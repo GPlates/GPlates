@@ -621,7 +621,7 @@ export_finite_rotation()
 				"\n"
 				"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
 				"\n"
-				"  See :class:`FiniteRotation` for more details on composing finite rotations.\n"
+				"  See :ref:`pygplates_foundations_working_with_finite_rotations` for more details on composing finite rotations.\n"
 				"\n"
 				"  ::\n"
 				"\n"

@@ -888,7 +888,10 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 			reconstruction_time,
 			velocity_surface_reconstructed_static_polygons,
 			velocity_surface_resolved_topological_boundaries,
-			boost::none/*velocity_surface_resolved_topological_networks*/);
+			boost::none/*velocity_surface_resolved_topological_networks*/,
+			// Use high speed point-in-poly testing since very dense velocity meshes containing
+			// lots of points can go through this path...
+			GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
 
 	// Get the resolved topological networks so we can query them for interpolated velocity at domain points.
 	const TopologicalNetworksVelocities resolved_networks_query(

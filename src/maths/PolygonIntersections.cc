@@ -549,6 +549,8 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 			partitioned_points_inside.push_back(point);
 			break;
 
+		// Note: We shouldn't actually get here with point partitioning.
+		// Results are either inside or outside. But we test just in case this changes...
 		case GEOMETRY_INTERSECTING:
 			// Classify points on boundary as inside.
 			partitioned_points_inside.push_back(point);

@@ -58,6 +58,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
@@ -2575,6 +2576,86 @@ namespace GPlatesApi
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
 				tessellate(polygon_on_sphere, tessellate_radians));
 	}
+
+	GPlatesMaths::PolygonIntersections::Result
+	polygon_on_sphere_partition(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+			bp::object partitioned_geometries_inside_object,
+			bp::object partitioned_geometries_outside_object)
+	{
+		// Partitioned inside/outside lists may or may not get used.
+		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
+		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
+		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_inside;
+		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_outside;
+		boost::optional<bp::list> partitioned_geometries_inside_list;
+		boost::optional<bp::list> partitioned_geometries_outside_list;
+
+		if (partitioned_geometries_inside_object != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::list> extract_partitioned_geometries_inside_list(partitioned_geometries_inside_object);
+			if (!extract_partitioned_geometries_inside_list.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_inside'");
+				bp::throw_error_already_set();
+			}
+			partitioned_geometries_inside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_inside = partitioned_geometries_inside_storage.get();
+			partitioned_geometries_inside_list = extract_partitioned_geometries_inside_list();
+		}
+
+		if (partitioned_geometries_outside_object != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::list> extract_partitioned_geometries_outside_list(partitioned_geometries_outside_object);
+			if (!extract_partitioned_geometries_outside_list.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_outside'");
+				bp::throw_error_already_set();
+			}
+			partitioned_geometries_outside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_outside = partitioned_geometries_outside_storage.get();
+			partitioned_geometries_outside_list = extract_partitioned_geometries_outside_list();
+		}
+
+		//
+		// Partition the geometry.
+		//
+
+		GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections =
+				GPlatesMaths::PolygonIntersections::create(polygon_on_sphere);
+		const GPlatesMaths::PolygonIntersections::Result partition_result =
+				polygon_intersections->partition_geometry(
+						geometry,
+						partitioned_geometries_inside,
+						partitioned_geometries_outside);
+
+		//
+		// Populate inside/output partitioned geometry lists if requested.
+		//
+
+		if (partitioned_geometries_inside)
+		{
+			BOOST_FOREACH(
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geometry,
+					partitioned_geometries_inside.get())
+			{
+				partitioned_geometries_inside_list->append(partitioned_geometry);
+			}
+		}
+
+		if (partitioned_geometries_outside)
+		{
+			BOOST_FOREACH(
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geometry,
+					partitioned_geometries_outside.get())
+			{
+				partitioned_geometries_outside_list->append(partitioned_geometry);
+			}
+		}
+
+		return partition_result;
+	}
 }
 
 
@@ -2948,6 +3029,77 @@ export_polygon_on_sphere()
 				"\n"
 				"    if polygon.is_point_in_polygon((latitude, longitude)):\n"
 				"      ...\n")
+		.def("partition",
+				&GPlatesApi::polygon_on_sphere_partition,
+				(bp::arg("geometry"),
+						bp::arg("partitioned_geometries_inside") = bp::object()/*Py_None*/,
+						bp::arg("partitioned_geometries_outside") = bp::object()/*Py_None*/),
+				"partition(geometry, [partitioned_geometries_inside], [partitioned_geometries_outside])\n"
+				"  Partition a geometry into optional inside/outside lists of partitioned geometry pieces.\n"
+				"\n"
+				"  :param geometry: the geometry to be partitioned\n"
+				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param partitioned_geometries_inside: optional list of geometries partitioned *inside* this polygon\n"
+				"  :type partitioned_geometries_inside: ``list`` or None\n"
+				"  :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon\n"
+				"  :type partitioned_geometries_outside: ``list`` or None\n"
+				"  :rtype: PolygonOnSphere.PartitionResult\n"
+				"\n"
+				"  The returned result is:\n"
+				"\n"
+				"  * *PolygonOnSphere.PartitionResult.inside*: if *geometry* is entirely *inside* this polygon, or\n"
+				"  * *PolygonOnSphere.PartitionResult.outside*: if *geometry* is entirely *outside* this polygon, or\n"
+				"  * *PolygonOnSphere.PartitionResult.intersecting*: if *geometry* *intersects* this polygon.\n"
+				"\n"
+				"  If *partitioned_geometries_inside* is specified then it must be a ``list`` and any part of *geometry* "
+				"inside this polygon is added to it. So if *PolygonOnSphere.PartitionResult.inside* is returned this means "
+				"*geometry* is added and if *PolygonOnSphere.PartitionResult.intersecting* is returned this means the "
+				"partitioned parts of *geometry* inside this polygon are added.\n"
+				"\n"
+				"  If *partitioned_geometries_outside* is specified then if must be a ``list`` and any part of *geometry* "
+				"outside this polygon is added to it. So if *PolygonOnSphere.PartitionResult.outside* is returned this means "
+				"*geometry* is added and if *PolygonOnSphere.PartitionResult.intersecting* is returned this means the "
+				"partitioned parts of *geometry* outside this polygon are added.\n"
+				"\n"
+				"  .. note:: Partitioning :class:`point<PointOnSphere>` geometries returns only "
+				"*PolygonOnSphere.PartitionResult.inside* or *PolygonOnSphere.PartitionResult.outside*.\n"
+				"\n"
+				"  If a partitioned :class:`multi-point<MultiPointOnSphere>` contains points both inside and outside "
+				"this polygon then *PolygonOnSphere.PartitionResult.intersecting* is returned. In this case the points *inside* "
+				"are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_inside* (if specified) and the "
+				"points *outside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_outside* (if specified).\n"
+				"\n"
+				"  .. warning:: | Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry is partial.\n"
+				"               | If a polygon geometry is entirely inside or entirely outside this polygon then it will get added as a "
+				"**polygon** as expected (to *partitioned_geometries_inside* or *partitioned_geometries_outside* respectively if specified).\n"
+				"               | But if a polygon geometry intersects this polygon, then partitioned **polylines** (not polygons) "
+				"are added (to the optional inside/outside lists).\n"
+				"               | This is also how it is in the Assign Plate IDs dialog in `GPlates <http://www.gplates.org>`_.\n"
+				"               | *In a future release this will be fixed to always return polygons.*\n"
+				"\n"
+				"  Test if a polyline is entirely inside a polygon:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if polygon.partition(polyline) == pygplates.PolygonOnSphere.PartitionResult.inside:\n"
+				"      ...\n"
+				"\n"
+				"  Find the bits of a polyline that are outside a group of continental polygons:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    # Start with the original polyline to partition.\n"
+				"    oceanic_polylines = [polyline]\n"
+				"\n"
+				"    for continental_polygon in continental_polygons:\n"
+				"        # Iterate over the polylines that are outside the continental polygons processed so far.\n"
+				"        current_oceanic_polylines = oceanic_polylines\n"
+				"        # The new list of polylines will also be outside the current continental polygon.\n"
+				"        oceanic_polylines = []\n"
+				"        for current_oceanic_polyline in current_oceanic_polylines:\n"
+				"            continental_polygon.partition(current_oceanic_polyline, partitioned_geometries_outside=oceanic_polylines)\n"
+				"\n"
+				"    # The final result is in 'oceanic_polylines'.\n")
 		.def("get_boundary_centroid",
 				&GPlatesApi::polygon_on_sphere_get_boundary_centroid,
 				"get_boundary_centroid()\n"
@@ -3026,6 +3178,15 @@ export_polygon_on_sphere()
 
 	// Enable boost::optional<GPlatesMaths::PolygonOrientation::Orientation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
+
+	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
+	bp::enum_<GPlatesMaths::PolygonIntersections::Result>("PartitionResult")
+			.value("inside", GPlatesMaths::PolygonIntersections::GEOMETRY_INSIDE)
+			.value("outside", GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE)
+			.value("intersecting", GPlatesMaths::PolygonIntersections::GEOMETRY_INTERSECTING);
+
+	// Enable boost::optional<GPlatesMaths::PolygonOrientation::PolygonIntersections::Result> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonIntersections::Result>();
 
 
 	// Register to-python conversion for PolygonOnSphere::non_null_ptr_to_const_type.

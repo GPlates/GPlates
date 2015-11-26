@@ -157,6 +157,7 @@ present day geometry on moving plate :math:`P_{M}` to time :math:`t_{to}` via th
 .. math::
 
    \text{geometry_moving_plate} &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times \text{geometry_present_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
                          &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
                          &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry_stage_pole_frame} \\
    \text{geometry_stage_pole_frame} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\

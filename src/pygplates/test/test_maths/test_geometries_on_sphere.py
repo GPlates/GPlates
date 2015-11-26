@@ -892,6 +892,96 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertFalse(self.polygon.is_point_in_polygon(
                 pygplates.PointOnSphere(-inv_sqrt_two, 0, inv_sqrt_two)))
     
+    def test_partition(self):
+        inv_sqrt_two = 1.0 / math.sqrt(2.0)
+        
+        point1 = pygplates.PointOnSphere(inv_sqrt_two, 0, inv_sqrt_two)
+        self.assertTrue(self.polygon.partition(point1) == pygplates.PolygonOnSphere.PartitionResult.inside)
+        inside_geometries = []
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(point1, inside_geometries, outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.inside)
+        self.assertTrue(inside_geometries == [point1])
+        self.assertFalse(outside_geometries)
+        
+        point2 = pygplates.PointOnSphere(-inv_sqrt_two, 0, inv_sqrt_two)
+        self.assertTrue(self.polygon.partition(point2) == pygplates.PolygonOnSphere.PartitionResult.outside)
+        inside_geometries = []
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(point2, inside_geometries, outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertFalse(inside_geometries)
+        self.assertTrue(outside_geometries == [point2])
+        
+        multipoint = pygplates.MultiPointOnSphere([point1, point2])
+        self.assertTrue(self.polygon.partition(multipoint) == pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        inside_geometries = []
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(multipoint, inside_geometries, outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(inside_geometries == [pygplates.MultiPointOnSphere([point1])])
+        self.assertTrue(outside_geometries == [pygplates.MultiPointOnSphere([point2])])
+        inside_geometries = []
+        self.assertTrue(self.polygon.partition(multipoint, inside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(inside_geometries == [pygplates.MultiPointOnSphere([point1])])
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(multipoint, partitioned_geometries_outside=outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(outside_geometries == [pygplates.MultiPointOnSphere([point2])])
+        
+        polyline = pygplates.PolylineOnSphere([(10, 0), (-10, 0)])
+        self.assertTrue(self.polygon.partition(polyline) == pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        inside_geometries = []
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(polyline, inside_geometries, outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(inside_geometries == [pygplates.PolylineOnSphere([(10, 0), (0, 0)])] or
+                        inside_geometries == [pygplates.PolylineOnSphere([(0, 0), (10, 0)])])
+        self.assertTrue(outside_geometries == [pygplates.PolylineOnSphere([(0, 0), (-10, 0)])] or
+                        outside_geometries == [pygplates.PolylineOnSphere([(-10, 0), (0, 0)])])
+        polyline = pygplates.PolylineOnSphere([(10, 0), (5, 0)])
+        inside_geometries = []
+        self.assertTrue(self.polygon.partition(polyline, inside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.inside)
+        self.assertTrue(inside_geometries == [polyline])
+        polyline = pygplates.PolylineOnSphere([(-10, 0), (-5, 0)])
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(polyline, partitioned_geometries_outside=outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(outside_geometries == [polyline])
+        
+        polygon = pygplates.PolygonOnSphere([(10, 0), (-10, 0), (-10, 5), (10,5)])
+        self.assertTrue(self.polygon.partition(polygon) == pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        inside_geometries = []
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(polygon, inside_geometries, outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
+        # Also we end up with 2 polylines inside (instead of 1).
+        self.assertTrue(len(inside_geometries) == 2)
+        self.assertTrue(inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
+                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
+                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
+                        inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
+        self.assertTrue(inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
+                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
+                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
+                        inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
+        self.assertTrue(len(outside_geometries) == 1)
+        self.assertTrue(outside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (-10, 0), (-10, 5), (0, 5)]) or
+                        outside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (-10, 5), (-10, 0), (0, 0)]))
+        polygon = pygplates.PolygonOnSphere([(10, 0), (5, 0), (5, 5), (10,5)])
+        inside_geometries = []
+        self.assertTrue(self.polygon.partition(polygon, inside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.inside)
+        self.assertTrue(inside_geometries == [polygon])
+        polygon = pygplates.PolygonOnSphere([(-10, 0), (-5, 0), (-5, 5), (-10,5)])
+        outside_geometries = []
+        self.assertTrue(self.polygon.partition(polygon, partitioned_geometries_outside=outside_geometries) ==
+                pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(outside_geometries == [polygon])
+    
     def test_centroid(self):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))

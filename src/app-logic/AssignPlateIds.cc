@@ -156,7 +156,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					resolved_topological_networks,
 					// Use high speed point-in-poly testing since we're being used for
 					// generalised cookie-cutting and we could be asked to test lots of points.
-					// For example, very dense velocity meshes go through this path.
 					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE));
 
 	d_partition_feature_tasks =
