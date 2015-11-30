@@ -195,39 +195,40 @@ namespace GPlatesApi
 
 
 		/**
-		 * Enables a GPlatesUtils::non_null_intrusive_ptr<const T> to be passed to python when a
-		 * GPlatesUtils::non_null_intrusive_ptr<T> is expected (eg, because the HeldType of the
-		 * 'bp::class_' wrapper of the type 'T' is the non-const version).
+		 * Registers a to-python converter from GPlatesUtils::non_null_intrusive_ptr<const T> to
+		 * GPlatesUtils::non_null_intrusive_ptr<T> and registers a from-python converter from
+		 * GPlatesUtils::non_null_intrusive_ptr<T> to GPlatesUtils::non_null_intrusive_ptr<const T>.
 		 *
-		 * Many types are considered immutable and hence a lot of general functions return *const*
-		 * objects. This is fine except that boost-python currently does not compile when wrapping
-		 * *const* objects (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+		 * The to-python converter is useful when the HeldType of a 'bp::class_' wrapper of type 'T'
+		 * is GPlatesUtils::non_null_intrusive_ptr<T> but C++ is returning a
+		 * GPlatesUtils::non_null_intrusive_ptr<const T>. And the from-python converter is useful
+		 * when Python returns the (wrapped HeldType) GPlatesUtils::non_null_intrusive_ptr<T> but
+		 * C++ is expecting GPlatesUtils::non_null_intrusive_ptr<const T>.
+		 *
+		 * Usually we wrap non-null intrusive pointers to *non-const* objects (instead of const).
+		 *
+		 * However some wrapped types are considered immutable and it might be desireable to wrap
+		 * *const objects (instead of *non-const*). However boost-python currently does not compile
+		 * when wrapping *const* objects (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
 		 *   https://svn.boost.org/trac/boost/ticket/857
 		 *   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
 		 *
-		 * ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-		 * but provide a python to/from converter that converts:
-		 *   to-python: T::non_null_ptr_to_const_type -> T::non_null_ptr_type (using this method)
-		 *   from-python: T::non_null_ptr_type -> T::non_null_ptr_to_const_type (using bp::implicitly_convertible)
-		 * ...which enables us to keep using 'non_null_ptr_to_const_type' everywhere (ie, we don't have
-		 * to change our C++ source code) but have it converted to/from 'non_null_ptr_type' when
-		 * interacting with python. And since our python-wrapped objects are 'non_null_ptr_type' then
-		 * boost-python takes care of the rest of the conversion/wrapping.
+		 * ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+		 * and register python to/from converter that convert const to non-const and back again.
 		 *
 		 * WARNING: This is dangerous since it involves casting away const so it should be used with care.
 		 * The danger is if a const object is passed to python (as non-const) which is then passed
 		 * back to C++ (as non-const) which then modifies it (thus modifying the original const object).
-		 * Or even just modifying it via python.
-		 *
-		 * NOTE: You will also need to specify the reverse from-python conversion from
-		 * non-const back to const if haven't already (eg, using bp::implicitly_convertible).
+		 * Or even just modifying it via python. However there's not a lot that can be done about this
+		 * since we need to store something in the Python wrapped object (const or non-const) and
+		 * usually we want non-const.
 		 *
 		 * For more information on boost python to/from conversions, see:
 		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 		 */
 		template <typename T>
 		void
-		register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion();
+		register_conversion_const_non_null_intrusive_ptr();
 
 
 		/**
@@ -236,7 +237,7 @@ namespace GPlatesApi
 		 * expected (because the HeldType of the 'bp::class_' wrapper of the type 'GeometryOnSphere'
 		 * is the non-const version).
 		 * 
-		 * This is the same as @a register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion
+		 * This is the same as @a register_conversion_const_non_null_intrusive_ptr
 		 * except it also converts an instance of GeometryOnSphere::non_null_ptr_to_const_type to
 		 * its derived GeometryOnSphere type first - this ensures that the python object contains
 		 * a pointer to the 'derived' type - if we don't do this then it appears that boost-python
@@ -255,7 +256,7 @@ namespace GPlatesApi
 		 * wrapper allows copying (ie, does not declare boost::noncopyable) and hence boost-python
 		 * can create a GPlatesUtils::non_null_intrusive_ptr<PointOnSphere> by copying the
 		 * PointOnSphere out of the GPlatesUtils::non_null_intrusive_ptr<GeometryOnSphere> python object,
-		 * created (by @a register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion),
+		 * created (by @a register_conversion_const_non_null_intrusive_ptr),
 		 * which it knows by polymorphism is really a GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>.
 		 */
 		void
@@ -779,7 +780,7 @@ namespace GPlatesApi
 		namespace Implementation
 		{
 			template <class T>
-			struct to_python_ConstToNonConst :
+			struct ConversionConstNonNullIntrusivePtr :
 					private boost::noncopyable
 			{
 				struct Conversion
@@ -797,20 +798,56 @@ namespace GPlatesApi
 						return bp::incref(bp::object(GPlatesUtils::const_pointer_cast<T>(value)).ptr());
 					};
 				};
+
+				static
+				void *
+				convertible(
+						PyObject *obj)
+				{
+					namespace bp = boost::python;
+
+					// non_null_intrusive_ptr<const T> is created from a non_null_intrusive_ptr<T>.
+					return bp::extract< GPlatesUtils::non_null_intrusive_ptr<T> >(obj).check() ? obj : NULL;
+				}
+
+				static
+				void
+				construct(
+						PyObject *obj,
+						boost::python::converter::rvalue_from_python_stage1_data *data)
+				{
+					namespace bp = boost::python;
+
+					void *const storage = reinterpret_cast<
+							bp::converter::rvalue_from_python_storage<
+									GPlatesUtils::non_null_intrusive_ptr<const T> > *>(
+											data)->storage.bytes;
+
+					new (storage) GPlatesUtils::non_null_intrusive_ptr<const T>(
+							bp::extract< GPlatesUtils::non_null_intrusive_ptr<T> >(obj)());
+
+					data->convertible = storage;
+				}
 			};
 		}
 
 
 		template <typename T>
 		void
-		register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion()
+		register_conversion_const_non_null_intrusive_ptr()
 		{
 			namespace bp = boost::python;
 
 			// To python conversion.
 			bp::to_python_converter<
 					GPlatesUtils::non_null_intrusive_ptr<const T>,
-					typename Implementation::to_python_ConstToNonConst<T>::Conversion>();
+					typename Implementation::ConversionConstNonNullIntrusivePtr<T>::Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&Implementation::ConversionConstNonNullIntrusivePtr<T>::convertible,
+					&Implementation::ConversionConstNonNullIntrusivePtr<T>::construct,
+					bp::type_id< GPlatesUtils::non_null_intrusive_ptr<const T> >());
 		}
 	}
 }
