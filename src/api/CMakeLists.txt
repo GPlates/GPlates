@@ -74,7 +74,6 @@ set(srcs
     PyRotationModel.cc
     PyRotationModel.h
     PyStrings.cc
-    PythonConverterUtils.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
