@@ -98,7 +98,7 @@ namespace GPlatesApi
 	 *   https://mail.python.org/pipermail/cplusplus-sig/2003-July/004459.html
 	 */
 	template <class ExceptionType>
-	class python_Exception
+	class PythonException
 	{
 	public:
 
@@ -108,7 +108,7 @@ namespace GPlatesApi
 		 * Instance can be passed to 'bp::register_exception_translator()'.
 		 */
 		explicit
-		python_Exception(
+		PythonException(
 				const char *python_exception_name,
 				bp::object python_base_exception_type)
 		{
@@ -186,7 +186,7 @@ namespace GPlatesApi
 			const char *python_exception_name,
 			bp::object python_base_exception_type)
 	{
-		python_Exception<ExceptionType> python_exception(
+		PythonException<ExceptionType> python_exception(
 				python_exception_name,
 				python_base_exception_type);
 

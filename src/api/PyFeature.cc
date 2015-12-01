@@ -3821,16 +3821,8 @@ export_feature()
 				"  :rtype: :class:`FeatureId`\n")
 	;
 
-	// Enable boost::optional<FeatureHandle::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::FeatureHandle::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesModel::FeatureHandle::non_null_ptr_type,
-			GPlatesModel::FeatureHandle::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>,
-			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesModel::FeatureHandle>();
 }
 
 // This is here at the end of the layer because the problem appears to reside

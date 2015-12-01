@@ -78,7 +78,7 @@ namespace GPlatesApi
 	 * A from-python converter from a sequence of points or a GeometryOnSphere to a
 	 * @a PointSequenceFunctionArgument.
 	 */
-	struct python_PointSequenceFunctionArgument :
+	struct ConversionPointSequenceFunctionArgument :
 			private boost::noncopyable
 	{
 		static
@@ -132,8 +132,8 @@ namespace GPlatesApi
 
 		// From python conversion.
 		bp::converter::registry::push_back(
-				&python_PointSequenceFunctionArgument::convertible,
-				&python_PointSequenceFunctionArgument::construct,
+				&ConversionPointSequenceFunctionArgument::convertible,
+				&ConversionPointSequenceFunctionArgument::construct,
 				bp::type_id<PointSequenceFunctionArgument>());
 	}
 }
@@ -366,8 +366,14 @@ export_geometry_on_sphere()
 	 */
 	bp::class_<
 			GPlatesMaths::GeometryOnSphere,
-			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
-			// for why this is 'non-const' instead of 'const'...
+			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
+			// However boost-python currently does not compile when wrapping *const* objects
+			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+			//   https://svn.boost.org/trac/boost/ticket/857
+			//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+			//
+			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+			// and register python to/from converter that convert const to non-const and back again.
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
 					"GeometryOnSphere",
@@ -543,15 +549,8 @@ export_geometry_on_sphere()
 		.staticmethod("distance")
 	;
 
-	// Register to-python conversion for GeometryOnSphere::non_null_ptr_to_const_type.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_geometry_on_sphere_conversion();
-	// Register from-python 'non-const' to 'const' conversion.
-	boost::python::implicitly_convertible<
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::GeometryOnSphere>,
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere> >();
-
-	// Enable boost::optional<GeometryOnSphere::non_null_ptr_to_const_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::GeometryOnSphere>();
 
 	// Register converter from a sequence of points or a GeometryOnSphere to a @a PointSequenceFunctionArgument.
 	GPlatesApi::register_point_sequence_function_argument_conversion();
@@ -566,11 +565,11 @@ namespace GPlatesApi
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_PointOnSphereFromLatLonPoint :
+	struct ConversionPointOnSphereFromLatLonPoint :
 			private boost::noncopyable
 	{
 		explicit
-		python_PointOnSphereFromLatLonPoint()
+		ConversionPointOnSphereFromLatLonPoint()
 		{
 			namespace bp = boost::python;
 
@@ -619,11 +618,11 @@ namespace GPlatesApi
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_PointOnSphereFromXYZOrLatLonSequence :
+	struct ConversionPointOnSphereFromXYZOrLatLonSequence :
 			private boost::noncopyable
 	{
 		explicit
-		python_PointOnSphereFromXYZOrLatLonSequence()
+		ConversionPointOnSphereFromXYZOrLatLonSequence()
 		{
 			namespace bp = boost::python;
 
@@ -729,9 +728,10 @@ namespace GPlatesApi
 	// With boost 1.42 we get the following compile error...
 	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
-	// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-	// successfully for python bindings in other source files. It's possibly due to
-	// 'bp::make_constructor' which isn't used for MultiPointOnSphere which has no problem with 'const'.
+	// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+	// to convert for us - despite the fact that this conversion works successfully for python bindings
+	// in other source files. It's possibly due to 'bp::make_constructor' which isn't used for
+	// MultiPointOnSphere which has no problem with 'const'.
 	//
 	// So we avoid it by using returning a pointer to 'non-const' PointOnSphere.
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
@@ -828,8 +828,14 @@ export_point_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::PointOnSphere,
-			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
-			// for why this is 'non-const' instead of 'const'...
+			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
+			// However boost-python currently does not compile when wrapping *const* objects
+			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+			//   https://svn.boost.org/trac/boost/ticket/857
+			//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+			//
+			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+			// and register python to/from converter that convert const to non-const and back again.
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>
 			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
@@ -1022,30 +1028,18 @@ export_point_on_sphere()
 		.def(bp::self_ns::str(bp::self))
 	;
 
-	// Register to-python conversion for PointOnSphere::non_null_ptr_to_const_type.
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	//
 	// PointOnSphere is a bit of an exception to the immutable rule since it can be allocated on
 	// the stack or heap (unlike the other geometry types) and it has an assignment operator.
 	// However we treat it the same as the other geometry types.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesMaths::PointOnSphere>();
-	// Register from-python 'non-const' to 'const' conversion.
-	boost::python::implicitly_convertible<
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >();
-
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Note that we're only dealing with 'const' conversions here.
-	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			const GPlatesMaths::PointOnSphere,
-			const GPlatesMaths::GeometryOnSphere>();
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>();
 
 	// Registers the from-python converter from GPlatesMaths::LatLonPoint.
-	GPlatesApi::python_PointOnSphereFromLatLonPoint();
+	GPlatesApi::ConversionPointOnSphereFromLatLonPoint();
 
 	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence.
-	GPlatesApi::python_PointOnSphereFromXYZOrLatLonSequence();
+	GPlatesApi::ConversionPointOnSphereFromXYZOrLatLonSequence();
 }
 
 
@@ -1071,8 +1065,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by using returning a pointer to 'non-const' MultiPointOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
@@ -1089,8 +1084,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by returning a pointer to 'non-const' MultiPointOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
@@ -1197,8 +1193,14 @@ export_multi_point_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::MultiPointOnSphere,
-			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
-			// for why this is 'non-const' instead of 'const'...
+			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
+			// However boost-python currently does not compile when wrapping *const* objects
+			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+			//   https://svn.boost.org/trac/boost/ticket/857
+			//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+			//
+			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+			// and register python to/from converter that convert const to non-const and back again.
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -1341,20 +1343,8 @@ export_multi_point_on_sphere()
 		.def(bp::self != bp::self)
 	;
 
-	// Register to-python conversion for MultiPointOnSphere::non_null_ptr_to_const_type.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesMaths::MultiPointOnSphere>();
-	// Register from-python 'non-const' to 'const' conversion.
-	boost::python::implicitly_convertible<
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>,
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere> >();
-
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Note that we're only dealing with 'const' conversions here.
-	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			const GPlatesMaths::MultiPointOnSphere,
-			const GPlatesMaths::GeometryOnSphere>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>();
 }
 
 
@@ -1382,8 +1372,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'PolyGeometryOnSphereType::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by using returning a pointer to 'non-const' PolyGeometryOnSphereType.
 		return GPlatesUtils::const_pointer_cast<PolyGeometryOnSphereType>(
@@ -1428,8 +1419,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by returning a pointer to 'non-const' PolylineOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(polyline.get());
@@ -1739,8 +1731,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolylineOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
@@ -1928,8 +1921,14 @@ export_polyline_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::PolylineOnSphere,
-			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
-			// for why this is 'non-const' instead of 'const'...
+			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
+			// However boost-python currently does not compile when wrapping *const* objects
+			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+			//   https://svn.boost.org/trac/boost/ticket/857
+			//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+			//
+			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+			// and register python to/from converter that convert const to non-const and back again.
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -2472,20 +2471,8 @@ export_polyline_on_sphere()
 		.def(bp::self != bp::self)
 	;
 
-	// Register to-python conversion for PolylineOnSphere::non_null_ptr_to_const_type.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesMaths::PolylineOnSphere>();
-	// Register from-python 'non-const' to 'const' conversion.
-	boost::python::implicitly_convertible<
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>,
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >();
-
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Note that we're only dealing with 'const' conversions here.
-	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			const GPlatesMaths::PolylineOnSphere,
-			const GPlatesMaths::GeometryOnSphere>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>();
 }
 
 
@@ -2530,8 +2517,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by returning a pointer to 'non-const' PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(polygon.get());
@@ -2569,8 +2557,9 @@ namespace GPlatesApi
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
 		//
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
@@ -2668,7 +2657,7 @@ export_polygon_on_sphere()
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> >(
 			"PolygonOnSpherePointsView",
-			bp::init<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
+			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> >())
 		.def("__len__",
@@ -2685,7 +2674,7 @@ export_polygon_on_sphere()
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::PolyGeometryOnSphereArcsView<GPlatesMaths::PolygonOnSphere> >(
 			"PolygonOnSphereArcsView",
-			bp::init<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
+			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::PolyGeometryOnSphereArcsView<GPlatesMaths::PolygonOnSphere> >())
 		.def("__len__",
@@ -2701,8 +2690,14 @@ export_polygon_on_sphere()
 	//
 	bp::scope polygon_on_sphere_class = bp::class_<
 			GPlatesMaths::PolygonOnSphere,
-			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
-			// for why this is 'non-const' instead of 'const'...
+			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
+			// However boost-python currently does not compile when wrapping *const* objects
+			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
+			//   https://svn.boost.org/trac/boost/ticket/857
+			//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+			//
+			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
+			// and register python to/from converter that convert const to non-const and back again.
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -3189,20 +3184,8 @@ export_polygon_on_sphere()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonIntersections::Result>();
 
 
-	// Register to-python conversion for PolygonOnSphere::non_null_ptr_to_const_type.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesMaths::PolygonOnSphere>();
-	// Register from-python 'non-const' to 'const' conversion.
-	boost::python::implicitly_convertible<
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>,
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> >();
-
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Note that we're only dealing with 'const' conversions here.
-	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			const GPlatesMaths::PolygonOnSphere,
-			const GPlatesMaths::GeometryOnSphere>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>();
 }
 
 

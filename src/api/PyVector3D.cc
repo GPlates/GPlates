@@ -58,11 +58,11 @@ namespace GPlatesApi
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_Vector3DFromXYZSequence :
+	struct ConversionVector3DFromXYZSequence :
 			private boost::noncopyable
 	{
 		explicit
-		python_Vector3DFromXYZSequence()
+		ConversionVector3DFromXYZSequence()
 		{
 			namespace bp = boost::python;
 
@@ -631,7 +631,7 @@ export_vector_3d()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::Vector3D>();
 
 	// Registers the from-python converter from an (x,y,z) sequence.
-	GPlatesApi::python_Vector3DFromXYZSequence();
+	GPlatesApi::ConversionVector3DFromXYZSequence();
 }
 
 #endif // GPLATES_NO_PYTHON

@@ -364,16 +364,16 @@ namespace GPlatesApi
 	 * NOTE: We don't enable passing the other direction (from C++ to python) because only
 	 * one to-python converter is allowed per type and we always pass
 	 * GPlatesPropertyValues::GeoTimeInstant (the C++ 'GeoTimeInstant') to python as a
-	 * python 'float' (using 'python_GPlatesPropertyValues_GeoTimeInstant').
+	 * python 'float' (using 'ConversionGPlatesPropertyValuesGeoTimeInstant').
 	 *
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_GPlatesApi_GeoTimeInstant :
+	struct ConversionGPlatesApiGeoTimeInstant :
 			private boost::noncopyable
 	{
 		explicit
-		python_GPlatesApi_GeoTimeInstant()
+		ConversionGPlatesApiGeoTimeInstant()
 		{
 			namespace bp = boost::python;
 
@@ -422,11 +422,11 @@ namespace GPlatesApi
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_GPlatesPropertyValues_GeoTimeInstant :
+	struct ConversionGPlatesPropertyValuesGeoTimeInstant :
 			private boost::noncopyable
 	{
 		explicit
-		python_GPlatesPropertyValues_GeoTimeInstant()
+		ConversionGPlatesPropertyValuesGeoTimeInstant()
 		{
 			namespace bp = boost::python;
 
@@ -675,8 +675,8 @@ export_geo_time_instant()
 
 	// Registers the python converters to/from GPlatesPropertyValues::GeoTimeInstant (C++)
 	// from/to GPlatesApi::GeoTimeInstant (python) and float (python).
-	GPlatesApi::python_GPlatesApi_GeoTimeInstant();
-	GPlatesApi::python_GPlatesPropertyValues_GeoTimeInstant();
+	GPlatesApi::ConversionGPlatesApiGeoTimeInstant();
+	GPlatesApi::ConversionGPlatesPropertyValuesGeoTimeInstant();
 }
 
 #endif // GPLATES_NO_PYTHON

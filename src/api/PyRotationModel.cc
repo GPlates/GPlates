@@ -67,7 +67,7 @@ namespace GPlatesApi
 		 * A from-python converter from a rotation model or a sequence of feature collections to a
 		 * @a RotationModelFunctionArgument.
 		 */
-		struct python_RotationModelFunctionArgument :
+		struct ConversionRotationModelFunctionArgument :
 				private boost::noncopyable
 		{
 			static
@@ -121,8 +121,8 @@ namespace GPlatesApi
 			// 
 			// From python conversion.
 			bp::converter::registry::push_back(
-					&python_RotationModelFunctionArgument::convertible,
-					&python_RotationModelFunctionArgument::construct,
+					&ConversionRotationModelFunctionArgument::convertible,
+					&ConversionRotationModelFunctionArgument::construct,
 					bp::type_id<RotationModelFunctionArgument>());
 		}
 
@@ -620,16 +620,8 @@ export_rotation_model()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable boost::optional<RotationModel::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::RotationModel::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesApi::RotationModel::non_null_ptr_type,
-			GPlatesApi::RotationModel::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesApi::RotationModel::non_null_ptr_type>,
-			boost::optional<GPlatesApi::RotationModel::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::RotationModel>();
 
 	// Register converter from a rotation model or a sequence of feature collections to a @a RotationModelFunctionArgument.
 	GPlatesApi::register_rotation_model_function_argument_conversion();

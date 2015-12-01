@@ -258,16 +258,8 @@ export_property_value()
 		.def(bp::self != bp::self)
 	;
 
-	// Enable boost::optional<PropertyValue::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::PropertyValue::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesModel::PropertyValue::non_null_ptr_type,
-			GPlatesModel::PropertyValue::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>,
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesModel::PropertyValue>();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -430,11 +422,8 @@ export_enumeration()
 				"    dip_slip_enum.set_content('Extension')\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::Enumeration,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::Enumeration>();
 }
 
 
@@ -917,11 +906,8 @@ export_gml_data_block()
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlDataBlock,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlDataBlock>();
 }
 
 
@@ -971,11 +957,8 @@ export_gml_line_string()
 				"  :type polyline: :class:`PolylineOnSphere`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlLineString,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlLineString>();
 }
 
 
@@ -1035,11 +1018,8 @@ export_gml_multi_point()
 				"  :type multi_point: :class:`MultiPointOnSphere`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlMultiPoint,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlMultiPoint>();
 }
 
 
@@ -1112,11 +1092,8 @@ export_gml_orientable_curve()
 				"  :type base_curve: :class:`GmlLineString`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlOrientableCurve,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlOrientableCurve>();
 }
 
 
@@ -1181,11 +1158,8 @@ export_gml_point()
 				", in degrees, or tuple (x,y,z)\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlPoint,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPoint>();
 }
 
 
@@ -1248,11 +1222,8 @@ export_gml_polygon()
 				"  :type polygon: :class:`PolygonOnSphere`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlPolygon,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPolygon>();
 }
 
 
@@ -1319,11 +1290,8 @@ export_gml_time_instant()
 				"  :type time_position: float or :class:`GeoTimeInstant`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlTimeInstant,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimeInstant>();
 }
 
 
@@ -1456,11 +1424,8 @@ export_gml_time_period()
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GmlTimePeriod,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimePeriod>();
 }
 
 
@@ -1591,11 +1556,8 @@ export_gpml_array()
 					gpml_array_class,
 					gpml_array_class_name);
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlArray,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlArray>();
 }
 
 
@@ -1712,11 +1674,8 @@ export_gpml_constant_value()
 				"  :type description: string or None\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlConstantValue,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlConstantValue>();
 }
 
 
@@ -1772,11 +1731,8 @@ export_gpml_finite_rotation()
 				"  :type finite_rotation: :class:`FiniteRotation`\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlFiniteRotation,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlFiniteRotation>();
 }
 
 
@@ -2185,11 +2141,8 @@ export_gpml_irregular_sampling()
 					gpml_irregular_sampling_class,
 					gpml_irregular_sampling_class_name);
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlIrregularSampling,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling>();
 }
 
 
@@ -2782,11 +2735,8 @@ export_gpml_key_value_dictionary()
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlKeyValueDictionary,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlKeyValueDictionary>();
 
 	// Register the dictionary element value types.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::dictionary_element_value_type>();
@@ -3058,11 +3008,8 @@ export_gpml_old_plates_header()
 				"  :type number_of_points: int\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlOldPlatesHeader,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlOldPlatesHeader>();
 }
 
 namespace GPlatesApi
@@ -3235,11 +3182,8 @@ export_gpml_piecewise_aggregation()
 					gpml_piecewise_aggregation_class,
 					gpml_piecewise_aggregation_class_name);
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlPiecewiseAggregation,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPiecewiseAggregation>();
 }
 
 
@@ -3291,11 +3235,8 @@ export_gpml_plate_id()
 				"  :type plate_id: int\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlPlateId,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPlateId>();
 }
 
 
@@ -3459,11 +3400,8 @@ export_gpml_polarity_chron_id()
 				"  :type minor_region: string\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlPolarityChronId,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPolarityChronId>();
 }
 
 
@@ -3696,16 +3634,8 @@ export_gpml_time_sample()
 		.def(bp::self != bp::self)
 	;
 
-	// Enable boost::optional<GpmlTimeSample::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type,
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>,
-			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeSample>();
 }
 
 
@@ -3878,16 +3808,8 @@ export_gpml_time_window()
 		.def(bp::self != bp::self)
 	;
 
-	// Enable boost::optional<GpmlTimeWindow::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type,
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>,
-			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeWindow>();
 }
 
 
@@ -3928,11 +3850,8 @@ export_gpml_total_reconstruction_pole()
 				"    total_reconstruction_pole_property = pygplates.GpmlTotalReconstructionPole(finite_rotation)\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlTotalReconstructionPole,
-			GPlatesPropertyValues::GpmlFiniteRotation>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTotalReconstructionPole>();
 }
 
 
@@ -3984,11 +3903,8 @@ export_xs_boolean()
 				"  :type boolean_value: bool\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::XsBoolean,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsBoolean>();
 }
 
 
@@ -4041,11 +3957,8 @@ export_xs_double()
 				"  :type float_value: float\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::XsDouble,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsDouble>();
 }
 
 
@@ -4097,11 +4010,8 @@ export_xs_integer()
 				"  :type integer_value: int\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::XsInteger,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsInteger>();
 }
 
 
@@ -4154,11 +4064,8 @@ export_xs_string()
 				"  :type string: string\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::XsString,
-			GPlatesModel::PropertyValue>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsString>();
 }
 
 

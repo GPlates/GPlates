@@ -136,16 +136,8 @@ export_top_level_property()
 		.def(bp::self != bp::self)
 	;
 
-	// Enable boost::optional<TopLevelProperty::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::TopLevelProperty::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesModel::TopLevelProperty::non_null_ptr_type,
-			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>,
-			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesModel::TopLevelProperty>();
 }
 
 #endif // GPLATES_NO_PYTHON

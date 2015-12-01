@@ -440,16 +440,8 @@ export_date_line_wrapper()
 		.def("get_points", &GPlatesApi::date_line_wrapper_multi_point_get_points)
 	;
 
-	// Enable boost::optional<DateLineWrapper::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::DateLineWrapper::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesMaths::DateLineWrapper::non_null_ptr_type,
-			GPlatesMaths::DateLineWrapper::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesMaths::DateLineWrapper::non_null_ptr_type>,
-			boost::optional<GPlatesMaths::DateLineWrapper::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::DateLineWrapper>();
 }
 
 #endif // GPLATES_NO_PYTHON

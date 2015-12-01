@@ -678,7 +678,7 @@ namespace GPlatesApi
 	 * A from-python converter from a feature collection or a string filename to a
 	 * @a FeatureCollectionFunctionArgument.
 	 */
-	struct python_FeatureCollectionFunctionArgument :
+	struct ConversionFeatureCollectionFunctionArgument :
 			private boost::noncopyable
 	{
 		static
@@ -722,7 +722,7 @@ namespace GPlatesApi
 	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionFunctionArgument.
 	 */
 	void
-	register_feature_collection_function_argument_conversion()
+	register_conversion_feature_collection_function_argument()
 	{
 		// Register function argument types variant.
 		PythonConverterUtils::register_variant_conversion<
@@ -732,8 +732,8 @@ namespace GPlatesApi
 
 		// From python conversion.
 		bp::converter::registry::push_back(
-				&python_FeatureCollectionFunctionArgument::convertible,
-				&python_FeatureCollectionFunctionArgument::construct,
+				&ConversionFeatureCollectionFunctionArgument::convertible,
+				&ConversionFeatureCollectionFunctionArgument::construct,
 				bp::type_id<FeatureCollectionFunctionArgument>());
 	}
 
@@ -742,7 +742,7 @@ namespace GPlatesApi
 	 * A from-python converter from a feature collection or a string filename or a sequence of feature
 	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument.
 	 */
-	struct python_FeatureCollectionSequenceFunctionArgument :
+	struct ConversionFeatureCollectionSequenceFunctionArgument :
 			private boost::noncopyable
 	{
 		static
@@ -786,7 +786,7 @@ namespace GPlatesApi
 	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
 	 */
 	void
-	register_feature_collection_sequence_function_argument_conversion()
+	register_conversion_feature_collection_sequence_function_argument()
 	{
 		// Register function argument types variant.
 		PythonConverterUtils::register_variant_conversion<
@@ -796,8 +796,8 @@ namespace GPlatesApi
 
 		// From python conversion.
 		bp::converter::registry::push_back(
-				&python_FeatureCollectionSequenceFunctionArgument::convertible,
-				&python_FeatureCollectionSequenceFunctionArgument::construct,
+				&ConversionFeatureCollectionSequenceFunctionArgument::convertible,
+				&ConversionFeatureCollectionSequenceFunctionArgument::construct,
 				bp::type_id<FeatureCollectionSequenceFunctionArgument>());
 	}
 }
@@ -1456,22 +1456,14 @@ export_feature_collection()
 				"        pygplates.FeatureReturn.all)\n")
 	;
 
-	// Enable boost::optional<FeatureCollectionHandle::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>,
-			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle>();
 
 	// Register converter from a feature collection or a string filename to a @a FeatureCollectionFunctionArgument.
-	GPlatesApi::register_feature_collection_function_argument_conversion();
+	GPlatesApi::register_conversion_feature_collection_function_argument();
 
 	// Register converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
-	GPlatesApi::register_feature_collection_sequence_function_argument_conversion();
+	GPlatesApi::register_conversion_feature_collection_sequence_function_argument();
 
 
 	//

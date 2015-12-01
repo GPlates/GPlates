@@ -49,11 +49,11 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_Real :
+	struct ConversionReal :
 			private boost::noncopyable
 	{
 		explicit
-		python_Real()
+		ConversionReal()
 		{
 			namespace bp = boost::python;
 
@@ -138,7 +138,7 @@ void
 export_real()
 {
 	// Registers the python to/from converters for GPlatesMaths::Real.
-	GPlatesApi::python_Real();
+	GPlatesApi::ConversionReal();
 
 	// Enable boost::optional<GPlatesMaths::Real> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::Real>();

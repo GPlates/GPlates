@@ -1164,21 +1164,8 @@ export_reconstruction_tree()
 				bp::arg("fixed_plate_id"),
 				bp::arg("use_identity_for_missing_plate_ids")=true));
 
-	// Enable boost::optional<ReconstructionTree::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionTree::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> >();
-
-	// Register to-python conversion from ReconstructionTree::non_null_ptr_to_const_type to
-	// ReconstructionTree::non_null_ptr_type since some functions return a 'const' reconstruction tree.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesAppLogic::ReconstructionTree>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructionTree>();
 
 	//
 	// ReconstructionTreeEdge - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).

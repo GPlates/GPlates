@@ -55,11 +55,11 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_QString :
+	struct ConversionQString :
 			private boost::noncopyable
 	{
 		explicit
-		python_QString()
+		ConversionQString()
 		{
 			namespace bp = boost::python;
 
@@ -129,11 +129,11 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 	 * For more information on boost python to/from conversions, see:
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
-	struct python_UnicodeString :
+	struct ConversionUnicodeString :
 			private boost::noncopyable
 	{
 		explicit
-		python_UnicodeString()
+		ConversionUnicodeString()
 		{
 			namespace bp = boost::python;
 
@@ -199,11 +199,11 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 	 */
 	template <class StringContentTypeGeneratorType>
-	struct python_StringContentTypeGenerator :
+	struct ConversionStringContentTypeGenerator :
 			private boost::noncopyable
 	{
 		explicit
-		python_StringContentTypeGenerator()
+		ConversionStringContentTypeGenerator()
 		{
 			namespace bp = boost::python;
 
@@ -268,7 +268,7 @@ void
 export_qstring()
 {
 	// Registers the python to/from converters for QString.
-	GPlatesApi::python_QString();
+	GPlatesApi::ConversionQString();
 
 	// Enable boost::optional<QString> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<QString>();
@@ -279,7 +279,7 @@ void
 export_unicode_string()
 {
 	// Registers the python to/from converters for GPlatesUtils::UnicodeString.
-	GPlatesApi::python_UnicodeString();
+	GPlatesApi::ConversionUnicodeString();
 
 	// Enable boost::optional<GPlatesUtils::UnicodeString> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesUtils::UnicodeString>();
@@ -290,7 +290,7 @@ void
 export_xml_attribute_value()
 {
 	// Registers the python to/from converters for GPlatesModel::XmlAttributeValue.
-	GPlatesApi::python_StringContentTypeGenerator<GPlatesModel::XmlAttributeValue>();
+	GPlatesApi::ConversionStringContentTypeGenerator<GPlatesModel::XmlAttributeValue>();
 
 	// Enable boost::optional<GPlatesModel::XmlAttributeValue> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::XmlAttributeValue>();
@@ -301,7 +301,7 @@ void
 export_enumeration_content()
 {
 	// Registers the python to/from converters for GPlatesPropertyValues::EnumerationContent.
-	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::EnumerationContent>();
+	GPlatesApi::ConversionStringContentTypeGenerator<GPlatesPropertyValues::EnumerationContent>();
 
 	// Enable boost::optional<GPlatesPropertyValues::EnumerationContent> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::EnumerationContent>();
@@ -312,7 +312,7 @@ void
 export_text_content()
 {
 	// Registers the python to/from converters for GPlatesPropertyValues::TextContent.
-	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::TextContent>();
+	GPlatesApi::ConversionStringContentTypeGenerator<GPlatesPropertyValues::TextContent>();
 
 	// Enable boost::optional<GPlatesPropertyValues::TextContent> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::TextContent>();
