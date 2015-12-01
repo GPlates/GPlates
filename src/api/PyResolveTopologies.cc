@@ -384,9 +384,7 @@ namespace GPlatesApi
 					rg_iter != feature_geom_group.recon_geoms.end();
 					++rg_iter)
 				{
-					// FIXME: Currently using 'const_cast' since we pass non-const to python.
-					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rg(
-							const_cast<GPlatesAppLogic::ReconstructionGeometry *>(*rg_iter));
+					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg(*rg_iter);
 
 					output_resolved_topologies_list.append(rg);
 				}

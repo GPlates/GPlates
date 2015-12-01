@@ -107,7 +107,13 @@ namespace GPlatesApi
 
 		explicit
 		ReconstructionGeometryTypeWrapper(
-				typename ReconstructionGeometryType::non_null_ptr_to_const_type reconstruction_geometry_type);
+				typename ReconstructionGeometryType::non_null_ptr_to_const_type reconstruction_geometry_type) :
+			d_reconstruction_geometry_type(
+					// We wrap *non-const* reconstruction geometries and hence cast away const
+					// (which is dangerous since Python user could modify)...
+					GPlatesUtils::const_pointer_cast<ReconstructionGeometryType>(reconstruction_geometry_type)),
+			d_keep_feature_property_alive(*reconstruction_geometry_type)
+		{  }
 
 		/**
 		 * Get the wrapped reconstruction geometry type.
@@ -203,7 +209,7 @@ namespace GPlatesApi
 		static
 		boost::any
 		create_reconstruction_geometry_type_wrapper(
-				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry);
+				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry);
 
 
 		//! The wrapped reconstruction geometry itself.
@@ -660,28 +666,6 @@ namespace GPlatesApi
 	{
 		return wrapper.get_resolved_topological_section().get();
 	}
-}
-
-//
-// Implementation.
-//
-
-namespace GPlatesApi
-{
-	template <class ReconstructionGeometryType>
-	ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>::ReconstructionGeometryTypeWrapper(
-			typename ReconstructionGeometryType::non_null_ptr_to_const_type reconstruction_geometry_type) :
-		d_reconstruction_geometry_type(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
-				GPlatesUtils::const_pointer_cast<ReconstructionGeometryType>(reconstruction_geometry_type)),
-		d_keep_feature_property_alive(*reconstruction_geometry_type)
-	{  }
 }
 
 #endif   // GPLATES_NO_PYTHON

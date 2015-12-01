@@ -548,9 +548,7 @@ namespace GPlatesApi
 				{
 					// Create a Python feature.
 					bp::object feature_object(
-							GPlatesModel::FeatureHandle::non_null_ptr_type(
-									// FIXME: Currently using 'const_cast' since we pass non-const to python...
-									const_cast<GPlatesModel::FeatureHandle *>(feature_ref.handle_ptr())));
+							GPlatesModel::FeatureHandle::non_null_ptr_to_const_type(feature_ref.handle_ptr()));
 					// Create a Python list (of reconstruction geometries).
 					feature_reconstruction_geometries_list = bp::list();
 
@@ -567,9 +565,7 @@ namespace GPlatesApi
 					rg_iter != feature_geom_group.recon_geoms.end();
 					++rg_iter)
 				{
-					// FIXME: Currently using 'const_cast' since we pass non-const to python.
-					const typename ReconstructionGeometryType::non_null_ptr_type rg(
-							const_cast<ReconstructionGeometryType *>(*rg_iter));
+					const typename ReconstructionGeometryType::non_null_ptr_to_const_type rg(*rg_iter);
 
 					// Add the reconstruction geometry to python list.
 					if (group_with_feature)

@@ -26,7 +26,6 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/type_traits/remove_const.hpp>
 
 #include "PyReconstructionGeometries.h"
 
@@ -169,11 +168,11 @@ namespace GPlatesApi
 	 * ReconstructionGeometry visitor to create a derived reconstruction geometry type wrapper.
 	 */
 	class WrapReconstructionGeometryTypeVisitor :
-			public GPlatesAppLogic::ConstReconstructionGeometryVisitor
+			public GPlatesAppLogic::ReconstructionGeometryVisitor
 	{
 	public:
 		// Bring base class visit methods into scope of current class.
-		using GPlatesAppLogic::ConstReconstructionGeometryVisitor::visit;
+		using GPlatesAppLogic::ReconstructionGeometryVisitor::visit;
 
 
 		const boost::any &
@@ -189,8 +188,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<reconstructed_feature_geometry_type>::type>(rfg));
+					ReconstructionGeometryTypeWrapper<reconstructed_feature_geometry_type>(rfg));
 		}
 
 		virtual
@@ -199,8 +197,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<reconstructed_motion_path_type>::type>(rmp));
+					ReconstructionGeometryTypeWrapper<reconstructed_motion_path_type>(rmp));
 		}
 
 		virtual
@@ -209,8 +206,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<reconstructed_flowline_type>::type>(rf));
+					ReconstructionGeometryTypeWrapper<reconstructed_flowline_type>(rf));
 		}
 
 		virtual
@@ -219,8 +215,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<resolved_topological_line_type>::type>(rtl));
+					ReconstructionGeometryTypeWrapper<resolved_topological_line_type>(rtl));
 		}
 
 		virtual
@@ -229,8 +224,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<resolved_topological_boundary_type>::type>(rtb));
+					ReconstructionGeometryTypeWrapper<resolved_topological_boundary_type>(rtb));
 		}
 
 		virtual
@@ -239,8 +233,7 @@ namespace GPlatesApi
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{
 			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<
-							boost::remove_const<resolved_topological_network_type>::type>(rtn));
+					ReconstructionGeometryTypeWrapper<resolved_topological_network_type>(rtn));
 		}
 
 	private:
@@ -259,22 +252,17 @@ namespace GPlatesApi
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry) :
 		d_reconstruction_geometry(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
+				// We wrap *non-const* reconstruction geometries and hence cast away const
+				// (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ReconstructionGeometry>(reconstruction_geometry)),
 		d_reconstruction_geometry_type_wrapper(
-				create_reconstruction_geometry_type_wrapper(reconstruction_geometry))
+				create_reconstruction_geometry_type_wrapper(d_reconstruction_geometry))
 	{  }
 
 
 	boost::any
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::create_reconstruction_geometry_type_wrapper(
-			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry)
 	{
 		WrapReconstructionGeometryTypeVisitor visitor;
 		reconstruction_geometry->accept_visitor(visitor);
@@ -283,11 +271,11 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a derived 'ReconstructionGeometryType' to a
-	 * 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>' (and vice versa).
+	 * To-python converter from a 'non_null_intrusive_ptr<ReconstructionGeometryType>'
+	 * to a 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>'.
 	 */
 	template <class ReconstructionGeometryType>
-	struct python_ReconstructionGeometryType :
+	struct ToPythonConversionReconstructionGeometryWrapperType :
 			private boost::noncopyable
 	{
 		struct Conversion
@@ -298,62 +286,26 @@ namespace GPlatesApi
 					const typename ReconstructionGeometryType::non_null_ptr_type &rg)
 			{
 				// Convert to ReconstructionGeometryTypeWrapper<> first.
-				// Then it'll get converted to python.
+				// Then it'll get converted to python as part of bp::class_ wrapper.
 				return bp::incref(bp::object(
 						ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>(rg)).ptr());
 			}
 		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			// 'ReconstructionGeometryType' is obtained from a
-			// ReconstructionGeometryTypeWrapper<> (which in turn is already convertible).
-			return bp::extract< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(obj).check()
-					? obj
-					: NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				bp::converter::rvalue_from_python_stage1_data *data)
-		{
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							typename ReconstructionGeometryType::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) typename ReconstructionGeometryType::non_null_ptr_type(
-					bp::extract< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(obj)()
-							.get_reconstruction_geometry_type());
-
-			data->convertible = storage;
-		}
 	};
 
 
 	/**
-	 * Registers converter from a derived 'ReconstructionGeometryType' to a
-	 * 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>' (and vice versa).
+	 * Registers a to-python converter from a 'non_null_intrusive_ptr<ReconstructionGeometryType>'
+	 * to a 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>'.
 	 */
 	template <class ReconstructionGeometryType>
 	void
-	register_reconstruction_geometry_type_conversion()
+	register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper()
 	{
 		// To python conversion.
 		bp::to_python_converter<
 				typename ReconstructionGeometryType::non_null_ptr_type,
-				typename python_ReconstructionGeometryType<ReconstructionGeometryType>::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ReconstructionGeometryType<ReconstructionGeometryType>::convertible,
-				&python_ReconstructionGeometryType<ReconstructionGeometryType>::construct,
-				bp::type_id<typename ReconstructionGeometryType::non_null_ptr_type>());
+				typename ToPythonConversionReconstructionGeometryWrapperType<ReconstructionGeometryType>::Conversion>();
 	}
 }
 
@@ -393,24 +345,16 @@ export_reconstruction_geometry()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructionGeometry>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructionGeometry>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructionGeometry
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ReconstructionGeometry::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructionGeometry>();
 }
 
 
@@ -520,18 +464,16 @@ export_reconstructed_feature_geometry()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedFeatureGeometry>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedFeatureGeometry>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedFeatureGeometry
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ReconstructedFeatureGeometry,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructedFeatureGeometry>();
 }
 
 
@@ -667,18 +609,16 @@ export_reconstructed_motion_path()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedMotionPath>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedMotionPath>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedMotionPath
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ReconstructedMotionPath,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructedMotionPath>();
 }
 
 
@@ -845,18 +785,16 @@ export_reconstructed_flowline()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedFlowline>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedFlowline>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedFlowline
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ReconstructedFlowline,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructedFlowline>();
 }
 
 
@@ -909,13 +847,8 @@ namespace GPlatesApi
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type resolved_topological_line) :
 		d_resolved_topological_line(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
+				// We wrap *non-const* reconstruction geometries and hence cast away const
+				// (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalLine>(resolved_topological_line)),
 		d_keep_feature_property_alive(*resolved_topological_line)
 	{
@@ -1066,18 +999,16 @@ export_resolved_topological_line()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalLine>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalLine>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalLine
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ResolvedTopologicalLine,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ResolvedTopologicalLine>();
 }
 
 
@@ -1130,13 +1061,8 @@ namespace GPlatesApi
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) :
 		d_resolved_topological_boundary(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
+				// We wrap *non-const* reconstruction geometries and hence cast away const
+				// (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalBoundary>(resolved_topological_boundary)),
 		d_keep_feature_property_alive(*resolved_topological_boundary)
 	{
@@ -1287,18 +1213,16 @@ export_resolved_topological_boundary()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalBoundary>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalBoundary>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalBoundary
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ResolvedTopologicalBoundary,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ResolvedTopologicalBoundary>();
 }
 
 
@@ -1351,13 +1275,8 @@ namespace GPlatesApi
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network) :
 		d_resolved_topological_network(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
+				// We wrap *non-const* reconstruction geometries and hence cast away const
+				// (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalNetwork>(resolved_topological_network)),
 		d_keep_feature_property_alive(*resolved_topological_network)
 	{
@@ -1503,18 +1422,16 @@ export_resolved_topological_network()
 
 	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalNetwork>();
+	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalNetwork>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalNetwork
 	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesAppLogic::ResolvedTopologicalNetwork,
-			GPlatesAppLogic::ReconstructionGeometry>();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ResolvedTopologicalNetwork>();
 }
 
 
@@ -1585,10 +1502,10 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
+	 * To-python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
 	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
 	 */
-	struct python_ResolvedTopologicalGeometrySubSegment :
+	struct ToPythonConversionResolvedTopologicalGeometrySubSegment :
 			private boost::noncopyable
 	{
 		struct Conversion
@@ -1604,34 +1521,6 @@ namespace GPlatesApi
 						ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment)).ptr());
 			}
 		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			// 'ResolvedTopologicalGeometrySubSegment' is obtained from a
-			// ResolvedTopologicalGeometrySubSegmentWrapper (which in turn is already convertible).
-			return bp::extract<const ResolvedTopologicalGeometrySubSegmentWrapper &>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				bp::converter::rvalue_from_python_stage1_data *data)
-		{
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
-					bp::extract<const ResolvedTopologicalGeometrySubSegmentWrapper &>(obj)()
-							.get_resolved_topological_geometry_sub_segment());
-
-			data->convertible = storage;
-		}
 	};
 
 
@@ -1640,18 +1529,12 @@ namespace GPlatesApi
 	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
 	 */
 	void
-	register_resolved_topological_geometry_sub_segment_conversion()
+	register_to_python_conversion_resolved_topological_geometry_sub_segment()
 	{
 		// To python conversion.
 		bp::to_python_converter<
 				GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment,
-				python_ResolvedTopologicalGeometrySubSegment::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalGeometrySubSegment::convertible,
-				&python_ResolvedTopologicalGeometrySubSegment::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment>());
+				ToPythonConversionResolvedTopologicalGeometrySubSegment::Conversion>();
 	}
 }
 
@@ -1783,7 +1666,7 @@ export_resolved_topological_sub_segment()
 
 	// Enable python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment (and vice versa).
-	GPlatesApi::register_resolved_topological_geometry_sub_segment_conversion();
+	GPlatesApi::register_to_python_conversion_resolved_topological_geometry_sub_segment();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment
@@ -1925,10 +1808,10 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a 'ResolvedTopologicalSharedSubSegment' to a
+	 * To-python converter from a 'ResolvedTopologicalSharedSubSegment' to a
 	 * 'ResolvedTopologicalSharedSubSegmentWrapper' (and vice versa).
 	 */
-	struct python_ResolvedTopologicalSharedSubSegment :
+	struct ToPythonConversionResolvedTopologicalSharedSubSegment :
 			private boost::noncopyable
 	{
 		struct Conversion
@@ -1944,34 +1827,6 @@ namespace GPlatesApi
 						ResolvedTopologicalSharedSubSegmentWrapper(sub_segment)).ptr());
 			}
 		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			// 'ResolvedTopologicalSharedSubSegment' is obtained from a
-			// ResolvedTopologicalSharedSubSegmentWrapper (which in turn is already convertible).
-			return bp::extract<const ResolvedTopologicalSharedSubSegmentWrapper &>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				bp::converter::rvalue_from_python_stage1_data *data)
-		{
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalSharedSubSegment(
-					bp::extract<const ResolvedTopologicalSharedSubSegmentWrapper &>(obj)()
-							.get_resolved_topological_shared_sub_segment());
-
-			data->convertible = storage;
-		}
 	};
 
 
@@ -1980,18 +1835,12 @@ namespace GPlatesApi
 	 * 'ResolvedTopologicalSharedSubSegmentWrapper' (and vice versa).
 	 */
 	void
-	register_resolved_topological_shared_sub_segment_conversion()
+	register_to_python_conversion_resolved_topological_shared_sub_segment()
 	{
 		// To python conversion.
 		bp::to_python_converter<
 				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment,
-				python_ResolvedTopologicalSharedSubSegment::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalSharedSubSegment::convertible,
-				&python_ResolvedTopologicalSharedSubSegment::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>());
+				ToPythonConversionResolvedTopologicalSharedSubSegment::Conversion>();
 	}
 }
 
@@ -2144,7 +1993,7 @@ export_resolved_topological_shared_sub_segment()
 
 	// Enable python-wrapped ResolvedTopologicalSharedSubSegmentWrapper to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment (and vice versa).
-	GPlatesApi::register_resolved_topological_shared_sub_segment_conversion();
+	GPlatesApi::register_to_python_conversion_resolved_topological_shared_sub_segment();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalSharedSubSegment
@@ -2188,13 +2037,8 @@ namespace GPlatesApi
 	ResolvedTopologicalSectionWrapper::ResolvedTopologicalSectionWrapper(
 			const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type &resolved_topological_section) :
 		d_resolved_topological_section(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
+				// We wrap *non-const* resolved topological sections and hence cast away const
+				// (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalSection>(resolved_topological_section)),
 		d_reconstruction_geometry(resolved_topological_section->get_reconstruction_geometry())
 	{
@@ -2230,10 +2074,10 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a 'ResolvedTopologicalSection' to a
+	 * To-python converter from a 'ResolvedTopologicalSection' to a
 	 * 'ResolvedTopologicalSectionWrapper' (and vice versa).
 	 */
-	struct python_ResolvedTopologicalSection :
+	struct ToPythonConversionResolvedTopologicalSection :
 			private boost::noncopyable
 	{
 		struct Conversion
@@ -2249,34 +2093,6 @@ namespace GPlatesApi
 						ResolvedTopologicalSectionWrapper(section)).ptr());
 			}
 		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			// 'ResolvedTopologicalSection' is obtained from a
-			// ResolvedTopologicalSectionWrapper (which in turn is already convertible).
-			return bp::extract<const ResolvedTopologicalSectionWrapper &>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				bp::converter::rvalue_from_python_stage1_data *data)
-		{
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type(
-					bp::extract<const ResolvedTopologicalSectionWrapper &>(obj)()
-							.get_resolved_topological_section());
-
-			data->convertible = storage;
-		}
 	};
 
 
@@ -2285,18 +2101,12 @@ namespace GPlatesApi
 	 * 'ResolvedTopologicalSectionWrapper' (and vice versa).
 	 */
 	void
-	register_resolved_topological_section_conversion()
+	register_to_python_conversion_resolved_topological_section()
 	{
 		// To python conversion.
 		bp::to_python_converter<
 				GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type,
-				python_ResolvedTopologicalSection::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalSection::convertible,
-				&python_ResolvedTopologicalSection::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>());
+				ToPythonConversionResolvedTopologicalSection::Conversion>();
 	}
 }
 
@@ -2393,24 +2203,15 @@ export_resolved_topological_section()
 
 	// Enable python-wrapped ResolvedTopologicalSectionWrapper to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalSection (and vice versa).
-	GPlatesApi::register_resolved_topological_section_conversion();
+	GPlatesApi::register_to_python_conversion_resolved_topological_section();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalSection
 	// (not ResolvedTopologicalSectionWrapper).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalSection> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	bp::implicitly_convertible<
-			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type,
-			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type>();
-	bp::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type> >();
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ResolvedTopologicalSection>();
 }
 
 
