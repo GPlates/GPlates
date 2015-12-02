@@ -3638,10 +3638,11 @@ export_feature()
 				"           pygplates.ScalarType.create_gpml('VelocityLon') : [0.36, 0.37, 0.376]}\n"
 				"       feature.set_geometry((coverage_geometry, coverage_scalars))\n"
 				"\n"
-				"  .. warning:: The number of points in each coverage geometry specified in *geometry* "
-				"(if any coverages are specified) should be different otherwise *AmbiguousGeometryCoverageError* "
-				"will be raised. Due to this restriction it's better to set only a single coverage "
-				"(per geometry property name).\n")
+				"  .. warning:: If more than one coverage geometry is specified in *geometry* then the "
+				"number of points in each coverage geometry should be different otherwise "
+				"*AmbiguousGeometryCoverageError* will be raised. Due to this restriction it's better "
+				"to set only a single coverage (per geometry property name) - but that single coverage "
+				"can still have more than one list of scalars.\n")
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,

@@ -307,6 +307,106 @@ namespace GPlatesApi
 				typename ReconstructionGeometryType::non_null_ptr_type,
 				typename ToPythonConversionReconstructionGeometryWrapperType<ReconstructionGeometryType>::Conversion>();
 	}
+
+
+	/**
+	 * From-python converter from a 'ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>'
+	 * to a 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>'.
+	 */
+	template <class ReconstructionGeometryType>
+	struct FromPythonConversionBaseToDerivedReconstructionGeometryWrapperType :
+			private boost::noncopyable
+	{
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> is created from a
+			// ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
+			bp::extract< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> > extract_reconstruction_geometry_wrapper(obj);
+			if (!extract_reconstruction_geometry_wrapper.check())
+			{
+				return NULL;
+			}
+
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry_wrapper =
+					extract_reconstruction_geometry_wrapper();
+
+			// See if can convert to the derived reconstruction geometry type wrapper.
+			boost::optional<const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &> wrapper =
+					reconstruction_geometry_wrapper.get_reconstruction_geometry_type_wrapper<ReconstructionGeometryType>();
+
+			return wrapper ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> > *>(
+									data)->storage.bytes;
+
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry_wrapper =
+					bp::extract< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >(obj)();
+
+			// Extract theReconstructionGeometryTypeWrapper<ReconstructionGeometryType> wrapper.
+			boost::optional<const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &> wrapper =
+					reconstruction_geometry_wrapper.get_reconstruction_geometry_type_wrapper<ReconstructionGeometryType>();
+
+			// The function 'convertible()' will have verified this.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					wrapper,
+					GPLATES_ASSERTION_SOURCE);
+
+			new (storage) ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>(wrapper.get());
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers a converter from a 'ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>'
+	 * to a 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>'.
+	 *
+	 * This is useful when, for example, a GPlatesAppLogic::ResolvedTopologicalLine is passed to Python
+	 * as a GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
+	 * GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalLine but
+	 * cannot convert from a...
+	 * 
+	 *   GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	 * 
+	 * ...to a...
+	 * 
+	 *   GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>
+	 * 
+	 * ...so we need to provide that conversion.
+	 * Note that this only applies when C++ needs an actual
+	 * GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>.
+	 * Usually it just needs a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type in which
+	 * case this conversion is not used.
+	 */
+	template <class ReconstructionGeometryType>
+	void
+	register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper()
+	{
+		namespace bp = boost::python;
+
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&FromPythonConversionBaseToDerivedReconstructionGeometryWrapperType<ReconstructionGeometryType>::convertible,
+				&FromPythonConversionBaseToDerivedReconstructionGeometryWrapperType<ReconstructionGeometryType>::construct,
+				bp::type_id< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >());
+	}
 }
 
 
@@ -462,9 +562,14 @@ export_reconstructed_feature_geometry()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedFeatureGeometry>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFeatureGeometry>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedFeatureGeometry>();
 
 	//
@@ -607,9 +712,14 @@ export_reconstructed_motion_path()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedMotionPath>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedMotionPath>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedMotionPath>();
 
 	//
@@ -783,9 +893,14 @@ export_reconstructed_flowline()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ReconstructedFlowline>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFlowline>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedFlowline>();
 
 	//
@@ -824,24 +939,6 @@ namespace GPlatesApi
 		}
 
 		return line_sub_segments_list;
-	}
-
-	// The derived reconstruction geometry type wrapper might be the wrong type.
-	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
-	bp::object
-	resolved_topological_line_get_resolved_feature(
-			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
-	{
-		// Extract the 'GPlatesAppLogic::ResolvedTopologicalLine' wrapper.
-		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine> &> wrapper =
-				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalLine>();
-		if (!wrapper)
-		{
-			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalLine");
-			bp::throw_error_already_set();
-		}
-
-		return wrapper->get_resolved_feature();
 	}
 
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::ReconstructionGeometryTypeWrapper(
@@ -891,6 +988,26 @@ namespace GPlatesApi
 		}
 
 		return d_resolved_feature_object;
+	}
+
+	/**
+	 * For some reason we need to wrap...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::get_resolved_feature()
+	 * 
+	 * ...in a function for boost-python to recognise the 'this' pointer type...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>
+	 * 
+	 * ...so it can convert from...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	 */
+	bp::object
+	resolved_topological_line_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine> &resolved_topological_line)
+	{
+		return resolved_topological_line.get_resolved_feature();
 	}
 }
 
@@ -945,7 +1062,7 @@ export_resolved_topological_line()
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_line`.\n")
 		.def("get_resolved_feature",
-				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::get_resolved_feature,
+				&GPlatesApi::resolved_topological_line_get_resolved_feature,
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved line geometry.\n"
 				"\n"
@@ -963,18 +1080,6 @@ export_resolved_topological_line()
 				"to present day because topologies are resolved (not reconstructed).\n"
 				"\n"
 				"  .. seealso:: :meth:`get_feature`\n")
-		// This overload of 'get_resolved_feature' works with
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
-		// This happens when a GPlatesAppLogic::ResolvedTopologicalLine is passed to Python as a
-		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
-		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalLine
-		// (which is how it gets here) but cannot convert from a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>
-		// so we have to do that ourselves...
-		.def("get_resolved_feature",
-				&GPlatesApi::resolved_topological_line_get_resolved_feature,
-				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_line_sub_segments",
 				&GPlatesApi::resolved_topological_line_get_line_sub_segments,
 				"get_line_sub_segments()\n"
@@ -997,9 +1102,14 @@ export_resolved_topological_line()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalLine>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalLine>();
 
 	//
@@ -1038,24 +1148,6 @@ namespace GPlatesApi
 		}
 
 		return boundary_sub_segments_list;
-	}
-
-	// The derived reconstruction geometry type wrapper might be the wrong type.
-	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
-	bp::object
-	resolved_topological_boundary_get_resolved_feature(
-			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
-	{
-		// Extract the 'GPlatesAppLogic::ResolvedTopologicalBoundary' wrapper.
-		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary> &> wrapper =
-				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>();
-		if (!wrapper)
-		{
-			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalBoundary");
-			bp::throw_error_already_set();
-		}
-
-		return wrapper->get_resolved_feature();
 	}
 
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::ReconstructionGeometryTypeWrapper(
@@ -1105,6 +1197,26 @@ namespace GPlatesApi
 		}
 
 		return d_resolved_feature_object;
+	}
+
+	/**
+	 * For some reason we need to wrap...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::get_resolved_feature()
+	 * 
+	 * ...in a function for boost-python to recognise the 'this' pointer type...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>
+	 * 
+	 * ...so it can convert from...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	 */
+	bp::object
+	resolved_topological_boundary_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary> &resolved_topological_boundary)
+	{
+		return resolved_topological_boundary.get_resolved_feature();
 	}
 }
 
@@ -1159,7 +1271,7 @@ export_resolved_topological_boundary()
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_boundary`.\n")
 		.def("get_resolved_feature",
-				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::get_resolved_feature,
+				&GPlatesApi::resolved_topological_boundary_get_resolved_feature,
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved boundary geometry.\n"
 				"\n"
@@ -1177,18 +1289,6 @@ export_resolved_topological_boundary()
 				"to present day because topologies are resolved (not reconstructed).\n"
 				"\n"
 				"  .. seealso:: :meth:`get_feature`\n")
-		// This overload of 'get_resolved_feature' works with
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
-		// This happens when a GPlatesAppLogic::ResolvedTopologicalBoundary is passed to Python as a
-		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
-		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalBoundary
-		// (which is how it gets here) but cannot convert from a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>
-		// so we have to do that ourselves...
-		.def("get_resolved_feature",
-				&GPlatesApi::resolved_topological_boundary_get_resolved_feature,
-				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_boundary_sub_segments",
 				&GPlatesApi::resolved_topological_boundary_get_boundary_sub_segments,
 				"get_boundary_sub_segments()\n"
@@ -1211,9 +1311,14 @@ export_resolved_topological_boundary()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalBoundary>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalBoundary>();
 
 	//
@@ -1252,24 +1357,6 @@ namespace GPlatesApi
 		}
 
 		return boundary_sub_segments_list;
-	}
-
-	// The derived reconstruction geometry type wrapper might be the wrong type.
-	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
-	bp::object
-	resolved_topological_network_get_resolved_feature(
-			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
-	{
-		// Extract the 'GPlatesAppLogic::ResolvedTopologicalNetwork' wrapper.
-		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork> &> wrapper =
-				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>();
-		if (!wrapper)
-		{
-			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalNetwork");
-			bp::throw_error_already_set();
-		}
-
-		return wrapper->get_resolved_feature();
 	}
 
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
@@ -1319,6 +1406,26 @@ namespace GPlatesApi
 		}
 
 		return d_resolved_feature_object;
+	}
+
+	/**
+	 * For some reason we need to wrap...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::get_resolved_feature()
+	 * 
+	 * ...in a function for boost-python to recognise the 'this' pointer type...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>
+	 * 
+	 * ...so it can convert from...
+	 * 
+	 *   ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	 */
+	bp::object
+	resolved_topological_network_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork> &resolved_topological_network)
+	{
+		return resolved_topological_network.get_resolved_feature();
 	}
 }
 
@@ -1372,7 +1479,7 @@ export_resolved_topological_network()
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_boundary`.\n")
 		.def("get_resolved_feature",
-				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::get_resolved_feature,
+				&GPlatesApi::resolved_topological_network_get_resolved_feature,
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved boundary geometry.\n"
 				"\n"
@@ -1390,18 +1497,6 @@ export_resolved_topological_network()
 				"to present day because topologies are resolved (not reconstructed).\n"
 				"\n"
 				"  .. seealso:: :meth:`get_feature`\n")
-		// This overload of 'get_resolved_feature' works with
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
-		// This happens when a GPlatesAppLogic::ResolvedTopologicalNetwork is passed to Python as a
-		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
-		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalNetwork
-		// (which is how it gets here) but cannot convert from a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
-		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>
-		// so we have to do that ourselves...
-		.def("get_resolved_feature",
-				&GPlatesApi::resolved_topological_network_get_resolved_feature,
-				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_boundary_sub_segments",
 				&GPlatesApi::resolved_topological_network_get_boundary_sub_segments,
 				"get_boundary_sub_segments()\n"
@@ -1420,9 +1515,14 @@ export_resolved_topological_network()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
+			GPlatesAppLogic::ResolvedTopologicalNetwork>();
+
+	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>.
+	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalNetwork>();
 
 	//
@@ -1664,8 +1764,8 @@ export_resolved_topological_sub_segment()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment to be converted
+	// to-python as a python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_geometry_sub_segment();
 
 	//
@@ -1991,8 +2091,8 @@ export_resolved_topological_shared_sub_segment()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalSharedSubSegmentWrapper to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment to be converted
+	// to-python as a python-wrapped ResolvedTopologicalSharedSubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_shared_sub_segment();
 
 	//
@@ -2201,8 +2301,8 @@ export_resolved_topological_section()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalSectionWrapper to be converted to
-	// a GPlatesAppLogic::ResolvedTopologicalSection (and vice versa).
+	// Enable a GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type to be converted
+	// to-python as a python-wrapped ResolvedTopologicalSectionWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_section();
 
 	//
