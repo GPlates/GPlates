@@ -48,6 +48,7 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
+#include "model/PropertyName.h"
 #include "model/TopLevelProperty.h"
 
 
@@ -113,6 +114,38 @@ namespace GPlatesApi
 			}
 
 			return convert_geometry_to_polyline(topological_section_geometry.get());
+		}
+
+		/**
+		 * Create a resolved feature by cloning the feature and setting the resolved geometry on it.
+		 */
+		bp::object
+		create_resolved_feature(
+				GPlatesModel::FeatureHandle::non_null_ptr_type feature,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type resolved_reconstruction_geometry,
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry)
+		{
+			// Clone the feature.
+			// Currently we use Python to do this.
+			// FIXME: When C++ FeatureHandle::clone() is implemented to be deep then switch to using it.
+			bp::object resolved_feature_object = bp::object(feature).attr("clone")();
+
+			// Get the property name that the reconstruction geometry came from.
+			// We need this to set the geometry on the correct geometry property name in the cloned feature.
+			boost::optional<GPlatesModel::FeatureHandle::iterator> resolved_geometry_property_iterator =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+							resolved_reconstruction_geometry);
+			if (!resolved_geometry_property_iterator)
+			{
+				return bp::object()/*Py_None*/;
+			}
+			const GPlatesModel::PropertyName &resolved_geometry_property_name =
+					(*resolved_geometry_property_iterator.get())->get_property_name();
+
+			// Set the resolved geometry.
+			resolved_feature_object.attr("set_geometry")(resolved_geometry, resolved_geometry_property_name);
+
+			return resolved_feature_object;
 		}
 	}
 
@@ -977,11 +1010,13 @@ namespace GPlatesApi
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					d_resolved_topological_line->resolved_topology_line();
 
-			// Clone the feature.
-			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
-
-			// Set the resolved line geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+			// Create the resolved feature.
+			bp::object resolved_feature_object =
+					create_resolved_feature(feature.get(), d_resolved_topological_line, resolved_geometry);
+			if (resolved_feature_object == bp::object()/*Py_None*/)
+			{
+				return bp::object()/*Py_None*/;
+			}
 
 			// No exceptions have been thrown so record our new resolved feature.
 			d_resolved_feature_object = resolved_feature_object;
@@ -1186,11 +1221,13 @@ namespace GPlatesApi
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					d_resolved_topological_boundary->resolved_topology_boundary();
 
-			// Clone the feature.
-			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
-
-			// Set the resolved boundary geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+			// Create the resolved feature.
+			bp::object resolved_feature_object =
+					create_resolved_feature(feature.get(), d_resolved_topological_boundary, resolved_geometry);
+			if (resolved_feature_object == bp::object()/*Py_None*/)
+			{
+				return bp::object()/*Py_None*/;
+			}
 
 			// No exceptions have been thrown so record our new resolved feature.
 			d_resolved_feature_object = resolved_feature_object;
@@ -1395,11 +1432,13 @@ namespace GPlatesApi
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					d_resolved_topological_network->boundary_polygon();
 
-			// Clone the feature.
-			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
-
-			// Set the resolved boundary geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+			// Create the resolved feature.
+			bp::object resolved_feature_object =
+					create_resolved_feature(feature.get(), d_resolved_topological_network, resolved_geometry);
+			if (resolved_feature_object == bp::object()/*Py_None*/)
+			{
+				return bp::object()/*Py_None*/;
+			}
 
 			// No exceptions have been thrown so record our new resolved feature.
 			d_resolved_feature_object = resolved_feature_object;
@@ -1587,11 +1626,16 @@ namespace GPlatesApi
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_sub_segment_geometry =
 					resolved_topological_geometry_sub_segment_get_resolved_geometry(d_resolved_topological_geometry_sub_segment);
 
-			// Clone the topological section feature.
-			bp::object resolved_feature_object = bp::object(topological_section_feature.get()).attr("clone")();
-
-			// Set the resolved sub-segment geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_sub_segment_geometry);
+			// Create the resolved feature.
+			bp::object resolved_feature_object =
+					create_resolved_feature(
+							topological_section_feature.get(),
+							d_resolved_topological_geometry_sub_segment.get_reconstruction_geometry(),
+							resolved_sub_segment_geometry);
+			if (resolved_feature_object == bp::object()/*Py_None*/)
+			{
+				return bp::object()/*Py_None*/;
+			}
 
 			// No exceptions have been thrown so record our new resolved feature.
 			d_resolved_feature_object = resolved_feature_object;
@@ -1877,11 +1921,16 @@ namespace GPlatesApi
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_sub_segment_geometry =
 					resolved_topological_shared_sub_segment_get_resolved_geometry(d_resolved_topological_shared_sub_segment);
 
-			// Clone the topological section feature.
-			bp::object resolved_feature_object = bp::object(topological_section_feature.get()).attr("clone")();
-
-			// Set the resolved sub-segment geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_sub_segment_geometry);
+			// Create the resolved feature.
+			bp::object resolved_feature_object =
+					create_resolved_feature(
+							topological_section_feature.get(),
+							d_resolved_topological_shared_sub_segment.get_reconstruction_geometry(),
+							resolved_sub_segment_geometry);
+			if (resolved_feature_object == bp::object()/*Py_None*/)
+			{
+				return bp::object()/*Py_None*/;
+			}
 
 			// No exceptions have been thrown so record our new resolved feature.
 			d_resolved_feature_object = resolved_feature_object;

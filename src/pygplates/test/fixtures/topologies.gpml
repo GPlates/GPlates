@@ -793,7 +793,7 @@
         </gpml:TopologicalClosedPlateBoundary>
     </gml:featureMember>
     <gml:featureMember>
-        <gpml:UnclassifiedFeature>
+        <gpml:TopologicalNetwork>
             <gpml:identity>GPlates-4fe56a89-d041-4494-ab07-3abead642b8e</gpml:identity>
             <gpml:revision>GPlates-96422135-e97d-4139-8ede-ea6d10155ddd</gpml:revision>
             <gml:name>topology3</gml:name>
@@ -924,6 +924,6 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalNetwork</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:network>
-        </gpml:UnclassifiedFeature>
+        </gpml:TopologicalNetwork>
     </gml:featureMember>
 </gpml:FeatureCollection>
