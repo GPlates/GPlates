@@ -460,22 +460,55 @@ GPlatesModel::ModelUtils::get_property_value(
 
 std::vector<GPlatesModel::FeatureHandle::iterator>
 GPlatesModel::ModelUtils::get_top_level_properties(
-		const PropertyName& name,
+		const PropertyName &property_name,
 		FeatureHandle::weak_ref feature)
 {
-	std::vector<FeatureHandle::iterator> ret;
-	if(feature.is_valid())
+	std::vector<FeatureHandle::iterator> properties;
+
+	if (feature.is_valid())
 	{
-		FeatureHandle::iterator it = feature->begin();
-		for(;it != feature->end(); it++)
+		for (FeatureHandle::iterator property_iter = feature->begin(); property_iter != feature->end(); ++property_iter)
 		{
-			if((*it)->get_property_name() == name)
+			if ((*property_iter)->get_property_name() == property_name)
 			{
-				ret.push_back(it);
+				properties.push_back(property_iter);
 			}
 		}
 	}
-	return ret;
+
+	return properties;
+}
+
+
+std::vector<GPlatesModel::FeatureHandle::iterator>
+GPlatesModel::ModelUtils::get_top_level_geometry_properties(
+		FeatureHandle::weak_ref feature)
+{
+	std::vector<FeatureHandle::iterator> geometry_properties;
+
+	if (feature.is_valid())
+	{
+		const Gpgim::property_seq_type &gpgim_geometry_properties = Gpgim::instance().get_geometry_properties();
+
+		for (FeatureHandle::iterator property_iter = feature->begin(); property_iter != feature->end(); ++property_iter)
+		{
+			const PropertyName &property_name = (*property_iter)->get_property_name();
+
+			// Add feature property to return list if it's property name represents a geometry property.
+			BOOST_FOREACH(
+					const GpgimProperty::non_null_ptr_to_const_type &gpgim_geometry_property,
+					gpgim_geometry_properties)
+			{
+				if (property_name == gpgim_geometry_property->get_property_name())
+				{
+					geometry_properties.push_back(property_iter);
+					break;
+				}
+			}
+		}
+	}
+
+	return geometry_properties;
 }
 
 
