@@ -183,6 +183,16 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns all *geometry* properties supported by the GPGIM.
+		 */
+		const property_seq_type &
+		get_geometry_properties() const
+		{
+			return d_geometry_properties;
+		}
+
+
+		/**
 		 * Returns all property structural types supported by the GPGIM.
 		 *
 		 * Note that this includes enumerations since they are a subset of all property structural types.
@@ -214,6 +224,28 @@ namespace GPlatesModel
 		boost::optional<GpgimStructuralType::non_null_ptr_to_const_type>
 		get_property_structural_type(
 				const GPlatesPropertyValues::StructuralType &structural_type) const;
+
+
+		/**
+		 * Returns all *geometry* property structural types supported by the GPGIM.
+		 *
+		 * Geometry structural types include:
+		 *   - gml:Point
+		 *   - gml:MultiPoint
+		 *   - gml:Polygon
+		 *   - gml:LineString
+		 *   - gml:OrientableCurve
+		 *   - gpml:TopologicalLine
+		 *   - gpml:TopologicalNetwork
+		 *   - gpml:TopologicalPolygon
+		 *
+		 * Note: Like @a get_property_structural_type, this method does *not* include instantiated templates.
+		 */
+		const property_structural_type_seq_type &
+		get_geometry_property_structural_types() const
+		{
+			return d_geometry_property_structural_types;
+		}
 
 
 		/**
@@ -322,17 +354,22 @@ namespace GPlatesModel
 		property_structural_type_seq_type d_property_structural_types;
 
 		/**
+		 * Used to retrieve GPGIM structural type from structural type.
+		 */
+		property_structural_type_map_type d_property_structural_type_map;
+
+		/**
+		 * The list of all supported *geometry* property structural types.
+		 */
+		property_structural_type_seq_type d_geometry_property_structural_types;
+
+		/**
 		 * The list of all supported property *template* structural types (instantiations).
 		 *
 		 * Note that only those template instantiations required by properties (ie, structural type
 		 * *and* value type) are actually inserted.
 		 */
 		property_template_structural_type_seq_type d_property_template_structural_types;
-
-		/**
-		 * Used to retrieve GPGIM structural type from structural type.
-		 */
-		property_structural_type_map_type d_property_structural_type_map;
 
 		/**
 		 * Used to retrieve GPGIM *template* structural type from a structural type and value type.
@@ -363,6 +400,11 @@ namespace GPlatesModel
 		 * Used to retrieve GPGIM property from property name.
 		 */
 		property_map_type d_property_map;
+
+		/**
+		 * The list of all supported *geometry* properties.
+		 */
+		property_seq_type d_geometry_properties;
 
 		/**
 		 * Used to retrieve feature class from feature type.

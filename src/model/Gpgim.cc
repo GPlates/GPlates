@@ -765,6 +765,12 @@ GPlatesModel::Gpgim::create_property_structural_types(
 		// Add to the list of GPGIM property structural types.
 		d_property_structural_types.push_back(gpgim_structural_type);
 
+		// Also add to list of *geometry* property structural types if it represents a geometry.
+		if (gpgim_structural_type->is_geometry_structural_type())
+		{
+			d_geometry_property_structural_types.push_back(gpgim_structural_type);
+		}
+
 		// If it's an enumeration (structural type) then also add it to our list of GPGIM enumeration types.
 		if (is_enumeration)
 		{
@@ -819,8 +825,40 @@ GPlatesModel::Gpgim::create_property_structural_type(
 
 	if (!is_enumeration)
 	{
+		// Read the geometry attribute (determines whether structural type represents a geometry).
+		bool is_geometry_structural_type = false;
+
+		// Look for the 'gpgim:isGeometry' attribute.
+		static const XmlAttributeName IS_GEOMETRY_ATTRIBUTE_NAME = XmlAttributeName::create_gpgim("isGeometry");
+		const XmlElementNode::attribute_const_iterator is_geometry_attribute_iter =
+				property_type_xml_element->get_attribute_by_name(IS_GEOMETRY_ATTRIBUTE_NAME);
+		if (is_geometry_attribute_iter != property_type_xml_element->attributes_end())
+		{
+			const XmlAttributeValue &attribute_value = is_geometry_attribute_iter->second;
+			if (attribute_value.get() == "true" ||
+				attribute_value.get() == "1")
+			{
+				is_geometry_structural_type = true;
+			}
+			else if (attribute_value.get() == "false" ||
+					attribute_value.get() == "0")
+			{
+				is_geometry_structural_type = false;
+			}
+			else
+			{
+				throw GpgimInitialisationException(
+						GPLATES_EXCEPTION_SOURCE,
+						gpgim_resource_filename,
+						property_type_xml_element->line_number(),
+						QString("incorrect attribute value '%1'='%2' - should be 'false', 'true', '0' or '1'")
+								.arg(convert_qualified_xml_name_to_qstring(IS_GEOMETRY_ATTRIBUTE_NAME))
+								.arg(GPlatesUtils::make_qstring_from_icu_string(attribute_value.get())));
+			}
+		}
+
 		// Create the GPGIM property structural type.
-		return GpgimStructuralType::create(structural_type, structural_description);
+		return GpgimStructuralType::create(structural_type, structural_description, is_geometry_structural_type);
 	}
 	// ...else the 'Enumeration' property type contains extra data - the allowed enumeration values.
 
@@ -949,6 +987,12 @@ GPlatesModel::Gpgim::create_properties(
 
 		// Add to the list of GPGIM properties.
 		d_properties.push_back(gpgim_property);
+
+		// Also add to list of GPGIM *geometry* properties if it represents a geometry.
+		if (gpgim_property->has_geometry_structural_type())
+		{
+			d_geometry_properties.push_back(gpgim_property);
+		}
 	}
 }
 

@@ -133,9 +133,10 @@ namespace GPlatesModel
 		non_null_ptr_type
 		create(
 				const GPlatesPropertyValues::StructuralType &structural_type,
-				const QString &description)
+				const QString &description,
+				bool is_geometry_structural_type_ = false)
 		{
-			return non_null_ptr_type(new GpgimStructuralType(structural_type, description));
+			return non_null_ptr_type(new GpgimStructuralType(structural_type, description, is_geometry_structural_type_));
 		}
 
 
@@ -160,6 +161,26 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns true if the structural type represents a geometry.
+		 *
+		 * Geometry structural types include:
+		 *   - gml:Point
+		 *   - gml:MultiPoint
+		 *   - gml:Polygon
+		 *   - gml:LineString
+		 *   - gml:OrientableCurve
+		 *   - gpml:TopologicalLine
+		 *   - gpml:TopologicalNetwork
+		 *   - gpml:TopologicalPolygon
+		 */
+		bool
+		is_geometry_structural_type() const
+		{
+			return d_is_geometry_structural_type;
+		}
+
+
+		/**
 		 * Returns the description of the structural type.
 		 */
 		const QString &
@@ -172,9 +193,12 @@ namespace GPlatesModel
 		/**
 		 * Returns the instantiation type.
 		 *
+		 * Non-template structural types do not need a value type (implementation below).
+		 *
 		 * Template structural types (such as 'gpml:Array') need a value type to be specified
 		 * in order to complete the type or instantiate the type (eg, 'gpml:Array<gml:TimePeriod>').
-		 * Non-template structural types do not need a value type.
+		 * Hence template structural types use the derivd class @a GpgimTemplateStructuralType
+		 * which overrides this method.
 		 */
 		virtual
 		instantiation_type
@@ -189,9 +213,11 @@ namespace GPlatesModel
 
 		GpgimStructuralType(
 				const GPlatesPropertyValues::StructuralType &structural_type,
-				const QString &description) :
+				const QString &description,
+				bool is_geometry_structural_type_ = false) :
 			d_structural_type(structural_type),
-			d_description(description)
+			d_description(description),
+			d_is_geometry_structural_type(is_geometry_structural_type_)
 		{  }
 
 	private:
@@ -201,6 +227,9 @@ namespace GPlatesModel
 
 		//! The description of the structural type.
 		QString d_description;
+
+		//! Is a geometry?
+		bool d_is_geometry_structural_type;
 
 	};
 }
