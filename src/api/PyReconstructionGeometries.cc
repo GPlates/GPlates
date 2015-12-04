@@ -48,6 +48,7 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
+#include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 #include "model/TopLevelProperty.h"
 
@@ -125,11 +126,6 @@ namespace GPlatesApi
 				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type resolved_reconstruction_geometry,
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry)
 		{
-			// Clone the feature.
-			// Currently we use Python to do this.
-			// FIXME: When C++ FeatureHandle::clone() is implemented to be deep then switch to using it.
-			bp::object resolved_feature_object = bp::object(feature).attr("clone")();
-
 			// Get the property name that the reconstruction geometry came from.
 			// We need this to set the geometry on the correct geometry property name in the cloned feature.
 			boost::optional<GPlatesModel::FeatureHandle::iterator> resolved_geometry_property_iterator =
@@ -141,6 +137,26 @@ namespace GPlatesApi
 			}
 			const GPlatesModel::PropertyName &resolved_geometry_property_name =
 					(*resolved_geometry_property_iterator.get())->get_property_name();
+
+			// Clone the feature.
+			// Currently we use Python to do this.
+			// FIXME: When C++ FeatureHandle::clone() is implemented to be deep then switch to using it.
+			bp::object resolved_feature_object = bp::object(feature).attr("clone")();
+
+			// Get the C++ cloned feature.
+			GPlatesModel::FeatureHandle::non_null_ptr_type resolved_feature =
+					bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(resolved_feature_object);
+
+			// Remove all geometry properties.
+			// We need to do this because our resolved feature should really only contain the
+			// single resolved geometry - any other geometries (with different property names) will
+			// just confuse the user and look like spurious resolved geometries in the wrong position.
+			std::vector<GPlatesModel::FeatureHandle::iterator> cloned_geometry_properties =
+					GPlatesModel::ModelUtils::get_top_level_geometry_properties(resolved_feature->reference());
+			BOOST_FOREACH(GPlatesModel::FeatureHandle::iterator cloned_geometry_property, cloned_geometry_properties)
+			{
+				resolved_feature->remove(cloned_geometry_property);
+			}
 
 			// Set the resolved geometry.
 			resolved_feature_object.attr("set_geometry")(resolved_geometry, resolved_geometry_property_name);
