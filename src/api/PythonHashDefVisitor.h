@@ -27,6 +27,7 @@
 #define GPLATES_API_PYTHONHASHDEFVISITOR_H
 
 #include <cstdlib> // For std::size_t
+#include <boost/type_traits/is_polymorphic.hpp>
 
 #include "global/python.h"
 
@@ -200,7 +201,37 @@ namespace GPlatesApi
 		static
 		std::size_t
 		hash(
-				const ClassType &instance);
+				const ClassType &instance)
+		{
+			return std::size_t(
+					// Make sure we get the address of the outermost object in cases where
+					// 'ClassType' is a polymorphic base class of a multiply-inherited class...
+					get_object_address(
+							&instance,
+							typename boost::is_polymorphic<ClassType>::type()));
+		}
+
+		//! Overload for polymorphic types - returns address of the entire (dynamic) object.
+		template <class ClassType>
+		static
+		const void *
+		get_object_address(
+				const ClassType *object_address,
+				boost::mpl::true_/*is_polymorphic*/)
+		{
+			return dynamic_cast<const void *>(object_address);
+		}
+
+		//! Overload for non-polymorphic types - just returns the address passed in.
+		template <class ClassType>
+		static
+		const void *
+		get_object_address(
+				const ClassType *object_address,
+				boost::mpl::false_/*is_polymorphic*/)
+		{
+			return static_cast<const void *>(object_address);
+		}
 
 
 		bool d_define_equality_and_inequality_operators;
@@ -224,6 +255,12 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
+			// Note that this also extracts from a Python object wrapping a C++ held-pointer to an
+			// object derived from 'ClassType', and from a Python object wrapping a C++ held-pointer
+			// to a polymorphic base of 'ClassType'. This is due to the Bases parameter of bp::class_.
+			// This conversion to a 'ClassType' pointer/reference also nicely avoids the issue that
+			// the address of a base class of a multiply-inherited class can be offset from the
+			// derived class.
 			bp::extract<const ClassType &> extract_other_instance(other);
 			if (extract_other_instance.check())
 			{
@@ -231,17 +268,7 @@ namespace GPlatesApi
 			}
 
 			// If 'other' is not same type then cannot be same object (at same address).
-			//
-			// QUESTION: Is this true for derived types (does bp::extract<ClassHeldType>
-			// extract from derived held types) ?
-			// Also address of base class of multiply-inherited class can be offset from derived class.
-			// So might need to return Py_NotImplemented instead but we want to avoid python falling back
-			// to using 'id()' which is incorrect for two distinct python objects pointing to same C++ object.
-			//
-			// ANSWER: But probably not a problem because boost-python is pretty good at making sure python
-			// objects store pointers to derived C++ class (not base class) so shouldn't be comparing
-			// two PointOnSphere's (for example) but with one python object only storing GeometryOnSphere pointer
-			// while other python object stores PointOnSphere pointer (instead both should be PointOnSphere).
+			// Aside from the above-mentioned base and derived classes.
 			return false;
 		}
 
@@ -397,15 +424,6 @@ namespace GPlatesApi
 				.def("__ge__", &Implementation::object_identity_ge<class_type>)
 			;
 		}
-	}
-
-
-	template <class ClassType>
-	std::size_t
-	ObjectIdentityHashDefVisitor::hash(
-			const ClassType &instance)
-	{
-		return std::size_t(&instance);
 	}
 }
 
