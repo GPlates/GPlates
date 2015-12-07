@@ -6,6 +6,15 @@ Split an isochron into ridge and transform segments
 This example splits the geometry of an isochron into ridge and transform segments based on each segment's
 alignment with the isochron's stage pole at its time of appearance.
 
+.. warning:: This algorithm only works well under the following conditions:
+            
+             - ridge segments are perpendicular to their spreading directions,
+             - isochron geometries are up-to-date with respect to the rotation model (ie, stage pole is in correct location relative to geometry),
+             - there are valid rotations (in rotation model) for each isochron at its birth time plus one (ie, 1My *prior* to isochron birth time),
+             - all isochrons have :meth:`conjugate plate IDs<pygplates.Feature.get_conjugate_plate_id>`.
+            
+             Note that you can tweak the *isochron_segment_deviation_in_radians* parameter. A 45 degree split may not always be appropriate.
+
 Sample code
 """""""""""
 
