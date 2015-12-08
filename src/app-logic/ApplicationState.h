@@ -357,10 +357,14 @@ namespace GPlatesAppLogic
 					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
-				// Perform a reconstruction every time the model (feature store) is modified.
-				// We'll need to put model notification guards in the appropriate places to
-				// avoid excessive reconstructions.
-				d_application_state->reconstruct();
+				// Perform a reconstruction every time the model (feature store) is modified,
+				// unless we are already inside a reconstruction (avoid infinite cycle).
+				if (!d_application_state->d_currently_reconstructing)
+				{
+					// Clients should put model notification guards in the appropriate places to
+					// avoid excessive reconstructions.
+					d_application_state->reconstruct();
+				}
 			}
 
 			ApplicationState *d_application_state;
@@ -451,6 +455,16 @@ namespace GPlatesAppLogic
 		 * should be called when all @a ScopedReconstructGuard objects go out of scope.
 		 */
 		bool d_reconstruct_on_scope_exit;
+
+		/**
+		 * Is true if we are currently inside/executing the @a reconstruct method.
+		 *
+		 * This is used to avoid re-entering @a reconstruct (due to a model notification event
+		 * happening inside the @a reconstruct method). Clients still need to make sure they
+		 * don't call @a reconstruct if they form part of the @a reconstruct implementation -
+		 * ie, it obviously makes no sense for @a ReconstructGraph to call @a reconstruct.
+		 */
+		bool d_currently_reconstructing;
 
 		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
