@@ -85,7 +85,11 @@ export_feature_id()
 				"  [*staticmethod*] Create a unique *FeatureId* by generating a unique string identifier.\n"
 				"  ::\n"
 				"\n"
-				"    feature_id = pygplates.FeatureId.create_unique_id()\n")
+				"    feature_id = pygplates.FeatureId.create_unique_id()\n"
+				"\n"
+				"  .. note:: You cannot generate a feature ID using a specific string - it must be "
+				"randomly generated. You can however compare an existing feature ID with a specific "
+				"string - see :meth:`get_string`.\n")
 		.staticmethod("create_unique_id")
 		.def("get_string",
 				&GPlatesModel::FeatureId::get,
@@ -93,9 +97,15 @@ export_feature_id()
 				"get_string() -> string\n"
 				"  Returns the feature identifier as a string.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: string\n"
+				"\n"
+				"  To determine if a feature has a particular feature ID:\n"
+				"  ::\n"
+				"\n"
+				"    if feature.get_feature_id().get_string() == 'GPlates-63b81b91-b7a0-4ad7-908d-16db3c70e6ed':\n"
+				"      ...\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
 		.def("__hash__", &GPlatesApi::feature_id_hash)
@@ -165,7 +175,7 @@ export_revision_id()
 				"\n"
 				"  :rtype: string\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
 		.def("__hash__", &GPlatesApi::revision_id_hash)

@@ -33,6 +33,8 @@
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 
+#include "PythonHashDefVisitor.h"
+
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -261,6 +263,8 @@ export_feature_collection_file_format_registry()
 				"    except pygplates.FileFormatNotSupportedError:\n"
 				"        # Handle unsupported file format (for writing).\n"
 				"        ...\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
 
