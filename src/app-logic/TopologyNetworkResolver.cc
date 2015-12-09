@@ -489,7 +489,7 @@ GPlatesAppLogic::TopologyNetworkResolver::find_seed_geometry(
 	// See if it's a reconstructed feature geometry (or any of its derived types).
 	boost::optional<ReconstructedFeatureGeometry *> rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ReconstructedFeatureGeometry>(reconstruction_geometry);
+					ReconstructedFeatureGeometry *>(reconstruction_geometry);
 	if (!rfg)
 	{
 		// Not a seed geometry.
@@ -514,7 +514,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_re
 	// See if topological boundary section is a reconstructed feature geometry (or any of its derived types).
 	boost::optional<ReconstructedFeatureGeometry *> boundary_section_source_rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ReconstructedFeatureGeometry>(boundary_section_source_rg);
+					ReconstructedFeatureGeometry *>(boundary_section_source_rg);
 	if (boundary_section_source_rfg)
 	{
 		// Store the feature id and reconstruction geometry.
@@ -527,7 +527,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_re
 	// See if topological section is a resolved topological line.
 	boost::optional<ResolvedTopologicalLine *> boundary_section_source_rtl =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ResolvedTopologicalLine>(boundary_section_source_rg);
+					ResolvedTopologicalLine *>(boundary_section_source_rg);
 	if (boundary_section_source_rtl)
 	{
 		// Store the feature id and reconstruction geometry.
@@ -562,7 +562,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_reconstruc
 	// See if topological interior is a reconstructed feature geometry (or any of its derived types).
 	boost::optional<ReconstructedFeatureGeometry *> interior_source_rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ReconstructedFeatureGeometry>(interior_source_rg);
+					ReconstructedFeatureGeometry *>(interior_source_rg);
 	if (interior_source_rfg)
 	{
 		// Store the feature id and reconstruction geometry.
@@ -575,7 +575,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_reconstruc
 	// See if topological interior is a resolved topological line.
 	boost::optional<ResolvedTopologicalLine *> interior_source_rtl =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ResolvedTopologicalLine>(interior_source_rg);
+					ResolvedTopologicalLine *>(interior_source_rg);
 	if (interior_source_rtl)
 	{
 		// Store the feature id and reconstruction geometry.
@@ -810,7 +810,7 @@ debug_output_topological_source_feature(boundary_section.d_source_feature_id);
 
 		boost::optional<ReconstructedFeatureGeometry *> boundary_section_rfg =
 				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						ReconstructedFeatureGeometry>(boundary_section.d_source_rg);
+						ReconstructedFeatureGeometry *>(boundary_section.d_source_rg);
 		if (boundary_section_rfg)
 		{
 			// Add the boundary delaunay points from the reconstructed feature geometry.
@@ -823,7 +823,7 @@ debug_output_topological_source_feature(boundary_section.d_source_feature_id);
 		{
 			boost::optional<ResolvedTopologicalLine *> boundary_section_rtl =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalLine>(boundary_section.d_source_rg);
+							ResolvedTopologicalLine *>(boundary_section.d_source_rg);
 
 			// Skip the current boundary section if it's not a resolved topological *line*.
 			if (!boundary_section_rtl)
@@ -914,7 +914,7 @@ debug_output_topological_source_feature(interior_geometry.d_source_feature_id);
 
 		boost::optional<ReconstructedFeatureGeometry *> interior_rfg =
 				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						ReconstructedFeatureGeometry>(interior_geometry.d_source_rg);
+						ReconstructedFeatureGeometry *>(interior_geometry.d_source_rg);
 		if (interior_rfg)
 		{
 			// Add the interior delaunay points from the reconstructed feature geometry.
@@ -928,7 +928,7 @@ debug_output_topological_source_feature(interior_geometry.d_source_feature_id);
 		{
 			boost::optional<ResolvedTopologicalLine *> interior_rtl =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalLine>(interior_geometry.d_source_rg);
+							ResolvedTopologicalLine *>(interior_geometry.d_source_rg);
 
 			// Skip the current interior geometry if it's not a resolved topological *line*.
 			if (!interior_rtl)

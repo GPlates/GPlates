@@ -754,15 +754,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::get_focused_feature_geometry()
 	}
 
 	// We're only interested in ReconstructedFeatureGeometry's.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
-	if (!rfg)
-	{
-		return boost::none;
-	}
-
-	return GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type(rfg.get());
+	return GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(focused_geometry);
 }
 
 

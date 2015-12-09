@@ -583,7 +583,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 						// Determine if point was in the deforming region or interior rigid block of network.
 						// It's either a resolved topological network or a reconstructed feature geometry...
 						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-								const ResolvedTopologicalNetwork>(surface.get())
+								const ResolvedTopologicalNetwork *>(surface.get())
 							? MultiPointVectorField::CodomainElement::InNetworkDeformingRegion
 							: MultiPointVectorField::CodomainElement::InNetworkRigidBlock,
 						ReconstructionGeometryUtils::get_plate_id(surface.get()),

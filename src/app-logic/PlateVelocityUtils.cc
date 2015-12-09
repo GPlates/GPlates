@@ -260,7 +260,7 @@ namespace GPlatesAppLogic
 			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
 					// It's either a resolved topological network or a reconstructed feature geometry...
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							const ResolvedTopologicalNetwork>(network_component)
+							const ResolvedTopologicalNetwork *>(network_component)
 					? MultiPointVectorField::CodomainElement::InNetworkDeformingRegion
 					: MultiPointVectorField::CodomainElement::InNetworkRigidBlock;
 
@@ -351,7 +351,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			// Determine if point was in a resolved topological boundary or RFG (static polygon).
 			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							const ResolvedTopologicalBoundary>(rigid_plate_containing_point.get())
+							const ResolvedTopologicalBoundary *>(rigid_plate_containing_point.get())
 					? MultiPointVectorField::CodomainElement::InPlateBoundary
 					: MultiPointVectorField::CodomainElement::InStaticPolygon;
 

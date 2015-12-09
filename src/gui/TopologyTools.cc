@@ -1866,7 +1866,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	// See if focused reconstruction geometry is an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_recon_geom);
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(focused_recon_geom);
 	if (focused_rfg)
 	{
 		// Get the geometry on sphere from the RFG.
@@ -1876,7 +1876,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	// See if focused reconstruction geometry is an RTG.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> focused_rtg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalGeometry>(focused_recon_geom);
+					const GPlatesAppLogic::ResolvedTopologicalGeometry *>(focused_recon_geom);
 	if (focused_rtg)
 	{
 		focused_geometry = focused_rtg.get()->resolved_topology_geometry();
@@ -3889,7 +3889,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 	// See if topological section is an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> section_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(section_rg.get());
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(section_rg.get());
 	if (section_rfg)
 	{
 		// Get the geometry on sphere from the RFG.
@@ -3902,7 +3902,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 	// See if topological section is an RTG.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> section_rtg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalGeometry>(section_rg.get());
+					const GPlatesAppLogic::ResolvedTopologicalGeometry *>(section_rg.get());
 	if (section_rtg)
 	{
 		// Get the geometry on sphere from the RTG.

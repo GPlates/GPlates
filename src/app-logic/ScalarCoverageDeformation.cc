@@ -96,7 +96,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 		}
 
 		boost::optional<const DeformedFeatureGeometry *> dfg =
-				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<const DeformedFeatureGeometry>(
+				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<const DeformedFeatureGeometry *>(
 						domain_rfg.get());
 		// If the RFG is not a DeformedFeatureGeometry then we have no deformation strain information and
 		// hence the scalar values do not evolve for the current time step so continue to the next time slot.

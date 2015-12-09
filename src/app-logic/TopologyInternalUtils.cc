@@ -1960,7 +1960,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 	// We only return true if the reconstruction geometry is a reconstructed feature geometry.
 	boost::optional<const ReconstructedFeatureGeometry *> rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const ReconstructedFeatureGeometry>(recon_geom);
+					const ReconstructedFeatureGeometry *>(recon_geom);
 	if (!rfg)
 	{
 		return false;
@@ -2006,7 +2006,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological
 	// See if RTL.
 	boost::optional<const ResolvedTopologicalLine *> resolved_topological_line =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const ResolvedTopologicalLine>(recon_geom);
+					const ResolvedTopologicalLine *>(recon_geom);
 	if (resolved_topological_line)
 	{
 		// NOTE: We don't need to check that the resolved line was not formed from
