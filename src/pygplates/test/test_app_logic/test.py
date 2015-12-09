@@ -440,14 +440,15 @@ class ReconstructTestCase(unittest.TestCase):
 
 
 class ReconstructionPartitionerTestCase(unittest.TestCase):
-    def test_partition(self):
-        topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
-        rotation_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
-        
+    def setUp(self):
+        self.topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        self.rotation_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+
+    def test_partition_exceptions(self):
         resolved_topologies = []
         pygplates.resolve_topologies(
-            topological_features,
-            rotation_features,
+            self.topological_features,
+            self.rotation_features,
             resolved_topologies,
             0)
         
@@ -458,14 +459,172 @@ class ReconstructionPartitionerTestCase(unittest.TestCase):
         # All reconstruction times must be the same.
         resolved_topologies_10 = []
         pygplates.resolve_topologies(
-            topological_features,
-            rotation_features,
+            self.topological_features,
+            self.rotation_features,
             resolved_topologies_10,
             10)
         self.assertRaises(pygplates.DifferentTimesInPartitioningReconstructionGeometriesError,
                 pygplates.ReconstructionPartitioner, resolved_topologies + resolved_topologies_10)
+
+    def test_partition(self):
+        resolved_topologies = []
+        pygplates.resolve_topologies(
+            self.topological_features,
+            self.rotation_features,
+            resolved_topologies,
+            0)
         
         reconstruction_partitioner = pygplates.ReconstructionPartitioner(resolved_topologies)
+        
+        # Partition inside point.
+        point = pygplates.PointOnSphere(0, -30)
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(point, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        recon_geom, inside_points = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_points) == 1)
+        self.assertTrue(inside_points[0] == point)
+        
+        # Partition outside point.
+        point = pygplates.PointOnSphere(0, 0)
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(point, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_inside_geometries)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        outside_point = partitioned_outside_geometries[0]
+        self.assertTrue(outside_point == point)
+        
+        # Partition inside multipoint.
+        multipoint = pygplates.MultiPointOnSphere([(15,-30), (0,-30)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(multipoint, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        recon_geom, inside_geoms = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_geoms) == 1)
+        self.assertTrue(inside_geoms[0] == multipoint)
+        
+        # Partition outside multipoint.
+        multipoint = pygplates.MultiPointOnSphere([(15,0), (0,0)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(multipoint, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_inside_geometries)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        outside_geom = partitioned_outside_geometries[0]
+        self.assertTrue(outside_geom == multipoint)
+        
+        # Partition intersecting multipoint.
+        multipoint = pygplates.MultiPointOnSphere([(0,-30), (0,0)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(multipoint, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        recon_geom, inside_geoms = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_geoms) == 1)
+        self.assertTrue(inside_geoms[0] == pygplates.MultiPointOnSphere([(0,-30)]))
+        outside_geom = partitioned_outside_geometries[0]
+        self.assertTrue(outside_geom == pygplates.MultiPointOnSphere([(0,0)]))
+        
+        # Partition intersecting multipoint.
+        multipoint = pygplates.MultiPointOnSphere([(30,-30), (0,-30), (0,0)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(multipoint, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 2)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        recon_geom1, inside_geoms1 = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom1.get_feature().get_feature_id().get_string() == 'GPlates-a6054d82-6e6d-4f59-9d24-4ab255ece477')
+        self.assertTrue(len(inside_geoms1) == 1)
+        self.assertTrue(inside_geoms1[0] == pygplates.MultiPointOnSphere([(30,-30)]))
+        recon_geom2, inside_geoms2 = partitioned_inside_geometries[1]
+        self.assertTrue(recon_geom2.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_geoms2) == 1)
+        self.assertTrue(inside_geoms2[0] == pygplates.MultiPointOnSphere([(0,-30)]))
+        outside_geom = partitioned_outside_geometries[0]
+        self.assertTrue(outside_geom == pygplates.MultiPointOnSphere([(0,0)]))
+        
+        # Partition inside polyline.
+        polyline = pygplates.PolylineOnSphere([(15,-30), (0,-30)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polyline, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        recon_geom, inside_geoms = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_geoms) == 1)
+        self.assertTrue(inside_geoms[0] == polyline)
+        
+        # Partition outside polyline.
+        polyline = pygplates.PolylineOnSphere([(15,0), (0,0)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polyline, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_inside_geometries)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        outside_geom = partitioned_outside_geometries[0]
+        self.assertTrue(outside_geom == polyline)
+        
+        # Partition intersecting polyline.
+        polyline = pygplates.PolylineOnSphere([(0,0), (0,-30), (30,-30), (30,-90)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polyline, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 3)
+        self.assertTrue(len(partitioned_outside_geometries) == 2)
+        
+        # Partition inside polygon.
+        polygon = pygplates.PolygonOnSphere([(15,-30), (0,-30), (0,-15)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polygon, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        recon_geom, inside_geoms = partitioned_inside_geometries[0]
+        self.assertTrue(recon_geom.get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(inside_geoms) == 1)
+        self.assertTrue(inside_geoms[0] == polygon)
+        
+        # Partition outside polygon.
+        polygon = pygplates.PolygonOnSphere([(15,0), (0,0), (0,15)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polygon, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertFalse(partitioned_inside_geometries)
+        self.assertTrue(len(partitioned_outside_geometries) == 1)
+        outside_geom = partitioned_outside_geometries[0]
+        self.assertTrue(outside_geom == polygon)
+        
+        # Partition intersecting polygon.
+        polygon = pygplates.PolygonOnSphere([(0,0), (0,-30), (30,-30), (30,-90)])
+        partitioned_inside_geometries = []
+        partitioned_outside_geometries = []
+        reconstruction_partitioner.partition(polygon, partitioned_inside_geometries, partitioned_outside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 3)
+        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
+        # Also we end up with 3 polylines outside (instead of 2).
+        self.assertTrue(len(partitioned_outside_geometries) == 3)
+
+    def test_partition_point(self):
+        resolved_topologies = []
+        pygplates.resolve_topologies(
+            self.topological_features,
+            self.rotation_features,
+            resolved_topologies,
+            0)
+        
+        reconstruction_partitioner = pygplates.ReconstructionPartitioner(resolved_topologies)
+        
+        # Partition points.
         self.assertFalse(reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, 0)))
         self.assertTrue(
                 reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, -30)).get_feature().get_feature_id().get_string() ==
