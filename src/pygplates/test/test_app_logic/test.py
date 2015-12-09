@@ -476,6 +476,16 @@ class ReconstructionPartitionerTestCase(unittest.TestCase):
         
         reconstruction_partitioner = pygplates.ReconstructionPartitioner(resolved_topologies)
         
+        # Test optional arguments.
+        point = pygplates.PointOnSphere(0, -30)
+        self.assertTrue(reconstruction_partitioner.partition(point))
+        partitioned_inside_geometries = []
+        self.assertTrue(reconstruction_partitioner.partition(point, partitioned_inside_geometries))
+        self.assertTrue(len(partitioned_inside_geometries) == 1)
+        partitioned_outside_geometries = []
+        self.assertTrue(reconstruction_partitioner.partition(point, partitioned_outside_geometries=partitioned_outside_geometries))
+        self.assertFalse(partitioned_outside_geometries)
+        
         # Partition inside point.
         point = pygplates.PointOnSphere(0, -30)
         partitioned_inside_geometries = []

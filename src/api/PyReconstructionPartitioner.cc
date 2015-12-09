@@ -116,48 +116,94 @@ namespace GPlatesApi
 	reconstruction_partitioner_partition(
 			const GPlatesAppLogic::GeometryCookieCutter &reconstruction_partitioner,
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-			bp::list partitioned_inside_geometries_list,
-			bp::list partitioned_outside_geometries_list)
+			bp::object partitioned_inside_geometries_object,
+			bp::object partitioned_outside_geometries_object)
 	{
-		GPlatesAppLogic::GeometryCookieCutter::partition_seq_type partitioned_inside_geometries;
-		GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type partitioned_outside_geometries;
+		// Partitioned inside/outside lists may or may not get used.
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::partition_seq_type> partitioned_inside_geometries_storage;
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type> partitioned_outside_geometries_storage;
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::partition_seq_type &> partitioned_inside_geometries;
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type &> partitioned_outside_geometries;
+		boost::optional<bp::list> partitioned_inside_geometries_list;
+		boost::optional<bp::list> partitioned_outside_geometries_list;
+
+		if (partitioned_inside_geometries_object != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::list> extract_partitioned_inside_geometries_list(partitioned_inside_geometries_object);
+			if (!extract_partitioned_inside_geometries_list.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_inside_geometries'");
+				bp::throw_error_already_set();
+			}
+			partitioned_inside_geometries_storage = GPlatesAppLogic::GeometryCookieCutter::partition_seq_type();
+			partitioned_inside_geometries = partitioned_inside_geometries_storage.get();
+			partitioned_inside_geometries_list = extract_partitioned_inside_geometries_list();
+		}
+
+		if (partitioned_outside_geometries_object != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::list> extract_partitioned_outside_geometries_list(partitioned_outside_geometries_object);
+			if (!extract_partitioned_outside_geometries_list.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_outside_geometries'");
+				bp::throw_error_already_set();
+			}
+			partitioned_outside_geometries_storage = GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type();
+			partitioned_outside_geometries = partitioned_outside_geometries_storage.get();
+			partitioned_outside_geometries_list = extract_partitioned_outside_geometries_list();
+		}
+
+		//
+		// Partition the geometry.
+		//
+
 		const bool geometry_inside_any_partitions = reconstruction_partitioner.partition_geometry(
 				geometry,
 				partitioned_inside_geometries,
 				partitioned_outside_geometries);
 
-		// Append the inside geometry partitions to the caller's list.
-		BOOST_FOREACH(
-				const GPlatesAppLogic::GeometryCookieCutter::Partition &partitioned_inside_geometry,
-				partitioned_inside_geometries)
+		//
+		// Populate inside/output partitioned geometry lists if requested.
+		//
+
+		if (partitioned_inside_geometries)
 		{
-			// Each partition contains a list of geometries inside the partition's reconstruction geometry.
-			bp::list partitioned_geometries_list;
-
-			GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geoms_iter =
-					partitioned_inside_geometry.partitioned_geometries.begin();
-			GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geoms_end =
-					partitioned_inside_geometry.partitioned_geometries.end();
-			for ( ; partitioned_geoms_iter != partitioned_geoms_end; ++partitioned_geoms_iter)
+			// Append the inside geometry partitions to the caller's list.
+			BOOST_FOREACH(
+					const GPlatesAppLogic::GeometryCookieCutter::Partition &partitioned_inside_geometry,
+					partitioned_inside_geometries.get())
 			{
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom = *partitioned_geoms_iter;
+				// Each partition contains a list of geometries inside the partition's reconstruction geometry.
+				bp::list partitioned_geometries_list;
 
-				partitioned_geometries_list.append(partitioned_geom);
+				GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geoms_iter =
+						partitioned_inside_geometry.partitioned_geometries.begin();
+				GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geoms_end =
+						partitioned_inside_geometry.partitioned_geometries.end();
+				for ( ; partitioned_geoms_iter != partitioned_geoms_end; ++partitioned_geoms_iter)
+				{
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom = *partitioned_geoms_iter;
+
+					partitioned_geometries_list.append(partitioned_geom);
+				}
+
+				// Append a 2-tuple containing the partitioning reconstruction geometry and partitioned list of geometries.
+				partitioned_inside_geometries_list->append(
+						bp::make_tuple(
+								partitioned_inside_geometry.reconstruction_geometry,
+								partitioned_geometries_list));
 			}
-
-			// Append a 2-tuple containing the partitioning reconstruction geometry and partitioned list of geometries.
-			partitioned_inside_geometries_list.append(
-					bp::make_tuple(
-							partitioned_inside_geometry.reconstruction_geometry,
-							partitioned_geometries_list));
 		}
 
-		// Append the outside geometries to the caller's list.
-		BOOST_FOREACH(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &partitioned_outside_geometry,
-				partitioned_outside_geometries)
+		if (partitioned_outside_geometries)
 		{
-			partitioned_outside_geometries_list.append(partitioned_outside_geometry);
+			// Append the outside geometries to the caller's list.
+			BOOST_FOREACH(
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &partitioned_outside_geometry,
+					partitioned_outside_geometries.get())
+			{
+				partitioned_outside_geometries_list->append(partitioned_outside_geometry);
+			}
 		}
 
 		return geometry_inside_any_partitions;
@@ -223,6 +269,17 @@ export_reconstruction_partitioner()
 				"    \n"
 				"    reconstruction_partitioner = pygplates.ReconstructionPartitioner(resolved_topologies)\n"
 				"\n"
+				"  Only those types of :class:`reconstruction geometries<ReconstructionGeometry>` "
+				"that contain a polygon boundary are actually used for partitioning. For resolved topologies "
+				"this includes :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`. "
+				"For reconstructed geometries, a :class:`ReconstructedFeatureGeometry` is only included if its "
+				"reconstructed geometry is a :class:`PolygonOnSphere`.\n"
+				"\n"
+				"  .. note:: If the partitioning polygons overlap each other then their final ordering "
+				"determines the partitioning results (see :meth:`partition` and :meth:`partition_point`). "
+				"Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap "
+				"and hence the sorting order becomes relevant.\n"
+				"\n"
 				"  .. note:: All partitioning reconstruction geometries should have been generated for the same "
 				"reconstruction time otherwise *DifferentTimesInPartitioningReconstructionGeometriesError* is raised.\n")
 		.def("partition",
@@ -235,13 +292,13 @@ export_reconstruction_partitioner()
 				"\n"
 				"  :param geometry: the geometry to partition\n"
 				"  :type geometry: :class:`GeometryOnSphere`\n"
-				"  :param partitioned_geometries_inside: optional list of geometries partitioned *inside* "
+				"  :param partitioned_inside_geometries: optional list of geometries partitioned *inside* "
 				"the partitioning reconstruction geometries (note that the list is *not* cleared first)\n"
-				"  :type partitioned_geometries_inside: ``list`` of 2-tuple "
+				"  :type partitioned_inside_geometries: ``list`` of 2-tuple "
 				"(:class:`ReconstructionGeometry`, ``list`` of :class:`GeometryOnSphere`), or None\n"
-				"  :param partitioned_geometries_outside: optional list of geometries partitioned *outside* "
+				"  :param partitioned_outside_geometries: optional list of geometries partitioned *outside* "
 				"all partitioning reconstruction geometries (note that the list is *not* cleared first)\n"
-				"  :type partitioned_geometries_outside: ``list`` of :class:`GeometryOnSphere`, or None\n"
+				"  :type partitioned_outside_geometries: ``list`` of :class:`GeometryOnSphere`, or None\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  If *geometry* is inside any partitioning reconstruction geometries (even partially) "
@@ -249,6 +306,12 @@ export_reconstruction_partitioner()
 				"*partitioned_inside_geometries* (if specified) and the outside parts appended to "
 				"*partitioned_outside_geometries* (if specified). Otherwise ``False`` is returned "
 				"and *geometry* is appended to *partitioned_outside_geometries* (if specified).\n"
+				"\n"
+				"  .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple "
+				"consisting of a partitioning :class:`ReconstructionGeometry` and a list of the "
+				":class:`geometry<GeometryOnSphere>` pieces partitioned into it. In contrast, "
+				"*partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` "
+				"outside all partitioning reconstruction geometries.\n"
 				"\n"
 				"  .. warning:: Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry "
 				"is partial. See :meth:`PolygonOnSphere.partition` for more details.\n"

@@ -113,15 +113,18 @@ GPlatesAppLogic::GeometryCookieCutter::has_partitioning_polygons() const
 bool
 GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		partition_seq_type &partitioned_inside_geometries,
-		partitioned_geometry_seq_type &partitioned_outside_geometries) const
+		boost::optional<partition_seq_type &> partitioned_inside_geometries,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
 {
 	// Return early no partitioning polygons.
 	if (d_partitioning_geometries.empty())
 	{
 		// There are no partitioning polygons so the input geometry goes
 		// to the list of geometries partitioned outside all partitioning polygons.
-		partitioned_outside_geometries.push_back(geometry);
+		if (partitioned_outside_geometries)
+		{
+			partitioned_outside_geometries->push_back(geometry);
+		}
 		return false;
 	}
 
@@ -180,7 +183,18 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 		// into the current partitioning polygon.
 		if (!current_partitioned_inside_geometries.partitioned_geometries.empty())
 		{
-			partitioned_inside_geometries.push_back(current_partitioned_inside_geometries);
+			// Return early if no inside/outside geometries requested since we have determined
+			// that the geometry is at least partially inside one of the partitioning polygons.
+			if (!partitioned_inside_geometries &&
+				!partitioned_outside_geometries)
+			{
+				return true;
+			}
+
+			if (partitioned_inside_geometries)
+			{
+				partitioned_inside_geometries->push_back(current_partitioned_inside_geometries);
+			}
 
 			was_geometry_partitioned = true;
 		}
@@ -193,9 +207,12 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 
 	// Pass any remaining partitioned outside geometries to the caller.
 	// These are not inside any of the resolved boundaries.
-	partitioned_outside_geometries.splice(
-			partitioned_outside_geometries.end(),
-			*current_partitioned_outside_geometries);
+	if (partitioned_outside_geometries)
+	{
+		partitioned_outside_geometries->splice(
+				partitioned_outside_geometries->end(),
+				*current_partitioned_outside_geometries);
+	}
 
 	return was_geometry_partitioned;
 }
