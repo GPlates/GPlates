@@ -1046,7 +1046,7 @@
 603 175.0  19.85   91.65   52.17  606 ! SMA-STB EarthByte2009, SZ09
 603 190.0  21.58   93.65   76.88  606 ! SMA-STB EarthByte2009, SZ09
 603 200.0  22.07   94.23   88.34  606 ! SMA-STB EarthByte2009, SZ09
-603 300.0  27.88   98.67  -93.39  606 ! SMA-STB
+603 300.0  27.88   98.67  266.61  606 ! SMA-STB
 604  0.0   0.0    0.0    0.0  602 ! ICH-SCH Indochina-South China
 604 15.0  16.73  103.23   -0.9  602 ! ICH-SCH right-lateral move; Wang et al 1989
 604 20.2  16.73  103.23   -0.9  602 ! ICH-SCH Lee & Lawver 1992

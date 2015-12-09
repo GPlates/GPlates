@@ -439,6 +439,45 @@ class ReconstructTestCase(unittest.TestCase):
         os.remove(os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
 
 
+class ReconstructionPartitionerTestCase(unittest.TestCase):
+    def test_partition(self):
+        topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        rotation_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+        
+        resolved_topologies = []
+        pygplates.resolve_topologies(
+            topological_features,
+            rotation_features,
+            resolved_topologies,
+            0)
+        
+        # Can have no reconstruction geometries.
+        reconstruction_partitioner = pygplates.ReconstructionPartitioner([])
+        self.assertFalse(reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, 0)))
+        
+        # All reconstruction times must be the same.
+        resolved_topologies_10 = []
+        pygplates.resolve_topologies(
+            topological_features,
+            rotation_features,
+            resolved_topologies_10,
+            10)
+        self.assertRaises(pygplates.DifferentTimesInPartitioningReconstructionGeometriesError,
+                pygplates.ReconstructionPartitioner, resolved_topologies + resolved_topologies_10)
+        
+        reconstruction_partitioner = pygplates.ReconstructionPartitioner(resolved_topologies)
+        self.assertFalse(reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, 0)))
+        self.assertTrue(
+                reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, -30)).get_feature().get_feature_id().get_string() ==
+                'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(
+                reconstruction_partitioner.partition_point(pygplates.PointOnSphere(30, -30)).get_feature().get_feature_id().get_string() ==
+                'GPlates-a6054d82-6e6d-4f59-9d24-4ab255ece477')
+        self.assertTrue(
+                reconstruction_partitioner.partition_point(pygplates.PointOnSphere(0, -60)).get_feature().get_feature_id().get_string() ==
+                'GPlates-4fe56a89-d041-4494-ab07-3abead642b8e')
+
+
 class ResolvedTopologiesTestCase(unittest.TestCase):
     def test_resolve_topologies(self):
         pygplates.resolve_topologies(
@@ -894,6 +933,7 @@ def suite():
             CrossoverTestCase,
             InterpolateTotalReconstructionSequenceTestCase,
             ReconstructTestCase,
+            ReconstructionPartitionerTestCase,
             ReconstructionTreeCase,
             ResolvedTopologiesTestCase,
             RotationModelCase

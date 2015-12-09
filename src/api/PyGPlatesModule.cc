@@ -70,6 +70,7 @@ void export_top_level_property();
 void export_calculate_velocities();
 void export_reconstruct();
 void export_reconstruction_geometries();
+void export_reconstruction_partitioner();
 void export_reconstruction_tree();
 void export_resolve_topologies();
 void export_rotation_model();
@@ -177,6 +178,7 @@ export_cpp_python_api()
 	export_calculate_velocities();
 	export_reconstruct();
 	export_reconstruction_geometries();
+	export_reconstruction_partitioner();
 	export_reconstruction_tree();
 	export_resolve_topologies();
 	export_rotation_model();
