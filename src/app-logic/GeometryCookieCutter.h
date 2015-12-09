@@ -134,9 +134,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Partition @a geometry using the partitioning polygons found in the constructor.
 		 *
-		 * The partitioning polygons found in the constructor are assumed to not
-		 * overlap each other - if they do then the overlapping boundary a geometry
-		 * is partitioned into is valid but undefined.
+		 * If the partitioning polygons (passed in the constructor) overlap each other then
+		 * @a geometry is partitioned consecutively according to the final ordering of
+		 * the partitioning polygons. See the constructor comment for more details.
 		 *
 		 * On returning @a partitioned_outside_geometries contains any partitioned
 		 * geometries that are not inside any partitioning polygons.
@@ -155,11 +155,13 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Finds which partitioning polygon boundary contains @a point.
+		 *
 		 * Returns false if no containing boundaries are found.
 		 *
 		 * NOTE: If there are overlapping partitioning polygons and the specified point
-		 * is inside more that one polygon then the partitioning polygon with the highest
-		 * plate id is chosen. See the constructor comment for more details.
+		 * is inside more that one polygon then the first partitioning polygon containing
+		 * the point is chosen (according to the final ordering of the partitioning polygons).
+		 * See the constructor comment for more details.
 		 */
 		boost::optional<const ReconstructionGeometry *>
 		partition_point(
