@@ -33,6 +33,7 @@
 #include "PyGreatCircleArc.h"
 #include "PyInformationModel.h"
 #include "PyInterpolationException.h"
+#include "PyReconstructionPartitioner.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -203,6 +204,7 @@ namespace GPlatesApi
 	bp::object AmbiguousGeometryCoverageError;
 	bp::object AssertionFailureError;
 	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
+	bp::object DifferentTimesInPartitioningReconstructionGeometriesError;
 	bp::object FileFormatNotSupportedError;
 	bp::object GeometryTypeError;
 	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
@@ -271,15 +273,19 @@ export_exceptions()
 					"PreconditionViolationError",
 					GPlatesApi::GPlatesError);
 	GPlatesApi::AmbiguousGeometryCoverageError =
-			export_exception<AmbiguousGeometryCoverageException>(
+			export_exception<GPlatesApi::AmbiguousGeometryCoverageException>(
 					"AmbiguousGeometryCoverageError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesError =
-			export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
+			export_exception<GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesException>(
 					"DifferentAnchoredPlatesInReconstructionTreesError",
 					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::DifferentTimesInPartitioningReconstructionGeometriesError =
+			export_exception<GPlatesApi::DifferentTimesInPartitioningReconstructionGeometriesException>(
+					"DifferentTimesInPartitioningReconstructionGeometriesError",
+					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::GeometryTypeError =
-			export_exception<GeometryTypeException>(
+			export_exception<GPlatesApi::GeometryTypeException>(
 					"GeometryTypeError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::GmlTimePeriodBeginTimeLaterThanEndTimeError =
@@ -307,7 +313,7 @@ export_exceptions()
 					"InsufficientPointsForMultiPointConstructionError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InterpolationError =
-			export_exception<InterpolationException>(
+			export_exception<GPlatesApi::InterpolationException>(
 					"InterpolationError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InvalidPointsForPolygonConstructionError =

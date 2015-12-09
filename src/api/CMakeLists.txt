@@ -66,6 +66,8 @@ set(srcs
     PyReconstruct.cc
     PyReconstructionGeometries.cc
     PyReconstructionGeometries.h
+    PyReconstructionPartitioner.cc
+    PyReconstructionPartitioner.h
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc
