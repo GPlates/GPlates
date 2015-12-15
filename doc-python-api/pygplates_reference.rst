@@ -7,7 +7,7 @@ This document lists the Python functions and classes that make up the GPlates Py
 
 .. note:: Please see the :ref:`installation<pygplates_getting_started_installation>` section for information on how to install *pygplates*.
 
-.. note:: Please see the :ref:`tuturial<pygplates_getting_started_tutorial>` section to help get you started using *pygplates*.
+.. note:: Please see the :ref:`tutorial<pygplates_getting_started_tutorial>` section to help get you started using *pygplates*.
 
 
 .. contents::

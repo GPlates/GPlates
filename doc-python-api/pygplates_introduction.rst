@@ -23,9 +23,15 @@ There are two ways to interact with GPlates functionality:
 
 #. *Using the graphical user interface (GUI)*:
    
-   Here you control GPlates by interacting with a user interface.
+   Here you control GPlates by interacting with a user interface (such as *menus and dialogs*).
    
-   For example, using *menus and dialogs* to visualise geological reconstructions.
+   For example, to export reconstructed data you:
+   
+   * open up the Export dialog,
+   * select a range of geological times,
+   * select the type of export (eg, reconstructed geometries),
+   * select some export options, and
+   * export the reconstructed results to files.
    
    To do this you can download the `GPlates desktop application (executable) <http://www.gplates.org>`_.
    
@@ -33,65 +39,52 @@ There are two ways to interact with GPlates functionality:
    
    Here you access GPlates functionality using the `Python <http://www.python.org>`_ programming language.
    
-   For example, you can reconstruct geological data using *Python functions (and classes)* known as
-   :ref:`pygplates<pygplates_reference>`:
+   For example, to export reconstructed data (the equivalent of the above GPlates example) you can write a
+   small Python script using functions (and classes) provided by :ref:`pygplates<pygplates_reference>`:
    ::
 
-     pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
-   
-   Here we're using the :func:`pygplates.reconstruct` function to reconstruct coastlines to 10
-   million years ago (Ma) using the plate rotations in the 'rotations.rot' file and save the results
-   to a shapefile ('.shp').
+     # Import the pygplates library.
+     import pygplates
+     
+     # Load the coastline features and rotation model.
+     coastline_features = pygplates.FeatureCollection('coastlines.gpml')
+     rotation_model = pygplates.RotationModel('rotations.rot')
+
+     # Iterate from 200Ma to 0Ma inclusive in steps of 10My.
+     for reconstruction_time in range(200,-1,-10):
+         
+         # Create the output filename using the current reconstruction time.
+         reconstructed_coastlines_filename = 'reconstructed_coastlines_{0:0.2f}Ma.shp'.format(reconstruction_time)
+         
+         # Reconstruct the coastlines to the current reconstruction time and save to the output file.
+         pygplates.reconstruct(coastline_features, rotation_model, reconstructed_coastlines_filename, reconstruction_time)
 
 .. _pygplates_introduction_why_use_pygplates:
 
 Why use pygplates ?
 -------------------
 
-Since GPlates is a desktop application its functionality is accessed through a graphical user interface.
-For example, to export reconstructed data you:
+In general, writing a Python script affords a greater level of flexibility (compared to a
+graphical user interface) provided you are comfortable using Python as a programming language.
+Python libraries such as *pygplates* typically provide both high-level and low-level granularity
+in their functions and classes to enable this kind of flexibility.
 
-* open up the Export dialog,
-* select a range of geological times,
-* select the type of export (eg, reconstructed geometries or velocities),
-* select some export options, and
-* export the reconstructed results to files.
-
-...this is fine if you want a sequence of exported files over a geological time range.
-
-However you might only want to export geological data within a specific region of the globe.
-If GPlates does not support this in its export options then you can write some Python source code
-to do this using *pygplates*.
-
-.. note:: This particular *pygplates* example is covered in the
-   :ref:`Getting Started tutorial<pygplates_getting_started_tutorial>`.
-
-In general, using a Python script affords a much greater level of flexibility provided you are
-comfortable using Python as a programming language.
-This is because the granularity level of *pygplates* (in its functions and classes) enables both
-high-level and low-level access to GPlates functionality.
-
-High-level access enables common high-level tasks such as reconstructing entire files of geological data.
-These *pygplates* functions are typically easier to use but more restrictive in what they can do.
+High-level functionality enables common tasks (such as reconstructing entire files of geological data)
+and is typically easier to use but more restrictive in what it can do.
 For example, :func:`pygplates.reconstruct` is a high-level function that can reconstruct geological data
 to a past geological time:
 ::
 
   pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
 
-...but it cannot restrict reconstructed data to a specific region on the globe. To achieve that,
-lower-level access is necessary along with having to write a bit more Python code as shown in the
-:ref:`Getting Started tutorial<pygplates_getting_started_tutorial>`.
+...but it cannot restrict reconstructed data to a specific region on the globe.
+To achieve that, some more Python code needs to be written that accesses lower-level *pygplates* functionality
+as shown in the sample code :ref:`pygplates_find_features_overlapping_a_polygon`.
 
-Low-level access is beneficial for advanced scenarios where the low-level details need to be exposed
-in order to achieve the desired outcome (such as restricting reconstructed data to a specific region
-on the globe). Ideally this should also provide enough flexibility to cover the variety of advanced
-use cases that researchers might come up with.
-
-Even if something can be done using the GPlates desktop application, it's still a manual process
-that requires interacting with a graphical user interface via the mouse and keyboard.
-If GPlates is just one node of a research pipeline then it can be easier to process all nodes
-together in a single script (or collection of scripts) reducing the need for manual intervention.
+Also if GPlates is just one node in a research pipeline then it can be easier to process all nodes
+together in a single script (or collection of scripts) reducing the need to interact with a graphical
+user interface. In this case :ref:`external pygplates<pygplates_introduction_using_pygplates_external>`
+can replace the GPlates desktop application as a node in the pipeline.
 
 .. _pygplates_introduction_external_vs_embedded:
 

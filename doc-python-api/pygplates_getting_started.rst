@@ -328,6 +328,9 @@ If this is the case then a potential solution is to:
 Tutorial
 --------
 
+This tutorial first provides a fundamental overview of functions and classes.
+And then covers the steps to set up and run a simple *pygplates* script.
+
 .. contents::
    :local:
    :depth: 2
@@ -380,7 +383,7 @@ by giving it a specific latitude and longitude:
   point = pygplates.PointOnSphere(latitude, longitude)
 
 .. note:: This looks like a regular ``pygplates`` function call (such as ``pygplates.reconstruct()``)
-   but this is just how you create (instantiate) an object with a specific initial state from a class.
+   but this is just how you create (instantiate) an object from a class with a specific initial state.
    Python uses the special method name ``__init__()`` for this and you will see these special methods
    documented in the classes listed in the :ref:`reference section<pygplates_reference>`.
 
@@ -394,9 +397,9 @@ The ``point.`` before the ``to_lat_lon()`` means the ``to_lat_lon()`` function (
 And :meth:`to_lat_lon()<pygplates.PointOnSphere.to_lat_lon>` will be one of several functions (methods)
 documented in the :class:`pygplates.PointOnSphere` class.
 
-These class *methods* behave just like top-level functions (such as ``pygplates.reconstruct()``).
-The main difference is a class *method* has an implicit first function argument - the object itself
-(for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
+These class *methods* behave similarly to top-level functions (such as ``pygplates.reconstruct()``) except
+they operate on an object (instance of class). Hence a class *method* has an implicit first function
+argument that is the object itself (for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
 
 .. note:: A complete list of functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
 
