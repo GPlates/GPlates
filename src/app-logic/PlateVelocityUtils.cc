@@ -889,6 +889,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 			velocity_surface_reconstructed_static_polygons,
 			velocity_surface_resolved_topological_boundaries,
 			boost::none/*velocity_surface_resolved_topological_networks*/,
+			GeometryCookieCutter::SORT_BY_PLATE_ID,
 			// Use high speed point-in-poly testing since very dense velocity meshes containing
 			// lots of points can go through this path...
 			GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);

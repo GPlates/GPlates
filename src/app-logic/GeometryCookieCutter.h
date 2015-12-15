@@ -33,6 +33,7 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructionGeometry.h"
+#include "ReconstructionGeometryVisitor.h"
 
 #include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
@@ -78,6 +79,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Enumerated ways to sort plates.
+		 */
+		enum SortPlates
+		{
+			SORT_BY_PLATE_ID,
+			SORT_BY_PLATE_AREA
+		};
+
+
+		/**
 		 * Finds reconstructed polygon geometries to partition other geometry with.
 		 *
 		 * Topological networks (and their static interior polygons, if any) are used first when
@@ -86,9 +97,11 @@ namespace GPlatesAppLogic
 		 * networks themselves (it's required since the network boundaries contain the interior polygons).
 		 *
 		 * The partitioning polygons, in each group (ie, static, topological boundary, topological network),
-		 * are sorted from highest plate id to lowest.
+		 * are optionally sorted either sorted by plate ID (from highest plate id to lowest) or
+		 * plate area (from largest area to lowest), if @a sort_plates is not none.
 		 * This ensures that if there are any overlapping polygons in the (combined) set then
-		 * those with the highest plate id will partition before those with lower plate ids.
+		 * those with the highest plate id will partition before those with lower plate ids, or
+		 * those with largest area will partition before those with lower area.
 		 *
 		 * The reason for preferring plates further from the anchor is, I think,
 		 * because it provides more detailed rotations since plates further down the plate
@@ -121,6 +134,24 @@ namespace GPlatesAppLogic
 				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
 				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
 				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+
+
+		/**
+		 * Finds reconstructed polygon geometries to partition other geometry with.
+		 *
+		 * This is the same as the other constructor except the resolved topological networks,
+		 * resolved topological boundaries and reconstructed static polygons are combined
+		 * (in @a reconstruction_geometries) and @a group_networks_then_boundaries_then_static_polygons
+		 * determines whether they are grouped/sorted in that order or not. If @a sort_plates
+		 * is specified then it applies within those sub-groups.
+		 */
+		GeometryCookieCutter(
+				const double &reconstruction_time,
+				const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+				bool group_networks_then_boundaries_then_static_polygons = true,
+				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
 
 
@@ -203,10 +234,57 @@ namespace GPlatesAppLogic
 						const PartitioningGeometry &lhs,
 						const PartitioningGeometry &rhs) const;
 			};
+
+			//! Used to sort by plate area.
+			struct SortPlateAreaHighestToLowest
+			{
+				bool
+				operator()(
+						const PartitioningGeometry &lhs,
+						const PartitioningGeometry &rhs) const;
+			};
 		};
 
 		//! Typedef for a sequence of partitioning geometries.
 		typedef std::vector<PartitioningGeometry> partitioning_geometry_seq_type;
+
+
+		/**
+		 * Visits reconstruction geometries to add as partitioning geometries.
+		 */
+		class AddPartitioningReconstructionGeometry :
+				public ReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ReconstructionGeometryVisitor::visit;
+
+
+			explicit
+			AddPartitioningReconstructionGeometry(
+					GeometryCookieCutter &geometry_cookie_cutter) :
+				d_geometry_cookie_cutter(geometry_cookie_cutter)
+			{  }
+
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+		private:
+			GeometryCookieCutter &d_geometry_cookie_cutter;
+		};
 
 
 		//! The partitioning geometries.
@@ -218,33 +296,70 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds all @a ResolvedTopologicalBoundary objects as partitioning geometries.
+		 * Adds @a ReconstructionGeometry objects, unsorted by type, as partitioning geometries.
 		 */
 		void
-		add_partitioning_resolved_topological_boundaries(
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
+		add_partitioning_reconstruction_geometries(
+				const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+				boost::optional<SortPlates> sort_plates);
+
 
 		/**
-		 * Adds all @a ResolvedTopologicalNetwork objects as partitioning geometries.
+		 * Adds @a ResolvedTopologicalNetwork objects as partitioning geometries.
 		 */
 		void
 		add_partitioning_resolved_topological_networks(
-				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				boost::optional<SortPlates> sort_plates);
 
 		/**
-		 * Adds all @a ResolvedTopologicalNetwork interior polygons, if any, as partitioning geometries.
+		 * Add a @a ResolvedTopologicalNetwork as a partitioning geometry.
 		 */
 		void
-		add_partitioning_resolved_topological_network_interior_polygons(
-				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+		add_partitioning_resolved_topological_network(
+				const resolved_topological_network_non_null_ptr_type &resolved_topological_network);
+
 
 		/**
-		 * Adds all @a ReconstructedFeatureGeometry objects in @a reconstruction, that have
-		 * polygon geometry, as partitioning geometries.
+		 * Adds @a ResolvedTopologicalBoundary objects as partitioning geometries.
+		 */
+		void
+		add_partitioning_resolved_topological_boundaries(
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				boost::optional<SortPlates> sort_plates);
+
+		/**
+		 * Add a @a ResolvedTopologicalBoundary as a partitioning geometry.
+		 */
+		void
+		add_partitioning_resolved_topological_boundary(
+				const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary);
+
+
+		/**
+		 * Adds @a ReconstructedFeatureGeometry objects as partitioning geometries.
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygons(
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries);
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				boost::optional<SortPlates> sort_plates);
+
+		/**
+		 * Add a @a ReconstructedFeatureGeometry as a partitioning geometry, if it has a *polygon* geometry.
+		 */
+		void
+		add_partitioning_reconstructed_feature_polygon(
+				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_feature_geometry);
+
+
+		/**
+		 * Sort plates within a partitioning group.
+		 */
+		void
+		sort_plates_in_partitioning_group(
+				const partitioning_geometry_seq_type::iterator &partitioning_group_begin,
+				const partitioning_geometry_seq_type::iterator &partitioning_group_end,
+				SortPlates sort_plates);
 	};
 }
 

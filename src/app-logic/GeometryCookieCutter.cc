@@ -35,6 +35,8 @@
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 
@@ -43,6 +45,7 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
 		boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
 		boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks,
+		boost::optional<SortPlates> sort_plates,
 		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
 	d_reconstruction_time(reconstruction_time),
 	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
@@ -51,54 +54,56 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 	// during partitioning.
 	if (resolved_topological_networks)
 	{
-		const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
-
-		add_partitioning_resolved_topological_network_interior_polygons(resolved_topological_networks.get());
-
-		// Sort the partitioning geometries just added by plate id.
-		std::sort(
-				d_partitioning_geometries.begin() + num_partitioning_geometries,
-				d_partitioning_geometries.end(),
-				PartitioningGeometry::SortPlateIdHighestToLowest());
-	}
-
-	if (resolved_topological_networks)
-	{
-		const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
-
-		add_partitioning_resolved_topological_networks(resolved_topological_networks.get());
-
-		// Sort the partitioning geometries just added by plate id.
-		std::sort(
-				d_partitioning_geometries.begin() + num_partitioning_geometries,
-				d_partitioning_geometries.end(),
-				PartitioningGeometry::SortPlateIdHighestToLowest());
+		add_partitioning_resolved_topological_networks(resolved_topological_networks.get(), sort_plates);
 	}
 
 	if (resolved_topological_boundaries)
 	{
-		const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
-
-		add_partitioning_resolved_topological_boundaries(resolved_topological_boundaries.get());
-
-		// Sort the partitioning geometries just added by plate id.
-		std::sort(
-				d_partitioning_geometries.begin() + num_partitioning_geometries,
-				d_partitioning_geometries.end(),
-				PartitioningGeometry::SortPlateIdHighestToLowest());
+		add_partitioning_resolved_topological_boundaries(resolved_topological_boundaries.get(), sort_plates);
 	}
 
 	if (reconstructed_static_polygons)
 	{
-		const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
+		add_partitioning_reconstructed_feature_polygons(reconstructed_static_polygons.get(), sort_plates);
+	}
+}
 
-		add_partitioning_reconstructed_feature_polygons(reconstructed_static_polygons.get());
 
-		// Sort the partitioning geometries just added by plate id.
-		std::sort(
-				d_partitioning_geometries.begin() + num_partitioning_geometries,
-				d_partitioning_geometries.end(),
-				PartitioningGeometry::SortPlateIdHighestToLowest());
+GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
+		const double &reconstruction_time,
+		const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+		bool group_networks_then_boundaries_then_static_polygons,
+		boost::optional<SortPlates> sort_plates,
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+	d_reconstruction_time(reconstruction_time),
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+{
+	if (group_networks_then_boundaries_then_static_polygons)
+	{
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
+		ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geometries.begin(),
+				reconstruction_geometries.end(),
+				resolved_topological_networks);
+		add_partitioning_resolved_topological_networks(resolved_topological_networks, sort_plates);
+
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
+		ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geometries.begin(),
+				reconstruction_geometries.end(),
+				resolved_topological_boundaries);
+		add_partitioning_resolved_topological_boundaries(resolved_topological_boundaries, sort_plates);
+
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_static_polygons;
+		ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geometries.begin(),
+				reconstruction_geometries.end(),
+				reconstructed_static_polygons);
+		add_partitioning_reconstructed_feature_polygons(reconstructed_static_polygons, sort_plates);
+	}
+	else
+	{
+		add_partitioning_reconstruction_geometries(reconstruction_geometries, sort_plates);
 	}
 }
 
@@ -249,91 +254,195 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 
 
 void
-GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundaries(
-		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
+GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstruction_geometries(
+		const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+		boost::optional<SortPlates> sort_plates)
 {
 	// Create the partitioned geometries.
-	BOOST_FOREACH(const ResolvedTopologicalBoundary::non_null_ptr_type &rtb, resolved_topological_boundaries)
+	// These are not grouped by reconstruction geometry type.
+	AddPartitioningReconstructionGeometry visitor(*this);
+	BOOST_FOREACH(const ReconstructionGeometry::non_null_ptr_type &rg, reconstruction_geometries)
 	{
-		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rtb, rtb->resolved_topology_boundary(), d_partition_point_speed_and_memory));
+		rg->accept_visitor(visitor);
+	}
+
+	if (sort_plates)
+	{
+		sort_plates_in_partitioning_group(
+				d_partitioning_geometries.begin(),
+				d_partitioning_geometries.end(),
+				sort_plates.get());
 	}
 }
 
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_networks(
-		const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+		const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+		boost::optional<SortPlates> sort_plates)
 {
-	// Create the partitioned geometries.
+	const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
+
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &rtn, resolved_topological_networks)
 	{
-		d_partitioning_geometries.push_back(
-				PartitioningGeometry(
-						rtn,
-						rtn->get_triangulation_network().get_boundary_polygon(),
-						d_partition_point_speed_and_memory));
+		add_partitioning_resolved_topological_network(rtn);
+	}
+
+	if (sort_plates)
+	{
+		// Sort only the partitioning geometries just added.
+		sort_plates_in_partitioning_group(
+				d_partitioning_geometries.begin() + num_partitioning_geometries,
+				d_partitioning_geometries.end(),
+				sort_plates.get());
 	}
 }
 
 
 void
-GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_network_interior_polygons(
-		const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_network(
+		const resolved_topological_network_non_null_ptr_type &rtn)
 {
-	// Create the partitioned geometries.
-	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &rtn, resolved_topological_networks)
+	// Iterate over the interior rigid blocks, if any, of the current topological network.
+	const ResolvedTriangulation::Network::rigid_block_seq_type &rigid_blocks =
+			rtn->get_triangulation_network().get_rigid_blocks();
+	ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_iter = rigid_blocks.begin();
+	ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_end = rigid_blocks.end();
+	for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
 	{
-		// Iterate over the interior rigid blocks, if any, of the current topological network.
-		const ResolvedTriangulation::Network::rigid_block_seq_type &rigid_blocks =
-				rtn->get_triangulation_network().get_rigid_blocks();
-		ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_iter = rigid_blocks.begin();
-		ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_end = rigid_blocks.end();
-		for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
+		const ResolvedTriangulation::Network::RigidBlock &rigid_block = *rigid_blocks_iter;
+
+		const ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
+				rigid_block.get_reconstructed_feature_geometry();
+
+		// Get the polygon geometry.
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+				GeometryUtils::get_polygon_on_sphere(*rigid_block_rfg->reconstructed_geometry());
+		if (!polygon)
 		{
-			const ResolvedTriangulation::Network::RigidBlock &rigid_block = *rigid_blocks_iter;
-
-			const ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
-					rigid_block.get_reconstructed_feature_geometry();
-
-			// Get the polygon geometry.
-			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
-					GeometryUtils::get_polygon_on_sphere(*rigid_block_rfg->reconstructed_geometry());
-
-			// Add it as a partitioning geometry.
-			if (polygon)
-			{
-				d_partitioning_geometries.push_back(
-						PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
-			}
+			continue;
 		}
+
+		// Add interior block as a partitioning geometry.
+		d_partitioning_geometries.push_back(
+				PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
 	}
+
+	// Add boundary as a partitioning geometry.
+	//
+	// Note: We add this after the interior blocks since the boundary should contain the interiors.
+	d_partitioning_geometries.push_back(
+			PartitioningGeometry(
+					rtn,
+					rtn->get_triangulation_network().get_boundary_polygon(),
+					d_partition_point_speed_and_memory));
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundaries(
+		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+		boost::optional<SortPlates> sort_plates)
+{
+	const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
+
+	// Create the partitioned geometries.
+	BOOST_FOREACH(const ResolvedTopologicalBoundary::non_null_ptr_type &rtb, resolved_topological_boundaries)
+	{
+		add_partitioning_resolved_topological_boundary(rtb);
+	}
+
+	if (sort_plates)
+	{
+		// Sort only the partitioning geometries just added.
+		sort_plates_in_partitioning_group(
+				d_partitioning_geometries.begin() + num_partitioning_geometries,
+				d_partitioning_geometries.end(),
+				sort_plates.get());
+	}
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundary(
+		const resolved_topological_boundary_non_null_ptr_type &rtb)
+{
+	// Add it as a partitioning geometry.
+	d_partitioning_geometries.push_back(
+			PartitioningGeometry(rtb, rtb->resolved_topology_boundary(), d_partition_point_speed_and_memory));
 }
 
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_polygons(
-		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries)
+		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		boost::optional<SortPlates> sort_plates)
 {
-	typedef std::vector<reconstructed_feature_geometry_non_null_ptr_type> rfg_seq_type;
+	const partitioning_geometry_seq_type::size_type num_partitioning_geometries = d_partitioning_geometries.size();
 
-	// Find the RFGs that contain polygon geometry and add them as partitioning polygon.
-	rfg_seq_type::const_iterator rfg_iter = reconstructed_feature_geometries.begin();
-	rfg_seq_type::const_iterator rfg_end = reconstructed_feature_geometries.end();
-	for ( ; rfg_iter != rfg_end; ++rfg_iter)
+	// Create the partitioned geometries.
+	BOOST_FOREACH(const ReconstructedFeatureGeometry::non_null_ptr_type &rfg, reconstructed_feature_geometries)
 	{
-		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+		add_partitioning_reconstructed_feature_polygon(rfg);
+	}
 
-		// Get the polygon geometry.
-		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
-				GeometryUtils::get_polygon_on_sphere(*rfg->reconstructed_geometry());
+	if (sort_plates)
+	{
+		// Sort only the partitioning geometries just added.
+		sort_plates_in_partitioning_group(
+				d_partitioning_geometries.begin() + num_partitioning_geometries,
+				d_partitioning_geometries.end(),
+				sort_plates.get());
+	}
+}
 
-		// Add it as a partitioning geometry.
-		if (polygon)
-		{
-			d_partitioning_geometries.push_back(
-					PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory));
-		}
+
+void
+GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_polygon(
+		const reconstructed_feature_geometry_non_null_ptr_type &rfg)
+{
+	// Get the polygon geometry.
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+			GeometryUtils::get_polygon_on_sphere(*rfg->reconstructed_geometry());
+	if (!polygon)
+	{
+		return;
+	}
+
+	// Add it as a partitioning geometry.
+	d_partitioning_geometries.push_back(
+			PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory));
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::sort_plates_in_partitioning_group(
+		const partitioning_geometry_seq_type::iterator &partitioning_group_begin,
+		const partitioning_geometry_seq_type::iterator &partitioning_group_end,
+		SortPlates sort_plates)
+{
+	switch (sort_plates)
+	{
+	case SORT_BY_PLATE_ID:
+		// Sort the partitioning geometries added by plate id.
+		std::stable_sort(
+				partitioning_group_begin,
+				partitioning_group_end,
+				PartitioningGeometry::SortPlateIdHighestToLowest());
+		break;
+
+	case SORT_BY_PLATE_AREA:
+		// Sort the partitioning geometries added by plate area.
+		std::stable_sort(
+				partitioning_group_begin,
+				partitioning_group_end,
+				PartitioningGeometry::SortPlateAreaHighestToLowest());
+		break;
+
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
 	}
 }
 
@@ -356,4 +465,54 @@ GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::SortPlateIdHighestT
 {
 	return ReconstructionGeometryUtils::get_plate_id(lhs.d_reconstruction_geometry) >
 		ReconstructionGeometryUtils::get_plate_id(rhs.d_reconstruction_geometry);
+}
+
+
+bool
+GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::SortPlateAreaHighestToLowest::operator()(
+		const PartitioningGeometry &lhs,
+		const PartitioningGeometry &rhs) const
+{
+	// Mirror the functionality of 'operator > (optional x, optional y)' which is:
+	//   !x ? false : ( !y ? true : (*x) > (*y) )
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> lhs_polygon =
+			ReconstructionGeometryUtils::get_boundary_polygon(lhs.d_reconstruction_geometry);
+	if (!lhs_polygon)
+	{
+		return false;
+	}
+
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> rhs_polygon =
+			ReconstructionGeometryUtils::get_boundary_polygon(rhs.d_reconstruction_geometry);
+	if (!rhs_polygon)
+	{
+		return true;
+	}
+
+	return lhs_polygon.get()->get_area().is_precisely_greater_than(
+		rhs_polygon.get()->get_area().dval());
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::AddPartitioningReconstructionGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_geometry_cookie_cutter.add_partitioning_reconstructed_feature_polygon(rfg);
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::AddPartitioningReconstructionGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+{
+	d_geometry_cookie_cutter.add_partitioning_resolved_topological_boundary(rtb);
+}
+
+
+void
+GPlatesAppLogic::GeometryCookieCutter::AddPartitioningReconstructionGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_geometry_cookie_cutter.add_partitioning_resolved_topological_network(rtn);
 }
