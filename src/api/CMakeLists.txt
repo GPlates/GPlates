@@ -56,6 +56,8 @@ set(srcs
     PyOldFeature.h
     PyOldFeatureCollection.cc
     PyOldFeatureCollection.h
+    PyPlatePartitioner.cc
+    PyPlatePartitioner.h
     PyProperty.cc
     PyPropertyValues.cc
     PyPropertyValues.h
@@ -66,8 +68,6 @@ set(srcs
     PyReconstruct.cc
     PyReconstructionGeometries.cc
     PyReconstructionGeometries.h
-    PyReconstructionPartitioner.cc
-    PyReconstructionPartitioner.h
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc

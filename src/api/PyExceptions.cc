@@ -33,7 +33,7 @@
 #include "PyGreatCircleArc.h"
 #include "PyInformationModel.h"
 #include "PyInterpolationException.h"
-#include "PyReconstructionPartitioner.h"
+#include "PyPlatePartitioner.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -41,6 +41,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 
+#include "global/AbortException.h"
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/PreconditionViolationError.h"
@@ -201,10 +202,11 @@ namespace GPlatesApi
 	// GPlates C++ exceptions translated to python errors.
 	//
 
+	bp::object AbortError;
 	bp::object AmbiguousGeometryCoverageError;
 	bp::object AssertionFailureError;
 	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
-	bp::object DifferentTimesInPartitioningReconstructionGeometriesError;
+	bp::object DifferentTimesInPartitioningPlatesError;
 	bp::object FileFormatNotSupportedError;
 	bp::object GeometryTypeError;
 	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
@@ -248,6 +250,10 @@ export_exceptions()
 	//
 	// Direct subclasses of GPlatesGlobal::Exception.
 	//
+	GPlatesApi::AbortError =
+			export_exception<GPlatesGlobal::AbortException>(
+					"AbortError",
+					GPlatesApi::GPlatesError);
 	GPlatesApi::AssertionFailureError =
 			export_exception<GPlatesGlobal::AssertionFailureException>(
 					"AssertionFailureError",
@@ -280,9 +286,9 @@ export_exceptions()
 			export_exception<GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesException>(
 					"DifferentAnchoredPlatesInReconstructionTreesError",
 					GPlatesApi::PreconditionViolationError);
-	GPlatesApi::DifferentTimesInPartitioningReconstructionGeometriesError =
-			export_exception<GPlatesApi::DifferentTimesInPartitioningReconstructionGeometriesException>(
-					"DifferentTimesInPartitioningReconstructionGeometriesError",
+	GPlatesApi::DifferentTimesInPartitioningPlatesError =
+			export_exception<GPlatesApi::DifferentTimesInPartitioningPlatesException>(
+					"DifferentTimesInPartitioningPlatesError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::GeometryTypeError =
 			export_exception<GPlatesApi::GeometryTypeException>(

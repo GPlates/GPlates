@@ -63,10 +63,11 @@ namespace GPlatesApi
 	// NOTE: These are Py_None if the 'pygplates' module has not yet been initialised.
 	//
 
+	extern boost::python::object AbortError;
 	extern boost::python::object AmbiguousGeometryCoverageError;
 	extern boost::python::object AssertionFailureError;
 	extern boost::python::object DifferentAnchoredPlatesInReconstructionTreesError;
-	extern boost::python::object DifferentTimesInPartitioningReconstructionGeometriesError;
+	extern boost::python::object DifferentTimesInPartitioningPlatesError;
 	extern boost::python::object FileFormatNotSupportedError;
 	extern boost::python::object GeometryTypeError;
 	extern boost::python::object GmlTimePeriodBeginTimeLaterThanEndTimeError;

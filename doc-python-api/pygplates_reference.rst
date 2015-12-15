@@ -388,5 +388,5 @@ General utility classes:
    pygplates.Earth
    pygplates.FeaturesFunctionArgument
    pygplates.GeoTimeInstant
-   pygplates.ReconstructionPartitioner
+   pygplates.PlatePartitioner
    pygplates.Version
