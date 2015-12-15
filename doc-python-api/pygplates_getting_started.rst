@@ -33,7 +33,7 @@ As covered in the :ref:`introduction <pygplates_introduction>` there are two way
 
 No installation is required for the *embedded* case since both *pygplates* and a Python interpreter are
 already embedded inside the GPlates desktop application. All that is required is the
-`installation of GPlates <http://www.gplates.org/download.html>`_.
+`installation of GPlates <http://www.gplates.org>`_.
 
 However installation of *pygplates* is required for the *external* case since, in this situation,
 *pygplates* is provided as a separate Python library/module (that is not part of the
@@ -328,18 +328,85 @@ If this is the case then a potential solution is to:
 Tutorial
 --------
 
-This introductory tutorial is designed to help get you started using *pygplates*.
-
-.. note:: Before starting this tutorial please make sure you have :ref:`installed<pygplates_getting_started_installation>` *pygplates*.
-
 .. contents::
    :local:
    :depth: 2
+
+What are functions and classes ?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+First, let's cover what a function is.
+
+Essentially a function accepts arguments, does some work and then optionally returns a value.
+The function arguments allow data to be passed to and from the function. Input arguments pass data
+to the function and output arguments pass data from the function back to the caller. The function
+return value is also another way to pass data back to the caller. A function argument can be both
+input and output if the function first reads from it (input) and then writes to it (output).
+
+An example *pygplates* function call is reconstructing coastlines to 10Ma:
+::
+
+  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+
+.. note:: The ``pygplates.`` in front of ``reconstruct()`` means the ``reconstruct()`` function belongs to the ``pygplates`` module.
+          Also this particular function doesn't need to a return value.
+
+All four parameters are input parameters (even though ``'reconstructed_coastlines_10Ma.shp'`` specifies
+the filename to *write* the output to) since they are not used to pass data directly back to the caller.
+
+A similar use of the ``pygplates.reconstruct()`` function appends the reconstructed output to a Python list (instead of a file):
+::
+
+  reconstructed_feature_geometries = []
+  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', reconstructed_feature_geometries, 10)
+  
+  # Do something with the reconstructed output.
+  for reconstructed_feature_geometry in reconstructed_feature_geometries:
+    ...
+
+The parameter ``reconstructed_feature_geometries`` is now an *output* parameter because it is used
+to pass data from the function back to the caller so that the caller can do something with it.
+
+
+Next, let's look at what a class is.
+
+Primarily a class is a way to group some data together as a single entity.
+
+An object can be created (instantiated) from a class by providing a specific initial state.
+For example, a point object can be created (instantiated) from the :class:`pygplates.PointOnSphere` class
+by giving it a specific latitude and longitude:
+::
+
+  point = pygplates.PointOnSphere(latitude, longitude)
+
+.. note:: This looks like a regular ``pygplates`` function call (such as ``pygplates.reconstruct()``)
+   but this is just how you create (instantiate) an object with a specific initial state from a class.
+   Python uses the special method name ``__init__()`` for this and you will see these special methods
+   documented in the classes listed in the :ref:`reference section<pygplates_reference>`.
+
+You can then call functions (methods) on the *point* object such as querying its latitude and longitude
+(this particular method returns a Python tuple):
+::
+
+  latitude, longitude = point.to_lat_lon()
+
+The ``point.`` before the ``to_lat_lon()`` means the ``to_lat_lon()`` function (method) applies to the ``point`` object.
+And :meth:`to_lat_lon()<pygplates.PointOnSphere.to_lat_lon>` will be one of several functions (methods)
+documented in the :class:`pygplates.PointOnSphere` class.
+
+These class *methods* behave just like top-level functions (such as ``pygplates.reconstruct()``).
+The main difference is a class *method* has an implicit first function argument - the object itself
+(for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
+
+.. note:: A complete list of functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
+
 
 .. _pygplates_getting_started_tutorial_first_script:
 
 Introductory *pygplates* script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note:: Before starting this section please make sure you have :ref:`installed<pygplates_getting_started_installation>` *pygplates*.
 
 Source code
 """""""""""
@@ -424,11 +491,5 @@ Output of the script
 
 | There should now be a ``reconstructed_coastlines_10Ma.shp`` file containing the reconstructed coastline
   locations at ten million years ago (10Ma).
-| This Shapefile can be loaded into the `GPlates desktop application <http://www.gplates.org/download.html>`_
+| This Shapefile can be loaded into the `GPlates desktop application <http://www.gplates.org>`_
   to see these locations on the globe.
-
-In the next section we will enhance our Python script.
-
-.. _pygplates_getting_started_tutorial_second_script:
-
-**TODO** add enhanced script section

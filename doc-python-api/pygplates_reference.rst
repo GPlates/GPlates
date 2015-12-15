@@ -3,47 +3,19 @@
 Reference
 =========
 
-This document lists the Python :ref:`functions<pygplates_reference_functions>` and
-:ref:`classes<pygplates_reference_classes>` that make up the GPlates Python *Application Programming Interface* (*API*) known as *pygplates*.
+This document lists the Python functions and classes that make up the GPlates Python *Application Programming Interface* (*API*) known as *pygplates*.
+
+.. note:: Please see the :ref:`installation<pygplates_getting_started_installation>` section for information on how to install *pygplates*.
+
+.. note:: Please see the :ref:`tuturial<pygplates_getting_started_tutorial>` section to help get you started using *pygplates*.
+
 
 .. contents::
    :local:
    :depth: 2
 
-Module
-------
-
-``pygplates`` is a Python module containing :ref:`functions<pygplates_reference_functions>` and
-:ref:`classes<pygplates_reference_classes>`.
-
-.. note:: Please see the :ref:`installation<pygplates_getting_started_installation>` section for information on how to install *pygplates*.
-
-To use ``pygplates`` in your Python script you will first need to import it:
-::
-
-  import pygplates
-
-.. _pygplates_reference_functions:
-
-Functions
----------
-
-This section contains a list of all *functions* at the top-level of *pygplates* (the module level).
-
-.. note:: There are also functions deeper down inside the :ref:`classes<pygplates_reference_classes>`.
-   These are called *methods* but they behave just like functions (they accept arguments and return a value).
-
-An example function call is reconstructing coastlines to 10Ma:
-::
-
-  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
-
-.. note:: The ``pygplates.`` in front of ``reconstruct()`` means the ``reconstruct()`` function belongs to the ``pygplates`` module.
-
-Each function documents how to use the function and lists its function arguments and return value.
-
-Reconstruct functions
-^^^^^^^^^^^^^^^^^^^^^
+Reconstruction
+--------------
 
 Functions to reconstruct backward and forward in time:
 
@@ -53,8 +25,27 @@ Functions to reconstruct backward and forward in time:
    pygplates.reconstruct
    pygplates.reverse_reconstruct
 
-Topology functions
-^^^^^^^^^^^^^^^^^^
+Classes resulting from :func:`reconstructing<pygplates.reconstruct>` regular
+:class:`features<pygplates.Feature>` at a particular reconstruction time.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ReconstructedFeatureGeometry
+   pygplates.ReconstructedFlowline
+   pygplates.ReconstructedMotionPath
+
+All three above reconstructed feature types inherit from:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ReconstructionGeometry
+
+Topology
+--------
 
 Functions to resolve topologies:
 
@@ -63,8 +54,44 @@ Functions to resolve topologies:
 
    pygplates.resolve_topologies
 
-Velocity functions
-^^^^^^^^^^^^^^^^^^
+Classes resulting from :func:`resolving<pygplates.resolve_topologies>` topological
+:class:`features<pygplates.Feature>` at a particular reconstruction time.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ResolvedTopologicalLine
+   pygplates.ResolvedTopologicalBoundary
+   pygplates.ResolvedTopologicalNetwork
+
+All three above resolved topology types inherit from:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ReconstructionGeometry
+
+The following class represents a sub-segment of a *single* resolved topological line, boundary or network.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ResolvedTopologicalSubSegment
+
+The following classes represent sub-segments *shared* by one or more resolved topological boundaries and/or networks.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ResolvedTopologicalSection
+   pygplates.ResolvedTopologicalSharedSubSegment
+
+Velocity
+--------
 
 Functions to calculate velocities:
 
@@ -73,66 +100,8 @@ Functions to calculate velocities:
 
    pygplates.calculate_velocities
 
-Crossover functions
-^^^^^^^^^^^^^^^^^^^
-
-Functions to find and fix finite rotation crossovers (fixed plate transitions):
-
-.. autosummary::
-   :toctree: generated
-
-   pygplates.find_crossovers
-   pygplates.synchronise_crossovers
-
-.. _pygplates_reference_classes:
-
-Classes
--------
-
-This section contains a list of all *classes* in *pygplates*.
-
-Essentially a class is just a way to associate some data with some functions.
-An object can be created (instantiated) from a class by providing a specific initial state.
-
-For example, a point object can be created (instantiated) from the :class:`pygplates.PointOnSphere` class
-by giving it a specific latitude and longitude:
-::
-
-  point = pygplates.PointOnSphere(latitude, longitude)
-
-.. note:: This looks like a regular ``pygplates`` function call (see :ref:`functions<pygplates_reference_functions>`)
-   but this is just how you create (instantiate) an object, with a specific initial state, from a class.
-   Python uses the special method name ``__init__()`` for this and you will see these special methods
-   documented in the classes listed below.
-
-You can then call functions (methods) on the *point* object such as accessing its latitude and longitude (as a tuple):
-::
-
-  latitude, longitude = point.to_lat_lon()
-
-.. note:: The ``point.`` before the ``to_lat_lon()`` means the ``to_lat_lon()`` function (method) applies to the ``point`` object.
-   And ``to_lat_lon()`` will be one of several functions (methods) documented in the :class:`pygplates.PointOnSphere` class.
-
-Within each class is a list of methods.
-And each method documents how to use the method and lists its function arguments and return value.
-
-File reading/writing classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Classes that read/write data from/to files:
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.FeatureCollection
-   pygplates.FeatureCollectionFileFormatRegistry
-
-.. note:: ``FeatureCollection`` is easier to use for
-   :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
-
-Rotation classes
-^^^^^^^^^^^^^^^^
+Rotation
+--------
 
 | ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
 | ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
@@ -155,8 +124,42 @@ Rotation classes
    pygplates.ReconstructionTreeBuilder
    pygplates.ReconstructionTreeEdge
 
-Feature classes
-^^^^^^^^^^^^^^^
+Functions to find and fix finite rotation crossovers (transitions of fixed plate):
+
+.. autosummary::
+   :toctree: generated
+
+   pygplates.find_crossovers
+   pygplates.synchronise_crossovers
+
+Plate Partitioning
+------------------
+
+Classes to partition into plates:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.PlatePartitioner
+
+File I/O
+--------
+
+Classes that read/write data from/to files:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.FeatureCollection
+   pygplates.FeatureCollectionFileFormatRegistry
+
+.. note:: ``FeatureCollection`` is easier to use for
+   :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
+
+Feature
+-------
 
 ``Feature`` is the main class to go to for querying/setting geological feature properties.
 
@@ -167,8 +170,8 @@ Feature classes
    pygplates.Feature
    pygplates.FeatureCollection
 
-Feature property classes
-^^^^^^^^^^^^^^^^^^^^^^^^
+Feature property
+----------------
 
 A :class:`feature<pygplates.Feature>` is essentially a list of :class:`properties<pygplates.Property>`
 where each property has a :class:`name<pygplates.PropertyName>` and a :class:`value<pygplates.PropertyValue>`.
@@ -184,8 +187,8 @@ where each property has a :class:`name<pygplates.PropertyName>` and a :class:`va
    pygplates.PropertyValue
    pygplates.PropertyValueVisitor
 
-Feature property value classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Feature property value
+----------------------
 
 | These classes represent the various types of property values that a :class:`feature<pygplates.Feature>` can contain.
 | Property values contain things such as plate IDs, geometries, finite rotations, strings, numbers, etc.
@@ -246,69 +249,8 @@ Strictly speaking they are not actually :class:`property values<pygplates.Proper
    pygplates.GpmlTimeSample
    pygplates.GpmlTimeWindow
 
-Reconstructed feature classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-These classes result from :func:`reconstructing<pygplates.reconstruct>` regular
-:class:`features<pygplates.Feature>` at a particular reconstruction time.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.ReconstructedFeatureGeometry
-   pygplates.ReconstructedFlowline
-   pygplates.ReconstructedMotionPath
-
-All three above reconstructed feature types inherit from:
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-   
-   pygplates.ReconstructionGeometry
-
-Resolved topology  classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-These classes result from :func:`resolving<pygplates.resolve_topologies>` topological
-:class:`features<pygplates.Feature>` at a particular reconstruction time.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.ResolvedTopologicalLine
-   pygplates.ResolvedTopologicalBoundary
-   pygplates.ResolvedTopologicalNetwork
-
-All three above resolved topology types inherit from:
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-   
-   pygplates.ReconstructionGeometry
-
-The following class represents a sub-segment of a *single* resolved topological line, boundary or network.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-   
-   pygplates.ResolvedTopologicalSubSegment
-
-The following classes represent sub-segments *shared* by one or more resolved topological boundaries and/or networks.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.ResolvedTopologicalSection
-   pygplates.ResolvedTopologicalSharedSubSegment
-
-Geometry classes
-^^^^^^^^^^^^^^^^
+Geometry
+--------
 
 There are four types of geometry:
 
@@ -348,8 +290,8 @@ There is also a latitude/longitude version of a point:
 
    pygplates.LatLonPoint
 
-Vector classes
-^^^^^^^^^^^^^^
+Vector
+------
 
 A vector class, and conversions between global cartesian and local magnitude/azimuth/inclination:
 
@@ -360,8 +302,8 @@ A vector class, and conversions between global cartesian and local magnitude/azi
    pygplates.LocalCartesian
    pygplates.Vector3D
 
-String classes
-^^^^^^^^^^^^^^
+String
+------
 
 String-type classes used in various areas of *pygplates*:
 
@@ -375,8 +317,8 @@ String-type classes used in various areas of *pygplates*:
    pygplates.PropertyName
    pygplates.ScalarType
 
-Utility classes
-^^^^^^^^^^^^^^^
+Utility
+-------
 
 General utility classes:
 
@@ -388,5 +330,4 @@ General utility classes:
    pygplates.Earth
    pygplates.FeaturesFunctionArgument
    pygplates.GeoTimeInstant
-   pygplates.PlatePartitioner
    pygplates.Version

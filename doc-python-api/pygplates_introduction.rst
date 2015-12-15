@@ -27,7 +27,7 @@ There are two ways to interact with GPlates functionality:
    
    For example, using *menus and dialogs* to visualise geological reconstructions.
    
-   To do this you can download the `GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
+   To do this you can download the `GPlates desktop application (executable) <http://www.gplates.org>`_.
    
 #. *Using Python*:
    
@@ -113,7 +113,7 @@ Using pygplates with an *external* Python interpreter
 
 In this scenario you are running a Python script using an *external* Python interpreter.
 
-.. note:: This does **not** require the `GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
+.. note:: This does **not** require the `GPlates desktop application (executable) <http://www.gplates.org>`_.
 
 For example you might have a file called ``my_python_script.py`` that you execute on the terminal or shell command-line as:
 ::
