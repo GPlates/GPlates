@@ -42,7 +42,8 @@
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const std::pair<double, double> &gpml_euler_pole,
-		const double &gml_angle_in_degrees)
+		const double &gml_angle_in_degrees,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	const double &lon = gpml_euler_pole.first;
 	const double &lat = gpml_euler_pole.second;
@@ -55,32 +56,34 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 					p,
 					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees));
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const GmlPoint::non_null_ptr_to_const_type &gpml_euler_pole,
-		const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees)
+		const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					*gpml_euler_pole->get_point(),
 					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->get_quantity()));
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
-GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
+GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation(
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	using namespace ::GPlatesMaths;
 
 	FiniteRotation fr = FiniteRotation::create_identity_rotation();
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
@@ -101,39 +104,112 @@ GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation(
 }
 
 
+void
+GPlatesPropertyValues::GpmlFiniteRotation::set_metadata(
+		const GPlatesModel::MetadataContainer &metadata)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().metadata = metadata;
+	revision_handler.commit();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlFiniteRotation::print_to(
 		std::ostream &os) const
 {
-	return os << get_current_revision<Revision>().finite_rotation;
+	const Revision &revision = get_current_revision<Revision>();
+
+	os << revision.finite_rotation;
+
+	os << ", [ ";
+
+	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, revision.metadata)
+	{
+		os << '(' << metadata_entry->get_name().toStdString() << ": " << metadata_entry->get_content().toStdString() << "), ";
+	}
+
+	return os << " ]";
 }
 
 
-const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-GPlatesPropertyValues::calculate_euler_pole(
-		const GpmlFiniteRotation &fr)
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::Revision(
+		const GPlatesMaths::FiniteRotation &finite_rotation_,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_) :
+	finite_rotation(finite_rotation_)
 {
-	// FIXME:  This code should probably move into the GPlatesMaths namespace somewhere.
-	using namespace ::GPlatesMaths;
-
-	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp =
-			fr.get_finite_rotation().unit_quat().get_rotation_params(
-					fr.get_finite_rotation().axis_hint());
-	return GmlPoint::create(PointOnSphere(rp.axis));
+	if (metadata_)
+	{
+		// Clone each metadata entry - so that we have our own copy that's different from our client.
+		BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, metadata_.get())
+		{
+			metadata.push_back(metadata_entry->clone());
+		}
+	}
 }
 
 
-const GPlatesMaths::real_t
-GPlatesPropertyValues::calculate_angle(
-		const GpmlFiniteRotation &fr)
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::Revision(
+		const Revision &other,
+		boost::optional<GPlatesModel::RevisionContext &> context_) :
+	PropertyValue::Revision(context_),
+	finite_rotation(other.finite_rotation)
 {
-	// FIXME:  This code should probably move into the GPlatesMaths namespace somewhere.
-	using namespace ::GPlatesMaths;
+	// Clone each metadata entry.
+	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, other.metadata)
+	{
+		metadata.push_back(metadata_entry->clone());
+	}
+}
 
-	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp =
-			fr.get_finite_rotation().unit_quat().get_rotation_params(
-					fr.get_finite_rotation().axis_hint());
-	return GPlatesMaths::convert_rad_to_deg(rp.angle);
+
+bool
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::equality(
+		const GPlatesModel::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (finite_rotation != other_revision.finite_rotation)
+	{
+		return false;
+	}
+
+	if (metadata.size() != other_revision.metadata.size())
+	{
+		return false;
+	}
+
+	// Copy of other metadata so can remove equality matches.
+	GPlatesModel::MetadataContainer other_metadata(other_revision.metadata);
+
+	// FIXME: Change from O(N^2) search to something faster.
+	// Perhaps not really needed though, since metadata container sizes should be quite small.
+	GPlatesModel::MetadataContainer::const_iterator metadata_iter = metadata.begin();
+	GPlatesModel::MetadataContainer::const_iterator metadata_end = metadata.end();
+	for ( ; metadata_iter != metadata_end; ++metadata_iter)
+	{
+		const GPlatesModel::Metadata &metadata_entry = **metadata_iter;
+
+		GPlatesModel::MetadataContainer::iterator other_metadata_iter = other_metadata.begin();
+		GPlatesModel::MetadataContainer::iterator other_metadata_end = other_metadata.end();
+		for ( ; other_metadata_iter != other_metadata_end; ++other_metadata_iter)
+		{
+			const GPlatesModel::Metadata &other_metadata_entry = **other_metadata_iter;
+
+			if (metadata_entry == other_metadata_entry)
+			{
+				// Remove other metadata entry so we don't compare against it twice.
+				other_metadata.erase(other_metadata_iter);
+				break;
+			}
+		}
+
+		if (other_metadata_iter == other_metadata_end)
+		{
+			// Didn't find a match for the current metadata entry.
+			return false;
+		}
+	}
+
+	return PropertyValue::Revision::equality(other);
 }
