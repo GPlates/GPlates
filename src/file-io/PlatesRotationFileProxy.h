@@ -45,7 +45,6 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 namespace GPlatesFileIO
 {

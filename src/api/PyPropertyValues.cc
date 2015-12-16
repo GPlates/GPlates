@@ -84,7 +84,6 @@
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -1679,14 +1678,19 @@ export_gpml_constant_value()
 }
 
 
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
+	gpml_finite_rotation_create(
+			const GPlatesMaths::FiniteRotation &finite_rotation)
+	{
+		return GPlatesPropertyValues::GpmlFiniteRotation::create(finite_rotation);
+	}
+}
+
 void
 export_gpml_finite_rotation()
 {
-	// Select the desired overload of GpmlFiniteRotation::create...
-	const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
-			(*create)(const GPlatesMaths::FiniteRotation &) =
-					&GPlatesPropertyValues::GpmlFiniteRotation::create;
-
 	//
 	// GpmlFiniteRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -1702,7 +1706,7 @@ export_gpml_finite_rotation()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						create,
+						&GPlatesApi::gpml_finite_rotation_create,
 						bp::default_call_policies(),
 						(bp::arg("finite_rotation"))),
 				"__init__(finite_rotation)\n"
@@ -3814,48 +3818,6 @@ export_gpml_time_window()
 
 
 void
-export_gpml_total_reconstruction_pole()
-{
-	// Select the desired overload of GpmlTotalReconstructionPole::create...
-	const GPlatesPropertyValues::GpmlTotalReconstructionPole::non_null_ptr_type
-			(*create)(const GPlatesMaths::FiniteRotation &) =
-					&GPlatesPropertyValues::GpmlTotalReconstructionPole::create;
-
-	//
-	// GpmlTotalReconstructionPole - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	bp::class_<
-			GPlatesPropertyValues::GpmlTotalReconstructionPole,
-			GPlatesPropertyValues::GpmlTotalReconstructionPole::non_null_ptr_type,
-			bp::bases<GPlatesPropertyValues::GpmlFiniteRotation>,
-			boost::noncopyable>(
-					"GpmlTotalReconstructionPole",
-					"A property value that represents a finite rotation with metadata.",
-					// We need this (even though "__init__" is defined) since
-					// there is no publicly-accessible default constructor...
-					bp::no_init)
-		.def("__init__",
-				bp::make_constructor(
-						create,
-						bp::default_call_policies(),
-						(bp::arg("finite_rotation"))),
-				"__init__(finite_rotation)\n"
-				"  Create a total reconstruction pole property value from a finite rotation.\n"
-				"\n"
-				"  :param finite_rotation: the finite rotation\n"
-				"  :type finite_rotation: :class:`FiniteRotation`\n"
-				"\n"
-				"  ::\n"
-				"\n"
-				"    total_reconstruction_pole_property = pygplates.GpmlTotalReconstructionPole(finite_rotation)\n")
-	;
-
-	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTotalReconstructionPole>();
-}
-
-
-void
 export_xs_boolean()
 {
 	//
@@ -4108,7 +4070,6 @@ export_property_values()
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.
-	export_gpml_total_reconstruction_pole();
 
 	export_xs_boolean();
 	export_xs_double();

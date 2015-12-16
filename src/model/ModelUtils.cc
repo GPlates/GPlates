@@ -64,7 +64,6 @@
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
 
 namespace
@@ -1311,33 +1310,24 @@ GPlatesModel::ModelUtils::create_gml_time_instant(
 
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::ModelUtils::create_total_reconstruction_pole(
-		const std::vector<TotalReconstructionPole> &five_tuples,
-		bool enable_metadata)
+		const std::vector<TotalReconstructionPole> &five_tuples)
 {
 	using namespace GPlatesPropertyValues;
 	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples;
-	boost::optional<StructuralType> value_type;
-	if (enable_metadata)
-	{
-		value_type = StructuralType::create_gpml("TotalReconstructionPole");
-	}
-	else
-	{
-		value_type = StructuralType::create_gpml("FiniteRotation");
-	}
+	const StructuralType value_type = StructuralType::create_gpml("FiniteRotation");
 
 	for (std::vector<TotalReconstructionPole>::const_iterator iter = five_tuples.begin(); 
 		iter != five_tuples.end(); ++iter) 
 	{
-		time_samples.push_back(create_gml_time_sample(*iter, enable_metadata));
+		time_samples.push_back(create_gml_time_sample(*iter));
 	}
 
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 		GpmlIrregularSampling::create(
 				time_samples,
 				GpmlInterpolationFunction::non_null_ptr_type(
-						GpmlFiniteRotationSlerp::create(*value_type)),
-				*value_type);
+						GpmlFiniteRotationSlerp::create(value_type)),
+				value_type);
 
 	TopLevelProperty::non_null_ptr_type top_level_property_inline =
 		TopLevelPropertyInline::create(
@@ -1422,8 +1412,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 
 GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gml_time_sample(
-		const TotalReconstructionPole &trp,
-		bool enable_metadata)
+		const TotalReconstructionPole &trp)
 {
 	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
@@ -1444,22 +1433,11 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	XsString::non_null_ptr_type gml_description = 
 		XsString::create(GPlatesUtils::make_icu_string_from_qstring(trp.comment));
 
-	if (enable_metadata)
-	{
-		return GpmlTimeSample::create(
-				GpmlTotalReconstructionPole::create(gpml_finite_rotation->get_finite_rotation()),
-				gml_time_instant,
-				gml_description, 
-				StructuralType::create_gpml("TotalReconstructionPole"));
-	}
-	else
-	{
-		return GpmlTimeSample::create(
-				gpml_finite_rotation, 
-				gml_time_instant,
-				gml_description, 
-				StructuralType::create_gpml("FiniteRotation"));
-	}
+	return GpmlTimeSample::create(
+			gpml_finite_rotation, 
+			gml_time_instant,
+			gml_description, 
+			StructuralType::create_gpml("FiniteRotation"));
 }
 
 

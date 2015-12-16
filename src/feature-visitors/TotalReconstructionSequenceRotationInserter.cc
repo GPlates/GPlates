@@ -49,7 +49,6 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 /*
 namespace
@@ -160,6 +159,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// The time of the total reconstruction pole (TRP) matches exactly, so
 			// we'll update the finite rotation in place, right now.
 			update_finite_rotation(gpml_finite_rotation);
+
+			// The time of the total reconstruction pole (TRP) matches exactly, so
+			// we'll update the pole metadata.
+			update_pole_metadata(gpml_finite_rotation);
 		}
 		else
 		{
@@ -180,27 +183,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	{
 		// FIXME:  Should we complain?
 	}
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_total_reconstruction_pole(
-		GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
-{
-	if (d_is_expecting_a_finite_rotation)
-	{
-		// The visitor was expecting a FiniteRotation, which means the structure of the
-		// Total Reconstruction Sequence is (more or less) correct.
-		if (d_trp_time_matches_exactly)
-		{
-			// The time of the total reconstruction pole (TRP) matches exactly, so
-			// we'll update the pole metadata.
-			update_pole_metadata(gpml_total_reconstruction_pole);
-		}
-	}
-
-	// Handle the rest in base class GpmlFiniteRotation.
-	visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 }
 
 
@@ -376,10 +358,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					GPlatesMaths::compose(d_rotation_to_apply, interpolated_finite_rotation);
 
 			// Create the new time-sample.
-			// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
-			// the former also supports pole metadata (which can remain empty if not needed/used).
-			GpmlTotalReconstructionPole::non_null_ptr_type value = GpmlTotalReconstructionPole::create(updated_finite_rotation);
-			// Set/modify the pole metadata (if needed) in the GpmlTotalReconstructionPole.
+			GpmlFiniteRotation::non_null_ptr_type value = GpmlFiniteRotation::create(updated_finite_rotation);
+			// Set/modify the pole metadata (if needed) in the GpmlFiniteRotation.
 			set_pole_metadata(*value);
 
 			GmlTimeInstant::non_null_ptr_type valid_time =
@@ -466,9 +446,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_fini
 
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_pole_metadata(
-		GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
-	set_pole_metadata(gpml_total_reconstruction_pole);
+	set_pole_metadata(gpml_finite_rotation);
 
 	// TODO: Update the GROT proxy.
 }
@@ -476,6 +456,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_pole
 
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::set_pole_metadata(
-		GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 }

@@ -237,7 +237,6 @@ namespace GPlatesQtWidgets
 
 		bool d_moving_plate_changed;
 		bool d_fixed_plate_changed;
-		bool d_is_grot;
 	};
 
 }

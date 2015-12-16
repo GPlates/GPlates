@@ -36,7 +36,6 @@
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 
 namespace GPlatesAppLogic

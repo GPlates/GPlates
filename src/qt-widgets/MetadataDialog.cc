@@ -34,10 +34,13 @@
 #include <QValidator>
 
 #include "MetadataDialog.h"
-#include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlIrregularSampling.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
+
 #include "model/ModelUtils.h"
+
+#include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlMetadata.h"
+
 
 class RejectAllEdit : 
 	public QValidator
@@ -823,7 +826,7 @@ namespace
 			{
 				QString name = ele->key()->get_value().get().qstring();
 				ret.push_back(boost::shared_ptr<Metadata>(
-						new PoleMetadata(
+						new Metadata(
 								name, 
 								val->get_value().get().qstring())));
 			}
@@ -927,7 +930,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 		qWarning() << "There should be always one totalReconstructionPole in the feature.";
 		return;
 	}
-	GPlatesPropertyValues::GpmlTotalReconstructionPole *trs = 
+	GPlatesPropertyValues::GpmlFiniteRotation *trs = 
 		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(**iters[0]));
 	if(trs)
 	{
@@ -1059,7 +1062,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 	}
 	TopLevelProperty::non_null_ptr_type trp_copy = (*iters[0])->clone();
 	
-	GPlatesPropertyValues::GpmlTotalReconstructionPole *gpml_trp = 
+	GPlatesPropertyValues::GpmlFiniteRotation *gpml_trp = 
 		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(*trp_copy));
 	if(!gpml_trp)
 	{
@@ -1095,7 +1098,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 }
 
 
-GPlatesPropertyValues::GpmlTotalReconstructionPole *
+GPlatesPropertyValues::GpmlFiniteRotation *
 GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 		GPlatesModel::PropertyValue::non_null_ptr_type val)
 {
@@ -1115,15 +1118,15 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 		end = irreg_sampling_const->time_samples().end();
 	
 	static const double EPSILON = 1.0e-6; // I have to use a less tight precision because of qt.
-	GpmlTotalReconstructionPole *trs = NULL;
+	GpmlFiniteRotation *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
 		if(std::fabs(iter->get()->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
-			trs = dynamic_cast<GpmlTotalReconstructionPole *>(iter->get()->value().get());
+			trs = dynamic_cast<GpmlFiniteRotation *>(iter->get()->value().get());
 			if(!trs)
 			{
-				qWarning() << "The time sample is not GpmlTotalReconstructionPole type.";
+				qWarning() << "The time sample is not GpmlFiniteRotation type.";
 				return NULL;
 			}
 			GPlatesFileIO::RotationPoleData pole_data(trs->get_finite_rotation(), 0, 0, time.toDouble());

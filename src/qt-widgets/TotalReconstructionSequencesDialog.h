@@ -196,10 +196,6 @@ namespace GPlatesQtWidgets
 				GPlatesModel::TopLevelProperty::non_null_ptr_type trs);
 
 		bool
-		is_grot_sequence(
-				GPlatesModel::FeatureHandle::weak_ref);
-
-		bool
 		has_metadata(
 				GPlatesModel::FeatureCollectionHandle::weak_ref);
 

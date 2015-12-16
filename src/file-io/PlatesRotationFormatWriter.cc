@@ -344,23 +344,14 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
-	d_accum.current_pole().finite_rotation = gpml_finite_rotation.get_finite_rotation();
-}
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_total_reconstruction_pole(
-		const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
-{
 	d_accum.current_pole().metadata = std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type>();
-	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata =
-			gpml_total_reconstruction_pole.get_metadata();
-	for(std::size_t i = 0; i < metadata.size(); ++i)
+	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata = gpml_finite_rotation.get_metadata();
+	for (std::size_t i = 0; i < metadata.size(); ++i)
 	{
 		d_accum.current_pole().metadata->push_back(metadata[i]);
 	}
 
-	visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
+	d_accum.current_pole().finite_rotation = gpml_finite_rotation.get_finite_rotation();
 }
 
 

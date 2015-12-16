@@ -30,12 +30,13 @@
 
 #include <boost/optional.hpp>
 
+#include "maths/FiniteRotation.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
+
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
-#include "maths/FiniteRotation.h"
 
 
 namespace GPlatesFeatureVisitors

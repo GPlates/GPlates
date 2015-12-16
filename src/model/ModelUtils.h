@@ -113,14 +113,10 @@ namespace GPlatesModel
 
 		/**
 		 * Create a total reconstruction pole property.
-		 *
-		 * If @a enable_metadata is true then a @a GpmlTotalReconstructionPole is is used (in time samples)
-		 * (since supports metadata), otherwise its base class @a GpmlFiniteRotation is used.
 		 */
 		const TopLevelProperty::non_null_ptr_type
 		create_total_reconstruction_pole(
-				const std::vector<TotalReconstructionPole> &five_tuples,
-				bool enable_metadata = true);
+				const std::vector<TotalReconstructionPole> &five_tuples);
 
 
 		const FeatureHandle::weak_ref
@@ -134,14 +130,10 @@ namespace GPlatesModel
 
 		/**
 		 * Create a total reconstruction pole time sample.
-		 *
-		 * If @a enable_metadata is true then a @a GpmlTotalReconstructionPole is is used
-		 * (since supports metadata), otherwise its base class @a GpmlFiniteRotation is used.
 		 */
 		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_gml_time_sample(
-				const ModelUtils::TotalReconstructionPole &trp,
-				bool enable_metadata = true);
+				const ModelUtils::TotalReconstructionPole &trp);
 
 
 

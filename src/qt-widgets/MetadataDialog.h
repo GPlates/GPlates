@@ -38,9 +38,12 @@
 #include "AddCreatorWidgetUi.h"
 #include "AddGTSWidgetUi.h"
 #include "MetadataDialogUi.h"
+
 #include "file-io/PlatesRotationFileProxy.h"
-#include "model/Metadata.h"
+
 #include "model/FeatureHandle.h"
+#include "model/Metadata.h"
+
 
 namespace GPlatesModel
 {
@@ -49,7 +52,7 @@ namespace GPlatesModel
 
 namespace GPlatesPropertyValues
 {
-	class GpmlTotalReconstructionPole;
+	class GpmlFiniteRotation;
 }
 
 namespace GPlatesQtWidgets
@@ -474,7 +477,7 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::MetadataContainer&,
 				const GPlatesModel::MetadataContainer&);
 
-		GPlatesPropertyValues::GpmlTotalReconstructionPole *
+		GPlatesPropertyValues::GpmlFiniteRotation *
 		get_gpml_total_reconstruction_pole(
 				GPlatesModel::PropertyValue::non_null_ptr_type);
 

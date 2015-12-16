@@ -31,12 +31,14 @@
 
 #include <boost/optional.hpp>
 
+#include "maths/FiniteRotation.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
+
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
-#include "maths/FiniteRotation.h"
+
 
 namespace GPlatesFileIO
 {
@@ -88,11 +90,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
@@ -123,19 +120,19 @@ namespace GPlatesFeatureVisitors
 				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		/**
-		 * Update the pole metadata in an existing GpmlTotalReconstructionPole time sample
+		 * Update the pole metadata in an existing GpmlFiniteRotation time sample
 		 * (time coincides with existing time sample).
 		 */
 		void
 		update_pole_metadata(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		/**
-		 * Set/modify the pole metadata in a GpmlTotalReconstructionPole.
+		 * Set/modify the pole metadata in a GpmlFiniteRotation.
 		 */
 		void
 		set_pole_metadata(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 	};
 }
 

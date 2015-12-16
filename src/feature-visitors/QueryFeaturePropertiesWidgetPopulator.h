@@ -134,21 +134,6 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_finite_rotation(
-				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
-		virtual
-		void
 		visit_gpml_key_value_dictionary(
 				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 

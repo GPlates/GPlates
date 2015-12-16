@@ -39,12 +39,12 @@
 #include "maths/FiniteRotation.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/Metadata.h"
 #include "model/PropertyName.h"
 
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 
 namespace GPlatesPropertyValues
@@ -91,11 +91,6 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_finite_rotation(
 				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
 
 		virtual
 		void

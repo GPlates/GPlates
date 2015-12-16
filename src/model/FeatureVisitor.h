@@ -79,7 +79,6 @@ namespace GPlatesPropertyValues
 	class GpmlRevisionId;
 	class GpmlScalarField3DFile;
 	class GpmlStringList;
-	class GpmlTotalReconstructionPole;
 	class GpmlTopologicalNetwork;
 	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
@@ -229,7 +228,6 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsInteger>::type xs_integer_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsString>::type xs_string_type;
-		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTotalReconstructionPole>::type gpml_total_reconstruction_pole_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlMetadata>::type gpml_metadata_type;
 		/**
 		 * Destructor.
@@ -629,11 +627,6 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
-
-		virtual
-		void
 		visit_old_version_property_value(
 				old_version_property_value_type &old_version_prop_val) 
 		{  }
@@ -867,24 +860,6 @@ namespace GPlatesModel
 			(*iter)->accept_visitor(*this);
 		}
 	}
-
-
-	// Template specialisations are in .cc file.
-	//
-	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
-	template<>
-	void
-	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
-
-
-	// Template specialisations are in .cc file.
-	//
-	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
-	template<>
-	void
-	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 
 	// Private methods ///////////////////////////////////////////////////////////

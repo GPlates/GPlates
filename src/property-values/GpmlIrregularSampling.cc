@@ -30,7 +30,7 @@
 
 #include "GpmlIrregularSampling.h"
 
-#include "GpmlTotalReconstructionPole.h"
+#include "GpmlFiniteRotation.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -151,8 +151,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	//first, remove all DISABLED_SEQUENCE_FLAG
 	BOOST_FOREACH(GpmlTimeSample::non_null_ptr_type sample, samples)
 	{
-		GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(sample->value().get());
+		GpmlFiniteRotation *trs_pole = dynamic_cast<GpmlFiniteRotation *>(sample->value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
@@ -169,8 +168,8 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	}
 
 	//then add new DISABLED_SEQUENCE_FLAG
-	GpmlTotalReconstructionPole *first_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(samples[0].get()->value().get());
+	GpmlFiniteRotation *first_pole = 
+			dynamic_cast<GpmlFiniteRotation *>(samples[0].get()->value().get());
 	if(flag && first_pole)
 	{
 		MetadataContainer first_pole_meta_data = first_pole->get_metadata();
@@ -196,8 +195,8 @@ GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() 
 
 	BOOST_FOREACH(GpmlTimeSample::non_null_ptr_to_const_type sample, samples)
 	{
-		const GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<const GpmlTotalReconstructionPole *>(sample->value().get());
+		const GpmlFiniteRotation *trs_pole = 
+			dynamic_cast<const GpmlFiniteRotation *>(sample->value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
