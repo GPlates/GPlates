@@ -1287,25 +1287,16 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_rotation_file_proxy(
 GPlatesFileIO::PlatesRotationFileProxy*
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_rotation_file_proxy()
 {
-    try
+	GPlatesFileIO::File::Reference &file_ref = get_current_file_ref();
+	QString filename = file_ref.get_file_info().get_display_name(false);
+    if (!filename.endsWith(".grot"))
     {
-		GPlatesFileIO::File::Reference &file_ref = get_current_file_ref();
-		QString fn = file_ref.get_file_info().get_display_name(false);
-        if(fn.endsWith(".grot"))
-        {
-			return get_rotation_file_proxy(file_ref);
-		}
-		throw GPlatesGlobal::LogException(
-				GPLATES_EXCEPTION_SOURCE, 
-				"The current rotaion file is not in a .grot file.");
-    }
-    catch(GPlatesGlobal::LogException &e)
-    {
-        std::ostringstream ostr;
-        e.write(ostr);
-        qDebug() << ostr.str().c_str();
-        return NULL;
-    }
+		// '.rot' files don't have a rotation proxy.
+		// Soon both file types will have the equivalent of a rotation proxy.
+		return NULL;
+	}
+
+	return get_rotation_file_proxy(file_ref);
 }
 
 
