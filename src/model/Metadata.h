@@ -31,6 +31,7 @@
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/operators.hpp>
 
 #include <QString>
 
@@ -572,7 +573,8 @@ namespace GPlatesModel
 		}
 	};
 		
-	class Metadata
+	class Metadata :
+			public boost::equality_comparable<Metadata>
 	{
 	public:
 		typedef boost::shared_ptr<GPlatesModel::Metadata> shared_ptr_type;
@@ -591,44 +593,49 @@ namespace GPlatesModel
 			d_content(other.d_content)
 		{ }
 
-		virtual
-		~Metadata()
-		{ }
-
-		virtual
 		const shared_ptr_type
 		clone() const
 		{
 			return shared_ptr_type(new Metadata(*this));
 		}
 
-		virtual
 		QString
 		get_name() const 
 		{
 			return d_name;
 		}
 
-		virtual
 		QString&
 		get_name()  
 		{
 			return d_name;
 		}
 
-		virtual
 		const QString&
 		get_content() const 
 		{
 			return d_content;
 		}
 
-		virtual
 		QString&
 		get_content()  
 		{
 			return d_content;
 		}
+
+		/**
+		 * Equality comparison operator.
+		 *
+		 * Inequality provided by boost equality_comparable.
+		 */
+		bool
+		operator==(
+				const Metadata &other) const
+		{
+			return d_name == other.d_name &&
+					d_content == other.d_content;
+		}
+
 
 		static const QString DISABLED_SEQUENCE_FLAG;
 		static const QString DELETE_MARK;
@@ -639,30 +646,13 @@ namespace GPlatesModel
 
 	typedef std::vector<Metadata::shared_ptr_type> MetadataContainer;
 
-	class PoleMetadata:
-			public Metadata
-	{
-	public:
 
-		PoleMetadata(
-				const QString& name,
-				const QString& content) :
-			Metadata(name, content)
-		{ }
-
-		PoleMetadata(
-				const PoleMetadata &other) :
-			Metadata(other)
-		{ }
-
-		virtual
-		const Metadata::shared_ptr_type
-		clone() const
-		{
-			return shared_ptr_type(new PoleMetadata(*this));
-		}
-	};
-
+	/**
+	 * Read rotation pole metadata from a 'gpml:TotalReconstructionPole' structural element.
+	 */
+	MetadataContainer
+	create_metadata_from_gpml(
+			XmlElementNode::non_null_ptr_type total_reconstruction_pole_element);
 
 	inline
 	MetadataContainer::iterator 
