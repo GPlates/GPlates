@@ -69,7 +69,6 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
 #include "property-values/ValueObjectType.h"
 
@@ -703,7 +702,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_feature_snapsh
 
 GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesModel::XmlElementNode::non_null_ptr_type parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		ReadErrorAccumulation &read_errors)
 {
@@ -715,71 +714,57 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 		TOTAL_RECONSTRUCTION_POLE = 
 			GPlatesModel::XmlElementName::create_gpml("TotalReconstructionPole");
 	
-	if (parent->number_of_children() > 1) {
+	if (parent->number_of_children() > 1)
+	{
 		// Too many children!
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 				parent, GPlatesFileIO::ReadErrors::TooManyChildrenInElement,
 				EXCEPTION_SOURCE);
 	}
 
-	bool is_trp = false;
-	GPlatesModel::XmlElementNode::non_null_ptr_type xml_elem = parent; 
-	boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type > structural_elem = 
+	GPlatesModel::MetadataContainer metadata;
+
+	// Determine if a 'gpml:TotalReconstructionPole' (contains rotation metadata).
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> total_reconstruction_pole = 
 		parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE);
-	if (structural_elem) {
-		is_trp = true;
-		xml_elem = *structural_elem;
+	if (total_reconstruction_pole)
+	{
+		metadata = create_metadata_from_gpml(total_reconstruction_pole.get());
+
+		// 'gpml:ZeroFiniteRotation' or 'gpml:AxisAngleFiniteRotation' are inside the
+		// total reconstruction pole.
+		parent = total_reconstruction_pole.get();
 	}
 
-	boost::optional<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type> finite_rotation;
-
-	structural_elem = xml_elem->get_child_by_name(ZERO_FINITE_ROTATION);
-	if (structural_elem)
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> zero_finite_rotation =
+			parent->get_child_by_name(ZERO_FINITE_ROTATION);
+	if (zero_finite_rotation)
 	{
-		finite_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation();
-	}
-	else
-	{
-		structural_elem = xml_elem->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
-		if (structural_elem)
-		{
-			static const GPlatesModel::XmlElementName
-					EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
-					ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
-			
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
-					find_and_create_one(structural_elem.get(), &create_gml_point,
-							EULER_POLE, gpml_version, read_errors);
-			GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
-					find_and_create_one(structural_elem.get(), &create_gpml_measure,
-							ANGLE, gpml_version, read_errors);
-			finite_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle);
-		}
+		return GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation(metadata);
 	}
 
-	if (!finite_rotation)
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> axis_angle_finite_rotation =
+			parent->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
+	if (axis_angle_finite_rotation)
 	{
-		// Invalid child!
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
-				EXCEPTION_SOURCE);
+		static const GPlatesModel::XmlElementName
+				EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
+				ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
+		
+		GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
+				find_and_create_one(axis_angle_finite_rotation.get(), &create_gml_point,
+						EULER_POLE, gpml_version, read_errors);
+		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
+				find_and_create_one(axis_angle_finite_rotation.get(), &create_gpml_measure,
+						ANGLE, gpml_version, read_errors);
+
+		return GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle, metadata);
 	}
-	else
-	{
-		if (is_trp)
-		{
-			return GPlatesPropertyValues::GpmlTotalReconstructionPole::create(
-					finite_rotation.get()->get_finite_rotation(),
-					*parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE));
-		}
-		else
-		{
-			// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
-			// the former also supports pole metadata (which can remain empty if not needed/used).
-			return GPlatesPropertyValues::GpmlTotalReconstructionPole::create(
-					finite_rotation.get()->get_finite_rotation());
-		}
-	}
+
+	// Invalid child!
+	throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+			parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+			EXCEPTION_SOURCE);
 }
 
 

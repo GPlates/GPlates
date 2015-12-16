@@ -274,7 +274,7 @@ namespace GPlatesFileIO
 
 		GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 		create_gpml_finite_rotation(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				GPlatesModel::XmlElementNode::non_null_ptr_type elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
 
