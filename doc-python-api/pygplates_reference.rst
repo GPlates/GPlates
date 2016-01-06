@@ -135,6 +135,13 @@ Functions to find and fix finite rotation crossovers (transitions of fixed plate
 Plate Partitioning
 ------------------
 
+Functions to partition into plates:
+
+.. autosummary::
+   :toctree: generated
+   
+   pygplates.partition_into_plates
+
 Classes to partition into plates:
 
 .. autosummary::

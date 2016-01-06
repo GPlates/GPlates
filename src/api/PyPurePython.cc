@@ -108,6 +108,7 @@ export_pure_python_api()
 	export_pure_python_code(":/python/api/Crossovers.py");
 	export_pure_python_code(":/python/api/Feature.py");
 	export_pure_python_code(":/python/api/GeometriesOnSphere.py");
+	export_pure_python_code(":/python/api/PlatePartitioning.py");
 	export_pure_python_code(":/python/api/Property.py");
 	export_pure_python_code(":/python/api/PropertyValues.py");
 }
