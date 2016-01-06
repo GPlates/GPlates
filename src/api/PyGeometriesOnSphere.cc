@@ -36,6 +36,7 @@
 #include "PyGeometriesOnSphere.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -47,7 +48,6 @@
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/slice.hpp>
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/AngularDistance.h"
 #include "maths/AngularExtent.h"
@@ -143,51 +143,18 @@ bool
 GPlatesApi::PointSequenceFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
-	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
-	try
+	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+	if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(python_function_argument).check() ||
+		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(python_function_argument).check() ||
+		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(python_function_argument).check() ||
+		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(python_function_argument).check())
 	{
-		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-		if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(python_function_argument).check() ||
-			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(python_function_argument).check() ||
-			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(python_function_argument).check() ||
-			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(python_function_argument).check())
-		{
-			return true;
-		}
-
-		// Else it's a boost::python::object so we're expecting it to be a sequence of
-		// points which requires further checking.
-
-		const bp::object sequence = python_function_argument;
-
-		// Iterate over the sequence of points.
-		//
-		// NOTE: We avoid iterating using 'bp::stl_input_iterator<GPlatesMaths::PointOnSphere>'
-		// because we want to avoid actually extracting the points.
-		// We're just checking if there's a sequence of points here.
-		bp::object iter = sequence.attr("__iter__")();
-		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
-		{
-			if (!bp::extract<GPlatesMaths::PointOnSphere>(bp::object(item)).check())
-			{
-				return false;
-			}
-		}
-
-		if (PyErr_Occurred())
-		{
-			PyErr_Clear();
-			return false;
-		}
-
 		return true;
 	}
-	catch (const bp::error_already_set &)
-	{
-		PyErr_Clear();
-	}
 
-	return false;
+	// Else it's a boost::python::object so we're expecting it to be a sequence of
+	// points which requires further checking.
+	return PythonExtractUtils::check_sequence<GPlatesMaths::PointOnSphere>(python_function_argument);
 }
 
 
@@ -242,13 +209,7 @@ GPlatesApi::PointSequenceFunctionArgument::initialise_points(
 		boost::shared_ptr<point_seq_type> points(new point_seq_type());
 
 		const bp::object sequence = boost::get<bp::object>(function_argument);
-
-		bp::stl_input_iterator<GPlatesMaths::PointOnSphere> points_iter(sequence);
-		bp::stl_input_iterator<GPlatesMaths::PointOnSphere> points_end;
-		for ( ; points_iter != points_end; ++points_iter)
-		{
-			points->push_back(*points_iter);
-		}
+		PythonExtractUtils::extract_sequence(*points, sequence);
 
 		return points;
 	}
@@ -642,26 +603,16 @@ namespace GPlatesApi
 
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
-			// If the check fails then we'll catch a python exception and return NULL.
-			try
+			// Is a sequence containing floats ?
+			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(py_obj);
+			if (!sequence_size)
 			{
-				// A sequence containing floats.
-				bp::stl_input_iterator<double>
-						float_seq_begin(py_obj),
-						float_seq_end;
-
-				// Copy into a vector.
-				std::vector<double> float_vector;
-				std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
-				if (float_vector.size() != 2 && // (lat,lon)
-					float_vector.size() != 3)   // (x,y,z)
-				{
-					return NULL;
-				}
+				return NULL;
 			}
-			catch (const boost::python::error_already_set &)
+
+			if (sequence_size.get() != 2 && // (lat,lon)
+				sequence_size.get() != 3)   // (x,y,z)
 			{
-				PyErr_Clear();
 				return NULL;
 			}
 
@@ -678,14 +629,9 @@ namespace GPlatesApi
 
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
-			// A sequence containing floats.
-			bp::stl_input_iterator<double>
-					float_seq_begin(py_obj),
-					float_seq_end;
-
 			// Copy into a vector.
 			std::vector<double> float_vector;
-			std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
+			PythonExtractUtils::extract_sequence(float_vector, py_obj);
 
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<GPlatesMaths::PointOnSphere> *>(
@@ -1050,17 +996,12 @@ namespace GPlatesApi
 	multi_point_on_sphere_create_from_points(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
-		// Begin/end iterators over the python points sequence.
-		bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
-				points_begin(points),
-				points_end;
-
 		// Copy into a vector.
 		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create_on_heap'
 		// because they are *input* iterators (ie, one pass only) and 'MultiPointOnSphere' expects
 		// forward iterators (it actually makes two passes over the points).
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
-		std::copy(points_begin, points_end, std::back_inserter(points_vector));
+		PythonExtractUtils::extract_iterable(points_vector, points, "Expected a sequence of points");
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -1356,18 +1297,13 @@ namespace GPlatesApi
 	poly_geometry_on_sphere_create_from_points(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
-		// Begin/end iterators over the python points sequence.
-		bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
-				points_begin(points),
-				points_end;
-
 		// Copy into a vector.
 		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create_on_heap' or
 		// 'PolygonOnSphere::create_on_heap' because they are *input* iterators (ie, one pass only)
 		// and 'PolylineOnSphere/PolygonOnSphere' expects forward iterators (they actually makes
 		// two passes over the points).
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
-		std::copy(points_begin, points_end, std::back_inserter(points_vector));
+		PythonExtractUtils::extract_iterable(points_vector, points, "Expected a sequence of points");
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -1819,24 +1755,11 @@ namespace GPlatesApi
 		{
 			// Attempt to extract a sequence of interpolate ratios.
 			std::vector<double> interpolate_ratios;
-			try
-			{
-				bp::stl_input_iterator<double>
-						interpolate_ratio_seq_begin(interpolate_object),
-						interpolate_ratio_seq_end;
-
-				// Copy into a sequence.
-				std::copy(interpolate_ratio_seq_begin, interpolate_ratio_seq_end, std::back_inserter(interpolate_ratios));
-			}
-			catch (const boost::python::error_already_set &)
-			{
-				PyErr_Clear();
-
-				PyErr_SetString(PyExc_TypeError,
-						"Expected an interpolate resolution (float) or "
-						"a sequence of interpolate ratios (eg, list or tuple of float)");
-				bp::throw_error_already_set();
-			}
+			PythonExtractUtils::extract_iterable(
+					interpolate_ratios,
+					interpolate_object,
+					"Expected an interpolate resolution (float) or "
+					"a sequence of interpolate ratios (eg, list or tuple of float)");
 
 			if (!GPlatesMaths::interpolate(
 					interpolated_polylines,

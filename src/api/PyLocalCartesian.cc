@@ -32,15 +32,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include "PyGeometriesOnSphere.h"
+#include "PythonExtractUtils.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/CartesianConvMatrix3D.h"
 #include "maths/PointOnSphere.h"
@@ -61,12 +59,7 @@ namespace GPlatesApi
 				std::vector<GPlatesMaths::Vector3D> &vectors,
 				bp::object vectors_object)
 		{
-			// Begin/end iterators over the python vectors sequence.
-			bp::stl_input_iterator<GPlatesMaths::Vector3D>
-					vectors_begin(vectors_object),
-					vectors_end;
-			// Copy into a vector.
-			std::copy(vectors_begin, vectors_end, std::back_inserter(vectors));
+			PythonExtractUtils::extract_iterable(vectors, vectors_object, "Expected a sequence of vectors");
 		}
 
 		void
@@ -88,17 +81,15 @@ namespace GPlatesApi
 		extract_magnitude_azimuth_inclination(
 				bp::object magnitude_azimuth_inclination_sequence)
 		{
-			// Begin/end iterators over the python sequence.
-			bp::stl_input_iterator<GPlatesMaths::Real>
-					reals_begin(magnitude_azimuth_inclination_sequence),
-					reals_end;
+			const char *type_error_string = "Expected a (magnitude, azimuth, inclination)";
 
 			// Copy into a vector.
 			std::vector<GPlatesMaths::Real> real_vector;
-			std::copy(reals_begin, reals_end, std::back_inserter(real_vector));
+			PythonExtractUtils::extract_iterable(real_vector, magnitude_azimuth_inclination_sequence, type_error_string);
+
 			if (real_vector.size() != 3)
 			{
-				PyErr_SetString(PyExc_TypeError, "Expected a sequence of (magnitude, azimuth, inclination)");
+				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
 
@@ -115,17 +106,12 @@ namespace GPlatesApi
 										magnitude_azimuth_inclination_tuples,
 				bp::object magnitude_azimuth_inclination_tuple_sequence)
 		{
-			// Begin/end iterators over the python tuples sequence.
-			bp::stl_input_iterator<bp::object>
-					magnitude_azimuth_inclination_tuples_begin(magnitude_azimuth_inclination_tuple_sequence),
-					magnitude_azimuth_inclination_tuples_end;
-
 			// Copy into a vector.
 			std::vector<bp::object> magnitude_azimuth_inclinations;
-			std::copy(
-					magnitude_azimuth_inclination_tuples_begin,
-					magnitude_azimuth_inclination_tuples_end,
-					std::back_inserter(magnitude_azimuth_inclinations));
+			PythonExtractUtils::extract_iterable(
+					magnitude_azimuth_inclinations,
+					magnitude_azimuth_inclination_tuple_sequence,
+					"Expected a sequence of (magnitude, azimuth, inclination)");
 
 			BOOST_FOREACH(bp::object magnitude_azimuth_inclination, magnitude_azimuth_inclinations)
 			{

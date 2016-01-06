@@ -32,6 +32,7 @@
 #include "PyPlatePartitioner.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "app-logic/GeometryCookieCutter.h"
@@ -42,9 +43,6 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/MathsUtils.h"
 
@@ -61,17 +59,12 @@ namespace GPlatesApi
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
 	{
-		// Begin/end iterators over the python partitioning plates sequence.
-		bp::stl_input_iterator<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
-				partitioning_plates_begin(partitioning_plates),
-				partitioning_plates_end;
-
-		// Copy into a vector.
+		// Copy partitioning plates into a vector.
 		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> partitioning_plates_vector;
-		std::copy(
-				partitioning_plates_begin,
-				partitioning_plates_end,
-				std::back_inserter(partitioning_plates_vector));
+		PythonExtractUtils::extract_iterable(
+				partitioning_plates_vector,
+				partitioning_plates,
+				"Expected a sequence of ReconstructionGeometry");
 
 		// If there happen to be no partitioning plates then default the reconstruction time to zero.
 		const double reconstruction_time = !partitioning_plates_vector.empty()

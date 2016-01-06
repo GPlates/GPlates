@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
@@ -39,7 +40,6 @@
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/slice.hpp>
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
@@ -82,25 +82,15 @@ namespace GPlatesApi
 
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
-			// If the check fails then we'll catch a python exception and return NULL.
-			try
+			// Is a sequence containing floats ?
+			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(py_obj);
+			if (!sequence_size)
 			{
-				// A sequence containing floats.
-				bp::stl_input_iterator<double>
-						float_seq_begin(py_obj),
-						float_seq_end;
-
-				// Copy into a vector.
-				std::vector<double> float_vector;
-				std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
-				if (float_vector.size() != 3)   // (x,y,z)
-				{
-					return NULL;
-				}
+				return NULL;
 			}
-			catch (const boost::python::error_already_set &)
+
+			if (sequence_size.get() != 3)   // (x,y,z)
 			{
-				PyErr_Clear();
 				return NULL;
 			}
 
@@ -117,14 +107,9 @@ namespace GPlatesApi
 
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
-			// A sequence containing floats.
-			bp::stl_input_iterator<double>
-					float_seq_begin(py_obj),
-					float_seq_end;
-
 			// Copy into a vector.
 			std::vector<double> float_vector;
-			std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
+			PythonExtractUtils::extract_sequence(float_vector, py_obj);
 
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<GPlatesMaths::Vector3D> *>(

@@ -33,12 +33,10 @@
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -101,23 +99,10 @@ namespace GPlatesApi
 
 		// Try a sequence of filenames next.
 		std::vector<QString> filenames;
-		try
-		{
-			// Begin/end iterators over the python filename sequence.
-			bp::stl_input_iterator<QString>
-					filenames_begin(filename_object),
-					filenames_end;
-
-			// Copy into a vector of filenames.
-			std::copy(filenames_begin, filenames_end, std::back_inserter(filenames));
-		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, "Expected a filename or sequence of filenames");
-			bp::throw_error_already_set();
-		}
+		PythonExtractUtils::extract_iterable(
+				filenames,
+				filename_object,
+				"Expected a filename or sequence of filenames");
 
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
 		read_feature_collections(feature_collections, registry, filenames);
@@ -209,8 +194,7 @@ export_feature_collection_file_format_registry()
 				"default file formats supported by GPlates.\n"
 				"  ::\n"
 				"\n"
-				"    feature_collection_file_format_registry = "
-				"pygplates.FeatureCollectionFileFormatRegistry()\n")
+				"    feature_collection_file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()\n")
 		.def("read",
 				&GPlatesApi::feature_collection_file_format_registry_read,
 				(bp::arg("filename")),
@@ -237,7 +221,9 @@ export_feature_collection_file_format_registry()
 				"        ...\n"
 				"\n"
 				"  .. note:: The returned *feature collection* may contain fewer features than are "
-				"stored in the file if there were read errors. *TODO:* return read errors.\n")
+				"stored in the file if there were read errors. *TODO:* return read errors.\n"
+				"\n"
+				"  .. seealso:: :meth:`FeatureCollection.read`\n")
 		.def("write",
 				&GPlatesApi::write_feature_collection,
 				(bp::arg("feature_collection"), bp::arg("filename")),
@@ -262,7 +248,9 @@ export_feature_collection_file_format_registry()
 				"        ...\n"
 				"    except pygplates.FileFormatNotSupportedError:\n"
 				"        # Handle unsupported file format (for writing).\n"
-				"        ...\n")
+				"        ...\n"
+				"\n"
+				"  .. seealso:: :meth:`FeatureCollection.write`\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

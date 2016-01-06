@@ -38,6 +38,7 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "global/CompilerWarnings.h"
@@ -46,7 +47,6 @@
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/slice.hpp>
-#include <boost/python/stl_iterator.hpp>
 
 #include "model/RevisionedVector.h"
 
@@ -560,13 +560,9 @@ namespace GPlatesApi
 			bp::extract<bp::slice> extract_slice(i);
 			if (extract_slice.check())
 			{
-				// Begin/end iterators over the python sequence.
-				bp::stl_input_iterator<element_type>
-						new_elements_begin(v),
-						new_elements_end;
-
 				// Copy the new elements into a vector so we can count the number of new elements.
-				const std::vector<element_type> new_elements(new_elements_begin, new_elements_end);
+				std::vector<element_type> new_elements;
+				PythonExtractUtils::extract_iterable(new_elements, v, "Expected a sequence of elements");
 
 				const bp::slice slice_object = extract_slice;
 				boost::optional<bp::slice::range<iterator_type> >
@@ -878,17 +874,15 @@ namespace GPlatesApi
 
 			revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
 
-			// Begin/end iterators over the python sequence.
-			bp::stl_input_iterator<element_type>
-					new_elements_begin(sequence),
-					new_elements_end;
+			std::vector<element_type> new_elements;
+			PythonExtractUtils::extract_iterable(new_elements, sequence, "Expected a sequence of elements");
 
 			// Insert the new elements.
 			concat_revisioned_vector->insert(
 					// Insert at the *end* ...
 					concat_revisioned_vector->end(),
-					new_elements_begin,
-					new_elements_end);
+					new_elements.begin(),
+					new_elements.end());
 
 			return concat_revisioned_vector;
 		}
@@ -904,17 +898,15 @@ namespace GPlatesApi
 
 			revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
 
-			// Begin/end iterators over the python sequence.
-			bp::stl_input_iterator<element_type>
-					new_elements_begin(sequence),
-					new_elements_end;
+			std::vector<element_type> new_elements;
+			PythonExtractUtils::extract_iterable(new_elements, sequence, "Expected a sequence of elements");
 
 			// Insert the new elements.
 			concat_revisioned_vector->insert(
 					// Insert at the *beginning* ...
 					concat_revisioned_vector->begin(),
-					new_elements_begin,
-					new_elements_end);
+					new_elements.begin(),
+					new_elements.end());
 
 			return concat_revisioned_vector;
 		}
@@ -928,17 +920,15 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			// Begin/end iterators over the python sequence.
-			bp::stl_input_iterator<element_type>
-					new_elements_begin(sequence),
-					new_elements_end;
+			std::vector<element_type> new_elements;
+			PythonExtractUtils::extract_iterable(new_elements, sequence, "Expected a sequence of elements");
 
 			// Insert the new elements.
 			revisioned_vector->insert(
 					// Insert at the *end* ...
 					revisioned_vector->end(),
-					new_elements_begin,
-					new_elements_end);
+					new_elements.begin(),
+					new_elements.end());
 
 			return revisioned_vector;
 		}

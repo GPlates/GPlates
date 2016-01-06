@@ -34,9 +34,6 @@
 #include "PythonHashDefVisitor.h"
 
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/FiniteRotation.h"
 #include "maths/UnitQuaternion3D.h"

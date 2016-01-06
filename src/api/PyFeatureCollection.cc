@@ -35,15 +35,13 @@
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
@@ -188,27 +186,13 @@ namespace GPlatesApi
 		}
 
 		// Try a sequence of features next.
-		try
+		std::vector<GPlatesModel::FeatureHandle::non_null_ptr_type> features;
+		PythonExtractUtils::extract_iterable(features, feature_object, "Expected Feature or sequence of Feature's");
+
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, features)
 		{
-			// Begin/end iterators over the python feature sequence.
-			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
-					features_iter(feature_object),
-					features_end;
-
-			for ( ; features_iter != features_end; ++features_iter)
-			{
-				feature_collection_handle.add(*features_iter);
-			}
-
-			return;
+			feature_collection_handle.add(feature);
 		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
-		}
-
-		PyErr_SetString(PyExc_TypeError, "Expected Feature or sequence of Feature's");
-		bp::throw_error_already_set();
 	}
 
 	void
@@ -317,23 +301,7 @@ namespace GPlatesApi
 		// Try an iterable sequence next.
 		typedef std::vector<bp::object> feature_queries_seq_type;
 		feature_queries_seq_type feature_queries_seq;
-		try
-		{
-			// Begin/end iterators over the python feature queries sequence.
-			bp::stl_input_iterator<bp::object>
-					feature_queries_begin(feature_query_object),
-					feature_queries_end;
-
-			// Copy into the vector.
-			std::copy(feature_queries_begin, feature_queries_end, std::back_inserter(feature_queries_seq));
-		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		PythonExtractUtils::extract_iterable(feature_queries_seq, feature_query_object, type_error_string);
 
 		typedef std::vector<GPlatesModel::FeatureType> feature_types_seq_type;
 		feature_types_seq_type feature_types_seq;
@@ -807,50 +775,17 @@ bool
 GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
-	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
-	try
+	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+	if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
+		bp::extract<QString>(python_function_argument).check() ||
+		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument).check())
 	{
-		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
-			bp::extract<QString>(python_function_argument).check() ||
-			bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument).check())
-		{
-			return true;
-		}
-
-		// Else it's a boost::python::object so we're expecting it to be a sequence of
-		// GPlatesModel::FeatureHandle::non_null_ptr_type's which requires further checking.
-
-		const bp::object sequence = python_function_argument;
-
-		// Iterate over the sequence of features.
-		//
-		// NOTE: We avoid iterating using 'bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>'
-		// because we want to avoid actually extracting the features.
-		// We're just checking if there's a sequence of features here.
-		bp::object iter = sequence.attr("__iter__")();
-		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
-		{
-			if (!bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(bp::object(item)).check())
-			{
-				return false;
-			}
-		}
-
-		if (PyErr_Occurred())
-		{
-			PyErr_Clear();
-			return false;
-		}
-
 		return true;
 	}
-	catch (const bp::error_already_set &)
-	{
-		PyErr_Clear();
-	}
 
-	return false;
+	// Else it's a boost::python::object so we're expecting it to be a sequence of
+	// GPlatesModel::FeatureHandle::non_null_ptr_type's which requires further checking.
+	return PythonExtractUtils::check_sequence<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument);
 }
 
 
@@ -917,12 +852,12 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::create();
 
 		const bp::object sequence = boost::get<bp::object>(function_argument);
+		std::vector<GPlatesModel::FeatureHandle::non_null_ptr_type> features;
+		PythonExtractUtils::extract_sequence(features, sequence);
 
-		bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type> features_iter(sequence);
-		bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type> features_end;
-		for ( ; features_iter != features_end; ++features_iter)
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, features)
 		{
-			feature_collection->add(*features_iter);
+			feature_collection->add(feature);
 		}
 
 		// Create a file with an empty filename - since feature collection didn't come from a file.
@@ -951,48 +886,15 @@ bool
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
-	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
-	try
+	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+	if (bp::extract<FeatureCollectionFunctionArgument>(python_function_argument).check())
 	{
-		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-		if (bp::extract<FeatureCollectionFunctionArgument>(python_function_argument).check())
-		{
-			return true;
-		}
-
-		// Else it's a boost::python::object so we're expecting it to be a sequence of
-		// FeatureCollectionFunctionArgument's which requires further checking.
-
-		const bp::object sequence = python_function_argument;
-
-		// Iterate over the sequence.
-		//
-		// NOTE: We avoid iterating using 'bp::stl_input_iterator<FeatureCollectionFunctionArgument>'
-		// because we want to avoid actually reading a feature collection from a file.
-		// We're just checking if there's a feature collection or a string here.
-		bp::object iter = sequence.attr("__iter__")();
-		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
-		{
-			if (!bp::extract<FeatureCollectionFunctionArgument>(bp::object(item)).check())
-			{
-				return false;
-			}
-		}
-
-		if (PyErr_Occurred())
-		{
-			PyErr_Clear();
-			return false;
-		}
-
 		return true;
 	}
-	catch (const bp::error_already_set &)
-	{
-		PyErr_Clear();
-	}
 
-	return false;
+	// Else it's a boost::python::object so we're expecting it to be a sequence of
+	// FeatureCollectionFunctionArgument's which requires further checking.
+	return PythonExtractUtils::check_sequence<FeatureCollectionFunctionArgument>(python_function_argument);
 }
 
 
@@ -1038,12 +940,7 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 		const bp::object sequence = boost::get<bp::object>(function_argument);
 
 		// Use convenience class 'FeatureCollectionFunctionArgument' to access the feature collections.
-		bp::stl_input_iterator<FeatureCollectionFunctionArgument> feature_collections_iter(sequence);
-		bp::stl_input_iterator<FeatureCollectionFunctionArgument> feature_collections_end;
-		for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
-		{
-			feature_collections.push_back(*feature_collections_iter);
-		}
+		PythonExtractUtils::extract_sequence(feature_collections, sequence);
 	}
 }
 
@@ -1636,10 +1533,9 @@ export_feature_collection()
 				"        # Write those (modified) feature collections that came from files (if any) back to file.\n"
 				"        files = features.get_files()\n"
 				"        if files:\n"
-				"            file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()\n"
 				"            for feature_collection, filename in files:\n"
 				"                # This can raise pygplates.OpenFileForWritingError if file is not writable.\n"
-				"                file_format_registry.write(feature_collection, filename)\n"
+				"                feature_collection.write(filename)\n"
 				"    \n"
 				"    # Modify features in 'file.gpml' and 'feature_collection'.\n"
 				"    # Modified features from 'file.gpml' will get written back out to 'file.gpml'.\n"

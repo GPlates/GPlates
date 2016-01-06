@@ -55,9 +55,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/GeometryOnSphere.h"
 
@@ -879,23 +876,7 @@ namespace GPlatesApi
 		// Attempt to extract a sequence of property values.
 		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
 		property_value_seq_type property_values;
-		try
-		{
-			// A sequence containing property values.
-			bp::stl_input_iterator<GPlatesModel::PropertyValue::non_null_ptr_type>
-					property_value_seq_begin(property_value_object),
-					property_value_seq_end;
-
-			// Copy into a vector.
-			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		PythonExtractUtils::extract_iterable(property_values, property_value_object, type_error_string);
 
 		if (verify_information_model == VerifyInformationModel::NO)
 		{
@@ -974,43 +955,28 @@ namespace GPlatesApi
 			bp::object properties_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		bp::list properties;
+		bp::list properties_list;
 
 		const char *type_error_string = "Expected a sequence of (PropertyName, PropertyValue(s))";
 
-		// Begin/end iterators over the python property name/value pair sequence.
-		bp::stl_input_iterator<bp::object>
-				properties_iter(properties_object),
-				properties_end;
+		std::vector<bp::object> properties;
+		PythonExtractUtils::extract_iterable(properties, properties_object, type_error_string);
 
 		// Retrieve the (PropertyName, PropertyValue) pairs.
+		std::vector<bp::object>::const_iterator properties_iter = properties.begin();
+		std::vector<bp::object>::const_iterator properties_end = properties.end();
 		for ( ; properties_iter != properties_end; ++properties_iter)
 		{
-			std::vector<bp::object> name_value_vector;
 			// Attempt to extract the property name and value.
-			try
-			{
-				// A two-element sequence containing property name and property value(s).
-				bp::stl_input_iterator<bp::object>
-						name_value_seq_begin(*properties_iter),
-						name_value_seq_end;
-
-				// Copy into a vector.
-				std::copy(name_value_seq_begin, name_value_seq_end, std::back_inserter(name_value_vector));
-			}
-			catch (const bp::error_already_set &)
-			{
-				PyErr_Clear();
-
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
+			std::vector<bp::object> name_value_vector;
+			PythonExtractUtils::extract_iterable(name_value_vector, *properties_iter, type_error_string);
 
 			if (name_value_vector.size() != 2)   // (PropertyName, PropertyValue(s))
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
+			// A two-element sequence containing property name and property value(s).
 			const bp::object property_name_object = name_value_vector[0];
 			const bp::object property_value_object = name_value_vector[1];
 
@@ -1035,15 +1001,15 @@ namespace GPlatesApi
 			bp::extract<bp::list> extract_property_list(property);
 			if (extract_property_list.check())
 			{
-				properties.extend(extract_property_list());
+				properties_list.extend(extract_property_list());
 			}
 			else
 			{
-				properties.append(property);
+				properties_list.append(property);
 			}
 		}
 
-		return properties;
+		return properties_list;
 	}
 
 	void
@@ -1130,23 +1096,7 @@ namespace GPlatesApi
 		// Try an iterable sequence next.
 		typedef std::vector<bp::object> property_queries_seq_type;
 		property_queries_seq_type property_queries_seq;
-		try
-		{
-			// Begin/end iterators over the python property queries sequence.
-			bp::stl_input_iterator<bp::object>
-					property_queries_begin(property_query_object),
-					property_queries_end;
-
-			// Copy into the vector.
-			std::copy(property_queries_begin, property_queries_end, std::back_inserter(property_queries_seq));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		PythonExtractUtils::extract_iterable(property_queries_seq, property_query_object, type_error_string);
 
 		typedef std::vector<GPlatesModel::PropertyName> property_names_seq_type;
 		property_names_seq_type property_names_seq;
@@ -1376,7 +1326,7 @@ namespace GPlatesApi
 		// Attempt to extract a sequence of property values.
 		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
 		property_value_seq_type property_values;
-		PythonExtractUtils::extract_sequence(property_values, property_value_object, type_error_string);
+		PythonExtractUtils::extract_iterable(property_values, property_value_object, type_error_string);
 
 		if (verify_information_model == VerifyInformationModel::NO)
 		{
@@ -1681,7 +1631,7 @@ namespace GPlatesApi
 		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
 		//
 		std::vector<bp::object> sequence_of_objects;
-		PythonExtractUtils::extract_sequence(sequence_of_objects, geometry_object, type_error_string);
+		PythonExtractUtils::extract_iterable(sequence_of_objects, geometry_object, type_error_string);
 
 		// It's possible we were given an empty sequence - which means we should remove all
 		// matching geometries (domains) and coverage ranges.
@@ -1795,7 +1745,7 @@ namespace GPlatesApi
 
 			// Extract the domain/range tuple.
 			std::vector<bp::object> coverage_domain_range;
-			PythonExtractUtils::extract_sequence(coverage_domain_range, coverage_object, type_error_string);
+			PythonExtractUtils::extract_iterable(coverage_domain_range, coverage_object, type_error_string);
 
 			if (coverage_domain_range.size() != 2)
 			{
@@ -3344,8 +3294,10 @@ export_feature()
 				"    for property in feature:\n"
 				"        if predicate(property):\n"
 				"            feature.remove(property)\n"
-				"    feature.remove([property for property in feature if predicate(property)])\n"
 				"    feature.remove(predicate)\n"
+				"    feature.remove([property for property in feature if predicate(property)])\n"
+				"    # Specifying just an iterator also works...\n"
+				"    feature.remove(property for property in feature if predicate(property))\n"
 				"    \n"
 				"    # Mix different query types.\n"
 				"    # Remove a specific 'property' instance and any 'gpml:leftPlate' properties...\n"
