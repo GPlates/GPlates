@@ -96,7 +96,7 @@ namespace GPlatesApi
 			const QualifiedXmlNameType &qualified_xml_name)
 	{
 		// Use python builtin hash() function to hash the fully-qualified string.
-		return get_pygplates_module().attr("__builtins__").attr("hash")(
+		return get_builtin_hash()(
 				GPlatesModel::convert_qualified_xml_name_to_qstring<QualifiedXmlNameType>(
 						qualified_xml_name));
 	}
@@ -334,15 +334,15 @@ export_property_name()
 			"\n"
 			"* ``pygplates.PropertyName.gpml_average_sample_site_position`` = "
 			"pygplates.PropertyName.create_gpml('averageSampleSitePosition')\n"
-			"* ``pygplates.PropertyName.gpml_boundary`` = pygplates.PropertyName.create_gpml('boundary')\n"
-			"* ``pygplates.PropertyName.gpml_center_line_of`` = pygplates.PropertyName.create_gpml('centerLineOf')\n"
-			"* ``pygplates.PropertyName.gpml_error_bounds`` = pygplates.PropertyName.create_gpml('errorBounds')\n"
-			"* ``pygplates.PropertyName.gpml_multi_position`` = pygplates.PropertyName.create_gpml('multiPosition')\n"
-			"* ``pygplates.PropertyName.gpml_outline_of`` = pygplates.PropertyName.create_gpml('outlineOf')\n"
-			"* ``pygplates.PropertyName.gpml_pole_position`` = pygplates.PropertyName.create_gpml('polePosition')\n"
-			"* ``pygplates.PropertyName.gpml_position`` = pygplates.PropertyName.create_gpml('position')\n"
-			"* ``pygplates.PropertyName.gpml_seed_points`` = pygplates.PropertyName.create_gpml('seedPoints')\n"
-			"* ``pygplates.PropertyName.gpml_unclassified_geometry`` = pygplates.PropertyName.create_gpml('unclassifiedGeometry')\n",
+			"* ``pygplates.PropertyName.gpml_boundary`` = ``pygplates.PropertyName.create_gpml('boundary')``\n"
+			"* ``pygplates.PropertyName.gpml_center_line_of`` = ``pygplates.PropertyName.create_gpml('centerLineOf')``\n"
+			"* ``pygplates.PropertyName.gpml_error_bounds`` = ``pygplates.PropertyName.create_gpml('errorBounds')``\n"
+			"* ``pygplates.PropertyName.gpml_multi_position`` = ``pygplates.PropertyName.create_gpml('multiPosition')``\n"
+			"* ``pygplates.PropertyName.gpml_outline_of`` = ``pygplates.PropertyName.create_gpml('outlineOf')``\n"
+			"* ``pygplates.PropertyName.gpml_pole_position`` = ``pygplates.PropertyName.create_gpml('polePosition')``\n"
+			"* ``pygplates.PropertyName.gpml_position`` = ``pygplates.PropertyName.create_gpml('position')``\n"
+			"* ``pygplates.PropertyName.gpml_seed_points`` = ``pygplates.PropertyName.create_gpml('seedPoints')``\n"
+			"* ``pygplates.PropertyName.gpml_unclassified_geometry`` = ``pygplates.PropertyName.create_gpml('unclassifiedGeometry')``\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common geometry property names...

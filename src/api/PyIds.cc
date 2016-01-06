@@ -53,7 +53,7 @@ namespace GPlatesApi
 	feature_id_hash(
 			const GPlatesModel::FeatureId &feature_id)
 	{
-		return get_pygplates_module().attr("__builtins__").attr("hash")(feature_id.get());
+		return get_builtin_hash()(feature_id.get());
 	}
 }
 
@@ -78,11 +78,14 @@ export_feature_id()
 			bp::no_init)
 		.def("create_unique_id",
 				&GPlatesApi::feature_id_create_unique_id,
-				"create_unique_id() -> FeatureId\n"
+				"create_unique_id()\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a unique *FeatureId* by generating a unique string identifier.\n"
+				"\n"
+				"  :rtype: :class:`FeatureId`\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    feature_id = pygplates.FeatureId.create_unique_id()\n"
@@ -94,7 +97,7 @@ export_feature_id()
 		.def("get_string",
 				&GPlatesModel::FeatureId::get,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_string() -> string\n"
+				"get_string()\n"
 				"  Returns the feature identifier as a string.\n"
 				"\n"
 				"  :rtype: string\n"
@@ -134,7 +137,7 @@ namespace GPlatesApi
 	revision_id_hash(
 			const GPlatesModel::RevisionId &revision_id)
 	{
-		return get_pygplates_module().attr("__builtins__").attr("hash")(revision_id.get());
+		return get_builtin_hash()(revision_id.get());
 	}
 }
 
@@ -158,11 +161,14 @@ export_revision_id()
 			bp::no_init)
 		.def("create_unique_id",
 				&GPlatesApi::revision_id_create_unique_id,
-				"create_unique_id() -> RevisionId\n"
+				"create_unique_id()\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a unique *RevisionId* by generating a unique string identifier.\n"
+				"\n"
+				"  :rtype: :class:`RevisionId`\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    revision_id = pygplates.RevisionId.create_unique_id()\n")
@@ -170,7 +176,7 @@ export_revision_id()
 		.def("get_string",
 				&GPlatesModel::RevisionId::get,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_string() -> string\n"
+				"get_string()\n"
 				"  Returns the revision identifier as a string.\n"
 				"\n"
 				"  :rtype: string\n")

@@ -586,11 +586,14 @@ export_geo_time_instant()
 				"    time_instant = pygplates.GeoTimeInstant(time_value)\n")
 		.def("create_distant_past",
 				&GPlatesApi::GeoTimeInstant::create_distant_past,
-				"create_distant_past() -> GeoTimeInstant\n"
+				"create_distant_past()\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant past.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
@@ -603,11 +606,14 @@ export_geo_time_instant()
 		.staticmethod("create_distant_past")
 		.def("create_distant_future",
 				&GPlatesApi::GeoTimeInstant::create_distant_future,
-				"create_distant_future() -> GeoTimeInstant\n"
+				"create_distant_future()\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant future.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    distant_future = pygplates.GeoTimeInstant.create_distant_future()\n"
@@ -620,7 +626,7 @@ export_geo_time_instant()
 		.staticmethod("create_distant_future")
 		.def("get_value",
 				&GPlatesApi::GeoTimeInstant::get_value,
-				"get_value() -> float\n"
+				"get_value()\n"
 				"  Access the floating-point representation of the time-position of this instance. "
 				"Units are in Ma (millions of year ago).\n"
 				"\n"
@@ -633,19 +639,19 @@ export_geo_time_instant()
 				"times in the future.\n")
 		.def("is_distant_past",
 				&GPlatesApi::GeoTimeInstant::is_distant_past,
-				"is_distant_past() -> bool\n"
+				"is_distant_past()\n"
 				"  Returns ``True`` if this instance is a time-instant in the distant past.\n"
 				"\n"
 				"  :rtype: bool\n")
 		.def("is_distant_future",
 				&GPlatesApi::GeoTimeInstant::is_distant_future,
-				"is_distant_future() -> bool\n"
+				"is_distant_future()\n"
 				"  Returns ``True`` if this instance is a time-instant in the distant future.\n"
 				"\n"
 				"  :rtype: bool\n")
 		.def("is_real",
 				&GPlatesApi::GeoTimeInstant::is_real,
-				"is_real() -> bool\n"
+				"is_real()\n"
 				"  Returns ``True`` if this instance is a time-instant whose time-position may be "
 				"expressed as a *real* floating-point number.\n"
 				"\n"

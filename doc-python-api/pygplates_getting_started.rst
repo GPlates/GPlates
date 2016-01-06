@@ -338,7 +338,8 @@ And then covers the steps to set up and run a simple *pygplates* script.
 What are functions and classes ?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-First, let's cover what a function is.
+Functions
+"""""""""
 
 Essentially a function accepts arguments, does some work and then optionally returns a value.
 The function arguments allow data to be passed to and from the function. Input arguments pass data
@@ -354,10 +355,11 @@ An example *pygplates* function call is reconstructing coastlines to 10Ma:
 .. note:: The ``pygplates.`` in front of ``reconstruct()`` means the ``reconstruct()`` function belongs to the ``pygplates`` module.
           Also this particular function doesn't need to a return value.
 
-All four parameters are input parameters (even though ``'reconstructed_coastlines_10Ma.shp'`` specifies
-the filename to *write* the output to) since they are not used to pass data directly back to the caller.
+All four parameters are input parameters since they only pass data *to* the function
+(even though ``'reconstructed_coastlines_10Ma.shp'`` specifies the filename to *write* the output to).
 
-A similar use of the ``pygplates.reconstruct()`` function appends the reconstructed output to a Python list (instead of a file):
+A similar use of the ``pygplates.reconstruct()`` function appends the reconstructed output to a
+Python list (instead of writing to a file):
 ::
 
   reconstructed_feature_geometries = []
@@ -370,8 +372,8 @@ A similar use of the ``pygplates.reconstruct()`` function appends the reconstruc
 The parameter ``reconstructed_feature_geometries`` is now an *output* parameter because it is used
 to pass data from the function back to the caller so that the caller can do something with it.
 
-
-Next, let's look at what a class is.
+Classes
+"""""""
 
 Primarily a class is a way to group some data together as a single entity.
 
@@ -398,10 +400,10 @@ And :meth:`to_lat_lon()<pygplates.PointOnSphere.to_lat_lon>` will be one of seve
 documented in the :class:`pygplates.PointOnSphere` class.
 
 These class *methods* behave similarly to top-level functions (such as ``pygplates.reconstruct()``) except
-they operate on an object (instance of class). Hence a class *method* has an implicit first function
+they operate on an instance of class. Hence a class *method* has an implicit first function
 argument that is the object itself (for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
 
-.. note:: A complete list of functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
+.. note:: A complete list of *pygplates* functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
 
 
 .. _pygplates_getting_started_tutorial_first_script:

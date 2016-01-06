@@ -147,7 +147,7 @@ export_lat_lon_point()
 		.def("is_valid_latitude",
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),
-				"is_valid_latitude(latitude) -> bool\n"
+				"is_valid_latitude(latitude)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -165,7 +165,7 @@ export_lat_lon_point()
 		.def("is_valid_longitude",
 				&GPlatesMaths::LatLonPoint::is_valid_longitude,
 				(bp::arg("longitude")),
-				"is_valid_longitude(longitude) -> bool\n"
+				"is_valid_longitude(longitude)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -188,26 +188,26 @@ export_lat_lon_point()
 		.def("get_latitude",
 				&GPlatesMaths::LatLonPoint::latitude,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_latitude() -> float\n"
+				"get_latitude()\n"
 				"  Returns the latitude (in degrees).\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("get_longitude",
 				&GPlatesMaths::LatLonPoint::longitude,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_longitude() -> float\n"
+				"get_longitude()\n"
 				"  Returns the longitude (in degrees).\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("to_point_on_sphere",
 				&GPlatesMaths::make_point_on_sphere,
-				"to_point_on_sphere() -> PointOnSphere\n"
+				"to_point_on_sphere()\n"
 				"  Returns the cartesian coordinates as a :class:`PointOnSphere`.\n"
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n")
 		.def("to_xyz",
 				&GPlatesApi::lat_lon_point_to_xyz,
-				"to_xyz() -> x, y, z\n"
+				"to_xyz()\n"
 				"  Returns the cartesian coordinates as the tuple (x,y,z).\n"
 				"\n"
 				"  :rtype: the tuple (float,float,float)\n"
@@ -219,7 +219,7 @@ export_lat_lon_point()
 				"  This is similar to :meth:`PointOnSphere.to_xyz`.\n")
 		.def("to_lat_lon",
 				&GPlatesApi::lat_lon_point_to_lat_lon,
-				"to_lat_lon() -> latitude, longitude\n"
+				"to_lat_lon()\n"
 				"  Returns the tuple (latitude,longitude) in degrees.\n"
 				"\n"
 				"  :rtype: the tuple (float,float)\n"
@@ -249,7 +249,7 @@ export_lat_lon_point()
 			// 'LatLonPoint.to_point_on_sphere()' and 'PointOnSphere.to_lat_lon_point()'...
 #if 0
 			,
-			"convert_lat_lon_point_to_point_on_sphere(lat_lon_point) -> PointOnSphere\n"
+			"convert_lat_lon_point_to_point_on_sphere(lat_lon_point)\n"
 			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
 			"\n"
 			"  :param lat_lon_point: the 2D latitude/longitude point\n"
@@ -269,7 +269,7 @@ export_lat_lon_point()
 			// 'LatLonPoint.to_point_on_sphere()' and 'PointOnSphere.to_lat_lon_point()'...
 #if 0
 			,
-			"convert_point_on_sphere_to_lat_lon_point(point) -> LatLonPoint\n"
+			"convert_point_on_sphere_to_lat_lon_point(point)\n"
 			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
 			"\n"
 			"  :param point: the 3D cartesian point\n"
