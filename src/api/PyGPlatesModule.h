@@ -49,6 +49,35 @@ namespace GPlatesApi
 	 */
 	boost::python::object
 	get_pygplates_module();
+
+
+	//
+	// Some commonly used Python built-in attributes.
+	//
+
+	/**
+	 * Returns the Python built-in 'hash()' function.
+	 *
+	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("hash")'.
+	 */
+	boost::python::object
+	get_builtin_hash();
+
+	/**
+	 * Returns the Python built-in 'iter()' function.
+	 *
+	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("iter")'.
+	 */
+	boost::python::object
+	get_builtin_iter();
+
+	/**
+	 * Returns the Python built-in 'next()' function.
+	 *
+	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("next")'.
+	 */
+	boost::python::object
+	get_builtin_next();
 }
 
 #endif   // GPLATES_NO_PYTHON

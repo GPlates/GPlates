@@ -196,6 +196,19 @@ void export_pure_python_api();
 namespace
 {
 	boost::python::object pygplates_module;
+
+
+	boost::python::object builtin_hash;
+	boost::python::object builtin_iter;
+	boost::python::object builtin_next;
+
+	void
+	cache_builtin_attributes()
+	{
+		builtin_hash = pygplates_module.attr("__builtins__").attr("hash");
+		builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
+		builtin_next = pygplates_module.attr("__builtins__").attr("next");
+	}
 }
 
 
@@ -203,6 +216,27 @@ boost::python::object
 GPlatesApi::get_pygplates_module()
 {
 	return pygplates_module;
+}
+
+
+boost::python::object
+GPlatesApi::get_builtin_hash()
+{
+	return builtin_hash;
+}
+
+
+boost::python::object
+GPlatesApi::get_builtin_iter()
+{
+	return builtin_iter;
+}
+
+
+boost::python::object
+GPlatesApi::get_builtin_next()
+{
+	return builtin_next;
 }
 
 
@@ -264,6 +298,10 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
 	pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
+
+	// Cache some commonly used built-in attributes.
+	// Note: This must be done *after* initialising 'pygplates_module' and injecting the __builtin__ module.
+	cache_builtin_attributes();
 
 	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
 	export_cpp_python_api();
