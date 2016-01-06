@@ -126,9 +126,9 @@ namespace GPlatesApi
 	}
 
 	bool
-	plate_partitioner_partition(
+	plate_partitioner_partition_geometry(
 			const GPlatesAppLogic::GeometryCookieCutter &plate_partitioner,
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+			bp::object geometry_object,
 			bp::object partitioned_inside_geometries_object,
 			bp::object partitioned_outside_geometries_object)
 	{
@@ -169,11 +169,36 @@ namespace GPlatesApi
 		//
 		// Partition the geometry.
 		//
+		// 'geometry_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a sequence of GeometryOnSphere's.
+		//
 
-		const bool geometry_inside_any_partitions = plate_partitioner.partition_geometry(
-				geometry,
-				partitioned_inside_geometries,
-				partitioned_outside_geometries);
+		bool geometry_inside_any_partitions = false;
+
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			geometry_inside_any_partitions = plate_partitioner.partition_geometry(
+					geometry,
+					partitioned_inside_geometries,
+					partitioned_outside_geometries);
+		}
+		else
+		{
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+			PythonExtractUtils::extract_iterable(
+					geometries,
+					geometry_object,
+					"Expected a GeometryOnSphere, or a sequence of GeometryOnSphere");
+
+			geometry_inside_any_partitions = plate_partitioner.partition_geometries(
+					geometries,
+					partitioned_inside_geometries,
+					partitioned_outside_geometries);
+		}
 
 		//
 		// Populate inside/output partitioned geometry lists if requested.
@@ -347,16 +372,17 @@ export_plate_partitioner()
 				"\n"
 				"  .. note:: All partitioning plates should have been generated for the same "
 				"reconstruction time otherwise *DifferentTimesInPartitioningPlatesError* is raised.\n")
-		.def("partition",
-				&GPlatesApi::plate_partitioner_partition,
+		.def("partition_geometry",
+				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
 						bp::arg("partitioned_inside_geometries") = bp::object()/*Py_None*/,
 						bp::arg("partitioned_outside_geometries") = bp::object()/*Py_None*/),
-				"partition(geometry, [partitioned_inside_geometries], [partitioned_outside_geometries])\n"
+				"partition_geometry(geometry, [partitioned_inside_geometries], [partitioned_outside_geometries])\n"
 				"  Partitions a geometry into partitioning plates.\n"
 				"\n"
-				"  :param geometry: the geometry to partition\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param geometry: the geometry, or geometries, to partition\n"
+				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`GeometryOnSphere`\n"
 				"  :param partitioned_inside_geometries: optional list of geometries partitioned *inside* "
 				"the partitioning plates (note that the list is *not* cleared first)\n"
 				"  :type partitioned_inside_geometries: ``list`` of 2-tuple "
@@ -374,7 +400,8 @@ export_plate_partitioner()
 				"\n"
 				"  .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple "
 				"consisting of a partitioning :class:`ReconstructionGeometry` and a list of the "
-				":class:`geometry<GeometryOnSphere>` pieces partitioned into it. In contrast, "
+				":class:`geometry<GeometryOnSphere>` pieces partitioned into it (note that these pieces "
+				"can come from multiple input geometries if *geometry* is a sequence). In contrast, "
 				"*partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` "
 				"outside all partitioning plates.\n"
 				"\n"

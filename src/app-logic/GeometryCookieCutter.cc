@@ -121,14 +121,30 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 		boost::optional<partition_seq_type &> partitioned_inside_geometries,
 		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
 {
-	// Return early no partitioning polygons.
+	return partition_geometries(
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(1, geometry),
+			partitioned_inside_geometries,
+			partitioned_outside_geometries);
+}
+
+
+bool
+GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
+		const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &geometries,
+		boost::optional<partition_seq_type &> partitioned_inside_geometries,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
+{
+	// Return early if no partitioning polygons.
 	if (d_partitioning_geometries.empty())
 	{
-		// There are no partitioning polygons so the input geometry goes
+		// There are no partitioning polygons so the input geometries go
 		// to the list of geometries partitioned outside all partitioning polygons.
 		if (partitioned_outside_geometries)
 		{
-			partitioned_outside_geometries->push_back(geometry);
+			partitioned_outside_geometries->insert(
+					partitioned_outside_geometries->end(),
+					geometries.begin(),
+					geometries.end());
 		}
 		return false;
 	}
@@ -144,9 +160,12 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 	partitioned_geometry_seq_type *next_partitioned_outside_geometries =
 			&partitioned_outside_geometries2;
 
-	// Add the geometry to be partitioned to the current list of outside geometries
+	// Add the geometries to be partitioned to the current list of outside geometries
 	// to start off the processing chain.
-	current_partitioned_outside_geometries->push_back(geometry);
+	current_partitioned_outside_geometries->insert(
+			current_partitioned_outside_geometries->end(),
+			geometries.begin(),
+			geometries.end());
 
 	// Iterate through the partitioning polygons.
 	partitioning_geometry_seq_type::const_iterator partition_iter =

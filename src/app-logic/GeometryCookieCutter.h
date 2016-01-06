@@ -185,6 +185,19 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Same as @a partition_geometry except partitions multiple input geometries (instead of one).
+		 *
+		 * Returns true if any geometry in @a geometries is inside any partitioning polygons (even partially)
+		 * in which case elements were appended to @a partitioned_inside_geometries.
+		 */
+		bool
+		partition_geometries(
+				const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &geometries,
+				boost::optional<partition_seq_type &> partitioned_inside_geometries = boost::none,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none) const;
+
+
+		/**
 		 * Finds which partitioning polygon boundary contains @a point.
 		 *
 		 * Returns false if no containing boundaries are found.
