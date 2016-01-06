@@ -44,9 +44,6 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 #include "maths/MathsUtils.h"
 
@@ -131,7 +128,7 @@ namespace GPlatesApi
 		 * This is called directly from Python via 'RotationModel.__init__()'.
 		 */
 		RotationModel::non_null_ptr_type
-		rotation_model_create(
+		rotation_model_create_from_features(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
 				unsigned int reconstruction_tree_cache_size,
 				bool clone_rotation_features)
@@ -140,6 +137,23 @@ namespace GPlatesApi
 					rotation_features,
 					reconstruction_tree_cache_size,
 					clone_rotation_features);
+		}
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()'.
+		 *
+		 * This enables Python code such as:
+		 *
+		 *   def my_func(rotation_features_or_model, ...):
+		 *     rotation_model = pygplates.RotationModel(rotation_features_or_model)
+		 *
+		 * ...which will work if 'rotation_features_or_model' is already a 'RotationModel'.
+		 */
+		RotationModel::non_null_ptr_type
+		rotation_model_create_from_rotation_model(
+				RotationModel::non_null_ptr_type rotation_model)
+		{
+			return rotation_model;
 		}
 	}
 }
@@ -399,8 +413,14 @@ GPlatesApi::RotationModelFunctionArgument::get_rotation_model() const
 void
 export_rotation_model()
 {
-	std::stringstream rotation_model_constructor_docstring_stream;
-	rotation_model_constructor_docstring_stream <<
+	std::stringstream rotation_model_from_features_constructor_docstring_stream;
+	rotation_model_from_features_constructor_docstring_stream <<
+			// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+			// Specific overload signature...
+			"__init__(...)\n"
+			"A *RotationModel* object can be constructed in more than one way...\n"
+			"\n"
+			// Specific overload signature...
 			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
 			<< "], [clone_rotation_features=True])\n"
@@ -468,6 +488,9 @@ export_rotation_model()
 			"\n"
 			"  .. note:: *clone_rotation_features* is ignored if all rotation features specified in the "
 			"*rotation_features* argument are loaded from files (ie, if only filenames are specified).\n"
+			"\n"
+			"  .. note:: *clone_rotation_features* will be deprecated in future when this optimisation  is "
+			"taken care of internally (by cloning only if a modification to its features is detected internally).\n"
 			;
 
 	//
@@ -501,13 +524,33 @@ export_rotation_model()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::rotation_model_create,
+						&GPlatesApi::rotation_model_create_from_features,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_tree_cache_size") =
 								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
 							bp::arg("clone_rotation_features") = true)),
-				rotation_model_constructor_docstring_stream.str().c_str())
+				rotation_model_from_features_constructor_docstring_stream.str().c_str())
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::rotation_model_create_from_rotation_model,
+						bp::default_call_policies(),
+						(bp::arg("rotation_model"))),
+			// Specific overload signature...
+			"__init__(rotation_model)\n"
+			"  Create from an existing rotation model as a convenience.\n"
+			"\n"
+			"  :param rotation_model: an existing rotation model\n"
+			"  :type rotation_model: :class:`RotationModel`\n"
+			"\n"
+			"  This is useful when defining your own function that accepts rotation features or a rotation model. "
+			"It avoids the hassle of having to explicitly test for each source type:\n"
+			"  ::\n"
+			"\n"
+			"    def my_function(rotation_features_or_model):\n"
+			"        # The appropriate constructor (__init__) overload is chosen depending on argument type.\n"
+			"        rotation_model = pygplates.RotationModel(rotation_features_or_model)\n"
+			"        ...\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
