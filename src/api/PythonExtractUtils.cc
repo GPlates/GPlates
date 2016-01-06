@@ -30,10 +30,10 @@
 
 #include "PythonExtractUtils.h"
 
+#include "PyExceptions.h"
+#include "PyGPlatesModule.h"
+
 #include "global/python.h"
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/stl_iterator.hpp>
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -58,7 +58,7 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 
 	// Attempt to extract the python key/value sequence.
 	std::vector<bp::object> key_value_objects;
-	extract_sequence(key_value_objects, key_value_mapping_object, type_error_string);
+	extract_iterable(key_value_objects, key_value_mapping_object, type_error_string);
 
 	// Extract the individual key/value object pairs.
 	std::vector<bp::object>::const_iterator key_value_objects_iter = key_value_objects.begin();
@@ -69,7 +69,7 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 
 		// Attempt to extract the (key, value) 2-tuples/2-sequences.
 		std::vector<bp::object> key_value_pair;
-		extract_sequence(key_value_pair, key_value_object, type_error_string);
+		extract_iterable(key_value_pair, key_value_object, type_error_string);
 
 		if (key_value_pair.size() != 2)
 		{
@@ -80,6 +80,44 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 		key_value_map.push_back(
 				std::make_pair(key_value_object[0], key_value_object[1]));
 	}
+}
+
+
+void
+GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
+		bp::object iterable_object)
+{
+	// Calling builtin function 'next()' will work on an iterator, but not on a sequence.
+	try
+	{
+		// Use python builtin next() function to see if iterable is an iterator.
+		get_builtin_next()(iterable_object);
+	}
+	catch (const bp::error_already_set &)
+	{
+		PythonExceptionHandler handler;
+		if (handler.exception_matches(PyExc_TypeError))
+		{
+			// It's not an iterator.
+			return;
+		}
+		else if (handler.exception_matches(PyExc_StopIteration))
+		{
+			// It's an iterator that has stopped iteration (ie, there were no items to iterate over).
+			// Let's fall through to our error message.
+		}
+		else
+		{
+			// It's some other error so let's restore it (this also throws boost::python::error_already_set).
+			handler.restore_exception();
+		}
+	}
+
+	PyErr_SetString(
+			PyExc_TypeError,
+			"Iterable must be a sequence (eg, list or tuple), not an iterator, since need more than one iteration pass");
+
+	boost::python::throw_error_already_set();
 }
 
 #endif // GPLATES_NO_PYTHON
