@@ -38,11 +38,16 @@
 #include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
 
 namespace GPlatesAppLogic
 {
+	class ReconstructionTreeCreator;
+	class ReconstructMethodRegistry;
+
+
 	/**
 	 * Partitions geometry using dynamic resolved topological boundaries and/or
 	 * static reconstructed feature polygons.
@@ -141,7 +146,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Finds reconstructed polygon geometries to partition other geometry with.
 		 *
-		 * This is the same as the other constructor except the resolved topological networks,
+		 * This is the same as the above constructor except the resolved topological networks,
 		 * resolved topological boundaries and reconstructed static polygons are combined
 		 * (in @a reconstruction_geometries) and @a group_networks_then_boundaries_then_static_polygons
 		 * determines whether they are grouped/sorted in that order or not. If @a sort_plates
@@ -150,6 +155,23 @@ namespace GPlatesAppLogic
 		GeometryCookieCutter(
 				const double &reconstruction_time,
 				const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+				bool group_networks_then_boundaries_then_static_polygons = true,
+				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+
+
+		/**
+		 * Finds reconstructed polygon geometries to partition other geometry with.
+		 *
+		 * This is the same as the above constructor except that the resolved topological networks,
+		 * resolved topological boundaries and reconstructed static polygons are reconstructed/resolved
+		 * from @a feature_collections.
+		 */
+		GeometryCookieCutter(
+				const double &reconstruction_time,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);

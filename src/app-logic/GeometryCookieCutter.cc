@@ -24,20 +24,79 @@
  */
 
 #include <algorithm>
+#include <map>
+#include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "GeometryCookieCutter.h"
 
+#include "AppLogicUtils.h"
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructMethodRegistry.h"
+#include "ReconstructUtils.h"
 #include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "TopologyUtils.h"
 
 #include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+
+#include "model/FeatureVisitor.h"
+
+
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		class FeatureOrderVisitor :
+				public GPlatesModel::FeatureVisitor
+		{
+		public:
+
+			typedef std::map<GPlatesModel::FeatureHandle::weak_ref, unsigned int> feature_order_map_type;
+
+
+			explicit
+			FeatureOrderVisitor(
+					feature_order_map_type &feature_order_map) :
+				d_feature_order_map(feature_order_map),
+				d_feature_count(0)
+			{  }
+
+		protected:
+
+			virtual
+			bool
+			initialise_pre_feature_properties(
+					GPlatesModel::FeatureHandle &feature_handle)
+			{
+				std::pair<feature_order_map_type::iterator, bool> result =
+						d_feature_order_map.insert(
+								feature_order_map_type::value_type(
+										feature_handle.reference(),
+										d_feature_count));
+				if (result.second)
+				{
+					// A new feature was inserted into the map.
+					++d_feature_count;
+				}
+
+				// We don't actually need to visit the properties.
+				return false;
+			}
+
+		private:
+
+			feature_order_map_type &d_feature_order_map;
+			unsigned int d_feature_count;
+		};
+	}
+}
 
 
 GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
@@ -103,6 +162,156 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 	}
 	else
 	{
+		add_partitioning_reconstruction_geometries(reconstruction_geometries, sort_plates);
+	}
+}
+
+
+GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
+		const double &reconstruction_time,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		bool group_networks_then_boundaries_then_static_polygons,
+		boost::optional<SortPlates> sort_plates,
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+	d_reconstruction_time(reconstruction_time),
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+{
+	// Contains the reconstructed static polygons used for cookie-cutting.
+	// Can also contain the topological section geometries referenced by topologies.
+	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_feature_geometries;
+
+	const ReconstructHandle::type reconstruct_handle = ReconstructUtils::reconstruct(
+			reconstructed_feature_geometries,
+			reconstruction_time,
+			reconstruct_method_registry,
+			feature_collections,
+			reconstruction_tree_creator);
+
+	std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
+
+	// Contains the resolved topological line sections referenced by topological polygons and networks.
+	std::vector<resolved_topological_line_non_null_ptr_type> resolved_topological_lines;
+
+	// Resolving topological lines generates its own reconstruct handle that will be used by
+	// topological polygons and networks to find this group of resolved lines.
+	const ReconstructHandle::type resolved_topological_lines_handle =
+			TopologyUtils::resolve_topological_lines(
+					resolved_topological_lines,
+					feature_collections,
+					reconstruction_tree_creator, 
+					reconstruction_time,
+					// Resolved topo lines use the reconstructed non-topo geometries...
+					reconstruct_handles);
+	reconstruct_handles.push_back(resolved_topological_lines_handle);
+
+	// Contains the resolved topological polygons used for cookie-cutting.
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+	TopologyUtils::resolve_topological_boundaries(
+			resolved_topological_boundaries,
+			feature_collections,
+			reconstruction_tree_creator, 
+			reconstruction_time,
+			// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
+			reconstruct_handles);
+
+	// Contains the resolved topological networks used for cookie-cutting.
+	// See comment in header for why a deforming region is currently used to assign plate ids.
+	std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+	TopologyUtils::resolve_topological_networks(
+			resolved_topological_networks,
+			reconstruction_time,
+			feature_collections,
+			// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
+			reconstruct_handles);
+
+	if (group_networks_then_boundaries_then_static_polygons)
+	{
+		add_partitioning_resolved_topological_networks(resolved_topological_networks, sort_plates);
+		add_partitioning_resolved_topological_boundaries(resolved_topological_boundaries, sort_plates);
+		add_partitioning_reconstructed_feature_polygons(reconstructed_feature_geometries, sort_plates);
+	}
+	else // keep same order as input feature collections (for reconstruction geometries)...
+	{
+		// Determine the order of features passed to us.
+		FeatureOrderVisitor::feature_order_map_type feature_order_map;
+		FeatureOrderVisitor visitor(feature_order_map);
+		AppLogicUtils::visit_feature_collections(
+				feature_collections.begin(),
+				feature_collections.end(),
+				visitor);
+
+		// Order the reconstruction geometries in the same order as their associated features.
+		typedef std::multimap<unsigned int, reconstruction_geometry_non_null_ptr_type> feature_ordered_recon_geom_map_type;
+		feature_ordered_recon_geom_map_type feature_ordered_recon_geoms_map;
+		std::vector<reconstruction_geometry_non_null_ptr_type> reconstruction_geometries;
+
+		// Iterate over resolved topological networks.
+		BOOST_FOREACH(
+				const resolved_topological_network_non_null_ptr_type &resolved_topological_network,
+				resolved_topological_networks)
+		{
+			FeatureOrderVisitor::feature_order_map_type::const_iterator feature_order_iter =
+					feature_order_map.find(resolved_topological_network->get_feature_ref());
+			if (feature_order_iter != feature_order_map.end())
+			{
+				const unsigned int feature_order = feature_order_iter->second;
+				feature_ordered_recon_geoms_map.insert(
+						feature_ordered_recon_geom_map_type::value_type(feature_order, resolved_topological_network));
+			}
+			else // couldn't find feature so just add unordered...
+			{
+				reconstruction_geometries.push_back(resolved_topological_network);
+			}
+		}
+
+		// Iterate over resolved topological boundaries.
+		BOOST_FOREACH(
+				const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
+				resolved_topological_boundaries)
+		{
+			FeatureOrderVisitor::feature_order_map_type::const_iterator feature_order_iter =
+					feature_order_map.find(resolved_topological_boundary->get_feature_ref());
+			if (feature_order_iter != feature_order_map.end())
+			{
+				const unsigned int feature_order = feature_order_iter->second;
+				feature_ordered_recon_geoms_map.insert(
+						feature_ordered_recon_geom_map_type::value_type(feature_order, resolved_topological_boundary));
+			}
+			else // couldn't find feature so just add unordered...
+			{
+				reconstruction_geometries.push_back(resolved_topological_boundary);
+			}
+		}
+
+		// Iterate over reconstructed static polygons.
+		BOOST_FOREACH(
+				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_feature_geometry,
+				reconstructed_feature_geometries)
+		{
+			FeatureOrderVisitor::feature_order_map_type::const_iterator feature_order_iter =
+					feature_order_map.find(reconstructed_feature_geometry->get_feature_ref());
+			if (feature_order_iter != feature_order_map.end())
+			{
+				const unsigned int feature_order = feature_order_iter->second;
+				feature_ordered_recon_geoms_map.insert(
+						feature_ordered_recon_geom_map_type::value_type(feature_order, reconstructed_feature_geometry));
+			}
+			else // couldn't find feature so just add unordered...
+			{
+				reconstruction_geometries.push_back(reconstructed_feature_geometry);
+			}
+		}
+
+		// Copy the ordered reconstruction geometries from the map into vector.
+		BOOST_FOREACH(
+				const feature_ordered_recon_geom_map_type::value_type &recon_geom_map_entry,
+				feature_ordered_recon_geoms_map)
+		{
+			reconstruction_geometries.push_back(recon_geom_map_entry.second);
+		}
+
 		add_partitioning_reconstruction_geometries(reconstruction_geometries, sort_plates);
 	}
 }

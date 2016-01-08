@@ -181,11 +181,6 @@ namespace GPlatesAppLogic
 		 * the partitioning polygon features and to reverse reconstruct any features
 		 * partitioned by them.
 		 *
-		 * @a allow_partitioning_using_topological_plate_polygons determines if
-		 * topological closed plate boundary features can be used as partitioning polygons.
-		 * @a allow_partitioning_using_static_polygons determines if
-		 * regular features (with static polygon geometry) can be used as partitioning polygons.
-		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
 		 *
@@ -201,18 +196,12 @@ namespace GPlatesAppLogic
 		non_null_ptr_type
 		create(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						partitioning_feature_collections,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &partitioning_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
-				const feature_property_flags_type &feature_property_types_to_assign =
-						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				const feature_property_flags_type &feature_property_types_to_assign = RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool verify_information_model = true,
-				bool allow_partitioning_using_topological_plate_polygons = true,
-				bool allow_partitioning_using_topological_networks = true,
-				bool allow_partitioning_using_static_polygons = true,
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
@@ -223,9 +212,6 @@ namespace GPlatesAppLogic
 					anchor_plate_id,
 					feature_property_types_to_assign,
 					verify_information_model,
-					allow_partitioning_using_topological_plate_polygons,
-					allow_partitioning_using_topological_networks,
-					allow_partitioning_using_static_polygons,
 					respect_feature_time_period));
 		}
 
@@ -265,8 +251,7 @@ namespace GPlatesAppLogic
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const feature_property_flags_type &feature_property_types_to_assign =
-						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				const feature_property_flags_type &feature_property_types_to_assign = RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool verify_information_model = true,
 				bool respect_feature_time_period = true)
 		{
@@ -358,17 +343,12 @@ namespace GPlatesAppLogic
 		 */
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						partitioning_feature_collections,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &partitioning_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool verify_information_model,
-				bool allow_partitioning_using_topological_plate_polygons,
-				bool allow_partitioning_using_topological_networks,
-				bool allow_partitioning_using_static_polygons,
 				bool respect_feature_time_period);
 
 

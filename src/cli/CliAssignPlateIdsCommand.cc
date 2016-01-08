@@ -364,9 +364,6 @@ GPlatesCli::AssignPlateIdsCommand::run(
 					d_anchor_plate_id,
 					assign_feature_property_flags,
 					true/*verify_information_model*/,
-					true/*allow_partitioning_using_topological_plate_polygons*/,
-					true/*allow_partitioning_using_topological_networks*/,
-					true/*allow_partitioning_using_static_polygons*/,
 					d_respect_time_period);
 
 	// Assign plate ids to the features.
