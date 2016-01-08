@@ -45,6 +45,113 @@ def _plate_partitioning_copy_partition_properties(partitioning_feature, features
         feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
 
 
+def plate_partitioner_partition_features(
+        plate_partitioner,
+        features,
+        return_separate_partitioned_and_unpartitioned=False):
+    """partition_features(features, [reconstruction_time=0], [return_separate_partitioned_and_unpartitioned])
+    Partitions features into partitioning plates.
+    
+    :param features: the features to partition
+    :type features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    
+    :param return_separate_partitioned_and_unpartitioned: whether to return separate partitioned and \
+        unpartitioned feature collections, or a single combined feature collection - \
+        ie, whether to return a 2-tuple of :class:`FeatureCollection`, or a :class:`FeatureCollection`
+    :type return_separate_partitioned_and_unpartitioned: bool
+    
+    :rtype: if *return_separate_partitioned_and_unpartitioned* is ``True`` then returns \
+        2-tuple of :class:`FeatureCollection` (separate partitioned and unpartitioned), \
+        otherwise returns :class:`FeatureCollection` (combined partitioned and unpartitioned)
+    """
+    
+    # Turn function argument into something more convenient for extracting features.
+    features = FeaturesFunctionArgument(features)
+    
+    partitioned_features = []
+    unpartitioned_features = []
+    
+    vgp_feature_type = FeatureType.create_gpml('VirtualGeomagneticPole')
+    
+    for feature in features.get_features():
+        # Special case handling for VGP features.
+        if feature.get_feature_type() == vgp_feature_type:
+            
+            
+            continue
+        
+        # Group partitioned inside geometries by partitioning plate and then by geometry property name.
+        partitioned_geometries = { }
+        # Group partitioned outside geometries by geometry property name.
+        unpartitioned_geometries = { }
+        
+        feature_without_geometry = feature.clone()
+        for property in feature_without_geometry:
+            property_value = property.get_value()
+            if not property_value:
+                continue
+            
+            geometry = property_value.get_geometry()
+            if not geometry:
+                continue
+            
+            # Remove geometry property.
+            feature_without_geometry.remove(property)
+            
+            
+            # Partition the current geometry into inside/outside geometries.
+            partitioned_inside_geometries = []
+            partitioned_outside_geometries = []
+            plate_partitioner.partition_geometry(geometry, partitioned_inside_geometries, partitioned_outside_geometries)
+            
+            geometry_property_name = property.get_name()
+            
+            if partitioned_inside_geometries:
+                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
+                    # Group by partition.
+                    geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
+                    # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
+                    geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
+                    geometries_in_partition_with_property_name.extend(inside_geometries)
+            
+            if partitioned_outside_geometries:
+                # Group by property name - there could be multiple geometry properties (per feature) with the same name.
+                unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
+                unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
+        
+        for partitioning_plate, geometries_inside_partition in partitioned_geometries.iteritems():
+            features_inside_partition = _plate_partitioning_set_geometries(
+                    feature_without_geometry, geometries_inside_partition)
+            
+            # Copy the requested properties over from the partitioning feature.
+            _plate_partitioning_copy_partition_properties(partitioning_plate.get_feature(), features_inside_partition)
+            
+            partitioned_features.extend(features_inside_partition)
+        
+        features_outside_partition = _plate_partitioning_set_geometries(
+                feature_without_geometry, unpartitioned_geometries)
+        unpartitioned_features.extend(features_outside_partition)
+        
+    # Reverse reconstruct all partitioned features (using their new plate IDs) if their geometries are not at present day.
+    reconstruction_time = plate_partitioner._get_reconstruction_time()
+    if reconstruction_time != GeoTimeInstant(0):
+        rotation_model = plate_partitioner._get_rotation_model()
+        reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
+    
+    # Return separate partitioned and unpartitioned feature collections if requested.
+    if return_separate_partitioned_and_unpartitioned:
+        return (FeatureCollection(partitioned_features), FeatureCollection(unpartitioned_features))
+    
+    return FeatureCollection(partitioned_features + unpartitioned_features)
+
+
+# Add the module function as a class method.
+PlatePartitioner.partition_features = plate_partitioner_partition_features
+# Delete the module reference to the function - we only keep the class method.
+del plate_partitioner_partition_features
+
+
 def partition_into_plates(
         partitioning_features,
         rotation_model,
@@ -55,11 +162,9 @@ def partition_into_plates(
     """partition_into_plates(partitioning_features, rotation_model, features_to_partition, \
         [reconstruction_time=0], [return_separate_partitioned_and_unpartitioned], \
         [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])
-    Partition features in plates.
+    Partition features into plates.
     
-    :param partitioning_features: the partitioning features as a feature collection, or filename, or \
-        feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any \
-        combination of those four types
+    :param partitioning_features: the partitioning features
     :type partitioning_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
@@ -68,9 +173,7 @@ def partition_into_plates(
     :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string \
         or sequence of :class:`FeatureCollection` instances and/or strings
     
-    :param features_to_partition: the features to be partitioned as a feature collection, or filename, or \
-        feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any \
-        combination of those four types
+    :param features_to_partition: the features to be partitioned
     :type features_to_partition: :class:`FeatureCollection`, or string, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
@@ -90,91 +193,32 @@ def partition_into_plates(
     :rtype: if *return_separate_partitioned_and_unpartitioned* is ``True`` then returns \
         2-tuple of :class:`FeatureCollection` (separate partitioned and unpartitioned), \
         otherwise returns :class:`FeatureCollection` (combined partitioned and unpartitioned)
+    
+    This is a convenience function that essentially does the following:
+    ::
+    
+        def partition_into_plates(
+                partitioning_features,
+                rotation_model,
+                features_to_partition,
+                reconstruction_time = 0,
+                return_separate_partitioned_and_unpartitioned = False,
+                sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id):
+            
+            plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
+            
+            return plate_partitioner.partition_features(features_to_partition, return_separate_partitioned_and_unpartitioned)
+    
+    To partition features at present day and write results to a new file:
+    ::
+
+        partitioned_feature_collection = pygplates.partition_into_plates('topologies.gpml', 'rotations.rot', 'features.gpml')
+        
+        partitioned_feature_collection.write('partitioned_features.gpml')
+    
+    .. seealso:: :meth:`PlatePartitioner.partition_features`
     """
     
-    # Turn function argument into something more convenient for extracting features.
-    features_to_partition = FeaturesFunctionArgument(features_to_partition)
-
-    # 'rotation_model' might actually be a list of features, files, etc.
-    # If it's already a RotationModel then this just references existing RotationModel.
-    rotation_model = RotationModel(rotation_model)
+    plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
     
-    partitioning_plates = []
-    reconstruct(partitioning_features, rotation_model, partitioning_plates, reconstruction_time)
-    resolve_topologies(partitioning_features, rotation_model, partitioning_plates, reconstruction_time)
-    
-    plate_partitioner = PlatePartitioner(partitioning_plates, sort_partitioning_plates)
-    
-    partitioned_features = []
-    unpartitioned_features = []
-    
-    vgp_feature_type = FeatureType.create_gpml('VirtualGeomagneticPole')
-    
-    for feature_to_partition in features_to_partition.get_features():
-        # Special case handling for VGP features.
-        if feature_to_partition.get_feature_type() == vgp_feature_type:
-            
-            
-            continue
-        
-        # Group partitioned inside geometries by partitioning plate and then by geometry property name.
-        partitioned_geometries = { }
-        # Group partitioned outside geometries by geometry property name.
-        unpartitioned_geometries = { }
-        
-        feature_to_partition_without_geometry = feature_to_partition.clone()
-        for property in feature_to_partition_without_geometry:
-            property_value = property.get_value()
-            if not property_value:
-                continue
-            
-            geometry = property_value.get_geometry()
-            if not geometry:
-                continue
-            
-            # Remove geometry property.
-            feature_to_partition_without_geometry.remove(property)
-            
-            
-            # Partition the current geometry into inside/outside geometries.
-            partitioned_inside_geometries = []
-            partitioned_outside_geometries = []
-            plate_partitioner.partition(geometry, partitioned_inside_geometries, partitioned_outside_geometries)
-            
-            geometry_property_name = property.get_name()
-            
-            if partitioned_inside_geometries:
-                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
-                    # Group by partition.
-                    geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
-                    # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
-                    geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
-                    geometries_in_partition_with_property_name.extend(inside_geometries)
-            
-            if partitioned_outside_geometries:
-                # Group by property name - there could be multiple geometry properties (per feature) with the same name.
-                unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
-                unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
-        
-        for partitioning_plate, geometries_inside_partition in partitioned_geometries.iteritems():
-            features_inside_partition = _plate_partitioning_set_geometries(
-                    feature_to_partition_without_geometry, geometries_inside_partition)
-            
-            # Copy the requested properties over from the partitioning feature.
-            _plate_partitioning_copy_partition_properties(partitioning_plate.get_feature(), features_inside_partition)
-            
-            partitioned_features.extend(features_inside_partition)
-        
-        features_outside_partition = _plate_partitioning_set_geometries(
-                feature_to_partition_without_geometry, unpartitioned_geometries)
-        unpartitioned_features.extend(features_outside_partition)
-        
-    # Reverse reconstruct all partitioned features (using their new plate IDs) if their geometries are not at present day.
-    if reconstruction_time != 0:
-        reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
-    
-    # Return separate partitioned and unpartitioned feature collections if requested.
-    if return_separate_partitioned_and_unpartitioned:
-        return (FeatureCollection(partitioned_features), FeatureCollection(unpartitioned_features))
-    
-    return FeatureCollection(partitioned_features + unpartitioned_features)
+    return plate_partitioner.partition_features(features_to_partition, return_separate_partitioned_and_unpartitioned)
