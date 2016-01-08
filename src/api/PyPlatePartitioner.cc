@@ -27,7 +27,6 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "PyPlatePartitioner.h"
 
@@ -35,9 +34,9 @@
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
-#include "app-logic/GeometryCookieCutter.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 
@@ -45,6 +44,8 @@
 #include "global/python.h"
 
 #include "maths/MathsUtils.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -54,9 +55,90 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>
-	plate_partitioner_create(
+	PlatePartitionerWrapper
+	plate_partitioner_create_from_features(
+			FeatureCollectionSequenceFunctionArgument partitioning_features_argument,
+			RotationModelFunctionArgument rotation_model_argument,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
+	{
+		// Time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Get the partitioning feature collections and convert them to weak references.
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> partitioning_feature_collections;
+		partitioning_features_argument.get_feature_collections(partitioning_feature_collections);
+
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> partitioning_feature_collection_refs;
+		BOOST_FOREACH(
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type partitioning_feature_collection,
+				partitioning_feature_collections)
+		{
+			partitioning_feature_collection_refs.push_back(partitioning_feature_collection->reference());
+		}
+
+		// Determine grouping/sorting of partitioning plates.
+		bool group_networks_then_boundaries_then_static_polygons = false;
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::SortPlates> sort_plates;
+		if (sort_partitioning_plates)
+		{
+			switch (sort_partitioning_plates.get())
+			{
+			case GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE:
+				group_networks_then_boundaries_then_static_polygons = true;
+				break;
+
+			case GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID:
+				group_networks_then_boundaries_then_static_polygons = true;
+				sort_plates = GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_ID;
+				break;
+
+			case GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_AREA:
+				group_networks_then_boundaries_then_static_polygons = true;
+				sort_plates = GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_AREA;
+				break;
+
+			case GPlatesApi::SortPartitioningPlates::BY_PLATE_ID:
+				sort_plates = GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_ID;
+				break;
+
+			case GPlatesApi::SortPartitioningPlates::BY_PLATE_AREA:
+				sort_plates = GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_AREA;
+				break;
+
+			default:
+				// Shouldn't get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
+		}
+
+		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+		RotationModel::non_null_ptr_type rotation_model = rotation_model_argument.get_rotation_model();
+
+		return PlatePartitionerWrapper(
+				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
+						new GPlatesAppLogic::GeometryCookieCutter(
+								reconstruction_time.value(),
+								reconstruct_method_registry,
+								partitioning_feature_collection_refs,
+								rotation_model->get_reconstruction_tree_creator(),
+								group_networks_then_boundaries_then_static_polygons,
+								sort_plates)),
+				rotation_model,
+				partitioning_features_argument);
+	}
+
+
+	PlatePartitionerWrapper
+	plate_partitioner_create_from_reconstruction_geometries(
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
+			bp::object rotation_model_object,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
 	{
 		// Copy partitioning plates into a vector.
@@ -117,12 +199,30 @@ namespace GPlatesApi
 			}
 		}
 
-		return boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
-				new GPlatesAppLogic::GeometryCookieCutter(
-						reconstruction_time,
-						partitioning_plates_vector,
-						group_networks_then_boundaries_then_static_polygons,
-						sort_plates));
+		// Extract the rotation model (if specified).
+		// It'll be used to reverse reconstruct (if reconstruction time is not present day).
+		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
+		if (rotation_model_object != bp::object()/*Py_None*/)
+		{
+			bp::extract<RotationModelFunctionArgument> extract_rotation_model(rotation_model_object);
+			rotation_model = extract_rotation_model().get_rotation_model();
+		}
+		else if (GPlatesPropertyValues::GeoTimeInstant(reconstruction_time) !=
+				GPlatesPropertyValues::GeoTimeInstant(0))
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"A rotation model is required for non-zero reconstruction times (to reverse reconstruct).");
+			bp::throw_error_already_set();
+		}
+
+		return PlatePartitionerWrapper(
+				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
+						new GPlatesAppLogic::GeometryCookieCutter(
+								reconstruction_time,
+								partitioning_plates_vector,
+								group_networks_then_boundaries_then_static_polygons,
+								sort_plates)),
+				rotation_model);
 	}
 
 	bool
@@ -264,6 +364,26 @@ namespace GPlatesApi
 		return GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type(
 				partitioning_reconstruction_geom.get());
 	}
+
+	/**
+	 * Returns the reconstruction time passed into constructor (used by pure Python API code).
+	 */
+	double
+	plate_partitioner_get_reconstruction_time(
+			const GPlatesAppLogic::GeometryCookieCutter &plate_partitioner)
+	{
+		return plate_partitioner.get_reconstruction_time();
+	}
+
+	/**
+	 * Returns the rotation model (if any) passed into constructor (used by pure Python API code).
+	 */
+	boost::optional<RotationModel::non_null_ptr_type>
+	plate_partitioner_get_rotation_model(
+			const PlatePartitionerWrapper &plate_partitioner)
+	{
+		return plate_partitioner.get_rotation_model();
+	}
 }
 
 
@@ -286,8 +406,7 @@ export_plate_partitioner()
 	//
 	bp::class_<
 			GPlatesAppLogic::GeometryCookieCutter,
-			// A pointer holder is required by 'bp::make_constructor'...
-			boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>,
+			GPlatesApi::PlatePartitionerWrapper,
 			boost::noncopyable>(
 					"PlatePartitioner",
 					"Partition geometries using dynamic resolved topological boundaries and/or static reconstructed feature polygons.\n",
@@ -296,39 +415,21 @@ export_plate_partitioner()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::plate_partitioner_create,
+						&GPlatesApi::plate_partitioner_create_from_reconstruction_geometries,
 						bp::default_call_policies(),
 						(bp::arg("partitioning_plates"),
+								bp::arg("rotation_model") = bp::object()/*Py_None*/,
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
-				"__init__(partitioning_plates, [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
-				"  Create a geometry partitioner from a sequence of reconstructed/resolved plates.\n"
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				// Specific overload signature...
+				"__init__(...)\n"
+				"  A *PlatePartitioner* object can be constructed in more than one way.\n"
 				"\n"
-				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
-				"  :type partitioning_plates: Any sequence of :class:`ReconstructionGeometry`\n"
-				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
-				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
-				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table below, or None\n"
-				"  :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same "
-				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
+				"  The following applies to both ways...\n"
 				"\n"
-				"  The *partitioning_plates* sequence can be generated by "
-				":func:`reconstructing regular geological features<reconstruct>` and/or "
-				":func:`resolving topological features<resolve_topologies>`.\n"
-				"  ::\n"
-				"\n"
-				"    resolved_topologies = []\n"
-				"    pygplates.resolve_topologies('topologies.gpml', 'rotations.rot', resolved_topologies, reconstruction_time)\n"
-				"    \n"
-				"    plate_partitioner = pygplates.PlatePartitioner(resolved_topologies)\n"
-				"\n"
-				"  .. note:: Only those types of :class:`reconstruction geometries<ReconstructionGeometry>` "
-				"that contain a *polygon* boundary are actually used for partitioning. For resolved topologies "
-				"this includes :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`. "
-				"For reconstructed geometries, a :class:`ReconstructedFeatureGeometry` is only included if its "
-				"reconstructed geometry is a :class:`PolygonOnSphere`.\n"
-				"\n"
-				"  The following table maps *sort_partitioning_plates* values to the sorting criteria used for *partitioning_plates*:\n"
+				"  This table maps the values of the *sort_partitioning_plates* parameter to the "
+				"sorting criteria used for the partitioning plates:\n"
 				"\n"
 				"  ======================================= ==============\n"
 				"  SortPartitioningPlates Value            Description\n"
@@ -346,16 +447,15 @@ export_plate_partitioner()
 				"but no grouping by partition type.\n"
 				"  ======================================= ==============\n"
 				"\n"
-				"  .. note:: If you don't want to sort the partitioning plates (for example, if you have "
-				"already sorted them) then you'll need to explicitly specify ``None`` for "
-				"*sort_partitioning_plates* (eg, ``pygplates.PlatePartitioner(resolved_topologies, None)``). "
+				"  .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them) "
+				"then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter "
+				"(eg, ``pygplates.PlatePartitioner(..., sort_partitioning_plates=None)``). "
 				"This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id* "
 				"(since this always gives deterministic partitioning results).\n"
 				"\n"
 				"  If the partitioning plates overlap each other then their final ordering "
-				"determines the partitioning results (of :meth:`partition` and :meth:`partition_point`). "
-				"Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap "
-				"and hence the sorting order becomes relevant.\n"
+				"determines the partitioning results. Resolved topologies do not tend to overlap, "
+				"but reconstructed static polygons do overlap and hence the sorting order becomes relevant.\n"
 				"\n"
 				"  Partitioning of points is more efficient if you sort by plate *area* because an arbitrary "
 				"point is likely to be found sooner when testing against larger partitioning polygons first "
@@ -367,18 +467,99 @@ export_plate_partitioner()
 				"to overlay the topological plate boundaries(usually this isn't the case though):\n"
 				"  ::\n"
 				"\n"
-				"    plate_partitioner = pygplates.PlatePartitioner(resolved_topologies, "
-				"pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)\n"
+				"    plate_partitioner = pygplates.PlatePartitioner(..., "
+				"sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)\n"
+				"\n"
+				"  .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning. "
+				"For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and "
+				":class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry` "
+				"is only included if its reconstructed geometry is a :class:`PolygonOnSphere`.\n"
+				"\n"
+				"\n"
+				"  A *PlatePartitioner* object can be constructed in the following ways...\n"
+				"\n"
+
+				// Specific overload signature...
+				"__init__(partitioning_plates, [rotation_model], [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"  Create a partitioner from a sequence of reconstructed/resolved plates.\n"
+				"\n"
+				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
+				"  :type partitioning_plates: Any sequence of :class:`ReconstructionGeometry`\n"
+				"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
+				"filename or a sequence of rotation feature collections and/or rotation filenames\n"
+				"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
+				"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
+				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
+				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
+				"  :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same "
+				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
+				"  :raises: ValueError if *rotation_model* is not specified and the reconstruction time "
+				"(of the partitioning plates) is non-zero\n"
+				"\n"
+				"  The *partitioning_plates* sequence can be generated by "
+				":func:`reconstructing regular geological features<reconstruct>` and/or "
+				":func:`resolving topological features<resolve_topologies>`.\n"
+				"  ::\n"
+				"\n"
+				"    resolved_topologies = []\n"
+				"    pygplates.resolve_topologies('topologies.gpml', 'rotations.rot', resolved_topologies, reconstruction_time=0)\n"
+				"    \n"
+				"    plate_partitioner = pygplates.PlatePartitioner(resolved_topologies)\n"
 				"\n"
 				"  .. note:: All partitioning plates should have been generated for the same "
-				"reconstruction time otherwise *DifferentTimesInPartitioningPlatesError* is raised.\n")
+				"reconstruction time otherwise *DifferentTimesInPartitioningPlatesError* is raised.\n"
+				"\n"
+				"  .. note:: *rotation_model* should be specified (ie, not ``None``) if the partitioning plates "
+				"were reconstructed/resolved to a *non-zero* reconstruction time. This enables partitioned "
+				"feature geometries to be reverse-reconstructed in :meth:`partition_features`.\n")
+		//
+		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
+		// because boost-python matches most recently defined functions first and this function has a tighter
+		// match to its parameters (eg, doesn't have general bp::object arguments that match anything).
+		//
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::plate_partitioner_create_from_features,
+						bp::default_call_policies(),
+						(bp::arg("partitioning_features"),
+								bp::arg("rotation_model"),
+								bp::arg("reconstruction_time") = GPlatesPropertyValues::GeoTimeInstant(0),
+								bp::arg("sort_partitioning_plates") =
+										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
+				// Specific overload signature...
+				"__init__(partitioning_features, rotation_model, [reconstruction_time=0], "
+				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
+				"\n"
+				"  :param partitioning_features: A sequence of plate features to partition with.\n"
+				"  :type partitioning_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
+				"filename or a sequence of rotation feature collections and/or rotation filenames\n"
+				"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
+				"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+				"  :param reconstruction_time: the specific geological time to reconstruct/resolve the *partitioning_features* to\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
+				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
+				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
+				"\n"
+				"  The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` "
+				"and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and "
+				"optional reconstruction time.\n"
+				"\n"
+				"  To create a plate partitioner suitable for partitioning present day geometries/features (ie, *reconstruction_time* is zero):.\n"
+				"  ::\n"
+				"    \n"
+				"    plate_partitioner = pygplates.PlatePartitioner('topologies.gpml', 'rotations.rot')\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
 						bp::arg("partitioned_inside_geometries") = bp::object()/*Py_None*/,
 						bp::arg("partitioned_outside_geometries") = bp::object()/*Py_None*/),
 				"partition_geometry(geometry, [partitioned_inside_geometries], [partitioned_outside_geometries])\n"
-				"  Partitions a geometry into partitioning plates.\n"
+				"  Partitions one or more geometries into partitioning plates.\n"
 				"\n"
 				"  :param geometry: the geometry, or geometries, to partition\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
@@ -415,7 +596,7 @@ export_plate_partitioner()
 				"    polyline_inside_length = 0\n"
 				"\n"
 				"    reconstructed_static_polygons = []\n"
-				"    pygplates.reconstruct('static_polygons.gpml', 'rotations.rot', reconstructed_static_polygons, reconstruction_time)\n"
+				"    pygplates.reconstruct('static_polygons.gpml', 'rotations.rot', reconstructed_static_polygons, reconstruction_time=0)\n"
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner(reconstructed_static_polygons)\n"
 				"    partitioned_inside_geometries = []\n"
@@ -431,7 +612,7 @@ export_plate_partitioner()
 				&GPlatesApi::plate_partitioner_partition_point,
 				(bp::arg("point")),
 				"partition_point(point)\n"
-				"  A convenient alternative to :meth:`partition`, for a point, that finds the first "
+				"  A convenient alternative to :meth:`partition_geometry`, for a point, that finds the first "
 				"partitioning plate (if any) containing the point.\n"
 				"\n"
 				"  :param point: the point to partition\n"
@@ -444,7 +625,7 @@ export_plate_partitioner()
 				"  ::\n"
 				"\n"
 				"    reconstructed_static_polygons = []\n"
-				"    pygplates.reconstruct('static_polygons.gpml', 'rotations.rot', reconstructed_static_polygons, reconstruction_time)\n"
+				"    pygplates.reconstruct('static_polygons.gpml', 'rotations.rot', reconstructed_static_polygons, reconstruction_time=0)\n"
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner(reconstructed_static_polygons)\n"
 				"    reconstructed_static_polygon = plate_partitioner.partition_point((0,0))\n"
@@ -452,6 +633,14 @@ export_plate_partitioner()
 				"        partitioning_plate_id = reconstructed_static_polygon.get_feature().get_reconstruction_plate_id()\n"
 				"\n"
 				"  .. seealso:: :meth:`PolygonOnSphere.is_point_in_polygon`\n")
+		// This is a private method (has leading '_'), and we don't provide a docstring.
+		// This method is accessed by pure python API code.
+		.def("_get_reconstruction_time",
+				&GPlatesApi::plate_partitioner_get_reconstruction_time)
+		// This is a private method (has leading '_'), and we don't provide a docstring.
+		// This method is accessed by pure python API code.
+		.def("_get_rotation_model",
+				&GPlatesApi::plate_partitioner_get_rotation_model)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

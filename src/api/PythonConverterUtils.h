@@ -125,7 +125,7 @@ namespace GPlatesApi
 		 * A similar two-stage conversion applies if a Python-wrapped GPlatesUtils::non_null_intrusive_ptr<Derived>
 		 * is passed to a C++ function accepting GPlatesUtils::non_null_intrusive_ptr<Base>.
 		 * Note that boost-python does treat boost::shared_ptr as a special case (where base/derived
-		 * conversions are registered/handled automatically) but we need to this extra registration
+		 * conversions are registered/handled automatically) but we need this extra registration
 		 * to properly handle GPlatesUtils::non_null_intrusive_ptr.
 		 *
 		 * For more information on boost python to/from conversions, see:

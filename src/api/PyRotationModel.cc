@@ -50,6 +50,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
+#include "property-values/GeoTimeInstant.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 

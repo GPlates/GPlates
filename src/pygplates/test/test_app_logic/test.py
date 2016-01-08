@@ -465,6 +465,9 @@ class PlatePartitionerTestCase(unittest.TestCase):
             10)
         self.assertRaises(pygplates.DifferentTimesInPartitioningPlatesError,
                 pygplates.PlatePartitioner, resolved_topologies + resolved_topologies_10)
+        # Need to provide a rotation model for non-zero reconstruction time.
+        self.assertRaises(ValueError,
+                pygplates.PlatePartitioner, resolved_topologies_10)
 
     def test_sort(self):
         resolved_topologies = []
@@ -479,7 +482,17 @@ class PlatePartitionerTestCase(unittest.TestCase):
         polyline = pygplates.PolylineOnSphere([(0,0), (0,-30), (30,-30), (30,-90)])
         
         # Unsorted.
-        plate_partitioner = pygplates.PlatePartitioner(resolved_topologies, None)
+        plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features, sort_partitioning_plates=None)
+        partitioned_inside_geometries = []
+        plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
+        self.assertTrue(len(partitioned_inside_geometries) == 3)
+        # Should be in original order.
+        for recon_geom_index, (recon_geom, inside_geoms) in enumerate(partitioned_inside_geometries):
+            self.assertTrue(recon_geom.get_feature().get_feature_id() ==
+                    resolved_topologies[recon_geom_index].get_feature().get_feature_id())
+        
+        # Unsorted.
+        plate_partitioner = pygplates.PlatePartitioner(resolved_topologies, sort_partitioning_plates=None)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -496,7 +509,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
             del resolved_topologies_copy[0]
         self.assertFalse(isinstance(resolved_topologies_copy[0], pygplates.ResolvedTopologicalNetwork))
         plate_partitioner = pygplates.PlatePartitioner(
-                resolved_topologies_copy, pygplates.SortPartitioningPlates.by_partition_type)
+                resolved_topologies_copy, sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -513,7 +526,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
             del resolved_topologies_copy[0]
         self.assertFalse(isinstance(resolved_topologies_copy[0], pygplates.ResolvedTopologicalNetwork))
         plate_partitioner = pygplates.PlatePartitioner(
-                resolved_topologies_copy, pygplates.SortPartitioningPlates.by_partition_type_then_plate_id)
+                resolved_topologies_copy, sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_id)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -533,7 +546,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
             del resolved_topologies_copy[0]
         self.assertFalse(isinstance(resolved_topologies_copy[0], pygplates.ResolvedTopologicalNetwork))
         plate_partitioner = pygplates.PlatePartitioner(
-                resolved_topologies_copy, pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)
+                resolved_topologies_copy, sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -548,7 +561,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
         # Sort in opposite plate ID order.
         resolved_topologies_copy = sorted(resolved_topologies, key = lambda rg: rg.get_feature().get_reconstruction_plate_id())
         plate_partitioner = pygplates.PlatePartitioner(
-                resolved_topologies_copy, pygplates.SortPartitioningPlates.by_plate_id)
+                resolved_topologies_copy, sort_partitioning_plates=pygplates.SortPartitioningPlates.by_plate_id)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -561,7 +574,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
         # Sort in opposite plate area order.
         resolved_topologies_copy = sorted(resolved_topologies, key = lambda rg: rg.get_resolved_boundary().get_area())
         plate_partitioner = pygplates.PlatePartitioner(
-                resolved_topologies_copy, pygplates.SortPartitioningPlates.by_plate_area)
+                resolved_topologies_copy, sort_partitioning_plates=pygplates.SortPartitioningPlates.by_plate_area)
         partitioned_inside_geometries = []
         plate_partitioner.partition_geometry(polyline, partitioned_inside_geometries)
         self.assertTrue(len(partitioned_inside_geometries) == 3)
@@ -570,14 +583,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(partitioned_inside_geometries[2][0].get_feature().get_reconstruction_plate_id() == 2)
 
     def test_partition(self):
-        resolved_topologies = []
-        pygplates.resolve_topologies(
-            self.topological_features,
-            self.rotation_features,
-            resolved_topologies,
-            0)
-        
-        plate_partitioner = pygplates.PlatePartitioner(resolved_topologies)
+        plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)
         
         # Test optional arguments.
         point = pygplates.PointOnSphere(0, -30)
