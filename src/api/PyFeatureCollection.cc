@@ -816,12 +816,12 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 		// came from a file or not.
 		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection_function_argument);
 	}
-	else if (const QString *filename =
+	else if (const QString *filename_function_argument =
 		boost::get<QString>(&function_argument))
 	{
 		// Create a file with an empty feature collection.
 		GPlatesFileIO::File::non_null_ptr_type file =
-				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(*filename));
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(*filename_function_argument));
 
 		// Read new features from the file into the feature collection.
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
@@ -830,13 +830,13 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 
 		return file;
 	}
-	else if (const GPlatesModel::FeatureHandle::non_null_ptr_type *feature =
+	else if (const GPlatesModel::FeatureHandle::non_null_ptr_type *feature_function_argument =
 		boost::get<GPlatesModel::FeatureHandle::non_null_ptr_type>(&function_argument))
 	{
 		// Create a feature collection with a single feature.
 		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
 				GPlatesModel::FeatureCollectionHandle::create();
-		feature_collection->add(*feature);
+		feature_collection->add(*feature_function_argument);
 
 		// Create a file with an empty filename - since feature collection didn't come from a file.
 		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);

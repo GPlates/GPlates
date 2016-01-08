@@ -250,6 +250,63 @@ export_enumeration_type()
 }
 
 
+namespace GPlatesApi
+{
+	//
+	// Some common feature types....
+	//
+	const GPlatesModel::FeatureType gpml_aseismic_ridge = GPlatesModel::FeatureType::create_gpml("AseismicRidge");
+	const GPlatesModel::FeatureType gpml_basic_rock_unit = GPlatesModel::FeatureType::create_gpml("BasicRockUnit");
+	const GPlatesModel::FeatureType gpml_basin = GPlatesModel::FeatureType::create_gpml("Basin");
+	const GPlatesModel::FeatureType gpml_closed_continental_boundary = GPlatesModel::FeatureType::create_gpml("ClosedContinentalBoundary");
+	const GPlatesModel::FeatureType gpml_closed_plate_boundary = GPlatesModel::FeatureType::create_gpml("ClosedPlateBoundary");
+	const GPlatesModel::FeatureType gpml_coastline = GPlatesModel::FeatureType::create_gpml("Coastline");
+	const GPlatesModel::FeatureType gpml_continental_crust = GPlatesModel::FeatureType::create_gpml("ContinentalCrust");
+	const GPlatesModel::FeatureType gpml_continental_fragment = GPlatesModel::FeatureType::create_gpml("ContinentalFragment");
+	const GPlatesModel::FeatureType gpml_continental_rift = GPlatesModel::FeatureType::create_gpml("ContinentalRift");
+	const GPlatesModel::FeatureType gpml_craton = GPlatesModel::FeatureType::create_gpml("Craton");
+	const GPlatesModel::FeatureType gpml_extended_continental_crust = GPlatesModel::FeatureType::create_gpml("ExtendedContinentalCrust");
+	const GPlatesModel::FeatureType gpml_fault = GPlatesModel::FeatureType::create_gpml("Fault");
+	const GPlatesModel::FeatureType gpml_flowline = GPlatesModel::FeatureType::create_gpml("Flowline");
+	const GPlatesModel::FeatureType gpml_fold_plane = GPlatesModel::FeatureType::create_gpml("FoldPlane");
+	const GPlatesModel::FeatureType gpml_fracture_zone = GPlatesModel::FeatureType::create_gpml("FractureZone");
+	const GPlatesModel::FeatureType gpml_fracture_zone_identification = GPlatesModel::FeatureType::create_gpml("FractureZoneIdentification");
+	const GPlatesModel::FeatureType gpml_geological_lineation = GPlatesModel::FeatureType::create_gpml("GeologicalLineation");
+	const GPlatesModel::FeatureType gpml_geological_plane = GPlatesModel::FeatureType::create_gpml("GeologicalPlane");
+	const GPlatesModel::FeatureType gpml_hot_spot = GPlatesModel::FeatureType::create_gpml("HotSpot");
+	const GPlatesModel::FeatureType gpml_hot_spot_trail = GPlatesModel::FeatureType::create_gpml("HotSpotTrail");
+	const GPlatesModel::FeatureType gpml_inferred_paleo_boundary = GPlatesModel::FeatureType::create_gpml("InferredPaleoBoundary");
+	const GPlatesModel::FeatureType gpml_island_arc = GPlatesModel::FeatureType::create_gpml("IslandArc");
+	const GPlatesModel::FeatureType gpml_isochron = GPlatesModel::FeatureType::create_gpml("Isochron");
+	const GPlatesModel::FeatureType gpml_large_igneous_province = GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince");
+	const GPlatesModel::FeatureType gpml_magnetic_anomaly_identification = GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification");
+	const GPlatesModel::FeatureType gpml_magnetic_anomaly_lineation = GPlatesModel::FeatureType::create_gpml("MagneticAnomalyLineation");
+	const GPlatesModel::FeatureType gpml_magnetic_anomaly_ship_track = GPlatesModel::FeatureType::create_gpml("MagneticAnomalyShipTrack");
+	const GPlatesModel::FeatureType gpml_mid_ocean_ridge = GPlatesModel::FeatureType::create_gpml("MidOceanRidge");
+	const GPlatesModel::FeatureType gpml_motion_path = GPlatesModel::FeatureType::create_gpml("MotionPath");
+	const GPlatesModel::FeatureType gpml_oceanic_crust = GPlatesModel::FeatureType::create_gpml("OceanicCrust");
+	const GPlatesModel::FeatureType gpml_ophiolite = GPlatesModel::FeatureType::create_gpml("Ophiolite");
+	const GPlatesModel::FeatureType gpml_orogenic_belt = GPlatesModel::FeatureType::create_gpml("OrogenicBelt");
+	const GPlatesModel::FeatureType gpml_passive_continental_boundary = GPlatesModel::FeatureType::create_gpml("PassiveContinentalBoundary");
+	const GPlatesModel::FeatureType gpml_pluton = GPlatesModel::FeatureType::create_gpml("Pluton");
+	const GPlatesModel::FeatureType gpml_pseudo_fault = GPlatesModel::FeatureType::create_gpml("PseudoFault");
+	const GPlatesModel::FeatureType gpml_seamount = GPlatesModel::FeatureType::create_gpml("Seamount");
+	const GPlatesModel::FeatureType gpml_slab_edge = GPlatesModel::FeatureType::create_gpml("SlabEdge");
+	const GPlatesModel::FeatureType gpml_subduction_zone = GPlatesModel::FeatureType::create_gpml("SubductionZone");
+	const GPlatesModel::FeatureType gpml_suture = GPlatesModel::FeatureType::create_gpml("Suture");
+	const GPlatesModel::FeatureType gpml_terrane_boundary = GPlatesModel::FeatureType::create_gpml("TerraneBoundary");
+	const GPlatesModel::FeatureType gpml_topological_closed_plate_boundary = GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+	const GPlatesModel::FeatureType gpml_topological_network = GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+	const GPlatesModel::FeatureType gpml_topological_slab_boundary = GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
+	const GPlatesModel::FeatureType gpml_total_reconstruction_sequence = GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
+	const GPlatesModel::FeatureType gpml_transform = GPlatesModel::FeatureType::create_gpml("Transform");
+	const GPlatesModel::FeatureType gpml_transitional_crust = GPlatesModel::FeatureType::create_gpml("TransitionalCrust");
+	const GPlatesModel::FeatureType gpml_unconformity = GPlatesModel::FeatureType::create_gpml("Unconformity");
+	const GPlatesModel::FeatureType gpml_unknown_contact = GPlatesModel::FeatureType::create_gpml("UnknownContact");
+	const GPlatesModel::FeatureType gpml_virtual_geomagnetic_pole = GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
+	const GPlatesModel::FeatureType gpml_volcano = GPlatesModel::FeatureType::create_gpml("Volcano");
+}
+
 void
 export_feature_type()
 {
@@ -261,8 +318,114 @@ export_feature_type()
 			"The namespace-qualified type of a feature.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. FeatureType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"As a convenience the following common feature types are available as class attributes:\n"
+			"\n"
+			"* ``pygplates.FeatureType.gpml_aseismic_ridge`` = pygplates.FeatureType.create_gpml('AseismicRidge')\n"
+			"* ``pygplates.FeatureType.gpml_basic_rock_unit`` = pygplates.FeatureType.create_gpml('BasicRockUnit')\n"
+			"* ``pygplates.FeatureType.gpml_basin`` = pygplates.FeatureType.create_gpml('Basin')\n"
+			"* ``pygplates.FeatureType.gpml_closed_continental_boundary`` = pygplates.FeatureType.create_gpml('ClosedContinentalBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_closed_plate_boundary`` = pygplates.FeatureType.create_gpml('ClosedPlateBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_coastline`` = pygplates.FeatureType.create_gpml('Coastline')\n"
+			"* ``pygplates.FeatureType.gpml_continental_crust`` = pygplates.FeatureType.create_gpml('ContinentalCrust')\n"
+			"* ``pygplates.FeatureType.gpml_continental_fragment`` = pygplates.FeatureType.create_gpml('ContinentalFragment')\n"
+			"* ``pygplates.FeatureType.gpml_continental_rift`` = pygplates.FeatureType.create_gpml('ContinentalRift')\n"
+			"* ``pygplates.FeatureType.gpml_craton`` = pygplates.FeatureType.create_gpml('Craton')\n"
+			"* ``pygplates.FeatureType.gpml_extended_continental_crust`` = pygplates.FeatureType.create_gpml('ExtendedContinentalCrust')\n"
+			"* ``pygplates.FeatureType.gpml_fault`` = pygplates.FeatureType.create_gpml('Fault')\n"
+			"* ``pygplates.FeatureType.gpml_flowline`` = pygplates.FeatureType.create_gpml('Flowline')\n"
+			"* ``pygplates.FeatureType.gpml_fold_plane`` = pygplates.FeatureType.create_gpml('FoldPlane')\n"
+			"* ``pygplates.FeatureType.gpml_fracture_zone`` = pygplates.FeatureType.create_gpml('FractureZone')\n"
+			"* ``pygplates.FeatureType.gpml_fracture_zone_identification`` = pygplates.FeatureType.create_gpml('FractureZoneIdentification')\n"
+			"* ``pygplates.FeatureType.gpml_geological_lineation`` = pygplates.FeatureType.create_gpml('GeologicalLineation')\n"
+			"* ``pygplates.FeatureType.gpml_geological_plane`` = pygplates.FeatureType.create_gpml('GeologicalPlane')\n"
+			"* ``pygplates.FeatureType.gpml_hot_spot`` = pygplates.FeatureType.create_gpml('HotSpot')\n"
+			"* ``pygplates.FeatureType.gpml_hot_spot_trail`` = pygplates.FeatureType.create_gpml('HotSpotTrail')\n"
+			"* ``pygplates.FeatureType.gpml_inferred_paleo_boundary`` = pygplates.FeatureType.create_gpml('InferredPaleoBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_island_arc`` = pygplates.FeatureType.create_gpml('IslandArc')\n"
+			"* ``pygplates.FeatureType.gpml_isochron`` = pygplates.FeatureType.create_gpml('Isochron')\n"
+			"* ``pygplates.FeatureType.gpml_large_igneous_province`` = pygplates.FeatureType.create_gpml('LargeIgneousProvince')\n"
+			"* ``pygplates.FeatureType.gpml_magnetic_anomaly_identification`` = pygplates.FeatureType.create_gpml('MagneticAnomalyIdentification')\n"
+			"* ``pygplates.FeatureType.gpml_magnetic_anomaly_lineation`` = pygplates.FeatureType.create_gpml('MagneticAnomalyLineation')\n"
+			"* ``pygplates.FeatureType.gpml_magnetic_anomaly_ship_track`` = pygplates.FeatureType.create_gpml('MagneticAnomalyShipTrack')\n"
+			"* ``pygplates.FeatureType.gpml_mid_ocean_ridge`` = pygplates.FeatureType.create_gpml('MidOceanRidge')\n"
+			"* ``pygplates.FeatureType.gpml_motion_path`` = pygplates.FeatureType.create_gpml('MotionPath')\n"
+			"* ``pygplates.FeatureType.gpml_oceanic_crust`` = pygplates.FeatureType.create_gpml('OceanicCrust')\n"
+			"* ``pygplates.FeatureType.gpml_ophiolite`` = pygplates.FeatureType.create_gpml('Ophiolite')\n"
+			"* ``pygplates.FeatureType.gpml_orogenic_belt`` = pygplates.FeatureType.create_gpml('OrogenicBelt')\n"
+			"* ``pygplates.FeatureType.gpml_passive_continental_boundary`` = pygplates.FeatureType.create_gpml('PassiveContinentalBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_pluton`` = pygplates.FeatureType.create_gpml('Pluton')\n"
+			"* ``pygplates.FeatureType.gpml_pseudo_fault`` = pygplates.FeatureType.create_gpml('PseudoFault')\n"
+			"* ``pygplates.FeatureType.gpml_seamount`` = pygplates.FeatureType.create_gpml('Seamount')\n"
+			"* ``pygplates.FeatureType.gpml_slab_edge`` = pygplates.FeatureType.create_gpml('SlabEdge')\n"
+			"* ``pygplates.FeatureType.gpml_subduction_zone`` = pygplates.FeatureType.create_gpml('SubductionZone')\n"
+			"* ``pygplates.FeatureType.gpml_suture`` = pygplates.FeatureType.create_gpml('Suture')\n"
+			"* ``pygplates.FeatureType.gpml_terrane_boundary`` = pygplates.FeatureType.create_gpml('TerraneBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_topological_closed_plate_boundary`` = pygplates.FeatureType.create_gpml('TopologicalClosedPlateBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_topological_network`` = pygplates.FeatureType.create_gpml('TopologicalNetwork')\n"
+			"* ``pygplates.FeatureType.gpml_topological_slab_boundary`` = pygplates.FeatureType.create_gpml('TopologicalSlabBoundary')\n"
+			"* ``pygplates.FeatureType.gpml_total_reconstruction_sequence`` = pygplates.FeatureType.create_gpml('TotalReconstructionSequence')\n"
+			"* ``pygplates.FeatureType.gpml_transform`` = pygplates.FeatureType.create_gpml('Transform')\n"
+			"* ``pygplates.FeatureType.gpml_transitional_crust`` = pygplates.FeatureType.create_gpml('TransitionalCrust')\n"
+			"* ``pygplates.FeatureType.gpml_unconformity`` = pygplates.FeatureType.create_gpml('Unconformity')\n"
+			"* ``pygplates.FeatureType.gpml_unknown_contact`` = pygplates.FeatureType.create_gpml('UnknownContact')\n"
+			"* ``pygplates.FeatureType.gpml_virtual_geomagnetic_pole`` = pygplates.FeatureType.create_gpml('VirtualGeomagneticPole')\n"
+			"* ``pygplates.FeatureType.gpml_volcano`` = pygplates.FeatureType.create_gpml('Volcano')\n",
 			bp::no_init/*force usage of create functions*/);
+
+	// Some common feature types...
+	feature_type_class.def_readonly("gpml_aseismic_ridge", GPlatesApi::gpml_aseismic_ridge);
+	feature_type_class.def_readonly("gpml_basic_rock_unit", GPlatesApi::gpml_basic_rock_unit);
+	feature_type_class.def_readonly("gpml_basin", GPlatesApi::gpml_basin);
+	feature_type_class.def_readonly("gpml_closed_continental_boundary", GPlatesApi::gpml_closed_continental_boundary);
+	feature_type_class.def_readonly("gpml_closed_plate_boundary", GPlatesApi::gpml_closed_plate_boundary);
+	feature_type_class.def_readonly("gpml_coastline", GPlatesApi::gpml_coastline);
+	feature_type_class.def_readonly("gpml_continental_crust", GPlatesApi::gpml_continental_crust);
+	feature_type_class.def_readonly("gpml_continental_fragment", GPlatesApi::gpml_continental_fragment);
+	feature_type_class.def_readonly("gpml_continental_rift", GPlatesApi::gpml_continental_rift);
+	feature_type_class.def_readonly("gpml_craton", GPlatesApi::gpml_craton);
+	feature_type_class.def_readonly("gpml_extended_continental_crust", GPlatesApi::gpml_extended_continental_crust);
+	feature_type_class.def_readonly("gpml_fault", GPlatesApi::gpml_fault);
+	feature_type_class.def_readonly("gpml_flowline", GPlatesApi::gpml_flowline);
+	feature_type_class.def_readonly("gpml_fold_plane", GPlatesApi::gpml_fold_plane);
+	feature_type_class.def_readonly("gpml_fracture_zone", GPlatesApi::gpml_fracture_zone);
+	feature_type_class.def_readonly("gpml_fracture_zone_identification", GPlatesApi::gpml_fracture_zone_identification);
+	feature_type_class.def_readonly("gpml_geological_lineation", GPlatesApi::gpml_geological_lineation);
+	feature_type_class.def_readonly("gpml_geological_plane", GPlatesApi::gpml_geological_plane);
+	feature_type_class.def_readonly("gpml_hot_spot", GPlatesApi::gpml_hot_spot);
+	feature_type_class.def_readonly("gpml_hot_spot_trail", GPlatesApi::gpml_hot_spot_trail);
+	feature_type_class.def_readonly("gpml_inferred_paleo_boundary", GPlatesApi::gpml_inferred_paleo_boundary);
+	feature_type_class.def_readonly("gpml_island_arc", GPlatesApi::gpml_island_arc);
+	feature_type_class.def_readonly("gpml_isochron", GPlatesApi::gpml_isochron);
+	feature_type_class.def_readonly("gpml_large_igneous_province", GPlatesApi::gpml_large_igneous_province);
+	feature_type_class.def_readonly("gpml_magnetic_anomaly_identification", GPlatesApi::gpml_magnetic_anomaly_identification);
+	feature_type_class.def_readonly("gpml_magnetic_anomaly_lineation", GPlatesApi::gpml_magnetic_anomaly_lineation);
+	feature_type_class.def_readonly("gpml_magnetic_anomaly_ship_track", GPlatesApi::gpml_magnetic_anomaly_ship_track);
+	feature_type_class.def_readonly("gpml_mid_ocean_ridge", GPlatesApi::gpml_mid_ocean_ridge);
+	feature_type_class.def_readonly("gpml_motion_path", GPlatesApi::gpml_motion_path);
+	feature_type_class.def_readonly("gpml_oceanic_crust", GPlatesApi::gpml_oceanic_crust);
+	feature_type_class.def_readonly("gpml_ophiolite", GPlatesApi::gpml_ophiolite);
+	feature_type_class.def_readonly("gpml_orogenic_belt", GPlatesApi::gpml_orogenic_belt);
+	feature_type_class.def_readonly("gpml_passive_continental_boundary", GPlatesApi::gpml_passive_continental_boundary);
+	feature_type_class.def_readonly("gpml_pluton", GPlatesApi::gpml_pluton);
+	feature_type_class.def_readonly("gpml_pseudo_fault", GPlatesApi::gpml_pseudo_fault);
+	feature_type_class.def_readonly("gpml_seamount", GPlatesApi::gpml_seamount);
+	feature_type_class.def_readonly("gpml_slab_edge", GPlatesApi::gpml_slab_edge);
+	feature_type_class.def_readonly("gpml_subduction_zone", GPlatesApi::gpml_subduction_zone);
+	feature_type_class.def_readonly("gpml_suture", GPlatesApi::gpml_suture);
+	feature_type_class.def_readonly("gpml_terrane_boundary", GPlatesApi::gpml_terrane_boundary);
+	feature_type_class.def_readonly("gpml_topological_closed_plate_boundary", GPlatesApi::gpml_topological_closed_plate_boundary);
+	feature_type_class.def_readonly("gpml_topological_network", GPlatesApi::gpml_topological_network);
+	feature_type_class.def_readonly("gpml_topological_slab_boundary", GPlatesApi::gpml_topological_slab_boundary);
+	feature_type_class.def_readonly("gpml_total_reconstruction_sequence", GPlatesApi::gpml_total_reconstruction_sequence);
+	feature_type_class.def_readonly("gpml_transform", GPlatesApi::gpml_transform);
+	feature_type_class.def_readonly("gpml_transitional_crust", GPlatesApi::gpml_transitional_crust);
+	feature_type_class.def_readonly("gpml_unconformity", GPlatesApi::gpml_unconformity);
+	feature_type_class.def_readonly("gpml_unknown_contact", GPlatesApi::gpml_unknown_contact);
+	feature_type_class.def_readonly("gpml_virtual_geomagnetic_pole", GPlatesApi::gpml_virtual_geomagnetic_pole);
+	feature_type_class.def_readonly("gpml_volcano", GPlatesApi::gpml_volcano);
+
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>,
@@ -293,28 +456,45 @@ export_feature_type()
 namespace GPlatesApi
 {
 	//
+	// Some common property names....
+	//
+	const GPlatesModel::PropertyName gml_description = GPlatesModel::PropertyName::create_gml("description");
+	const GPlatesModel::PropertyName gml_name = GPlatesModel::PropertyName::create_gml("name");
+	const GPlatesModel::PropertyName gml_valid_time = GPlatesModel::PropertyName::create_gml("validTime");
+	const GPlatesModel::PropertyName gpml_average_age = GPlatesModel::PropertyName::create_gpml("averageAge");
+	const GPlatesModel::PropertyName gpml_average_declination = GPlatesModel::PropertyName::create_gpml("averageDeclination");
+	const GPlatesModel::PropertyName gpml_average_inclination = GPlatesModel::PropertyName::create_gpml("averageInclination");
+	const GPlatesModel::PropertyName gpml_conjugate_plate_id = GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
+	const GPlatesModel::PropertyName gpml_fixed_reference_frame = GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
+	const GPlatesModel::PropertyName gpml_left_plate = GPlatesModel::PropertyName::create_gpml("leftPlate");
+	const GPlatesModel::PropertyName gpml_moving_reference_frame = GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
+	const GPlatesModel::PropertyName gpml_polarity_chron_id = GPlatesModel::PropertyName::create_gpml("polarityChronId");
+	const GPlatesModel::PropertyName gpml_polarity_chron_offset = GPlatesModel::PropertyName::create_gpml("polarityChronOffset");
+	const GPlatesModel::PropertyName gpml_polarity_chron_orientation = GPlatesModel::PropertyName::create_gpml("polarityChronOrientation");
+	const GPlatesModel::PropertyName gpml_pole_a95 = GPlatesModel::PropertyName::create_gpml("poleA95");
+	const GPlatesModel::PropertyName gpml_pole_dm = GPlatesModel::PropertyName::create_gpml("poleDm");
+	const GPlatesModel::PropertyName gpml_pole_dp = GPlatesModel::PropertyName::create_gpml("poleDp");
+	const GPlatesModel::PropertyName gpml_reconstruction_method = GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
+	const GPlatesModel::PropertyName gpml_reconstruction_plate_id = GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	const GPlatesModel::PropertyName gpml_relative_plate = GPlatesModel::PropertyName::create_gpml("relativePlate");
+	const GPlatesModel::PropertyName gpml_right_plate = GPlatesModel::PropertyName::create_gpml("rightPlate");
+	const GPlatesModel::PropertyName gpml_shapefile_attributes = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
+	const GPlatesModel::PropertyName gpml_times = GPlatesModel::PropertyName::create_gpml("times");
+	const GPlatesModel::PropertyName gpml_total_reconstruction_pole = GPlatesModel::PropertyName::create_gpml("totalReconstructionPole");
+
+	//
 	// Some common geometry property names....
 	//
-	const GPlatesModel::PropertyName gpml_average_sample_site_position =
-			GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
-	const GPlatesModel::PropertyName gpml_boundary =
-			GPlatesModel::PropertyName::create_gpml("boundary");
-	const GPlatesModel::PropertyName gpml_center_line_of =
-			GPlatesModel::PropertyName::create_gpml("centerLineOf");
-	const GPlatesModel::PropertyName gpml_error_bounds =
-			GPlatesModel::PropertyName::create_gpml("errorBounds");
-	const GPlatesModel::PropertyName gpml_multi_position =
-			GPlatesModel::PropertyName::create_gpml("multiPosition");
-	const GPlatesModel::PropertyName gpml_outline_of =
-			GPlatesModel::PropertyName::create_gpml("outlineOf");
-	const GPlatesModel::PropertyName gpml_pole_position =
-			GPlatesModel::PropertyName::create_gpml("polePosition");
-	const GPlatesModel::PropertyName gpml_position =
-			GPlatesModel::PropertyName::create_gpml("position");
-	const GPlatesModel::PropertyName gpml_seed_points =
-			GPlatesModel::PropertyName::create_gpml("seedPoints");
-	const GPlatesModel::PropertyName gpml_unclassified_geometry =
-			GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
+	const GPlatesModel::PropertyName gpml_average_sample_site_position = GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
+	const GPlatesModel::PropertyName gpml_boundary = GPlatesModel::PropertyName::create_gpml("boundary");
+	const GPlatesModel::PropertyName gpml_center_line_of = GPlatesModel::PropertyName::create_gpml("centerLineOf");
+	const GPlatesModel::PropertyName gpml_error_bounds = GPlatesModel::PropertyName::create_gpml("errorBounds");
+	const GPlatesModel::PropertyName gpml_multi_position = GPlatesModel::PropertyName::create_gpml("multiPosition");
+	const GPlatesModel::PropertyName gpml_outline_of = GPlatesModel::PropertyName::create_gpml("outlineOf");
+	const GPlatesModel::PropertyName gpml_pole_position = GPlatesModel::PropertyName::create_gpml("polePosition");
+	const GPlatesModel::PropertyName gpml_position = GPlatesModel::PropertyName::create_gpml("position");
+	const GPlatesModel::PropertyName gpml_seed_points = GPlatesModel::PropertyName::create_gpml("seedPoints");
+	const GPlatesModel::PropertyName gpml_unclassified_geometry = GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
 }
 
 void
@@ -330,20 +510,70 @@ export_property_name()
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. PropertyName is "
 			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
+			"As a convenience the following common property names are available as class attributes:\n"
+			"\n"
+			"* ``pygplates.PropertyName.gml_description`` = pygplates.PropertyName.create_gml('description')\n"
+			"* ``pygplates.PropertyName.gml_name`` = pygplates.PropertyName.create_gml('name')\n"
+			"* ``pygplates.PropertyName.gml_valid_time`` = pygplates.PropertyName.create_gml('validTime')\n"
+			"* ``pygplates.PropertyName.gpml_average_age`` = pygplates.PropertyName.create_gpml('averageAge')\n"
+			"* ``pygplates.PropertyName.gpml_average_declination`` = pygplates.PropertyName.create_gpml('averageDeclination')\n"
+			"* ``pygplates.PropertyName.gpml_average_inclination`` = pygplates.PropertyName.create_gpml('averageInclination')\n"
+			"* ``pygplates.PropertyName.gpml_conjugate_plate_id`` = pygplates.PropertyName.create_gpml('conjugatePlateId')\n"
+			"* ``pygplates.PropertyName.gpml_fixed_reference_frame`` = pygplates.PropertyName.create_gpml('fixedReferenceFrame')\n"
+			"* ``pygplates.PropertyName.gpml_left_plate`` = pygplates.PropertyName.create_gpml('leftPlate')\n"
+			"* ``pygplates.PropertyName.gpml_moving_reference_frame`` = pygplates.PropertyName.create_gpml('movingReferenceFrame')\n"
+			"* ``pygplates.PropertyName.gpml_polarity_chron_id`` = pygplates.PropertyName.create_gpml('polarityChronId')\n"
+			"* ``pygplates.PropertyName.gpml_polarity_chron_offset`` = pygplates.PropertyName.create_gpml('polarityChronOffset')\n"
+			"* ``pygplates.PropertyName.gpml_polarity_chron_orientation`` = pygplates.PropertyName.create_gpml('polarityChronOrientation')\n"
+			"* ``pygplates.PropertyName.gpml_pole_a95`` = pygplates.PropertyName.create_gpml('poleA95')\n"
+			"* ``pygplates.PropertyName.gpml_pole_dm`` = pygplates.PropertyName.create_gpml('poleDm')\n"
+			"* ``pygplates.PropertyName.gpml_pole_dp`` = pygplates.PropertyName.create_gpml('poleDp')\n"
+			"* ``pygplates.PropertyName.gpml_reconstruction_method`` = pygplates.PropertyName.create_gpml('reconstructionMethod')\n"
+			"* ``pygplates.PropertyName.gpml_reconstruction_plate_id`` = pygplates.PropertyName.create_gpml('reconstructionPlateId')\n"
+			"* ``pygplates.PropertyName.gpml_relative_plate`` = pygplates.PropertyName.create_gpml('relativePlate')\n"
+			"* ``pygplates.PropertyName.gpml_right_plate`` = pygplates.PropertyName.create_gpml('rightPlate')\n"
+			"* ``pygplates.PropertyName.gpml_shapefile_attributes`` = pygplates.PropertyName.create_gpml('shapefileAttributes')\n"
+			"* ``pygplates.PropertyName.gpml_times`` = pygplates.PropertyName.create_gpml('times')\n"
+			"* ``pygplates.PropertyName.gpml_total_reconstruction_pole`` = pygplates.PropertyName.create_gpml('totalReconstructionPole')\n"
+			"\n"
 			"As a convenience the following common *geometry* property names are available as class attributes:\n"
 			"\n"
-			"* ``pygplates.PropertyName.gpml_average_sample_site_position`` = "
-			"pygplates.PropertyName.create_gpml('averageSampleSitePosition')\n"
-			"* ``pygplates.PropertyName.gpml_boundary`` = ``pygplates.PropertyName.create_gpml('boundary')``\n"
-			"* ``pygplates.PropertyName.gpml_center_line_of`` = ``pygplates.PropertyName.create_gpml('centerLineOf')``\n"
-			"* ``pygplates.PropertyName.gpml_error_bounds`` = ``pygplates.PropertyName.create_gpml('errorBounds')``\n"
-			"* ``pygplates.PropertyName.gpml_multi_position`` = ``pygplates.PropertyName.create_gpml('multiPosition')``\n"
-			"* ``pygplates.PropertyName.gpml_outline_of`` = ``pygplates.PropertyName.create_gpml('outlineOf')``\n"
-			"* ``pygplates.PropertyName.gpml_pole_position`` = ``pygplates.PropertyName.create_gpml('polePosition')``\n"
-			"* ``pygplates.PropertyName.gpml_position`` = ``pygplates.PropertyName.create_gpml('position')``\n"
-			"* ``pygplates.PropertyName.gpml_seed_points`` = ``pygplates.PropertyName.create_gpml('seedPoints')``\n"
-			"* ``pygplates.PropertyName.gpml_unclassified_geometry`` = ``pygplates.PropertyName.create_gpml('unclassifiedGeometry')``\n",
+			"* ``pygplates.PropertyName.gpml_average_sample_site_position`` = pygplates.PropertyName.create_gpml('averageSampleSitePosition')\n"
+			"* ``pygplates.PropertyName.gpml_boundary`` = pygplates.PropertyName.create_gpml('boundary')\n"
+			"* ``pygplates.PropertyName.gpml_center_line_of`` = pygplates.PropertyName.create_gpml('centerLineOf')\n"
+			"* ``pygplates.PropertyName.gpml_error_bounds`` = pygplates.PropertyName.create_gpml('errorBounds')\n"
+			"* ``pygplates.PropertyName.gpml_multi_position`` = pygplates.PropertyName.create_gpml('multiPosition')\n"
+			"* ``pygplates.PropertyName.gpml_outline_of`` = pygplates.PropertyName.create_gpml('outlineOf')\n"
+			"* ``pygplates.PropertyName.gpml_pole_position`` = pygplates.PropertyName.create_gpml('polePosition')\n"
+			"* ``pygplates.PropertyName.gpml_position`` = pygplates.PropertyName.create_gpml('position')\n"
+			"* ``pygplates.PropertyName.gpml_seed_points`` = pygplates.PropertyName.create_gpml('seedPoints')\n"
+			"* ``pygplates.PropertyName.gpml_unclassified_geometry`` = pygplates.PropertyName.create_gpml('unclassifiedGeometry')\n",
 			bp::no_init/*force usage of create functions*/);
+
+	// Some common property names...
+	property_name_class.def_readonly("gml_description", GPlatesApi::gml_description);
+	property_name_class.def_readonly("gml_name", GPlatesApi::gml_name);
+	property_name_class.def_readonly("gml_valid_time", GPlatesApi::gml_valid_time);
+	property_name_class.def_readonly("gpml_average_age", GPlatesApi::gpml_average_age);
+	property_name_class.def_readonly("gpml_average_declination", GPlatesApi::gpml_average_declination);
+	property_name_class.def_readonly("gpml_average_inclination", GPlatesApi::gpml_average_inclination);
+	property_name_class.def_readonly("gpml_conjugate_plate_id", GPlatesApi::gpml_conjugate_plate_id);
+	property_name_class.def_readonly("gpml_fixed_reference_frame", GPlatesApi::gpml_fixed_reference_frame);
+	property_name_class.def_readonly("gpml_left_plate", GPlatesApi::gpml_left_plate);
+	property_name_class.def_readonly("gpml_moving_reference_frame", GPlatesApi::gpml_moving_reference_frame);
+	property_name_class.def_readonly("gpml_polarity_chron_id", GPlatesApi::gpml_polarity_chron_id);
+	property_name_class.def_readonly("gpml_polarity_chron_offset", GPlatesApi::gpml_polarity_chron_offset);
+	property_name_class.def_readonly("gpml_polarity_chron_orientation", GPlatesApi::gpml_polarity_chron_orientation);
+	property_name_class.def_readonly("gpml_pole_a95", GPlatesApi::gpml_pole_a95);
+	property_name_class.def_readonly("gpml_pole_dm", GPlatesApi::gpml_pole_dm);
+	property_name_class.def_readonly("gpml_pole_dp", GPlatesApi::gpml_pole_dp);
+	property_name_class.def_readonly("gpml_reconstruction_method", GPlatesApi::gpml_reconstruction_method);
+	property_name_class.def_readonly("gpml_reconstruction_plate_id", GPlatesApi::gpml_reconstruction_plate_id);
+	property_name_class.def_readonly("gpml_right_plate", GPlatesApi::gpml_right_plate);
+	property_name_class.def_readonly("gpml_relative_plate", GPlatesApi::gpml_relative_plate);
+	property_name_class.def_readonly("gpml_shapefile_attributes", GPlatesApi::gpml_shapefile_attributes);
+	property_name_class.def_readonly("gpml_times", GPlatesApi::gpml_times);
+	property_name_class.def_readonly("gpml_total_reconstruction_pole", GPlatesApi::gpml_total_reconstruction_pole);
 
 	// Some common geometry property names...
 	property_name_class.def_readonly("gpml_average_sample_site_position", GPlatesApi::gpml_average_sample_site_position);

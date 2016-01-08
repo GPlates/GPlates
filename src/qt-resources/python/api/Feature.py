@@ -16,23 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-# Private variable property names of common feature properties.
+# Private variable names.
 # We create them once to avoid constantly re-creating them each time a class method is called.
-_gml_description_property_name = PropertyName.create_gml('description')
-_gml_name_property_name = PropertyName.create_gml('name')
-_gml_valid_time_property_name = PropertyName.create_gml('validTime')
-_gpml_left_plate_property_name = PropertyName.create_gpml('leftPlate')
-_gpml_right_plate_property_name = PropertyName.create_gpml('rightPlate')
-_gpml_reconstruction_method_property_name = PropertyName.create_gpml('reconstructionMethod')
 _gpml_reconstruction_method_enumeration_type = EnumerationType.create_gpml('ReconstructionMethodEnumeration')
-_gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
-_gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
-_gpml_relative_plate_property_name = PropertyName.create_gpml('relativePlate')
-_gpml_times_property_name = PropertyName.create_gpml('times')
-_gpml_shapefile_attributes_property_name = PropertyName.create_gpml('shapefileAttributes')
-_gpml_fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
-_gpml_moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
-_gpml_total_reconstruction_pole_property_name = PropertyName.create_gpml('totalReconstructionPole')
 
 
 def get_description(feature, default=''):
@@ -67,7 +53,7 @@ def get_description(feature, default=''):
         ...
     """
     
-    gml_description = feature.get_value(_gml_description_property_name)
+    gml_description = feature.get_value(PropertyName.gml_description)
     if not gml_description:
         return default
     
@@ -105,7 +91,7 @@ def set_description(feature, description, verify_information_model=VerifyInforma
       feature.set_description('description')
     """
     
-    return feature.set(_gml_description_property_name, XsString(description), verify_information_model)
+    return feature.set(PropertyName.gml_description, XsString(description), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_description = set_description
@@ -182,7 +168,7 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
         ...
     """
     
-    gml_name = feature.get_value(_gml_name_property_name, 0, property_return)
+    gml_name = feature.get_value(PropertyName.gml_name, 0, property_return)
     if gml_name:
         try:
             if property_return == PropertyReturn.all:
@@ -235,9 +221,9 @@ def set_name(feature, name, verify_information_model=VerifyInformationModel.yes)
     
     # If 'name' is a sequence.
     if hasattr(name, '__iter__'):
-        return feature.set(_gml_name_property_name, [XsString(n) for n in name], verify_information_model)
+        return feature.set(PropertyName.gml_name, [XsString(n) for n in name], verify_information_model)
     
-    return feature.set(_gml_name_property_name, XsString(name), verify_information_model)
+    return feature.set(PropertyName.gml_name, XsString(name), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_name = set_name
@@ -275,7 +261,7 @@ def get_valid_time(feature, default=(float('inf'), float('-inf'))):
         begin_time, end_time = valid_time
     """
     
-    gml_valid_time = feature.get_value(_gml_valid_time_property_name)
+    gml_valid_time = feature.get_value(PropertyName.gml_valid_time)
     if not gml_valid_time:
         return default
     
@@ -316,7 +302,7 @@ def set_valid_time(feature, begin_time, end_time, verify_information_model=Verif
       feature.set_valid_time(pygplates.GeoTimeInstant.create_distant_past(), 0)
     """
     
-    return feature.set(_gml_valid_time_property_name, GmlTimePeriod(begin_time, end_time), verify_information_model)
+    return feature.set(PropertyName.gml_valid_time, GmlTimePeriod(begin_time, end_time), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_valid_time = set_valid_time
@@ -349,7 +335,7 @@ def get_left_plate(feature, default=0):
         ...
     """
     
-    gpml_left_plate = feature.get_value(_gpml_left_plate_property_name)
+    gpml_left_plate = feature.get_value(PropertyName.gpml_left_plate)
     if not gpml_left_plate:
         return default
     
@@ -387,7 +373,7 @@ def set_left_plate(feature, left_plate, verify_information_model=VerifyInformati
       feature.set_left_plate(201)
     """
     
-    return feature.set(_gpml_left_plate_property_name, GpmlPlateId(left_plate), verify_information_model)
+    return feature.set(PropertyName.gpml_left_plate, GpmlPlateId(left_plate), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_left_plate = set_left_plate
@@ -420,7 +406,7 @@ def get_right_plate(feature, default=0):
         ...
     """
     
-    gpml_right_plate = feature.get_value(_gpml_right_plate_property_name)
+    gpml_right_plate = feature.get_value(PropertyName.gpml_right_plate)
     if not gpml_right_plate:
         return default
     
@@ -458,7 +444,7 @@ def set_right_plate(feature, right_plate, verify_information_model=VerifyInforma
       feature.set_right_plate(701)
     """
     
-    return feature.set(_gpml_right_plate_property_name, GpmlPlateId(right_plate), verify_information_model)
+    return feature.set(PropertyName.gpml_right_plate, GpmlPlateId(right_plate), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_right_plate = set_right_plate
@@ -492,7 +478,7 @@ def get_reconstruction_method(feature, default='ByPlateId'):
         ...
     """
     
-    gpml_reconstruction_method = feature.get_value(_gpml_reconstruction_method_property_name)
+    gpml_reconstruction_method = feature.get_value(PropertyName.gpml_reconstruction_method)
     if gpml_reconstruction_method:
         try:
             # We're expecting a certain enumeration type - if we don't get it then we return 'default'.
@@ -534,7 +520,7 @@ def set_reconstruction_method(feature, reconstruction_method, verify_information
     """
     
     return feature.set(
-            _gpml_reconstruction_method_property_name,
+            PropertyName.gpml_reconstruction_method,
             Enumeration(_gpml_reconstruction_method_enumeration_type, reconstruction_method, verify_information_model),
             verify_information_model)
 
@@ -569,7 +555,7 @@ def get_reconstruction_plate_id(feature, default=0):
         ...
     """
     
-    gpml_reconstruction_plate_id = feature.get_value(_gpml_reconstruction_plate_id_property_name)
+    gpml_reconstruction_plate_id = feature.get_value(PropertyName.gpml_reconstruction_plate_id)
     if not gpml_reconstruction_plate_id:
         return default
     
@@ -607,7 +593,7 @@ def set_reconstruction_plate_id(feature, reconstruction_plate_id, verify_informa
       feature.set_reconstruction_plate_id(701)
     """
     
-    return feature.set(_gpml_reconstruction_plate_id_property_name, GpmlPlateId(reconstruction_plate_id), verify_information_model)
+    return feature.set(PropertyName.gpml_reconstruction_plate_id, GpmlPlateId(reconstruction_plate_id), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_reconstruction_plate_id = set_reconstruction_plate_id
@@ -684,7 +670,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
         ...
     """
     
-    gml_conjugate_plate_id = feature.get_value(_gpml_conjugate_plate_id_property_name, 0, property_return)
+    gml_conjugate_plate_id = feature.get_value(PropertyName.gpml_conjugate_plate_id, 0, property_return)
     if gml_conjugate_plate_id:
         try:
             if property_return == PropertyReturn.all:
@@ -737,9 +723,9 @@ def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model
     
     # If 'conjugate_plate_id' is a sequence.
     if hasattr(conjugate_plate_id, '__iter__'):
-        return feature.set(_gpml_conjugate_plate_id_property_name, [GpmlPlateId(id) for id in conjugate_plate_id], verify_information_model)
+        return feature.set(PropertyName.gpml_conjugate_plate_id, [GpmlPlateId(id) for id in conjugate_plate_id], verify_information_model)
     
-    return feature.set(_gpml_conjugate_plate_id_property_name, GpmlPlateId(conjugate_plate_id), verify_information_model)
+    return feature.set(PropertyName.gpml_conjugate_plate_id, GpmlPlateId(conjugate_plate_id), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_conjugate_plate_id = set_conjugate_plate_id
@@ -772,7 +758,7 @@ def get_relative_plate(feature, default=0):
         ...
     """
     
-    gpml_relative_plate = feature.get_value(_gpml_relative_plate_property_name)
+    gpml_relative_plate = feature.get_value(PropertyName.gpml_relative_plate)
     if not gpml_relative_plate:
         return default
     
@@ -810,7 +796,7 @@ def set_relative_plate(feature, relative_plate, verify_information_model=VerifyI
       feature.set_relative_plate(701)
     """
     
-    return feature.set(_gpml_relative_plate_property_name, GpmlPlateId(relative_plate), verify_information_model)
+    return feature.set(PropertyName.gpml_relative_plate, GpmlPlateId(relative_plate), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_relative_plate = set_relative_plate
@@ -842,7 +828,7 @@ def get_times(feature):
        do not overlap each other and do not have gaps between them).
     """
     
-    gpml_times = feature.get_value(_gpml_times_property_name)
+    gpml_times = feature.get_value(PropertyName.gpml_times)
     if gpml_times:
         try:
             times = []
@@ -912,7 +898,7 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
         
         prev_time = time
     
-    return feature.set(_gpml_times_property_name, GpmlArray(gml_time_periods), verify_information_model)
+    return feature.set(PropertyName.gpml_times, GpmlArray(gml_time_periods), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_times = set_times
@@ -956,7 +942,7 @@ def get_shapefile_attribute(feature, key, default_value=None):
     .. seealso:: :meth:`get_shapefile_attributes`
     """
     
-    gpml_shapefile_attributes = feature.get_value(_gpml_shapefile_attributes_property_name)
+    gpml_shapefile_attributes = feature.get_value(PropertyName.gpml_shapefile_attributes)
     if not gpml_shapefile_attributes:
         return default_value
     
@@ -1008,11 +994,11 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     """
     
     # Get the existing shapefile attributes dictionary (if exists), otherwise create a new dictionary.
-    gpml_shapefile_attributes = feature.get_value(_gpml_shapefile_attributes_property_name)
+    gpml_shapefile_attributes = feature.get_value(PropertyName.gpml_shapefile_attributes)
     if not gpml_shapefile_attributes:
         # Add an empty key/value dictionary property to the feature.
         gpml_shapefile_attributes = feature.set(
-                _gpml_shapefile_attributes_property_name, GpmlKeyValueDictionary(), verify_information_model).get_value()
+                PropertyName.gpml_shapefile_attributes, GpmlKeyValueDictionary(), verify_information_model).get_value()
     
     try:
         gpml_shapefile_attributes.set(key, value)
@@ -1021,7 +1007,7 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
         # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
         raise InformationModelError(
                 "Expected a GpmlKeyValueDictionary property value for property name '%s'" %
-                    _gpml_shapefile_attributes_property_name.to_qualified_string())
+                    PropertyName.gpml_shapefile_attributes.to_qualified_string())
     
     return gpml_shapefile_attributes
 
@@ -1066,7 +1052,7 @@ def get_shapefile_attributes(feature, default=None):
     .. seealso:: :meth:`get_shapefile_attribute`
     """
     
-    gpml_shapefile_attributes = feature.get_value(_gpml_shapefile_attributes_property_name)
+    gpml_shapefile_attributes = feature.get_value(PropertyName.gpml_shapefile_attributes)
     if gpml_shapefile_attributes is None:
         return default
     
@@ -1128,7 +1114,7 @@ def set_shapefile_attributes(feature, attribute_mapping=None, verify_information
     .. seealso:: :meth:`set_shapefile_attribute`
     """
     
-    return feature.set(_gpml_shapefile_attributes_property_name, GpmlKeyValueDictionary(attribute_mapping), verify_information_model)
+    return feature.set(PropertyName.gpml_shapefile_attributes, GpmlKeyValueDictionary(attribute_mapping), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_shapefile_attributes = set_shapefile_attributes
@@ -1166,15 +1152,15 @@ def get_total_reconstruction_pole(feature):
     ...although it is much easier to use :class:`RotationModel`.
     """
 
-    fixed_plate_id_property_value = feature.get_value(_gpml_fixed_reference_frame_property_name)
+    fixed_plate_id_property_value = feature.get_value(PropertyName.gpml_fixed_reference_frame)
     if not fixed_plate_id_property_value:
         return
     
-    moving_plate_id_property_value = feature.get_value(_gpml_moving_reference_frame_property_name)
+    moving_plate_id_property_value = feature.get_value(PropertyName.gpml_moving_reference_frame)
     if not moving_plate_id_property_value:
         return
     
-    total_reconstruction_pole_property = feature.get(_gpml_total_reconstruction_pole_property_name)
+    total_reconstruction_pole_property = feature.get(PropertyName.gpml_total_reconstruction_pole)
     if not total_reconstruction_pole_property:
         return
     total_reconstruction_pole_property_value = total_reconstruction_pole_property.get_time_dependent_container()
@@ -1228,9 +1214,9 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     """
     
     return (
-        feature.set(_gpml_fixed_reference_frame_property_name, GpmlPlateId(fixed_plate_id), verify_information_model),
-        feature.set(_gpml_moving_reference_frame_property_name, GpmlPlateId(moving_plate_id), verify_information_model),
-        feature.set(_gpml_total_reconstruction_pole_property_name, total_reconstruction_pole, verify_information_model))
+        feature.set(PropertyName.gpml_fixed_reference_frame, GpmlPlateId(fixed_plate_id), verify_information_model),
+        feature.set(PropertyName.gpml_moving_reference_frame, GpmlPlateId(moving_plate_id), verify_information_model),
+        feature.set(PropertyName.gpml_total_reconstruction_pole, total_reconstruction_pole, verify_information_model))
 
 # Add the module function as a class method.
 Feature.set_total_reconstruction_pole = set_total_reconstruction_pole
