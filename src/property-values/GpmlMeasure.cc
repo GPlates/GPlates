@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlMeasure::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("measure");
+
+
 void
 GPlatesPropertyValues::GpmlMeasure::set_quantity(
 		const double &q)

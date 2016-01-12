@@ -34,6 +34,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlOrientableCurve::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("OrientableCurve");
+
+
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesPropertyValues::GmlOrientableCurve::create(
 		GmlLineString::non_null_ptr_type base_curve_,

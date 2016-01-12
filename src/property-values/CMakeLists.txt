@@ -70,6 +70,7 @@ set(srcs
     GpmlKeyValueDictionaryElement.h
     GpmlMeasure.cc
     GpmlMeasure.h
+    GpmlMetadata.cc
     GpmlMetadata.h
     GpmlOldPlatesHeader.cc
     GpmlOldPlatesHeader.h

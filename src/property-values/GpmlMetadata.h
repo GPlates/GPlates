@@ -84,12 +84,7 @@ namespace GPlatesPropertyValues
 
 		void
 		set_data(
-				const GPlatesModel::FeatureCollectionMetadata &metadata)
-		{
-			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-			revision_handler.get_revision<Revision>().metadata = metadata;
-			revision_handler.commit();
-		}
+				const GPlatesModel::FeatureCollectionMetadata &metadata);
 
 		std::multimap<QString, QString>
 		get_feature_collection_metadata_as_map() const
@@ -110,12 +105,17 @@ namespace GPlatesPropertyValues
 			get_data().serialize(writer);
 		}
 
-		GPlatesPropertyValues::StructuralType
+		StructuralType
 		get_structural_type() const 
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("GpmlMetadata");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlMetadata::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		virtual
 		void
@@ -137,12 +137,7 @@ namespace GPlatesPropertyValues
 		virtual
 		std::ostream &
 		print_to(
-				std::ostream &os) const
-		{
-			qWarning() << "TODO: implement this function.";
-			os << "TODO: implement this function.";
-			return  os;
-		}
+				std::ostream &os) const;
 
 	protected:
 

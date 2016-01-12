@@ -37,6 +37,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlPoint::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("Point");
+
+
 GPlatesMaths::LatLonPoint
 GPlatesPropertyValues::GmlPoint::get_point_in_lat_lon() const
 {

@@ -37,6 +37,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlRasterBandNames::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("RasterBandNames");
+
+
 void
 GPlatesPropertyValues::GpmlRasterBandNames::set_band_names(
 		const band_names_list_type &band_names_)

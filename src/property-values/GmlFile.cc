@@ -60,6 +60,10 @@ namespace
 }
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlFile::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("File");
+
+
 const GPlatesPropertyValues::GmlFile::non_null_ptr_type
 GPlatesPropertyValues::GmlFile::create(
 		const composite_value_type &range_parameters_,

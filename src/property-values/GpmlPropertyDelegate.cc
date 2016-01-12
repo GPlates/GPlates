@@ -30,6 +30,10 @@
 #include "GpmlPropertyDelegate.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlPropertyDelegate::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("PropertyDelegate");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlPropertyDelegate::print_to(
 		std::ostream &os) const

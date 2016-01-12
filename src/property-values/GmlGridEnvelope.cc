@@ -36,6 +36,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlGridEnvelope::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("GridEnvelope");
+
+
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
 		const integer_list_type &low_,

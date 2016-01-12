@@ -39,6 +39,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlFiniteRotation::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("FiniteRotation");
+
+
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const std::pair<double, double> &gpml_euler_pole,

@@ -90,7 +90,7 @@ namespace GPlatesPropertyValues
 		void
 		set_value(
 				bool b);
-		
+
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -99,9 +99,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_xsi("boolean");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as XsBoolean::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

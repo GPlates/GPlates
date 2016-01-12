@@ -80,6 +80,10 @@ namespace
 }
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlAge::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("Age");
+
+
 const GPlatesPropertyValues::GpmlAge::non_null_ptr_type
 GPlatesPropertyValues::GpmlAge::create(
 		boost::optional<double> age_absolute,

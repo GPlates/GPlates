@@ -36,6 +36,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlPiecewiseAggregation::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("PiecewiseAggregation");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 		std::ostream &os) const

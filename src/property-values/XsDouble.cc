@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::XsDouble::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_xsi("double");
+
+
 void
 GPlatesPropertyValues::XsDouble::set_value(
 		const double &d)

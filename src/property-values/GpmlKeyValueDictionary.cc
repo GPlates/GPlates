@@ -35,6 +35,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlKeyValueDictionary::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("KeyValueDictionary");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 		std::ostream &os) const

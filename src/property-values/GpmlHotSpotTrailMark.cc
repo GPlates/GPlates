@@ -61,6 +61,10 @@ namespace
 }
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlHotSpotTrailMark::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("HotSpotTrailMark");
+
+
 const GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type
 GPlatesPropertyValues::GpmlHotSpotTrailMark::create(
 		const GmlPoint::non_null_ptr_type &position_,

@@ -36,6 +36,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
+
+
 void
 GPlatesPropertyValues::GpmlTopologicalNetwork::set_boundary_sections(
 		const boundary_sections_seq_type &boundary_sections)

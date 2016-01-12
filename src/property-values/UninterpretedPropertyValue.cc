@@ -30,6 +30,10 @@
 #include "UninterpretedPropertyValue.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::UninterpretedPropertyValue::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("UninterpretedPropertyValue");
+
+
 std::ostream &
 GPlatesPropertyValues::UninterpretedPropertyValue::print_to(
 		std::ostream &os) const

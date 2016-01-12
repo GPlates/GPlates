@@ -64,6 +64,10 @@ namespace
 }
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlIrregularSampling::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("IrregularSampling");
+
+
 const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_to_const_type>
 GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function() const
 {

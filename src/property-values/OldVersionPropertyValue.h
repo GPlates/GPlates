@@ -114,6 +114,13 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
+		 * NOTE: There is no static access to the structural type (eg, as OldVersionPropertyValue::STRUCTURAL_TYPE)
+		 * because it depends on non-static data.
+		 */
+		//static const StructuralType STRUCTURAL_TYPE;
+
+
+		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *
 		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of

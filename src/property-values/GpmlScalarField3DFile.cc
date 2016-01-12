@@ -34,6 +34,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlScalarField3DFile::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("ScalarField3DFile");
+
+
 const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
 GPlatesPropertyValues::GpmlScalarField3DFile::create(
 		XsString::non_null_ptr_type filename_)

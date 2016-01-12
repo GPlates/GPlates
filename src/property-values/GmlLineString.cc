@@ -34,6 +34,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlLineString::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("LineString");
+
+
 void
 GPlatesPropertyValues::GmlLineString::set_polyline(
 		const polyline_type &p)

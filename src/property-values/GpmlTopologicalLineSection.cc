@@ -34,6 +34,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalLineSection::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLineSection");
+
+
 const GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 		GpmlPropertyDelegate::non_null_ptr_type source_geometry_,

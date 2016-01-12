@@ -35,6 +35,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlDataBlock::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("DataBlock");
+
+
 std::ostream &
 GPlatesPropertyValues::GmlDataBlock::print_to(
 		std::ostream &os) const

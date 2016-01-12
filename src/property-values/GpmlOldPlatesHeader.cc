@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlOldPlatesHeader::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader");
+
+
 void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_region_number(
 		const unsigned int &i)

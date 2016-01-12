@@ -36,6 +36,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlTimePeriod::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
+
+
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 GPlatesPropertyValues::GmlTimePeriod::create(
 		GmlTimeInstant::non_null_ptr_type begin_,

@@ -37,6 +37,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlMultiPoint::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+
+
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlMultiPoint::create(
 		const multipoint_type &multipoint_,

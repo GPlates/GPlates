@@ -39,6 +39,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
+
+
 void
 GPlatesPropertyValues::GpmlTopologicalPolygon::set_exterior_sections(
 		const sections_seq_type &exterior_sections)

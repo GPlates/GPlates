@@ -2,12 +2,10 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2016 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,31 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-
-#include "XsString.h"
-
-#include "model/BubbleUpRevisionHandler.h"
+#include "GpmlMetadata.h"
 
 
 const GPlatesPropertyValues::StructuralType
-GPlatesPropertyValues::XsString::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_xsi("string");
+GPlatesPropertyValues::GpmlMetadata::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("GpmlMetadata");
 
 
 void
-GPlatesPropertyValues::XsString::set_value(
-		const TextContent &tc)
+GPlatesPropertyValues::GpmlMetadata::set_data(
+		const GPlatesModel::FeatureCollectionMetadata &metadata)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().value = tc;
+	revision_handler.get_revision<Revision>().metadata = metadata;
 	revision_handler.commit();
 }
 
 
 std::ostream &
-GPlatesPropertyValues::XsString::print_to(
+GPlatesPropertyValues::GpmlMetadata::print_to(
 		std::ostream &os) const
 {
-	return os << get_current_revision<Revision>().value.get();
+	qWarning() << "TODO: implement this function.";
+	os << "TODO: implement this function.";
+	return  os;
 }
-

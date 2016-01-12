@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlTimeInstant::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("TimeInstant");
+
+
 void
 GPlatesPropertyValues::GmlTimeInstant::set_time_position(
 		const GeoTimeInstant &tp)

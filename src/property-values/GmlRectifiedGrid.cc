@@ -38,6 +38,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlRectifiedGrid::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("RectifiedGrid");
+
+
 const GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
 GPlatesPropertyValues::GmlRectifiedGrid::create(
 		const GmlGridEnvelope::non_null_ptr_type &limits_,

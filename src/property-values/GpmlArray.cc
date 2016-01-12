@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlArray::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("Array");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlArray::print_to(
                 std::ostream &os) const

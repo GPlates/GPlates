@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlPlateId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("plateId");
+
+
 void
 GPlatesPropertyValues::GpmlPlateId::set_value(
 		const GPlatesModel::integer_plate_id_type &p)

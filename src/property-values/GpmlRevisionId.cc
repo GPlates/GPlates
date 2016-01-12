@@ -30,6 +30,10 @@
 #include "GpmlRevisionId.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlRevisionId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("revisionId");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlRevisionId::print_to(
 		std::ostream &os) const

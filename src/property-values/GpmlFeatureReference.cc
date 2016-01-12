@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlFeatureReference::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("FeatureReference");
+
+
 void
 GPlatesPropertyValues::GpmlFeatureReference::set_feature_id(
 		const GPlatesModel::FeatureId &feature)

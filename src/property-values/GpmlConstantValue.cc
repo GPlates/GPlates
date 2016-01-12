@@ -36,6 +36,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlConstantValue::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("ConstantValue");
+
+
 const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesPropertyValues::GpmlConstantValue::create(
 		PropertyValue::non_null_ptr_type value_,

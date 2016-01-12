@@ -33,6 +33,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+
+
 void
 GPlatesPropertyValues::GmlPolygon::set_exterior(
 		const ring_type &exterior)

@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::XsBoolean::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_xsi("boolean");
+
+
 void
 GPlatesPropertyValues::XsBoolean::set_value(
 		bool b)

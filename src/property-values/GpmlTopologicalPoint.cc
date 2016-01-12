@@ -34,6 +34,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalPoint::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPoint");
+
+
 const GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalPoint::create(
 		GpmlPropertyDelegate::non_null_ptr_type source_geometry_) 

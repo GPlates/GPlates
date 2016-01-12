@@ -39,6 +39,10 @@
 #include "model/ModelTransaction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
+
+
 void
 GPlatesPropertyValues::GpmlTopologicalLine::set_sections(
 		const sections_seq_type &sections)

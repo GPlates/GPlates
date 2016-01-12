@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlPolarityChronId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("PolarityChronId");
+
+
 void
 GPlatesPropertyValues::GpmlPolarityChronId::set_era(
 		const QString &era)

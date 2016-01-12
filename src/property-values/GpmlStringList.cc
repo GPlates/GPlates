@@ -32,6 +32,10 @@
 #include "model/BubbleUpRevisionHandler.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlStringList::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("StringList");
+
+
 void
 GPlatesPropertyValues::GpmlStringList::set_string_list(
 		const string_list_type &strings_)

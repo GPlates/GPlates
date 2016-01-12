@@ -117,6 +117,13 @@ namespace GPlatesPropertyValues
 			return StructuralType(d_type);
 		}
 
+		/**
+		 * NOTE: There is no static access to the structural type (eg, as Enumeration::STRUCTURAL_TYPE)
+		 * because it depends on the enumeration type which is non-static data.
+		 */
+		//static const StructuralType STRUCTURAL_TYPE;
+
+
 		virtual
 		void
 		accept_visitor(

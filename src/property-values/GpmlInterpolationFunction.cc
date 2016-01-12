@@ -30,6 +30,10 @@
 #include "GpmlInterpolationFunction.h"
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlInterpolationFunction::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("InterpolationFunction");
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlInterpolationFunction::print_to(
 		std::ostream &os) const

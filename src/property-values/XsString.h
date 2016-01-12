@@ -69,9 +69,17 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
+				const TextContent &tc)
+		{
+			return non_null_ptr_type(new XsString(tc));
+		}
+
+		static
+		const non_null_ptr_type
+		create(
 				const GPlatesUtils::UnicodeString &s)
 		{
-			return non_null_ptr_type(new XsString(s));
+			return non_null_ptr_type(new XsString(TextContent(s)));
 		}
 
 		const non_null_ptr_type
@@ -110,9 +118,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_xsi("string");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as XsString::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -153,8 +166,8 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		XsString(
-				const GPlatesUtils::UnicodeString &s) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(s)))
+				const TextContent &tc) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(tc)))
 		{  }
 
 		//! Constructor used when cloning.
