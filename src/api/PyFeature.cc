@@ -73,6 +73,11 @@
 #include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/TextContent.h"
+#include "property-values/XsBoolean.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsInteger.h"
+#include "property-values/XsString.h"
 
 #include "utils/UnicodeString.h"
 
@@ -349,10 +354,10 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Returns the GPGIM enumeration type associated with the specified property name.
+		 * Returns the GPGIM structural type associated with the specified property name.
 		 */
-		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
-		get_gpgim_enumeration_type_from_property_name(
+		boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type>
+		get_gpgim_structural_type_from_property_name(
 				const GPlatesModel::PropertyName &property_name)
 		{
 			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
@@ -366,12 +371,32 @@ namespace GPlatesApi
 			}
 
 			// Get the GPGIM property structural type.
-			GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type =
-					gpgim_property.get()->get_default_structural_type();
+			return gpgim_property.get()->get_default_structural_type();
+		}
+
+		/**
+		 * Returns the GPGIM enumeration type associated with the specified property name.
+		 */
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
+		get_gpgim_enumeration_type_from_property_name(
+				const GPlatesModel::PropertyName &property_name)
+		{
+			boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type> gpgim_structural_type =
+					get_gpgim_structural_type_from_property_name(property_name);
+			if (!gpgim_structural_type)
+			{
+				return boost::none;
+			}
 
 			// Make sure it's an enumeration type (enumeration types are a subset of structural types).
-			// Get the GPGIM enumeration type.
-			return gpgim.get_property_enumeration_type(gpgim_structural_type->get_structural_type());
+			const GPlatesModel::GpgimEnumerationType *gpgim_enumeration_type =
+					dynamic_cast<const GPlatesModel::GpgimEnumerationType *>(gpgim_structural_type.get().get());
+			if (gpgim_enumeration_type == NULL)
+			{
+				return boost::none;
+			}
+
+			return GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type(gpgim_enumeration_type);
 		}
 
 		/**
@@ -2190,6 +2215,266 @@ namespace GPlatesApi
 		return default_enumeration_content_object;
 	}
 
+	/**
+	 * Template function to use with XsBoolean, XsDouble, XsInteger and XsString since these classes have same interface.
+	 */
+	template <class XsPropertyValueType, typename XsPropertyValueContentType>
+	bp::object
+	feature_handle_set_xs_property_value_content(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object content_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			// Determine structural type from the property name via the GPGIM.
+			boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type> gpgim_structural_type =
+					get_gpgim_structural_type_from_property_name(property_name);
+			if (!gpgim_structural_type)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Property name '") + convert_qualified_xml_name_to_qstring(property_name) +
+								"' is not recognised as a valid name by the GPGIM");
+			}
+
+			if (gpgim_structural_type.get()->get_structural_type() != XsPropertyValueType::STRUCTURAL_TYPE)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Property name '") + convert_qualified_xml_name_to_qstring(property_name) +
+								"' is not associated with a '" +
+								XsPropertyValueType::STRUCTURAL_TYPE.get_name().qstring() +
+								"' property type");
+			}
+		}
+
+		// Content is either a single XsPropertyValueContentType or a sequence of them.
+		bp::extract<XsPropertyValueContentType> extract_content(content_object);
+		if (extract_content.check())
+		{
+			XsPropertyValueContentType content = extract_content();
+
+			// Create the XsPropertyValueType property value.
+			typename XsPropertyValueType::non_null_ptr_type xs_property_value = XsPropertyValueType::create(content);
+
+			// Set the XsPropertyValueType property in the feature.
+			return feature_handle_set_property(
+					feature_handle,
+					property_name,
+					bp::object(xs_property_value),
+					verify_information_model);
+		}
+
+		// Attempt to extract a sequence of XsPropertyValueContentType.
+		static const QString content_type_error = QString("Expected a '") +
+				XsPropertyValueType::STRUCTURAL_TYPE.get_name().qstring() +
+				"' or a sequence of them";
+		typedef std::vector<XsPropertyValueContentType> content_seq_type;
+		content_seq_type contents;
+		PythonExtractUtils::extract_iterable(contents, content_object, content_type_error.toStdString().c_str());
+
+		bp::list xs_property_value_list;
+		BOOST_FOREACH(const XsPropertyValueContentType &content, contents)
+		{
+			// Create the XsPropertyValueType property value.
+			typename XsPropertyValueType::non_null_ptr_type xs_property_value = XsPropertyValueType::create(content);
+
+			xs_property_value_list.append(xs_property_value);
+		}
+
+		// Set the XsPropertyValueType properties in the feature.
+		return feature_handle_set_property(
+				feature_handle,
+				property_name,
+				xs_property_value_list,
+				verify_information_model);
+	}
+
+	/**
+	 * Template function to use with XsBoolean, XsDouble, XsInteger and XsString since these classes have same interface.
+	 */
+	template <class XsPropertyValueType>
+	bp::object
+	feature_handle_get_xs_property_value_content(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_object,
+			PropertyReturn::Value property_return)
+	{
+		// If anything fails then we fall through and return the default (if any).
+
+		bp::object xs_property_values_object =
+				feature_handle_get_property_value(
+						feature_handle,
+						bp::object(property_name),
+						GPlatesPropertyValues::GeoTimeInstant(0),
+						property_return);
+		if (xs_property_values_object != bp::object()/*Py_None*/)
+		{
+			if (property_return == PropertyReturn::ALL)
+			{
+				// We're expecting a list for 'PropertyReturn::ALL'.
+				bp::list xs_property_value_contents;
+
+				const unsigned int num_xs_property_values = bp::len(xs_property_values_object);
+				unsigned int n = 0;
+				for ( ; n < num_xs_property_values; ++n)
+				{
+					bp::object xs_property_value_object = xs_property_values_object[n];
+
+					// Only append to list if it's a XsPropertyValueType property value.
+					bp::extract<typename XsPropertyValueType::non_null_ptr_type> extract_xs_property_value(
+									xs_property_value_object);
+					if (!extract_xs_property_value.check())
+					{
+						break;
+					}
+
+					typename XsPropertyValueType::non_null_ptr_type xs_property_value = extract_xs_property_value();
+
+					xs_property_value_contents.append(xs_property_value->get_value());
+				}
+
+				// If any property values were wrong type then drop through and return default.
+				if (n == num_xs_property_values)
+				{
+					return xs_property_value_contents;
+				}
+			}
+			else
+			{
+				// Check that it's a XsPropertyValueType property value.
+				bp::extract<typename XsPropertyValueType::non_null_ptr_type> extract_xs_property_value(
+								xs_property_values_object);
+				if (extract_xs_property_value.check())
+				{
+					typename XsPropertyValueType::non_null_ptr_type xs_property_value = extract_xs_property_value();
+
+					return bp::object(xs_property_value->get_value());
+				}
+			}
+		}
+
+		return default_object;
+	}
+
+	bp::object
+	feature_handle_set_boolean(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object content_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		return feature_handle_set_xs_property_value_content<GPlatesPropertyValues::XsBoolean, bool>(
+				feature_handle,
+				property_name,
+				content_object,
+				verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_boolean(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_object,
+			PropertyReturn::Value property_return)
+	{
+		return feature_handle_get_xs_property_value_content<GPlatesPropertyValues::XsBoolean>(
+				feature_handle,
+				property_name,
+				default_object,
+				property_return);
+	}
+
+	bp::object
+	feature_handle_set_double(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object content_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		return feature_handle_set_xs_property_value_content<GPlatesPropertyValues::XsDouble, double>(
+				feature_handle,
+				property_name,
+				content_object,
+				verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_double(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_object,
+			PropertyReturn::Value property_return)
+	{
+		return feature_handle_get_xs_property_value_content<GPlatesPropertyValues::XsDouble>(
+				feature_handle,
+				property_name,
+				default_object,
+				property_return);
+	}
+
+	bp::object
+	feature_handle_set_integer(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object content_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		return feature_handle_set_xs_property_value_content<GPlatesPropertyValues::XsInteger, int>(
+				feature_handle,
+				property_name,
+				content_object,
+				verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_integer(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_object,
+			PropertyReturn::Value property_return)
+	{
+		return feature_handle_get_xs_property_value_content<GPlatesPropertyValues::XsInteger>(
+				feature_handle,
+				property_name,
+				default_object,
+				property_return);
+	}
+
+	bp::object
+	feature_handle_set_string(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object content_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		return feature_handle_set_xs_property_value_content<
+				GPlatesPropertyValues::XsString, GPlatesPropertyValues::TextContent>(
+						feature_handle,
+						property_name,
+						content_object,
+						verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_string(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_object,
+			PropertyReturn::Value property_return)
+	{
+		return feature_handle_get_xs_property_value_content<GPlatesPropertyValues::XsString>(
+				feature_handle,
+				property_name,
+				default_object,
+				property_return);
+	}
+
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_total_reconstruction_sequence(
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
@@ -2656,6 +2941,18 @@ export_feature()
 					"\n"
 					"* :meth:`set_enumeration`\n"
 					"* :meth:`get_enumeration`\n"
+					"\n"
+					"The following methods provide a convenient way to set and get :class:`string<XsString>`, "
+					":class:`floating-point<XsDouble>`, :class:`integer<XsInteger>` and :class:`boolean<XsBoolean>` properties:\n"
+					"\n"
+					"* :meth:`set_string`\n"
+					"* :meth:`get_string`\n"
+					"* :meth:`set_double`\n"
+					"* :meth:`get_double`\n"
+					"* :meth:`set_integer`\n"
+					"* :meth:`get_integer`\n"
+					"* :meth:`set_boolean`\n"
+					"* :meth:`get_boolean`\n"
 					"\n"
 					"The following methods provide a convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
@@ -3462,6 +3759,7 @@ export_feature()
 				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_name* does not support the number of property values in *property_value*, "
 				"or if *property_value* does not have a property value type supported by *property_name*\n"
 				"\n"
 				"  ::\n"
@@ -3939,6 +4237,271 @@ export_feature()
 				"    subduction_polarity = subduction_zone_feature.get_enumeration(\n"
 				"        pygplates.PropertyName.gpml_subduction_polarity,\n"
 				"        'Unknown')\n")
+		.def("set_boolean",
+				&GPlatesApi::feature_handle_set_boolean,
+				(bp::arg("property_name"),
+						bp::arg("boolean"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_boolean(property_name, boolean, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the boolean property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the boolean property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param boolean: the boolean or booleans\n"
+				"  :type boolean: bool, or sequence of bools\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property containing the boolean, or properties containing the booleans\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_name* does not support a :class:`boolean<XsBoolean>` property value type.\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`set` for :class:`XsBoolean` properties.\n"
+				"\n"
+				"  Set the active state on a feature:\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_boolean(\n"
+				"        pygplates.PropertyName.create_gpml('isActive'),\n"
+				"        True)\n")
+		.def("get_boolean",
+				&GPlatesApi::feature_handle_get_boolean,
+				(bp::arg("property_name"),
+						bp::arg("default") = bp::object(bool(false)),
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_boolean(property_name, [default=False], [property_return=PropertyReturn.exactly_one])\n"
+				"  Returns the boolean property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the boolean property (or properties)\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param default: the default boolean value (defaults to False), or default boolean values\n"
+				"  :type default: bool or list or None\n"
+				"  :param property_return: whether to return exactly one boolean, the first boolean or "
+				"all matching booleans\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: bool, or list of bools, or type(*default*)\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsBoolean` properties.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyReturn Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a ``bool`` if exactly one *property_name* property is found, "
+				"otherwise *default* is returned.\n"
+				"  first                                   Returns the ``bool`` of the first *property_name* property - "
+				"however note that a feature is an *unordered* collection of properties. Returns *default* "
+				"if there are no *property_name* properties.\n"
+				"  all                                     Returns a ``list`` of ``bool`` of *property_name* properties. "
+				"Returns *default* if there are no *property_name* properties.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  Return the active state (defaulting to False if not exactly one found):\n"
+				"  ::\n"
+				"\n"
+				"    is_active = feature.get_boolean(\n"
+				"        pygplates.PropertyName.create_gpml('isActive'))\n")
+		.def("set_double",
+				&GPlatesApi::feature_handle_set_double,
+				(bp::arg("property_name"),
+						bp::arg("double"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_double(property_name, double, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the floating-point (double) property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the float property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param double: the float or floats\n"
+				"  :type double: float, or sequence of floats\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property containing the float, or properties containing the floats\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_name* does not support a :class:`double<XsDouble>` property value type.\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`set` for :class:`XsDouble` properties.\n"
+				"\n"
+				"  Set the subduction zone depth on a feature:\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_double(\n"
+				"        pygplates.PropertyName.create_gpml('subductionZoneDepth'),\n"
+				"        85.5)\n")
+		.def("get_double",
+				&GPlatesApi::feature_handle_get_double,
+				(bp::arg("property_name"),
+						bp::arg("default") = bp::object(double(0.0)),
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_double(property_name, [default=0.0], [property_return=PropertyReturn.exactly_one])\n"
+				"  Returns the floating-point (double) property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the float property (or properties)\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param default: the default float value (defaults to 0.0), or default float values\n"
+				"  :type default: float or list or None\n"
+				"  :param property_return: whether to return exactly one float, the first float or "
+				"all matching floats\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: float, or list of floats, or type(*default*)\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsDouble` properties.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyReturn Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a ``float`` if exactly one *property_name* property is found, "
+				"otherwise *default* is returned.\n"
+				"  first                                   Returns the ``float`` of the first *property_name* property - "
+				"however note that a feature is an *unordered* collection of properties. Returns *default* "
+				"if there are no *property_name* properties.\n"
+				"  all                                     Returns a ``list`` of ``float`` of *property_name* properties. "
+				"Returns *default* if there are no *property_name* properties.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  Return the subduction zone depth (defaulting to 0.0 if not exactly one found):\n"
+				"  ::\n"
+				"\n"
+				"    subduction_zone_depth = feature.get_double(\n"
+				"        pygplates.PropertyName.create_gpml('subductionZoneDepth'))\n")
+		.def("set_integer",
+				&GPlatesApi::feature_handle_set_integer,
+				(bp::arg("property_name"),
+						bp::arg("integer"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_integer(property_name, integer, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the integer property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the integer property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param integer: the integer or integers\n"
+				"  :type integer: integer, or sequence of integers\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property containing the integer, or properties containing the integers\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_name* does not support an :class:`integer<XsInteger>` property value type.\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`set` for :class:`XsInteger` properties.\n"
+				"\n"
+				"  Set the subduction zone system order on a feature:\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_integer(\n"
+				"        pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),\n"
+				"        1)\n")
+		.def("get_integer",
+				&GPlatesApi::feature_handle_get_integer,
+				(bp::arg("property_name"),
+						bp::arg("default") = bp::object(int(0)),
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_integer(property_name, [default=0], [property_return=PropertyReturn.exactly_one])\n"
+				"  Returns the integer property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the integer property (or properties)\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param default: the default integer value (defaults to zero), or default integer values\n"
+				"  :type default: integer or list or None\n"
+				"  :param property_return: whether to return exactly one integer, the first integer or "
+				"all matching integers\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: integer, or list of integers, or type(*default*)\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsInteger` properties.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyReturn Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a ``int`` if exactly one *property_name* property is found, "
+				"otherwise *default* is returned.\n"
+				"  first                                   Returns the ``int`` of the first *property_name* property - "
+				"however note that a feature is an *unordered* collection of properties. Returns *default* "
+				"if there are no *property_name* properties.\n"
+				"  all                                     Returns a ``list`` of ``int`` of *property_name* properties. "
+				"Returns *default* if there are no *property_name* properties.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  Return the subduction zone system order (defaulting to zero if not exactly one found):\n"
+				"  ::\n"
+				"\n"
+				"    subduction_zone_system_order = feature.get_integer(\n"
+				"        pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))\n")
+		.def("set_string",
+				&GPlatesApi::feature_handle_set_string,
+				(bp::arg("property_name"),
+						bp::arg("string"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_string(property_name, string, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the string property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the string property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param string: the string or strings\n"
+				"  :type string: string, or sequence of string\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property containing the string, or properties containing the strings\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_name* does not support a :class:`string<XsString>` property value type.\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`set` for :class:`XsString` properties.\n"
+				"\n"
+				"  Set the ship track name on a feature:\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_string(\n"
+				"        pygplates.PropertyName.create_gpml('shipTrackName'),\n"
+				"        '...')\n")
+		.def("get_string",
+				&GPlatesApi::feature_handle_get_string,
+				(bp::arg("property_name"),
+						bp::arg("default") = bp::object(GPlatesPropertyValues::TextContent("")),
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_string(property_name, [default=''], [property_return=PropertyReturn.exactly_one])\n"
+				"  Returns the string property value associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the string property (or properties)\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param default: the default string value (defaults to an empty string), or default string values\n"
+				"  :type default: string or list or None\n"
+				"  :param property_return: whether to return exactly one string, the first string or "
+				"all matching strings\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: string, or list of strings, or type(*default*)\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsString` properties.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyReturn Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a ``str`` if exactly one *property_name* property is found, "
+				"otherwise *default* is returned.\n"
+				"  first                                   Returns the ``str`` of the first *property_name* property - "
+				"however note that a feature is an *unordered* collection of properties. Returns *default* "
+				"if there are no *property_name* properties.\n"
+				"  all                                     Returns a ``list`` of ``str`` of *property_name* properties. "
+				"Returns *default* if there are no *property_name* properties. Note that any *property_name* property with an "
+				"empty name string *will* be added to the list.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  Return the ship track name (defaulting to empty string if not exactly one found):\n"
+				"  ::\n"
+				"\n"
+				"    ship_track_name = feature.get_string(\n"
+				"        pygplates.PropertyName.create_gpml('shipTrackName'))\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),

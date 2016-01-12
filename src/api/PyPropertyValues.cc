@@ -3959,6 +3959,16 @@ export_xs_integer()
 }
 
 
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::XsString::non_null_ptr_type
+	xs_string_create(
+			const GPlatesPropertyValues::TextContent &string)
+	{
+		return GPlatesPropertyValues::XsString::create(string);
+	}
+}
+
 void
 export_xs_string()
 {
@@ -3979,7 +3989,7 @@ export_xs_string()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesPropertyValues::XsString::create,
+						&GPlatesApi::xs_string_create,
 						bp::default_call_policies(),
 						(bp::arg("string"))),
 				"__init__(string)\n"
