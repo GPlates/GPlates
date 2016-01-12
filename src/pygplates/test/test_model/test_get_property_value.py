@@ -53,6 +53,15 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                         pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
                         'Left'))
         self.feature.add(
+                pygplates.PropertyName.create_gpml('shipTrackName'),
+                pygplates.XsString('Vessel'))
+        self.feature.add(
+                pygplates.PropertyName.create_gpml('isActive'),
+                pygplates.XsBoolean(True))
+        self.feature.add(
+                pygplates.PropertyName.create_gpml('subductionZoneDepth'),
+                pygplates.XsDouble(10.5))
+        self.feature.add(
                 pygplates.PropertyName.gml_valid_time,
                 pygplates.GmlTimePeriod(50, 0))
         # A time-dependent property excluding time 0Ma.
@@ -359,6 +368,116 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_primary_slip_component) == 'StrikeSlip')
         self.feature.set_enumeration(pygplates.PropertyName.gpml_subduction_polarity, 'Right')
         self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity) == 'Right')
+    
+    def test_get_and_set_string(self):
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == 'Vessel')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), [], pygplates.PropertyReturn.all) == ['Vessel'])
+        self.feature.remove(pygplates.PropertyName.create_gpml('shipTrackName'))
+        # With property removed it should return default.
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == '')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), 'Unknown') == 'Unknown')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), None) is None)
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), [], pygplates.PropertyReturn.all) == [])
+        
+        self.feature.set_string(pygplates.PropertyName.create_gpml('shipTrackName'), 'TestShip')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == 'TestShip')
+        gpml_ship_track_name = self.feature.set_string(pygplates.PropertyName.create_gpml('shipTrackName'), ['TestShip2'])
+        self.assertTrue(len(gpml_ship_track_name) == 1)
+        self.assertTrue(gpml_ship_track_name[0].get_value().get_string() == 'TestShip2')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == 'TestShip2')
+        
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_string, pygplates.PropertyName.create_gpml('invalid'), 'arbitrary')
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_string, pygplates.PropertyName.create_gpml('reconstructionPlateId'), 'arbitrary')
+        self.assertRaises(TypeError,
+                self.feature.set_string, pygplates.PropertyName.create_gpml('shipTrackName'), 1)
+        # Use 'gpml:MagneticAnomalyIdentification' feature type when checking multiplicity.
+        # Because 'gpml:UnclassifiedFeature' feature type is a special case allows any multiplicity.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature(pygplates.FeatureType.gpml_magnetic_anomaly_identification).set_string,
+                pygplates.PropertyName.create_gpml('shipTrackName'),
+                ['arbitrary1', 'arbitrary2'])
+        self.feature.set_string(pygplates.PropertyName.create_gpml('reconstructionPlateId'), 'arbitrary', pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('reconstructionPlateId')) == 'arbitrary')
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == 'TestShip2')
+    
+    def test_get_and_set_boolean(self):
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive')) == True)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), [], pygplates.PropertyReturn.all) == [True])
+        self.feature.remove(pygplates.PropertyName.create_gpml('isActive'))
+        # With property removed it should return default.
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive')) == False)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), None) is None)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), [], pygplates.PropertyReturn.all) == [])
+        
+        self.feature.set_boolean(pygplates.PropertyName.create_gpml('isActive'), False)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), None) == False)
+        gpml_is_active = self.feature.set_boolean(pygplates.PropertyName.create_gpml('isActive'), [True])
+        self.assertTrue(len(gpml_is_active) == 1)
+        self.assertTrue(gpml_is_active[0].get_value().get_boolean() == True)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive')) == True)
+        
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_boolean, pygplates.PropertyName.create_gpml('invalid'), True)
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_boolean, pygplates.PropertyName.create_gpml('reconstructionPlateId'), True)
+        self.assertRaises(TypeError,
+                self.feature.set_boolean, pygplates.PropertyName.create_gpml('isActive'), 'True')
+        self.feature.set_boolean(pygplates.PropertyName.create_gpml('reconstructionPlateId'), True, pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('reconstructionPlateId')) == True)
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive')) == True)
+    
+    def test_get_and_set_integer(self):
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')) == 300)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), [], pygplates.PropertyReturn.all) == [300])
+        self.feature.remove(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))
+        # With property removed it should return default.
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')) == 0)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), None) is None)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), [], pygplates.PropertyReturn.all) == [])
+        
+        self.feature.set_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), 20)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), None) == 20)
+        gpml_subduction_zone_system_order = self.feature.set_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), [30])
+        self.assertTrue(len(gpml_subduction_zone_system_order) == 1)
+        self.assertTrue(gpml_subduction_zone_system_order[0].get_value().get_integer() == 30)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')) == 30)
+        
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_integer, pygplates.PropertyName.create_gpml('invalid'), 5)
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_integer, pygplates.PropertyName.create_gpml('reconstructionPlateId'), 5)
+        self.assertRaises(TypeError,
+                self.feature.set_integer, pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), 'True')
+        self.feature.set_integer(pygplates.PropertyName.create_gpml('reconstructionPlateId'), 5, pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('reconstructionPlateId')) == 5)
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')) == 30)
+    
+    def test_get_and_set_double(self):
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth')), 10.5)
+        self.feature.remove(pygplates.PropertyName.create_gpml('subductionZoneDepth'))
+        # With property removed it should return default.
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth')), 0)
+        self.assertTrue(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), None) is None)
+        self.assertTrue(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), [], pygplates.PropertyReturn.all) == [])
+        
+        self.feature.set_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), 20.4)
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), None), 20.4)
+        gpml_subduction_zone_depth = self.feature.set_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), [30.6])
+        self.assertTrue(len(gpml_subduction_zone_depth) == 1)
+        self.assertAlmostEqual(gpml_subduction_zone_depth[0].get_value().get_double(), 30.6)
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth')), 30.6)
+        
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_double, pygplates.PropertyName.create_gpml('invalid'), 5.5)
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_double, pygplates.PropertyName.create_gpml('reconstructionPlateId'), 5.5)
+        self.assertRaises(TypeError,
+                self.feature.set_double, pygplates.PropertyName.create_gpml('subductionZoneDepth'), 'True')
+        self.feature.set_double(pygplates.PropertyName.create_gpml('reconstructionPlateId'), 5.6, pygplates.VerifyInformationModel.no)
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('reconstructionPlateId')), 5.6)
+        self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth')), 30.6)
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()
