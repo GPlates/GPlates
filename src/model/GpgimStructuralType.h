@@ -197,7 +197,7 @@ namespace GPlatesModel
 		 *
 		 * Template structural types (such as 'gpml:Array') need a value type to be specified
 		 * in order to complete the type or instantiate the type (eg, 'gpml:Array<gml:TimePeriod>').
-		 * Hence template structural types use the derivd class @a GpgimTemplateStructuralType
+		 * Hence template structural types use the derived class @a GpgimTemplateStructuralType
 		 * which overrides this method.
 		 */
 		virtual

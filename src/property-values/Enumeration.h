@@ -64,9 +64,18 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const EnumerationType &enum_type,
-				const GPlatesUtils::UnicodeString &enum_content)
+				const EnumerationContent &enum_content)
 		{
 			return non_null_ptr_type(new Enumeration(enum_type, enum_content));
+		}
+
+		static
+		const non_null_ptr_type
+		create(
+				const EnumerationType &enum_type,
+				const GPlatesUtils::UnicodeString &enum_content)
+		{
+			return non_null_ptr_type(new Enumeration(enum_type, EnumerationContent(enum_content)));
 		}
 
 		const non_null_ptr_type
@@ -134,7 +143,7 @@ namespace GPlatesPropertyValues
 		explicit
 		Enumeration(
 				const EnumerationType &enum_type,
-				const GPlatesUtils::UnicodeString &enum_content) :
+				const EnumerationContent &enum_content) :
 			PropertyValue(Revision::non_null_ptr_type(new Revision(enum_content))),
 			d_type(enum_type)
 		{  }
@@ -179,7 +188,7 @@ namespace GPlatesPropertyValues
 		{
 			explicit
 			Revision(
-					const GPlatesUtils::UnicodeString &value_) :
+					const EnumerationContent &value_) :
 				value(value_)
 			{  }
 

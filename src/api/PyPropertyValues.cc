@@ -270,7 +270,7 @@ namespace GPlatesApi
 		void
 		verify_enumeration_type_and_content(
 				const GPlatesPropertyValues::EnumerationType &type,
-				const QString &content)
+				const GPlatesPropertyValues::EnumerationContent &content)
 		{
 			// Get the GPGIM enumeration type.
 			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
@@ -292,7 +292,7 @@ namespace GPlatesApi
 					gpgim_enumeration_type.get()->get_contents();
 			BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
 			{
-				if (content == enum_content.value)
+				if (content.get().qstring() == enum_content.value)
 				{
 					is_content_valid = true;
 					break;
@@ -305,7 +305,7 @@ namespace GPlatesApi
 				throw InformationModelException(
 						GPLATES_EXCEPTION_SOURCE,
 						QString("The enumeration content '") +
-								content +
+								content.get().qstring() +
 								"' is not supported by enumeration type '" +
 								convert_qualified_xml_name_to_qstring(type) + "'");
 			}
@@ -315,12 +315,12 @@ namespace GPlatesApi
 	const GPlatesPropertyValues::Enumeration::non_null_ptr_type
 	enumeration_create(
 			const GPlatesPropertyValues::EnumerationType &type,
-			const GPlatesUtils::UnicodeString &content,
+			const GPlatesPropertyValues::EnumerationContent &content,
 			VerifyInformationModel::Value verify_information_model)
 	{
 		if (verify_information_model == VerifyInformationModel::YES)
 		{
-			verify_enumeration_type_and_content(type, content.qstring());
+			verify_enumeration_type_and_content(type, content);
 		}
 
 		return GPlatesPropertyValues::Enumeration::create(type, content);
@@ -334,7 +334,7 @@ namespace GPlatesApi
 	{
 		if (verify_information_model == VerifyInformationModel::YES)
 		{
-			verify_enumeration_type_and_content(enumeration.get_type(), content.get().qstring());
+			verify_enumeration_type_and_content(enumeration.get_type(), content);
 		}
 
 		enumeration.set_value(content);

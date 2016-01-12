@@ -30,9 +30,11 @@ def get_value(property, time=0):
     instance is simply returned as is (since it's not a time-dependent property value).
     See :meth:`PropertyValue.get_value` for more details.
     
-    Note that this method never returns a time-dependent property value (:class:`GpmlConstantValue`,
-    :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
-    You can use :meth:`get_time_dependent_container` for that.
+    .. note:: This method never returns a time-dependent property value (:class:`GpmlConstantValue`,
+       :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
+       You can use :meth:`get_time_dependent_container` for that.
+    
+    .. seealso:: :meth:`PropertyValue.get_value`
     """
     
     # Get the property value using a private method.

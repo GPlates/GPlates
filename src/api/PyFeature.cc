@@ -284,10 +284,9 @@ namespace GPlatesApi
 		}
 
 		// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
-		void
-		verify_enumeration_type_and_content(
-				const GPlatesPropertyValues::EnumerationType &type,
-				const QString &content)
+		GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type
+		verify_enumeration_type(
+				const GPlatesPropertyValues::EnumerationType &type)
 		{
 			// Get the GPGIM enumeration type.
 			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
@@ -303,13 +302,22 @@ namespace GPlatesApi
 								"' was not recognised as a valid type by the GPGIM");
 			}
 
+			return gpgim_enumeration_type.get();
+		}
+
+		// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
+		void
+		verify_enumeration_content(
+				const GPlatesModel::GpgimEnumerationType &gpgim_enumeration_type,
+				const GPlatesPropertyValues::EnumerationContent &content)
+		{
 			// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
 			bool is_content_valid = false;
 			const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
-					gpgim_enumeration_type.get()->get_contents();
+					gpgim_enumeration_type.get_contents();
 			BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
 			{
-				if (content == enum_content.value)
+				if (content.get().qstring() == enum_content.value)
 				{
 					is_content_valid = true;
 					break;
@@ -322,10 +330,48 @@ namespace GPlatesApi
 				throw InformationModelException(
 						GPLATES_EXCEPTION_SOURCE,
 						QString("The enumeration content '") +
-								content +
+								content.get().qstring() +
 								"' is not supported by enumeration type '" +
-								convert_qualified_xml_name_to_qstring(type) + "'");
+								convert_qualified_xml_name_to_qstring(gpgim_enumeration_type.get_structural_type()) + "'");
 			}
+		}
+
+		// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
+		void
+		verify_enumeration_type_and_content(
+				const GPlatesPropertyValues::EnumerationType &type,
+				const GPlatesPropertyValues::EnumerationContent &content)
+		{
+			GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type gpgim_enumeration_type =
+					verify_enumeration_type(type);
+
+			verify_enumeration_content(*gpgim_enumeration_type, content);
+		}
+
+		/**
+		 * Returns the GPGIM enumeration type associated with the specified property name.
+		 */
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
+		get_gpgim_enumeration_type_from_property_name(
+				const GPlatesModel::PropertyName &property_name)
+		{
+			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+			// Get the GPGIM property.
+			boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+					gpgim.get_property(property_name);
+			if (!gpgim_property)
+			{
+				return boost::none;
+			}
+
+			// Get the GPGIM property structural type.
+			GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type =
+					gpgim_property.get()->get_default_structural_type();
+
+			// Make sure it's an enumeration type (enumeration types are a subset of structural types).
+			// Get the GPGIM enumeration type.
+			return gpgim.get_property_enumeration_type(gpgim_structural_type->get_structural_type());
 		}
 
 		/**
@@ -2068,6 +2114,82 @@ namespace GPlatesApi
 		return coverages_list;
 	}
 
+	bp::object
+	feature_handle_set_enumeration(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			const GPlatesPropertyValues::EnumerationContent &enumeration_content,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		// Determine enumeration type from the property name via the GPGIM.
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+				get_gpgim_enumeration_type_from_property_name(property_name);
+		if (!gpgim_enumeration_type)
+		{
+			// This exception will get converted to python 'InformationModelError'.
+			throw InformationModelException(
+					GPLATES_EXCEPTION_SOURCE,
+					QString("Unable to determine the enumeration type from the property name '") +
+							convert_qualified_xml_name_to_qstring(property_name) + "'");
+		}
+
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			verify_enumeration_content(*gpgim_enumeration_type.get(), enumeration_content);
+		}
+
+		// Create the enumeration property value.
+		const GPlatesPropertyValues::EnumerationType enumeration_type(
+				gpgim_enumeration_type.get()->get_structural_type());
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type enumeration_property_value =
+				GPlatesPropertyValues::Enumeration::create(enumeration_type, enumeration_content);
+
+		// Set the enumeration property in the feature.
+		return feature_handle_set_property(
+				feature_handle,
+				property_name,
+				bp::object(enumeration_property_value),
+				verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_enumeration(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object default_enumeration_content_object)
+	{
+		// If anything fails then we fall through and return the default enumeration content (if any).
+
+		bp::object enumeration_property_value_object =
+				feature_handle_get_property_value(
+						feature_handle,
+						bp::object(property_name),
+						GPlatesPropertyValues::GeoTimeInstant(0),
+						PropertyReturn::EXACTLY_ONE);
+		if (enumeration_property_value_object != bp::object()/*Py_None*/)
+		{
+			// Check that it's an Enumeration property value.
+			bp::extract<GPlatesPropertyValues::Enumeration::non_null_ptr_type> extract_enumeration(
+							enumeration_property_value_object);
+			if (extract_enumeration.check())
+			{
+				GPlatesPropertyValues::Enumeration::non_null_ptr_type enumeration = extract_enumeration();
+
+				// Determine enumeration type from the property name via the GPGIM.
+				boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+						get_gpgim_enumeration_type_from_property_name(property_name);
+				// If the enumeration type matches what we expect from the property name...
+				if (gpgim_enumeration_type &&
+					gpgim_enumeration_type.get()->get_structural_type() == enumeration->get_structural_type())
+				{
+					return bp::object(enumeration->get_value());
+				}
+			}
+		}
+
+		return default_enumeration_content_object;
+	}
+
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_total_reconstruction_sequence(
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
@@ -2196,7 +2318,7 @@ namespace GPlatesApi
 			bp::object conjugate_plate_id,
 			boost::optional<GPlatesModel::integer_plate_id_type> left_plate,
 			boost::optional<GPlatesModel::integer_plate_id_type> right_plate,
-			boost::optional<GPlatesUtils::UnicodeString> reconstruction_method,
+			boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
 			bp::object reverse_reconstruct_object,
@@ -2267,7 +2389,7 @@ namespace GPlatesApi
 			{
 				verify_enumeration_type_and_content(
 						RECONSTRUCTION_METHOD_ENUMERATION_TYPE,
-						reconstruction_method->qstring());
+						reconstruction_method.get());
 			}
 
 			feature_handle_add_property(
@@ -2529,6 +2651,11 @@ export_feature()
 					"* :meth:`set_shapefile_attributes`\n"
 					"* :meth:`get_shapefile_attribute`\n"
 					"* :meth:`get_shapefile_attributes`\n"
+					"\n"
+					"The following methods provide a convenient way to set and get :class:`enumeration<Enumeration>` properties:\n"
+					"\n"
+					"* :meth:`set_enumeration`\n"
+					"* :meth:`get_enumeration`\n"
 					"\n"
 					"The following methods provide a convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
@@ -3494,6 +3621,8 @@ export_feature()
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for "
 				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
+				"  :raises: InformationModelError if *property_name* is not specified and a default geometry property "
+				"is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)\n"
 				"  :raises: AmbiguousGeometryCoverageError if multiple coverages are specified (in *geometry*) "
 				"and more than one has the same number of points (or scalar values) - the ambiguity is due to not being able to "
 				"subsequently determine which coverage range property is associated with which coverage domain property\n"
@@ -3758,6 +3887,58 @@ export_feature()
 				"            coverage_return)\n"
 				"\n"
 				"  See :meth:`get_geometries` for more details.\n")
+		.def("set_enumeration",
+				&GPlatesApi::feature_handle_set_enumeration,
+				(bp::arg("property_name"),
+						bp::arg("enumeration_content"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_enumeration(property_name, enumeration_content, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the enumeration content associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the enumeration property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param enumeration_content: the enumeration content (value of enumeration)\n"
+				"  :type enumeration_content: string\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property containing the enumeration\n"
+				"  :rtype: :class:`Property`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` "
+				"does not support an enumeration property named *property_name*, or *enumeration_content* is not a recognised enumeration content value "
+				"for the enumeration type associated with *property_name*.\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`set` for :class:`Enumeration` properties.\n"
+				"\n"
+				"  Set the subduction polarity on a subduction zone feature to ``Left``:\n"
+				"  ::\n"
+				"\n"
+				"    subduction_zone_feature.set_enumeration(\n"
+				"        pygplates.PropertyName.gpml_subduction_polarity,\n"
+				"        'Left')\n")
+		.def("get_enumeration",
+				&GPlatesApi::feature_handle_get_enumeration,
+				(bp::arg("property_name"),
+						bp::arg("default") = bp::object()/*Py_None*/),
+				"get_enumeration(property_name, [default])\n"
+				"  Returns the enumeration content associated with *property_name*.\n"
+				"\n"
+				"  :param property_name: the property name of the enumeration property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param default: the default enumeration content value (defaults to None)\n"
+				"  :type default: string or None\n"
+				"  :returns: the enumeration content value if exactly one :class:`enumeration<Enumeration>` property "
+				"named *property_name* is found with the expected :class:`enumeration type<EnumerationType>` "
+				"associated with *property_name*, otherwise *default* is returned\n"
+				"  :rtype: string, or type(*default*)\n"
+				"\n"
+				"  This is a convenience method that wraps :meth:`get_value` for :class:`Enumeration` properties.\n"
+				"\n"
+				"  Return the subduction polarity (defaulting to 'Unknown'):\n"
+				"  ::\n"
+				"\n"
+				"    subduction_polarity = subduction_zone_feature.get_enumeration(\n"
+				"        pygplates.PropertyName.gpml_subduction_polarity,\n"
+				"        'Unknown')\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
