@@ -109,7 +109,8 @@ export_qualified_xml_name(
 		PythonClassType &qualified_xml_name_class,
 		const char *class_name,
 		const char *instance_name,
-		const char *example_qualified_name)
+		const char *example_qualified_name,
+		const char *example_unqualified_name)
 {
 	// The GPlatesModel::QualifiedXmlName<> type.
 	typedef typename PythonClassType::wrapped_type qualified_xml_name_type;
@@ -126,8 +127,8 @@ export_qualified_xml_name(
 				"\n"
 				"  :rtype: string\n"
 				"\n"
-				"  For example, the 'gpml' namespace alias has the namespace "
-				"'http://www.gplates.org/gplates'.\n")
+				"  For example, the ``gpml`` namespace alias has the namespace "
+				"``http://www.gplates.org/gplates``.\n")
 		.def("get_namespace_alias",
 				&qualified_xml_name_type::get_namespace_alias,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -136,17 +137,7 @@ export_qualified_xml_name(
 				"\n"
 				"  :rtype: string\n"
 				"\n"
-				"  For example, 'gpml' (if created with 'create_gpml()').\n")
-		.def("get_name",
-				&qualified_xml_name_type::get_name,
-				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_name()\n"
-				"  Returns the unqualified name.\n"
-				"\n"
-				"  :rtype: string\n"
-				"\n"
-				"  For example, the fully qualified name minus the "
-				"'gpml:' prefix (if created with 'create_gpml()').\n")
+				"  For example, ``gpml`` (if created with *create_gpml()*).\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
@@ -162,8 +153,25 @@ export_qualified_xml_name(
 		.def("__str__", &GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>)
 	;
 
-	// Enable boost::optional<GPlatesModel::QualifiedXmlName<> > to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<qualified_xml_name_type>();
+
+	std::stringstream get_name_docstring_stream;
+	get_name_docstring_stream <<
+			"get_name()\n"
+			"  Returns the unqualified name.\n"
+			"\n"
+			"  :rtype: string\n"
+			"\n"
+			"  This is the fully qualified name minus the "
+			"``gpml:`` prefix (if created with *create_gpml()*).\n"
+			"\n"
+			"  For example, ``" << example_unqualified_name << "``.\n";
+
+	// Member to-QString conversion function.
+	qualified_xml_name_class.def("get_name",
+			&qualified_xml_name_type::get_name,
+			bp::return_value_policy<bp::copy_const_reference>(),
+			get_name_docstring_stream.str().c_str());
+
 
 	std::stringstream to_qualified_string_docstring_stream;
 	to_qualified_string_docstring_stream <<
@@ -172,12 +180,13 @@ export_qualified_xml_name(
 			"\n"
 			"  :rtype: string\n"
 			"\n"
-			"  For example, '" << example_qualified_name << "'.\n";
+			"  For example, ``" << example_qualified_name << "``.\n";
 
 	// Member to-QString conversion function.
 	qualified_xml_name_class.def("to_qualified_string",
 			&GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>,
 			to_qualified_string_docstring_stream.str().c_str());
+
 
 	std::stringstream from_qualified_string_docstring_stream;
 	from_qualified_string_docstring_stream <<
@@ -185,17 +194,17 @@ export_qualified_xml_name(
 			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 			// (like it can a pure python function) and we cannot document it in first (signature) line
 			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Creates a " << class_name << " instance from a fully qualified name string.\n"
+			"  [*staticmethod*] Creates a :class:`" << class_name << "` instance from a fully qualified name string.\n"
 			"\n"
 			"  :param name: qualified name\n"
 			"  :type name: string\n"
-			"  :rtype: " << class_name << " or None\n"
+			"  :rtype: :class:`" << class_name << "` or None\n"
 			"\n"
-			"  The name string should have a ':' character separating the namespace alias from the unqualified name, "
-			"for example '" << example_qualified_name
-			<< "'. If the namespace alias is not recognised (as 'gpml', 'gml' or 'xsi') then 'gpml' is assumed.\n"
+			"  The name string should have a ``:`` character separating the namespace alias from the unqualified name, "
+			"for example ``" << example_qualified_name
+			<< "``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.\n"
 			"\n"
-			"  An over-qualified name string (eg, containing two or more ':' characters) will result "
+			"  An over-qualified name string (eg, containing two or more ``:`` characters) will result "
 			"in ``None`` being returned.\n"
 			"  ::\n"
 			"\n"
@@ -207,6 +216,10 @@ export_qualified_xml_name(
 			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>,
 			from_qualified_string_docstring_stream.str().c_str());
 	qualified_xml_name_class.staticmethod("create_from_qualified_string");
+
+
+	// Enable boost::optional<GPlatesModel::QualifiedXmlName<> > to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<qualified_xml_name_type>();
 }
 
 
@@ -230,7 +243,7 @@ export_enumeration_type()
 			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 			// (like it can a pure python function) and we cannot document it in first (signature) line
 			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create an enumeration type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+			"  [*staticmethod*] Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
@@ -246,7 +259,8 @@ export_enumeration_type()
 			enumeration_type_class,
 			"EnumerationType",
 			"enumeration_type",
-			"gpml:SubductionPolarityEnumeration");
+			"gpml:SubductionPolarityEnumeration",
+			"SubductionPolarityEnumeration");
 }
 
 
@@ -433,7 +447,7 @@ export_feature_type()
 			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 			// (like it can a pure python function) and we cannot document it in first (signature) line
 			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create a feature type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+			"  [*staticmethod*] Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
@@ -449,7 +463,8 @@ export_feature_type()
 			feature_type_class,
 			"FeatureType",
 			"feature_type",
-			"gpml:Coastline");
+			"gpml:Coastline",
+			"Coastline");
 }
 
 
@@ -470,7 +485,6 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_moving_reference_frame = GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
 	const GPlatesModel::PropertyName gpml_polarity_chron_id = GPlatesModel::PropertyName::create_gpml("polarityChronId");
 	const GPlatesModel::PropertyName gpml_polarity_chron_offset = GPlatesModel::PropertyName::create_gpml("polarityChronOffset");
-	const GPlatesModel::PropertyName gpml_polarity_chron_orientation = GPlatesModel::PropertyName::create_gpml("polarityChronOrientation");
 	const GPlatesModel::PropertyName gpml_pole_a95 = GPlatesModel::PropertyName::create_gpml("poleA95");
 	const GPlatesModel::PropertyName gpml_pole_dm = GPlatesModel::PropertyName::create_gpml("poleDm");
 	const GPlatesModel::PropertyName gpml_pole_dp = GPlatesModel::PropertyName::create_gpml("poleDp");
@@ -481,6 +495,23 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_shapefile_attributes = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 	const GPlatesModel::PropertyName gpml_times = GPlatesModel::PropertyName::create_gpml("times");
 	const GPlatesModel::PropertyName gpml_total_reconstruction_pole = GPlatesModel::PropertyName::create_gpml("totalReconstructionPole");
+
+	//
+	// Some common enumeration property names....
+	//
+	const GPlatesModel::PropertyName gpml_absolute_reference_frame = GPlatesModel::PropertyName::create_gpml("absoluteReferenceFrame");
+	const GPlatesModel::PropertyName gpml_crust = GPlatesModel::PropertyName::create_gpml("crust");
+	const GPlatesModel::PropertyName gpml_dip_side = GPlatesModel::PropertyName::create_gpml("dipSide");
+	const GPlatesModel::PropertyName gpml_dip_slip = GPlatesModel::PropertyName::create_gpml("dipSlip");
+	const GPlatesModel::PropertyName gpml_edge = GPlatesModel::PropertyName::create_gpml("edge");
+	const GPlatesModel::PropertyName gpml_fold_annotation = GPlatesModel::PropertyName::create_gpml("foldAnnotation");
+	const GPlatesModel::PropertyName gpml_motion = GPlatesModel::PropertyName::create_gpml("motion");
+	const GPlatesModel::PropertyName gpml_polarity_chron_orientation = GPlatesModel::PropertyName::create_gpml("polarityChronOrientation");
+	const GPlatesModel::PropertyName gpml_primary_slip_component = GPlatesModel::PropertyName::create_gpml("primarySlipComponent");
+	const GPlatesModel::PropertyName gpml_quality = GPlatesModel::PropertyName::create_gpml("quality");
+	const GPlatesModel::PropertyName gpml_side = GPlatesModel::PropertyName::create_gpml("side");
+	const GPlatesModel::PropertyName gpml_strike_slip = GPlatesModel::PropertyName::create_gpml("strikeSlip");
+	const GPlatesModel::PropertyName gpml_subduction_polarity = GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
 	//
 	// Some common geometry property names....
@@ -524,7 +555,6 @@ export_property_name()
 			"* ``pygplates.PropertyName.gpml_moving_reference_frame`` = pygplates.PropertyName.create_gpml('movingReferenceFrame')\n"
 			"* ``pygplates.PropertyName.gpml_polarity_chron_id`` = pygplates.PropertyName.create_gpml('polarityChronId')\n"
 			"* ``pygplates.PropertyName.gpml_polarity_chron_offset`` = pygplates.PropertyName.create_gpml('polarityChronOffset')\n"
-			"* ``pygplates.PropertyName.gpml_polarity_chron_orientation`` = pygplates.PropertyName.create_gpml('polarityChronOrientation')\n"
 			"* ``pygplates.PropertyName.gpml_pole_a95`` = pygplates.PropertyName.create_gpml('poleA95')\n"
 			"* ``pygplates.PropertyName.gpml_pole_dm`` = pygplates.PropertyName.create_gpml('poleDm')\n"
 			"* ``pygplates.PropertyName.gpml_pole_dp`` = pygplates.PropertyName.create_gpml('poleDp')\n"
@@ -535,6 +565,22 @@ export_property_name()
 			"* ``pygplates.PropertyName.gpml_shapefile_attributes`` = pygplates.PropertyName.create_gpml('shapefileAttributes')\n"
 			"* ``pygplates.PropertyName.gpml_times`` = pygplates.PropertyName.create_gpml('times')\n"
 			"* ``pygplates.PropertyName.gpml_total_reconstruction_pole`` = pygplates.PropertyName.create_gpml('totalReconstructionPole')\n"
+			"\n"
+			"As a convenience the following common :class:`enumeration<Enumeration>` property names are available as class attributes:\n"
+			"\n"
+			"* ``pygplates.PropertyName.gpml_absolute_reference_frame`` = pygplates.PropertyName.create_gpml('absoluteReferenceFrame')\n"
+			"* ``pygplates.PropertyName.gpml_crust`` = pygplates.PropertyName.create_gpml('crust')\n"
+			"* ``pygplates.PropertyName.gpml_dip_side`` = pygplates.PropertyName.create_gpml('dipSide')\n"
+			"* ``pygplates.PropertyName.gpml_dip_slip`` = pygplates.PropertyName.create_gpml('dipSlip')\n"
+			"* ``pygplates.PropertyName.gpml_edge`` = pygplates.PropertyName.create_gpml('edge')\n"
+			"* ``pygplates.PropertyName.gpml_fold_annotation`` = pygplates.PropertyName.create_gpml('foldAnnotation')\n"
+			"* ``pygplates.PropertyName.gpml_motion`` = pygplates.PropertyName.create_gpml('motion')\n"
+			"* ``pygplates.PropertyName.gpml_polarity_chron_orientation`` = pygplates.PropertyName.create_gpml('polarityChronOrientation')\n"
+			"* ``pygplates.PropertyName.gpml_primary_slip_component`` = pygplates.PropertyName.create_gpml('primarySlipComponent')\n"
+			"* ``pygplates.PropertyName.gpml_quality`` = pygplates.PropertyName.create_gpml('quality')\n"
+			"* ``pygplates.PropertyName.gpml_side`` = pygplates.PropertyName.create_gpml('side')\n"
+			"* ``pygplates.PropertyName.gpml_strike_slip`` = pygplates.PropertyName.create_gpml('strikeSlip')\n"
+			"* ``pygplates.PropertyName.gpml_subduction_polarity`` = pygplates.PropertyName.create_gpml('subductionPolarity')\n"
 			"\n"
 			"As a convenience the following common *geometry* property names are available as class attributes:\n"
 			"\n"
@@ -563,7 +609,6 @@ export_property_name()
 	property_name_class.def_readonly("gpml_moving_reference_frame", GPlatesApi::gpml_moving_reference_frame);
 	property_name_class.def_readonly("gpml_polarity_chron_id", GPlatesApi::gpml_polarity_chron_id);
 	property_name_class.def_readonly("gpml_polarity_chron_offset", GPlatesApi::gpml_polarity_chron_offset);
-	property_name_class.def_readonly("gpml_polarity_chron_orientation", GPlatesApi::gpml_polarity_chron_orientation);
 	property_name_class.def_readonly("gpml_pole_a95", GPlatesApi::gpml_pole_a95);
 	property_name_class.def_readonly("gpml_pole_dm", GPlatesApi::gpml_pole_dm);
 	property_name_class.def_readonly("gpml_pole_dp", GPlatesApi::gpml_pole_dp);
@@ -574,6 +619,21 @@ export_property_name()
 	property_name_class.def_readonly("gpml_shapefile_attributes", GPlatesApi::gpml_shapefile_attributes);
 	property_name_class.def_readonly("gpml_times", GPlatesApi::gpml_times);
 	property_name_class.def_readonly("gpml_total_reconstruction_pole", GPlatesApi::gpml_total_reconstruction_pole);
+
+	// Some common enumeration property names...
+	property_name_class.def_readonly("gpml_absolute_reference_frame", GPlatesApi::gpml_absolute_reference_frame);
+	property_name_class.def_readonly("gpml_crust", GPlatesApi::gpml_crust);
+	property_name_class.def_readonly("gpml_dip_side", GPlatesApi::gpml_dip_side);
+	property_name_class.def_readonly("gpml_dip_slip", GPlatesApi::gpml_dip_slip);
+	property_name_class.def_readonly("gpml_edge", GPlatesApi::gpml_edge);
+	property_name_class.def_readonly("gpml_fold_annotation", GPlatesApi::gpml_fold_annotation);
+	property_name_class.def_readonly("gpml_motion", GPlatesApi::gpml_motion);
+	property_name_class.def_readonly("gpml_polarity_chron_orientation", GPlatesApi::gpml_polarity_chron_orientation);
+	property_name_class.def_readonly("gpml_primary_slip_component", GPlatesApi::gpml_primary_slip_component);
+	property_name_class.def_readonly("gpml_quality", GPlatesApi::gpml_quality);
+	property_name_class.def_readonly("gpml_side", GPlatesApi::gpml_side);
+	property_name_class.def_readonly("gpml_strike_slip", GPlatesApi::gpml_strike_slip);
+	property_name_class.def_readonly("gpml_subduction_polarity", GPlatesApi::gpml_subduction_polarity);
 
 	// Some common geometry property names...
 	property_name_class.def_readonly("gpml_average_sample_site_position", GPlatesApi::gpml_average_sample_site_position);
@@ -594,7 +654,7 @@ export_property_name()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"  [*staticmethod*] Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -610,7 +670,7 @@ export_property_name()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"  [*staticmethod*] Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -626,7 +686,7 @@ export_property_name()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"  [*staticmethod*] Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -642,7 +702,8 @@ export_property_name()
 			property_name_class,
 			"PropertyName",
 			"property_name",
-			"gpml:reconstructionPlateId");
+			"gpml:reconstructionPlateId",
+			"reconstructionPlateId");
 }
 
 
@@ -671,7 +732,7 @@ export_scalar_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"  [*staticmethod*] Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -687,7 +748,7 @@ export_scalar_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"  [*staticmethod*] Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -699,7 +760,7 @@ export_scalar_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"  [*staticmethod*] Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -711,7 +772,8 @@ export_scalar_type()
 			scalar_type_class,
 			"ScalarType",
 			"gpml_velocity_colat_scalar_type",
-			"gpml:VelocityColat");
+			"gpml:VelocityColat",
+			"VelocityColat");
 }
 
 
@@ -735,7 +797,7 @@ export_structural_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"  [*staticmethod*] Create a structural type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -751,7 +813,7 @@ export_structural_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"  [*staticmethod*] Create a structural type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -767,7 +829,7 @@ export_structural_type()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"  [*staticmethod*] Create a structural type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -783,7 +845,8 @@ export_structural_type()
 			structural_type_class,
 			"StructuralType",
 			"structural_type",
-			"gml:TimePeriod");
+			"gml:TimePeriod",
+			"TimePeriod");
 }
 
 
