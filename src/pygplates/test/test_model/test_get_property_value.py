@@ -14,31 +14,31 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     def setUp(self):
         self.feature = pygplates.Feature()
         self.feature.add(
-                pygplates.PropertyName.create_gml('description'),
+                pygplates.PropertyName.gml_description,
                 pygplates.XsString('Feature description'))
         self.feature.add(
-                pygplates.PropertyName.create_gml('name'),
+                pygplates.PropertyName.gml_name,
                 pygplates.XsString('Feature name'))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                pygplates.PropertyName.gpml_reconstruction_plate_id,
                 pygplates.GpmlPlateId(201))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('conjugatePlateId'),
+                pygplates.PropertyName.gpml_conjugate_plate_id,
                 pygplates.GpmlPlateId(2))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                pygplates.PropertyName.gpml_reconstruction_plate_id,
                 pygplates.GpmlPlateId(801))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('leftPlate'),
+                pygplates.PropertyName.gpml_left_plate,
                 pygplates.GpmlPlateId(11))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('rightPlate'),
+                pygplates.PropertyName.gpml_right_plate,
                 pygplates.GpmlPlateId(12))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('relativePlate'),
+                pygplates.PropertyName.gpml_relative_plate,
                 pygplates.GpmlPlateId(13))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('times'),
+                pygplates.PropertyName.gpml_times,
                 pygplates.GpmlArray([
                         pygplates.GmlTimePeriod(10, 0),
                         pygplates.GmlTimePeriod(20, 10),
@@ -48,7 +48,12 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 pygplates.XsInteger(300))
         self.feature.add(
-                pygplates.PropertyName.create_gml('validTime'),
+                pygplates.PropertyName.gpml_subduction_polarity,
+                pygplates.Enumeration(
+                        pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
+                        'Left'))
+        self.feature.add(
+                pygplates.PropertyName.gml_valid_time,
                 pygplates.GmlTimePeriod(50, 0))
         # A time-dependent property excluding time 0Ma.
         self.feature.add(
@@ -328,10 +333,37 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.PropertyName.gpml_position,
                 verify_information_model=pygplates.VerifyInformationModel.no)
     
+    def test_get_and_set_enumeration(self):
+        subduction_polarity = self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
+        self.assertTrue(subduction_polarity == 'Left')
+        self.feature.remove(pygplates.PropertyName.gpml_subduction_polarity)
+        # With property removed it should return default.
+        subduction_polarity = self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
+        self.assertTrue(subduction_polarity is None)
+        subduction_polarity = self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity, 'Unknown')
+        self.assertTrue(subduction_polarity == 'Unknown')
+        
+        self.feature.set_enumeration(pygplates.PropertyName.gpml_primary_slip_component, 'DipSlip')
+        self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_primary_slip_component) == 'DipSlip')
+        gpml_primary_slip_component = self.feature.set_enumeration(pygplates.PropertyName.gpml_primary_slip_component, 'StrikeSlip')
+        self.assertTrue(gpml_primary_slip_component.get_value().get_content() == 'StrikeSlip')
+        self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_primary_slip_component) == 'StrikeSlip')
+        
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_enumeration, pygplates.PropertyName.create_gpml('invalid'), 'arbitrary')
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_enumeration, pygplates.PropertyName.gpml_primary_slip_component, 'invalid')
+        self.feature.set_enumeration(pygplates.PropertyName.gpml_primary_slip_component, 'invalid', pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_primary_slip_component) == 'invalid')
+        self.feature.set_enumeration(pygplates.PropertyName.gpml_primary_slip_component, 'StrikeSlip')
+        self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_primary_slip_component) == 'StrikeSlip')
+        self.feature.set_enumeration(pygplates.PropertyName.gpml_subduction_polarity, 'Right')
+        self.assertTrue(self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity) == 'Right')
+    
     def test_get_and_set_description(self):
         description = self.feature.get_description()
         self.assertTrue(description == 'Feature description')
-        self.feature.remove(pygplates.PropertyName.create_gml('description'))
+        self.feature.remove(pygplates.PropertyName.gml_description)
         # With property removed it should return default of an empty string.
         description = self.feature.get_description()
         self.assertTrue(description == '')
@@ -347,7 +379,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     def test_get_and_set_name(self):
         self.assertTrue(self.feature.get_name() == 'Feature name')
         self.assertTrue(self.feature.get_name('', pygplates.PropertyReturn.first) == 'Feature name')
-        self.feature.remove(pygplates.PropertyName.create_gml('name'))
+        self.feature.remove(pygplates.PropertyName.gml_name)
         # With property removed it should return default of an empty string.
         self.assertTrue(self.feature.get_name() == '')
         self.assertFalse(self.feature.get_name())
@@ -362,21 +394,21 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_names(self):
         self.assertTrue(self.feature.get_name([], pygplates.PropertyReturn.all) == ['Feature name'])
-        self.feature.remove(pygplates.PropertyName.create_gml('name'))
+        self.feature.remove(pygplates.PropertyName.gml_name)
         # With property removed it should return default of an empty list.
         self.assertTrue(self.feature.get_name([], pygplates.PropertyReturn.all) == [])
         self.assertFalse(self.feature.get_name([], pygplates.PropertyReturn.all))
         self.assertFalse(self.feature.get_name(None, pygplates.PropertyReturn.all))
-        self.feature.add(pygplates.PropertyName.create_gml('name'), pygplates.XsString('Feature name'))
-        self.feature.add(pygplates.PropertyName.create_gml('name'), pygplates.XsString(''))
+        self.feature.add(pygplates.PropertyName.gml_name, pygplates.XsString('Feature name'))
+        self.feature.add(pygplates.PropertyName.gml_name, pygplates.XsString(''))
         # The name with the empty string will still get returned.
         names = self.feature.get_name([], pygplates.PropertyReturn.all)
         self.assertTrue('Feature name' in names)
         self.assertTrue('' in names)
         # If we ask for exactly one name then we'll get none (even though one of the two names is an empty string).
         self.assertFalse(self.feature.get_name())
-        self.feature.remove(pygplates.PropertyName.create_gml('name'))
-        self.feature.add(pygplates.PropertyName.create_gml('name'), pygplates.XsString(''))
+        self.feature.remove(pygplates.PropertyName.gml_name)
+        self.feature.add(pygplates.PropertyName.gml_name, pygplates.XsString(''))
         # With only a single name with empty string it should still return a non-empty list.
         self.assertTrue(self.feature.get_name([], pygplates.PropertyReturn.all) == [''])
         self.assertFalse(any(self.feature.get_name([], pygplates.PropertyReturn.all)))
@@ -391,7 +423,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         begin_time, end_time = self.feature.get_valid_time()
         self.assertTrue(pygplates.GeoTimeInstant(begin_time) == 50)
         self.assertTrue(pygplates.GeoTimeInstant(end_time) == 0)
-        self.feature.remove(pygplates.PropertyName.create_gml('validTime'))
+        self.feature.remove(pygplates.PropertyName.gml_valid_time)
         # With property removed it should return default of all time.
         begin_time, end_time = self.feature.get_valid_time()
         self.assertTrue(pygplates.GeoTimeInstant(begin_time).is_distant_past())
@@ -408,7 +440,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_left_plate(self):
         self.assertTrue(self.feature.get_left_plate() == 11)
-        self.feature.remove(pygplates.PropertyName.create_gpml('leftPlate'))
+        self.feature.remove(pygplates.PropertyName.gpml_left_plate)
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_left_plate() == 0)
         # With property removed it should return our default (None).
@@ -422,7 +454,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_right_plate(self):
         self.assertTrue(self.feature.get_right_plate() == 12)
-        self.feature.remove(pygplates.PropertyName.create_gpml('rightPlate'))
+        self.feature.remove(pygplates.PropertyName.gpml_right_plate)
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_right_plate() == 0)
         # With property removed it should return our default (None).
@@ -461,8 +493,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_reconstruction_plate_id() == 0)
         self.assertFalse(self.feature.get_reconstruction_plate_id(None))
         # Remove both reconstruction plate IDs.
-        self.feature.remove(pygplates.PropertyName.create_gpml('reconstructionPlateId'))
-        self.feature.add(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(10))
+        self.feature.remove(pygplates.PropertyName.gpml_reconstruction_plate_id)
+        self.feature.add(pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(10))
         reconstruction_plate_id = self.feature.get_reconstruction_plate_id()
         self.assertTrue(reconstruction_plate_id == 10)
         
@@ -475,7 +507,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     def test_get_and_set_conjugate_plate_id(self):
         self.assertTrue(self.feature.get_conjugate_plate_id() == 2)
         self.assertTrue(self.feature.get_conjugate_plate_id(0, pygplates.PropertyReturn.first) == 2)
-        self.feature.remove(pygplates.PropertyName.create_gpml('conjugatePlateId'))
+        self.feature.remove(pygplates.PropertyName.gpml_conjugate_plate_id)
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_conjugate_plate_id() == 0)
         self.assertFalse(self.feature.get_conjugate_plate_id())
@@ -490,20 +522,20 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_conjugate_plate_ids(self):
         self.assertTrue(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all) == [2])
-        self.feature.remove(pygplates.PropertyName.create_gpml('conjugatePlateId'))
+        self.feature.remove(pygplates.PropertyName.gpml_conjugate_plate_id)
         # With property removed it should return default of an empty list.
         self.assertTrue(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all) == [])
         self.assertFalse(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all))
-        self.feature.add(pygplates.PropertyName.create_gpml('conjugatePlateId'), pygplates.GpmlPlateId(22))
-        self.feature.add(pygplates.PropertyName.create_gpml('conjugatePlateId'), pygplates.GpmlPlateId(0))
+        self.feature.add(pygplates.PropertyName.gpml_conjugate_plate_id, pygplates.GpmlPlateId(22))
+        self.feature.add(pygplates.PropertyName.gpml_conjugate_plate_id, pygplates.GpmlPlateId(0))
         # The plate ID zero should still get returned.
         conjugate_plate_ids = self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all)
         self.assertTrue(0 in conjugate_plate_ids)
         self.assertTrue(22 in conjugate_plate_ids)
         # If we ask for exactly one plate ID then we'll get none (even though one of the two plate IDs is zero).
         self.assertFalse(self.feature.get_conjugate_plate_id())
-        self.feature.remove(pygplates.PropertyName.create_gpml('conjugatePlateId'))
-        self.feature.add(pygplates.PropertyName.create_gpml('conjugatePlateId'), pygplates.GpmlPlateId(0))
+        self.feature.remove(pygplates.PropertyName.gpml_conjugate_plate_id)
+        self.feature.add(pygplates.PropertyName.gpml_conjugate_plate_id, pygplates.GpmlPlateId(0))
         # With only a single plate ID of zero it should still return a non-empty list.
         self.assertTrue(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all) == [0])
         self.assertFalse(any(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all)))
@@ -516,7 +548,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_relative_plate(self):
         self.assertTrue(self.feature.get_relative_plate() == 13)
-        self.feature.remove(pygplates.PropertyName.create_gpml('relativePlate'))
+        self.feature.remove(pygplates.PropertyName.gpml_relative_plate)
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_relative_plate() == 0)
         # With property removed it should return our default (None).
@@ -530,7 +562,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_and_set_times(self):
         self.assertTrue(self.feature.get_times() == [0, 10, 20, pygplates.GeoTimeInstant(30), 40])
-        self.feature.remove(pygplates.PropertyName.create_gpml('times'))
+        self.feature.remove(pygplates.PropertyName.gpml_times)
         # With property removed it should return default of None.
         self.assertFalse(self.feature.get_times())
         
@@ -609,17 +641,17 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(
                 self.feature.get_value(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')).get_integer() == 300)
         properties = self.feature.get_value(
-                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                pygplates.PropertyName.gpml_reconstruction_plate_id,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 2)
         self.assertTrue(properties[0].get_plate_id() in (201,801))
         self.assertTrue(properties[1].get_plate_id() in (201,801))
         property = self.feature.get_value(
-                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                pygplates.PropertyName.gpml_reconstruction_plate_id,
                 property_return=pygplates.PropertyReturn.first)
         self.assertTrue(property.get_plate_id() == 201)
         properties = self.feature.get(
-                pygplates.PropertyName.create_gpml('conjugatePlateId'),
+                pygplates.PropertyName.gpml_conjugate_plate_id,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 1)
         self.assertTrue(properties[0].get_value().get_plate_id() == 2)
@@ -653,23 +685,23 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_value(lambda property: property.get_name() ==
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')).get_integer() == 300)
         properties = self.feature.get_value(
-                lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                lambda property: property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 2)
         self.assertTrue(properties[0].get_plate_id() in (201,801))
         self.assertTrue(properties[1].get_plate_id() in (201,801))
         properties = self.feature.get_value(
-                lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and
+                lambda property: property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id and
                     property.get_value().get_plate_id() == 201,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 1)
         self.assertTrue(properties[0].get_plate_id() == 201)
         property = self.feature.get_value(
-                lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                lambda property: property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id,
                 property_return=pygplates.PropertyReturn.first)
         self.assertTrue(property.get_plate_id() == 201)
         properties = self.feature.get(
-                lambda property: property.get_name() == pygplates.PropertyName.create_gpml('conjugatePlateId'),
+                lambda property: property.get_name() == pygplates.PropertyName.gpml_conjugate_plate_id,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 1)
         self.assertTrue(properties[0].get_value().get_plate_id() == 2)
