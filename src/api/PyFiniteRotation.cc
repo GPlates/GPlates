@@ -490,7 +490,7 @@ export_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    finite_rotation = pygplates.FiniteRotation(from_point, to_point)\n"
-				"    assert(to_point == finite_rotation * from_point)\n")
+				"    # assert(to_point == finite_rotation * from_point)\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create_identity_rotation,
@@ -519,7 +519,8 @@ export_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation.create_identity_rotation()\n"
-				"    assert(identity_finite_rotation.represents_identity_rotation())\n"
+				"    # assert(identity_finite_rotation.represents_identity_rotation())\n"
+				"\n"
 				"    # The rotated point and original point are at the same position.\n"
 				"    rotated_point = identity_finite_rotation * point\n"
 				"\n"
@@ -683,7 +684,7 @@ export_finite_rotation()
 				"\n"
 				"    # Create an identity rotation using zero angle and any pole location.\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation(any_pole, 0)\n"
-				"    assert(identity_finite_rotation.represents_identity_rotation())\n")
+				"    # assert(identity_finite_rotation.represents_identity_rotation())\n")
 		.def("get_inverse",
 				&GPlatesMaths::get_reverse,
 				"get_inverse()\n"

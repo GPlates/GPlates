@@ -554,17 +554,17 @@ export_geo_time_instant()
 					"  print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()\n"
 					"  time10Ma = pygplates.GeoTimeInstant(10)\n"
 					"  time20Ma = pygplates.GeoTimeInstant(20)\n"
-					"  assert(time20Ma > time10Ma)\n"
-					"  assert(20 > time10Ma)\n"
-					"  assert(20 > time10Ma.get_value()\n"
-					"  assert(time20Ma > 10)\n"
-					"  assert(time20Ma.get_value() > 10)\n"
-					"  assert(time20Ma.get_value() > time10Ma.get_value())\n"
-					"  assert(time20Ma > time10Ma.get_value())\n"
-					"  assert(time20Ma.get_value() > time10Ma)\n"
-					"  assert(time20Ma < pygplates.GeoTimeInstant.create_distant_past())\n"
-					"  assert(time20Ma.get_value() < pygplates.GeoTimeInstant.create_distant_past())\n"
-					"  assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n",
+					"  # assert(time20Ma > time10Ma)\n"
+					"  # assert(20 > time10Ma)\n"
+					"  # assert(20 > time10Ma.get_value()\n"
+					"  # assert(time20Ma > 10)\n"
+					"  # assert(time20Ma.get_value() > 10)\n"
+					"  # assert(time20Ma.get_value() > time10Ma.get_value())\n"
+					"  # assert(time20Ma > time10Ma.get_value())\n"
+					"  # assert(time20Ma.get_value() > time10Ma)\n"
+					"  # assert(time20Ma < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"  # assert(time20Ma.get_value() < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"  # assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

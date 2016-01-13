@@ -250,8 +250,8 @@ def get_valid_time(feature, default=(float('inf'), float('-inf'))):
       # Valid time for an empty feature defaults to all time.
       empty_feature = pygplates.Feature()
       begin_time, end_time = empty_feature.get_valid_time()
-      assert(begin_time == pygplates.GeoTimeInstant.create_distant_past())
-      assert(end_time == pygplates.GeoTimeInstant.create_distant_future())
+      # assert(begin_time == pygplates.GeoTimeInstant.create_distant_past())
+      # assert(end_time == pygplates.GeoTimeInstant.create_distant_future())
     
     Set *default* to ``None`` to test that there is exactly one 'gml:validTime' property:
     ::

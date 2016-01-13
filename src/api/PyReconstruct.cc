@@ -1142,7 +1142,7 @@ export_reconstruct()
 			"\n"
 			"    reconstructed_feature_geometries = []\n"
             "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
-			"    assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
+			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
 
 	// Register 'reconstructed feature geometries' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<

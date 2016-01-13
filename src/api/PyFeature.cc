@@ -2900,7 +2900,7 @@ export_feature()
 					"\n"
 					"  num_properties = len(feature)\n"
 					"  properties_in_feature = [property for property in feature]\n"
-					"  assert(num_properties == len(properties_in_feature))\n"
+					"  # assert(num_properties == len(properties_in_feature))\n"
 					"\n"
 					"The following methods provide convenient ways to create :class:`features<Feature>`:\n"
 					"\n"
@@ -3642,7 +3642,7 @@ export_feature()
 				"\n"
 				"    property_added = feature.add(property_name, property_value)\n"
 				"    properties_added = feature.add(property_name, [property_value1, property_value2])\n"
-				"    assert(len(properties_added) == 2)\n"
+				"    # assert(len(properties_added) == 2)\n"
 				"\n"
 				"  A feature is an *unordered* collection of properties so there is no concept of "
 				"where a property is inserted in the sequence of properties.\n"
@@ -3673,14 +3673,14 @@ export_feature()
 				"    properties_added = feature.add([\n"
 				"        (property_name1, property_value1),\n"
 				"        (property_name2, property_value2)])\n"
-				"    assert(len(properties_added) == 2)\n"
+				"    # assert(len(properties_added) == 2)\n"
 				"    \n"
 				"    properties_added = feature.add([\n"
 				"        (property_name3, (property_value3a, property_value3b, property_value3c)),\n"
 				"        (property_name4, [property_value4a, property_value4b])\n"
 				"        (property_name5, property_value5)\n"
 				"        ])\n"
-				"    assert(len(properties_added) == 6)\n"
+				"    # assert(len(properties_added) == 6)\n"
 				"\n"
 				"  A feature is an *unordered* collection of properties so there is no concept of where "
 				"a property is inserted in the sequence of properties.\n"
@@ -3766,7 +3766,7 @@ export_feature()
 				"\n"
 				"    property = feature.set(property_name, property_value)\n"
 				"    properties = feature.set(property_name, [property_value1, property_value2])\n"
-				"    assert(len(properties) == 2)\n"
+				"    # assert(len(properties) == 2)\n"
 				"\n"
 				"  This method essentially has the same effect as calling :meth:`remove` followed by :meth:`add`:\n"
 				"  ::\n"
@@ -3824,7 +3824,7 @@ export_feature()
 				"             property.get_value().get_plate_id() < 700\n"
 				"    \n"
 				"    recon_plate_id_less_700_property = feature.get(recon_plate_id_less_700)\n"
-				"    assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n")
+				"    # assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n")
 		.def("get_value",
 				&GPlatesApi::feature_handle_get_property_value,
 				(bp::arg("property_query"),
@@ -3877,7 +3877,7 @@ export_feature()
 				"    recon_plate_id_less_700_property_value = feature.get_value(\n"
 				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and\n"
 				"                         property.get_value().get_plate_id() < 700)\n"
-				"    assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n")
+				"    # assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n")
 		.def("set_geometry",
 				&GPlatesApi::feature_handle_set_geometry,
 				(bp::arg("geometry"),

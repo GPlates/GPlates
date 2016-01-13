@@ -1122,7 +1122,7 @@ export_feature_collection()
 					"\n"
 					"  num_features = len(feature_collection)\n"
 					"  features_in_collection = [feature for feature in feature_collection]\n"
-					"  assert(num_features == len(features_in_collection))\n"
+					"  # assert(num_features == len(features_in_collection))\n"
 					"\n"
 					".. note:: A feature collection can be :meth:`read<read>` from a file and "
 					":meth:`written<write>` to a file.\n"
