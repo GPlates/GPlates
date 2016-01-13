@@ -141,12 +141,30 @@ namespace GPlatesApi
 			bp::object rotation_model_object,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
 	{
-		// Copy partitioning plates into a vector.
-		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> partitioning_plates_vector;
+		const char *partitioning_plates_type_error_string = "Expected a sequence of ReconstructionGeometry";
+
+		// Copy partitioning plate objects into a vector.
+		// We'll store these Python objects to ensure the features they reference stay alive.
+		std::vector<bp::object> partitioning_plate_objects_vector;
 		PythonExtractUtils::extract_iterable(
-				partitioning_plates_vector,
+				partitioning_plate_objects_vector,
 				partitioning_plates,
-				"Expected a sequence of ReconstructionGeometry");
+				partitioning_plates_type_error_string);
+
+		// Convert partitioning plate objects into reconstruction geometries.
+		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> partitioning_plates_vector;
+		BOOST_FOREACH(const bp::object &partitioning_plate_object, partitioning_plate_objects_vector)
+		{
+			bp::extract<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> extract_partitioning_plate(
+					partitioning_plate_object);
+			if (!extract_partitioning_plate.check())
+			{
+				PyErr_SetString(PyExc_TypeError, partitioning_plates_type_error_string);
+				boost::python::throw_error_already_set();
+			}
+
+			partitioning_plates_vector.push_back(extract_partitioning_plate());
+		}
 
 		// If there happen to be no partitioning plates then default the reconstruction time to zero.
 		const double reconstruction_time = !partitioning_plates_vector.empty()
@@ -222,7 +240,9 @@ namespace GPlatesApi
 								partitioning_plates_vector,
 								group_networks_then_boundaries_then_static_polygons,
 								sort_plates)),
-				rotation_model);
+				rotation_model,
+				boost::none,
+				partitioning_plate_objects_vector);
 	}
 
 	bool
@@ -424,9 +444,7 @@ export_plate_partitioner()
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				// Specific overload signature...
 				"__init__(...)\n"
-				"  A *PlatePartitioner* object can be constructed in more than one way.\n"
-				"\n"
-				"  The following applies to both ways...\n"
+				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
 				"\n"
 				"  This table maps the values of the *sort_partitioning_plates* parameter to the "
 				"sorting criteria used for the partitioning plates:\n"
@@ -475,8 +493,7 @@ export_plate_partitioner()
 				":class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry` "
 				"is only included if its reconstructed geometry is a :class:`PolygonOnSphere`.\n"
 				"\n"
-				"\n"
-				"  A *PlatePartitioner* object can be constructed in the following ways...\n"
+				"**A PlatePartitioner object can be constructed in the following ways...**\n"
 				"\n"
 
 				// Specific overload signature...
@@ -552,7 +569,7 @@ export_plate_partitioner()
 				"  To create a plate partitioner suitable for partitioning present day geometries/features (ie, *reconstruction_time* is zero):.\n"
 				"  ::\n"
 				"    \n"
-				"    plate_partitioner = pygplates.PlatePartitioner('topologies.gpml', 'rotations.rot')\n")
+				"    plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),

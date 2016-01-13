@@ -121,13 +121,18 @@ namespace GPlatesApi
 		PlatePartitionerWrapper(
 				const boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter> &geometry_cookie_cutter,
 				boost::optional<RotationModel::non_null_ptr_type> rotation_model = boost::none,
-				boost::optional<const FeatureCollectionSequenceFunctionArgument &> partitioning_features = boost::none) :
+				boost::optional<const FeatureCollectionSequenceFunctionArgument &> partitioning_features = boost::none,
+				boost::optional<const std::vector<boost::python::object> &> partitioning_plates = boost::none) :
 			d_geometry_cookie_cutter(geometry_cookie_cutter),
 			d_rotation_model(rotation_model)
 		{
 			if (partitioning_features)
 			{
 				d_partitioning_features = partitioning_features.get();
+			}
+			if (partitioning_plates)
+			{
+				d_partitioning_plates = partitioning_plates.get();
 			}
 		}
 
@@ -158,6 +163,22 @@ namespace GPlatesApi
 
 		//! Keep any partitioning features alive since returned partitioning reconstruction geometries reference them.
 		boost::optional<FeatureCollectionSequenceFunctionArgument> d_partitioning_features;
+
+		/**
+		 * The Python reconstruction geometries.
+		 *
+		 * These objects keep their referenced partitioning features alive.
+		 * This keeps the features alive until the partitioning reconstruction geometries are returned
+		 * back to Python (from C++) at which point the returned reconstruction geometries will again
+		 * keep their referenced features alive.
+		 *
+		 * This is useful when the Python user reconstructs/resolves some reconstruction geometries,
+		 * then uses them to create a plate partitioner and then discards them (and their referenced
+		 * features). If we (the Python-wrapped plate partitioner) didn't keep the features alive then
+		 * the returned reconstruction geometries (in partitioning results) would have null references
+		 * to their features.
+		 */
+		std::vector<boost::python::object> d_partitioning_plates;
 	};
 
 	/**
