@@ -70,6 +70,29 @@ namespace GPlatesApi
 
 
 	/**
+	 * Enumerated ways to partition plates.
+	 */
+	namespace PartitionMethod
+	{
+		enum Value
+		{
+			/**
+			 * Split each feature into plates (and into parts outside all plates).
+			 */
+			SPLIT_INTO_PLATES,
+
+			/**
+			 * Don't split each feature into plates, instead use the plate that most overlaps a feature's geometry.
+			 *
+			 * If a feature contains multiple sub-geometries then they are treated
+			 * as one composite geometry for our purposes here.
+			 */
+			MOST_OVERLAPPING_PLATE
+		};
+	};
+
+
+	/**
 	 * Enumerated properties to copy.
 	 *
 	 * This includes a very small number of common properties.

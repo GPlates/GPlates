@@ -411,6 +411,15 @@ void
 export_plate_partitioner()
 {
 	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::PartitionMethod::Value>("PartitionMethod")
+			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
+			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
+
+	// Enable boost::optional<GPlatesApi::PartitionMethod::Value> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionMethod::Value>();
+
+
+	// An enumeration nested within 'pygplates (ie, current) module.
 	bp::enum_<GPlatesApi::PartitionProperty::Value>("PartitionProperty")
 			.value("reconstruction_plate_id", GPlatesApi::PartitionProperty::RECONSTRUCTION_PLATE_ID)
 			.value("valid_time_period", GPlatesApi::PartitionProperty::VALID_TIME_PERIOD)
@@ -428,7 +437,7 @@ export_plate_partitioner()
 			.value("partitioned_groups_and_unpartitioned", GPlatesApi::PartitionReturn::PARTITIONED_GROUPS_AND_UNPARTITIONED);
 
 	// Enable boost::optional<GPlatesApi::PartitionProperty::Value> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionProperty::Value>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionReturn::Value>();
 
 
 	// An enumeration nested within 'pygplates (ie, current) module.
