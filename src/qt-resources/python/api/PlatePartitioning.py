@@ -40,21 +40,59 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
-def _plate_partitioning_copy_partition_properties(partitioning_feature, features_inside_partition):
-    for feature in features_inside_partition:
-        feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
+def _plate_partitioning_copy_partition_properties(partitioning_feature, features_inside_partition, properties_to_copy):
+    for property_to_copy in properties_to_copy:
+        for feature in features_inside_partition:
+            # If a property cannot be set on the feature (eg, because not supported by feature type)
+            # then don't copy that property.
+            try:
+                if property_to_copy == PartitionProperty.reconstruction_plate_id:
+                    # Defaults to zero if partitioning feature has no plate ID.
+                    feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
+                elif property_to_copy == PartitionProperty.valid_time_period:
+                    # Defaults to all time if partitioning feature has no valid time property.
+                    valid_time_begin, valid_time_end = partitioning_feature.get_valid_time()
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                elif property_to_copy == PartitionProperty.valid_time_begin:
+                    # Defaults to distant past if partitioning feature has no valid time property.
+                    valid_time_begin = partitioning_feature.get_valid_time()[0]
+                    valid_time_end = feature.get_valid_time()[1]
+                    # If partitioning feature's begin time is later than feature's end time then set to feature's end time.
+                    if valid_time_begin < valid_time_end:
+                        valid_time_begin = valid_time_end
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                elif property_to_copy == PartitionProperty.valid_time_end:
+                    # Defaults to distant future if partitioning feature has no valid time property.
+                    valid_time_end = partitioning_feature.get_valid_time()[1]
+                    valid_time_begin = feature.get_valid_time()[0]
+                    # If partitioning feature's end time is earlier than feature's begin time then set to feature's begin time.
+                    if valid_time_end > valid_time_begin:
+                        valid_time_end = valid_time_begin
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                else: # 'property_to_copy' is a PropertyName...
+                    properties = partitioning_feature.get(property_to_copy, PropertyReturn.all)
+                    if properties:
+                        feature.set(property_to_copy, [property.get_value().clone() for property in properties])
+            except InformationModelError:
+                pass
 
 
 def plate_partitioner_partition_features(
         plate_partitioner,
         features,
+        properties_to_copy=(PartitionProperty.reconstruction_plate_id,),
         return_separate_partitioned_and_unpartitioned=False):
-    """partition_features(features, [reconstruction_time=0], [return_separate_partitioned_and_unpartitioned])
+    """partition_features(features, [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], \
+        [return_separate_partitioned_and_unpartitioned])
     Partitions features into partitioning plates.
     
     :param features: the features to partition
     :type features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
+    
+    :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features
+    :type properties_to_copy: a sequence of any of :class:`PropertyName` or *PartitionProperty.reconstruction_plate_id* or \
+    *PartitionProperty.valid_time_period* or *PartitionProperty.valid_time_begin* or *PartitionProperty.valid_time_end*
     
     :param return_separate_partitioned_and_unpartitioned: whether to return separate partitioned and \
         unpartitioned feature collections, or a single combined feature collection - \
@@ -72,11 +110,9 @@ def plate_partitioner_partition_features(
     partitioned_features = []
     unpartitioned_features = []
     
-    vgp_feature_type = FeatureType.create_gpml('VirtualGeomagneticPole')
-    
     for feature in features.get_features():
         # Special case handling for VGP features.
-        if feature.get_feature_type() == vgp_feature_type:
+        if feature.get_feature_type() == FeatureType.gpml_virtual_geomagnetic_pole:
             
             
             continue
@@ -121,17 +157,16 @@ def plate_partitioner_partition_features(
                 unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
         
         for partitioning_plate, geometries_inside_partition in partitioned_geometries.iteritems():
-            features_inside_partition = _plate_partitioning_set_geometries(
-                    feature_without_geometry, geometries_inside_partition)
+            features_inside_partition = _plate_partitioning_set_geometries(feature_without_geometry, geometries_inside_partition)
             
             # Copy the requested properties over from the partitioning feature.
-            _plate_partitioning_copy_partition_properties(partitioning_plate.get_feature(), features_inside_partition)
+            _plate_partitioning_copy_partition_properties(partitioning_plate.get_feature(), features_inside_partition, properties_to_copy)
             
             partitioned_features.extend(features_inside_partition)
         
-        features_outside_partition = _plate_partitioning_set_geometries(
-                feature_without_geometry, unpartitioned_geometries)
-        unpartitioned_features.extend(features_outside_partition)
+        if unpartitioned_geometries:
+            features_outside_partition = _plate_partitioning_set_geometries(feature_without_geometry, unpartitioned_geometries)
+            unpartitioned_features.extend(features_outside_partition)
         
     # Reverse reconstruct all partitioned features (using their new plate IDs) if their geometries are not at present day.
     reconstruction_time = plate_partitioner._get_reconstruction_time()
@@ -156,11 +191,13 @@ def partition_into_plates(
         partitioning_features,
         rotation_model,
         features_to_partition,
+        properties_to_copy=(PartitionProperty.reconstruction_plate_id,),
         reconstruction_time=0,
         return_separate_partitioned_and_unpartitioned=False,
         sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id):
     """partition_into_plates(partitioning_features, rotation_model, features_to_partition, \
-        [reconstruction_time=0], [return_separate_partitioned_and_unpartitioned], \
+        [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], [reconstruction_time=0], \
+        [return_separate_partitioned_and_unpartitioned], \
         [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])
     Partition features into plates.
     
@@ -176,6 +213,10 @@ def partition_into_plates(
     :param features_to_partition: the features to be partitioned
     :type features_to_partition: :class:`FeatureCollection`, or string, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
+    
+    :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features
+    :type properties_to_copy: a sequence of any of :class:`PropertyName` or *PartitionProperty.reconstruction_plate_id* or \
+    *PartitionProperty.valid_time_period* or *PartitionProperty.valid_time_begin* or *PartitionProperty.valid_time_end*
     
     :param reconstruction_time: the specific geological time to reconstruct/resolve the \
         *partitioning_features* to
@@ -201,18 +242,19 @@ def partition_into_plates(
                 partitioning_features,
                 rotation_model,
                 features_to_partition,
+                properties_to_copy = [PartitionProperty.reconstruction_plate_id],
                 reconstruction_time = 0,
                 return_separate_partitioned_and_unpartitioned = False,
                 sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id):
             
-            plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
+            plate_partitioner = pygplates.PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
             
-            return plate_partitioner.partition_features(features_to_partition, return_separate_partitioned_and_unpartitioned)
+            return plate_partitioner.partition_features(features_to_partition, properties_to_copy, return_separate_partitioned_and_unpartitioned)
     
     To partition features at present day and write results to a new file:
     ::
 
-        partitioned_feature_collection = pygplates.partition_into_plates('topologies.gpml', 'rotations.rot', 'features.gpml')
+        partitioned_feature_collection = pygplates.partition_into_plates('static_polygons.gpml', 'rotations.rot', 'features_to_partition.gpml')
         
         partitioned_feature_collection.write('partitioned_features.gpml')
     
@@ -221,4 +263,4 @@ def partition_into_plates(
     
     plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
     
-    return plate_partitioner.partition_features(features_to_partition, return_separate_partitioned_and_unpartitioned)
+    return plate_partitioner.partition_features(features_to_partition, properties_to_copy, return_separate_partitioned_and_unpartitioned)

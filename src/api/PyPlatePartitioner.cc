@@ -410,6 +410,18 @@ namespace GPlatesApi
 void
 export_plate_partitioner()
 {
+	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::PartitionProperty::Value>("PartitionProperty")
+			.value("reconstruction_plate_id", GPlatesApi::PartitionProperty::RECONSTRUCTION_PLATE_ID)
+			.value("valid_time_period", GPlatesApi::PartitionProperty::VALID_TIME_PERIOD)
+			.value("valid_time_begin", GPlatesApi::PartitionProperty::VALID_TIME_BEGIN)
+			.value("valid_time_end", GPlatesApi::PartitionProperty::VALID_TIME_END);
+
+	// Enable boost::optional<GPlatesApi::PartitionProperty::Value> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionProperty::Value>();
+
+
+	// An enumeration nested within 'pygplates (ie, current) module.
 	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>("SortPartitioningPlates")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)

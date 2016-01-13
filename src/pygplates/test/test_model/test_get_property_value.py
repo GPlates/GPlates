@@ -547,6 +547,12 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         begin_time, end_time = self.feature.get_valid_time()
         self.assertTrue(pygplates.GeoTimeInstant(begin_time).is_distant_past())
         self.assertTrue(pygplates.GeoTimeInstant(end_time).is_distant_future())
+        self.feature.set_valid_time(begin_time, end_time)
+        self.assertTrue(self.feature.get_valid_time(None))
+        begin_time, end_time = self.feature.get_valid_time()
+        self.assertTrue(pygplates.GeoTimeInstant(begin_time).is_distant_past())
+        self.assertTrue(pygplates.GeoTimeInstant(end_time).is_distant_future())
+        self.feature.remove(pygplates.PropertyName.gml_valid_time)
         # With property removed it should return our default (None).
         self.assertFalse(self.feature.get_valid_time(None))
         

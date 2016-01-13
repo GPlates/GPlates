@@ -70,6 +70,34 @@ namespace GPlatesApi
 
 
 	/**
+	 * Enumerated properties to copy.
+	 *
+	 * This includes a very small number of common properties.
+	 * Other properties should be specified using property names.
+	 *
+	 * This also handles those cases where *part* of a property needs to be copied
+	 * (such as only the begin time of a 'gpml:validTime' property).
+	 */
+	namespace PartitionProperty
+	{
+		enum Value
+		{
+			//! Property name 'gpml:reconstructionPlateId'.
+			RECONSTRUCTION_PLATE_ID,
+
+			//! Property name 'gpml:validTime'.
+			VALID_TIME_PERIOD,
+
+			//! Begin time of property name 'gpml:validTime'.
+			VALID_TIME_BEGIN,
+
+			//! End time of property name 'gpml:validTime'.
+			VALID_TIME_END
+		};
+	};
+
+
+	/**
 	 * Enumerated ways to sort partitioning plates.
 	 */
 	namespace SortPartitioningPlates
