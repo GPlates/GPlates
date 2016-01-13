@@ -98,6 +98,35 @@ namespace GPlatesApi
 
 
 	/**
+	 * Enumerated properties to copy.
+	 *
+	 * This includes a very small number of common properties.
+	 * Other properties should be specified using property names.
+	 *
+	 * This also handles those cases where *part* of a property needs to be copied
+	 * (such as only the begin time of a 'gpml:validTime' property).
+	 */
+	namespace PartitionReturn
+	{
+		enum Value
+		{
+			//! Return a combined list of partitioned and unpartitioned features.
+			COMBINED_PARTITIONED_AND_UNPARTITIONED,
+
+			//! Return separate lists for partitioned and unpartitioned features.
+			SEPARATE_PARTITIONED_AND_UNPARTITIONED,
+
+			/**
+			 * Return a list of partitioned groups and a list of unpartitioned features.
+			 *
+			 * Each partition group is a 2-tuple (partitioning plate, features inside partition).
+			 */
+			PARTITIONED_GROUPS_AND_UNPARTITIONED
+		};
+	};
+
+
+	/**
 	 * Enumerated ways to sort partitioning plates.
 	 */
 	namespace SortPartitioningPlates

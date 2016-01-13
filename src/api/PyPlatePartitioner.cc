@@ -422,6 +422,16 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::PartitionReturn::Value>("PartitionReturn")
+			.value("combined_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::COMBINED_PARTITIONED_AND_UNPARTITIONED)
+			.value("separate_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::SEPARATE_PARTITIONED_AND_UNPARTITIONED)
+			.value("partitioned_groups_and_unpartitioned", GPlatesApi::PartitionReturn::PARTITIONED_GROUPS_AND_UNPARTITIONED);
+
+	// Enable boost::optional<GPlatesApi::PartitionProperty::Value> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionProperty::Value>();
+
+
+	// An enumeration nested within 'pygplates (ie, current) module.
 	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>("SortPartitioningPlates")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)

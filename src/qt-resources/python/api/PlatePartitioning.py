@@ -81,9 +81,9 @@ def plate_partitioner_partition_features(
         plate_partitioner,
         features,
         properties_to_copy=(PartitionProperty.reconstruction_plate_id,),
-        return_separate_partitioned_and_unpartitioned=False):
+        partition_return=PartitionReturn.combined_partitioned_and_unpartitioned):
     """partition_features(features, [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], \
-        [return_separate_partitioned_and_unpartitioned])
+        [partition_return=PartitionReturn.combined_partitioned_and_unpartitioned])
     Partitions features into partitioning plates.
     
     :param features: the features to partition
@@ -94,19 +94,27 @@ def plate_partitioner_partition_features(
     :type properties_to_copy: a sequence of any of :class:`PropertyName` or *PartitionProperty.reconstruction_plate_id* or \
     *PartitionProperty.valid_time_period* or *PartitionProperty.valid_time_begin* or *PartitionProperty.valid_time_end*
     
-    :param return_separate_partitioned_and_unpartitioned: whether to return separate partitioned and \
-        unpartitioned feature collections, or a single combined feature collection - \
-        ie, whether to return a 2-tuple of :class:`FeatureCollection`, or a :class:`FeatureCollection`
-    :type return_separate_partitioned_and_unpartitioned: bool
+    :param partition_return: whether to return a single combined list of partitioned and \
+        unpartitioned features, or two separate lists, or a list of partitioned groups and a list of unpartitioned features \
+        (where each partitioned group associates a partitioning plate with its partitioned features)
+    :type partition_return: *PartitionReturn.combined_partitioned_and_unpartitioned*, \
+        *PartitionReturn.separate_partitioned_and_unpartitioned* or \
+        *PartitionReturn.partitioned_groups_and_unpartitioned*
     
-    :rtype: if *return_separate_partitioned_and_unpartitioned* is ``True`` then returns \
-        2-tuple of :class:`FeatureCollection` (separate partitioned and unpartitioned), \
-        otherwise returns :class:`FeatureCollection` (combined partitioned and unpartitioned)
+    :rtype: list of partitioned and unpartitioned :class:`features<Feature>`, \
+        or 2-tuple (list of partitioned :class:`features<Feature>`, list of unpartitioned :class:`features<Feature>`), \
+        or 2-tuple (list of 2-tuple (:class:`partitioning plate<ReconstructionGeometry>`, list of partitioned :class:`features<Feature>`), \
+            list of unpartitioned :class:`features<Feature>`) - depending on *partition_return*
     """
     
     # Turn function argument into something more convenient for extracting features.
     features = FeaturesFunctionArgument(features)
     
+    # Group partitioned features by partitioning plate (if requested).
+    if partition_return == PartitionReturn.partitioned_groups_and_unpartitioned:
+        partitioned_feature_groups = {}
+    
+    # Regular lists of partitioned and unpartitioned features.
     partitioned_features = []
     unpartitioned_features = []
     
@@ -135,7 +143,6 @@ def plate_partitioner_partition_features(
             # Remove geometry property.
             feature_without_geometry.remove(property)
             
-            
             # Partition the current geometry into inside/outside geometries.
             partitioned_inside_geometries = []
             partitioned_outside_geometries = []
@@ -163,6 +170,10 @@ def plate_partitioner_partition_features(
             _plate_partitioning_copy_partition_properties(partitioning_plate.get_feature(), features_inside_partition, properties_to_copy)
             
             partitioned_features.extend(features_inside_partition)
+            
+            # Also group partitioned features by partitioning plate (if requested).
+            if partition_return == PartitionReturn.partitioned_groups_and_unpartitioned:
+                partitioned_feature_groups.setdefault(partitioning_plate, []).extend(features_inside_partition)
         
         if unpartitioned_geometries:
             features_outside_partition = _plate_partitioning_set_geometries(feature_without_geometry, unpartitioned_geometries)
@@ -175,10 +186,12 @@ def plate_partitioner_partition_features(
         reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
     
     # Return separate partitioned and unpartitioned feature collections if requested.
-    if return_separate_partitioned_and_unpartitioned:
-        return (FeatureCollection(partitioned_features), FeatureCollection(unpartitioned_features))
-    
-    return FeatureCollection(partitioned_features + unpartitioned_features)
+    if partition_return == PartitionReturn.combined_partitioned_and_unpartitioned:
+        return partitioned_features + unpartitioned_features
+    elif partition_return == PartitionReturn.separate_partitioned_and_unpartitioned:
+        return (partitioned_features, unpartitioned_features)
+    elif partition_return == PartitionReturn.partitioned_groups_and_unpartitioned:
+        return (partitioned_feature_groups.items(), unpartitioned_features)
 
 
 # Add the module function as a class method.
@@ -193,11 +206,11 @@ def partition_into_plates(
         features_to_partition,
         properties_to_copy=(PartitionProperty.reconstruction_plate_id,),
         reconstruction_time=0,
-        return_separate_partitioned_and_unpartitioned=False,
+        partition_return=PartitionReturn.combined_partitioned_and_unpartitioned,
         sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id):
     """partition_into_plates(partitioning_features, rotation_model, features_to_partition, \
         [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], [reconstruction_time=0], \
-        [return_separate_partitioned_and_unpartitioned], \
+        [partition_return=PartitionReturn.combined_partitioned_and_unpartitioned], \
         [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])
     Partition features into plates.
     
@@ -222,18 +235,26 @@ def partition_into_plates(
         *partitioning_features* to
     :type reconstruction_time: float or :class:`GeoTimeInstant`
     
+    :param partition_return: whether to return a single combined list of partitioned and \
+        unpartitioned features, or two separate lists, or a list of partitioned groups and a list of unpartitioned features \
+        (where each partitioned group associates a partitioning plate with its partitioned features)
+    :type partition_return: *PartitionReturn.combined_partitioned_and_unpartitioned*, \
+        *PartitionReturn.separate_partitioned_and_unpartitioned* or \
+        *PartitionReturn.partitioned_groups_and_unpartitioned*
+    
     :param return_separate_partitioned_and_unpartitioned: whether to return separate partitioned and \
-        unpartitioned feature collections, or a single combined feature collection - \
-        ie, whether to return a 2-tuple of :class:`FeatureCollection`, or a :class:`FeatureCollection`
+        unpartitioned feature lists, or a single combined feature list - \
+        ie, whether to return a 2-tuple (list, list), or a list
     :type return_separate_partitioned_and_unpartitioned: bool
     
     :param sort_partitioning_plates: optional sort order of partitioning plates \
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
     :type sort_partitioning_plates: one of the values in the *SortPartitioningPlates* table below, or None
     
-    :rtype: if *return_separate_partitioned_and_unpartitioned* is ``True`` then returns \
-        2-tuple of :class:`FeatureCollection` (separate partitioned and unpartitioned), \
-        otherwise returns :class:`FeatureCollection` (combined partitioned and unpartitioned)
+    :rtype: list of partitioned and unpartitioned :class:`features<Feature>`, \
+        or 2-tuple (list of partitioned :class:`features<Feature>`, list of unpartitioned :class:`features<Feature>`), \
+        or 2-tuple (list of 2-tuple (:class:`partitioning plate<ReconstructionGeometry>`, list of partitioned :class:`features<Feature>`), \
+            list of unpartitioned :class:`features<Feature>`) - depending on *partition_return*
     
     This is a convenience function that essentially does the following:
     ::
@@ -244,12 +265,12 @@ def partition_into_plates(
                 features_to_partition,
                 properties_to_copy = [PartitionProperty.reconstruction_plate_id],
                 reconstruction_time = 0,
-                return_separate_partitioned_and_unpartitioned = False,
+                partition_return = PartitionReturn.combined_partitioned_and_unpartitioned,
                 sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id):
             
             plate_partitioner = pygplates.PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
             
-            return plate_partitioner.partition_features(features_to_partition, properties_to_copy, return_separate_partitioned_and_unpartitioned)
+            return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_return)
     
     To partition features at present day and write results to a new file:
     ::
@@ -263,4 +284,4 @@ def partition_into_plates(
     
     plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
     
-    return plate_partitioner.partition_features(features_to_partition, properties_to_copy, return_separate_partitioned_and_unpartitioned)
+    return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_return)
