@@ -127,96 +127,132 @@ def find_crossovers(
     Find crossovers in rotation features.
     
     :param rotation_features: A rotation feature collection, or rotation filename, or \
-    rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
-    of any combination of those four types
+        rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
+        of any combination of those four types
     :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
-    or sequence of :class:`Feature`, or sequence of any combination of those four types
-    :param crossover_filter: a predicate function to determine which crossovers to return
+        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    
+    :param crossover_filter: A predicate function to determine which crossovers to return
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument
-    :param crossover_type_function: a function that determines a crossover's type, or one of the \
-    *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
-    scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
+    
+    :param crossover_type_function: A function that determines a crossover's type, or one of the \
+        *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
+        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
     :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, or None
-    :returns: a time-sorted list, from most recent (youngest) to least recent (oldest), of crossover \
-    named-tuple 'Crossover' with named elements (time, moving_plate_id, young_crossover_fixed_plate_id, \
-    old_crossover_fixed_plate_id, young_crossover_rotation_sequence, old_crossover_rotation_sequence)
+    
+    :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
     
-    A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
-    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id,
-    young_crossover_rotation_sequence, old_crossover_rotation_sequence) and with type
-    (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
-    Both the young and old crossover rotation sequences will each have at least one enabled time sample.
-    
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
-    to another (fixed) plate at a particular geological time. The named-tuple 'Crossover' stores the crossover time,
-    moving plate id, the fixed plate id after (younger) and before (older) the crossover and the time sequence of
-    :class:`finite rotations<GpmlFiniteRotation>` after (younger) and before (older) the crossover.
-    Younger means more recent (smaller time values) and older means less recent (larger time values).
+    to another (fixed) plate at a particular geological time.
     
-    Note that the returned list of crossovers is sorted by time from most recent (younger) to least recent (older).
-    The returned list is also optionally filtered if *crossover_filter* is specified.
+    A crossover is represented as a named-tuple 'Crossover' with the following named elements:
     
-    The following arguments are supported by *crossover_type_function*:
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | Name                                | Type                           | Description                                                        |
+    +=====================================+================================+====================================================================+
+    | *type*                              | int                            | One of the enumerated values of *CrossoverType* (see table below). |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *time*                              | float                          | The crossover time.                                                |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *moving_plate_id*                   | int                            | The moving plate ID.                                               |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *young_crossover_fixed_plate_id*    | int                            | The fixed plate ID after (younger than) the crossover.             |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *old_crossover_fixed_plate_id*      | int                            | The fixed plate ID before (older than) the crossover.              |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *young_crossover_rotation_sequence* | :class:`GpmlIrregularSampling` | The time sequence of :class:`finite rotations<GpmlFiniteRotation>` |
+    |                                     |                                | after (younger than) the crossover.                                |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *old_crossover_rotation_sequence*   | :class:`GpmlIrregularSampling` | The time sequence of :class:`finite rotations<GpmlFiniteRotation>` |
+    |                                     |                                | before (older than) the crossover.                                 |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    
+    .. note:: Younger means more recent (smaller time values) and older means less recent (larger time values).
+    
+    .. note:: Both the young and old crossover rotation sequences will each have at least one enabled time sample.
+    
+    .. note:: The returned list of crossovers is sorted by time from most recent (younger) to least recent (older).
+       The returned list is also optionally filtered if *crossover_filter* is specified.
+    
+    The following are supported enumeration values for *CrossoverType*:
     
     +----------------------------------------------------+---------------------------------------------------------------+
     | Type                                               | Description                                                   |
     +====================================================+===============================================================+
-    | Arbitrary callable (function)                      | A callable accepting the following arguments:                 |
-    |                                                    |                                                               |
-    |                                                    | - crossover_time                                              |
-    |                                                    | - moving_plate_id                                             |
-    |                                                    | - young_crossover_fixed_plate_id                              |
-    |                                                    | - old_crossover_fixed_plate_id                                |
-    |                                                    | - young_crossover_rotation_sequence                           |
-    |                                                    | - old_crossover_rotation_sequence                             |
-    |                                                    |                                                               |
-    |                                                    | ...and returning a *CrossoverType* enumerated value.          |
+    | *CrossoverType.unknown*                            | The crossover is of unknown type                              |
+    |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
     +----------------------------------------------------+---------------------------------------------------------------+
-    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that   |
-    |                                                    | uses the comment/description field of the *young* crossover   |
-    |                                                    | pole to determine the crossover type according to the         |
-    |                                                    | presence of the following strings/tags:                       |
-    |                                                    |                                                               |
-    |                                                    | - \@xo_ig : *CrossoverType.ignore*                            |
-    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*    |
-    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*          |
-    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*  |
-    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*        |
-    |                                                    |                                                               |
-    |                                                    | ...and if none of those tags are present then the crossover   |
-    |                                                    | type is *CrossoverType.unknown*.                              |
-    |                                                    |                                                               |
-    |                                                    | This is the default for *crossover_type_function*.            |
+    | *CrossoverType.ignore*                             | The crossover will be ignored                                 |
+    |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.unknown*                            | All crossovers will be of unknown type                        |
-    |                                                    | (no crossovers will be synchronised).                         |
+    | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in the *old* crossover                   |
+    |                                                    | sequence will be synchronised (such that old *stage*          |
+    |                                                    | rotations are preserved). All finite rotations in the         |
+    |                                                    | *young* crossover sequence are preserved.                     |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.ignore*                             | All crossovers will be of ignore type.                        |
-    |                                                    | (no crossovers will be synchronised).                         |
-    +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in all *old* crossover                   |
-    |                                                    | sequences will be synchronised (such that old *stage*         |
-    |                                                    | rotations are preserved). All finite rotations in             |
-    |                                                    | *young* crossover sequences are preserved.                    |
-    +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_only*           | Only the crossover finite rotation in all *old* crossover     |
-    |                                                    | sequences will be synchronised (such that the older           |
+    | *CrossoverType.synch_old_crossover_only*           | Only the crossover finite rotation in the *old* crossover     |
+    |                                                    | sequence will be synchronised (such that the older            |
     |                                                    | *finite* rotations are preserved). All finite rotations       |
-    |                                                    | in *young* crossover sequences are preserved.                 |
+    |                                                    | in the *young* crossover sequence are preserved.              |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_and_stages*   | All finite rotations in all *young* crossover                 |
-    |                                                    | sequences will be synchronised (such that *young* stage       |
-    |                                                    | rotations are preserved). All finite rotations in             |
-    |                                                    | *old* crossover sequences are preserved.                      |
+    | *CrossoverType.synch_young_crossover_and_stages*   | All finite rotations in the *young* crossover                 |
+    |                                                    | sequence will be synchronised (such that *young* stage        |
+    |                                                    | rotations are preserved). All finite rotations in the         |
+    |                                                    | *old* crossover sequence are preserved.                       |
     |                                                    | **Note:** This can result in non-zero finite rotations at     |
-    |                                                    | present day if a younger sequence includes present day.       |
+    |                                                    | present day if the younger sequence includes present day.     |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_only*         | Only the crossover finite rotation in all *young* crossover   |
-    |                                                    | sequences will be synchronised (such that the younger         |
+    | *CrossoverType.synch_young_crossover_only*         | Only the crossover finite rotation in the *young* crossover   |
+    |                                                    | sequence will be synchronised (such that the younger          |
     |                                                    | *finite* rotations are preserved). All finite rotations       |
-    |                                                    | in *old* crossover sequences are preserved.                   |
+    |                                                    | in the *old* crossover sequence are preserved.                |
     +----------------------------------------------------+---------------------------------------------------------------+
+    
+    The following arguments are supported by *crossover_type_function*:
+    
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                               | Description                                                                      |
+    +====================================================+==================================================================================+
+    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
+    |                                                    |                                                                                  |
+    |                                                    | - crossover_time                                                                 |
+    |                                                    | - moving_plate_id                                                                |
+    |                                                    | - young_crossover_fixed_plate_id                                                 |
+    |                                                    | - old_crossover_fixed_plate_id                                                   |
+    |                                                    | - young_crossover_rotation_sequence                                              |
+    |                                                    | - old_crossover_rotation_sequence                                                |
+    |                                                    |                                                                                  |
+    |                                                    | ...and returning a *CrossoverType* enumerated value.                             |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that                      |
+    |                                                    | uses the comment/description field of the *young* crossover                      |
+    |                                                    | pole to determine the crossover type according to the                            |
+    |                                                    | presence of the following strings/tags:                                          |
+    |                                                    |                                                                                  |
+    |                                                    | - \@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                    |                                                                                  |
+    |                                                    | ...and if none of those tags are present then the crossover                      |
+    |                                                    | type is *CrossoverType.unknown*.                                                 |
+    |                                                    |                                                                                  |
+    |                                                    | This is the default for *crossover_type_function*.                               |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.unknown*                            | All crossovers will be of type *CrossoverType.unknown*.                          |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.ignore*                             | All crossovers will be of type *CrossoverType.ignore*.                           |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_and_stages*     | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_only*           | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_and_stages*   | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_only*         | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
     
     
     A rotation feature has a :class:`feature type<FeatureType>` of `total reconstruction sequence
@@ -227,9 +263,9 @@ def find_crossovers(
     for the rotation feature before the crossover as well as the time of the crossover - note that both rotation features will have the same
     moving plate id but differing fixed plate ids.
     
-    Note that modifying the rotation sequences in the returned crossovers will modify the rotation features.
-    This is what happens if the returned crossovers are passed into :func:`synchronise_crossovers`.
-    The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
+    .. note:: Modifying the rotation sequences in the returned crossovers will modify the rotation features.
+       This is what happens if the returned crossovers are passed into :func:`synchronise_crossovers`.
+       The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     
     If any rotation filenames are specified then this method uses
     :class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.
@@ -249,7 +285,7 @@ def find_crossovers(
               .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
           print 'Crossover older finite rotation: %d' % \\
               crossover.old_crossover_rotation_sequence.get_value(crossover.time) \\
-              .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+                .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
     
     Find crossovers affecting moving plate 801 assuming all crossovers are of type
     *CrossoverType.synch_old_crossover_and_stages*:
@@ -370,53 +406,75 @@ def synchronise_crossovers(
     Synchronise crossovers in rotation features.
     
     :param rotation_features: A rotation feature collection, or rotation filename, or \
-    rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
-    of any combination of those four types - all features are used as input and output
+        rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
+        of any combination of those four types - all features are used as input and output
     :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
-    or sequence of :class:`Feature`, or sequence of any combination of those four types
-    :param crossover_filter: optional predicate function (accepting a single crossover argument) that determines \
-    which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
-    synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
-    a crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id, \
-    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id, \
-    young_crossover_rotation_sequence, old_crossover_rotation_sequence)
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
-    a sequence of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
-    :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
-    old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
-    more than this amount
-    :type crossover_threshold_degrees: float or None
-    :param crossover_type_function: a function that determines a crossover's type, or one of the \
-    *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
-    scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, or None
-    :param crossover_results: if specified then a tuple of (Crossover, int) is appended for each filtered \
-    crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
-    *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or \
-    *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
-    *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
-    *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
-    :type crossover_results: list or None
-    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which \
-    generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to \
-    process crossover). Also returns False if unable to synchronise all crossovers due to an infinite \
-    cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be \
-    processed and results saved to rotation features (and rotation files, if any).
-    :rtype: bool
+        or sequence of :class:`Feature`, or sequence of any combination of those four types
     
-    A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
-    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id,
-    young_crossover_rotation_sequence, old_crossover_rotation_sequence) and with type
-    (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
-    Both the young and old crossover rotation sequences will each have at least one enabled time sample.
+    :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \
+        which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
+        synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
+        a crossover is a named-tuple 'Crossover' (see table below)
+    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
+        a sequence of named-tuple 'Crossover'
+    
+    :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
+        old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
+        more than this amount
+    :type crossover_threshold_degrees: float or None
+    
+    :param crossover_type_function: A function that determines a crossover's type, or one of the \
+        *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
+        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
+    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, or None
+    
+    :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
+        crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
+        *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or \
+        *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
+        *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
+        *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
+    :type crossover_results: list or None
+    
+    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which \
+        generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to \
+        process crossover). Also returns False if unable to synchronise all crossovers due to an infinite \
+        cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be \
+        processed and results saved to rotation features (and rotation files, if any).
+    :rtype: bool
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time. Synchronising a crossover involves adjusting the finite rotations
     before (older) the crossover to match the finite rotation after (younger) the crossover.
-    Younger means more recent (smaller time values) and older means less recent (larger time values).
     
-    Note that *rotation_features* should contain all features that directly or indirectly affect the crossovers to be
-    synchronised (typically *rotation_features* is one or more rotation files), otherwise crossovers may not be correctly synchronised.
+    .. note:: Younger means more recent (smaller time values) and older means less recent (larger time values).
+    
+    A crossover is represented as a named-tuple 'Crossover' with the following named elements:
+    
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | Name                                | Type                           | Description                                                        |
+    +=====================================+================================+====================================================================+
+    | *type*                              | int                            | One of the enumerated values of *CrossoverType* (see table below). |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *time*                              | float                          | The crossover time.                                                |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *moving_plate_id*                   | int                            | The moving plate ID.                                               |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *young_crossover_fixed_plate_id*    | int                            | The fixed plate ID after (younger than) the crossover.             |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *old_crossover_fixed_plate_id*      | int                            | The fixed plate ID before (older than) the crossover.              |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *young_crossover_rotation_sequence* | :class:`GpmlIrregularSampling` | The time sequence of :class:`finite rotations<GpmlFiniteRotation>` |
+    |                                     |                                | after (younger than) the crossover.                                |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    | *old_crossover_rotation_sequence*   | :class:`GpmlIrregularSampling` | The time sequence of :class:`finite rotations<GpmlFiniteRotation>` |
+    |                                     |                                | before (older than) the crossover.                                 |
+    +-------------------------------------+--------------------------------+--------------------------------------------------------------------+
+    
+    .. note:: Both the young and old crossover rotation sequences will each have at least one enabled time sample.
+    
+    .. note:: *rotation_features* should contain all features that directly or indirectly affect the crossovers to be
+       synchronised (typically *rotation_features* is one or more rotation files), otherwise crossovers may not be correctly synchronised.
     
     Synchronising crossovers results in modifications to *rotation_features*.
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
@@ -436,69 +494,88 @@ def synchronise_crossovers(
     difference in young and old crossover rotation latitudes, longitudes or angles exceeds this amount. This is
     useful since some PLATES rotation files are typically only accurate to 2 decimal places (or threshold of 0.01).
     
-    The following arguments are supported by *crossover_type_function*:
+    The following are supported enumeration values for *CrossoverType*:
     
     +----------------------------------------------------+---------------------------------------------------------------+
     | Type                                               | Description                                                   |
     +====================================================+===============================================================+
-    | Arbitrary callable (function)                      | A callable accepting the following arguments:                 |
-    |                                                    |                                                               |
-    |                                                    | - crossover_time                                              |
-    |                                                    | - moving_plate_id                                             |
-    |                                                    | - young_crossover_fixed_plate_id                              |
-    |                                                    | - old_crossover_fixed_plate_id                                |
-    |                                                    | - young_crossover_rotation_sequence                           |
-    |                                                    | - old_crossover_rotation_sequence                             |
-    |                                                    |                                                               |
-    |                                                    | ...and returning a *CrossoverType* enumerated value.          |
+    | *CrossoverType.unknown*                            | The crossover is of unknown type                              |
+    |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
     +----------------------------------------------------+---------------------------------------------------------------+
-    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that   |
-    |                                                    | uses the comment/description field of the *young* crossover   |
-    |                                                    | pole to determine the crossover type according to the         |
-    |                                                    | presence of the following strings/tags:                       |
-    |                                                    |                                                               |
-    |                                                    | - \@xo_ig : *CrossoverType.ignore*                            |
-    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*    |
-    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*          |
-    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*  |
-    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*        |
-    |                                                    |                                                               |
-    |                                                    | ...and if none of those tags are present then the crossover   |
-    |                                                    | type is *CrossoverType.unknown*.                              |
-    |                                                    |                                                               |
-    |                                                    | This is the default for *crossover_type_function*.            |
+    | *CrossoverType.ignore*                             | The crossover will be ignored                                 |
+    |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.unknown*                            | All crossovers will be of unknown type.                       |
-    |                                                    | No crossovers will be synchronised.                           |
-    |                                                    | Crossover results will be *CrossoverResult.error*.            |
+    | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in the *old* crossover                   |
+    |                                                    | sequence will be synchronised (such that old *stage*          |
+    |                                                    | rotations are preserved). All finite rotations in the         |
+    |                                                    | *young* crossover sequence are preserved.                     |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.ignore*                             | All crossovers will be of ignore type.                        |
-    |                                                    | No crossovers will be synchronised.                           |
-    |                                                    | Crossover results will be *CrossoverResult.ignored*.          |
-    +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in all *old* crossover                   |
-    |                                                    | sequences will be synchronised (such that old *stage*         |
-    |                                                    | rotations are preserved). All finite rotations in             |
-    |                                                    | *young* crossover sequences are preserved.                    |
-    +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_only*           | Only the crossover finite rotation in all *old* crossover     |
-    |                                                    | sequences will be synchronised (such that the older           |
+    | *CrossoverType.synch_old_crossover_only*           | Only the crossover finite rotation in the *old* crossover     |
+    |                                                    | sequence will be synchronised (such that the older            |
     |                                                    | *finite* rotations are preserved). All finite rotations       |
-    |                                                    | in *young* crossover sequences are preserved.                 |
+    |                                                    | in the *young* crossover sequence are preserved.              |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_and_stages*   | All finite rotations in all *young* crossover                 |
-    |                                                    | sequences will be synchronised (such that *young* stage       |
-    |                                                    | rotations are preserved). All finite rotations in             |
-    |                                                    | *old* crossover sequences are preserved.                      |
+    | *CrossoverType.synch_young_crossover_and_stages*   | All finite rotations in the *young* crossover                 |
+    |                                                    | sequence will be synchronised (such that *young* stage        |
+    |                                                    | rotations are preserved). All finite rotations in the         |
+    |                                                    | *old* crossover sequence are preserved.                       |
     |                                                    | **Note:** This can result in non-zero finite rotations at     |
-    |                                                    | present day if a younger sequence includes present day.       |
+    |                                                    | present day if the younger sequence includes present day.     |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_only*         | Only the crossover finite rotation in all *young* crossover   |
-    |                                                    | sequences will be synchronised (such that the younger         |
+    | *CrossoverType.synch_young_crossover_only*         | Only the crossover finite rotation in the *young* crossover   |
+    |                                                    | sequence will be synchronised (such that the younger          |
     |                                                    | *finite* rotations are preserved). All finite rotations       |
-    |                                                    | in *old* crossover sequences are preserved.                   |
+    |                                                    | in the *old* crossover sequence are preserved.                |
     +----------------------------------------------------+---------------------------------------------------------------+
     
+    The following arguments are supported by *crossover_type_function*:
+    
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                               | Description                                                                      |
+    +====================================================+==================================================================================+
+    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
+    |                                                    |                                                                                  |
+    |                                                    | - crossover_time                                                                 |
+    |                                                    | - moving_plate_id                                                                |
+    |                                                    | - young_crossover_fixed_plate_id                                                 |
+    |                                                    | - old_crossover_fixed_plate_id                                                   |
+    |                                                    | - young_crossover_rotation_sequence                                              |
+    |                                                    | - old_crossover_rotation_sequence                                                |
+    |                                                    |                                                                                  |
+    |                                                    | ...and returning a *CrossoverType* enumerated value.                             |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that                      |
+    |                                                    | uses the comment/description field of the *young* crossover                      |
+    |                                                    | pole to determine the crossover type according to the                            |
+    |                                                    | presence of the following strings/tags:                                          |
+    |                                                    |                                                                                  |
+    |                                                    | - \@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                    |                                                                                  |
+    |                                                    | ...and if none of those tags are present then the crossover                      |
+    |                                                    | type is *CrossoverType.unknown*.                                                 |
+    |                                                    |                                                                                  |
+    |                                                    | This is the default for *crossover_type_function*.                               |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.unknown*                            | All crossovers will be of type *CrossoverType.unknown*.                          |
+    |                                                    | No crossovers will be synchronised.                                              |
+    |                                                    | Crossover results will be *CrossoverResult.error*.                               |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.ignore*                             | All crossovers will be of type *CrossoverType.ignore*.                           |
+    |                                                    | No crossovers will be synchronised.                                              |
+    |                                                    | Crossover results will be *CrossoverResult.ignored*.                             |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_and_stages*     | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_only*           | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_and_stages*   | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_only*         | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
     
     *crossover_results* can optionally be used to obtain a list of the synchronisation results of all
     filtered crossovers (see *crossover_filter*). Each list element is a tuple of (Crossover, int)
