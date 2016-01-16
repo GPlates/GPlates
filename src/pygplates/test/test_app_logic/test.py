@@ -43,7 +43,7 @@ class CalculateVelocitiesTestCase(unittest.TestCase):
 class CrossoverTestCase(unittest.TestCase):
     def test_find_crossovers(self):
         crossovers = pygplates.find_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
-        self.assertTrue(len(crossovers) == 134)
+        self.assertTrue(len(crossovers) == 133)
         
         # TODO: Add more tests.
 
@@ -62,7 +62,7 @@ class CrossoverTestCase(unittest.TestCase):
                 pygplates.CrossoverType.synch_old_crossover_and_stages,
                 crossover_results)
         # Due to filtering of crossover times less than 600Ma we have 124 instead of 134 crossovers.
-        self.assertTrue(len(crossover_results) == 124)
+        self.assertTrue(len(crossover_results) == 123)
         
         # TODO: Add more tests.
 
