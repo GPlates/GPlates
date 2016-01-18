@@ -317,6 +317,7 @@ def find_crossovers(
         if total_reconstruction_pole:
             fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
             
+            # Get the enabled rotation time samples - ignore disabled samples.
             rotation_sequence = rotation_sequence.get_enabled_time_samples()
             # If no time samples are enabled for some reason then skip.
             if not rotation_sequence:
@@ -668,60 +669,159 @@ def synchronise_crossovers(
     # If any crossovers cannot be processed (has unknown crossover type) then this will get set to False.
     success = True
     
+    # Prepare the crossovers before processing them in iterations.
+    # This avoids repeating redundant work at each iteration.
+    CrossoverInfo = namedtuple("CrossoverInfo",
+        "crossover crossover_index "
+        "disabled_samples_at_crossover_time "
+        "synchronised_samples_at_crossover_time "
+        "synchronised_samples_not_at_crossover_time "
+        "synchronised_fixed_plate_id")
+    crossover_infos = []
+    for crossover_index, crossover in enumerate(crossovers):
+        # One of the younger or older will be the preserved crossover and the other synchronised.
+        # This depends on the crossover type.
+        #
+        # Get the synchronised-crossover rotation enabled time samples.
+        # Note: there must be at least one enabled time sample otherwise we wouldn't have found this crossover.
+        if crossover.type == CrossoverType.unknown:
+            # Record that we were unable to process the crossover - this will be the same at each iteration.
+            success = False
+            if crossover_results is not None:
+                crossover_results[crossover_results_first_index + crossover_index] = (crossover, CrossoverResult.error)
+            continue
+        elif crossover.type == CrossoverType.ignore:
+            # Record the crossover result state (if any) as 'ignored'.
+            if crossover_results is not None:
+                crossover_results[crossover_results_first_index + crossover_index] = (crossover, CrossoverResult.ignored)
+            continue
+        elif CrossoverType._synch_old_crossover(crossover.type):
+            synchronised_time_samples = crossover.old_crossover_rotation_sequence
+            synchronised_fixed_plate_id = crossover.old_crossover_fixed_plate_id
+            preserved_fixed_plate_id = crossover.young_crossover_fixed_plate_id
+        else: # sync young crossover...
+            # Reverse the sequence so that the first time sample is the crossover and the rest have decreasing times.
+            synchronised_time_samples = crossover.young_crossover_rotation_sequence[::-1]
+            synchronised_fixed_plate_id = crossover.young_crossover_fixed_plate_id
+            preserved_fixed_plate_id = crossover.old_crossover_fixed_plate_id
+        
+        crossover_geo_time = GeoTimeInstant(crossover.time)
+        
+        # Find the first sample that is different than the crossover time.
+        # We do this in case there are duplicate rotations - for example if there is a single-sample
+        # rotation sequence and a multiple-sample rotation sequence with a common sample - note that
+        # these have been merged (by 'find_crossovers()') into the one sequence we see but that
+        # one sequence still contains the duplicate rotations to ensure that all the original
+        # unmerged sequences/features get modified/synchronised.
+        # Ideally the input rotations shouldn't be like that since it's essentially overlapping,
+        # but some rotation files are like this.
+        # We do however assume that any duplicate crossover rotations are actually the same rotation.
+        # If they're not then the input data is already malformed.
+        index_of_first_sample_not_at_crossover_time = 1
+        while index_of_first_sample_not_at_crossover_time < len(synchronised_time_samples):
+            if crossover_geo_time != synchronised_time_samples[index_of_first_sample_not_at_crossover_time].get_time():
+                break
+            index_of_first_sample_not_at_crossover_time += 1
+        
+        # If the crossover type requires synchronising of the stage rotations then separate out those
+        # finite rotations requiring stage rotation synchronisation.
+        if CrossoverType._synch_stages(crossover.type):
+            synchronised_samples_not_at_crossover_time = synchronised_time_samples[index_of_first_sample_not_at_crossover_time:]
+        else:
+            synchronised_samples_not_at_crossover_time = []
+        
+        # Separate out those finite rotations requiring stage rotation synchronisation at the crossover time.
+        synchronised_samples_at_crossover_time = synchronised_time_samples[:index_of_first_sample_not_at_crossover_time]
+        
+        # Find all rotation samples at the crossover time that need to be disabled.
+        #
+        # This is done so that later on we can calculate the correct synchronised-crossover rotation (to match
+        # the preserved-crossover rotation) without the previous synchronised-crossover rotation interfering
+        # (or any other spurious crossovers at the crossover time with the same moving plate but a different
+        # fixed plate than the young or old crossover sequence).
+        # In other words, we don't want to take the plate circuit path through the synchronised-crossover
+        # fixed plate - instead we want to take the path through the preserved-crossover fixed plate.
+        disabled_samples_at_crossover_time = synchronised_samples_at_crossover_time[:] # copy the list
+        
+        # Look for crossovers with the same moving plate and crossover time but with
+        # a young and/or old plate ID different than our preserved plate ID.
+        # We can rely on the fact that the list of crossovers is sorted by crossover time
+        # (ie, only need to search nearby crossovers in the list).
+        #
+        # An example of why this is needed is the following rotation file lines:
+        #
+        # 960  50.0  38.7  174.9  -89.19  934
+        # 960 110.0  38.7  174.9  -89.19  934
+        # 960 110.0  44.4 -167.2  -82.82  927
+        # 960 110.0   0.0    0.0     0.0  919
+        # 960 200.0   0.0    0.0     0.0  919
+        #
+        # ...where the spurious moving/fixed sample 960/927 creates this problem at 110Ma.
+        # For example, if the 960/927->960/919 crossover is processed to synchronise 960/919 then
+        # we need to disable both the 960/919 sample and the 960/934 sample - the 960/927 sample
+        # is preserved since it's used to determine the crossover adjustment.
+        #
+        # Note: It doesn't matter if we add the same sample more than once because they're only
+        # getting disabled/enabled (so disabling twice is fine and then enabling twice is also fine).
+        #
+        for pre_crossover_index in range(crossover_index-1, -1, -1): # [crossover_index-1, ..., 0]
+            pre_crossover = crossovers[pre_crossover_index]
+            if crossover_geo_time != pre_crossover.time:
+                # The list of crossovers is sorted by time so we can stop searching now.
+                break
+            if pre_crossover.moving_plate_id == crossover.moving_plate_id:
+                if pre_crossover.young_crossover_fixed_plate_id != preserved_fixed_plate_id:
+                    # Add those samples matching the crossover time.
+                    disabled_samples_at_crossover_time.extend(
+                        pre_time_sample for pre_time_sample in pre_crossover.young_crossover_rotation_sequence
+                                if crossover_geo_time == pre_time_sample.get_time())
+                if pre_crossover.old_crossover_fixed_plate_id != preserved_fixed_plate_id:
+                    # Add those samples matching the crossover time.
+                    disabled_samples_at_crossover_time.extend(
+                        pre_time_sample for pre_time_sample in pre_crossover.old_crossover_rotation_sequence
+                                if crossover_geo_time == pre_time_sample.get_time())
+        for post_crossover_index in range(crossover_index+1, len(crossovers)): # [crossover_index+1, ...]
+            post_crossover = crossovers[post_crossover_index]
+            if crossover_geo_time != post_crossover.time:
+                # The list of crossovers is sorted by time so we can stop searching now.
+                break
+            if post_crossover.moving_plate_id == crossover.moving_plate_id:
+                if post_crossover.young_crossover_fixed_plate_id != preserved_fixed_plate_id:
+                    # Add those samples matching the crossover time.
+                    disabled_samples_at_crossover_time.extend(
+                        post_time_sample for post_time_sample in post_crossover.young_crossover_rotation_sequence
+                                if crossover_geo_time == post_time_sample.get_time())
+                if post_crossover.old_crossover_fixed_plate_id != preserved_fixed_plate_id:
+                    # Add those samples matching the crossover time.
+                    disabled_samples_at_crossover_time.extend(
+                        post_time_sample for post_time_sample in post_crossover.old_crossover_rotation_sequence
+                                if crossover_geo_time == post_time_sample.get_time())
+        
+        crossover_info = CrossoverInfo(
+            crossover,
+            crossover_index,
+            disabled_samples_at_crossover_time,
+            synchronised_samples_at_crossover_time,
+            synchronised_samples_not_at_crossover_time,
+            synchronised_fixed_plate_id)
+        crossover_infos.append(crossover_info)
+    
     # Perform up to a maximum number of iterations over all the crossovers until there are no remaining
     # crossovers to synchronise. If this is exceeded then it's likely there was an infinite cycle.
     iteration = 0
     while iteration < _MAX_CROSSOVER_ITERATIONS:
         synchronised_crossovers_in_current_iteration = False
-        for crossover_index, crossover in enumerate(crossovers):
-            # One of the younger or older will be the preserved crossover and the other synchronised.
-            # This depends on the crossover type.
-            #
-            # Get the synchronised-crossover rotation time samples - ignore disabled samples.
-            # Note: there must be at least one enabled time sample otherwise we wouldn't have found this crossover.
-            if crossover.type == CrossoverType.unknown:
-                # Record that we were unable to process the crossover - this will be the same at each iteration.
-                success = False
-                if crossover_results is not None:
-                    crossover_results[crossover_results_first_index + crossover_index] = (crossover, CrossoverResult.error)
-                continue
-            elif crossover.type == CrossoverType.ignore:
-                # Record the crossover result state (if any) as 'ignored'.
-                if crossover_results is not None:
-                    crossover_results[crossover_results_first_index + crossover_index] = (crossover, CrossoverResult.ignored)
-                continue
-            elif CrossoverType._synch_old_crossover(crossover.type):
-                synchronised_crossover_time_samples = crossover.old_crossover_rotation_sequence
-                synchronised_crossover_fixed_plate_id = crossover.old_crossover_fixed_plate_id
-            else: # sync young crossover...
-                # Reverse the sequence so that the first time sample is the crossover and the rest have decreasing times.
-                synchronised_crossover_time_samples = crossover.young_crossover_rotation_sequence[::-1]
-                synchronised_crossover_fixed_plate_id = crossover.young_crossover_fixed_plate_id
-            
-            # Find the first sample that is different than the crossover time.
-            # We do this in case there are duplicate rotations - for example if there is a single-sample
-            # rotation sequence and a multiple-sample rotation sequence with a common sample - note that
-            # these have been merged (by 'find_crossovers()') into the one sequence we see but that
-            # one sequence still contains the duplicate rotations to ensure that all the original
-            # unmerged sequences/features get modified/synchronised.
-            # Ideally the input rotations shouldn't be like that since it's essentially overlapping,
-            # but some rotation files are like this.
-            # We do however assume that any duplicate crossover rotations are actually the same rotation.
-            # If they're not then the input data is already malformed.
-            first_non_crossover_time_sample_index = 1
-            while first_non_crossover_time_sample_index < len(synchronised_crossover_time_samples):
-                if GeoTimeInstant(crossover.time) != synchronised_crossover_time_samples[first_non_crossover_time_sample_index].get_time():
-                    break
-                first_non_crossover_time_sample_index += 1
-            
-            # Temporarily disable the synchronised-crossover time sample(s).
+        for crossover_info in crossover_infos:
+            # Temporarily disable all sample(s) at the crossover time that need disabling.
             # Note that this disables it directly in the rotation sequence/feature.
             # This is done so we can calculate the correct synchronised-crossover rotation (to match
-            # the preserved-crossover rotation) without the previous synchronised-crossover rotation interfering.
+            # the preserved-crossover rotation) without the previous synchronised-crossover rotation interfering
+            # (or any other spurious crossovers at the crossover time with the same moving plate but a different
+            # fixed plate than the young or old crossover sequence).
             # In other words, we don't want to take the plate circuit path through the synchronised-crossover
             # fixed plate - instead we want to take the path through the preserved-crossover fixed plate.
-            for time_sample_index in range(0, first_non_crossover_time_sample_index):
-                synchronised_crossover_time_samples[time_sample_index].set_disabled()
+            for time_sample in crossover_info.disabled_samples_at_crossover_time:
+                time_sample.set_disabled()
             
             # Note that the rotation model will include the crossover modifications made so far because
             # the modifications were made to the properties of the rotation features that we're passing
@@ -740,14 +840,14 @@ def synchronise_crossovers(
             # So we get the rotation relative to the synchronised-crossover fixed plate at the crossover time
             # (but with the synchronised-crossover time sample disabled above).
             current_synchronised_crossover_moving_fixed_relative_rotation = rotation_model.get_rotation(
-                crossover.time,
-                crossover.moving_plate_id,
+                crossover_info.crossover.time,
+                crossover_info.crossover.moving_plate_id,
                 # Note: Setting anchor plate instead of fixed plate in case there's no plate circuit path
                 # from plate zero (default anchor plate) to moving or fixed plates (see pygplates API docs)...
-                anchor_plate_id=synchronised_crossover_fixed_plate_id)
+                anchor_plate_id=crossover_info.synchronised_fixed_plate_id)
             
             # Now that we've obtained the current synchronised-crossover rotation we can re-enable the
-            # synchronised-crossover time sample(s) (that we disabled above).
+            # sample(s) at the crossover time that we disabled above.
             #
             # NOTE: We could do this immediately after constructing a RotationModel (and hence before
             # calculating the current crossover rotation), but currently RotationModel can see changes
@@ -755,12 +855,12 @@ def synchronise_crossovers(
             # This will be fixed in pygplates soon by having RotationModel clone its input rotation
             # features such that it won't see subsequent modifications to those features.
             # For now we just place it after the rotation has been calculated.
-            for time_sample_index in range(0, first_non_crossover_time_sample_index):
-                synchronised_crossover_time_samples[time_sample_index].set_enabled()
+            for time_sample in crossover_info.disabled_samples_at_crossover_time:
+                time_sample.set_enabled()
             
             # The previous synchronised-crossover rotation.
             previous_synchronised_crossover_moving_fixed_relative_rotation = (
-                    synchronised_crossover_time_samples[0].get_value().get_finite_rotation())
+                    crossover_info.synchronised_samples_at_crossover_time[0].get_value().get_finite_rotation())
             
             # Skip synchronising crossover if no adjustment is needed.
             #
@@ -775,16 +875,16 @@ def synchronise_crossovers(
             # Record that the crossover was synchronised.
             synchronised_crossovers_in_current_iteration = True
             if crossover_results is not None:
-                crossover_results[crossover_results_first_index + crossover_index] = (crossover, CrossoverResult.synchronised)
+                crossover_results[crossover_results_first_index + crossover_info.crossover_index] = (
+                    crossover_info.crossover, CrossoverResult.synchronised)
             
-            # Change the first rotation time sample(s).
-            # This is the first sample if old crossover sequence or last sample if young crossover sequence.
-            for time_sample_index in range(0, first_non_crossover_time_sample_index):
-                synchronised_crossover_time_samples[time_sample_index].get_value().set_finite_rotation(
-                    current_synchronised_crossover_moving_fixed_relative_rotation)
+            # Change the rotation time sample(s) at the crossover time.
+            # This is the first sample(s) if old crossover sequence or last sample(s) if young crossover sequence.
+            for time_sample in crossover_info.synchronised_samples_at_crossover_time:
+                time_sample.get_value().set_finite_rotation(current_synchronised_crossover_moving_fixed_relative_rotation)
             
             # If the crossover type requires synchronising of the stage rotations then apply crossover adjustment.
-            if CrossoverType._synch_stages(crossover.type):
+            if crossover_info.synchronised_samples_not_at_crossover_time:
                 # Determine the crossover adjustment to apply to all young or old crossover time samples.
                 # Whether it's applied to the younger or older crossover is determined by the crossover type.
                 #
@@ -817,13 +917,11 @@ def synchronise_crossovers(
                 # Note that if the stage poles of the young crossover sequence are being preserved then
                 # we are advancing towards present day and we will likely end up with a non-zero present
                 # day rotation (if sequence goes all the way back to present day).
-                for time_sample_index in range(first_non_crossover_time_sample_index, len(synchronised_crossover_time_samples)):
-                    crossover_time_sample = synchronised_crossover_time_samples[time_sample_index]
-                    
+                for time_sample in crossover_info.synchronised_samples_not_at_crossover_time:
                     # Get, adjust and set rotation.
-                    crossover_rotation = crossover_time_sample.get_value().get_finite_rotation()
-                    crossover_rotation = crossover_rotation * crossover_adjustment
-                    crossover_time_sample.get_value().set_finite_rotation(crossover_rotation)
+                    rotation = time_sample.get_value().get_finite_rotation()
+                    rotation = rotation * crossover_adjustment
+                    time_sample.get_value().set_finite_rotation(rotation)
         
         # If no crossovers required synchronisation in the current iteration then break out of the iteration loop.
         if not synchronised_crossovers_in_current_iteration:
