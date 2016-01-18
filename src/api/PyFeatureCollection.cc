@@ -103,25 +103,40 @@ namespace GPlatesApi
 
 		// Before we use 'FeatureCollectionFunctionArgument' to extract the feature collection
 		// we check that 'features_object' is not already a feature collection.
-		// If it is then we need to reject it since 'FeatureCollectionFunctionArgument' will accept it.
-		// We reject because it's not clear whether we should be doing a shallow copy or deep copy.
-		// So we'll make things clear to the user and just not allow it.
-		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(features_object).check())
+		// If it is then we need to perform a shallow copy (as is typical of Python constructors
+		// such as 'new_list = list(old_list)'). We do this before trying 'FeatureCollectionFunctionArgument'
+		// since it will accept a feature collection directly and return it as the same feature collection object
+		// and so there will be no shallow copy.
+		bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> extract_feature_collection(features_object);
+		if (extract_feature_collection.check())
+		{
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = extract_feature_collection();
+
+			// Create a feature collection to add the features to.
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type new_feature_collection =
+					GPlatesModel::FeatureCollectionHandle::create();
+
+			// Copy the features into the new feature collection.
+			GPlatesModel::FeatureCollectionHandle::iterator feature_collection_iter = feature_collection->begin();
+			GPlatesModel::FeatureCollectionHandle::iterator feature_collection_end = feature_collection->end();
+			for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type feature = *feature_collection_iter;
+				new_feature_collection->add(feature);
+			}
+
+			return new_feature_collection;
+		}
+
+		bp::extract<FeatureCollectionFunctionArgument> extract_feature_collection_function_argument(features_object);
+		if (!extract_feature_collection_function_argument.check())
 		{
 			PyErr_SetString(PyExc_TypeError,
 					"Expected an optional filename, or sequence of features, or a single feature");
 			bp::throw_error_already_set();
 		}
 
-		bp::extract<FeatureCollectionFunctionArgument> extract_feature_collection(features_object);
-		if (!extract_feature_collection.check())
-		{
-			PyErr_SetString(PyExc_TypeError,
-					"Expected an optional filename, or sequence of features, or a single feature");
-			bp::throw_error_already_set();
-		}
-
-		FeatureCollectionFunctionArgument feature_collection_function_argument = extract_feature_collection();
+		FeatureCollectionFunctionArgument feature_collection_function_argument = extract_feature_collection_function_argument();
 
 		return feature_collection_function_argument.get_feature_collection();
 	}
@@ -1162,7 +1177,26 @@ export_feature_collection()
 				"    \n"
 				"    feature_collection = pygplates.FeatureCollection()\n"
 				"    feature_collection.add(feature1)\n"
-				"    feature_collection.add(feature2)\n")
+				"    feature_collection.add(feature2)\n"
+				"\n"
+				"  .. note:: Since a :class:`FeatureCollection` is an iterable sequence of features it can be "
+				"used in the *features* argument.\n"
+				"\n"
+				"     This creates a shallow copy much in the same way as with a Python list "
+				"(for example ``shallow_copy_list = list(original_list)``):\n"
+				"     ::\n"
+				"\n"
+				"       shallow_copy_feature_collection = pygplates.FeatureCollection(original_feature_collection)\n"
+				"\n"
+				"       # Modifying the collection/list of features in the shallow copy will not affect the original...\n"
+				"       shallow_copy_feature_collection.add(...)\n"
+				"       # assert(len(shallow_copy_feature_collection) != len(original_feature_collection))\n"
+				"\n"
+				"       # Modifying the actual feature data in the collection will affect both feature collections\n"
+				"       # since the feature data is shared by both collections...\n"
+				"       for feature in original_feature_collection:\n"
+				"           # Changing the reconstruction plate ID affects both original and shallow copy collections.\n"
+				"           feature.set_reconstruction_plate_id(...)\n")
 		.def("read",
 				&GPlatesApi::feature_collection_handle_read,
 				(bp::arg("filename")),

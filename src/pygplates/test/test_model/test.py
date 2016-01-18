@@ -504,6 +504,13 @@ class FeatureCollectionCase(unittest.TestCase):
         # Create new feature collection from existing features.
         new_feature_collection = pygplates.FeatureCollection([feature for feature in self.feature_collection])
         self.assertEquals(len(new_feature_collection), len(self.feature_collection))
+        # A feature collection is also an iterable over features.
+        new_feature_collection = pygplates.FeatureCollection(self.feature_collection)
+        self.assertEquals(len(new_feature_collection), len(self.feature_collection))
+        # Modifications to feature list (not features themselves) should not affect original
+        # since 'new_feature_collection' is a shallow copy.
+        new_feature_collection.remove(lambda feature: True)
+        self.assertTrue(len(new_feature_collection) != len(self.feature_collection))
 
         feature_collection_from_file = pygplates.FeatureCollection(self.volcanoes_filename)
         self.assertTrue(len(feature_collection_from_file) == self.feature_count)

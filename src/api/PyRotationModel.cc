@@ -552,7 +552,11 @@ export_rotation_model()
 			"    def my_function(rotation_features_or_model):\n"
 			"        # The appropriate constructor (__init__) overload is chosen depending on argument type.\n"
 			"        rotation_model = pygplates.RotationModel(rotation_features_or_model)\n"
-			"        ...\n")
+			"        ...\n"
+			"\n"
+			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to *rotation_model* because a "
+			"*RotationModel* object is immutable (contains no operations or methods that modify its state) and "
+			"hence a deep copy of *rotation_model* is not needed.\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
