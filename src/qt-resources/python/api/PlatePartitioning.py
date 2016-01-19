@@ -41,39 +41,45 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_copy_partition_properties(partitioning_feature, feature, properties_to_copy):
-    for property_to_copy in properties_to_copy:
-        # If a property cannot be set on the feature (eg, because not supported by feature type)
-        # then don't copy that property.
-        try:
-            if property_to_copy == PartitionProperty.reconstruction_plate_id:
-                # Defaults to zero if partitioning feature has no plate ID.
-                feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
-            elif property_to_copy == PartitionProperty.valid_time_period:
-                # Defaults to all time if partitioning feature has no valid time property.
-                valid_time_begin, valid_time_end = partitioning_feature.get_valid_time()
-                feature.set_valid_time(valid_time_begin, valid_time_end)
-            elif property_to_copy == PartitionProperty.valid_time_begin:
-                # Defaults to distant past if partitioning feature has no valid time property.
-                valid_time_begin = partitioning_feature.get_valid_time()[0]
-                valid_time_end = feature.get_valid_time()[1]
-                # If partitioning feature's begin time is later than feature's end time then set to feature's end time.
-                if valid_time_begin < valid_time_end:
-                    valid_time_begin = valid_time_end
-                feature.set_valid_time(valid_time_begin, valid_time_end)
-            elif property_to_copy == PartitionProperty.valid_time_end:
-                # Defaults to distant future if partitioning feature has no valid time property.
-                valid_time_end = partitioning_feature.get_valid_time()[1]
-                valid_time_begin = feature.get_valid_time()[0]
-                # If partitioning feature's end time is earlier than feature's begin time then set to feature's begin time.
-                if valid_time_end > valid_time_begin:
-                    valid_time_end = valid_time_begin
-                feature.set_valid_time(valid_time_begin, valid_time_end)
-            else: # 'property_to_copy' is a PropertyName...
-                properties = partitioning_feature.get(property_to_copy, PropertyReturn.all)
-                if properties:
-                    feature.set(property_to_copy, (property.get_value().clone() for property in properties))
-        except InformationModelError:
-            pass
+    # The caller specified either a sequence of properties to copy or
+    # a single callable that copies the properties.
+    if hasattr(properties_to_copy, '__iter__'):
+        for property_to_copy in properties_to_copy:
+            # If a property cannot be set on the feature (eg, because not supported by feature type)
+            # then don't copy that property.
+            try:
+                if property_to_copy == PartitionProperty.reconstruction_plate_id:
+                    # Defaults to zero if partitioning feature has no plate ID.
+                    feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
+                elif property_to_copy == PartitionProperty.valid_time_period:
+                    # Defaults to all time if partitioning feature has no valid time property.
+                    valid_time_begin, valid_time_end = partitioning_feature.get_valid_time()
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                elif property_to_copy == PartitionProperty.valid_time_begin:
+                    # Defaults to distant past if partitioning feature has no valid time property.
+                    valid_time_begin = partitioning_feature.get_valid_time()[0]
+                    valid_time_end = feature.get_valid_time()[1]
+                    # If partitioning feature's begin time is later than feature's end time then set to feature's end time.
+                    if valid_time_begin < valid_time_end:
+                        valid_time_begin = valid_time_end
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                elif property_to_copy == PartitionProperty.valid_time_end:
+                    # Defaults to distant future if partitioning feature has no valid time property.
+                    valid_time_end = partitioning_feature.get_valid_time()[1]
+                    valid_time_begin = feature.get_valid_time()[0]
+                    # If partitioning feature's end time is earlier than feature's begin time then set to feature's begin time.
+                    if valid_time_end > valid_time_begin:
+                        valid_time_end = valid_time_begin
+                    feature.set_valid_time(valid_time_begin, valid_time_end)
+                else: # 'property_to_copy' is a PropertyName...
+                    properties = partitioning_feature.get(property_to_copy, PropertyReturn.all)
+                    if properties:
+                        feature.set(property_to_copy, (property.get_value().clone() for property in properties))
+            except InformationModelError:
+                pass
+    
+    else: # ...'properties_to_copy' is a callable...
+        properties_to_copy(partitioning_feature, feature)
 
 
 def plate_partitioner_partition_features(
@@ -95,14 +101,14 @@ def plate_partitioner_partition_features(
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
     :type properties_to_copy: a sequence of any combination of :class:`PropertyName` and \
-        the *PartitionProperty* enumeration values (see table below), or None
+        the *PartitionProperty* enumeration values (see table below)
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a *PartitionMethod* enumeration value (see table below), or None
+    :type partition_method: a *PartitionMethod* enumeration value (see table below)
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a *PartitionReturn* enumeration value (see table below), or None
+    :type partition_return: a *PartitionReturn* enumeration value (see table below)
     
     :returns: the partitioned and unpartitioned features \
         (**note:** new features are always returned, never the originals passed in via *features*)
@@ -110,7 +116,7 @@ def plate_partitioner_partition_features(
     
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
     
-    To partition features at present day and write them to a new file:
+    To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
 
         features = plate_partitioner.partition_features('features_to_partition.gpml')
@@ -155,7 +161,7 @@ def plate_partitioner_partition_features(
     |                                                    | composite geometry in the overlap calculation.                                      |
     +----------------------------------------------------+-------------------------------------------------------------------------------------+
     
-    To partition features using the most overlapping partitioning plate:
+    To assign reconstruction plate IDs to features using the most overlapping partitioning plate:
     ::
 
         features = plate_partitioner.partition_features(
@@ -169,10 +175,6 @@ def plate_partitioner_partition_features(
     +----------------------------------------------------+----------------------------------------------------------------------------------+
     | Type                                               | Description                                                                      |
     +====================================================+==================================================================================+
-    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
     | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
     |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
@@ -191,8 +193,12 @@ def plate_partitioner_partition_features(
     |                                                    |                                                                                  |
     |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
+    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
+    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
     
-    To copy reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
+    To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
     ::
 
         features = plate_partitioner.partition_features(
@@ -201,6 +207,49 @@ def plate_partitioner_partition_features(
                     pygplates.PartitionProperty.reconstruction_plate_id,
                     pygplates.PartitionProperty.valid_time_period,
                     pygplates.PropertyName.gml_name])
+    
+    *properties_to_copy* can also be a single callable (function):
+    
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                               | Description                                                                      |
+    +====================================================+==================================================================================+
+    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
+    |                                                    |                                                                                  |
+    |                                                    | - the partitioning :class:`feature<Feature>`                                     |
+    |                                                    | - the :class:`feature<Feature>` being partitioned                                |
+    |                                                    |                                                                                  |
+    |                                                    | This can be used to write your own implementation for copying properties.        |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    
+    An alternative way to copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
+    ::
+    
+        def properties_to_copy_func(partitioning_feature, feature):
+            # If a property cannot be set on the feature (eg, because not supported by feature type)
+            # then don't copy that property (ie, do nothing if pygplates.InformationModelError is raised).
+            try:
+                feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
+            except pygplates.InformationModelError:
+                pass
+                
+            begin, end = partitioning_feature.get_valid_time()
+            try:
+                feature.set_valid_time(begin, end)
+            except pygplates.InformationModelError:
+                pass
+                
+            try:
+                feature.set_name(partitioning_feature.get_name())
+            except pygplates.InformationModelError:
+                pass
+                
+            except pygplates.InformationModelError:
+                pass
+        
+        
+        features = plate_partitioner.partition_features(
+                'features_to_partition.gpml',
+                properties_to_copy = properties_to_copy_func)
     
     *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
     
@@ -223,8 +272,8 @@ def plate_partitioner_partition_features(
     |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
     +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
     
-    To write only the partitioned features to a new file excluding any unpartitioned features
-    (features that did not intersect any partitioning plates):
+    To write only the partitioned features (the features assigned reconstruction plate IDs) to a new file
+    excluding any unpartitioned features (features that did not intersect any partitioning plates):
     ::
 
         partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
@@ -410,18 +459,18 @@ def partition_into_plates(
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
     :type properties_to_copy: a sequence of any combination of :class:`PropertyName` and \
-        the *PartitionProperty* enumeration values (see table below), or None
+        the *PartitionProperty* enumeration values (see table below)
     
     :param reconstruction_time: the specific geological time to reconstruct/resolve the \
         *partitioning_features* to (defaults to zero)
-    :type reconstruction_time: float or :class:`GeoTimeInstant`, or None
+    :type reconstruction_time: float or :class:`GeoTimeInstant`
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a *PartitionMethod* enumeration value (see table below), or None
+    :type partition_method: a *PartitionMethod* enumeration value (see table below)
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a *PartitionReturn* enumeration value (see table below), or None
+    :type partition_return: a *PartitionReturn* enumeration value (see table below)
     
     :param sort_partitioning_plates: optional sort order of partitioning plates \
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
@@ -433,7 +482,7 @@ def partition_into_plates(
     
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
     
-    To partition features at present day and write them to a new file:
+    To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
 
         features = pygplates.partition_into_plates(
@@ -481,7 +530,7 @@ def partition_into_plates(
     |                                                    | composite geometry in the overlap calculation.                                      |
     +----------------------------------------------------+-------------------------------------------------------------------------------------+
     
-    To partition features using the most overlapping partitioning plate:
+    To assign reconstruction plate IDs to features using the most overlapping partitioning plate:
     ::
 
         features = pygplates.partition_into_plates(
@@ -497,10 +546,6 @@ def partition_into_plates(
     +----------------------------------------------------+----------------------------------------------------------------------------------+
     | Type                                               | Description                                                                      |
     +====================================================+==================================================================================+
-    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
     | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
     |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
@@ -519,8 +564,12 @@ def partition_into_plates(
     |                                                    |                                                                                  |
     |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
+    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
+    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
     
-    To copy reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
+    To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
     ::
 
         features = pygplates.partition_into_plates(
@@ -531,6 +580,52 @@ def partition_into_plates(
                     pygplates.PartitionProperty.reconstruction_plate_id,
                     pygplates.PartitionProperty.valid_time_period,
                     pygplates.PropertyName.gml_name])
+    
+    *properties_to_copy* can also be a single callable (function):
+    
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                               | Description                                                                      |
+    +====================================================+==================================================================================+
+    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
+    |                                                    |                                                                                  |
+    |                                                    | - the partitioning :class:`feature<Feature>`                                     |
+    |                                                    | - the :class:`feature<Feature>` being partitioned                                |
+    |                                                    |                                                                                  |
+    |                                                    | This can be used to write your own implementation for copying properties.        |
+    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    
+    An alternative way to copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
+    ::
+    
+        def properties_to_copy_func(partitioning_feature, feature):
+            # If a property cannot be set on the feature (eg, because not supported by feature type)
+            # then don't copy that property (ie, do nothing if pygplates.InformationModelError is raised).
+            try:
+                feature.set_reconstruction_plate_id(partitioning_feature.get_reconstruction_plate_id())
+            except pygplates.InformationModelError:
+                pass
+                
+            begin, end = partitioning_feature.get_valid_time()
+            try:
+                feature.set_valid_time(begin, end)
+            except pygplates.InformationModelError:
+                pass
+                
+            try:
+                feature.set_name(partitioning_feature.get_name())
+            except pygplates.InformationModelError:
+                pass
+                
+            except pygplates.InformationModelError:
+                pass
+        
+        
+        features = pygplates.partition_into_plates(
+                'static_polygons.gpml',
+                'rotations.rot',
+                'features_to_partition.gpml',
+                properties_to_copy = properties_to_copy_func)
+    
     
     *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
     
@@ -553,8 +648,8 @@ def partition_into_plates(
     |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
     +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
     
-    To write only the partitioned features to a new file excluding any unpartitioned features
-    (features that did not intersect any partitioning plates):
+    To write only the partitioned features (the features assigned reconstruction plate IDs) to a new file
+    excluding any unpartitioned features (features that did not intersect any partitioning plates):
     ::
 
         partitioned_features, unpartitioned_features = pygplates.partition_into_plates(
