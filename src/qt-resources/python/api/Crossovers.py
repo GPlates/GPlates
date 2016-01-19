@@ -189,10 +189,10 @@ def find_crossovers(
     If any rotation filenames are specified then this method uses
     :class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.
     
-    The following are supported enumeration values for *CrossoverType*:
+    *CrossoverType* supports the following enumeration values:
     
     +----------------------------------------------------+---------------------------------------------------------------+
-    | Type                                               | Description                                                   |
+    | Value                                              | Description                                                   |
     +====================================================+===============================================================+
     | *CrossoverType.unknown*                            | The crossover is of unknown type                              |
     |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
@@ -223,7 +223,7 @@ def find_crossovers(
     |                                                    | in the *old* crossover sequence are preserved.                |
     +----------------------------------------------------+---------------------------------------------------------------+
     
-    The following arguments are supported by *crossover_type_function*:
+    *crossover_type_function* supports the following arguments:
     
     +----------------------------------------------------+----------------------------------------------------------------------------------+
     | Type                                               | Description                                                                      |
@@ -520,10 +520,10 @@ def synchronise_crossovers(
     difference in young and old crossover rotation latitudes, longitudes or angles exceeds this amount. This is
     useful since some PLATES rotation files are typically only accurate to 2 decimal places (or threshold of 0.01).
     
-    The following are supported enumeration values for *CrossoverType*:
+    *CrossoverType* supports the following enumeration values:
     
     +----------------------------------------------------+---------------------------------------------------------------+
-    | Type                                               | Description                                                   |
+    | Value                                              | Description                                                   |
     +====================================================+===============================================================+
     | *CrossoverType.unknown*                            | The crossover is of unknown type                              |
     |                                                    | (it will not be :func:`synchronised<synchronise_crossovers>`).|
@@ -554,7 +554,7 @@ def synchronise_crossovers(
     |                                                    | in the *old* crossover sequence are preserved.                |
     +----------------------------------------------------+---------------------------------------------------------------+
     
-    The following arguments are supported by *crossover_type_function*:
+    *crossover_type_function* supports the following arguments:
     
     +----------------------------------------------------+----------------------------------------------------------------------------------+
     | Type                                               | Description                                                                      |
