@@ -581,7 +581,71 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(partitioned_inside_geometries[1][0].get_feature().get_reconstruction_plate_id() == 1)
         self.assertTrue(partitioned_inside_geometries[2][0].get_feature().get_reconstruction_plate_id() == 2)
 
-    def test_partition(self):
+    def test_partition_features(self):
+        plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)
+        
+        # Partition inside point.
+        point_feature = pygplates.Feature()
+        point_feature.set_geometry(pygplates.PointOnSphere(0, -30))
+        partitioned_features = plate_partitioner.partition_features(
+            point_feature,
+            properties_to_copy = [
+                pygplates.PartitionProperty.reconstruction_plate_id,
+                pygplates.PartitionProperty.valid_time_end])
+        self.assertTrue(len(partitioned_features) == 1)
+        self.assertTrue(partitioned_features[0].get_reconstruction_plate_id() == 1)
+        # Only the end time (0Ma) should have changed.
+        self.assertTrue(partitioned_features[0].get_valid_time() ==
+            (pygplates.GeoTimeInstant.create_distant_past(), 0))
+        
+        partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
+            point_feature,
+            properties_to_copy = [
+                pygplates.PartitionProperty.reconstruction_plate_id,
+                pygplates.PartitionProperty.valid_time_period,
+                pygplates.PropertyName.gml_name],
+            partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(unpartitioned_features) == 0)
+        self.assertTrue(len(partitioned_features) == 1)
+        self.assertTrue(partitioned_features[0].get_reconstruction_plate_id() == 1)
+        self.assertTrue(partitioned_features[0].get_name() == 'topology2')
+        # Both begin and end time should have changed.
+        self.assertTrue(partitioned_features[0].get_valid_time() == (100,0))
+        
+        partitioned_groups, unpartitioned_features = plate_partitioner.partition_features(
+            point_feature,
+            properties_to_copy = [
+                pygplates.PartitionProperty.reconstruction_plate_id,
+                pygplates.PartitionProperty.valid_time_begin],
+            partition_return = pygplates.PartitionReturn.partitioned_groups_and_unpartitioned)
+        self.assertTrue(len(unpartitioned_features) == 0)
+        self.assertTrue(len(partitioned_groups) == 1)
+        self.assertTrue(partitioned_groups[0][0].get_feature().get_feature_id().get_string() == 'GPlates-5511af6a-71bb-44b6-9cd2-fea9be3b7e8f')
+        self.assertTrue(len(partitioned_groups[0][1]) == 1)
+        self.assertTrue(partitioned_groups[0][1][0].get_reconstruction_plate_id() == 1)
+        # Only the begin time (100Ma) should have changed.
+        self.assertTrue(partitioned_groups[0][1][0].get_valid_time() == (100, pygplates.GeoTimeInstant.create_distant_future()))
+        
+        # Partition inside and outside point.
+        inside_point_feature = pygplates.Feature()
+        inside_point_feature.set_geometry(pygplates.PointOnSphere(0, -30))
+        outside_point_feature = pygplates.Feature()
+        outside_point_feature.set_geometry(pygplates.PointOnSphere(0, 0))
+        def test_set_name(partitioning_feature, feature):
+            try:
+                feature.set_name(partitioning_feature.get_name())
+            except pygplates.InformationModelError:
+                pass
+        partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
+            [inside_point_feature, outside_point_feature],
+            properties_to_copy = test_set_name,
+            partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(unpartitioned_features) == 1)
+        self.assertTrue(unpartitioned_features[0].get_name() == '')
+        self.assertTrue(len(partitioned_features) == 1)
+        self.assertTrue(partitioned_features[0].get_name() == 'topology2')
+
+    def test_partition_geometry(self):
         plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)
         
         # Test optional arguments.

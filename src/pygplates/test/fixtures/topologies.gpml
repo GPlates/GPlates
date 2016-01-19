@@ -691,12 +691,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">100</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
