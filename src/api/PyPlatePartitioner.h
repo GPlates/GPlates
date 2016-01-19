@@ -200,7 +200,7 @@ namespace GPlatesApi
 		explicit
 		PlatePartitionerWrapper(
 				const boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter> &geometry_cookie_cutter,
-				boost::optional<RotationModel::non_null_ptr_type> rotation_model = boost::none,
+				RotationModel::non_null_ptr_type rotation_model,
 				boost::optional<const FeatureCollectionSequenceFunctionArgument &> partitioning_features = boost::none,
 				boost::optional<const std::vector<boost::python::object> &> partitioning_plates = boost::none) :
 			d_geometry_cookie_cutter(geometry_cookie_cutter),
@@ -226,9 +226,9 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Get the rotation model (if any).
+		 * Get the rotation model.
 		 */
-		boost::optional<RotationModel::non_null_ptr_type>
+		RotationModel::non_null_ptr_type
 		get_rotation_model() const
 		{
 			return d_rotation_model;
@@ -238,8 +238,8 @@ namespace GPlatesApi
 
 		boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter> d_geometry_cookie_cutter;
 
-		//! A rotation model if needed to reverse reconstruct feature geometries after cookie-cutting.
-		boost::optional<RotationModel::non_null_ptr_type> d_rotation_model;
+		//! A rotation model (might be needed to reverse reconstruct feature geometries after cookie-cutting).
+		RotationModel::non_null_ptr_type d_rotation_model;
 
 		//! Keep any partitioning features alive since returned partitioning reconstruction geometries reference them.
 		boost::optional<FeatureCollectionSequenceFunctionArgument> d_partitioning_features;
