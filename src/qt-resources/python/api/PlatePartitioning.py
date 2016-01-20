@@ -162,6 +162,10 @@ def plate_partitioner_partition_features(
     |                                                    | composite geometry in the overlap calculation.                                      |
     +----------------------------------------------------+-------------------------------------------------------------------------------------+
     
+    .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
+       since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
+       The pole position (``PropertyName.gpml_pole_position``) is not used during the partitioning.
+    
     To assign reconstruction plate IDs to features using the most overlapping partitioning plate:
     ::
 
@@ -558,6 +562,10 @@ def partition_into_plates(
     |                                                    | Note that if a feature contains multiple geometries then they are treated as one    |
     |                                                    | composite geometry in the overlap calculation.                                      |
     +----------------------------------------------------+-------------------------------------------------------------------------------------+
+    
+    .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
+       since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
+       The pole position (``PropertyName.gpml_pole_position``) is not used during the partitioning.
     
     To assign reconstruction plate IDs to features using the most overlapping partitioning plate:
     ::
