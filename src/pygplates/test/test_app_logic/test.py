@@ -644,6 +644,38 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(unpartitioned_features[0].get_name() == '')
         self.assertTrue(len(partitioned_features) == 1)
         self.assertTrue(partitioned_features[0].get_name() == 'topology2')
+        
+        # Partition VGP feature - average sample site position is inside and pole position is outside.
+        vgp_feature = pygplates.Feature(pygplates.FeatureType.gpml_virtual_geomagnetic_pole)
+        vgp_feature.set_geometry(
+            pygplates.PointOnSphere(0, -30), pygplates.PropertyName.gpml_average_sample_site_position)
+        vgp_feature.set_geometry(
+            pygplates.PointOnSphere(0, 0), pygplates.PropertyName.gpml_pole_position)
+        features = plate_partitioner.partition_features(vgp_feature)
+        self.assertTrue(len(features) == 1)
+        self.assertTrue(features[0].get_reconstruction_plate_id() == 1)
+        # Move average sample site position outside.
+        vgp_feature.set_geometry(
+            pygplates.PointOnSphere(0, 0), pygplates.PropertyName.gpml_average_sample_site_position)
+        partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
+            vgp_feature,
+            partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned_features) == 0)
+        self.assertTrue(len(unpartitioned_features) == 1)
+        self.assertTrue(unpartitioned_features[0].get_reconstruction_plate_id() == 0)
+        # Again but not a VGP feature - should get split into two features.
+        non_vgp_feature = pygplates.Feature()
+        non_vgp_feature.set_geometry(
+            pygplates.PointOnSphere(0, -30), pygplates.PropertyName.gpml_average_sample_site_position)
+        non_vgp_feature.set_geometry(
+            pygplates.PointOnSphere(0, 0), pygplates.PropertyName.gpml_pole_position)
+        partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
+            non_vgp_feature,
+            partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned_features) == 1)
+        self.assertTrue(partitioned_features[0].get_reconstruction_plate_id() == 1)
+        self.assertTrue(len(unpartitioned_features) == 1)
+        self.assertTrue(unpartitioned_features[0].get_reconstruction_plate_id() == 0)
 
     def test_partition_geometry(self):
         plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)

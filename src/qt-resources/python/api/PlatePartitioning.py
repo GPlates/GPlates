@@ -119,6 +119,7 @@ def plate_partitioner_partition_features(
     To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
 
+        plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
         features = plate_partitioner.partition_features('features_to_partition.gpml')
         
         feature_collection = pygplates.FeatureCollection(features)
@@ -164,6 +165,7 @@ def plate_partitioner_partition_features(
     To assign reconstruction plate IDs to features using the most overlapping partitioning plate:
     ::
 
+        plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
         features = plate_partitioner.partition_features(
                 'features_to_partition.gpml',
                 partition_method = pygplates.PartitionMethod.most_overlapping_plate)
@@ -201,6 +203,7 @@ def plate_partitioner_partition_features(
     To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
     ::
 
+        plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
         features = plate_partitioner.partition_features(
                 'features_to_partition.gpml',
                 properties_to_copy = [
@@ -247,6 +250,7 @@ def plate_partitioner_partition_features(
                 pass
         
         
+        plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
         features = plate_partitioner.partition_features(
                 'features_to_partition.gpml',
                 properties_to_copy = properties_to_copy_func)
@@ -276,6 +280,7 @@ def plate_partitioner_partition_features(
     excluding any unpartitioned features (features that did not intersect any partitioning plates):
     ::
 
+        plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
         partitioned_features, unpartitioned_features = plate_partitioner.partition_features(
                 'features_to_partition.gpml',
                 partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
@@ -295,9 +300,33 @@ def plate_partitioner_partition_features(
     unpartitioned_features = []
     
     for feature in features.get_features():
+        
         # Special case handling for VGP features.
         if feature.get_feature_type() == FeatureType.gpml_virtual_geomagnetic_pole:
+            # Partition the average sample site position.
+            average_sample_site_position = feature.get_geometry(PropertyName.gpml_average_sample_site_position)
+            if average_sample_site_position:
+                partitioning_plate = plate_partitioner.partition_point(average_sample_site_position)
+                if partitioning_plate:
+                    # Clone the feature so we don't modify the original (we're returning copies).
+                    partitioned_feature = feature.clone()
+                    
+                    # Copy the requested properties over from the partitioning feature.
+                    _plate_partitioning_copy_partition_properties(
+                            partitioning_plate.get_feature(), partitioned_feature, properties_to_copy)
+                    
+                    partitioned_features.append(partitioned_feature)
+                    
+                    # Also group partitioned features by partitioning plate (if requested).
+                    if partition_return == PartitionReturn.partitioned_groups_and_unpartitioned:
+                        partitioned_feature_groups.setdefault(partitioning_plate, []).append(partitioned_feature)
+                    
+                    continue
             
+            # Feature does not overlap any partitions (or is missing an average sample site position)
+            # so it is unpartitioned.
+            unpartitioned_feature = feature.clone()
+            unpartitioned_features.append(unpartitioned_feature)
             
             continue
         
