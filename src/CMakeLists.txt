@@ -256,33 +256,12 @@ foreach(dir ${ALL_GPlates_src_subdirs})
 	add_subdirectory(${dir})
 endforeach(dir)
 
-#
-# Compile and run the gplates-extract-svn-info executable, which generates SubversionInfo.cc,
-# a file that contains the parsed output of the 'svnversion' and 'svn info' commands.
-#
-# There is an optional CMake variable called GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING
-# that, if set, will cause the value of that variable to be used as the source
-# control version instead of any value read from `svnversion` and "" to be
-# used as the branch name. This optional variable is useful when making public
-# releases from a branch (e.g. the 0.9.9 branch) or an exported source tree. The
-# CMake type of the GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING variable is STRING; it
-# may be set to non-numeric string values.
-#
-add_executable(gplates-extract-svn-info
-	gplates_extract_svn_info_main.cc)
-GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-extract-svn-info FALSE)
-target_link_libraries(gplates-extract-svn-info ${QT_LIBRARIES})
 set(GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/global/SubversionInfo.cc)
 if (WIN32)
 	set (GPlates_EXTRACT_SVN_INFO_PATH gplates-extract-svn-info)
 else (WIN32)
 	set (GPlates_EXTRACT_SVN_INFO_PATH ${EXECUTABLE_OUTPUT_PATH}/gplates-extract-svn-info)
 endif (WIN32)
-add_custom_target(
-	run-gplates-extract-svn-info ALL ${GPlates_EXTRACT_SVN_INFO_PATH} ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} ${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}
-	DEPENDS gplates-extract-svn-info)
-# Create a dummy output file so that CMake doesn't complain about it being missing.
-file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 
 #
 # Set top-level target dependencies.
@@ -306,19 +285,6 @@ endif(NOT GPLATES_NO_PYTHON)
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
 
-# Does the following:
-# - finds '.ui' files and adds commands to create 'Ui.h' files.
-# - adds dependencies on generated header files.
-# - scans '.h' files for Q_OBJECT and adds commands to run Qt's moc.exe to generate 'moc_*.cc' files.
-# - finds '.qrc' files and adds commands to generate '.cc' files from them.
-# - adds header files to Visual Studio projects.
-# - groups files in Visual Studio IDE according to type.
-GPLATES_GENERATE_TARGET_SOURCES(gplates target_GPlates_SRCS ${GPlates_SRCS})
-GPLATES_GENERATE_TARGET_SOURCES(gplates-no-gui target_GPlates_no_gui_SRCS ${GPlates_no_gui_SRCS})
-
-if (ADD_UNIT_TEST_TARGET)
-	GPLATES_GENERATE_TARGET_SOURCES(gplates-unit-test target_GPlates_unit_test_SRCS ${GPlates_unit_test_SRCS})
-endif (ADD_UNIT_TEST_TARGET)
 
 #
 # Set the platform-dependent icon file.
@@ -330,70 +296,6 @@ elseif (MSVC)
 else (APPLE)
 endif (APPLE)
 
-#
-# Add executable target(s).
-#
-# NOTE: On MacOS X some libraries referenced by these executable targets do not have
-# their full path specified in the executables themselves. When this happens
-# the error "dyld: Library not loaded:" error is generated when trying to
-# run the executable. An example is CGAL installed via Macports.
-# GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET() creates a post-build command
-# that looks at a built executable target and does these fixups.
-#
-message(STATUS "Adding executable for GPlates application.")
-add_executable(gplates
-	${target_GPlates_SRCS}
-	${GPlates_ICON}
-	${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
-GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
-
-# The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
-# it is not built by default.
-add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
-GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
-
-if (ADD_UNIT_TEST_TARGET)
-    message(STATUS "Adding executable for GPlates unit test application.")
-	add_executable(gplates-unit-test EXCLUDE_FROM_ALL
-		${target_GPlates_unit_test_SRCS}
-		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
-	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
-endif (ADD_UNIT_TEST_TARGET)
-
-# Referenced in "Package.cmake" so it knows which executable to package up.
-set(GPLATES_MAIN_TARGET gplates)
-
-if (APPLE)
-	# Copy icon file to 'Resources' directory inside application bundle.
-	set_source_files_properties(${GPlates_ICON} PROPERTIES
-		MACOSX_PACKAGE_LOCATION Resources)
-
-	#
-	# Tell cmake to build the main target as an application bundle.
-	#
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE TRUE)
-	# Specify our own Info.plist template file.
-	# We add a couple of keys to ensure Qt 4.8.4 (and above) include support Mac Retina displays.
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns)
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "${GPLATES_VERSION_STRING}-${CMAKE_SYSTEM}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${GPLATES_VERSION_STRING}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "${GPLATES_PACKAGE_NAME}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPLATES_PACKAGE_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_VERSION "${GPLATES_PACKAGE_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
-endif (APPLE)
 
 # NOTE: Even though Qt includes are taken care of by including QT_USE_FILE
 # their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
@@ -428,32 +330,6 @@ if (NOT WIN32)
 		set(dependency_LIBS ${dependency_LIBS} ${Boost_LIBRARIES})
 	endif (Boost_LIBRARY_DIRS)
 endif (NOT WIN32)
-
-
-
-# Avoid all GPlates library link dependencies on the linker command-line by
-# specifying a 'group' around GPlates libraries. This gets around some dependencies
-# like 'gui' depends on 'canvas-tools' depends on 'gui' depends on 'maths'.
-# The --start-group / --end-group options are specific to Linux' ld command, and
-# the -Xlinker option is necessary to pass those options through 'c++' into 'ld'.
-# The Windows and MacOS linkers appear to work fine without needing to specify
-# this extra resolution behaviour.
-if (NOT WIN32 AND NOT APPLE)
-	set(GPlates_LINK_CMD -Xlinker --start-group ${GPlates_LIBS} -Xlinker --end-group)
-	set(GPlates_unit_test_LINK_CMD -Xlinker --start-group ${GPlates_unit_test_LIBS} -Xlinker --end-group)
-else (NOT WIN32 AND NOT APPLE)
-	set(GPlates_LINK_CMD ${GPlates_LIBS})	
-	set(GPlates_unit_test_LINK_CMD ${GPlates_unit_test_LIBS})
-endif (NOT WIN32 AND NOT APPLE)
-
-# Actual link dependencies get assembled here.
-# NOTE: The command-line version of GPlates is no longer a separate executable to the GUI version of GPlates.
-target_link_libraries(gplates ${GPlates_LINK_CMD} ${dependency_LIBS})
-target_link_libraries(gplates-no-gui ${GPlates_LINK_CMD} ${dependency_LIBS})
-if (ADD_UNIT_TEST_TARGET)
-	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LINK_CMD} ${dependency_LIBS})
-endif (ADD_UNIT_TEST_TARGET)
-	
 # Add Python module library target.
 if(NOT GPLATES_NO_PYTHON)
 
@@ -474,41 +350,6 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 # Generated source header include directories.
 include_directories(${internal_INCLUDE_DIRS})
 
-# Perform commands that modify target properties.
-# We do this last because pre-compiled headers are done here and they
-# require access to directory and target properties (eg, include directories).
-GPLATES_POST_ADD_TARGET(gplates target_GPlates_SRCS)
-GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
-
-if (ADD_UNIT_TEST_TARGET)
-	GPLATES_POST_ADD_TARGET(gplates-unit-test target_GPlates_unit_test_SRCS)
-endif (ADD_UNIT_TEST_TARGET)
-
-if (APPLE)
-    install(TARGETS gplates
-    	RUNTIME DESTINATION bin
-    	BUNDLE DESTINATION bin
-    	CONFIGURATIONS release)
-else (APPLE)
-    # CMake 2.4 doesn't know about "BUNDLE DESTINATION" so don't force Windows/Linux users
-    # to require CMake 2.6.
-    install(TARGETS gplates
-    	RUNTIME DESTINATION bin
-    	CONFIGURATIONS release)
-endif (APPLE)
-
-# Include the package module which adds a 'package' target that packages up
-# a standalone version of GPlates (with dependent libraries included) for distribution
-# to another computer.
-#
-# NOTE: we don't include if CMake version is less than 2.6 because the
-# "package" module uses some commands, such as 'function', that were
-# introduced in CMake 2.6. This means you must have CMake 2.6 or better
-# to create binary install packages for distribution.
-#
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
-    include(Package)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 
 # We have a nasty case of a variable shadow warning in the boost program_options library.
 # Since it's a system header it should not emit a warning but it does on g++ 4.1.2 and g++ 4.1.3 

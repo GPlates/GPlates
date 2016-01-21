@@ -32,32 +32,3 @@ add_subdirectory(doc-cpp)
 # Also we need to add a dependency to the 'pygplates' target so that it gets built first.
 #
 add_subdirectory(doc-python-api)
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py")
-    install(FILES "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/SampleData/")
-    install(DIRECTORY SampleData/ DESTINATION share/gplates/SampleData/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz")
-    install(FILES  "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz"
-        DESTINATION share/man/man1/)
-endif()
