@@ -448,7 +448,7 @@ export_plate_partitioner()
 			GPlatesApi::PlatePartitionerWrapper,
 			boost::noncopyable>(
 					"PlatePartitioner",
-					"Partition geometries using dynamic resolved topological boundaries and/or static reconstructed feature polygons.\n",
+					"Partition features or geometries into plates.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

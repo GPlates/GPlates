@@ -381,7 +381,11 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 			d_partitioning_geometries.begin();
 	partitioning_geometry_seq_type::const_iterator partition_end =
 			d_partitioning_geometries.end();
-	for ( ; partition_iter != partition_end; ++partition_iter)
+	for ( ;
+		partition_iter != partition_end &&
+			// If there are outside geometries then continue, otherwise there's nothing left to partition...
+			!current_partitioned_outside_geometries->empty();
+		++partition_iter)
 	{
 		const PartitioningGeometry &partitioning_geometry = *partition_iter;
 

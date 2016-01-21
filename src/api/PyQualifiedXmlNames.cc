@@ -315,6 +315,7 @@ namespace GPlatesApi
 	const GPlatesModel::FeatureType gpml_total_reconstruction_sequence = GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
 	const GPlatesModel::FeatureType gpml_transform = GPlatesModel::FeatureType::create_gpml("Transform");
 	const GPlatesModel::FeatureType gpml_transitional_crust = GPlatesModel::FeatureType::create_gpml("TransitionalCrust");
+	const GPlatesModel::FeatureType gpml_unclassified_feature = GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
 	const GPlatesModel::FeatureType gpml_unconformity = GPlatesModel::FeatureType::create_gpml("Unconformity");
 	const GPlatesModel::FeatureType gpml_unknown_contact = GPlatesModel::FeatureType::create_gpml("UnknownContact");
 	const GPlatesModel::FeatureType gpml_virtual_geomagnetic_pole = GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
@@ -382,6 +383,7 @@ export_feature_type()
 			"* ``pygplates.FeatureType.gpml_total_reconstruction_sequence`` = pygplates.FeatureType.create_gpml('TotalReconstructionSequence')\n"
 			"* ``pygplates.FeatureType.gpml_transform`` = pygplates.FeatureType.create_gpml('Transform')\n"
 			"* ``pygplates.FeatureType.gpml_transitional_crust`` = pygplates.FeatureType.create_gpml('TransitionalCrust')\n"
+			"* ``pygplates.FeatureType.gpml_unclassified_feature`` = pygplates.FeatureType.create_gpml('UnclassifiedFeature')\n"
 			"* ``pygplates.FeatureType.gpml_unconformity`` = pygplates.FeatureType.create_gpml('Unconformity')\n"
 			"* ``pygplates.FeatureType.gpml_unknown_contact`` = pygplates.FeatureType.create_gpml('UnknownContact')\n"
 			"* ``pygplates.FeatureType.gpml_virtual_geomagnetic_pole`` = pygplates.FeatureType.create_gpml('VirtualGeomagneticPole')\n"
@@ -435,6 +437,7 @@ export_feature_type()
 	feature_type_class.def_readonly("gpml_total_reconstruction_sequence", GPlatesApi::gpml_total_reconstruction_sequence);
 	feature_type_class.def_readonly("gpml_transform", GPlatesApi::gpml_transform);
 	feature_type_class.def_readonly("gpml_transitional_crust", GPlatesApi::gpml_transitional_crust);
+	feature_type_class.def_readonly("gpml_unclassified_feature", GPlatesApi::gpml_unclassified_feature);
 	feature_type_class.def_readonly("gpml_unconformity", GPlatesApi::gpml_unconformity);
 	feature_type_class.def_readonly("gpml_unknown_contact", GPlatesApi::gpml_unknown_contact);
 	feature_type_class.def_readonly("gpml_virtual_geomagnetic_pole", GPlatesApi::gpml_virtual_geomagnetic_pole);
