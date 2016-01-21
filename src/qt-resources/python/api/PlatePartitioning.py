@@ -114,7 +114,16 @@ def plate_partitioner_partition_features(
         (**note:** new features are always returned, never the originals passed in via *features*)
     :rtype: depends on *partition_return* (see table below)
     
+    The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
+    specified by *partition_method*. Properties are copied from the partitioning plate features to the
+    features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+    
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
+    
+    So while the partitioning polygons are reconstructed/resolved to the reconstruction time before testing for overlap/intersection,
+    the geometries in the features to be partitioned (*features*) are not since they effectively represent a snapshot of the features at the reconstruction time.
+    In other words the features to be partitioned effectively contain geometry at the reconstruction time (rather than present day) and hence they are *not* reconstructed
+    to the reconstruction time before testing for overlap/intersection with the partitioning plates (even if they already happen to have a reconstruction plate ID property).
     
     To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
@@ -280,8 +289,7 @@ def plate_partitioner_partition_features(
     |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
     +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
     
-    To write only the partitioned features (the features assigned reconstruction plate IDs) to a new file
-    excluding any unpartitioned features (features that did not intersect any partitioning plates):
+    To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
     ::
 
         plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
@@ -289,7 +297,12 @@ def plate_partitioner_partition_features(
                 'features_to_partition.gpml',
                 partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
         
-        pygplates.FeatureCollection(partitioned_features).write('partitioned_features.gpml')
+        for unpartitioned_feature in unpartitioned_features:
+            unpartitioned_feature.set_reconstruction_plate_id(0)
+    
+    ...this is useful when the features to be partitioned already have reconstruction plate IDs but
+    they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
+    and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
     """
     
     # Turn function argument into something more convenient for extracting features.
@@ -513,7 +526,25 @@ def partition_into_plates(
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: depends on *partition_return* (see table below)
     
+    The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
+    specified by *partition_method*. Properties are copied from the partitioning plate features to the
+    features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+    
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
+    
+    The partitioning plates are generated internally by :func:`reconstructing any regular geological features<reconstruct>`
+    and :func:`resolving any topological features<resolve_topologies>` in *partitioning_features* using the rotation model and
+    optional reconstruction time.
+    
+    .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning.
+       For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and
+       :class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry`
+       is only included if its reconstructed geometry is a :class:`PolygonOnSphere`.
+    
+    So while the partitioning polygons are reconstructed/resolved to the reconstruction time before testing for overlap/intersection,
+    the geometries in the features to be partitioned (*features_to_partition*) are not since they effectively represent a snapshot of the features at the reconstruction time.
+    In other words the features to be partitioned effectively contain geometry at the reconstruction time (rather than present day) and hence they are *not* reconstructed
+    to the reconstruction time before testing for overlap/intersection with the partitioning plates (even if they already happen to have a reconstruction plate ID property).
     
     To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
@@ -685,8 +716,7 @@ def partition_into_plates(
     |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
     +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
     
-    To write only the partitioned features (the features assigned reconstruction plate IDs) to a new file
-    excluding any unpartitioned features (features that did not intersect any partitioning plates):
+    To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
     ::
 
         partitioned_features, unpartitioned_features = pygplates.partition_into_plates(
@@ -695,11 +725,12 @@ def partition_into_plates(
                 'features_to_partition.gpml',
                 partition_return = pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
         
-        pygplates.FeatureCollection(partitioned_features).write('partitioned_features.gpml')
+        for unpartitioned_feature in unpartitioned_features:
+            unpartitioned_feature.set_reconstruction_plate_id(0)
     
-    The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>`
-    and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and
-    optional reconstruction time.
+    ...this is useful when the features to be partitioned already have reconstruction plate IDs but
+    they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
+    and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
     
     *sort_partitioning_plates* determines the sorting criteria used to order the partitioning plates:
     
@@ -744,11 +775,6 @@ def partition_into_plates(
     
         features = pygplates.partition_into_plates(...,
             sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)
-    
-    .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning.
-       For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and
-       :class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry`
-       is only included if its reconstructed geometry is a :class:`PolygonOnSphere`.
     
     .. seealso:: :meth:`PlatePartitioner.partition_features`
     

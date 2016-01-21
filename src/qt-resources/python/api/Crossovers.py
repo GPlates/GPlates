@@ -132,12 +132,12 @@ def find_crossovers(
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument
+    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or None
     
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, or None
+    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list of named-tuple 'Crossover'
@@ -443,7 +443,7 @@ def synchronise_crossovers(
         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
         a crossover is a named-tuple 'Crossover' (see table below)
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
-        a sequence of named-tuple 'Crossover'
+        a sequence of named-tuple 'Crossover', or None
     
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
@@ -453,7 +453,8 @@ def synchronise_crossovers(
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, or None
+    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, \
+        or can also be None if *crossover_filter* is a sequence (since it then gets ignored)
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
@@ -515,6 +516,8 @@ def synchronise_crossovers(
     predicate test will be synchronised. If *crossover_filter* is a sequence of crossovers then only crossovers in that sequence will be
     synchronised (and you must ensure that both the young and old sequences in each crossover have at least one enabled time sample
     otherwise the crossover can't really be a crossover).
+    
+    .. note:: *crossover_type_function* is ignored if *crossover_filter* is a sequence of crossovers (since the crossover types are already known).
     
     *crossover_threshold_degrees* can optionally be used to synchronise (fix) only those crossovers whose
     difference in young and old crossover rotation latitudes, longitudes or angles exceeds this amount. This is
