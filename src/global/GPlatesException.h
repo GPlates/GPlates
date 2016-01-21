@@ -73,8 +73,11 @@ namespace GPlatesGlobal
 			~Exception() throw() { }
 
 			/**
-			 * Write the name and message of an exception into the supplied output
-			 * stream @a os.
+			 * Write the message of an exception into the supplied output stream @a os.
+			 *
+			 * If @a include_exception_name is true then the exception name is prefixed to the message.
+			 * If @a include_call_stack_trace is true then the call stack trace to the point at which
+			 * the exception was thrown is appended to the message.
 			 *
 			 * It is not intended that these messages be internationalised for users --
 			 * they are purely for debugging output when an exception is caught at the
@@ -82,7 +85,9 @@ namespace GPlatesGlobal
 			 */
 			void
 			write(
-					std::ostream &os) const;
+					std::ostream &os,
+					bool include_exception_name = true,
+					bool include_call_stack_trace = true) const;
 
 			/**
 			 * Returns a string containing the call stack trace to the location

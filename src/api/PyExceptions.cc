@@ -149,9 +149,18 @@ namespace GPlatesApi
 		operator()(
 				const ExceptionType &exc) const
 		{
-			// Extract the message
+			// Extract the message.
 			std::ostringstream exc_message_stream;
-			exc.write(exc_message_stream);
+			exc.write(
+					exc_message_stream,
+					// We don't include the exception name since it's the name of the C++ exception,
+					// not the Python exception...
+					false/*include_exception_name*/,
+					// We don't include the call stack trace because that was only meant for
+					// uncaught exceptions in GPlates. Uncaught exceptions are much more common in
+					// Python because users who write their own scripts will typically not
+					// write exception-handling Python code...
+					false/*include_call_stack_trace*/);
 
 			PyErr_SetString(d_python_exception_type.ptr(), exc_message_stream.str().c_str());
 		}
