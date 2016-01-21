@@ -36,7 +36,7 @@ if(NOT GPLATES_NO_PYTHON)
 	GPLATES_GENERATE_TARGET_SOURCES(pygplates gplates_lib_all_src ${all_files})
 	
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(pygplates MODULE ${gplates_lib_all_src} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
+	add_library(pygplates MODULE ${gplates_lib_all_src})
     
 	if(WIN32)
 		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
