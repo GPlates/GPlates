@@ -10,15 +10,21 @@ This document contains sample code that shows *pygplates* solving common plate t
    :ref:`installation guide<pygplates_getting_started_installation>` to help get started.
 
 
-Features
---------
+Import
+------
 
 .. toctree::
    :maxdepth: 2
 
    sample-code/pygplates_import_points_and_assign_plate_ids
 
+Rotations
+---------
 
+.. toctree::
+   :maxdepth: 2
+
+   sample-code/pygplates_plate_rotation_hierarchy
 
 Isochrons
 ---------
