@@ -148,7 +148,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::PlatesLineFormatHeaderVisitor()
 {
 }
 
-bool
+void
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		OldPlatesHeader& old_plates_header,
@@ -218,9 +218,6 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		old_plates_header.age_of_disappearance = 
 			convert_geotimeinstant_to_double(*d_accum.age_of_disappearance);
 	}
-
-	// Need at least an old plates header or plate id to be able to output header+geometry.
-	return d_accum.plate_id;
 }
 
 

@@ -624,13 +624,20 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		const GeoTimeInstant geo_time_instant_end(
 				create_geo_time_instant(header->get_age_of_disappearance()));
 
-		// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
-		// "gpml:reconstructionPlateId" property.
-		GpmlPlateId::non_null_ptr_type recon_plate_id = GpmlPlateId::create(plate_id);
-		feature_handle->add(
-				TopLevelPropertyInline::create(
-					PropertyName::create_gpml("reconstructionPlateId"),
-					ModelUtils::create_gpml_constant_value(recon_plate_id)));
+		// Ignore a reconstruction plate id of 999 (it's a hard-coded default value for no-plate-id).
+		if (plate_id != 999)
+		{
+			// Attempt to add the reconstruction plate id to the feature.
+			// If the feature type does not support it (according to GPGIM) then it won't get added.
+			// Pretty much all feature types support a reconstruction plate id so should be no problem.
+			GPlatesModel::ModelUtils::add_property(
+					feature_handle,
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GpmlPlateId::create(plate_id),
+					true/*check_property_name_allowed_for_feature_type*/,
+					false/*check_property_multiplicity*/,
+					false/*check_property_value_type*/);
+		}
 
 		// Ignore a conjugate plate id of 999 (it's a hard-coded default value for no-plate-id).
 		if (conjugate_plate_id != 999)
