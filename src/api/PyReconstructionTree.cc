@@ -1084,18 +1084,13 @@ export_reconstruction_tree()
 				"    with open('export.txt', 'w') as file: \n"
 				"        for edge in reconstruction_tree.get_edges():\n"
 				"            relative_rotation = edge.get_relative_total_rotation()\n"
-				"            if relative_rotation.represents_identity_rotation():\n"
-				"                # Use north pole with zero rotation to indicate identity rotation.\n"
-				"                lat_lon_pole = pygplates.LatLonPoint(90, 0)\n"
-				"                angle = 0\n"
-				"            else:\n"
-				"                pole, angle = relative_rotation.get_euler_pole_and_angle()\n"
-				"                lat_lon_pole = pole.to_lat_lon_point(pole)\n"
+				"            relative_pole_latitude, relative_pole_longitude, relative_angle_degrees = (\n"
+				"                relative_rotation.get_lat_lon_euler_pole_and_angle_degrees())\n"
 				"            file.write('%f %f %f %f %f\\n' % (\n"
 				"                edge.get_moving_plate_id(),\n"
-				"                lat_lon_pole.get_latitude(),\n"
-				"                lat_lon_pole.get_longitude(),\n"
-				"                math.degrees(angle),\n"
+				"                relative_pole_latitude,\n"
+				"                relative_pole_longitude,\n"
+				"                relative_angle_degrees,\n"
 				"                edge.get_fixed_plate_id()))\n")
 		.def("get_anchor_plate_edges",
 				&GPlatesApi::reconstruction_tree_get_anchor_plate_edges,
