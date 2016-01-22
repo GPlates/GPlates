@@ -51,7 +51,7 @@ if(NOT GPLATES_NO_PYTHON)
 	GPLATES_POST_ADD_TARGET(${target_name} gplates_lib_all_src)
 	
 	install(TARGETS pygplates
-		DESTINATION lib
+		DESTINATION lib/pygplates/revision${PYGPLATES_REVISION}/
 		CONFIGURATIONS release)
 	
 endif(NOT GPLATES_NO_PYTHON)
