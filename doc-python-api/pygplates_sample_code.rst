@@ -25,15 +25,7 @@ Rotations
    :maxdepth: 2
 
    sample-code/pygplates_plate_rotation_hierarchy
-
-Isochrons
----------
-
-.. toctree::
-   :maxdepth: 2
-
-   sample-code/pygplates_create_conjugate_isochrons_from_ridge
-   sample-code/pygplates_split_isochron_into_ridges_and_transforms
+   sample-code/pygplates_plate_circuits_to_anchored_plate
 
 Topologies
 ----------
@@ -61,3 +53,12 @@ Spatial proximity
 
    sample-code/pygplates_find_nearest_feature_to_a_point
    sample-code/pygplates_find_features_overlapping_a_polygon
+
+Isochrons
+---------
+
+.. toctree::
+   :maxdepth: 2
+
+   sample-code/pygplates_create_conjugate_isochrons_from_ridge
+   sample-code/pygplates_split_isochron_into_ridges_and_transforms
