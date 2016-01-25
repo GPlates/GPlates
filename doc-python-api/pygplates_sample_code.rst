@@ -26,6 +26,7 @@ Rotations
 
    sample-code/pygplates_plate_rotation_hierarchy
    sample-code/pygplates_plate_circuits_to_anchored_plate
+   sample-code/pygplates_modify_reconstruction_pole
 
 Topologies
 ----------

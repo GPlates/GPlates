@@ -3,7 +3,7 @@
 Plate circuits to anchored plate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example finds and prints the plate circuit path from all plates in the
+This example finds and prints the plate circuit paths from all plates in the
 :ref:`plate rotation hierarchy<pygplates_foundations_plate_reconstruction_hierarchy>`
 to the anchored plate (for a particular reconstruction time).
 
