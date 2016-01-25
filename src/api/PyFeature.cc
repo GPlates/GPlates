@@ -72,6 +72,7 @@
 #include "property-values/EnumerationContent.h"
 #include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
@@ -2475,6 +2476,40 @@ namespace GPlatesApi
 				property_return);
 	}
 
+	bool
+	feature_handle_is_valid_at_time(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesPropertyValues::GeoTimeInstant &time)
+	{
+		static const GPlatesModel::PropertyName valid_time_property_name =
+				GPlatesModel::PropertyName::create_gml("validTime");
+
+		bp::object valid_time_property_value_object =
+				feature_handle_get_property_value(
+						feature_handle,
+						bp::object(valid_time_property_name),
+						GPlatesPropertyValues::GeoTimeInstant(0),
+						PropertyReturn::EXACTLY_ONE);
+		if (valid_time_property_value_object != bp::object()/*Py_None*/)
+		{
+			// Check that it's a GmlTimePeriod property value.
+			bp::extract<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type> extract_gml_time_period(
+							valid_time_property_value_object);
+			if (extract_gml_time_period.check())
+			{
+				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period = extract_gml_time_period();
+
+				return gml_time_period->contains(time);
+			}
+		}
+
+		// If anything fails then we fall through and return true.
+		// Note: We do *not* default to false - because we want to emulate the behaviour of
+		// 'Feature.get_valid_time()' which defaults to all time (ie, distant past to distant future)
+		// if anything fails. And any time is contained with all time (ie, return true).
+		return true;
+	}
+
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_total_reconstruction_sequence(
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
@@ -2963,6 +2998,7 @@ export_feature()
 					"* :meth:`get_description`\n"
 					"* :meth:`set_valid_time`\n"
 					"* :meth:`get_valid_time`\n"
+					"* :meth:`is_valid_at_time`\n"
 					"* :meth:`set_reconstruction_plate_id`\n"
 					"* :meth:`get_reconstruction_plate_id`\n"
 					"* :meth:`set_conjugate_plate_id`\n"
@@ -4502,6 +4538,28 @@ export_feature()
 				"\n"
 				"    ship_track_name = feature.get_string(\n"
 				"        pygplates.PropertyName.create_gpml('shipTrackName'))\n")
+		.def("is_valid_at_time",
+				&GPlatesApi::feature_handle_is_valid_at_time,
+				(bp::arg("time")),
+				"is_valid_at_time(time)\n"
+				"  Determine if this feature is valid at the specified time.\n"
+				"\n"
+				"  :param time: the time\n"
+				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  A feature is valid at *time* if *time* lies within the time period returned by "
+				":meth:`get_valid_time` (includes coinciding with begin or end time of time period). "
+				"Otherwise the feature does not exist at the geological *time*.\n"
+				"\n"
+				"  .. note:: A feature that does not have a valid time (property) will be valid for *all* time "
+				"(since :meth:`get_valid_time` defaults to *all* time).\n"
+				"\n"
+				"  To test if a feature exists at present day (0Ma):\n"
+				"  ::\n"
+				"\n"
+				"    if feature.is_valid_at_time(0):\n"
+				"        ...\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),

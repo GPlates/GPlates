@@ -563,6 +563,23 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(gml_valid_time.get_value().get_end_time() == 0)
         self.assertTrue(self.feature.get_valid_time() == (100, 0))
     
+    def test_is_valid_at_time(self):
+        begin_time, end_time = self.feature.get_valid_time()
+        self.assertTrue(self.feature.is_valid_at_time(begin_time))
+        self.assertTrue(self.feature.is_valid_at_time(end_time))
+        self.assertTrue(self.feature.is_valid_at_time(10))
+        self.assertTrue(self.feature.is_valid_at_time(pygplates.GeoTimeInstant(10)))
+        self.assertFalse(self.feature.is_valid_at_time(60))
+        self.assertFalse(self.feature.is_valid_at_time(pygplates.GeoTimeInstant(60)))
+        self.feature.remove(pygplates.PropertyName.gml_valid_time)
+        # With property removed it should return default of all time.
+        self.assertTrue(self.feature.is_valid_at_time(60))
+        self.assertTrue(self.feature.is_valid_at_time(pygplates.GeoTimeInstant(60)))
+        self.assertTrue(self.feature.is_valid_at_time(pygplates.GeoTimeInstant.create_distant_past()))
+        self.assertTrue(self.feature.is_valid_at_time(pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(self.feature.is_valid_at_time(float('inf')))
+        self.assertTrue(self.feature.is_valid_at_time(float('-inf')))
+    
     def test_get_and_set_left_plate(self):
         self.assertTrue(self.feature.get_left_plate() == 11)
         self.feature.remove(pygplates.PropertyName.gpml_left_plate)

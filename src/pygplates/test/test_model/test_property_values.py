@@ -378,6 +378,14 @@ class GmlTimePeriodCase(unittest.TestCase):
         self.gml_time_period = pygplates.GmlTimePeriod(
                 self.begin_time_position, self.end_geo_time_instant)
 
+    def test_contains(self):
+        self.assertTrue(self.gml_time_period.contains(self.begin_time_position))
+        self.assertTrue(self.gml_time_period.contains(self.end_geo_time_instant))
+        self.assertTrue(self.gml_time_period.contains(10))
+        self.assertTrue(self.gml_time_period.contains(pygplates.GeoTimeInstant(10)))
+        self.assertFalse(self.gml_time_period.contains(30))
+        self.assertFalse(self.gml_time_period.contains(pygplates.GeoTimeInstant(30)))
+
     def test_get(self):
         self.assertTrue(self.gml_time_period.get_begin_time() == self.begin_time_position)
         self.assertTrue(self.gml_time_period.get_end_time() == self.end_geo_time_instant)

@@ -1330,6 +1330,14 @@ namespace GPlatesApi
 
 		gml_time_period.end()->set_time_position(end_time);
 	}
+
+	bool
+	gml_time_period_contains(
+			GPlatesPropertyValues::GmlTimePeriod &gml_time_period,
+			const GPlatesPropertyValues::GeoTimeInstant &time)
+	{
+		return gml_time_period.contains(time);
+	}
 }
 
 void
@@ -1403,6 +1411,18 @@ export_gml_time_period()
 				"  :param time_position: the end time position (time of disappearance)\n"
 				"  :type time_position: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+		.def("contains",
+				&GPlatesApi::gml_time_period_contains,
+				(bp::arg("time_position")),
+				"contains(time_position)\n"
+				"  Determine if a time lies within this time period.\n"
+				"\n"
+				"  :param time_position: the time position to test\n"
+				"  :type time_position: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  .. note:: *time_position* is considered to lie *within* a time period if it "
+				"coincides with the :meth:`begin<get_begin_time>` or :meth:`end<get_end_time>` time.\n")
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
