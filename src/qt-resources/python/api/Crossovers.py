@@ -98,6 +98,54 @@ class CrossoverTypeFunction(object):
         
         return CrossoverType.unknown
 
+    @staticmethod
+    def type_from_xo_tags_in_comment_default_xo_ys(
+            crossover_time,
+            moving_plate_id,
+            young_crossover_fixed_plate_id,
+            old_crossover_fixed_plate_id,
+            young_crossover_rotation_sequence,
+            old_crossover_rotation_sequence):
+        """Extracts the crossover type using the @xo_ys, @xo_yf, @xo_os and @xo_of tags in the
+        comment/description field of the 'young' crossover pole, and defaults to @xo_ys if not found."""
+        # Delegate to default crossover type function.
+        crossover_type = CrossoverTypeFunction.type_from_xo_tags_in_comment(
+                crossover_time,
+                moving_plate_id,
+                young_crossover_fixed_plate_id,
+                old_crossover_fixed_plate_id,
+                young_crossover_rotation_sequence,
+                old_crossover_rotation_sequence)
+        # Default to @xo_ys type if type is unknown.
+        if crossover_type == CrossoverType.unknown:
+            crossover_type = CrossoverType.synch_old_crossover_and_stages
+        
+        return crossover_type
+
+    @staticmethod
+    def type_from_xo_tags_in_comment_default_xo_ig(
+            crossover_time,
+            moving_plate_id,
+            young_crossover_fixed_plate_id,
+            old_crossover_fixed_plate_id,
+            young_crossover_rotation_sequence,
+            old_crossover_rotation_sequence):
+        """Extracts the crossover type using the @xo_ys, @xo_yf, @xo_os and @xo_of tags in the
+        comment/description field of the 'young' crossover pole, and defaults to @xo_ig if not found."""
+        # Delegate to default crossover type function.
+        crossover_type = CrossoverTypeFunction.type_from_xo_tags_in_comment(
+                crossover_time,
+                moving_plate_id,
+                young_crossover_fixed_plate_id,
+                old_crossover_fixed_plate_id,
+                young_crossover_rotation_sequence,
+                old_crossover_rotation_sequence)
+        # Default to @xo_ig type if type is unknown.
+        if crossover_type == CrossoverType.unknown:
+            crossover_type = CrossoverType.ignore
+        
+        return crossover_type
+
 
 # An enumeration (class with static integers) of crossover results (whether and how they were processed).
 class CrossoverResult(object):
@@ -225,48 +273,56 @@ def find_crossovers(
     
     *crossover_type_function* supports the following arguments:
     
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | Type                                               | Description                                                                      |
-    +====================================================+==================================================================================+
-    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
-    |                                                    |                                                                                  |
-    |                                                    | - crossover_time                                                                 |
-    |                                                    | - moving_plate_id                                                                |
-    |                                                    | - young_crossover_fixed_plate_id                                                 |
-    |                                                    | - old_crossover_fixed_plate_id                                                   |
-    |                                                    | - young_crossover_rotation_sequence                                              |
-    |                                                    | - old_crossover_rotation_sequence                                                |
-    |                                                    |                                                                                  |
-    |                                                    | ...and returning a *CrossoverType* enumerated value.                             |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that                      |
-    |                                                    | uses the comment/description field of the *young* crossover                      |
-    |                                                    | pole to determine the crossover type according to the                            |
-    |                                                    | presence of the following strings/tags:                                          |
-    |                                                    |                                                                                  |
-    |                                                    | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
-    |                                                    |                                                                                  |
-    |                                                    | ...and if none of those tags are present then the crossover                      |
-    |                                                    | type is *CrossoverType.unknown*.                                                 |
-    |                                                    |                                                                                  |
-    |                                                    | This is the default for *crossover_type_function*.                               |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.unknown*                            | All crossovers will be of type *CrossoverType.unknown*.                          |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.ignore*                             | All crossovers will be of type *CrossoverType.ignore*.                           |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_and_stages*     | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_only*           | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_and_stages*   | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_only*         | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                                             | Description                                                                      |
+    +==================================================================+==================================================================================+
+    | Arbitrary callable (function)                                    | A callable accepting the following arguments:                                    |
+    |                                                                  |                                                                                  |
+    |                                                                  | - crossover_time                                                                 |
+    |                                                                  | - moving_plate_id                                                                |
+    |                                                                  | - young_crossover_fixed_plate_id                                                 |
+    |                                                                  | - old_crossover_fixed_plate_id                                                   |
+    |                                                                  | - young_crossover_rotation_sequence                                              |
+    |                                                                  | - old_crossover_rotation_sequence                                                |
+    |                                                                  |                                                                                  |
+    |                                                                  | ...and returning a *CrossoverType* enumerated value.                             |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment               | A callable (with same arguments as arbitrary callable) that                      |
+    |                                                                  | uses the comment/description field of the *young* crossover                      |
+    |                                                                  | pole to determine the crossover type according to the                            |
+    |                                                                  | presence of the following strings/tags:                                          |
+    |                                                                  |                                                                                  |
+    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  |                                                                                  |
+    |                                                                  | ...and if none of those tags are present then the crossover                      |
+    |                                                                  | type is *CrossoverType.unknown*.                                                 |
+    |                                                                  |                                                                                  |
+    |                                                                  | This is the default for *crossover_type_function*.                               |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys | Same as *CrossoverTypeFunction.type_from_xo_tags_in_comment*                     |
+    |                                                                  | except defaults to *CrossoverType.synch_old_crossover_and_stages* if no tags     |
+    |                                                                  | are present in the comment/description field of the *young* crossover pole.      |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ig | Same as *CrossoverTypeFunction.type_from_xo_tags_in_comment*                     |
+    |                                                                  | except defaults to *CrossoverType.ignore* if no tags                             |
+    |                                                                  | are present in the comment/description field of the *young* crossover pole.      |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.unknown*                                          | All crossovers will be of type *CrossoverType.unknown*.                          |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.ignore*                                           | All crossovers will be of type *CrossoverType.ignore*.                           |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_and_stages*                   | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_only*                         | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_and_stages*                 | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_only*                       | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
     
     Find all crossovers in a rotation file where crossover types are determined by '\@xo_' tags
     in the young crossover description/comment:
@@ -559,52 +615,56 @@ def synchronise_crossovers(
     
     *crossover_type_function* supports the following arguments:
     
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | Type                                               | Description                                                                      |
-    +====================================================+==================================================================================+
-    | Arbitrary callable (function)                      | A callable accepting the following arguments:                                    |
-    |                                                    |                                                                                  |
-    |                                                    | - crossover_time                                                                 |
-    |                                                    | - moving_plate_id                                                                |
-    |                                                    | - young_crossover_fixed_plate_id                                                 |
-    |                                                    | - old_crossover_fixed_plate_id                                                   |
-    |                                                    | - young_crossover_rotation_sequence                                              |
-    |                                                    | - old_crossover_rotation_sequence                                                |
-    |                                                    |                                                                                  |
-    |                                                    | ...and returning a *CrossoverType* enumerated value.                             |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | CrossoverTypeFunction.type_from_xo_tags_in_comment | A callable (with same arguments as arbitrary callable) that                      |
-    |                                                    | uses the comment/description field of the *young* crossover                      |
-    |                                                    | pole to determine the crossover type according to the                            |
-    |                                                    | presence of the following strings/tags:                                          |
-    |                                                    |                                                                                  |
-    |                                                    | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                    | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
-    |                                                    |                                                                                  |
-    |                                                    | ...and if none of those tags are present then the crossover                      |
-    |                                                    | type is *CrossoverType.unknown*.                                                 |
-    |                                                    |                                                                                  |
-    |                                                    | This is the default for *crossover_type_function*.                               |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.unknown*                            | All crossovers will be of type *CrossoverType.unknown*.                          |
-    |                                                    | No crossovers will be synchronised.                                              |
-    |                                                    | Crossover results will be *CrossoverResult.error*.                               |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.ignore*                             | All crossovers will be of type *CrossoverType.ignore*.                           |
-    |                                                    | No crossovers will be synchronised.                                              |
-    |                                                    | Crossover results will be *CrossoverResult.ignored*.                             |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_and_stages*     | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_old_crossover_only*           | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_and_stages*   | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *CrossoverType.synch_young_crossover_only*         | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | Type                                                             | Description                                                                      |
+    +==================================================================+==================================================================================+
+    | Arbitrary callable (function)                                    | A callable accepting the following arguments:                                    |
+    |                                                                  |                                                                                  |
+    |                                                                  | - crossover_time                                                                 |
+    |                                                                  | - moving_plate_id                                                                |
+    |                                                                  | - young_crossover_fixed_plate_id                                                 |
+    |                                                                  | - old_crossover_fixed_plate_id                                                   |
+    |                                                                  | - young_crossover_rotation_sequence                                              |
+    |                                                                  | - old_crossover_rotation_sequence                                                |
+    |                                                                  |                                                                                  |
+    |                                                                  | ...and returning a *CrossoverType* enumerated value.                             |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment               | A callable (with same arguments as arbitrary callable) that                      |
+    |                                                                  | uses the comment/description field of the *young* crossover                      |
+    |                                                                  | pole to determine the crossover type according to the                            |
+    |                                                                  | presence of the following strings/tags:                                          |
+    |                                                                  |                                                                                  |
+    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  |                                                                                  |
+    |                                                                  | ...and if none of those tags are present then the crossover                      |
+    |                                                                  | type is *CrossoverType.unknown*.                                                 |
+    |                                                                  |                                                                                  |
+    |                                                                  | This is the default for *crossover_type_function*.                               |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys | Same as *CrossoverTypeFunction.type_from_xo_tags_in_comment*                     |
+    |                                                                  | except defaults to *CrossoverType.synch_old_crossover_and_stages* if no tags     |
+    |                                                                  | are present in the comment/description field of the *young* crossover pole.      |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ig | Same as *CrossoverTypeFunction.type_from_xo_tags_in_comment*                     |
+    |                                                                  | except defaults to *CrossoverType.ignore* if no tags                             |
+    |                                                                  | are present in the comment/description field of the *young* crossover pole.      |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.unknown*                                          | All crossovers will be of type *CrossoverType.unknown*.                          |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.ignore*                                           | All crossovers will be of type *CrossoverType.ignore*.                           |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_and_stages*                   | All crossovers will be of type *CrossoverType.synch_old_crossover_and_stages*.   |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_old_crossover_only*                         | All crossovers will be of type *CrossoverType.synch_old_crossover_only*.         |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_and_stages*                 | All crossovers will be of type *CrossoverType.synch_young_crossover_and_stages*. |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | *CrossoverType.synch_young_crossover_only*                       | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
+    +------------------------------------------------------------------+----------------------------------------------------------------------------------+
     
     *crossover_results* can optionally be used to obtain a list of the synchronisation results of all
     filtered crossovers (see *crossover_filter*). Each appended list element is a tuple of (Crossover, int)
