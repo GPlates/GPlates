@@ -150,6 +150,88 @@ Sample code
 Details
 """""""
 
+| We obtain the original rotation (at the reconstruction time) from the rotation feature using :meth:`pygplates.GpmlIrregularSampling.get_value`.
+| This will :meth:`interpolate<pygplates.FiniteRotation.interpolate>` between the two nearest rotation time samples in the rotation sequence
+  if the reconstruction time does not coincide with a rotation sample.
+
+::
+
+    rotation_property_value = rotation_sequence.get_value(reconstruction_time)
+    if not rotation_property_value:
+        continue
+    rotation = rotation_property_value.get_finite_rotation()
+
+Now that we have the original rotation from the rotation feature we need to calculate a rotation adjustment such that the new rotation
+will result in the *present day position* reconstructing to the *desired reconstructed position*.
+
+The reconstruction of the present day point position is given by the equation for the :ref:`pygplates_foundations_equivalent_total_rotation`
+which shows the equivalent total rotation of  moving plate :math:`P_{M}` (relative to anchored plate :math:`P_{A}`) at time :math:`t` (relative to present day) is:
+
+.. math::
+
+   \text{reconstructed_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
+
+Using the approach in :ref:`pygplates_foundations_composing_finite_rotations` we write the *desired reconstructed position*
+in terms of the *actual reconstructed position*:
+
+.. math::
+
+   \text{desired_reconstructed_position} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times \text{reconstructed_position} \\
+                         &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
+
+...where the rotation adjustment :math:`R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position})` represents the
+:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed_position}` to :math:`\text{desired_reconstructed_position}` which (in *pygplates*) is
+``pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)``.
+
+The composed rotation from *present day position* to *desired reconstructed position* represents the adjusted *equivalent* rotation:
+
+.. math::
+
+   \text{desired_reconstructed_position} &= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present_day_position} \\
+   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})
+
+| However we want to adjust a total rotation pole in a rotation feature. But a rotation feature represents a *relative* rotation between a moving and fixed plate pair.
+| So we need to rewrite the adjusted *equivalent* rotation (which is relative to the anchored plate) as an adjusted *relative* rotation (relative to the fixed plate
+  :math:`P_{F}` of the rotation feature/pole) using the result :math:`R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})`
+  from :ref:`pygplates_foundations_plate_circuit_paths`:
+
+.. math::
+
+   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \\
+   R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
+
+Pre-multiplying both sides by :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1}` gives:
+
+.. math::
+
+   R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &= R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
+
+...which represents the *adjusted* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}`
+in terms of the *original* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})`.
+
+This is written in pygplates as:
+::
+
+  fixed_plate_frame = rotation_model_before_adjustment.get_rotation(reconstruction_time, fixed_plate_id)
+  adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
+
+...where ``fixed_plate_frame`` represents :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})`.
+
+| Now that we have calculated the adjusted relative rotation we need to set it back in the rotation feature.
+| The process of getting the original rotation, adjusting it and setting the adjusted rotation is essentially the following:
+
+::
+
+    rotation = rotation_sequence.get_value(reconstruction_time).get_finite_rotation()
+    
+    adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
+    
+    rotation_sequence.set_value(
+        pygplates.GpmlFiniteRotation(adjusted_rotation),
+        reconstruction_time,
+        rotation_description)
+
+
 And finally the output should look something like:
 ::
 
