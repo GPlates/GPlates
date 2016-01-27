@@ -171,17 +171,24 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
-                        if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-                                #The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
-                                #The boost::optional<> has been used widely throughout gplates. So supress the error for now.
-                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-                        endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-                        if (CXX_MINOR_VERSION EQUAL "9")
-                                # gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
-                                # so suppress the warning.
-                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
-                        endif (CXX_MINOR_VERSION EQUAL "9")
+			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+				#The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
+				#The boost::optional<> has been used widely throughout gplates. So supress the error for now.
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+			endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+			if (CXX_MINOR_VERSION EQUAL "9")
+				# gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
+				# so suppress the warning.
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
+			endif (CXX_MINOR_VERSION EQUAL "9")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
+		if (CXX_MAJOR_VERSION EQUAL "5")
+			# gcc 5.x reports warnings on unused functions. We prefer to keep unused functions available,
+			# so suppress the warning.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
+			# boost::optional<> is used widely throughout GPlates. So supress the error for now.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+		endif (CXX_MAJOR_VERSION EQUAL "5")
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
@@ -225,6 +232,11 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 # is required to define it and it needs to be defined before any header inclusion to ensure it is defined
 # before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
+
+# Boost 1.58 introduced a breaking change in boost::variant that does compile-time with boost::get<U>(variant)
+# to see if U is one of the variant types. However it seems to generate compile errors for references and boost::optional.
+# So we'll default to using the old relaxed (run-time) method.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile

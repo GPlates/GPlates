@@ -143,7 +143,8 @@ GPlatesQtWidgets::MovePoleWidget::set_focus()
 	update_stage_pole_moving_fixed_plate_ids();
 
 	// Update the pole location according to the current stage pole of the focused feature (if focused).
-	if (keep_stage_pole_constrained_checkbox->isChecked())
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
 	{
 		set_stage_pole_location();
 	}
@@ -156,7 +157,8 @@ GPlatesQtWidgets::MovePoleWidget::handle_reconstruction()
 	update_stage_pole_moving_fixed_plate_ids();
 
 	// Update the pole location according to the current stage pole of the focused feature (if focused).
-	if (keep_stage_pole_constrained_checkbox->isChecked())
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
 	{
 		set_stage_pole_location();
 	}
@@ -184,6 +186,13 @@ GPlatesQtWidgets::MovePoleWidget::react_enable_pole_check_box_changed()
 
 	// Enable/disable ability to modify the pole.
 	pole_widget->setEnabled(d_pole);
+
+	// Update the pole location according to the current stage pole of the focused feature (if focused).
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
+	{
+		set_stage_pole_location();
+	}
 
 	Q_EMIT pole_changed(d_pole);
 }
@@ -435,17 +444,13 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 
 	// Get stage pole.
 	//
-    // NOTE: The fixed plate, in the stage pole calculation, is the moving plate because we need
-    // the stage pole to be relative to the moving plate since the adjustment rotation is in the
-    // moving plate reference frame (see below). Note that swapping the fixed and moving plate ids
-    // in the stage pole calculation does not produce inverse/reverse rotations - only
-    // swapping the from and to times will do that.
+	// The stage pole is from 't1' to 't2', where 't1' is 't+1' and 't2' is 't'.
 	const GPlatesMaths::FiniteRotation stage_pole =
 			GPlatesAppLogic::RotationUtils::get_stage_pole(
-					*reconstruction_tree_2,
-					*reconstruction_tree,
-					fixed_plate_id,
-					moving_plate_id);
+					*reconstruction_tree_2, // t1
+					*reconstruction_tree,   // t2
+					moving_plate_id,
+					fixed_plate_id);
 
 	// Get stage pole axis.
 	// We want to indicate an identity stage rotation (with none) so caller can indicate this to the user.
@@ -469,12 +474,21 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 	// is made within - this is "R(0->t,A->M)" which is just the total rotation of moving plate
 	// relative to anchor plate.
 	//
+	// We can write "R(0->t2,A->M)" in terms of the stage pole "R(t1->t2,F->M)" as:
+	//
+	// R(0->t2,A->M) = R(0->t2,A->F) * R(0->t2,F->M)
+	//               = R(0->t2,A->F) * R(t1->t2,F->M) * R(0->t1,F->M)
+	//               = R(0->t2,A->F) * stage_pole_rotation * R(0->t1,F->M)
+	//
+	// ...and so to get the stage pole into the reference frame of "R(0->t2,A->M)" we need to
+	// rotate it by "R(0->t2,A->F)" where 't1' is 't+1' and 't2' is 't' (ie, from 't1' to 't2').
+	//
 
-	const GPlatesMaths::FiniteRotation moving_plate_rotation =
-		reconstruction_tree->get_composed_absolute_rotation(moving_plate_id).first;
+	const GPlatesMaths::FiniteRotation fixed_plate_rotation =
+		reconstruction_tree->get_composed_absolute_rotation(fixed_plate_id).first;
 
 	// Return the stage pole axis rotated into the moving plate frame.
-	return GPlatesMaths::PointOnSphere(moving_plate_rotation * stage_pole_axis);
+	return GPlatesMaths::PointOnSphere(fixed_plate_rotation * stage_pole_axis);
 }
 
 

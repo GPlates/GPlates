@@ -119,7 +119,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_xml_attributes(
-				const xml_attributes_type &xml_attributes);
+				const xml_attributes_type &xml_attributes_);
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

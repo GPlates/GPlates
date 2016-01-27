@@ -35,10 +35,10 @@
 
 void
 GPlatesModel::TopLevelProperty::set_xml_attributes(
-		const xml_attributes_type &xml_attributes)
+		const xml_attributes_type &xml_attributes_)
 {
 	BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().xml_attributes = xml_attributes;
+	revision_handler.get_revision<Revision>().xml_attributes = xml_attributes_;
 	revision_handler.commit();
 }
 

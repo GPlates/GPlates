@@ -633,7 +633,7 @@ GPlatesModel::ModelUtils::add_property(
 					error_code);
 	if (!top_level_property)
 	{
-		return false;
+		return boost::none;
 	}
 
 	// Add the converted property value to the feature.

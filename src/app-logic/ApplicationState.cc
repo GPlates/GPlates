@@ -46,6 +46,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "model/NotificationGuard.h"
+
 #include "utils/Profile.h"
 
 namespace
@@ -94,6 +96,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
+	d_currently_reconstructing(false),
 	d_suppress_auto_layer_creation(false),
 	d_callback_feature_store(d_model->root())
 {
@@ -174,6 +177,45 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 		d_reconstruct_on_scope_exit = true;
 		return;
 	}
+
+	// Ensure that our model notification event does not cause 'reconstruct()' to be called again
+	// (re-entered) since this can create an infinite cycle.
+	class ScopedReentrantGuard
+	{
+	public:
+		explicit
+		ScopedReentrantGuard(
+				ApplicationState &application_state) :
+			d_application_state(application_state)
+		{
+			d_application_state.d_currently_reconstructing = true;
+		}
+
+		~ScopedReentrantGuard()
+		{
+			d_application_state.d_currently_reconstructing = false;
+		}
+
+	private:
+		ApplicationState &d_application_state;
+	};
+	ScopedReentrantGuard scoped_reentrant_guard(*this);
+
+	// We want to merge model events across this scope to avoid any interference during the
+	// reconstruction process. This currently can happen when visiting features with a *non-const*
+	// feature visitor which currently sets visited cloned properties on the feature if they differ
+	// from the original ones (and this can happen when a property's instance ID is updated even
+	// if the property is not actually modified). This model event in turn can cause the
+	// reconstruction tree layer to invalidate its reconstruction tree cache while its still being
+	// used thus resulting in a crash. This will no longer be a problem once the new model
+	// (for pygplates) is complete. In the meantime model notification guards and using the hacked
+	// feature visitor FeatureVisitorThatGuaranteesNotToModify (eg, on ReconstructionTreePopulator)
+	// are the best alternatives.
+	//
+	// Note: We also do this *after* the above scoped re-entrant guard so that any model events do
+	// not cause a recursive reconstruction.
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
+
 
 	// Get each layer to update itself in response to any changes that caused this
 	// 'reconstruct' method to get called.
