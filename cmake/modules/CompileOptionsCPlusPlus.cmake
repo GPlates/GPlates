@@ -233,6 +233,11 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 # before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
+# Boost 1.58 introduced a breaking change in boost::variant that does compile-time with boost::get<U>(variant)
+# to see if U is one of the variant types. However it seems to generate compile errors for references and boost::optional.
+# So we'll default to using the old relaxed (run-time) method.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
+
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile
 # build environment and activate 'CMAKE_CXX_FLAGS_PROFILEGPLATES' (note: 'CMAKE_CXX_FLAGS' will get used too).
