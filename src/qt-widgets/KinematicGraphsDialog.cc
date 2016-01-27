@@ -539,6 +539,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_animation()
 void
 GPlatesQtWidgets::KinematicGraphsDialog::handle_auto_y_clicked()
 {
+#if 0
 	d_plot->setAxisAutoScale(QwtPlot::yLeft, button_auto_y->isChecked());
 	button_compress_y->setEnabled(!button_auto_y->isChecked());
 	button_stretch_y->setEnabled(!button_auto_y->isChecked());
@@ -552,6 +553,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_auto_y_clicked()
 	unsigned int power = static_cast<unsigned int>(std::log(scale_factor)/std::log(VERTICAL_SCALE_MULTIPLIER));
 	d_vertical_scale_powers[d_graph_type] = power;
 	d_plot->replot();
+#endif
 }
 
 void
