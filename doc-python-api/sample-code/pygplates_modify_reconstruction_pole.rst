@@ -55,6 +55,7 @@ Sample code
     # A rotation model using the rotation features before they are modified.
     rotation_model_before_adjustment = pygplates.RotationModel(rotation_features.get_features())
 
+    # Reconstruct our point feature to obtain the reconstructed point location.
     reconstructed_feature_geometries = []
     pygplates.reconstruct(point_feature, rotation_model_before_adjustment, reconstructed_feature_geometries, reconstruction_time)
     reconstructed_position = reconstructed_feature_geometries[0].get_reconstructed_geometry()
@@ -150,6 +151,132 @@ Sample code
 Details
 """""""
 
+The filenames of one or more rotation files. We'll be writing modifications back out to these files.
+::
+
+    rotation_filenames = ['rotations.rot']
+
+| The rotation adjustment will get applied at 60Ma.
+| We wrap the reconstruction time in a :class:`pygplates.GeoTimeInstant` purely because its comparison
+  operators (==, !=, <, <=, >, >=) handle numerical tolerance in floating-point comparisons. This is
+  a good idea in general when comparing floating-point numbers even though in our case the sample code
+  would probably still work if we directly compared floating-point numbers (without a comparison threshold) -
+  in other words if we wrote this as ``reconstruction_time = 60`` instead.
+
+::
+
+    reconstruction_time = pygplates.GeoTimeInstant(60)
+
+| The desired reconstructed position is the location we want the present day point position to
+  reconstruct to at 60Ma.
+| We specify point locations by passing a latitude and longitude to :class:`pygplates.PointOnSphere`.
+
+::
+
+    present_day_latitude = -20
+    present_day_longitude = 135
+    present_day_position = pygplates.PointOnSphere(
+        present_day_latitude, present_day_longitude)
+
+    desired_reconstructed_latitude = -45
+    desired_reconstructed_longitude = 130
+    desired_reconstructed_position = pygplates.PointOnSphere(
+        desired_reconstructed_latitude, desired_reconstructed_longitude)
+
+| Before we can reconstruct the point location we need to create a :class:`pygplates.Feature`.
+| This contains the information (plate ID and present day position) needed to reconstruct the point to the reconstruction time.
+
+::
+
+    point_feature = pygplates.Feature()
+    point_feature.set_reconstruction_plate_id(reconstruction_plate_id)
+    point_feature.set_geometry(present_day_position)
+
+| We use the utility class :class:`pygplates.FeaturesFunctionArgument` to load our rotation file(s).
+| This makes it a little easier for us to write changes to the rotation features back out to the same files.
+| Alternatively we could have loaded each rotation file into its own :class:`pygplates.FeatureCollection` and then
+  later :meth:`saved<pygplates.FeatureCollection.write>` them back to their rotation file(s).
+
+::
+
+    rotation_features = pygplates.FeaturesFunctionArgument(rotation_filenames)
+
+| We use the unmodified rotation features to generate a :class:`rotation model<pygplates.RotationModel>`.
+| We'll use this model to reconstruct the point and to help us make an adjustment to the total reconstruction pole.
+
+::
+
+    rotation_model_before_adjustment = pygplates.RotationModel(rotation_features.get_features())
+
+| To find the *actual* reconstructed point location at 60Ma we :func:`reconstruct<pygplates.reconstruct>` our point feature.
+| Since our point feature is valid for all time (by default if we don't :meth:`set its valid time<pygplates.Feature.set_valid_time>`)
+  we should get one :class:`pygplates.ReconstructedFeatureGeometry` from which we obtain the
+  :meth:`reconstructed point position<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>`.
+
+::
+
+    reconstructed_feature_geometries = []
+    pygplates.reconstruct(point_feature, rotation_model_before_adjustment, reconstructed_feature_geometries, reconstruction_time)
+    reconstructed_position = reconstructed_feature_geometries[0].get_reconstructed_geometry()
+
+| If the *actual reconstructed position* differs from the *desired reconstructed position* then we need to adjust
+  the appropriate rotation feature(s) so that they match.
+| The rotation adjustment is the rotation from ``reconstructed_position`` to ``desired_reconstructed_position``.
+  The rotation is created using the :meth:`constructor<pygplates.FiniteRotation.__init__>` of :class:`pygplates.FiniteRotation`.
+
+::
+
+    if reconstructed_position != desired_reconstructed_position:
+        rotation_adjustment = pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)
+
+| Next we iterate over all the rotation features to find those whose moving plate ID matches the plate ID
+  of our point feature. This is because we only want to our rotation adjustment to affect the plate on
+  which our point lies (and all :ref:`child plates<pygplates_foundations_plate_reconstruction_hierarchy>`
+  at the reconstruction time).
+| We obtain the moving/fixed plate IDs and the time-varying total reconstruction poles from the rotation feature
+  using :meth:`pygplates.Feature.get_total_reconstruction_pole`.
+
+::
+
+    for rotation_feature in rotation_features.get_features():
+        total_reconstruction_pole = rotation_feature.get_total_reconstruction_pole()
+        if not total_reconstruction_pole:
+            continue
+        fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
+        if moving_plate_id != reconstruction_plate_id:
+            continue
+
+| A rotation sequence is a :class:`time sequence<pygplates.GpmlIrregularSampling>` of total rotations of
+  a moving plate relative to a fixed plate.
+| Not all rotation samples in the sequence are necessarily enabled. So we ignore the disabled samples by
+  calling :meth:`pygplates.GpmlIrregularSampling.get_enabled_time_samples`.
+| We use the enabled rotation samples to determine if the time range of the rotation sequence includes the reconstruction time.
+| Note that since ``reconstruction_time`` is a :class:`pygplates.GeoTimeInstant`, comparisons with it
+  will handle numerical tolerance (as mentioned above). This ensures that the test will pass if the
+  reconstruction time coincides with the time of the first or last rotation sample.
+
+::
+
+    enabled_rotation_samples = rotation_sequence.get_enabled_time_samples()
+    if not enabled_rotation_samples:
+        continue
+    if not (enabled_rotation_samples[0].get_time() <= reconstruction_time and
+            enabled_rotation_samples[-1].get_time() >= reconstruction_time):
+        continue
+
+| If one of the enabled rotation samples matches the reconstruction time then
+  get its description so we don't clobber it when we write the adjusted rotation.
+| Each rotation sample usually has a comment/description in the rotation file and this
+  enables us to retain them when writing back out to the rotation file.
+
+::
+
+    rotation_description = None
+    for rotation_sample in enabled_rotation_samples:
+        if rotation_sample.get_time() == reconstruction_time:
+            rotation_description = rotation_sample.get_description()
+            break
+
 | We obtain the original rotation (at the reconstruction time) from the rotation feature using :meth:`pygplates.GpmlIrregularSampling.get_value`.
 | This will :meth:`interpolate<pygplates.FiniteRotation.interpolate>` between the two nearest rotation time samples in the rotation sequence
   if the reconstruction time does not coincide with a rotation sample.
@@ -231,6 +358,50 @@ This is written in pygplates as:
         reconstruction_time,
         rotation_description)
 
+| Our rotation adjustment may require crossovers to be re-synchronised. This can happen when
+  a child plate (a plate that moves relative to the plate we made the adjustment on) crosses over
+  from another plate (or to another plate) at the reconstruction time of the rotation adjustment (60Ma).
+  The two crossover rotations will no longer match resulting in a jump in the reconstruction.
+| So we call :func:`pygplates.synchronise_crossovers` to synchronise all crossover rotations.
+| How each encountered crossover is synchronised needs to be specified. For example, do we synchronise
+  the younger or older rotation sequence (younger/older relative to the crossover time) ?  Here we
+  use the function ``pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys`` to
+  determine this for us. It will use ``@xo_`` tags in the rotation file (pole comments/descriptions)
+  to determine this and default to the ``@xo_ys`` tag if not present for a particular crossover.
+  See :func:`pygplates.synchronise_crossovers` for more details.
+| Note that this modifies the rotation features in-place.
+
+::
+
+    if not pygplates.synchronise_crossovers(
+            rotation_features.get_features(),
+            crossover_threshold_degrees = 0.01,
+            crossover_type_function = pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys):
+        print >> sys.stderr, 'Unable to synchronise all crossovers.'
+
+
+| Now we reconstruct the point feature again, but this time using the modified rotation features.
+| This time the reconstructed point location should match the desired reconstructed point location.
+
+::
+
+    rotation_model_after_adjustment = pygplates.RotationModel(rotation_features.get_features())
+    reconstructed_feature_geometries = []
+    pygplates.reconstruct(point_feature, rotation_model_after_adjustment, reconstructed_feature_geometries, reconstruction_time)
+    reconstructed_position = reconstructed_feature_geometries[0].get_reconstructed_geometry()
+    
+    print 'Reconstructed lat/lon position after adjustment (%f, %f)' % reconstructed_position.to_lat_lon()
+
+| The last step is to write the (modified) rotation features back to the files they came from.
+| This is made a little easier for us by using the ability of :class:`pygplates.FeaturesFunctionArgument`
+  to list those feature collections that came from files as well as their associated filenames.
+
+::
+
+    rotation_files = rotation_features.get_files()
+    if rotation_files:
+        for feature_collection, filename in rotation_files:
+            feature_collection.write(filename)
 
 And finally the output should look something like:
 ::
