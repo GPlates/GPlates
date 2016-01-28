@@ -45,6 +45,7 @@ Velocities
    :maxdepth: 2
 
    sample-code/pygplates_calculate_velocities_by_plate_id
+   sample-code/pygplates_calculate_velocities_in_dynamic_plates
 
 Spatial proximity
 -----------------
