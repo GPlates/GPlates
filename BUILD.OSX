@@ -6,13 +6,13 @@ Table of Contents
  2. Build process
      1. Development environment
      2. Package dependencies
-     3. Commands to build GPlates
-     4. The GPlates executable
-     5. Installing GPlates
+     3. Commands to build pygplates
+     4. The pygplates library
+     5. Installing pygplates
 
 Introduction
 
-This page details how to build GPlates from a source release.
+This page details how to build pygplates from a source release.
 
 Build process
 
@@ -31,9 +31,9 @@ Note that a MacOS X 10.5 install disc will not work on a computer with a 10.4 ve
 You can test the version of g++ by typing "g++ --version" at the terminal (you can open the terminal
 by running Applications->Utilities->Terminal in Finder).
 
-NOTE: Previously GPlates only required the default compiler g++ 4.0.1 on both MacOS X 10.4 and 10.5.
+NOTE: Previously pygplates only required the default compiler g++ 4.0.1 on both MacOS X 10.4 and 10.5.
 Now it requires g++ 4.2 or above (apparently there is a bug in g++ 4.0 that causes a new
-GPlates dependency library called CGAL to fail - http://www.cgal.org/FAQ.html#mac_optimization_bug).
+pygplates dependency library called CGAL to fail - http://www.cgal.org/FAQ.html#mac_optimization_bug).
 On MacOS X 10.4 (Tiger) there is only one compiler (g++ 4.0) so g++ 4.2 needs to be downloaded
 and installed - it can be obtained from http://r.research.att.com/tools/ (see gcc 4.2 under
 the section "Alternative and experimental tools") - this installs it as "/usr/bin/g++-4.2".
@@ -48,34 +48,34 @@ dependencies for compilation.
 See "DEPS.OSX" for more information on installing dependencies.
 NOTE: All dependencies (except CGAL) can be built with either g++/gcc 4.0 or 4.2
 
-Commands to build GPlates
+Commands to build pygplates
 
  1. Open a terminal window by running Applications->Utilities->Terminal in Finder.
  2. Change your working directory (if not already) into the base directory of
-    the GPlates source code.
- 3. Use g++/gcc 4.2 to build GPlates by typing (see above for installing g++ 4.2 on MacOS X 10.4):
+    the pygplates source code.
+ 3. Use g++/gcc 4.2 to build pygplates by typing (see above for installing g++ 4.2 on MacOS X 10.4):
 
 	cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.2 .
     make
 
-    * If you wish to install GPlates to a location other than the default
+    * If you wish to install pygplates to a location other than the default
       ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
-      For more information, see the Installing GPlates step below.
+      For more information, see the Installing pygplates step below.
 
-The GPlates executable
+The pygplates library
 
-The GPlates executable will be called "gplates", located in the "bin"
-directory. If you want to do more than test GPlates from this local directory,
+The pygplates library will be called "pygplates.so", located in the "bin"
+directory. If you want to do more than test pygplates from this local directory,
 you will need to install it on your system.
 
-Installing GPlates
+Installing pygplates
 
 The command
 
 	make install
 
-Will copy the "gplates" executable to the default location, "/usr/local".
-The GPlates executable will be installed as "/usr/local/bin/gplates".
+Will copy the "pygplates.so" library to the default location, "/usr/local".
+The pygplates library will be installed as "/usr/local/lib/pygplates/revision12/pygplates.so".
 Note that you will need to be root to install software to "/usr/local".
 On Ubuntu systems, this is accomplished by prefixing the command with
 "sudo", i.e. "sudo make install".
@@ -87,5 +87,5 @@ If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:
     make
 	make install
 
-This will install GPlates in your home directory as "~/usr/bin/gplates".
+This will install pygplates in your home directory as "~/usr/lib/pygplates/revision12/pygplates.so".
 

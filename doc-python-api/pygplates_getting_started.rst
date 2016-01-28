@@ -46,9 +46,7 @@ The following sections cover the installation of *pygplates* in the *external* c
 Installing pygplates
 ^^^^^^^^^^^^^^^^^^^^
 
-.. note:: *pygplates* is currently only available as *internal* releases (it has not yet been *publicly* released).
-
-| Each internal release comes in a single zip file.
+| Each release comes in a single zip file.
 | For the current *pygplates* revision @PYGPLATES_REVISION@ this is ``pygplates_rev@PYGPLATES_REVISION@.zip``.
 | It contains the following files:
 

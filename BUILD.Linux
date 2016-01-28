@@ -6,12 +6,12 @@ Table of Contents
  2. Build process
      1. Package dependencies
      2. Commands to execute
-     3. The GPlates executable
-     4. Installing GPlates
+     3. The pygplates library
+     4. Installing pygplates
 
 Introduction
 
-This page details how to build GPlates from a source release.
+This page details how to build pygplates from a source release.
 
 Build process
 
@@ -25,30 +25,30 @@ See "DEPS.Linux" for more information on installing dependencies.
 Commands to execute
 
  1. Change your working directory (if not already) into the base directory of
-    the GPlates source code.
+    the pygplates source code.
  2. Configure and compile the program:
 
 	cmake .
     make
 
-    * If you wish to install GPlates to a location other than the default
+    * If you wish to install pygplates to a location other than the default
       ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
       For more information, see the Installing GPlates step below.
 
-The GPlates executable
+The pygplates library
 
-The GPlates executable will be called "gplates", located in the "bin"
-directory. If you want to do more than test GPlates from this local directory,
+The pygplates library will be called "pygplates.so", located in the "bin"
+directory. If you want to do more than test pygplates from this local directory,
 you will need to install it on your system.
 
-Installing GPlates
+Installing pygplates
 
 The command
 
 	make install
 
-Will copy the "gplates" executable to the default location, "/usr/local".
-The GPlates executable will be installed as "/usr/local/bin/gplates".
+Will copy the "pygplates.so" library to the default location, "/usr/local".
+The pygplates library will be installed as "/usr/local/lib/pygplates/revision12/pygplates.so".
 Note that you will need to be root to install software to "/usr/local".
 On Ubuntu systems, this is accomplished by prefixing the command with
 "sudo", i.e. "sudo make install".
@@ -60,5 +60,5 @@ If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:
     make
 	make install
 
-This will install GPlates in your home directory as "~/usr/bin/gplates".
+This will install pygplates in your home directory as "~/usr/lib/pygplates/revision12/pygplates.so".
 

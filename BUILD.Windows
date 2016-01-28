@@ -9,12 +9,12 @@ Table of Contents
      3. Note before starting
      4. Program and library dependencies
  3. Creating Visual Studio solution and project files with CMake
-     1. Building GPlates via the IDE	
-     2. Building GPlates via the Command Line (MSVC2005+ only)
+     1. Building pygplates via the IDE	
+     2. Building pygplates via the Command Line (MSVC2005+ only)
 
 Introduction
 
-This will be a guide to building GPlates with various Windows development
+This will be a guide to building pygplates with various Windows development
 environments. 
 
 Using Microsoft Visual C++
@@ -25,12 +25,12 @@ MSDN product page for Visual C++.
 
 Version requirements
 
-GPlates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8).
-GPlates also builds under MSVC9 (2008). Older versions of the environment
+pygplates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8).
+pygplates also builds under MSVC9 (2008). Older versions of the environment
 are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
 which are not standard-conforming enough, and do not properly support many of the 
-C++ features that GPlates and its dependencies (especially Boost) use. 
-GPlates is also known to build under MSVC10 (2010), although newer versions of
+C++ features that pygplates and its dependencies (especially Boost) use. 
+pygplates is also known to build under MSVC10 (2010), although newer versions of
 the dependencies will be required; if in doubt, for each dependency, download
 the latest version instead of the version stated in DEPS.Windows.
 
@@ -38,7 +38,7 @@ Visual C++ Express Edition
 
 The Express edition of Visual C++ is freely available (although Microsoft's support
 for the 2005 edition is coming to an end and the 2008 edition may have issues
-with the boost library). The steps for building GPlates with the Express edition
+with the boost library). The steps for building pygplates with the Express edition
 are the same as those for the Standard or Professional editions, with one
 additional requirement. The Platform SDK must be downloaded and installed,
 and integrated with the version of Visual C++ Express installed. 
@@ -90,18 +90,18 @@ Creating Visual Studio solution and project files with CMake
   10. The CMake GUI closes or stays open and says 'Generating done'.
   11. You should now have a 'gplates.sln' file in your root GPlates directory.
 
-Building GPlates via the IDE
+Building pygplates via the IDE
 
   1. Open GPlates.sln with the VS IDE.
   2. Select 'release' build from the "Build->Configuration Manager..." menu.
   3. Rebuild All from the Build menu.
 
-Building GPlates via the Command Line (MSVC2005+ only)
+Building pygplates via the Command Line (MSVC2005+ only)
 
   1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the
      appropriate environment variables:
        * PATH: for Executable file paths 
   2. Run the Visual Studio 2005 Command Prompt. 
   3. Go to the root GPlates build directory. 
-  4. Type the following on the command-line to build a release version of GPlates:
+  4. Type the following on the command-line to build a release version of pygplates:
        vcbuild gplates.sln "Release|Win32"

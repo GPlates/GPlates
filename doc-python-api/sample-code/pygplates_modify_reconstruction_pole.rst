@@ -100,14 +100,14 @@ Sample code
             rotation_property_value = rotation_sequence.get_value(reconstruction_time)
             if not rotation_property_value:
                 continue
-            
             rotation = rotation_property_value.get_finite_rotation()
             
-            # Get the finite rotation of the fixed plate at the reconstruction time
-            # (relative to the anchored plate and present day).
+            # The rotation adjustment needs to be applied to the rotation feature (total reconstruction pole).
+            # Since this is a rotation relative to the fixed plate of the rotation feature, and not the anchored plate,
+            # we need to transform the adjustment appropriately before applying it.
             fixed_plate_frame = rotation_model_before_adjustment.get_rotation(reconstruction_time, fixed_plate_id)
-            
-            adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
+            fixed_plate_frame_rotation_adjustment = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame
+            adjusted_rotation = fixed_plate_frame_rotation_adjustment * rotation
             
             # If one of the enabled rotation samples matches the reconstruction time then
             # get its description so we don't clobber it when we write the adjusted rotation.
@@ -339,8 +339,8 @@ in terms of the *original* relative rotation :math:`R(0 \rightarrow t,P_{F} \rig
 This is written in pygplates as:
 ::
 
-  fixed_plate_frame = rotation_model_before_adjustment.get_rotation(reconstruction_time, fixed_plate_id)
-  adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
+    fixed_plate_frame = rotation_model_before_adjustment.get_rotation(reconstruction_time, fixed_plate_id)
+    adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
 
 ...where ``fixed_plate_frame`` represents :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})`.
 
