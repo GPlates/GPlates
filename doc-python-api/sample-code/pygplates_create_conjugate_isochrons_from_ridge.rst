@@ -53,7 +53,7 @@ Sample code
                 # Since they are conjugates they have swapped left and right plate IDs.
                 # And reverse reconstruct the mid-ocean ridge geometries to present day.
                 left_isochron_feature = pygplates.Feature.create_reconstructable_feature(
-                        pygplates.FeatureType.create_gpml('Isochron'),
+                        pygplates.FeatureType.gpml_isochron,
                         isochron_geometry_at_creation_time,
                         name = ridge_feature.get_name(None),
                         description = ridge_feature.get_description(None),
@@ -62,7 +62,7 @@ Sample code
                         conjugate_plate_id = right_plate_id,
                         reverse_reconstruct = (rotation_model, isochron_creation_time))
                 right_isochron_feature = pygplates.Feature.create_reconstructable_feature(
-                        pygplates.FeatureType.create_gpml('Isochron'),
+                        pygplates.FeatureType.gpml_isochron,
                         isochron_geometry_at_creation_time,
                         name = ridge_feature.get_name(None),
                         description = ridge_feature.get_description(None),
@@ -123,7 +123,7 @@ Isochron features are created using :meth:`pygplates.Feature.create_reconstructa
 ::
 
     left_isochron_feature = pygplates.Feature.create_reconstructable_feature(
-            pygplates.FeatureType.create_gpml('Isochron'),
+            pygplates.FeatureType.gpml_isochron,
             isochron_geometry_at_creation_time,
             name = ridge_feature.get_name(None),
             description = ridge_feature.get_description(None),
@@ -159,7 +159,7 @@ we can make sure they contain left/right plate IDs and a time of appearance/disa
     for ridge_feature in ridge_features:
     
         # Ignore anything that's not a mid-ocean ridge.
-        if ridge_feature.get_feature_type() != pygplates.FeatureType.create_gpml('MidOceanRidge'):
+        if ridge_feature.get_feature_type() != pygplates.FeatureType.gpml_mid_ocean_ridge:
             continue
         
         # Get the ridge left and right plate ids, and time of appearance.

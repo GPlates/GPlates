@@ -1313,10 +1313,10 @@ export_feature_collection()
 				"  ::\n"
 				"\n"
 				"    feature_collection.remove(feature_id)\n"
-				"    feature_collection.remove(pygplates.FeatureType.create_gpml('Volcano'))\n"
+				"    feature_collection.remove(pygplates.FeatureType.gpml_volcano)\n"
 				"    feature_collection.remove([\n"
-				"        pygplates.FeatureType.create_gpml('Volcano'),\n"
-				"        pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"        pygplates.FeatureType.gpml_volcano,\n"
+				"        pygplates.FeatureType.gpml_isochron])\n"
 				"    \n"
 				"    for feature in feature_collection:\n"
 				"        if predicate(feature):\n"
@@ -1326,20 +1326,20 @@ export_feature_collection()
 				"    \n"
 				"    # Mix different query types.\n"
 				"    # Remove a specific 'feature' instance and any features of type 'gpml:Isochron'...\n"
-				"    feature_collection.remove([feature, pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"    feature_collection.remove([feature, pygplates.FeatureType.gpml_isochron])\n"
 				"    \n"
 				"    # Remove features of type 'gpml:Isochron' with reconstruction plate IDs less than 700...\n"
 				"    feature_collection.remove(\n"
-				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron') and\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.gpml_isochron and\n"
 				"                         feature.get_reconstruction_plate_id() < 700)\n"
 				"    \n"
 				"    # Remove features of type 'gpml:Volcano' and 'gpml:Isochron'...\n"
 				"    feature_collection.remove([\n"
-				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano'),\n"
-				"        pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.gpml_volcano,\n"
+				"        pygplates.FeatureType.gpml_isochron])\n"
 				"    feature_collection.remove(\n"
-				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') or\n"
-				"                         feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'))\n")
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.gpml_volcano or\n"
+				"                         feature.get_feature_type() == pygplates.FeatureType.gpml_isochron)\n")
 		.def("get",
 				&GPlatesApi::feature_collection_handle_get_feature,
 				(bp::arg("feature_query"),
@@ -1372,7 +1372,7 @@ export_feature_collection()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    isochron_feature_type = pygplates.FeatureType.create_gpml('Isochron')\n"
+				"    isochron_feature_type = pygplates.FeatureType.gpml_isochron\n"
 				"    exactly_one_isochron = feature_collection.get(isochron_feature_type)\n"
 				"    first_isochron = feature_collection.get(isochron_feature_type, pygplates.FeatureReturn.first)\n"
 				"    all_isochrons = feature_collection.get(isochron_feature_type, pygplates.FeatureReturn.all)\n"
@@ -1382,7 +1382,7 @@ export_feature_collection()
 				"    # Using a predicate function that returns true if feature's type is 'gpml:Isochron' and \n"
 				"    # reconstruction plate ID is less than 700.\n"
 				"    recon_plate_id_less_700_isochrons = feature_collection.get(\n"
-				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron') and\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.gpml_isochron and\n"
 				"                        feature.get_reconstruction_plate_id() < 700,\n"
 				"        pygplates.FeatureReturn.all)\n")
 	;

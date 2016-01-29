@@ -44,8 +44,8 @@ Sample code
         for shared_boundary_section in shared_boundary_sections:
             
             # Skip sections that are not ridges or subduction zones.
-            if (shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.create_gpml('SubductionZone') and
-                shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.create_gpml('MidOceanRidge')):
+            if (shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.gpml_subduction_zone and
+                shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.gpml_mid_ocean_ridge):
                 continue
             
             # Iterate over the shared sub-segments to accumulate their lengths.
@@ -56,7 +56,7 @@ Sample code
                 shared_sub_segments_length += shared_sub_segment.get_resolved_geometry().get_arc_length()
             
             # The shared sub-segments contribute either to the ridges or to the subduction zones.
-            if shared_boundary_section.get_feature().get_feature_type() == pygplates.FeatureType.create_gpml('MidOceanRidge'):
+            if shared_boundary_section.get_feature().get_feature_type() == pygplates.FeatureType.gpml_mid_ocean_ridge:
                 total_ridge_length += shared_sub_segments_length
             else:
                 total_subduction_zone_length += shared_sub_segments_length
@@ -103,12 +103,12 @@ The topological features are loaded into a :class:`pygplates.FeatureCollection`.
   have sub-segments at the same shared boundary).
 
 The :meth:`feature type<pygplates.Feature.get_feature_type>` of each topological section is checked
-to see if it's a ridge or subduction zone using :meth:`pygplates.FeatureType.create_gpml` and
+to see if it's a ridge or subduction zone :class:`feature type<pygplates.FeatureType>` and
 ignored if it's neither.
 ::
 
-    if (shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.create_gpml('SubductionZone') and
-        shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.create_gpml('MidOceanRidge')):
+    if (shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.gpml_subduction_zone and
+        shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.gpml_mid_ocean_ridge):
         continue
 
 | Not all parts of a topological section feature's geometry contribute to the boundaries of topologies.
