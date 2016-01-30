@@ -10,6 +10,10 @@ This example resolves topological plate polygons (and deforming networks) and de
 
 ...over a series of geological times.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -135,7 +139,9 @@ Finally the results for the current 'time' are printed.
     print "At time %dMa, total ridge length is %f kms and total subduction zone length is %f kms." % (
             time, total_ridge_length_in_kms, total_subduction_zone_length_in_kms)
 
-...which should print something like:
+Output
+""""""
+
 ::
 
     At time 0Ma, total ridge length is 87002.773452 kms and total subduction zone length is 63502.688936 kms.

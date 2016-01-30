@@ -11,6 +11,10 @@ The output of this example is similar to the output of the ``Total Reconstructio
 
 .. seealso:: :ref:`pygplates_plate_circuits_to_anchored_plate`
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -166,7 +170,9 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
     for child_edge in edge.get_child_edges():
         traverse_sub_tree(child_edge, depth + 1)
 
-And finally the output should look something like:
+Output
+""""""
+
 ::
 
   Plate ID: 1, Fixed Plate ID: 0:

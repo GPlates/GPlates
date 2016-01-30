@@ -5,6 +5,10 @@ Find nearest reconstructed feature to a point
 
 This example iterates over a collection of reconstructed features and finds the feature that is nearest to a point.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 

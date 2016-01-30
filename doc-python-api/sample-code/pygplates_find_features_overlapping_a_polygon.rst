@@ -5,6 +5,10 @@ Find reconstructed features overlapping a polygon
 
 This example iterates over a collection of reconstructed features and finds those whose geometry overlaps a polygon.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 

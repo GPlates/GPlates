@@ -14,15 +14,15 @@ Import
 ------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   sample-code/pygplates_import_points_and_assign_plate_ids
+   sample-code/pygplates_import_geometries_and_assign_plate_ids
 
 Rotations
 ---------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    sample-code/pygplates_plate_rotation_hierarchy
    sample-code/pygplates_plate_circuits_to_anchored_plate
@@ -32,7 +32,7 @@ Topologies
 ----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies
    sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
@@ -42,7 +42,7 @@ Velocities
 ----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    sample-code/pygplates_calculate_velocities_by_plate_id
    sample-code/pygplates_calculate_velocities_in_dynamic_plates
@@ -51,7 +51,7 @@ Spatial proximity
 -----------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    sample-code/pygplates_find_nearest_feature_to_a_point
    sample-code/pygplates_find_features_overlapping_a_polygon
@@ -60,7 +60,7 @@ Isochrons
 ---------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    sample-code/pygplates_create_conjugate_isochrons_from_ridge
    sample-code/pygplates_split_isochron_into_ridges_and_transforms

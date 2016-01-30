@@ -10,6 +10,10 @@ This example resolves topological plate polygons (and deforming networks) and de
 
 ...over a series of geological times.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -140,7 +144,9 @@ Finally the results for the current 'time' are printed.
     print "At time %dMa, average topology area is %f square kms and average subduction length proportion is %f." % (
             time, average_area_in_sq_kms, average_subduction_length_proportion)
 
-...which should print something like:
+Output
+""""""
+
 ::
 
     At time 0Ma, average topology area is 18891256.145186 square kms and average subduction length proportion is 0.357645.

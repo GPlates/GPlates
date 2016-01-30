@@ -16,6 +16,10 @@ Gaps and overlaps are caused when:
 This can also happen if two topological line sections are *identical* when ideally there should
 only be one of them (and it should be shared by two neighbouring topological boundaries).
 
+.. contents::
+   :local:
+   :depth: 2
+
 
 Sample code
 """""""""""

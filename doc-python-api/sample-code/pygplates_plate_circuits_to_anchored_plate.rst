@@ -12,6 +12,10 @@ The output of this example is similar to the output of the ``Total Reconstructio
 
 .. seealso:: :ref:`pygplates_plate_rotation_hierarchy`
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -152,7 +156,9 @@ Print the relative and equivalent total rotations of the moving plate of the cur
 
     edge_in_circuit = edge_in_circuit.get_parent_edge()
 
-And finally the output should look something like:
+Output
+""""""
+
 ::
 
   Plate ID: 1:

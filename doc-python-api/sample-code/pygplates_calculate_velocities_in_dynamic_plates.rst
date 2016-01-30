@@ -3,7 +3,14 @@
 Calculate velocities in dynamic plates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example calculates velocities of topological plates at static point locations.
+This example shows three similar ways to calculate velocities of topological plates at static point locations.
+
+.. contents::
+   :local:
+   :depth: 2
+
+Calculate velocities by assigning plate IDs of dynamic plates to static points
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Sample code
 """""""""""
@@ -75,8 +82,14 @@ Sample code
                 all_domain_points.extend(partitioned_domain_points)
                 all_velocities.extend(partitioned_domain_velocities)
 
-| The following example groups velocities by partitioning plates.
+Calculate velocities by grouping static points into dynamic plates
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+| This example is similar to the above example except it groups velocities by partitioning plates.
 | It is also slightly faster than the above example, but only by one or two percent.
+
+Sample code
+"""""""""""
 
 ::
 
@@ -158,9 +171,15 @@ Sample code
             all_domain_points[partitioning_plate_id] = all_domain_points_in_partitioning_plate
             all_velocities[partitioning_plate_id] = all_velocities_in_partitioning_plate
 
-| The following example is **ten times slower** than the above examples.
+Calculate velocities by individually partitioning each static point into dynamic plates
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+| This example is **ten times slower** than the above two examples.
 | However it has the advantage of keeping the output velocities (and domain positions) in the same
   order as the input domain points (ie, the order of points in each domain multipoint).
+
+Sample code
+"""""""""""
 
 ::
 

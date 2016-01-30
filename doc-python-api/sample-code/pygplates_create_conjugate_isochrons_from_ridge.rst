@@ -5,6 +5,10 @@ Create conjugate isochrons from a ridge
 
 This example creates a conjugate pair of isochrons from a mid-ocean ridge at each specified geological time in a series.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -143,7 +147,6 @@ And finally the isochrons are saved to a new file using :meth:`pygplates.Feature
 ::
 
     isochron_feature_collection.write('isochrons.gpml')
-
 
 
 Advanced

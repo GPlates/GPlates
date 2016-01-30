@@ -13,6 +13,10 @@ This example:
 The functionality in this example is similar to the ``Modify Reconstruction Pole`` tool
 in `GPlates <http://www.gplates.org>`_.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
@@ -403,7 +407,9 @@ This is written in pygplates as:
         for feature_collection, filename in rotation_files:
             feature_collection.write(filename)
 
-And finally the output should look something like:
+Output
+""""""
+
 ::
 
     Reconstructed lat/lon position before adjustment (-45.962028, 131.398490)

@@ -6,6 +6,10 @@ Calculate velocities by plate ID
 This example calculates velocities at all points in geometries of a collection of features
 using the plate IDs of those features and a rotation model.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 

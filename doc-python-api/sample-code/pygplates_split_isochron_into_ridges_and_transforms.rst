@@ -15,6 +15,10 @@ alignment with the isochron's stage pole at its time of appearance.
             
              Note that you can tweak the *isochron_segment_deviation_in_radians* parameter. A 45 degree split may not always be appropriate.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Sample code
 """""""""""
 
