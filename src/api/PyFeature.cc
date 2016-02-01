@@ -3104,9 +3104,11 @@ export_feature()
 				"  :type moving_plate_id: int\n"
 				"  :param total_reconstruction_pole: the time-sequence of rotations\n"
 				"  :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`\n"
-				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
 				"  :type name: string, or sequence of string\n"
-				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
 				"  :type description: string\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
@@ -3172,18 +3174,22 @@ export_feature()
 				":func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
-				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
 				"  :type name: string, or sequence of string\n"
-				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
 				"  :type description: string\n"
-				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
 				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
-				"'gpml:reconstructionPlateId' property is not added\n"
+				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
 				"  :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no "
-				"'gpml:conjugatePlateId' properties are added - **note** that not all `reconstructable features "
+				"`pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added - "
+				"**note** that not all `reconstructable features "
 				"<http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_ have a conjugate "
 				"plate id (*conjugate_plate_id* is provided to support the "
 				"`Isochron feature type <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_)\n"
@@ -3320,24 +3326,30 @@ export_feature()
 				"reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
-				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
 				"  :type name: string, or sequence of string\n"
-				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
 				"  :type description: string\n"
-				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
 				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
-				"'gpml:reconstructionPlateId' property is not added\n"
+				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
 				"  :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no "
-				"'gpml:conjugatePlateId' properties are added\n"
+				"`pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added\n"
 				"  :type conjugate_plate_id: int, or sequence of int\n"
-				"  :param left_plate: the left plate id, if not specified then a 'gpml:leftPlate' property is not added\n"
+				"  :param left_plate: the left plate id, if not specified then a "
+				"`pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added\n"
 				"  :type left_plate: int\n"
-				"  :param right_plate: the right plate id, if not specified then a 'gpml:rightPlate' property is not added\n"
+				"  :param right_plate: the right plate id, if not specified then a "
+				"`pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added\n"
 				"  :type right_plate: int\n"
-				"  :param reconstruction_method: the reconstruction method, if not specified then a 'gpml:reconstructionMethod' "
+				"  :param reconstruction_method: the reconstruction method, if not specified then a "
+				"`pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ "
 				"property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) "
 				"- note that 'HalfStageRotationVersion2' is the latest and most accurate half-stage method and should "
 				"generally be used unless backward compatibility with old GPlates versions is required\n"
@@ -3453,16 +3465,21 @@ export_feature()
 				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
 				"  :param times: the list of times\n"
 				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
-				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
 				"  :type name: string, or sequence of string\n"
-				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
 				"  :type description: string\n"
-				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
 				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
-				"  :param left_plate: the left plate id, if not specified then a 'gpml:leftPlate' property is not added\n"
+				"  :param left_plate: the left plate id, if not specified then a "
+				"`pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added\n"
 				"  :type left_plate: int\n"
-				"  :param right_plate: the right plate id, if not specified then a 'gpml:rightPlate' property is not added\n"
+				"  :param right_plate: the right plate id, if not specified then a "
+				"`pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added\n"
 				"  :type right_plate: int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
@@ -3570,17 +3587,21 @@ export_feature()
 				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
 				"  :param times: the list of times\n"
 				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
-				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
 				"  :type name: string, or sequence of string\n"
-				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
 				"  :type description: string\n"
-				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
 				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
-				"  :param relative_plate: the relative plate id, if not specified then a 'gpml:relativePlate' property is not added\n"
+				"  :param relative_plate: the relative plate id, if not specified then a "
+				"`pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property is not added\n"
 				"  :type relative_plate: int\n"
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
-				"'gpml:reconstructionPlateId' property is not added\n"
+				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
@@ -3693,7 +3714,9 @@ export_feature()
 				"\n"
 				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
 				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
-				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n"
+				"\n"
+				"  .. seealso:: :meth:`remove`\n")
 		.def("add",
 				&GPlatesApi::feature_handle_add_properties,
 				(bp::arg("properties"),
@@ -3731,7 +3754,9 @@ export_feature()
 				"\n"
 				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
 				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
-				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n"
+				"\n"
+				"  .. seealso:: :meth:`remove`\n")
 		.def("remove",
 				&GPlatesApi::feature_handle_remove,
 				(bp::arg("property_query")),
@@ -3782,7 +3807,9 @@ export_feature()
 				"        pygplates.PropertyName.gpml_right_plate])\n"
 				"    feature.remove(\n"
 				"        lambda property: property.get_name() == pygplates.PropertyName.gpml_left_plate or\n"
-				"                         property.get_name() == pygplates.PropertyName.gpml_right_plate)\n")
+				"                         property.get_name() == pygplates.PropertyName.gpml_right_plate)\n"
+				"\n"
+				"  .. seealso:: :meth:`add`\n")
 		.def("set",
 				&GPlatesApi::feature_handle_set_property,
 				(bp::arg("property_name"),
@@ -3821,7 +3848,9 @@ export_feature()
 				"\n"
 				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
 				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
-				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n"
+				"\n"
+				"  .. seealso:: :meth:`get`\n")
 		.def("get",
 				&GPlatesApi::feature_handle_get_property,
 				(bp::arg("property_query"),
@@ -3861,14 +3890,19 @@ export_feature()
 				"    first_property = feature.get(property_name, pygplates.PropertyReturn.first)\n"
 				"    all_properties = feature.get(property_name, pygplates.PropertyReturn.all)\n"
 				"    \n"
-				"    # A predicate function that returns true if property is 'gpml:reconstructionPlateId' "
+				"    # A predicate function that returns true if property is "
+				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ "
 				"with value less than 700.\n"
 				"    def recon_plate_id_less_700(property):\n"
 				"      return property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id and \\\n"
 				"             property.get_value().get_plate_id() < 700\n"
 				"    \n"
 				"    recon_plate_id_less_700_property = feature.get(recon_plate_id_less_700)\n"
-				"    # assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n")
+				"    # assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n"
+				"\n"
+				"  .. seealso:: :meth:`get_value`\n"
+				"\n"
+				"  .. seealso:: :meth:`set`\n")
 		.def("get_value",
 				&GPlatesApi::feature_handle_get_property_value,
 				(bp::arg("property_query"),
@@ -3916,12 +3950,15 @@ export_feature()
 				"    first_property_value = feature.get_value(property_name, property_return=pygplates.PropertyReturn.first)\n"
 				"    all_property_values = feature.get_value(property_name, property_return=pygplates.PropertyReturn.all)\n"
 				"    \n"
-				"    # Using a predicate function that returns true if property is 'gpml:reconstructionPlateId' "
+				"    # Using a predicate function that returns true if property is "
+				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ "
 				"with value less than 700.\n"
 				"    recon_plate_id_less_700_property_value = feature.get_value(\n"
 				"        lambda property: property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id and\n"
 				"                         property.get_value().get_plate_id() < 700)\n"
-				"    # assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n")
+				"    # assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n"
+				"\n"
+				"  .. seealso:: :meth:`get`\n")
 		.def("set_geometry",
 				&GPlatesApi::feature_handle_set_geometry,
 				(bp::arg("geometry"),
@@ -3976,20 +4013,25 @@ export_feature()
 				"  This is a convenience method to make setting geometry easier.\n"
 				"\n"
 				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
-				"one property name (eg, 'gpml:centerLineOf' and 'gpml:unclassifiedGeometry'). "
+				"one property name (eg, `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ "
+				"and `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_). "
 				"But only one of them is the default (eg, the default property that geometry data is imported into). "
 				"If *property_name* is not specified then this method determines the default property name "
 				"from this feature's :class:`type<FeatureType>` and sets the geometry in one or more "
 				"properties of that :class:`PropertyName`.\n"
 				"\n"
 				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
-				"Some geometry properties, such as 'gpml:centerLineOf', support multiple properties per "
+				"Some geometry properties, such as "
+				"`pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_, support multiple properties per "
 				"feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
-				"properties, such as 'gpml:boundary', tend to support only one property per feature "
+				"properties, such as `pygplates.PropertyName.gpml_boundary <http://www.gplates.org/docs/gpgim/#gpml:boundary>`_, "
+				"tend to support only one property per feature "
 				"and only some :class:`geometry types<GeometryOnSphere>` (eg, only :class:`PolylineOnSphere` "
 				"and :class:`PolygonOnSphere`). However the :class:`geometry type<GeometryOnSphere>` is usually "
-				"apparent given the feature type. For example a 'gpml:Isochron' feature typically contains "
-				"a :class:`polyline<PolylineOnSphere>` whereas a 'gpml:HotSpot' feature contains a "
+				"apparent given the feature type. For example a "
+				"`pygplates.FeatureType.gpml_isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ feature typically contains "
+				"a :class:`polyline<PolylineOnSphere>` whereas a "
+				"`pygplates.FeatureType.gpml_hot_spot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`_ feature contains a "
 				":class:`point<PointOnSphere>`.\n"
 				"\n"
 				"  Set the default geometry:\n"
@@ -4065,7 +4107,9 @@ export_feature()
 				"number of points in each coverage geometry should be different otherwise "
 				"*AmbiguousGeometryCoverageError* will be raised. Due to this restriction it's better "
 				"to set only a single coverage (per geometry property name) - but that single coverage "
-				"can still have more than one list of scalars.\n")
+				"can still have more than one list of scalars.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n")
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -4089,20 +4133,24 @@ export_feature()
 				"  This is a convenience method to make geometry retrieval easier.\n"
 				"\n"
 				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
-				"one property name (eg, 'gpml:centerLineOf' and 'gpml:unclassifiedGeometry'). "
+				"one property name (eg, `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ "
+				"and `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_). "
 				"But only one of them is the default (eg, the default property that geometry data is imported into). "
 				"If *property_query* is not specified then this method determines the default property name "
 				"from this feature's :class:`type<FeatureType>` and retrieves the geometry from one or more "
 				"properties of that :class:`PropertyName`.\n"
 				"\n"
 				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
-				"Some geometry properties, such as 'gpml:centerLineOf', support multiple properties per "
-				"feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
-				"properties, such as 'gpml:boundary', tend to support only one property per feature "
+				"Some geometry properties, such as `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_, "
+				"support multiple properties per feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
+				"properties, such as `pygplates.PropertyName.gpml_boundary <http://www.gplates.org/docs/gpgim/#gpml:boundary>`_, "
+				"tend to support only one property per feature "
 				"and only some :class:`geometry types<GeometryOnSphere>` (eg, only :class:`PolylineOnSphere` "
 				"and :class:`PolygonOnSphere`). However the :class:`geometry type<GeometryOnSphere>` is usually "
-				"apparent given the feature type. For example a 'gpml:Isochron' feature typically contains "
-				"a :class:`polyline<PolylineOnSphere>` whereas a 'gpml:HotSpot' feature contains a "
+				"apparent given the feature type. For example a "
+				"`pygplates.FeatureType.gpml_isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ feature typically contains "
+				"a :class:`polyline<PolylineOnSphere>` whereas a "
+				"`pygplates.FeatureType.gpml_hot_spot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`_ feature contains a "
 				":class:`point<PointOnSphere>`.\n"
 				"\n"
 				"  The following table maps *property_return* values to return values:\n"
@@ -4179,7 +4227,11 @@ export_feature()
 				"           velocity_colat_scalars = coverage_scalars.get(\n"
 				"               pygplates.ScalarType.create_gpml('VelocityColat'))\n"
 				"           velocity_lon_scalars = coverage_scalars.get(\n"
-				"               pygplates.ScalarType.create_gpml('VelocityLon'))\n")
+				"               pygplates.ScalarType.create_gpml('VelocityLon'))\n"
+				"\n"
+				"  .. seealso:: :meth:`get_geometries` and :meth:`get_all_geometries`\n"
+				"\n"
+				"  .. seealso:: :meth:`set_geometry`\n")
 		.def("get_geometries",
 				&GPlatesApi::feature_handle_get_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -4205,7 +4257,11 @@ export_feature()
 				"    def get_geometries(feature, property_query, coverage_return):\n"
 				"        return feature.get_geometry(property_query, pygplates.PropertyReturn.all, coverage_return)\n"
 				"\n"
-				"  See :meth:`get_geometry` for more details.\n")
+				"  See :meth:`get_geometry` for more details.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_all_geometries`\n"
+				"\n"
+				"  .. seealso:: :meth:`set_geometry`\n")
 		.def("get_all_geometries",
 				&GPlatesApi::feature_handle_get_all_geometries,
 				(bp::arg("coverage_return") = GPlatesApi::CoverageReturn::GEOMETRY_ONLY),
@@ -4228,7 +4284,9 @@ export_feature()
 				"            lambda property: True,\n"
 				"            coverage_return)\n"
 				"\n"
-				"  See :meth:`get_geometries` for more details.\n")
+				"  See :meth:`get_geometries` for more details.\n"
+				"\n"
+				"  .. seealso:: :meth:`set_geometry`\n")
 		.def("set_enumeration",
 				&GPlatesApi::feature_handle_set_enumeration,
 				(bp::arg("property_name"),
@@ -4256,7 +4314,9 @@ export_feature()
 				"\n"
 				"    subduction_zone_feature.set_enumeration(\n"
 				"        pygplates.PropertyName.gpml_subduction_polarity,\n"
-				"        'Left')\n")
+				"        'Left')\n"
+				"\n"
+				"  .. seealso:: :meth:`get_enumeration`\n")
 		.def("get_enumeration",
 				&GPlatesApi::feature_handle_get_enumeration,
 				(bp::arg("property_name"),
@@ -4280,7 +4340,9 @@ export_feature()
 				"\n"
 				"    subduction_polarity = subduction_zone_feature.get_enumeration(\n"
 				"        pygplates.PropertyName.gpml_subduction_polarity,\n"
-				"        'Unknown')\n")
+				"        'Unknown')\n"
+				"\n"
+				"  .. seealso:: :meth:`set_enumeration`\n")
 		.def("set_boolean",
 				&GPlatesApi::feature_handle_set_boolean,
 				(bp::arg("property_name"),
@@ -4308,7 +4370,9 @@ export_feature()
 				"\n"
 				"    feature.set_boolean(\n"
 				"        pygplates.PropertyName.create_gpml('isActive'),\n"
-				"        True)\n")
+				"        True)\n"
+				"\n"
+				"  .. seealso:: :meth:`get_boolean`\n")
 		.def("get_boolean",
 				&GPlatesApi::feature_handle_get_boolean,
 				(bp::arg("property_name"),
@@ -4346,7 +4410,9 @@ export_feature()
 				"  ::\n"
 				"\n"
 				"    is_active = feature.get_boolean(\n"
-				"        pygplates.PropertyName.create_gpml('isActive'))\n")
+				"        pygplates.PropertyName.create_gpml('isActive'))\n"
+				"\n"
+				"  .. seealso:: :meth:`set_boolean`\n")
 		.def("set_double",
 				&GPlatesApi::feature_handle_set_double,
 				(bp::arg("property_name"),
@@ -4374,7 +4440,9 @@ export_feature()
 				"\n"
 				"    feature.set_double(\n"
 				"        pygplates.PropertyName.create_gpml('subductionZoneDepth'),\n"
-				"        85.5)\n")
+				"        85.5)\n"
+				"\n"
+				"  .. seealso:: :meth:`get_double`\n")
 		.def("get_double",
 				&GPlatesApi::feature_handle_get_double,
 				(bp::arg("property_name"),
@@ -4412,7 +4480,9 @@ export_feature()
 				"  ::\n"
 				"\n"
 				"    subduction_zone_depth = feature.get_double(\n"
-				"        pygplates.PropertyName.create_gpml('subductionZoneDepth'))\n")
+				"        pygplates.PropertyName.create_gpml('subductionZoneDepth'))\n"
+				"\n"
+				"  .. seealso:: :meth:`set_double`\n")
 		.def("set_integer",
 				&GPlatesApi::feature_handle_set_integer,
 				(bp::arg("property_name"),
@@ -4440,7 +4510,9 @@ export_feature()
 				"\n"
 				"    feature.set_integer(\n"
 				"        pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),\n"
-				"        1)\n")
+				"        1)\n"
+				"\n"
+				"  .. seealso:: :meth:`get_integer`\n")
 		.def("get_integer",
 				&GPlatesApi::feature_handle_get_integer,
 				(bp::arg("property_name"),
@@ -4478,7 +4550,9 @@ export_feature()
 				"  ::\n"
 				"\n"
 				"    subduction_zone_system_order = feature.get_integer(\n"
-				"        pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))\n")
+				"        pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))\n"
+				"\n"
+				"  .. seealso:: :meth:`set_integer`\n")
 		.def("set_string",
 				&GPlatesApi::feature_handle_set_string,
 				(bp::arg("property_name"),
@@ -4506,7 +4580,9 @@ export_feature()
 				"\n"
 				"    feature.set_string(\n"
 				"        pygplates.PropertyName.create_gpml('shipTrackName'),\n"
-				"        '...')\n")
+				"        '...')\n"
+				"\n"
+				"  .. seealso:: :meth:`get_string`\n")
 		.def("get_string",
 				&GPlatesApi::feature_handle_get_string,
 				(bp::arg("property_name"),
@@ -4545,7 +4621,9 @@ export_feature()
 				"  ::\n"
 				"\n"
 				"    ship_track_name = feature.get_string(\n"
-				"        pygplates.PropertyName.create_gpml('shipTrackName'))\n")
+				"        pygplates.PropertyName.create_gpml('shipTrackName'))\n"
+				"\n"
+				"  .. seealso:: :meth:`set_string`\n")
 		.def("is_valid_at_time",
 				&GPlatesApi::feature_handle_is_valid_at_time,
 				(bp::arg("time")),
@@ -4567,7 +4645,9 @@ export_feature()
 				"  ::\n"
 				"\n"
 				"    if feature.is_valid_at_time(0):\n"
-				"        ...\n")
+				"        ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_valid_time` and :meth:`set_valid_time`\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
