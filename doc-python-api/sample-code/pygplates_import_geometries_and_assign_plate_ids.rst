@@ -4,6 +4,16 @@ Import geometries and assign plate IDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example shows how to import points or polylines from a text file and assign plate IDs to them.
+The resulting feature data is then saved to a file format that *pygplates* can load directly.
+
+.. note:: Importing features is different than :ref:`loading<pygplates_load_and_save_feature_collections>` features.
+   When feature data is not in a file format that *pygplates* can load then it needs to be imported into a
+   GPlates-compatible file format. This usually involves more than just importing the geometry data.
+   For example, plate IDs need to be assigned so that *pygplates* can reconstruct the feature data
+   to geological times. And other feature metadata such as :meth:`name<pygplates.Feature.set_name>` and
+   :meth:`description<pygplates.Feature.set_description>` should also be assigned.
+
+.. seealso:: :ref:`pygplates_load_and_save_feature_collections`
 
 | The first two examples import *points*.
 | The second two examples import *polylines*.
@@ -275,7 +285,6 @@ Details
   are used (as longitude and latitude) - note that if you were to load your ``'.gmt'`` file into GPlates
   the extra data would cause it to give a warning about flattening 2.5D to 2D.
 | Note that, as with the previous example, the data should be in GMT (longitude/latitude) order.
-| Also note that the ``>`` symbol is used (by GMT) to group points into polylines so your ``'.gmt'``.
 
 ::
 

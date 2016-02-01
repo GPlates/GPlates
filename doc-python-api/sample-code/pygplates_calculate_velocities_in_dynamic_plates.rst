@@ -30,7 +30,7 @@ Sample code
     # These can be generated in GPlates via the menu 'Features > Generate Velocity Domain Points'.
     velocity_domain_features = pygplates.FeatureCollection('lat_lon_velocity_domain_90_180.gpml')
 
-    # Calculate velocities using a delta time interval of 1Ma.
+    # Calculate velocities using a delta time interval of 1My.
     delta_time = 1
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
@@ -106,7 +106,7 @@ Sample code
     # These can be generated in GPlates via the menu 'Features > Generate Velocity Domain Points'.
     velocity_domain_features = pygplates.FeatureCollection('lat_lon_velocity_domain_90_180.gpml')
 
-    # Calculate velocities using a delta time interval of 1Ma.
+    # Calculate velocities using a delta time interval of 1My.
     delta_time = 1
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
@@ -196,7 +196,7 @@ Sample code
     # These can be generated in GPlates via the menu 'Features > Generate Velocity Domain Points'.
     velocity_domain_features = pygplates.FeatureCollection('lat_lon_velocity_domain_90_180.gpml')
 
-    # Calculate velocities using a delta time interval of 1Ma.
+    # Calculate velocities using a delta time interval of 1My.
     delta_time = 1
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.

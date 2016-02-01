@@ -213,6 +213,8 @@ def plate_partitioner_partition_features(
     |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
     
+    .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
+    
     To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
     ::
 
@@ -636,6 +638,8 @@ def partition_into_plates(
     |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
     |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
     +----------------------------------------------------+----------------------------------------------------------------------------------+
+    
+    .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
     
     To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:
     ::

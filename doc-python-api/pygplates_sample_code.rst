@@ -18,6 +18,14 @@ Import
 
    sample-code/pygplates_import_geometries_and_assign_plate_ids
 
+Load/Save
+---------
+
+.. toctree::
+   :maxdepth: 3
+
+   sample-code/pygplates_load_and_save_feature_collections
+
 Rotations
 ---------
 
