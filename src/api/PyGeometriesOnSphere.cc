@@ -1486,14 +1486,6 @@ namespace GPlatesApi
 		typename PolyGeometryOnSphereType::non_null_ptr_to_const_type d_poly_geometry_on_sphere;
 	};
 
-	template <class PolyGeometryOnSphereType>
-	PolyGeometryOnSpherePointsView<PolyGeometryOnSphereType>
-	poly_geometry_on_sphere_get_points_view(
-			typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere)
-	{
-		return PolyGeometryOnSpherePointsView<PolyGeometryOnSphereType>(poly_geometry_on_sphere);
-	}
-
 
 	/**
 	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere/PolygonOnSphere.
@@ -2280,11 +2272,6 @@ export_polyline_on_sphere()
 				"        # and don't exceed the maximum distance threshold)\n"
 				"        ...\n")
 		.staticmethod("rotation_interpolate")
-		// To be deprecated in favour of 'get_points()'...
-		.def("get_points_view",
-				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
-				"get_points_view()\n"
-				"  To be **deprecated** - use :meth:`get_points` instead.\n")
 		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolylineOnSphere>,
 				"get_segments()\n"
@@ -2328,11 +2315,6 @@ export_polyline_on_sphere()
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
 				"using something like ``segments = list(polyline.get_segments())`` **but** note that modifying "
 				"the ``list`` (eg, appending a new segment) will **not** modify the original polyline.\n")
-		// To be deprecated in favour of 'get_segments()'...
-		.def("get_great_circle_arcs_view",
-				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolylineOnSphere>,
-				"get_great_circle_arcs_view()\n"
-				"  To be **deprecated** - use :meth:`get_segments` instead.\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolylineOnSphere::get_arc_length,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2820,11 +2802,6 @@ export_polygon_on_sphere()
 				"        polygon = pygplates.PolygonOnSphere(geometry, allow_one_or_two_points=False)\n"
 				"    except pygplates.InvalidPointsForPolygonConstructionError:\n"
 				"        ... # Handle failure to convert 'geometry' to a PolygonOnSphere.\n")
-		// To be deprecated in favour of 'get_points()'...
-		.def("get_points_view",
-				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolygonOnSphere>,
-				"get_points_view()\n"
-				"  To be **deprecated** - use :meth:`get_points` instead.\n")
 		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolygonOnSphere>,
 				"get_segments()\n"
@@ -2870,11 +2847,6 @@ export_polygon_on_sphere()
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
 				"using something like ``segments = list(polygon.get_segments())`` **but** note that modifying "
 				"the ``list`` (eg, appending a new segment) will **not** modify the original polygon.\n")
-		// To be deprecated in favour of 'get_segments()'...
-		.def("get_great_circle_arcs_view",
-				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolygonOnSphere>,
-				"get_great_circle_arcs_view()\n"
-				"  To be **deprecated** - use :meth:`get_segments` instead.\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolygonOnSphere::get_arc_length,
 				bp::return_value_policy<bp::copy_const_reference>(),

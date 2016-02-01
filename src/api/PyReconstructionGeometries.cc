@@ -1744,11 +1744,10 @@ export_resolved_topological_sub_segment()
 				"which is a topology and topologies are resolved (not reconstructed).\n"
 				"\n"
 				"  .. seealso:: :meth:`get_topological_section_feature`\n")
-		// To be deprecated in favour of 'get_topological_section_feature()'...
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_topological_section_feature,
 				"get_feature()\n"
-				"  To be **deprecated** - use :meth:`get_topological_section_feature` instead.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n")
 		.def("get_resolved_geometry",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry,
 				"get_resolved_geometry()\n"
@@ -1760,11 +1759,10 @@ export_resolved_topological_sub_segment()
 				"geometry of :meth:`get_topological_section_geometry`.\n"
 				"\n"
 				"  .. seealso:: :meth:`was_geometry_reversed_in_topology`\n")
-		// To be deprecated in favour of 'get_resolved_geometry()'...
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"
-				"  To be **deprecated** - use :meth:`get_resolved_geometry` instead.\n")
+				"  Same as :meth:`get_resolved_geometry`.\n")
 		.def("get_topological_section",
 				&GPlatesApi::ResolvedTopologicalGeometrySubSegmentWrapper::get_reconstruction_geometry,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2068,11 +2066,10 @@ export_resolved_topological_shared_sub_segment()
 				"\n"
 				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
 				"geometry of :meth:`get_topological_section_geometry`.\n")
-		// To be deprecated in favour of 'get_resolved_geometry()'...
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"
-				"  To be **deprecated** - use :meth:`get_resolved_geometry` instead.\n")
+				"  Same as :meth:`get_resolved_geometry`.\n")
 		.def("get_topological_section",
 				&GPlatesApi::ResolvedTopologicalSharedSubSegmentWrapper::get_reconstruction_geometry,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2113,11 +2110,10 @@ export_resolved_topological_shared_sub_segment()
 				"part that contributes to the shared sub-segment.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_resolved_feature`\n")
-		// To be deprecated in favour of 'get_topological_section_feature()'...
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_topological_section_feature,
 				"get_feature()\n"
-				"  To be **deprecated** - use :meth:`get_topological_section_feature` instead.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n")
 		.def("get_sharing_resolved_topologies",
 				&GPlatesApi::ResolvedTopologicalSharedSubSegmentWrapper::get_sharing_resolved_topologies,
 				"get_sharing_resolved_topologies()\n"
@@ -2308,11 +2304,10 @@ export_resolved_topological_section()
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** geometry of the "
 				"topological section, not just the parts that contribute to resolved topological boundaries.\n")
-		// To be deprecated in favour of 'get_topological_section_feature()'...
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_section_get_topological_section_feature,
 				"get_feature()\n"
-				"  To be **deprecated** - use :meth:`get_topological_section_feature` instead.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n")
 		.def("get_topological_section",
 				&GPlatesApi::ResolvedTopologicalSectionWrapper::get_reconstruction_geometry,
 				bp::return_value_policy<bp::copy_const_reference>(),

@@ -803,34 +803,6 @@ export_finite_rotation()
 		.def(bp::self_ns::str(bp::self))
 	;
 
-	// Non-member equivalent rotations function...
-	//
-	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
-	// There's no docstring because we are only documenting the static class method version.
-	bp::def("represent_equivalent_rotations",
-			&GPlatesApi::finite_rotation_represent_equivalent_rotations,
-			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")));
-
-	// Non-member conversion function...
-	//
-	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
-	// There's no docstring because we are only documenting the static class method version.
-	bp::def("compose_finite_rotations",
-			compose,
-			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")));
-
-	// Non-member interpolation function...
-	//
-	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
-	// There's no docstring because we are only documenting the static class method version.
-	bp::def("interpolate_finite_rotations",
-			&GPlatesApi::finite_rotation_interpolate,
-			(bp::arg("finite_rotation1"),
-				bp::arg("finite_rotation2"),
-				bp::arg("time1"),
-				bp::arg("time2"),
-				bp::arg("target_time")));
-
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::FiniteRotation>();
 }

@@ -1133,29 +1133,6 @@ export_reconstruction_tree()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Non-member equivalent stage rotation function...
-	//
-	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
-	// There's no docstring because we are only documenting the static class method version.
-	bp::def("get_equivalent_stage_rotation",
-			&GPlatesApi::get_equivalent_stage_rotation,
-			(bp::arg("from_reconstruction_tree"),
-				bp::arg("to_reconstruction_tree"),
-				bp::arg("plate_id"),
-				bp::arg("use_identity_for_missing_plate_ids")=true));
-
-	// Non-member relative stage rotation function...
-	//
-	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
-	// There's no docstring because we are only documenting the static class method version.
-	bp::def("get_relative_stage_rotation",
-			&GPlatesApi::get_relative_stage_rotation,
-			(bp::arg("from_reconstruction_tree"),
-				bp::arg("to_reconstruction_tree"),
-				bp::arg("moving_plate_id"),
-				bp::arg("fixed_plate_id"),
-				bp::arg("use_identity_for_missing_plate_ids")=true));
-
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::ReconstructionTree>();
 
