@@ -46,24 +46,25 @@ The following sections cover the installation of *pygplates* in the *external* c
 Installing pygplates
 ^^^^^^^^^^^^^^^^^^^^
 
-| Each release comes in a single zip file.
-| For the current *pygplates* revision @PYGPLATES_REVISION@ this is ``pygplates_rev@PYGPLATES_REVISION@.zip``.
-| It contains the following files:
-
+Each release includes the following files:
 ::
 
   pygplates_rev@PYGPLATES_REVISION@_docs.zip
   pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip
   pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip
   pygplates_rev@PYGPLATES_REVISION@_src.zip
-  README.txt
+
+.. note:: If this is an internal (non-public) release then the above files come in a single zip file
+  (``pygplates_rev@PYGPLATES_REVISION@.zip``).
+
+.. note:: For public releases there are also Ubuntu packages (``.deb`` files).
 
 | The *pygplates* documentation is in ``pygplates_rev@PYGPLATES_REVISION@_docs.zip``.
 | If you extract this zip file to your hard drive and then open ``pygplates_rev@PYGPLATES_REVISION@_docs/index.html``
   in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
 The remaining zip files contain a pre-built *pygplates* library for MacOS X and Windows, and source
-code for Linux:
+code for Linux (and Ubuntu packages for public *pygplates* releases):
   
 * ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip`` - *pygplates* for MacOS X (compiled for 64-bit Python 2.7).
 
@@ -113,6 +114,21 @@ code for Linux:
      that has not yet made its way into the development mainline (hence you won't find it in regular
      GPlates source code releases yet).
   
+* ``pygplates-ubuntu_...`` - *pygplates* Ubuntu ``.deb`` packages (compiled for Python 2.7).
+
+  To install *pygplates* on Ubuntu, double-click on the ``.deb`` file appropriate for your system.
+  
+  If you do not know which version of Ubuntu is installed, open a terminal and enter the following:
+  ::
+  
+    cat /etc/lsb-release
+  
+  ...and note the codename displayed.
+  
+  *pygplates* will then be installed to ``/usr/lib/pygplates/revision@PYGPLATES_REVISION@/``.
+  
+  .. note:: Ubuntu ``.deb`` packages are not available for internal (non-public) releases.
+  
 In the next section we will tell Python how to find our pre-built (or compiled) *pygplates* installation.
 
 .. _pygplates_getting_started_installation_telling_python_how_to_find_pygplates:
@@ -159,6 +175,15 @@ Setting the *PYTHONPATH* environment variable:
   
   .. note:: The extra ``/bin`` suffix is because ``pygplates.so`` is in the local ``bin`` directory
      (once it has been compiled from source code).
+
+* *Ubuntu* ``.deb`` package:
+
+  Type the following in a *Terminal* window (or you can add it to your shell startup file):
+  ::
+  
+    export PYTHONPATH=$PYTHONPATH:/usr/lib/pygplates/revision@PYGPLATES_REVISION@
+  
+  .. note:: Ubuntu ``.deb`` packages are not available for internal (non-public) releases.
 
 * *Windows*:
 
