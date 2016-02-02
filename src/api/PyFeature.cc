@@ -563,6 +563,17 @@ namespace GPlatesApi
 						reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(
 								reverse_reconstruct_object);
 
+				// Before we can reverse reconstruct the geometry, the feature we use for this
+				// must have a geometry otherwise the reconstruct method will default to by-plate-id.
+				// It may already have a geometry but it doesn't matter if we overwrite it now
+				// because we going to overwrite it later anyway with the reverse-reconstructed geometry.
+				feature_handle_set_property(
+						feature_handle,
+						geometry_property_name,
+						// Wrap the geometry in a property value...
+						bp::object(GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry)),
+						verify_information_model);
+
 				GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 				geometry = reverse_reconstruct_geometry(
 						geometry,
@@ -688,6 +699,20 @@ namespace GPlatesApi
 				// If we need to reverse reconstruct the geometry.
 				if (reverse_reconstruct_parameters)
 				{
+					if (bp::len(geometry_property_values) == 0)
+					{
+						// Before we can reverse reconstruct the geometry, the feature we use for this
+						// must have a geometry otherwise the reconstruct method will default to by-plate-id.
+						// It may already have a geometry but it doesn't matter if we overwrite it now
+						// because we going to overwrite it later anyway with the reverse-reconstructed geometry(s).
+						feature_handle_set_property(
+								feature_handle,
+								geometry_property_name,
+								// Wrap the geometry in a property value...
+								bp::object(GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry)),
+								verify_information_model);
+					}
+
 					geometry = reverse_reconstruct_geometry(
 							geometry,
 							feature_handle,
