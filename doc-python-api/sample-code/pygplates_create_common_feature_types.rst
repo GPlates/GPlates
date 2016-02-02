@@ -15,17 +15,11 @@ Create common feature types
    :local:
    :depth: 2
 
-* flowline
-* motion path
-* hot spot
-* isochron
-* mid-ocean ridge
-* subduction zone
-* total reconstruction sequence
-* virtual geomagnetic pole
 
-Create a coastline feature from present-day geometry
-++++++++++++++++++++++++++++++++++++++++++++++++++++
+.. _pygplates_create_coastline_feature:
+
+Create a *coastline* feature from present-day geometry
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 In this example we create a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ from
 *present day* geometry and save it to a file.
@@ -210,8 +204,10 @@ feature and then set its properties one by one.
     eastern_panama_coastline_feature.set_reconstruction_plate_id(201)
 
 
-Create an isochron feature from geometry at a past geological time
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+.. _pygplates_create_isochron_feature:
+
+Create an *isochron* feature from geometry at a past geological time
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 In this example we create an `isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ from
 geometry that represents its location at a past geological time (not present day).
@@ -233,14 +229,14 @@ Sample code
     isochron_time_of_appearance = 40.1
     isochron_geometry_at_time_of_appearance = pygplates.PolylineOnSphere(
         [
-            (-57.226800, -14.446200),
-            (-56.545700, -16.973300),
-            (-57.247800, -17.727000),
-            (-56.882600, -19.030100),
-            (-57.782800, -20.178900),
-            (-57.457300, -21.282600),
-            (-58.369800, -22.342900),
-            (-57.902600, -23.872600)
+            (-57.635356,  0.765764),
+            (-57.162269, -1.953176),
+            (-57.916700, -2.522021),
+            (-57.658576, -3.936703),
+            (-58.639846, -4.849338),
+            (-58.404889, -6.060713),
+            (-59.390700, -6.877544),
+            (-59.048499, -8.573530)
         ])
     
     # Create the isochron feature.
@@ -266,14 +262,14 @@ Details
 
     isochron_geometry_at_time_of_appearance = pygplates.PolylineOnSphere(
         [
-            (-57.226800, -14.446200),
-            (-56.545700, -16.973300),
-            (-57.247800, -17.727000),
-            (-56.882600, -19.030100),
-            (-57.782800, -20.178900),
-            (-57.457300, -21.282600),
-            (-58.369800, -22.342900),
-            (-57.902600, -23.872600)
+            (-57.635356,  0.765764),
+            (-57.162269, -1.953176),
+            (-57.916700, -2.522021),
+            (-57.658576, -3.936703),
+            (-58.639846, -4.849338),
+            (-58.404889, -6.060713),
+            (-59.390700, -6.877544),
+            (-59.048499, -8.573530)
         ])
 
 | The isochron geometry is not present-day geometry so the created isochron feature
@@ -328,14 +324,14 @@ Alternate sample code
     isochron_time_of_appearance = 40.1
     isochron_geometry_at_time_of_appearance = pygplates.PolylineOnSphere(
         [
-            (-57.226800, -14.446200),
-            (-56.545700, -16.973300),
-            (-57.247800, -17.727000),
-            (-56.882600, -19.030100),
-            (-57.782800, -20.178900),
-            (-57.457300, -21.282600),
-            (-58.369800, -22.342900),
-            (-57.902600, -23.872600)
+            (-57.635356,  0.765764),
+            (-57.162269, -1.953176),
+            (-57.916700, -2.522021),
+            (-57.658576, -3.936703),
+            (-58.639846, -4.849338),
+            (-58.404889, -6.060713),
+            (-59.390700, -6.877544),
+            (-59.048499, -8.573530)
         ])
     
     # Create the isochron feature.
@@ -392,3 +388,391 @@ An alternative is to reverse-reconstruct when :meth:`setting the geometry<pygpla
 .. warning:: :meth:`pygplates.Feature.set_geometry` is called *after* the properties have
    been set on the feature. Again this is necessary because reverse reconstruction looks at these
    properties to determine how to reverse reconstruct.
+
+
+.. _pygplates_create_mid_ocean_ridge_feature:
+
+Create a *mid-ocean ridge* feature from geometry at a past geological time
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+This is example is similar to :ref:`pygplates_create_isochron_feature` except we are creating
+a type of `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_ known as a
+`mid-ocean ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_.
+
+.. seealso:: :ref:`pygplates_create_isochron_feature`
+
+Sample code
+"""""""""""
+
+::
+
+    import pygplates
+
+
+    # Load a rotation model from a rotation file.
+    rotation_model = pygplates.RotationModel('rotations.rot')
+    
+    # Create the mid-ocean ridge feature using geometry at a past geological time.
+    time_of_appearance = 55.9
+    time_of_disappearance = 48
+    geometry_at_time_of_appearance = pygplates.PolylineOnSphere([...])
+    mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(
+        pygplates.FeatureType.gpml_mid_ocean_ridge,
+        geometry_at_time_of_appearance,
+        name='SOUTH ATLANTIC, SOUTH AMERICA-AFRICA',
+        valid_time=(time_of_appearance, time_of_disappearance),
+        left_plate=201,
+        right_plate=701,
+        reconstruction_method='HalfStageRotationVersion2',
+        # The specified geometry is not present day so it needs to be reverse-reconstructed to present day...
+        reverse_reconstruct=(rotation_model, time_of_appearance))
+
+Details
+"""""""
+
+| This is similar to :ref:`pygplates_create_isochron_feature` except we use
+  :meth:`pygplates.Feature.create_tectonic_section` since a
+  `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_ feature is a type of
+  `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_.
+| This allows us to specify the `left <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ and
+  `right <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ plates as well as a half-stage
+  `reconstruction method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_.
+
+::
+
+    time_of_appearance = 55.9
+    time_of_disappearance = 48
+    geometry_at_time_of_appearance = pygplates.PolylineOnSphere([...])
+    mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(
+        pygplates.FeatureType.gpml_mid_ocean_ridge,
+        geometry_at_time_of_appearance,
+        name='SOUTH ATLANTIC, SOUTH AMERICA-AFRICA',
+        valid_time=(time_of_appearance, time_of_disappearance),
+        left_plate=201,
+        right_plate=701,
+        reconstruction_method='HalfStageRotationVersion2',
+        reverse_reconstruct=(rotation_model, time_of_appearance))
+
+Alternate sample code
+"""""""""""""""""""""
+
+::
+
+    import pygplates
+
+
+    # Load a rotation model from a rotation file.
+    rotation_model = pygplates.RotationModel('rotations.rot')
+    
+    # Create the mid-ocean ridge feature using geometry at a past geological time.
+    time_of_appearance = 55.9
+    time_of_disappearance = 48
+    geometry_at_time_of_appearance = pygplates.PolylineOnSphere([...])
+    
+    mid_ocean_ridge_feature = pygplates.Feature(pygplates.FeatureType.gpml_mid_ocean_ridge)
+    mid_ocean_ridge_feature.set_geometry(geometry_at_time_of_appearance)
+    mid_ocean_ridge_feature.set_name('SOUTH ATLANTIC, SOUTH AMERICA-AFRICA')
+    mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)
+    mid_ocean_ridge_feature.set_left_plate(201)
+    mid_ocean_ridge_feature.set_right_plate(701)
+    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')
+    
+    # The specified geometry is not present day so it needs to be reverse-reconstructed to present day.
+    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)
+
+Details
+"""""""
+
+This is similar to the alternate sample code in :ref:`pygplates_create_isochron_feature`. Here we
+create an empty `pygplates.FeatureType.gpml_mid_ocean_ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_
+feature and then set its properties one by one.
+::
+
+    mid_ocean_ridge_feature = pygplates.Feature(pygplates.FeatureType.gpml_mid_ocean_ridge)
+    mid_ocean_ridge_feature.set_geometry(geometry_at_time_of_appearance)
+    mid_ocean_ridge_feature.set_name('SOUTH ATLANTIC, SOUTH AMERICA-AFRICA')
+    mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)
+    mid_ocean_ridge_feature.set_left_plate(201)
+    mid_ocean_ridge_feature.set_right_plate(701)
+    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')
+    
+    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)
+
+.. warning:: :func:`pygplates.reverse_reconstruct` is called *after* the properties have
+   been set on the feature. This is necessary because reverse reconstruction looks at these
+   properties to determine how to reverse reconstruct.
+
+
+.. _pygplates_create_subduction_zone_feature:
+
+Create a *subduction zone* feature from present-day geometry
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
+an enumeration property on a `subduction zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_.
+
+.. seealso:: :ref:`pygplates_create_coastline_feature`
+
+Sample code
+"""""""""""
+
+::
+
+    import pygplates
+    
+    # Create the subduction zone feature.
+    present_day_geometry = pygplates.PolylineOnSphere([...])
+    subduction_zone_feature = pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_subduction_zone,
+        present_day_geometry,
+        name='South America trench',
+        valid_time=(200, pygplates.GeoTimeInstant.create_distant_future()),
+        reconstruction_plate_id=201)
+    
+    subduction_zone_feature.set_enumeration(
+        pygplates.PropertyName.gpml_subduction_polarity,
+        'Right')
+
+Details
+"""""""
+
+| This is similar to :ref:`pygplates_create_coastline_feature` except we also use
+  :meth:`pygplates.Feature.set_enumeration` to set the
+  `subduction polarity <http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity>`_ to ``'Right'``
+  on our `subduction zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_ feature.
+
+::
+
+    present_day_geometry = pygplates.PolylineOnSphere([...])
+    subduction_zone_feature = pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_subduction_zone,
+        present_day_geometry,
+        name='South America trench',
+        valid_time=(200, pygplates.GeoTimeInstant.create_distant_future()),
+        reconstruction_plate_id=201)
+    
+    subduction_zone_feature.set_enumeration(
+        pygplates.PropertyName.gpml_subduction_polarity,
+        'Right')
+
+.. note:: :meth:`pygplates.Feature.create_reconstructable_feature` has the *other_properties*
+   argument for such cases, but it is usually more difficult - especially when there is a
+   convenient function like :meth:`pygplates.Feature.set_enumeration` available. For example, to
+   use the *other_properties* argument would have looked like:
+   ::
+   
+       subduction_zone_feature = pygplates.Feature.create_reconstructable_feature(
+           pygplates.FeatureType.gpml_subduction_zone,
+           present_day_geometry,
+           name='South America trench',
+           valid_time=(200, pygplates.GeoTimeInstant.create_distant_future()),
+           reconstruction_plate_id=201,
+           other_properties=[
+               (pygplates.PropertyName.gpml_subduction_polarity,
+               pygplates.Enumeration(
+                   pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
+                   'Right'))])
+
+Alternate sample code
+"""""""""""""""""""""
+
+::
+
+    import pygplates
+
+
+    # Create the subduction zone feature.
+    present_day_geometry = pygplates.PolylineOnSphere([...])
+    subduction_zone_feature = pygplates.Feature(pygplates.FeatureType.gpml_subduction_zone)
+    subduction_zone_feature.set_geometry(present_day_geometry)
+    subduction_zone_feature.set_name('South America trench')
+    subduction_zone_feature.set_valid_time(200, pygplates.GeoTimeInstant.create_distant_future())
+    subduction_zone_feature.set_reconstruction_plate_id(201)
+    subduction_zone_feature.set_enumeration(pygplates.PropertyName.gpml_subduction_polarity, 'Right')
+
+Details
+"""""""
+
+Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
+create an empty `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_
+feature and then set its properties one by one.
+::
+
+    subduction_zone_feature = pygplates.Feature(pygplates.FeatureType.gpml_subduction_zone)
+    subduction_zone_feature.set_geometry(present_day_geometry)
+    subduction_zone_feature.set_name('South America trench')
+    subduction_zone_feature.set_valid_time(200, pygplates.GeoTimeInstant.create_distant_future())
+    subduction_zone_feature.set_reconstruction_plate_id(201)
+    subduction_zone_feature.set_enumeration(pygplates.PropertyName.gpml_subduction_polarity, 'Right')
+
+
+.. _pygplates_create_virtual_geomagnetic_pole_feature:
+
+Create a *virtual geomagnetic pole* feature
++++++++++++++++++++++++++++++++++++++++++++
+
+This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
+some floating-point values on a `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_ feature.
+
+.. seealso:: :ref:`pygplates_create_coastline_feature`
+
+Sample code
+"""""""""""
+
+::
+
+    import pygplates
+    
+    # The pole position and the average sample site position.
+    pole_position = pygplates.PointOnSphere(86.3, 168.02)
+    average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
+    
+    # Create the virtual geomagnetic pole feature.
+    virtual_geomagnetic_pole_feature = pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_virtual_geomagnetic_pole,
+        pole_position,
+        name='RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)',
+        reconstruction_plate_id=701)
+    
+    # Set the average sample site position.
+    # We need to specify its property name otherwise it defaults to the pole position and overwrites it.
+    virtual_geomagnetic_pole_feature.set_geometry(
+        average_sample_site_position,
+        pygplates.PropertyName.gpml_average_sample_site_position)
+    
+    # Set the average inclination/declination.
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_inclination,
+        180.16)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_declination,
+        13.04)
+    
+    # Set the pole position uncertainty and the average age.
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_pole_a95,
+        3.05)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_age,
+        0)
+
+Details
+"""""""
+
+A `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_ feature
+contains two geometries. One is the `position of the virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_
+and the other is the `average sample site position <http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition>`_.
+::
+
+    pole_position = pygplates.PointOnSphere(86.3, 168.02)
+    average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
+
+| We create a `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
+  feature using the :func:`pygplates.Feature.create_reconstructable_feature` function.
+| The geometry we specify is the pole position (not the average sample site position). This is
+  because the default geometry for `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
+  (see the ``Default Geometry Property`` label) is ``gpml:polePosition``.
+
+::
+
+    virtual_geomagnetic_pole_feature = pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_virtual_geomagnetic_pole,
+        pole_position,
+        name='RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)',
+        reconstruction_plate_id=701)
+
+| We need to set the average sample site position separately since it is not the default geometry.
+| We also need to specify its property name otherwise :meth:`pygplates.Feature.set_geometry` defaults
+  to the pole position and overwrites the geometry we've already set for it.
+
+::
+
+    virtual_geomagnetic_pole_feature.set_geometry(
+        average_sample_site_position,
+        pygplates.PropertyName.gpml_average_sample_site_position)
+
+| Next we set some floating-point numbers using :meth:`pygplates.Feature.set_double`.
+| You can see from the `virtual geomagnetic pole model <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_ that
+  `gpml:averageInclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`_,
+  `gpml:averageDeclination <http://www.gplates.org/docs/gpgim/#gpml:averageDeclination>`_,
+  `gpml:poleA95 <http://www.gplates.org/docs/gpgim/#gpml:poleA95>`_ and
+  `gpml:averageAge <http://www.gplates.org/docs/gpgim/#gpml:averageAge>`_
+  are all of type `double <http://www.gplates.org/docs/gpgim/#xsi:double>`_ which is for floating-point numbers.
+
+::
+
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_inclination,
+        180.16)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_declination,
+        13.04)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_pole_a95,
+        3.05)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_age,
+        0)
+
+Alternate sample code
+"""""""""""""""""""""
+
+::
+
+    import pygplates
+
+
+    # The pole position and the average sample site position.
+    pole_position = pygplates.PointOnSphere(86.3, 168.02)
+    average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
+    
+    # Create the virtual geomagnetic pole feature.
+    virtual_geomagnetic_pole_feature = pygplates.Feature(pygplates.FeatureType.gpml_virtual_geomagnetic_pole)
+    
+    # Set the name and reconstruction plate ID.
+    virtual_geomagnetic_pole_feature.set_name('RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)')
+    virtual_geomagnetic_pole_feature.set_reconstruction_plate_id(701)
+    
+    # Set the average inclination/declination.
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_inclination,
+        180.16)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_declination,
+        13.04)
+    
+    # Set the pole position uncertainty and the average age.
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_pole_a95,
+        3.05)
+    virtual_geomagnetic_pole_feature.set_double(
+        pygplates.PropertyName.gpml_average_age,
+        0)
+    
+    # Set the two geometries.
+    virtual_geomagnetic_pole_feature.set_geometry(pole_position)
+    virtual_geomagnetic_pole_feature.set_geometry(
+        average_sample_site_position,
+        # We need to specify its property name otherwise it defaults to the pole position and overwrites it...
+        pygplates.PropertyName.gpml_average_sample_site_position)
+
+Details
+"""""""
+
+Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
+create an empty `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
+feature and then set its properties one by one.
+::
+
+    pole_position = pygplates.PointOnSphere(86.3, 168.02)
+    average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
+    
+    virtual_geomagnetic_pole_feature = pygplates.Feature(pygplates.FeatureType.gpml_virtual_geomagnetic_pole)
+    virtual_geomagnetic_pole_feature.set_name('RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)')
+    virtual_geomagnetic_pole_feature.set_reconstruction_plate_id(701)
+    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_inclination, 180.16)
+    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_declination, 13.04)
+    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_pole_a95, 3.05)
+    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_age, 0)
+    virtual_geomagnetic_pole_feature.set_geometry(pole_position)
+    virtual_geomagnetic_pole_feature.set_geometry(average_sample_site_position, pygplates.PropertyName.gpml_average_sample_site_position)

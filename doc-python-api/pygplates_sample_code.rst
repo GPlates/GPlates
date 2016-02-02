@@ -26,8 +26,8 @@ Load/Save
 
    sample-code/pygplates_load_and_save_feature_collections
 
-Create features
----------------
+Create/query features
+---------------------
 
 .. toctree::
    :maxdepth: 3
