@@ -26,6 +26,14 @@ Load/Save
 
    sample-code/pygplates_load_and_save_feature_collections
 
+Create features
+---------------
+
+.. toctree::
+   :maxdepth: 3
+
+   sample-code/pygplates_create_common_feature_types
+
 Rotations
 ---------
 

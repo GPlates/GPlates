@@ -123,7 +123,8 @@ list of :class:`pygplates.ReconstructedFeatureGeometry`.
     isochron_geometry_at_creation_time = [reconstructed_ridge.get_reconstructed_geometry()
             for reconstructed_ridge in reconstructed_ridges]
 
-Isochron features are created using :meth:`pygplates.Feature.create_reconstructable_feature`.
+`Isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ features are created using
+:meth:`pygplates.Feature.create_reconstructable_feature`.
 ::
 
     left_isochron_feature = pygplates.Feature.create_reconstructable_feature(
