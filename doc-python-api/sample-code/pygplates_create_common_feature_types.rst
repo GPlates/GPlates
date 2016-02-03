@@ -778,6 +778,121 @@ feature and then set its properties one by one.
     virtual_geomagnetic_pole_feature.set_geometry(average_sample_site_position, pygplates.PropertyName.gpml_average_sample_site_position)
 
 
+.. _pygplates_create_flowline_feature:
+
+Create a *flowline* feature
++++++++++++++++++++++++++++
+
+In this example we create a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+feature that tracks plate motion away from a spreading ridge.
+
+Sample code
+"""""""""""
+
+::
+
+    import pygplates
+
+
+    # Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-35.547600, -17.873000),
+            (-46.208000, -13.623000)
+        ])
+    
+    # A list of times to sample flowline - from 0 to 40Ma in 10My intervals.
+    times = range(0, 41, 10)
+    
+    # Create a flowline feature.
+    flowline_feature = pygplates.Feature.create_flowline(
+            seed_points,
+            times,
+            valid_time=(max(times), min(times)),
+            left_plate=201,
+            right_plate=701)
+
+Details
+"""""""
+
+| We specify two seed point locations on the present-day mid-ocean ridge.
+| These are the mid-ocean ridge points the flowline will track spreading from.
+
+::
+
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-35.547600, -17.873000),
+            (-46.208000, -13.623000)
+        ])
+
+| A sequence of time samples determine how accurate the flowline is - how densely sampled it is.
+| Here we sample from 0 to 40Ma in 10My intervals.
+
+::
+
+    times = range(0, 41, 10)
+
+| We can create the `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+  feature using the seed points, time samples, valid time period and left/right plate IDs.
+| We set the valid time period to encompass the time samples.
+
+::
+
+    flowline_feature = pygplates.Feature.create_flowline(
+            seed_points,
+            times,
+            valid_time=(max(times), min(times)),
+            left_plate=201,
+            right_plate=701)
+
+Alternate sample code
+"""""""""""""""""""""
+
+::
+
+    import pygplates
+
+
+    # Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-35.547600, -17.873000),
+            (-46.208000, -13.623000)
+        ])
+    
+    # A list of times to sample flowline - from 0 to 40Ma in 10My intervals.
+    times = range(0, 41, 10)
+    
+    # Create a flowline feature.
+    flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+    flowline_feature.set_geometry(seed_points)
+    flowline_feature.set_times(times)
+    flowline_feature.set_valid_time(max(times), min(times))
+    flowline_feature.set_left_plate(201)
+    flowline_feature.set_right_plate(701)
+    flowline_feature.set_reconstruction_method('HalfStageRotationVersion2')
+
+Details
+"""""""
+
+Instead of using the :meth:`pygplates.Feature.create_flowline` function, here we first
+create an empty `pygplates.FeatureType.gpml_flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+feature and then set its properties one by one.
+::
+
+    flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+    flowline_feature.set_geometry(seed_points)
+    flowline_feature.set_times(times)
+    flowline_feature.set_valid_time(max(times), min(times))
+    flowline_feature.set_left_plate(201)
+    flowline_feature.set_right_plate(701)
+    flowline_feature.set_reconstruction_method('HalfStageRotationVersion2')
+
+.. note:: In the above example we needed to call :meth:`pygplates.Feature.set_reconstruction_method` to
+   set up a half-stage rotation since that is what :meth:`pygplates.Feature.create_flowline` calls internally.
+
+
 .. _pygplates_create_total_reconstruction_sequence_feature:
 
 Create a *total reconstruction sequence* (rotation) feature
