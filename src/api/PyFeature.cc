@@ -3166,7 +3166,7 @@ export_feature()
 				"  The previous example is the equivalent of the following:\n"
 				"  ::\n"
 				"\n"
-				"    rotation_feature = pygplates.Feature(pygplates.FeatureType.gpml_total_reconstruction_sequence'))\n"
+				"    rotation_feature = pygplates.Feature(pygplates.FeatureType.gpml_total_reconstruction_sequence)\n"
 				"    rotation_feature.set_name('INA-AUS Muller et.al 2000')\n"
 				"    rotation_feature.set_total_reconstruction_pole(550, 801, total_reconstruction_pole_801_rel_550)\n")
 		.staticmethod("create_total_reconstruction_sequence")

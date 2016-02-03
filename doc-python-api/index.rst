@@ -5,8 +5,8 @@
 
 .. _pygplates_index:
 
-Welcome to the GPlates Python documentation!
-============================================
+GPlates Python documentation
+============================
 
 *pygplates* enables access to `GPlates <http://www.gplates.org>`_
 functionality via the `Python <http://www.python.org>`_ programming language.

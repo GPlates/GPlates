@@ -13,6 +13,8 @@ This example:
 The functionality in this example is similar to the ``Modify Reconstruction Pole`` tool
 in `GPlates <http://www.gplates.org>`_.
 
+.. seealso:: :ref:`pygplates_create_total_reconstruction_sequence_feature`
+
 .. contents::
    :local:
    :depth: 2
