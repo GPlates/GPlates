@@ -778,13 +778,126 @@ feature and then set its properties one by one.
     virtual_geomagnetic_pole_feature.set_geometry(average_sample_site_position, pygplates.PropertyName.gpml_average_sample_site_position)
 
 
+.. _pygplates_create_motion_path_feature:
+
+Create a *motion path* feature
+++++++++++++++++++++++++++++++
+
+In this example we create a `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+feature that tracks plate motion over time.
+
+Sample code
+"""""""""""
+
+::
+
+    import pygplates
+
+
+    # Specify two (lat/lon) seed points on the present-day African coastline.
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-19, 12.5),
+            (-28, 15.7)
+        ])
+    
+    # A list of times to sample the motion path - from 0 to 90Ma in 1My intervals.
+    times = range(0, 91, 1)
+    
+    # Create a motion path feature.
+    motion_path_feature = pygplates.Feature.create_motion_path(
+            seed_points,
+            times,
+            valid_time=(max(times), min(times)),
+            relative_plate=201,
+            reconstruction_plate_id=701)
+
+Details
+"""""""
+
+| We specify two seed point locations somewhere on the coastline of Africa (701).
+| These are the points the that motion path will track over time.
+
+::
+
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-19, 12.5),
+            (-28, 15.7)
+        ])
+
+| A sequence of time samples determine how accurate the motion path is - how densely sampled it is.
+| Here we sample from 0 to 90Ma in 1My intervals.
+
+::
+
+    times = range(0, 91, 1)
+
+| We can create the `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+  feature using the seed points, time samples, valid time period and relative/reconstruction plate IDs.
+| We set the valid time period to encompass the time samples.
+| The motion is the path of the seed point(s) attached to the
+  `gpml:reconstructionPlateId <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ plate relative to the
+  `gpml:relativePlate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ plate.
+
+::
+
+    motion_path_feature = pygplates.Feature.create_motion_path(
+            seed_points,
+            times,
+            valid_time=(max(times), min(times)),
+            relative_plate=201,
+            reconstruction_plate_id=701)
+
+Alternate sample code
+"""""""""""""""""""""
+
+::
+
+    import pygplates
+
+
+    # Specify two (lat/lon) seed points on the present-day African coastline.
+    seed_points = pygplates.MultiPointOnSphere(
+        [
+            (-19, 12.5),
+            (-28, 15.7)
+        ])
+    
+    # A list of times to sample the motion path - from 0 to 90Ma in 1My intervals.
+    times = range(0, 91, 1)
+    
+    # Create a motion path feature.
+    motion_path_feature = pygplates.Feature(pygplates.FeatureType.gpml_motion_path)
+    motion_path_feature.set_geometry(seed_points)
+    motion_path_feature.set_times(times)
+    motion_path_feature.set_valid_time(max(times), min(times))
+    motion_path_feature.set_relative_plate(201)
+    motion_path_feature.set_reconstruction_plate_id(701)
+
+Details
+"""""""
+
+Instead of using the :meth:`pygplates.Feature.create_motion_path` function, here we first
+create an empty `pygplates.FeatureType.gpml_motion_path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+feature and then set its properties one by one.
+::
+
+    motion_path_feature = pygplates.Feature(pygplates.FeatureType.gpml_motion_path)
+    motion_path_feature.set_geometry(seed_points)
+    motion_path_feature.set_times(times)
+    motion_path_feature.set_valid_time(max(times), min(times))
+    motion_path_feature.set_relative_plate(201)
+    motion_path_feature.set_reconstruction_plate_id(701)
+
+
 .. _pygplates_create_flowline_feature:
 
 Create a *flowline* feature
 +++++++++++++++++++++++++++
 
 In this example we create a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
-feature that tracks plate motion away from a spreading ridge.
+feature that tracks plate motion away from a spreading ridge over time.
 
 Sample code
 """""""""""
@@ -801,8 +914,8 @@ Sample code
             (-46.208000, -13.623000)
         ])
     
-    # A list of times to sample flowline - from 0 to 40Ma in 10My intervals.
-    times = range(0, 41, 10)
+    # A list of times to sample flowline - from 0 to 90Ma in 1My intervals.
+    times = range(0, 91, 1)
     
     # Create a flowline feature.
     flowline_feature = pygplates.Feature.create_flowline(
@@ -816,7 +929,10 @@ Details
 """""""
 
 | We specify two seed point locations on the present-day mid-ocean ridge.
-| These are the mid-ocean ridge points the flowline will track spreading from.
+| These are the mid-ocean ridge points that the flowline will track spreading over time.
+| The seed point(s) spread in the
+  `gpml:leftPlate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ plate and the
+  `gpml:rightPlate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ plate of the mid-ocean ridge.
 
 ::
 
@@ -827,11 +943,11 @@ Details
         ])
 
 | A sequence of time samples determine how accurate the flowline is - how densely sampled it is.
-| Here we sample from 0 to 40Ma in 10My intervals.
+| Here we sample from 0 to 90Ma in 1My intervals.
 
 ::
 
-    times = range(0, 41, 10)
+    times = range(0, 91, 1)
 
 | We can create the `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
   feature using the seed points, time samples, valid time period and left/right plate IDs.
@@ -861,8 +977,8 @@ Alternate sample code
             (-46.208000, -13.623000)
         ])
     
-    # A list of times to sample flowline - from 0 to 40Ma in 10My intervals.
-    times = range(0, 41, 10)
+    # A list of times to sample flowline - from 0 to 90Ma in 1My intervals.
+    times = range(0, 91, 1)
     
     # Create a flowline feature.
     flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
