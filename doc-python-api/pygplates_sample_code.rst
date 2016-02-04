@@ -55,6 +55,7 @@ to past geological times.
    :maxdepth: 3
 
    sample-code/pygplates_reconstruct_regular_features
+   sample-code/pygplates_reconstruct_motion_path_features
 
 Rotations
 ---------

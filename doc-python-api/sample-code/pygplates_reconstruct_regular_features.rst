@@ -45,7 +45,7 @@ Sample code
     # It's a shapefile called 'reconstructed_50Ma.shp'.
     export_filename = 'reconstructed_{0}Ma.shp'.format(reconstruction_time)
 
-    # Reconstruct the features to the reconstruction time and export them to a shapefile
+    # Reconstruct the features to the reconstruction time and export them to a shapefile.
     pygplates.reconstruct(features, rotation_model, export_filename, reconstruction_time)
 
 Details
@@ -191,7 +191,7 @@ The features will be reconstructed to their 50Ma positions.
 
 | All features are reconstructed to 50Ma using :func:`pygplates.reconstruct`.
 | We specify a ``list`` for *reconstructed_feature_geometries* instead of a filename so that we
-  can queries the reconstructed geometries easily.
+  can query the reconstructed geometries easily.
 
 ::
 

@@ -515,6 +515,8 @@ In this example we query a `motion path <http://www.gplates.org/docs/gpgim/#gpml
 
 .. seealso:: :ref:`pygplates_create_motion_path_feature`
 
+.. seealso:: :ref:`pygplates_reconstruct_motion_path_features`
+
 Sample code
 """""""""""
 

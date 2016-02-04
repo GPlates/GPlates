@@ -798,6 +798,8 @@ feature that tracks plate motion over time.
 
 .. seealso:: :ref:`pygplates_query_motion_path_feature`
 
+.. seealso:: :ref:`pygplates_reconstruct_motion_path_features`
+
 Sample code
 """""""""""
 
