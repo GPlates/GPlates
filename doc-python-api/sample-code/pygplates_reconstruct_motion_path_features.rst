@@ -130,6 +130,7 @@ Sample code
         reconstruct_type=pygplates.ReconstructType.motion_path)
 
     # Iterate over all reconstructed motion paths.
+    # There will be two (one for each seed point).
     for reconstructed_motion_path in reconstructed_motion_paths:
         
         # Print the motion path plate IDs.
@@ -148,7 +149,7 @@ Sample code
             
             lat, lon = point.to_lat_lon()
             
-            # The first point in the path is the oldest and the last point is the reconstructed seed point.
+            # The first point in the path is the oldest and the last point is the youngest.
             # So we need to start at the last time and work our way backwards.
             time = motion_path_times[-1-point_index]
             
@@ -197,7 +198,7 @@ The features will be reconstructed to their 50Ma positions.
 
 | We iterate over the points in the :meth:`reconstructed motion path<pygplates.ReconstructedMotionPath.get_motion_path>`
   and print each point location and its associated time.
-| The first point in the path is the oldest and the last point is the reconstructed seed point.
+| The first point in the path is the oldest and the last point is the youngest.
   So we need to start at the last (oldest) time and work our way backwards.
   The last sample is at index ``-1`` and ``point_index`` starts at zero.
   So our time indices are ``-1``, ``-2``, etc, which means last sample, then second last sample, etc.
