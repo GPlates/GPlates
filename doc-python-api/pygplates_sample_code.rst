@@ -33,6 +33,7 @@ Create/query features
    :maxdepth: 3
 
    sample-code/pygplates_create_common_feature_types
+   sample-code/pygplates_query_common_feature_types
 
 Rotations
 ---------

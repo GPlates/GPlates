@@ -9,7 +9,7 @@ Create common feature types
   except here we are more interested in creating different :class:`types<pygplates.FeatureType>` of features
   as opposed to creating the generic *unclassified* feature type (``pygplates.FeatureType.gpml_unclassified_feature``).
 
-.. seealso:: :ref:`pygplates_import_geometries_and_assign_plate_ids`
+.. seealso:: :ref:`pygplates_query_common_feature_types`
 
 .. contents::
    :local:
@@ -23,6 +23,8 @@ Create a *coastline* feature from present-day geometry
 
 In this example we create a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ from
 *present day* geometry and save it to a file.
+
+.. seealso:: :ref:`pygplates_query_coastline_feature`
 
 Sample code
 """""""""""
@@ -212,6 +214,8 @@ Create an *isochron* feature from geometry at a past geological time
 In this example we create an `isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ from
 geometry that represents its location at a past geological time (not present day).
 
+.. seealso:: :ref:`pygplates_query_isochron_feature`
+
 .. seealso:: :ref:`pygplates_create_conjugate_isochrons_from_ridge`
 
 Sample code
@@ -399,6 +403,8 @@ This is example is similar to :ref:`pygplates_create_isochron_feature` except we
 a type of `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_ known as a
 `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_.
 
+.. seealso:: :ref:`pygplates_query_mid_ocean_ridge_feature`
+
 .. seealso:: :ref:`pygplates_create_isochron_feature`
 
 Sample code
@@ -511,6 +517,8 @@ Create a *subduction zone* feature from present-day geometry
 This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
 an enumeration property on a `subduction zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_.
 
+.. seealso:: :ref:`pygplates_query_subduction_zone_feature`
+
 .. seealso:: :ref:`pygplates_create_coastline_feature`
 
 Sample code
@@ -613,6 +621,8 @@ Create a *virtual geomagnetic pole* feature
 
 This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
 some floating-point values on a `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_ feature.
+
+.. seealso:: :ref:`pygplates_query_virtual_geomagnetic_pole_feature`
 
 .. seealso:: :ref:`pygplates_create_coastline_feature`
 
@@ -786,6 +796,8 @@ Create a *motion path* feature
 In this example we create a `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
 feature that tracks plate motion over time.
 
+.. seealso:: :ref:`pygplates_query_motion_path_feature`
+
 Sample code
 """""""""""
 
@@ -898,6 +910,8 @@ Create a *flowline* feature
 
 In this example we create a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
 feature that tracks plate motion away from a spreading ridge over time.
+
+.. seealso:: :ref:`pygplates_query_flowline_feature`
 
 Sample code
 """""""""""
@@ -1017,6 +1031,8 @@ Create a *total reconstruction sequence* (rotation) feature
 | In this example we create a `total reconstruction sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_
   feature representing a time sequence of total rotation poles of a moving plate relative to a fixed plate.
 | These are the feature types created when a rotation file is loaded, except here we are creating them explicitly.
+
+.. seealso:: :ref:`pygplates_query_total_reconstruction_sequence_feature`
 
 .. seealso:: :ref:`pygplates_modify_reconstruction_pole`
 

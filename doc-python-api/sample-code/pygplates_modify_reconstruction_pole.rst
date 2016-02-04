@@ -15,6 +15,8 @@ in `GPlates <http://www.gplates.org>`_.
 
 .. seealso:: :ref:`pygplates_create_total_reconstruction_sequence_feature`
 
+.. seealso:: :ref:`pygplates_query_total_reconstruction_sequence_feature`
+
 .. contents::
    :local:
    :depth: 2
