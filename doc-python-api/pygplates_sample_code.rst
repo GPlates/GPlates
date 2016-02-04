@@ -106,6 +106,7 @@ This section covers queries involving distances between geometries.
 
    sample-code/pygplates_find_nearest_feature_to_a_point
    sample-code/pygplates_find_features_overlapping_a_polygon
+   sample-code/pygplates_find_overriding_plate_of_closest_subducting_line
 
 .. seealso:: :ref:`pygplates_calculate_distance_a_feature_is_reconstructed`
 

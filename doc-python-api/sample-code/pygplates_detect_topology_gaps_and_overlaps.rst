@@ -104,7 +104,7 @@ The topological features are loaded into a :class:`pygplates.FeatureCollection`.
     pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time, shared_boundary_sections)
 
 The :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are actually what
-we're interested in because they their sub-segments have a list of topologies them.
+we're interested in because their sub-segments have a list of topologies on them.
 
 | Not all parts of a topological section feature's geometry contribute to the boundaries of topologies.
 | Little bits at the ends get clipped off.
