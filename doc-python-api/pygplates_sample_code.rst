@@ -10,8 +10,14 @@ This document contains sample code that shows *pygplates* solving common plate t
    :ref:`installation guide<pygplates_getting_started_installation>` to help get started.
 
 
+.. contents::
+   :local:
+   :depth: 2
+
 Import
 ------
+
+This section covers how to get geometry data into a state where it can be reconstructed by *pygplates*.
 
 .. toctree::
    :maxdepth: 3
@@ -21,6 +27,8 @@ Import
 Load/Save
 ---------
 
+This section covers how to load and save collections of features from/to files.
+
 .. toctree::
    :maxdepth: 3
 
@@ -29,14 +37,30 @@ Load/Save
 Create/query features
 ---------------------
 
+This section covers how to create features from scratch and how to query their properties.
+
 .. toctree::
    :maxdepth: 3
 
    sample-code/pygplates_create_common_feature_types
    sample-code/pygplates_query_common_feature_types
 
+Reconstruct features
+--------------------
+
+This section covers how to reconstruct regular features, motion path features and flowline features
+to past geological times.
+
+.. toctree::
+   :maxdepth: 3
+
+   sample-code/pygplates_reconstruct_regular_features
+
 Rotations
 ---------
+
+This section covers querying and modifying the rotations that are used to reconstruct features to
+past geological times.
 
 .. toctree::
    :maxdepth: 3
@@ -48,6 +72,9 @@ Rotations
 Topologies
 ----------
 
+This section covers how to reconstruct (or resolve) dynamic geometries (such as topological plate boundaries)
+at past geological times, and how to query their topologies.
+
 .. toctree::
    :maxdepth: 3
 
@@ -58,6 +85,9 @@ Topologies
 Velocities
 ----------
 
+This section covers how to calculate velocities of features as they move through geological time
+and also how to calculate velocities of plates at non-moving point locations.
+
 .. toctree::
    :maxdepth: 3
 
@@ -67,14 +97,20 @@ Velocities
 Spatial proximity
 -----------------
 
+This section covers queries involving distances between geometries.
+
 .. toctree::
    :maxdepth: 3
 
    sample-code/pygplates_find_nearest_feature_to_a_point
    sample-code/pygplates_find_features_overlapping_a_polygon
 
+.. seealso:: :ref:`pygplates_calculate_distance_a_feature_is_reconstructed`
+
 Isochrons
 ---------
+
+This section covers some use cases specific to the isochron feature type.
 
 .. toctree::
    :maxdepth: 3
