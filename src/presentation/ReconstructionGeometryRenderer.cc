@@ -281,6 +281,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const TopologyGeometryVisualLayerParams &params)
 {
 	d_render_params.fill_polygons = params.get_fill_polygons();
+	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
 }
 
 

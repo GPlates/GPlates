@@ -28,6 +28,7 @@
 
 #include "VisualLayerParams.h"
 
+#include "gui/Colour.h"
 #include "gui/DrawStyleManager.h"
 
 
@@ -62,6 +63,58 @@ namespace GPlatesPresentation
 			return d_fill_polygons;
 		}
 
+		/**
+		 * Sets the opacity of filled primitives.
+		 */
+		void
+		set_fill_opacity(
+				const double &opacity)
+		{
+			d_fill_opacity = opacity;
+			emit_modified();
+		}
+
+		/**
+		 * Gets the opacity of filled primitives.
+		 */
+		double
+		get_fill_opacity() const
+		{
+			return d_fill_opacity;
+		}
+
+		/**
+		 * Sets the intensity of filled primitives.
+		 */
+		void
+		set_fill_intensity(
+				const double &intensity)
+		{
+			d_fill_intensity = intensity;
+			emit_modified();
+		}
+
+		/**
+		 * Gets the intensity of filled primitives.
+		 */
+		double
+		get_fill_intensity() const
+		{
+			return d_fill_intensity;
+		}
+
+		/**
+		 * Returns the filled primitives modulate colour.
+		 *
+		 * This is a combination of the opacity and intensity as (I, I, I, O) where
+		 * 'I' is intensity and 'O' is opacity.
+		 */
+		GPlatesGui::Colour
+		get_fill_modulate_colour() const
+		{
+			return GPlatesGui::Colour(d_fill_intensity, d_fill_intensity, d_fill_intensity, d_fill_opacity);
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -85,12 +138,19 @@ namespace GPlatesPresentation
 			VisualLayerParams(
 					layer_task_params,
 					GPlatesGui::DrawStyleManager::instance()->default_style()),
-			d_fill_polygons(false)
+			d_fill_polygons(false),
+			d_fill_opacity(1.0),
+			d_fill_intensity(1.0)
 		{  }
 
 	private:
 
 		bool d_fill_polygons;
+
+		//! The opacity of filled primitives in the range [0,1].
+		double d_fill_opacity;
+		//! The intensity of the raster in the range [0,1].
+		double d_fill_intensity;
 	};
 }
 

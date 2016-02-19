@@ -79,10 +79,18 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		open_draw_style_setting_dlg();
+
+		void
 		handle_fill_polygons_clicked();
 
 		void
-		open_draw_style_setting_dlg();
+		handle_fill_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_fill_intensity_spinbox_changed(
+				double value);
 
 	private:
 
