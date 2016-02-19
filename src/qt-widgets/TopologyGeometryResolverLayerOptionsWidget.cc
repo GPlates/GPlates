@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "TopologyBoundaryResolverLayerOptionsWidget.h"
+#include "TopologyGeometryResolverLayerOptionsWidget.h"
 
 #include "DrawStyleDialog.h"
 #include "LinkWidget.h"
@@ -33,13 +33,13 @@
 
 #include "gui/Dialogs.h"
 
-#include "presentation/TopologyBoundaryVisualLayerParams.h"
+#include "presentation/TopologyGeometryVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
 #include "utils/ComponentManager.h"
 
 
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryResolverLayerOptionsWidget(
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::TopologyGeometryResolverLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow *viewport_window,
@@ -78,13 +78,13 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryRe
 
 
 GPlatesQtWidgets::LayerOptionsWidget *
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create(
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::create(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow *viewport_window,
 		QWidget *parent_)
 {
-	return new TopologyBoundaryResolverLayerOptionsWidget(
+	return new TopologyGeometryResolverLayerOptionsWidget(
 			application_state,
 			view_state,
 			viewport_window,
@@ -93,7 +93,7 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create(
 
 
 void
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::set_data(
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::set_data(
 		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
 	d_current_visual_layer = visual_layer;
@@ -101,20 +101,20 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::set_data(
 	// Set the state of the checkboxes.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-		GPlatesPresentation::TopologyBoundaryVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::TopologyBoundaryVisualLayerParams *>(
+		GPlatesPresentation::TopologyGeometryVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::TopologyGeometryVisualLayerParams *>(
 					locked_visual_layer->get_visual_layer_params().get());
 
-		if (params)
+		if (visual_layer_params)
 		{
-			fill_polygons->setChecked(params->get_fill_polygons());
+			fill_polygons->setChecked(visual_layer_params->get_fill_polygons());
 		}
 	}
 }
 
 
 const QString &
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::get_title()
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::get_title()
 {
 	static const QString TITLE = tr("Topology options");
 	return TITLE;
@@ -122,23 +122,24 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::get_title()
 
 
 void
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::handle_fill_polygons_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::TopologyBoundaryVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::TopologyBoundaryVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
-		{
-			params->set_fill_polygons(fill_polygons->isChecked());
-		}
-	}
-}
-
-void
-GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::open_draw_style_setting_dlg()
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::open_draw_style_setting_dlg()
 {
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
+}
+
+
+void
+GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::handle_fill_polygons_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyGeometryVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::TopologyGeometryVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
+		{
+			visual_layer_params->set_fill_polygons(fill_polygons->isChecked());
+		}
+	}
 }

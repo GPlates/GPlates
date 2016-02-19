@@ -34,7 +34,7 @@
 #include "ReconstructScalarCoverageVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
-#include "TopologyBoundaryVisualLayerParams.h"
+#include "TopologyGeometryVisualLayerParams.h"
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VelocityFieldCalculatorVisualLayerParams.h"
 
@@ -51,7 +51,7 @@
 #include "qt-widgets/ReconstructScalarCoverageLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
 #include "qt-widgets/ScalarField3DLayerOptionsWidget.h"
-#include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
+#include "qt-widgets/TopologyGeometryResolverLayerOptionsWidget.h"
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
 #include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
 
@@ -494,8 +494,8 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				TOPOLOGY_GEOMETRY_RESOLVER),
-			&GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create,
-			&TopologyBoundaryVisualLayerParams::create,
+			&GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::create,
+			&TopologyGeometryVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(

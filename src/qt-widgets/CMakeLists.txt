@@ -508,9 +508,9 @@ set(srcs
     TimeDependentRasterPage.cc
     TimeDependentRasterPage.h
     TimeDependentRasterPageUi.ui
-    TopologyBoundaryResolverLayerOptionsWidget.cc
-    TopologyBoundaryResolverLayerOptionsWidget.h
-    TopologyBoundaryResolverLayerOptionsWidgetUi.ui
+    TopologyGeometryResolverLayerOptionsWidget.cc
+    TopologyGeometryResolverLayerOptionsWidget.h
+    TopologyGeometryResolverLayerOptionsWidgetUi.ui
     TopologyNetworkResolverLayerOptionsWidget.cc
     TopologyNetworkResolverLayerOptionsWidget.h
     TopologyNetworkResolverLayerOptionsWidgetUi.ui

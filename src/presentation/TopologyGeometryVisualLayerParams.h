@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
-#define GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
+#ifndef GPLATES_PRESENTATION_TOPOLOGYGEOMETRYVISUALLAYERPARAMS_H
+#define GPLATES_PRESENTATION_TOPOLOGYGEOMETRYVISUALLAYERPARAMS_H
 
 #include "VisualLayerParams.h"
 
@@ -33,19 +33,19 @@
 
 namespace GPlatesPresentation
 {
-	class TopologyBoundaryVisualLayerParams :
+	class TopologyGeometryVisualLayerParams :
 			public VisualLayerParams
 	{
 	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<TopologyBoundaryVisualLayerParams> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyBoundaryVisualLayerParams> non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<TopologyGeometryVisualLayerParams> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyGeometryVisualLayerParams> non_null_ptr_to_const_type;
 
 		static
 		non_null_ptr_type
 		create(
 			GPlatesAppLogic::LayerTaskParams &layer_task_params)
 		{
-			return new TopologyBoundaryVisualLayerParams( layer_task_params );
+			return new TopologyGeometryVisualLayerParams( layer_task_params );
 		}
 
 		void
@@ -67,7 +67,7 @@ namespace GPlatesPresentation
 		accept_visitor(
 				ConstVisualLayerParamsVisitor &visitor) const
 		{
-			visitor.visit_topology_boundary_visual_layer_params(*this);
+			visitor.visit_topology_geometry_visual_layer_params(*this);
 		}
 
 		virtual
@@ -75,12 +75,12 @@ namespace GPlatesPresentation
 		accept_visitor(
 				VisualLayerParamsVisitor &visitor)
 		{
-			visitor.visit_topology_boundary_visual_layer_params(*this);
+			visitor.visit_topology_geometry_visual_layer_params(*this);
 		}
 
 	protected:
 		explicit
-		TopologyBoundaryVisualLayerParams( 
+		TopologyGeometryVisualLayerParams( 
 				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 			VisualLayerParams(
 					layer_task_params,
@@ -94,4 +94,4 @@ namespace GPlatesPresentation
 	};
 }
 
-#endif // GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
+#endif // GPLATES_PRESENTATION_TOPOLOGYGEOMETRYVISUALLAYERPARAMS_H

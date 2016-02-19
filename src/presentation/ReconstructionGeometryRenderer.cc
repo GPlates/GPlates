@@ -37,7 +37,7 @@
 #include "ReconstructScalarCoverageVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
-#include "TopologyBoundaryVisualLayerParams.h"
+#include "TopologyGeometryVisualLayerParams.h"
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VelocityFieldCalculatorVisualLayerParams.h"
 #include "ViewState.h"
@@ -277,8 +277,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_boundary_visual_layer_params(
-		const TopologyBoundaryVisualLayerParams &params)
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_geometry_visual_layer_params(
+		const TopologyGeometryVisualLayerParams &params)
 {
 	d_render_params.fill_polygons = params.get_fill_polygons();
 }

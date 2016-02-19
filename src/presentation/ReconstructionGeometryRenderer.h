@@ -202,8 +202,8 @@ namespace GPlatesPresentation
 					const ScalarField3DVisualLayerParams &params);
 
 			void
-			visit_topology_boundary_visual_layer_params(
-					const TopologyBoundaryVisualLayerParams &params);
+			visit_topology_geometry_visual_layer_params(
+					const TopologyGeometryVisualLayerParams &params);
 
 			virtual
 			void
