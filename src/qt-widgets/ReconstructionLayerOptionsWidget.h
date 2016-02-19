@@ -81,6 +81,9 @@ namespace GPlatesQtWidgets
 		handle_view_total_reconstruction_poles_link_activated();
 
 		void
+		handle_merge_reconstruction_tree_layers_link_activated();
+
+		void
 		handle_keep_as_default_checkbox_clicked(
 				bool checked);
 
