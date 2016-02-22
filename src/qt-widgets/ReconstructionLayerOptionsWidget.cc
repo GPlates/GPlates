@@ -141,6 +141,7 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_merge_reconstruction_
 	{
 		d_merge_reconstruction_layers_dialog = new MergeReconstructionLayersDialog(
 				d_application_state,
+				d_view_state,
 				&d_viewport_window->dialogs().visual_layers_dialog());
 	}
 

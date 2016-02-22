@@ -27,10 +27,13 @@
 #ifndef GPLATES_QTWIDGETS_MERGERECONSTRUCTIONLAYERSDIALOG_H
 #define GPLATES_QTWIDGETS_MERGERECONSTRUCTIONLAYERSDIALOG_H
 
+#include <vector>
 #include <boost/weak_ptr.hpp>
 #include <QWidget>
 
 #include "MergeReconstructionLayersDialogUi.h"
+
+#include "app-logic/Layer.h"
 
 
 namespace GPlatesAppLogic
@@ -41,6 +44,7 @@ namespace GPlatesAppLogic
 namespace GPlatesPresentation
 {
 	class VisualLayer;
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets
@@ -59,6 +63,7 @@ namespace GPlatesQtWidgets
 		explicit
 		MergeReconstructionLayersDialog(
 				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 		/**
@@ -72,20 +77,75 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		react_clear_all_layers();
+
+		void
+		react_select_all_layers();
+
+		void
+		react_cell_changed_layers(
+				int row,
+				int column);
+
+		void
 		handle_apply();
 
+		void
+		handle_reject();
+
 	private:
+
+		/**
+		 * Keeps track of which layers are enabled/disabled by the user.
+		 */
+		class LayerState
+		{
+		public:
+			//! Layers are enabled by default - user will need to disable them.
+			explicit
+			LayerState(
+					const GPlatesAppLogic::Layer &layer_) :
+				layer(layer_),
+				enabled(true)
+			{  }
+
+			GPlatesAppLogic::Layer layer;
+			bool enabled;
+		};
+		typedef std::vector<LayerState> layer_state_seq_type;
+
+		/**
+		 * These should match the table columns set up in the UI designer.
+		 */
+		enum LayerColumnName
+		{
+			LAYER_NAME_COLUMN,
+			ENABLE_LAYER_COLUMN
+		};
+
 
 		void
 		setup_connections();
 
+		void
+		clear_layers();
+
+		std::vector<GPlatesAppLogic::Layer>
+		get_selected_layers() const;
+
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 
 		/**
 		 * The visual layer for which we are currently merging other 'Reconstruction Tree' layers into.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		/**
+		 * Keeps track of which layers are enabled by the user in the GUI.
+		 */
+		layer_state_seq_type d_layer_state_seq;
 	};
 }
 
