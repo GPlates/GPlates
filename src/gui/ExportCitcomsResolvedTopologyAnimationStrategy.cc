@@ -74,8 +74,12 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::ExportCitcomsResolve
 			d_export_animation_context_ptr->view_state().get_application_state().get_reconstruct_graph();
 
 	// Check all the active reconstruction layers, and get their input files.
-	BOOST_FOREACH(GPlatesAppLogic::Layer layer, reconstruct_graph)
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_iter = reconstruct_graph.begin();
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_end = reconstruct_graph.end();
+	for ( ; layers_iter != layers_end; ++layers_iter)
 	{
+		const GPlatesAppLogic::Layer layer = *layers_iter;
+
 		if (layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION &&
 			layer.is_active())
 		{

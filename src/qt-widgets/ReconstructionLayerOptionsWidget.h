@@ -44,6 +44,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
+	class MergeReconstructionLayersDialog;
 	class ViewportWindow;
 
 	/**
@@ -99,6 +100,7 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
+		MergeReconstructionLayersDialog *d_merge_reconstruction_layers_dialog;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

@@ -96,7 +96,7 @@
             </property>
             <column>
              <property name="text">
-              <string>File Name</string>
+              <string>Layer</string>
              </property>
             </column>
             <column>

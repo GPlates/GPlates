@@ -339,6 +339,9 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MergeReconstructionLayersDialog.cc
+    MergeReconstructionLayersDialog.h
+    MergeReconstructionLayersDialogUi.ui
     MetadataDialog.cc
     MetadataDialog.h
     MetadataDialogUi.ui
