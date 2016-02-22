@@ -64,10 +64,10 @@ GPlatesQtWidgets::MergeReconstructionLayersDialog::MergeReconstructionLayersDial
 
 bool
 GPlatesQtWidgets::MergeReconstructionLayersDialog::populate(
-		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
+		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &current_visual_layer)
 {
 	// Store pointer so we can write the settings back later.
-	d_current_visual_layer = visual_layer;
+	d_current_visual_layer = current_visual_layer;
 
 	// Clear the previous list of reconstruction layers (if any).
 	clear_layers();
