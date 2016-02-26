@@ -515,6 +515,10 @@ namespace GPlatesPresentation
 							const std::vector<TranscribeLayerInputConnection> &transcribe_input_connections =
 									transcribe_layer.d_input_connections;
 
+							// Whether one or more files connected to the current layer's main input channel were
+							// not loaded (if all files on this channel were not loaded then we'll delete the layer).
+							bool main_input_channel_file_not_loaded = false;
+
 							// Iterate over the layer's input connections.
 							for (unsigned int n = 0; n < transcribe_input_connections.size(); ++n)
 							{
@@ -532,6 +536,12 @@ namespace GPlatesPresentation
 									// If the input file did not load then skip this connection.
 									if (!file_references_on_load[transcribe_input_connection.d_input_index])
 									{
+										if (transcribe_input_connection.d_input_channel_name ==
+											layer.get_main_input_feature_collection_channel())
+										{
+											main_input_channel_file_not_loaded = true;
+										}
+
 										continue;
 									}
 
@@ -554,9 +564,40 @@ namespace GPlatesPresentation
 									GPlatesAppLogic::Layer input_layer =
 											layers[transcribe_input_connection.d_input_index];
 
-									layer.connect_input_to_layer_output(
-											input_layer,
-											transcribe_input_connection.d_input_channel_name);
+									// Connect to the input layer.
+									//
+									// We might have already removed the input layer if its main
+									// input channel files were not loaded (eg, didn't exist).
+									// If so then we don't connect to it.
+									if (input_layer.is_valid())
+									{
+										layer.connect_input_to_layer_output(
+												input_layer,
+												transcribe_input_connection.d_input_channel_name);
+									}
+								}
+							}
+
+							//
+							// Remove layer if connected to files that were not successfully loaded.
+							//
+							// Remove layer if references files, on the main input channel,
+							// that don't exist. This can happen when files have been moved or deleted
+							// since the session/project was saved.
+							//
+
+							if (main_input_channel_file_not_loaded)
+							{
+								std::vector<GPlatesAppLogic::Layer::InputConnection> layer_input_connections =
+										layer.get_channel_inputs(
+												layer.get_main_input_feature_collection_channel());
+								if (layer_input_connections.empty())
+								{
+									// Remove layer - also removes any connections made to layer so far.
+									reconstruct_graph.remove_layer(layer);
+
+									// Subsequently connected layers won't be able to connect to this layer.
+									layers[layer_index] = layer = GPlatesAppLogic::Layer();
 								}
 							}
 						}
@@ -606,44 +647,16 @@ namespace GPlatesPresentation
 							GPlatesAppLogic::Layer default_reconstruction_tree_layer =
 									layers[d_default_reconstruction_tree_layer_index.get()];
 
-							reconstruct_graph.set_default_reconstruction_tree_layer(
-									default_reconstruction_tree_layer);
-						}
-					}
-
-					//
-					// Remove layers due to files not successfully loaded.
-					//
-
-					if (scribe.is_loading())
-					{
-						// Put all layer additions in a single add layers group.
-						GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(reconstruct_graph);
-						add_layers_group.begin_add_or_remove_layers();
-
-						// Remove any loaded layers that reference files, on the main input channel,
-						// that don't exist. This can happen when files have been moved or deleted
-						// since the session/project was saved.
-						BOOST_FOREACH(GPlatesAppLogic::Layer layer, layers)
-						{
-							// Never remove layers that don't use the *main* input connection.
-							if (layer.get_main_input_feature_collection_channel() ==
-								GPlatesAppLogic::LayerInputChannelName::UNUSED)
+							// Set the default reconstruction tree layer.
+							//
+							// We might have already removed it if its main input channel files were
+							// not loaded (eg, didn't exist). If so then we don't set it as the default.
+							if (default_reconstruction_tree_layer.is_valid())
 							{
-								continue;
-							}
-
-							std::vector<GPlatesAppLogic::Layer::InputConnection> layer_input_connections =
-									layer.get_channel_inputs(
-											layer.get_main_input_feature_collection_channel());
-							if (layer_input_connections.empty())
-							{
-								reconstruct_graph.remove_layer(layer);
+								reconstruct_graph.set_default_reconstruction_tree_layer(
+										default_reconstruction_tree_layer);
 							}
 						}
-
-						// End the add layers group.
-						add_layers_group.end_add_or_remove_layers();
 					}
 
 					return GPlatesScribe::TRANSCRIBE_SUCCESS;
