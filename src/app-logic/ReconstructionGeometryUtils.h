@@ -29,7 +29,9 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <boost/mpl/eval_if.hpp>
 #include <boost/optional.hpp>
+#include <boost/type_traits/is_pointer.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
 #include "AppLogicFwd.h"
@@ -59,19 +61,41 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Determines if the @a ReconstructionGeometry object pointed to by
-		 * @a reconstruction_geom_ptr is of type ReconstructionGeometryDerivedType or
-		 * a type derived from it.
+		 * @a reconstruction_geom_ptr is of the type pointed to by ReconstructionGeometryDerivedPointer
+		 * (or a type derived from it).
 		 *
-		 * Example usage:
-		 *   const ReconstructionGeometry *reconstruction_geometry_ptr = ...;
+		 * Note that both ReconstructionGeometryPointer and ReconstructionGeometryDerivedPointer
+		 * can be either a raw pointer or a non-null intrusive pointer
+		 * (and they don't both have to be raw or both non-null intrusive).
+		 *
+		 * Example *raw* pointer usage:
+		 *   const ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr = ...;
 		 *   boost::optional<const ReconstructedFeatureGeometry *> rfg =
-		 *        get_reconstruction_geometry_derived_type<const ReconstructedFeatureGeometry>(
+		 *        get_reconstruction_geometry_derived_type<const ReconstructedFeatureGeometry *>(
 		 *              reconstruction_geometry_ptr);
 		 *
-		 * If type matches then returns pointer to derived type otherwise returns false.
+		 * Example *raw* pointer usage:
+		 *   ReconstructionGeometry *reconstruction_geometry_ptr = ...;
+		 *   boost::optional<ReconstructedFeatureGeometry *> rfg =
+		 *        get_reconstruction_geometry_derived_type<ReconstructedFeatureGeometry *>(
+		 *              reconstruction_geometry_ptr);
+		 *
+		 * Example *non-null intrusive* pointer usage:
+		 *   const ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr = ...;
+		 *   boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> rfg =
+		 *        get_reconstruction_geometry_derived_type<ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(
+		 *              reconstruction_geometry_ptr);
+		 *
+		 * Example *non-null intrusive* pointer usage:
+		 *   const ReconstructionGeometry *reconstruction_geometry_ptr = ...;
+		 *   boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> rfg =
+		 *        get_reconstruction_geometry_derived_type<ReconstructedFeatureGeometry::non_null_ptr_type>(
+		 *              reconstruction_geometry_ptr);
+		 *
+		 * If type matches then returns pointer to derived type, otherwise returns none.
 		 */
-		template <class ReconstructionGeometryDerivedType, typename ReconstructionGeometryPointer>
-		boost::optional<ReconstructionGeometryDerivedType *>
+		template <class ReconstructionGeometryDerivedPointer, typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionGeometryDerivedPointer>
 		get_reconstruction_geometry_derived_type(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
@@ -81,24 +105,60 @@ namespace GPlatesAppLogic
 		 * a certain type derived from @a ReconstructionGeometry and appends any found
 		 * to @a reconstruction_geom_derived_type_seq.
 		 *
-		 * Template parameter 'ReconstructionGeometryForwardIter' contains pointers to
-		 * @a ReconstructionGeometry objects (or anything that behaves like a pointer).
+		 * Template parameter 'ReconstructionGeometryForwardIter' contains raw or
+		 * non-null intrusive pointers to @a ReconstructionGeometry objects.
 		 *
-		 * NOTE: Template parameter 'ContainerOfReconstructionGeometryDerivedType' *must*
-		 * be a standard container supporting the 'push_back()' method and must contain
-		 * pointers to a const or non-const type derived from @a ReconstructionGeometry.
+		 * NOTE: Template parameter 'ContainerOfReconstructionGeometryDerivedPointerType' *must*
+		 * be a standard container supporting the 'push_back()' method and must contain raw or
+		 * non-null intrusive pointers to a const or non-const type derived from @a ReconstructionGeometry.
 		 * It is this exact type that the caller is effectively searching for -
 		 * the objects found will be of this type or a type derived from it.
+		 *
+		 * Example *raw* pointer usage:
+		 *   std::vector<ReconstructionGeometry::non_null_ptr_type> reconstruction_geometries;
+		 *   ...
+		 *   std::vector<const ReconstructedFeatureGeometry *> reconstructed_feature_geometries;
+		 *   get_reconstruction_geometry_derived_type_sequence(
+		 *        reconstruction_geometries.begin(),
+		 *        reconstruction_geometries.end(),
+		 *        reconstructed_feature_geometries);
+		 *
+		 * Example *raw* pointer usage:
+		 *   std::vector<ReconstructionGeometry *> reconstruction_geometries;
+		 *   ...
+		 *   std::vector<ReconstructedFeatureGeometry *> reconstructed_feature_geometries;
+		 *   get_reconstruction_geometry_derived_type_sequence(
+		 *        reconstruction_geometries.begin(),
+		 *        reconstruction_geometries.end(),
+		 *        reconstructed_feature_geometries);
+		 *
+		 * Example *non-null intrusive* pointer usage:
+		 *   std::vector<ReconstructionGeometry::non_null_ptr_type> reconstruction_geometries;
+		 *   ...
+		 *   std::vector<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> reconstructed_feature_geometries;
+		 *   get_reconstruction_geometry_derived_type_sequence(
+		 *        reconstruction_geometries.begin(),
+		 *        reconstruction_geometries.end(),
+		 *        reconstructed_feature_geometries);
+		 *
+		 * Example *non-null intrusive* pointer usage:
+		 *   std::vector<ReconstructionGeometry *> reconstruction_geometries;
+		 *   ...
+		 *   std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+		 *   get_reconstruction_geometry_derived_type_sequence(
+		 *        reconstruction_geometries.begin(),
+		 *        reconstruction_geometries.end(),
+		 *        reconstructed_feature_geometries);
 		 *
 		 * Returns true if any found from input sequence.
 		 */
 		template <typename ReconstructionGeometryForwardIter,
-				class ContainerOfReconstructionGeometryDerivedType>
+				class ContainerOfReconstructionGeometryDerivedPointerType>
 		bool
 		get_reconstruction_geometry_derived_type_sequence(
 				ReconstructionGeometryForwardIter reconstruction_geoms_begin,
 				ReconstructionGeometryForwardIter reconstruction_geoms_end,
-				ContainerOfReconstructionGeometryDerivedType &reconstruction_geom_derived_type_seq);
+				ContainerOfReconstructionGeometryDerivedPointerType &reconstruction_geom_derived_type_seq);
 
 
 		/**
@@ -408,13 +468,55 @@ namespace GPlatesAppLogic
 		};
 
 
-		template <class ReconstructionGeometryDerivedType, typename ReconstructionGeometryPointer>
-		boost::optional<ReconstructionGeometryDerivedType *>
+		namespace Implementation
+		{
+			/**
+			 * Metafunction to extract pointee type (pointed-to type) from a non-null intrusive pointer.
+			 */
+			template <typename NonNullIntrusivePtrType>
+			struct GetNonNullIntrusivePointeeType
+			{
+				// Intentionally empty.
+			};
+
+			/**
+			 * We only want it to compile/work for non-null intrusive smart pointer types.
+			 *
+			 * For example, shouldn't work for boost::shared_ptr as that would incorrectly take ownership.
+			 */
+			template <typename Type>
+			struct GetNonNullIntrusivePointeeType< GPlatesUtils::non_null_intrusive_ptr<Type> >
+			{
+				typedef typename GPlatesUtils::non_null_intrusive_ptr<Type>::element_type type;
+			};
+
+			/**
+			 * Metafunction to extract pointee type (pointed-to type) from a raw pointer or non-null intrusive pointer.
+			 */
+			template <typename PointerType>
+			struct GetPointeeType
+			{
+				typedef typename boost::mpl::eval_if< 
+						boost::is_pointer<PointerType>, // Is raw pointer ?
+								boost::remove_pointer<PointerType>,
+								// Delay instantiation until sure not a raw pointer because
+								// 'PointerType::element_type' makes no sense for a raw pointer...
+								GetNonNullIntrusivePointeeType<PointerType> >::type type;
+			};
+		}
+
+
+		template <class ReconstructionGeometryDerivedPointer, typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionGeometryDerivedPointer>
 		get_reconstruction_geometry_derived_type(
 				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
+			// Type of derived reconstruction geometry.
+			typedef typename Implementation::GetPointeeType<ReconstructionGeometryDerivedPointer>::type
+					recon_geom_derived_type;
+
 			// Type of finder class.
-			typedef ReconstructionGeometryDerivedTypeFinder<ReconstructionGeometryDerivedType>
+			typedef ReconstructionGeometryDerivedTypeFinder<recon_geom_derived_type>
 					reconstruction_geometry_derived_type_finder_type;
 
 			reconstruction_geometry_derived_type_finder_type recon_geom_derived_type_finder;
@@ -433,22 +535,23 @@ namespace GPlatesAppLogic
 				return boost::none;
 			}
 
-			return derived_type_seq.front();
+			return ReconstructionGeometryDerivedPointer(derived_type_seq.front());
 		}
 
 
 		template <typename ReconstructionGeometryForwardIter,
-				class ContainerOfReconstructionGeometryDerivedType>
+				class ContainerOfReconstructionGeometryDerivedPointerType>
 		bool
 		get_reconstruction_geometry_derived_type_sequence(
 				ReconstructionGeometryForwardIter reconstruction_geoms_begin,
 				ReconstructionGeometryForwardIter reconstruction_geoms_end,
-				ContainerOfReconstructionGeometryDerivedType &reconstruction_geom_derived_type_seq)
+				ContainerOfReconstructionGeometryDerivedPointerType &reconstruction_geom_derived_type_seq)
 		{
-			// We're expecting a container of pointers so get the type being pointed at.
-			typedef typename boost::remove_pointer<
-					typename ContainerOfReconstructionGeometryDerivedType::value_type>::type
-							recon_geom_derived_type;
+			// We're expecting a container of raw or non-null intrusive pointers so get the pointer type.
+			typedef typename ContainerOfReconstructionGeometryDerivedPointerType::value_type recon_geom_derived_ptr_type;
+
+			// Type of derived reconstruction geometry.
+			typedef typename Implementation::GetPointeeType<recon_geom_derived_ptr_type>::type recon_geom_derived_type;
 
 			// Type of finder class.
 			typedef ReconstructionGeometryDerivedTypeFinder<recon_geom_derived_type>
@@ -465,14 +568,18 @@ namespace GPlatesAppLogic
 			}
 
 			// Get the sequence of any found ReconstructionGeometry derived types.
-			const typename reconstruction_geometry_derived_type_finder_type::container_type &
-					derived_type_seq = recon_geom_derived_type_finder.get_geometry_type_sequence();
+			typedef typename reconstruction_geometry_derived_type_finder_type::container_type finder_container_type;
+			typedef typename finder_container_type::const_iterator finder_container_const_iterator_type;
+			const finder_container_type &derived_type_seq = recon_geom_derived_type_finder.get_geometry_type_sequence();
 
 			// Append to the end of the output sequence of derived types.
-			std::copy(
-					derived_type_seq.begin(),
-					derived_type_seq.end(),
-					std::back_inserter(reconstruction_geom_derived_type_seq));
+			finder_container_const_iterator_type derived_type_seq_iter = derived_type_seq.begin();
+			finder_container_const_iterator_type derived_type_seq_end = derived_type_seq.end();
+			for ( ; derived_type_seq_iter != derived_type_seq_end; ++derived_type_seq_iter)
+			{
+				reconstruction_geom_derived_type_seq.push_back(
+						recon_geom_derived_ptr_type(*derived_type_seq_iter));
+			}
 
 			// Return true if found any derived types.
 			return !derived_type_seq.empty();

@@ -64,7 +64,6 @@
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
 
 namespace
@@ -150,9 +149,9 @@ namespace
 			GPlatesModel::FeatureHandle::iterator properties_end = feature->end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
 			{
-				const GPlatesModel::TopLevelProperty &feature_property = **properties_iter;
+				GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type feature_property = *properties_iter;
 
-				if (gpgim_property.get_property_name() == feature_property.property_name())
+				if (gpgim_property.get_property_name() == feature_property->property_name())
 				{
 					if (error_code)
 					{
@@ -460,22 +459,55 @@ GPlatesModel::ModelUtils::get_property_value(
 
 std::vector<GPlatesModel::FeatureHandle::iterator>
 GPlatesModel::ModelUtils::get_top_level_properties(
-		const PropertyName& name,
+		const PropertyName &property_name,
 		FeatureHandle::weak_ref feature)
 {
-	std::vector<FeatureHandle::iterator> ret;
-	if(feature.is_valid())
+	std::vector<FeatureHandle::iterator> properties;
+
+	if (feature.is_valid())
 	{
-		FeatureHandle::iterator it = feature->begin();
-		for(;it != feature->end(); it++)
+		for (FeatureHandle::iterator property_iter = feature->begin(); property_iter != feature->end(); ++property_iter)
 		{
-			if((*it)->property_name() == name)
+			if ((*property_iter)->property_name() == property_name)
 			{
-				ret.push_back(it);
+				properties.push_back(property_iter);
 			}
 		}
 	}
-	return ret;
+
+	return properties;
+}
+
+
+std::vector<GPlatesModel::FeatureHandle::iterator>
+GPlatesModel::ModelUtils::get_top_level_geometry_properties(
+		FeatureHandle::weak_ref feature)
+{
+	std::vector<FeatureHandle::iterator> geometry_properties;
+
+	if (feature.is_valid())
+	{
+		const Gpgim::property_seq_type &gpgim_geometry_properties = Gpgim::instance().get_geometry_properties();
+
+		for (FeatureHandle::iterator property_iter = feature->begin(); property_iter != feature->end(); ++property_iter)
+		{
+			const PropertyName &property_name = (*property_iter)->property_name();
+
+			// Add feature property to return list if it's property name represents a geometry property.
+			BOOST_FOREACH(
+					const GpgimProperty::non_null_ptr_to_const_type &gpgim_geometry_property,
+					gpgim_geometry_properties)
+			{
+				if (property_name == gpgim_geometry_property->get_property_name())
+				{
+					geometry_properties.push_back(property_iter);
+					break;
+				}
+			}
+		}
+	}
+
+	return geometry_properties;
 }
 
 
@@ -669,9 +701,9 @@ GPlatesModel::ModelUtils::set_property(
 	FeatureHandle::iterator properties_end = feature->end();
 	for ( ; properties_iter != properties_end; ++properties_iter)
 	{
-		const TopLevelProperty &feature_property = **properties_iter;
+		TopLevelProperty::non_null_ptr_to_const_type feature_property = *properties_iter;
 
-		if (gpgim_property.get_property_name() == feature_property.property_name())
+		if (gpgim_property.get_property_name() == feature_property->property_name())
 		{
 			// Change the property.
 			FeatureHandle::iterator feature_property_iter = properties_iter;
@@ -777,9 +809,9 @@ GPlatesModel::ModelUtils::set_properties(
 	FeatureHandle::iterator properties_end = feature->end();
 	for ( ; properties_iter != properties_end; ++properties_iter)
 	{
-		const TopLevelProperty &feature_property = **properties_iter;
+		TopLevelProperty::non_null_ptr_to_const_type feature_property = *properties_iter;
 
-		if (gpgim_property.get_property_name() == feature_property.property_name())
+		if (gpgim_property.get_property_name() == feature_property->property_name())
 		{
 			// If we have a property value to set...
 			if (property_value_seq_iter != property_value_seq_end)
@@ -1280,33 +1312,24 @@ GPlatesModel::ModelUtils::create_gml_time_instant(
 
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::ModelUtils::create_total_reconstruction_pole(
-		const std::vector<TotalReconstructionPole> &five_tuples,
-		bool enable_metadata)
+		const std::vector<TotalReconstructionPole> &five_tuples)
 {
 	using namespace GPlatesPropertyValues;
 	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
-	boost::optional<StructuralType> value_type;
-	if (enable_metadata)
-	{
-		value_type = StructuralType::create_gpml("TotalReconstructionPole");
-	}
-	else
-	{
-		value_type = StructuralType::create_gpml("FiniteRotation");
-	}
+	const StructuralType value_type = StructuralType::create_gpml("FiniteRotation");
 
 	for (std::vector<TotalReconstructionPole>::const_iterator iter = five_tuples.begin(); 
 		iter != five_tuples.end(); ++iter) 
 	{
-		time_samples.push_back(create_gml_time_sample(*iter, enable_metadata));
+		time_samples.push_back(create_gml_time_sample(*iter));
 	}
 
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 		GpmlIrregularSampling::create(
 				time_samples,
 				GPlatesUtils::get_intrusive_ptr(
-						GpmlFiniteRotationSlerp::create(*value_type)), 
-				*value_type);
+						GpmlFiniteRotationSlerp::create(value_type)), 
+				value_type);
 
 	TopLevelProperty::non_null_ptr_type top_level_property_inline =
 		TopLevelPropertyInline::create(
@@ -1391,8 +1414,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 
 GPlatesPropertyValues::GpmlTimeSample
 GPlatesModel::ModelUtils::create_gml_time_sample(
-		const TotalReconstructionPole &trp,
-		bool enable_metadata)
+		const TotalReconstructionPole &trp)
 {
 	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
@@ -1413,22 +1435,11 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	XsString::non_null_ptr_type gml_description = 
 		XsString::create(GPlatesUtils::make_icu_string_from_qstring(trp.comment));
 
-	if (enable_metadata)
-	{
-		return GpmlTimeSample(
-				gpml_finite_rotation, 
-				gml_time_instant,
-				get_intrusive_ptr(gml_description), 
-				StructuralType::create_gpml("TotalReconstructionPole"));
-	}
-	else
-	{
-		return GpmlTimeSample(
-				gpml_finite_rotation, 
-				gml_time_instant,
-				get_intrusive_ptr(gml_description), 
-				StructuralType::create_gpml("FiniteRotation"));
-	}
+	return GpmlTimeSample(
+			gpml_finite_rotation, 
+			gml_time_instant,
+			get_intrusive_ptr(gml_description), 
+			StructuralType::create_gpml("FiniteRotation"));
 }
 
 

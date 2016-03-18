@@ -425,6 +425,38 @@ GPlatesModel::FeatureCollectionMetadata::serialize(
 }
 
 
+GPlatesModel::MetadataContainer
+GPlatesModel::create_metadata_from_gpml(
+		XmlElementNode::non_null_ptr_type total_reconstruction_pole_element)
+{
+	static const XmlElementName META = XmlElementName::create_gpml("meta");
 
+	MetadataContainer metadata;
 
+	std::pair<
+			XmlElementNode::child_const_iterator, 
+			boost::optional<XmlElementNode::non_null_ptr_type> >
+					child = 
+							total_reconstruction_pole_element->get_next_child_by_name(
+									META,
+									total_reconstruction_pole_element->children_begin());
 
+	while (child.second)
+	{
+		QString buf;
+		QXmlStreamWriter writer(&buf);
+		(*child.second)->write_to(writer);
+		QXmlStreamReader reader(buf);
+		GPlatesUtils::XQuery::next_start_element(reader);
+		QXmlStreamAttributes attr =	reader.attributes(); 
+		QStringRef name =attr.value("name");
+		QString value = reader.readElementText();
+		metadata.push_back(
+				boost::shared_ptr<Metadata>(
+						new Metadata(name.toString(),value)));
+		++child.first;
+		child = total_reconstruction_pole_element->get_next_child_by_name(META, child.first);
+	}
+
+	return metadata;
+}

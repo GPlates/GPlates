@@ -37,19 +37,13 @@
 #include "maths/PointOnSphere.h"
 
 
-const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
-GPlatesPropertyValues::GpmlFiniteRotation::create(
-		const GPlatesMaths::FiniteRotation &finite_rotation)
-{
-	return non_null_ptr_type(
-			new GpmlFiniteRotation(finite_rotation));
-}
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const std::pair<double, double> &gpml_euler_pole,
-		const double &gml_angle_in_degrees)
+		const double &gml_angle_in_degrees,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	const double &lon = gpml_euler_pole.first;
 	const double &lat = gpml_euler_pole.second;
@@ -62,32 +56,34 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 					p,
 					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees));
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees)
+		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					*gpml_euler_pole->point(),
 					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->quantity()));
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
-GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
+GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation(
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	using namespace ::GPlatesMaths;
 
 	FiniteRotation fr = FiniteRotation::create_identity_rotation();
 
-	return create(fr);
+	return create(fr, metadata_);
 }
 
 
@@ -98,41 +94,18 @@ GPlatesPropertyValues::GpmlFiniteRotation::is_zero_rotation() const
 }
 
 
-
-const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-GPlatesPropertyValues::calculate_euler_pole(
-		const GpmlFiniteRotation &fr)
-{
-	// FIXME:  This code should probably move into the GPlatesMaths namespace somewhere.
-	using namespace ::GPlatesMaths;
-
-	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp =
-			fr.finite_rotation().unit_quat().get_rotation_params(
-					fr.finite_rotation().axis_hint());
-	return GmlPoint::create(PointOnSphere(rp.axis));
-}
-
-
-const GPlatesMaths::real_t
-GPlatesPropertyValues::calculate_angle(
-		const GpmlFiniteRotation &fr)
-{
-	// FIXME:  This code should probably move into the GPlatesMaths namespace somewhere.
-	using namespace ::GPlatesMaths;
-
-	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp =
-			fr.finite_rotation().unit_quat().get_rotation_params(
-					fr.finite_rotation().axis_hint());
-	return GPlatesMaths::convert_rad_to_deg(rp.angle);
-}
-
-
 std::ostream &
 GPlatesPropertyValues::GpmlFiniteRotation::print_to(
 		std::ostream &os) const
 {
-	return os << d_finite_rotation;
-}
+	os << d_finite_rotation;
 
+	os << ", [ ";
+
+	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, d_metadata)
+	{
+		os << '(' << metadata_entry->get_name().toStdString() << ": " << metadata_entry->get_content().toStdString() << "), ";
+	}
+
+	return os << " ]";
+}

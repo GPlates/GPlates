@@ -961,13 +961,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 	// If the polygon is outside the current quad tree node then we are finished and can return.
 	// TODO: Implement a more optimal path that test intersection without partitioning.
-	GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_inside; // Not used.
-	GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_outside; // Not used.
 	if (GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE ==
-		polygon_intersections.partition_polygon(
-				quad_tree_node_bounding_polygon,
-				partitioned_polylines_inside,
-				partitioned_polylines_inside))
+		polygon_intersections.partition_polygon(quad_tree_node_bounding_polygon))
 	{
 		// If the cube quad tree node's polygon boundary is outside our test polygon then it's
 		// still possible for the cube quad tree node to completely surround the test polygon in which

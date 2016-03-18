@@ -43,7 +43,6 @@
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 
 const char GPlatesFileIO::RotationFileReaderV2::COMMENT_LEADING_CHARACTER = '#';
@@ -712,17 +711,19 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 {
 	if(d_current_sample)
 	{
-		GPlatesPropertyValues::GpmlTotalReconstructionPole* trp = 
-			dynamic_cast<GPlatesPropertyValues::GpmlTotalReconstructionPole*>(d_current_sample->value().get());
+		GPlatesPropertyValues::GpmlFiniteRotation* trp = 
+			dynamic_cast<GPlatesPropertyValues::GpmlFiniteRotation*>(d_current_sample->value().get());
 		if(trp)
 		{
-			std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta = trp->metadata();
+			std::vector<boost::shared_ptr<GPlatesModel::Metadata> > meta = trp->metadata();
 			BOOST_FOREACH(const AttributeSegment&attr, d_attrs)
 			{
 				meta.push_back(
 						boost::shared_ptr<GPlatesModel::Metadata>(
-								new GPlatesModel::PoleMetadata(attr.get_name(), attr.get_value())));
+								new GPlatesModel::Metadata(attr.get_name(), attr.get_value())));
 			}
+			trp->set_metadata(meta);
+
 			d_attrs.clear();
 		}
 		(*d_current_sampling)->time_samples().push_back(*d_current_sample);
@@ -820,10 +821,8 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 
 	std::pair<double, double> lon_lat_euler_pole(data.lon, data.lat);
 
-	GpmlTotalReconstructionPole::non_null_ptr_type trp =
-		GpmlTotalReconstructionPole::create(GpmlFiniteRotation::create(
-				lon_lat_euler_pole, 
-				data.angle)->finite_rotation());
+	GpmlFiniteRotation::non_null_ptr_type trp =
+			GpmlFiniteRotation::create(lon_lat_euler_pole, data.angle);
 
 	GeoTimeInstant geo_time_instant(data.time);
 	GmlTimeInstant::non_null_ptr_type valid_time =
@@ -831,10 +830,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 
 	boost::intrusive_ptr<XsString> description;
 
-// 	TemplateTypeParameterType value_type = 
-// 		TemplateTypeParameterType::create_gpml("FiniteRotation");
-	StructuralType value_type = 
-			StructuralType::create_gpml("TotalReconstructionPole");
+	const StructuralType value_type = StructuralType::create_gpml("FiniteRotation");
 
 	if (data.disabled) {
 		return GpmlTimeSample(trp, valid_time, description, value_type, true);

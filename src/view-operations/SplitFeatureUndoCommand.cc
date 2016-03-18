@@ -121,7 +121,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	{
 		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						const GPlatesAppLogic::ReconstructedFeatureGeometry>(
+						const GPlatesAppLogic::ReconstructedFeatureGeometry *>(
 								d_feature_focus->associated_reconstruction_geometry());
 		if (rfg)
 		{

@@ -260,7 +260,7 @@ namespace GPlatesAppLogic
 			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
 					// It's either a resolved topological network or a reconstructed feature geometry...
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							const ResolvedTopologicalNetwork>(network_component)
+							const ResolvedTopologicalNetwork *>(network_component)
 					? MultiPointVectorField::CodomainElement::InNetworkDeformingRegion
 					: MultiPointVectorField::CodomainElement::InNetworkRigidBlock;
 
@@ -281,97 +281,32 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Test the domain point against the resolved topological network.
+		 * Test the domain point against rigid plates (resolved topological boundaries and static polygons).
 		 *
-		 * Return false if point is not inside the network.
+		 * Return false if point is not inside any rigid plates.
 		 */
 		bool
 		solve_velocities_on_rigid_plates(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query)
+				const GeometryCookieCutter &rigid_plates_query)
 		{
-			// Get a list of all resolved topological boundaries that contain 'point'.
-			TopologyUtils::resolved_topological_boundary_seq_type resolved_topological_boundaries_containing_point;
-			resolved_rigid_plates_query->find_resolved_topology_boundaries_containing_point(
-					resolved_topological_boundaries_containing_point,
-					domain_point);
-			if (resolved_topological_boundaries_containing_point.empty())
+			const boost::optional<const ReconstructionGeometry *> rigid_plate_containing_point =
+					rigid_plates_query.partition_point(domain_point);
+			if (!rigid_plate_containing_point)
 			{
 				return false;
 			}
+
 
 #ifdef DEBUG
 GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
 qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 #endif
 
-			boost::optional< std::pair<
-					GPlatesModel::integer_plate_id_type,
-					const ResolvedTopologicalBoundary * > > recon_plate_id_opt =
-							TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
-									resolved_topological_boundaries_containing_point);
-			if (!recon_plate_id_opt)
-			{
-				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
-				MultiPointVectorField::CodomainElement::Reason reason =
-						MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
-				range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
-
-				return true; 
-			}
-
-			const GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
-			const ResolvedTopologicalBoundary *resolved_topo_boundary = recon_plate_id_opt->second;
-
-			// Compute the velocity for this domain point.
-			const GPlatesMaths::Vector3D vector_xyz =
-					PlateVelocityUtils::calc_velocity_vector(
-							domain_point,
-							*resolved_topo_boundary->get_reconstruction_tree(),
-							*resolved_topo_boundary->get_reconstruction_tree_creator()
-									.get_reconstruction_tree(
-											// FIXME:  Should this '1' should be user controllable? ...
-											resolved_topo_boundary->get_reconstruction_time() + 1),
-							recon_plate_id);
-
-			MultiPointVectorField::CodomainElement::Reason reason =
-					MultiPointVectorField::CodomainElement::InPlateBoundary;
-			range_element = MultiPointVectorField::CodomainElement(vector_xyz, reason,
-					recon_plate_id, resolved_topo_boundary);
-
-			return true;
-		}
-
-
-		/**
-		 * Test the domain point against the resolved topological network.
-		 *
-		 * Return false if point is not inside the network.
-		 */
-		bool
-		solve_velocities_on_static_polygon(
-				const GPlatesMaths::PointOnSphere &domain_point,
-				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const GeometryCookieCutter &reconstructed_static_polygons_query)
-		{
-			const boost::optional<const ReconstructionGeometry *>
-					reconstructed_static_polygon_containing_point = 
-							reconstructed_static_polygons_query.partition_point(domain_point);
-			if (!reconstructed_static_polygon_containing_point)
-			{
-				return false;
-			}
-
-
-#ifdef DEBUG
-GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
-qDebug() << "solve_velocities_on_static_polygon: " << llp;
-#endif
-
 			const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
 					ReconstructionGeometryUtils::get_plate_id(
-							reconstructed_static_polygon_containing_point.get());
+							rigid_plate_containing_point.get());
 			if (!recon_plate_id_opt)
 			{
 				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
@@ -387,13 +322,14 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			// Get the reconstruction trees to calculate velocity with.
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree1 =
 				ReconstructionGeometryUtils::get_reconstruction_tree(
-						reconstructed_static_polygon_containing_point.get());
+						rigid_plate_containing_point.get());
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree2 =
 				ReconstructionGeometryUtils::get_reconstruction_tree(
-						reconstructed_static_polygon_containing_point.get(),
+						rigid_plate_containing_point.get(),
 						// FIXME:  Should this '1' should be user controllable? ...
-						reconstructed_static_polygon_containing_point.get()->get_reconstruction_time() + 1);
-			// This should succeed since the static polygon is an RFG which supports reconstruction trees.
+						rigid_plate_containing_point.get()->get_reconstruction_time() + 1);
+			// This should succeed since resolved topological boundaries and RFGs (static polygons)
+			// support reconstruction trees.
 			if (!recon_tree1 || !recon_tree2)
 			{
 				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
@@ -412,11 +348,18 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 							*recon_tree2.get(),
 							recon_plate_id);
 
+			// Determine if point was in a resolved topological boundary or RFG (static polygon).
+			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
+					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							const ResolvedTopologicalBoundary *>(rigid_plate_containing_point.get())
+					? MultiPointVectorField::CodomainElement::InPlateBoundary
+					: MultiPointVectorField::CodomainElement::InStaticPolygon;
+
 			range_element = MultiPointVectorField::CodomainElement(
 					vector_xyz,
-					MultiPointVectorField::CodomainElement::InStaticPolygon,
+					codomain_element_reason,
 					recon_plate_id,
-					reconstructed_static_polygon_containing_point.get());
+					rigid_plate_containing_point.get());
 
 			return true;
 		}
@@ -431,8 +374,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 		solve_velocity_on_surfaces(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const GeometryCookieCutter &reconstructed_static_polygons_query,
-				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
 		{
 			//
@@ -445,19 +387,10 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			}
 
 			//
-			// Next see if point is inside any topological boundaries.
+			// Next see if point is inside any topological boundaries or static (reconstructed) polygons.
 			//
 
-			if (solve_velocities_on_rigid_plates(domain_point, range_element, resolved_rigid_plates_query))
-			{
-				return true;
-			}
-
-			//
-			// Next see if point is inside any static (reconstructed) polygons.
-			//
-
-			if (solve_velocities_on_static_polygon(domain_point, range_element, reconstructed_static_polygons_query))
+			if (solve_velocities_on_rigid_plates(domain_point, range_element, rigid_plates_query))
 			{
 				return true;
 			}
@@ -492,8 +425,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 				boost::optional<GPlatesMaths::Vector3D> &velocity_inside_polygon_boundary,
 				boost::optional<GPlatesMaths::Vector3D> &velocity_outside_polygon_boundary,
 				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
-				const GeometryCookieCutter &reconstructed_static_polygons_query,
-				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
 		{
 			// Sample the velocity at the point sample.
@@ -501,8 +433,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			if (!solve_velocity_on_surfaces(
 					point_sample,
 					velocity_sample,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query))
 			{
 				// Didn't sample a surface.
@@ -547,8 +478,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 				const GPlatesMaths::PointOnSphere &polygon_boundary_point,
 				const GPlatesMaths::PointOnSphere &domain_point,
 				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
-				const GeometryCookieCutter &reconstructed_static_polygons_query,
-				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
 		{
 			// We need both a velocity just inside and just outside the polygon boundary before
@@ -587,8 +517,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					velocity_inside_polygon_boundary,
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query);
 
 			// To get point sample inside polygon boundary we rotate the point outside by 180 degrees.
@@ -601,8 +530,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					velocity_inside_polygon_boundary,
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
@@ -629,8 +557,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					velocity_inside_polygon_boundary,
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
@@ -645,8 +572,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					velocity_inside_polygon_boundary,
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
@@ -685,8 +611,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 							velocity_inside_polygon_boundary,
 							velocity_outside_polygon_boundary,
 							polygon_recon_geom_containing_domain_point,
-							reconstructed_static_polygons_query,
-							resolved_rigid_plates_query,
+							rigid_plates_query,
 							resolved_networks_query);
 
 					if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
@@ -717,8 +642,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 						velocity_inside_polygon_boundary,
 						velocity_outside_polygon_boundary,
 						polygon_recon_geom_containing_domain_point,
-						reconstructed_static_polygons_query,
-						resolved_rigid_plates_query,
+						rigid_plates_query,
 						resolved_networks_query);
 
 				if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
@@ -755,8 +679,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 		solve_velocity_on_surfaces_with_boundary_smoothing(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const GeometryCookieCutter &reconstructed_static_polygons_query,
-				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &boundary_smoothing_half_angle_radians,
 				const GPlatesMaths::AngularExtent &boundary_smoothing_angular_half_extent,
@@ -766,8 +689,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			if (!solve_velocity_on_surfaces(
 					domain_point,
 					range_element,
-					reconstructed_static_polygons_query,
-					resolved_rigid_plates_query,
+					rigid_plates_query,
 					resolved_networks_query))
 			{
 				// Domain point is not inside any surfaces.
@@ -854,8 +776,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 							closest_point_on_polygon_boundary.get(),
 							domain_point,
 							boundary_recon_geom,
-							reconstructed_static_polygons_query,
-							resolved_rigid_plates_query,
+							rigid_plates_query,
 							resolved_networks_query);
 			if (!average_boundary_velocity)
 			{
@@ -961,21 +882,17 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		return;
 	}
 
-	// Get the reconstructed feature geometries and wrap them in a structure that can do
-	// point-in-polygon tests so we can query them at domain points.
-	GeometryCookieCutter reconstructed_static_polygons_query(
+	// Get the rigid plate features (resolved topological boundaries and static polygons) and wrap
+	// them in a structure that can do point-in-polygon tests so we can query them at domain points.
+	GeometryCookieCutter rigid_plates_query(
 			reconstruction_time,
 			velocity_surface_reconstructed_static_polygons,
-			boost::none/*velocity_surface_resolved_topological_boundaries*/,
-			boost::none/*velocity_surface_resolved_topological_networks*/);
-
-
-	// Get the resolved topological boundaries so we can query them at domain points.
-	const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type
-			resolved_rigid_plates_query =
-					TopologyUtils::ResolvedBoundariesForGeometryPartitioning::create(
-							velocity_surface_resolved_topological_boundaries);
-
+			velocity_surface_resolved_topological_boundaries,
+			boost::none/*velocity_surface_resolved_topological_networks*/,
+			GeometryCookieCutter::SORT_BY_PLATE_ID,
+			// Use high speed point-in-poly testing since very dense velocity meshes containing
+			// lots of points can go through this path...
+			GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
 
 	// Get the resolved topological networks so we can query them for interpolated velocity at domain points.
 	const TopologicalNetworksVelocities resolved_networks_query(
@@ -1045,8 +962,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 				solve_velocity_on_surfaces_with_boundary_smoothing(
 						domain_point,
 						range_element,
-						reconstructed_static_polygons_query,
-						resolved_rigid_plates_query,
+						rigid_plates_query,
 						resolved_networks_query,
 						velocity_smoothing_options->angular_half_extent_radians,
 						boundary_smoothing_angular_half_extent,
@@ -1057,8 +973,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 				solve_velocity_on_surfaces(
 						domain_point,
 						range_element,
-						reconstructed_static_polygons_query,
-						resolved_rigid_plates_query,
+						rigid_plates_query,
 						resolved_networks_query);
 			}
 		}

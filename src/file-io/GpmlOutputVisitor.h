@@ -215,11 +215,6 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
-
-		virtual
-		void
 		visit_gpml_finite_rotation_slerp(
 				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 

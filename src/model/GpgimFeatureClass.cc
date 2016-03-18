@@ -108,6 +108,37 @@ GPlatesModel::GpgimFeatureClass::get_feature_property(
 }
 
 
+bool
+GPlatesModel::GpgimFeatureClass::get_geometry_feature_properties(
+		gpgim_property_seq_type &geometry_feature_properties) const
+{
+	bool has_geometry_feature_properties = false;
+
+	// Recursively add the ancestor class geometry feature properties first.
+	if (d_parent_feature_class)
+	{
+		if (d_parent_feature_class.get()->get_geometry_feature_properties(geometry_feature_properties))
+		{
+			has_geometry_feature_properties = true;
+		}
+	}
+
+	// Then add the geometry feature properties from this (super)class.
+	BOOST_FOREACH(
+			const GpgimProperty::non_null_ptr_to_const_type &feature_property,
+			d_feature_properties)
+	{
+		if (feature_property->has_geometry_structural_type())
+		{
+			geometry_feature_properties.push_back(feature_property);
+			has_geometry_feature_properties = true;
+		}
+	}
+
+	return has_geometry_feature_properties;
+}
+
+
 boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>
 GPlatesModel::GpgimFeatureClass::get_default_geometry_feature_property() const
 {

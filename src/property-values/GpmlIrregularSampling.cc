@@ -126,12 +126,12 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	//first, remove all DISABLED_SEQUENCE_FLAG
 	BOOST_FOREACH(GpmlTimeSample &sample, d_time_samples)
 	{
-		GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(sample.value().get());
+		GpmlFiniteRotation *trs_pole = 
+			dynamic_cast<GpmlFiniteRotation *>(sample.value().get());
 		if(trs_pole)
 		{
-			MetadataContainer 
-				&meta_data = trs_pole->metadata(), new_meta_data;
+			const MetadataContainer &meta_data = trs_pole->metadata();
+			MetadataContainer new_meta_data;
 			BOOST_FOREACH(Metadata::shared_ptr_type m, meta_data)
 			{
 				if(m->get_name() != Metadata::DISABLED_SEQUENCE_FLAG)
@@ -139,20 +139,22 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 					new_meta_data.push_back(m);
 				}
 			}
-			trs_pole->metadata() = new_meta_data;
+			trs_pole->set_metadata(new_meta_data);
 		}
 	}
 	//then add new DISABLED_SEQUENCE_FLAG
-	GpmlTotalReconstructionPole *first_pole = 
-		dynamic_cast<GpmlTotalReconstructionPole *>(d_time_samples[0].value().get());
+	GpmlFiniteRotation *first_pole = 
+		dynamic_cast<GpmlFiniteRotation *>(d_time_samples[0].value().get());
 	if(flag && first_pole)
 	{
-		first_pole->metadata().insert(
-				first_pole->metadata().begin(), 
+		MetadataContainer first_pole_meta_data = first_pole->metadata();
+		first_pole_meta_data.insert(
+				first_pole_meta_data.begin(), 
 				Metadata::shared_ptr_type(
 						new Metadata(
 								Metadata::DISABLED_SEQUENCE_FLAG, 
 								"true")));
+		first_pole->set_metadata(first_pole_meta_data);
 	}
 }
 
@@ -163,8 +165,8 @@ GPlatesPropertyValues::GpmlIrregularSampling::contain_disabled_sequence_flag() c
 	using namespace GPlatesModel;
 	BOOST_FOREACH(const GpmlTimeSample &sample, d_time_samples)
 	{
-		const GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
+		const GpmlFiniteRotation *trs_pole = 
+			dynamic_cast<const GpmlFiniteRotation *>(sample.value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->metadata();

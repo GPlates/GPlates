@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="gpgim.xsl" type="text/xsl"?>
 <GPGIM
-	gpgim:version="1.6.0333"
+	gpgim:version="1.6.0334"
 	xmlns="http://www.gplates.org/gpgim"
 	xmlns:gpgim="http://www.gplates.org/gpgim"
 	xmlns:gpml="http://www.gplates.org/gplates"
@@ -573,23 +573,23 @@
 			<Type>gml:File</Type>
 			<Description>A reference to a file in the file system.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gml:LineString</Type>
 			<Description>A list of latitude/longitude coordinate tuples defining a polyline.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gml:MultiPoint</Type>
 			<Description>A list of latitude/longitude coordinate tuples defining an unordered set of points.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gml:OrientableCurve</Type>
 			<Description>A list of latitude/longitude coordinate tuples defining a polyline and a '+' or '-' orientation.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gml:Point</Type>
 			<Description>A single latitude/longitude coordinate tuple defining a point.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gml:Polygon</Type>
 			<Description>A list of latitude/longitude coordinate tuples defining a closed polyline exterior and zero or more lists of latitude/longitude coordinate tuples each defining an interior hole region.</Description>
 			<Comment>Currently interiors holes are not yet supported in GPlates.</Comment>
@@ -722,15 +722,15 @@
 			<Type>gpml:StringList</Type>
 			<Description>A list of strings.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gpml:TopologicalLine</Type>
 			<Description>A dynamic polyline formed by topological references to regular geometries of other features.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gpml:TopologicalNetwork</Type>
 			<Description>A dynamic triangulation consisting of a boundary and optional interior constraints formed by topological references to regular geometries and topological lines of other features.</Description>
 		</NativeProperty>
-		<NativeProperty>
+		<NativeProperty gpgim:isGeometry="true">
 			<Type>gpml:TopologicalPolygon</Type>
 			<Description>A dynamic polygon formed by topological references to regular geometries and topological lines of other features.</Description>
 		</NativeProperty>

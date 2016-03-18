@@ -64,13 +64,17 @@ namespace GPlatesMaths
 
 		/**
 		 * Create with the polygon that will do the partitioning.
+		 *
+		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
+		 * point-in-polygon tests in @a partition_point.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon)
+				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = PolygonOnSphere::ADAPTIVE)
 		{
-			return non_null_ptr_type(new PolygonIntersections(partitioning_polygon));
+			return non_null_ptr_type(new PolygonIntersections(partitioning_polygon, partition_point_speed_and_memory));
 		}
 
 
@@ -91,12 +95,10 @@ namespace GPlatesMaths
 
 
 		//! Typedef for a sequence of partitioned geometries.
-		typedef std::list<GeometryOnSphere::non_null_ptr_to_const_type>
-				partitioned_geometry_seq_type;
+		typedef std::list<GeometryOnSphere::non_null_ptr_to_const_type> partitioned_geometry_seq_type;
 
 		//! Typedef for a sequence of partitioned polylines.
-		typedef std::list<PolylineOnSphere::non_null_ptr_to_const_type>
-				partitioned_polyline_seq_type;
+		typedef std::list<PolylineOnSphere::non_null_ptr_to_const_type> partitioned_polyline_seq_type;
 
 
 		/**
@@ -112,12 +114,17 @@ namespace GPlatesMaths
 		/**
 		 * Partition @a geometry_to_be_partitioned into geometries inside and outside
 		 * the partitioning polygon.
+		 *
+		 * NOTE: Unlike @a partition_polygon, if @a geometry_to_be_partitioned is a polygon and it is
+		 * entirely inside or outside (ie, doesn't intersect) then it will get added to the optional
+		 * list of inside/outside geometries (as a polygon). But like @a partition_polygon, an
+		 * intersecting polygon is still returned as inside/outside *polylines* (not polygons).
 		 */
 		Result
 		partition_geometry(
 				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
-				partitioned_geometry_seq_type &partitioned_geometries_inside,
-				partitioned_geometry_seq_type &partitioned_geometries_outside) const;
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside = boost::none,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside = boost::none) const;
 
 
 		/**
@@ -127,8 +134,8 @@ namespace GPlatesMaths
 		Result
 		partition_polyline(
 				const PolylineOnSphere::non_null_ptr_to_const_type &polyline_to_be_partitioned,
-				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside = boost::none,
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside = boost::none) const;
 
 
 		/**
@@ -149,8 +156,8 @@ namespace GPlatesMaths
 		Result
 		partition_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
-				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside = boost::none,
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside = boost::none) const;
 
 
 		/**
@@ -168,23 +175,41 @@ namespace GPlatesMaths
 		 *
 		 * @a GEOMETRY_INTERSECTING is returned if any points were on the boundary
 		 * of the partitioning polygon or if points were partitioned both inside and outside.
+		 *
+		 * Example usage:
+		 *   boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> partitioned_multipoint_inside;
+		 *   boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> partitioned_multipoint_outside;
+		 *   PolygonIntersections::Result result = polygon_intersections.partition_multipoint(
+		 *	      multipoint,
+		 *	      partitioned_multipoint_inside,
+		 *	      partitioned_multipoint_outside);
+		 *	 if (partitioned_multipoint_inside)
+		 *	 {
+		 *	      // Some of 'multipoint's points are inside the polygon.
+		 *	 }
+		 *	 if (partitioned_multipoint_outside)
+		 *	 {
+		 *	      // Some of 'multipoint's points are outside the polygon.
+		 *	 }
 		 */
 		Result
 		partition_multipoint(
 				const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
-				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_inside,
-				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside) const;
+				boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_inside = boost::none,
+				boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_outside = boost::none) const;
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
 		PolygonOrientation::Orientation d_partitioning_polygon_orientation;
+		PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
 
 
 		/**
 		 * Construct with the polygon that will do the partitioning.
 		 */
 		PolygonIntersections(
-				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
+				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 
 		Result
 		partition_polyline_or_polygon_fully_inside_or_outside(
@@ -198,8 +223,8 @@ namespace GPlatesMaths
 		void
 		partition_intersecting_geometry(
 				const PolylineIntersections::Graph &partitioned_polylines_graph,
-				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
+				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const;
 
 		bool
 		is_partitioned_polyline_inside_partitioning_polygon(

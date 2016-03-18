@@ -387,7 +387,7 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstruc
 	// See if topological section is a reconstructed feature geometry (or any of its derived types).
 	boost::optional<ReconstructedFeatureGeometry *> source_rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ReconstructedFeatureGeometry>(source_rg.get());
+					ReconstructedFeatureGeometry *>(source_rg.get());
 	if (source_rfg)
 	{
 		// Store the feature id and reconstruction geometry.
@@ -402,7 +402,7 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstruc
 		// See if topological section is a resolved topological line.
 		boost::optional<ResolvedTopologicalLine *> source_rtl =
 				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						ResolvedTopologicalLine>(source_rg.get());
+						ResolvedTopologicalLine *>(source_rg.get());
 		if (source_rtl)
 		{
 			// Store the feature id and reconstruction geometry.

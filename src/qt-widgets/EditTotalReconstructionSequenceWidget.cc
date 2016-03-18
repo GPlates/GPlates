@@ -537,8 +537,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstruction
 		d_spinbox_row(0),
 		d_spinbox_column(0),
 		d_moving_plate_changed(false),
-		d_fixed_plate_changed(false),
-		d_is_grot(false)
+		d_fixed_plate_changed(false)
 {
 	setupUi(this);
 
@@ -593,39 +592,12 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 	// Note that this is clearContents() and not clear() - calling clear() will also clear the header text (which has
 	// been set up in QtDesigner) resulting in only numerical headers appearing. 
 	table_sequences->clearContents();
-	std::vector<GpmlTimeSample>::const_iterator 
-		iter = irreg_sampling->time_samples().begin(),
-		end = irreg_sampling->time_samples().end();
-
-	for ( ; iter != end; ++iter) 
-	{
-		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
-		{
-			break;
-		}
-	}
-	if(iter != end)
-	{
-		d_is_grot = true;
-		table_sequences->hideColumn(ColumnNames::COMMENT);
-	}
-	iter = irreg_sampling->time_samples().begin();
-	for ( ; iter != end; ++iter) 
-	{
-		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
-		{
-			break;
-		}
-	}
-	if(iter != end)
-	{
-		d_is_grot = true;
-		table_sequences->hideColumn(ColumnNames::COMMENT);
-	}
-	iter = irreg_sampling->time_samples().begin();
 	table_sequences->setRowCount(0);
 	unsigned int row_count = 0;
 
+	std::vector<GpmlTimeSample>::const_iterator 
+		iter = irreg_sampling->time_samples().begin(),
+		end = irreg_sampling->time_samples().end();
 	for ( ; iter != end; ++iter, ++row_count) 
 	{
 		insert_table_row(table_sequences,row_count,*iter,locale_);
@@ -1043,20 +1015,18 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 			{
 				new_time_sample.set_disabled(true);
 			}
-			GpmlTotalReconstructionPole 
-				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.value().get()),
-				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->value().get());			
+			GpmlFiniteRotation
+				*new_pole =	dynamic_cast<GpmlFiniteRotation*>(new_time_sample.value().get()),
+				*old_pole = dynamic_cast<GpmlFiniteRotation*>(original_sample->value().get());			
 			if(new_pole && old_pole)
 			{
-				new_pole->metadata() = old_pole->metadata();
+				new_pole->set_metadata(old_pole->metadata());
 			}
 		}
 		time_samples.push_back(new_time_sample);
 	}
 		
-	StructuralType value_type = d_is_grot ?
-			StructuralType::create_gpml("TotalReconstructionPole"):
-			StructuralType::create_gpml("FiniteRotation");
+	const StructuralType value_type = StructuralType::create_gpml("FiniteRotation");
 
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 		GpmlIrregularSampling::create(

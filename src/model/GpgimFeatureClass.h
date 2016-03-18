@@ -173,6 +173,19 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns the GPGIM *geometry* properties of this feature class (including ancestor feature classes).
+		 *
+		 * This includes *geometry* properties from the parent class (if exists) and any of its ancestors
+		 * (back to the root class).
+		 *
+		 * Returns false if there are no geometry feature properties.
+		 */
+		bool
+		get_geometry_feature_properties(
+				gpgim_property_seq_type &geometry_feature_properties) const;
+
+
+		/**
 		 * Returns the default GPGIM property that represents a *geometry* property for this feature class.
 		 *
 		 * Returns boost::none if this feature class (and its ancestor/inherited classes) do not

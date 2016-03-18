@@ -31,9 +31,9 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 
+#include "GpmlFiniteRotation.h"
 #include "GpmlInterpolationFunction.h"
 #include "GpmlTimeSample.h"
-#include "GpmlTotalReconstructionPole.h"
 #include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"

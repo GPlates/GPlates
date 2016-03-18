@@ -45,19 +45,26 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructUtils.h"
-#include "presentation/ViewState.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+
 #include "global/LogException.h"
-#include "property-values/GpmlIrregularSampling.h"
-#include "property-values/GpmlFiniteRotation.h"
-#include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
-#include "utils/UnicodeStringUtils.h"
-#include "utils/ReferenceCount.h"
+
 #include "maths/MathsUtils.h"
+
 #include "model/ModelUtils.h"
+
+#include "presentation/ViewState.h"
+
+#include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlMetadata.h"
+
+#include "utils/ReferenceCount.h"
+#include "utils/UnicodeStringUtils.h"
+
 
 Q_DECLARE_METATYPE( GPlatesModel::FeatureCollectionHandle * )
 Q_DECLARE_METATYPE( GPlatesPropertyValues::GpmlTimeSample * )
@@ -1089,8 +1096,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
     button_Delete_Sequence->setEnabled
         (current->type() == UserItemTypes::SEQUENCE_ITEM_TYPE);
 
-	if(is_grot_sequence(feature_ref) && 
-		(current_item->type() == UserItemTypes::SEQUENCE_ITEM_TYPE))
+	if (current_item->type() == UserItemTypes::SEQUENCE_ITEM_TYPE)
 	{
 		if(is_seq_disabled(feature_ref))
 		{
@@ -1281,25 +1287,16 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_rotation_file_proxy(
 GPlatesFileIO::PlatesRotationFileProxy*
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_rotation_file_proxy()
 {
-    try
+	GPlatesFileIO::File::Reference &file_ref = get_current_file_ref();
+	QString filename = file_ref.get_file_info().get_display_name(false);
+    if (!filename.endsWith(".grot"))
     {
-		GPlatesFileIO::File::Reference &file_ref = get_current_file_ref();
-		QString fn = file_ref.get_file_info().get_display_name(false);
-        if(fn.endsWith(".grot"))
-        {
-			return get_rotation_file_proxy(file_ref);
-		}
-		throw GPlatesGlobal::LogException(
-				GPLATES_EXCEPTION_SOURCE, 
-				"The current rotaion file is not in a .grot file.");
-    }
-    catch(GPlatesGlobal::LogException &e)
-    {
-        std::ostringstream ostr;
-        e.write(ostr);
-        qDebug() << ostr.str().c_str();
-        return NULL;
-    }
+		// '.rot' files don't have a rotation proxy.
+		// Soon both file types will have the equivalent of a rotation proxy.
+		return NULL;
+	}
+
+	return get_rotation_file_proxy(file_ref);
 }
 
 
@@ -1673,37 +1670,6 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_feature_collection_
 }
 
 
-bool
-GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
-        GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-    using namespace GPlatesModel;
-    using namespace GPlatesPropertyValues;
-    using namespace GPlatesFeatureVisitors;
-    
-	boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
-			get_property_value<GpmlIrregularSampling>(
-					feature_ref, 
-					totalReconstructionPole_prop_name());
-    if (!irreg_sampling_const)
-    {
-		qWarning() << "No GpmlIrregularSampling property found.";
-		return false;
-	}
-	std::vector<GpmlTimeSample>::const_iterator
-        iter =	irreg_sampling_const.get()->time_samples().begin(),
-        end =	irreg_sampling_const.get()->time_samples().end();
-    for ( ; iter != end; ++iter) 
-    {
-        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()))
-        {
-            return false;
-        }
-    }
-	return true;
-}
-
-
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
         GPlatesModel::TopLevelProperty::non_null_ptr_type moving_plate_id,
@@ -2018,8 +1984,8 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		const std::vector<GpmlTimeSample> samples =	irreg_sampling_const.get()->time_samples();
 		BOOST_FOREACH(const GpmlTimeSample &sample, samples)
 		{
-			const GpmlTotalReconstructionPole *trs_pole = 
-				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
+			const GpmlFiniteRotation *trs_pole = 
+				dynamic_cast<const GpmlFiniteRotation *>(sample.value().get());
 			if(trs_pole)
 			{
 				double time = sample.valid_time()->time_position().value();

@@ -175,7 +175,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(d_focused_rg);
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(d_focused_rg);
 	if (focused_rfg &&
 		// We explicitly calculate finite rotation by plate id (so not interested in half-stage, etc)...
 		focused_rfg.get()->get_reconstruct_method_type() == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID &&

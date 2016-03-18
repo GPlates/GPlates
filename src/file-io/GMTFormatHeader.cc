@@ -39,15 +39,10 @@ GPlatesFileIO::GMTFormatPlates4StyleHeader::get_feature_header_lines(
 {
 	GPlatesFileIO::OldPlatesHeader old_plates_header;
 
-	if ( d_plates_header_visitor.get_old_plates_header(
-		feature,
-		old_plates_header) )
-	{
-		format_header_lines(old_plates_header, header_lines);
-		return true;
-	}
+	d_plates_header_visitor.get_old_plates_header(feature, old_plates_header);
+	format_header_lines(old_plates_header, header_lines);
 
-	return false;
+	return true;
 }
 
 

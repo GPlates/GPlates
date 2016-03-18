@@ -65,6 +65,7 @@
 					.propref_multiplicity { font-family: "DejaVu Sans Mono", "monospace"; color: #555588 }
 					.propref_description {  }
 				</style>
+				<title>The GPlates Geological Information Model</title>
 			</head>
 			<body>
 				<h1 class="title">The GPlates Geological Information Model (GPGIM)</h1>

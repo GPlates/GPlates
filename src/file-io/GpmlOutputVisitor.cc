@@ -89,7 +89,6 @@
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/OldVersionPropertyValue.h"
 #include "property-values/UninterpretedPropertyValue.h"
@@ -1262,43 +1261,54 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) 
 {
-	if (gpml_finite_rotation.is_zero_rotation()) {
+	const GPlatesModel::MetadataContainer &metadata = gpml_finite_rotation.metadata();
+
+	// Write out in a parent 'gpml:TotalReconstructionPole' structural type if rotation pole has metadata.
+	const bool is_total_reconstruction_pole = !metadata.empty();
+
+	if (is_total_reconstruction_pole)
+	{
+		d_output.writeStartGpmlElement("TotalReconstructionPole");
+
+		BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> metadata_entry, metadata)
+		{
+			d_output.writeStartGpmlElement("meta");
+			d_output.writeAttribute("","name", metadata_entry->get_name());
+			d_output.writeText(metadata_entry->get_content());
+			d_output.writeEndElement();
+		}
+	}
+
+	if (gpml_finite_rotation.is_zero_rotation())
+	{
 		d_output.writeEmptyGpmlElement("ZeroFiniteRotation");
-	} else {
+	}
+	else
+	{
 		d_output.writeStartGpmlElement("AxisAngleFiniteRotation");
+
+			GPlatesMaths::UnitQuaternion3D::RotationParams rp =
+					gpml_finite_rotation.finite_rotation().unit_quat().get_rotation_params(
+							gpml_finite_rotation.finite_rotation().axis_hint());
 
 			d_output.writeStartGpmlElement("eulerPole");
 				GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
-						GPlatesPropertyValues::calculate_euler_pole(gpml_finite_rotation);
+						GPlatesPropertyValues::GmlPoint::create(GPlatesMaths::PointOnSphere(rp.axis));
 				visit_gml_point(*gml_point);
 			d_output.writeEndElement();
 
 			d_output.writeStartGpmlElement("angle");
-				GPlatesMaths::real_t angle_in_degrees =
-						GPlatesPropertyValues::calculate_angle(gpml_finite_rotation);
+				GPlatesMaths::real_t angle_in_degrees = GPlatesMaths::convert_rad_to_deg(rp.angle);
 				d_output.writeDecimal(angle_in_degrees.dval());
 			d_output.writeEndElement();
 
 		d_output.writeEndElement();  // </gpml:AxisAngleFiniteRotation>
 	}
-}
 
-
-void
-GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
-		const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
-{
-	d_output.writeStartGpmlElement("TotalReconstructionPole");
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= gpml_total_reconstruction_pole.metadata();
-	BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> data, meta_data)
+	if (is_total_reconstruction_pole)
 	{
-		d_output.writeStartGpmlElement("meta");
-		d_output.writeAttribute("","name", data->get_name());
-		d_output.writeText(data->get_content());
 		d_output.writeEndElement();
 	}
-	visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
-	d_output.writeEndElement();
 }
 
 

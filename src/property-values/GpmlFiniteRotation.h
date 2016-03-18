@@ -29,14 +29,16 @@
 #define GPLATES_PROPERTYVALUES_GPMLFINITEROTATION_H
 
 #include <utility>  /* std::pair */
+#include <boost/optional.hpp>
 
-#include "GmlPoint.h"
 #include "GpmlMeasure.h"
+#include "GmlPoint.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/FiniteRotation.h"
 
+#include "model/Metadata.h"
 #include "model/PropertyValue.h"
 
 
@@ -72,12 +74,16 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
-		 * Create a GpmlFiniteRotation instance from a finite rotation.
+		 * Create a GpmlFiniteRotation instance from a finite rotation and optional metadata.
 		 */
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesMaths::FiniteRotation &finite_rotation);
+				const GPlatesMaths::FiniteRotation &finite_rotation,
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_ = boost::none)
+		{
+			return non_null_ptr_type(new GpmlFiniteRotation(finite_rotation, metadata_));
+		}
 
 		/**
 		 * Create a GpmlFiniteRotation instance from an Euler pole (longitude, latitude)
@@ -100,7 +106,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const std::pair<double, double> &gpml_euler_pole,
-				const double &gml_angle_in_degrees);
+				const double &gml_angle_in_degrees,
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_ = boost::none);
 
 		/**
 		 * Create a GpmlFiniteRotation instance from an Euler pole (longitude, latitude)
@@ -118,7 +125,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-				const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees);
+				const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees,
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_ = boost::none);
 
 		/**
 		 * Create a GpmlFiniteRotation instance which represents a "zero" rotation.
@@ -133,7 +141,9 @@ namespace GPlatesPropertyValues
 		// reason..."
 		static
 		const non_null_ptr_type
-		create_zero_rotation();
+		create_zero_rotation(
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_ = boost::none);
+
 
 		const non_null_ptr_type
 		clone() const
@@ -182,6 +192,24 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::FiniteRotation &fr)
 		{
 			d_finite_rotation = fr;
+			update_instance_id();
+		}
+		
+		/**
+		 * FIXME: Re-implement MetadataContainer because it's currently possible to modify the
+		 * metadata in a 'const' MetadataContainer and this by-passes revisioning.
+		 */
+		const GPlatesModel::MetadataContainer &
+		metadata() const
+		{
+			return d_metadata;
+		}
+		
+		void
+		set_metadata(
+				const GPlatesModel::MetadataContainer &metadata)
+		{
+			d_metadata = metadata;
 			update_instance_id();
 		}
 
@@ -235,10 +263,16 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GpmlFiniteRotation(
-				const GPlatesMaths::FiniteRotation &finite_rotation_):
+				const GPlatesMaths::FiniteRotation &finite_rotation_,
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_):
 			PropertyValue(),
 			d_finite_rotation(finite_rotation_)
-		{  }
+		{
+			if (metadata_)
+			{
+				d_metadata = metadata_.get();
+			}
+		}
 
 
 		// This constructor should not be public, because we don't want to allow
@@ -249,12 +283,14 @@ namespace GPlatesPropertyValues
 		GpmlFiniteRotation(
 				const GpmlFiniteRotation &other):
 			PropertyValue(other), /* share instance id */
-			d_finite_rotation(other.d_finite_rotation)
+			d_finite_rotation(other.d_finite_rotation),
+			d_metadata(other.d_metadata)
 		{  }
 
 	private:
 
 		GPlatesMaths::FiniteRotation d_finite_rotation;
+		GPlatesModel::MetadataContainer d_metadata;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -265,34 +301,6 @@ namespace GPlatesPropertyValues
 				const GpmlFiniteRotation &);
 
 	};
-
-
-	/**
-	 * Calculate the GmlPoint of the Euler pole of the GpmlFiniteRotation instance @a fr.
-	 *
-	 * The instance @a fr should @em not represent a zero rotation.  Use the member function
-	 * @a is_zero_rotation to determine whether a GpmlFiniteRotation instance represents a zero
-	 * rotation.
-	 *
-	 * Note that the GmlPoint is calculated on-the-fly, rather than being stored inside the
-	 * GpmlFiniteRotation instance.  Thus, modifying the target of the return-value will have
-	 * no effect upon the internals of the GpmlFiniteRotation instance.
-	 */
-	const GmlPoint::non_null_ptr_type
-	calculate_euler_pole(
-			const GpmlFiniteRotation &fr);
-
-
-	/**
-	 * Calculate the angle of rotation (in degrees) of this finite rotation.
-	 *
-	 * The return-value of this function is suitable as the value of the "gml:angle"
-	 * property.
-	 */
-	const GPlatesMaths::real_t
-	calculate_angle(
-			const GpmlFiniteRotation &fr);
-
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLFINITEROTATION_H

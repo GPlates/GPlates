@@ -55,17 +55,12 @@ const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		AssignPlateIdMethodType assign_plate_id_method,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				partitioning_feature_collections,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_feature_collections,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &partitioning_feature_collections,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const feature_property_flags_type &feature_property_types_to_assign,
 		bool verify_information_model,
-		bool allow_partitioning_using_topological_plate_polygons,
-		bool allow_partitioning_using_topological_networks,
-		bool allow_partitioning_using_static_polygons,
 		bool respect_feature_time_period) :
 	d_assign_plate_id_method(assign_plate_id_method),
 	d_feature_property_types_to_assign(feature_property_types_to_assign),
@@ -81,79 +76,17 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 	ReconstructMethodRegistry reconstruct_method_registry;
 
-	// Contains the reconstructed static polygons used for cookie-cutting.
-	// Can also contain the topological section geometries referenced by topologies.
-	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_feature_geometries;
-
-	const ReconstructHandle::type reconstruct_handle = ReconstructUtils::reconstruct(
-			reconstructed_feature_geometries,
-			reconstruction_time,
-			reconstruct_method_registry,
-			partitioning_feature_collections,
-			reconstruction_tree_cache);
-
-	std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
-
-	// Contains the resolved topological line sections referenced by topological polygons and networks.
-	std::vector<resolved_topological_line_non_null_ptr_type> resolved_topological_lines;
-	if (allow_partitioning_using_topological_plate_polygons ||
-		allow_partitioning_using_topological_networks)
-	{
-		// Resolving topological lines generates its own reconstruct handle that will be used by
-		// topological polygons and networks to find this group of resolved lines.
-		const ReconstructHandle::type resolved_topological_lines_handle =
-				TopologyUtils::resolve_topological_lines(
-						resolved_topological_lines,
-						partitioning_feature_collections,
-						reconstruction_tree_cache, 
-						reconstruction_time,
-						// Resolved topo lines use the reconstructed non-topo geometries...
-						reconstruct_handles);
-
-		reconstruct_handles.push_back(resolved_topological_lines_handle);
-	}
-
-	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
-
-	// Contains the resolved topological networks used for cookie-cutting.
-	// See comment in header for why a deforming region is currently used to assign plate ids.
-	std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
-
-	if (allow_partitioning_using_topological_plate_polygons)
-	{
-		TopologyUtils::resolve_topological_boundaries(
-				resolved_topological_boundaries,
-				partitioning_feature_collections,
-				reconstruction_tree_cache, 
-				reconstruction_time,
-				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
-				reconstruct_handles);
-	}
-
-	if (allow_partitioning_using_topological_networks)
-	{
-		TopologyUtils::resolve_topological_networks(
-				resolved_topological_networks,
-				reconstruction_time,
-				partitioning_feature_collections,
-				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
-				reconstruct_handles);
-	}
-
-	// Contains the reconstructed static polygons used for cookie-cutting.
-	boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons;
-	if (allow_partitioning_using_static_polygons)
-	{
-		reconstructed_static_polygons = reconstructed_feature_geometries;
-	}
-
 	d_geometry_cookie_cutter.reset(
 			new GeometryCookieCutter(
 					reconstruction_time,
-					reconstructed_static_polygons,
-					resolved_topological_boundaries,
-					resolved_topological_networks));
+					reconstruct_method_registry,
+					partitioning_feature_collections,
+					reconstruction_tree_cache,
+					true/*group_networks_then_boundaries_then_static_polygons*/,
+					GeometryCookieCutter::SORT_BY_PLATE_ID,
+					// Use high speed point-in-poly testing since we're being used for
+					// generalised cookie-cutting and we could be asked to test lots of points.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE));
 
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
@@ -236,7 +169,12 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					reconstruction_time,
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
-					resolved_topological_networks));
+					resolved_topological_networks,
+					GeometryCookieCutter::SORT_BY_PLATE_ID,
+					// Use high speed point-in-poly testing since we're being used for
+					// generalised cookie-cutting and we could be asked to test lots of points.
+					// For example, very dense velocity meshes go through this path.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE));
 
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.

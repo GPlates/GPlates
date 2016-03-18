@@ -313,7 +313,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	// See if the focused reconstruction geometry is an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(d_focused_geometry);
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(d_focused_geometry);
 	if (focused_rfg)
 	{
 		return focused_rfg.get()->reconstructed_geometry();
@@ -322,7 +322,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	// See if the focused reconstruction geometry is a resolved topological boundary.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> focused_rtb =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalGeometry>(d_focused_geometry);
+					const GPlatesAppLogic::ResolvedTopologicalGeometry *>(d_focused_geometry);
 	if (focused_rtb)
 	{
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
@@ -334,7 +334,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	// If so then we'll use it's boundary polygon as the geometry and ignore the interior nodes, etc.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalNetwork *> focused_rtn =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalNetwork>(d_focused_geometry);
+					const GPlatesAppLogic::ResolvedTopologicalNetwork *>(d_focused_geometry);
 	if (focused_rtn)
 	{
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
@@ -355,7 +355,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 	// So return early if the ReconstructionGeometry is not an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(d_focused_geometry);
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(d_focused_geometry);
 	if (!focused_rfg)
 	{
 		return;
