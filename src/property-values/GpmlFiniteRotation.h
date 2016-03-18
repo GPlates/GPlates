@@ -207,9 +207,9 @@ namespace GPlatesPropertyValues
 		
 		void
 		set_metadata(
-				const GPlatesModel::MetadataContainer &metadata)
+				const GPlatesModel::MetadataContainer &metadata_)
 		{
-			d_metadata = metadata;
+			d_metadata = metadata_;
 			update_instance_id();
 		}
 
