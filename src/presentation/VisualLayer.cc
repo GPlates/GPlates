@@ -76,6 +76,11 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_visual_layer_params->handle_layer_modified(layer);
 
 	QObject::connect(
+			&d_layer.get_layer_task_params(),
+			SIGNAL(modified()),
+			this,
+			SLOT(handle_params_modified()));
+	QObject::connect(
 			d_visual_layer_params.get(),
 			SIGNAL(modified()),
 			this,
