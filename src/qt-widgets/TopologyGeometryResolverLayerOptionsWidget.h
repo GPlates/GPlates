@@ -23,10 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H
-#define GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H
+#ifndef GPLATES_QT_WIDGETS_TOPOLOGYGEOMETRYRESOLVERLAYEROPTIONSWIDGET_H
+#define GPLATES_QT_WIDGETS_TOPOLOGYGEOMETRYRESOLVERLAYEROPTIONSWIDGET_H
 
-#include "TopologyBoundaryResolverLayerOptionsWidgetUi.h"
+#include "TopologyGeometryResolverLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 
@@ -48,12 +48,12 @@ namespace GPlatesQtWidgets
 	class DrawStyleDialog;
 
 	/**
-	 * TopologyBoundaryResolverLayerOptionsWidget is used to show additional options for
-	 * topology boundary layers in the visual layers widget.
+	 * TopologyGeometryResolverLayerOptionsWidget is used to show additional options for
+	 * topology geometry layers in the visual layers widget.
 	 */
-	class TopologyBoundaryResolverLayerOptionsWidget :
+	class TopologyGeometryResolverLayerOptionsWidget :
 			public LayerOptionsWidget,
-			protected Ui_TopologyBoundaryResolverLayerOptionsWidget
+			protected Ui_TopologyGeometryResolverLayerOptionsWidget
 	{
 		Q_OBJECT
 
@@ -79,14 +79,22 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		open_draw_style_setting_dlg();
+
+		void
 		handle_fill_polygons_clicked();
 
 		void
-		open_draw_style_setting_dlg();
+		handle_fill_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_fill_intensity_spinbox_changed(
+				double value);
 
 	private:
 
-		TopologyBoundaryResolverLayerOptionsWidget(
+		TopologyGeometryResolverLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
 				ViewportWindow *viewport_window,
@@ -103,4 +111,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif // GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H
+#endif // GPLATES_QT_WIDGETS_TOPOLOGYGEOMETRYRESOLVERLAYEROPTIONSWIDGET_H

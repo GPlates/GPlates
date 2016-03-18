@@ -23,17 +23,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+
 #include "ReconstructionLayerOptionsWidget.h"
 
 #include "LinkWidget.h"
+#include "MergeReconstructionLayersDialog.h"
 #include "QtWidgetUtils.h"
-#include "TotalReconstructionPolesDialog.h"
 #include "ViewportWindow.h"
+#include "VisualLayersDialog.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructGraph.h"
+#include "app-logic/Layer.h"
 
 #include "gui/Dialogs.h"
+
+#include "presentation/ViewState.h"
+#include "presentation/VisualLayer.h"
 
 
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWidget(
@@ -44,22 +50,34 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWi
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_viewport_window(viewport_window)
+	d_viewport_window(viewport_window),
+	d_merge_reconstruction_layers_dialog(NULL)
 {
 	setupUi(this);
 	keep_as_default_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 
 	LinkWidget *view_total_reconstruction_poles_link = new LinkWidget(
-			tr("View total reconstruction poles"), this);
+			tr("View total reconstruction poles..."), this);
 	QtWidgetUtils::add_widget_to_placeholder(
 			view_total_reconstruction_poles_link,
 			view_total_reconstruction_poles_placeholder_widget);
+
+	LinkWidget *merge_reconstruction_tree_layers_link = new LinkWidget(
+			tr("Merge reconstruction tree layers..."), this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			merge_reconstruction_tree_layers_link,
+			merge_reconstruction_tree_layers_placeholder_widget);
 
 	QObject::connect(
 			view_total_reconstruction_poles_link,
 			SIGNAL(link_activated()),
 			this,
 			SLOT(handle_view_total_reconstruction_poles_link_activated()));
+	QObject::connect(
+			merge_reconstruction_tree_layers_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(handle_merge_reconstruction_tree_layers_link_activated()));
 	QObject::connect(
 			keep_as_default_checkbox,
 			SIGNAL(clicked(bool)),
@@ -113,6 +131,24 @@ void
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_view_total_reconstruction_poles_link_activated()
 {
 	d_viewport_window->dialogs().pop_up_total_reconstruction_poles_dialog(d_current_visual_layer);
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_merge_reconstruction_tree_layers_link_activated()
+{
+	if (!d_merge_reconstruction_layers_dialog)
+	{
+		d_merge_reconstruction_layers_dialog = new MergeReconstructionLayersDialog(
+				d_application_state,
+				d_view_state,
+				&d_viewport_window->dialogs().visual_layers_dialog());
+	}
+
+	d_merge_reconstruction_layers_dialog->populate(d_current_visual_layer);
+
+	// This dialog is shown modally.
+	d_merge_reconstruction_layers_dialog->exec();
 }
 
 

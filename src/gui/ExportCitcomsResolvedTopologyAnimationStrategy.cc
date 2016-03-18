@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QString>
@@ -73,30 +74,33 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::ExportCitcomsResolve
 			d_export_animation_context_ptr->view_state().get_application_state().get_reconstruct_graph();
 
 	// Check all the active reconstruction layers, and get their input files.
-	GPlatesAppLogic::ReconstructGraph::const_iterator it = reconstruct_graph.begin(),
-													end = reconstruct_graph.end();
-	for (; it != end ; ++it)
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_iter = reconstruct_graph.begin();
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_end = reconstruct_graph.end();
+	for ( ; layers_iter != layers_end; ++layers_iter)
 	{
-		if ((it->get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION) && it->is_active())
+		const GPlatesAppLogic::Layer layer = *layers_iter;
+
+		if (layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION &&
+			layer.is_active())
 		{
 
-			// The 'reconstruct geometries' layer has input feature collections on its main input channel.
+			// The 'reconstruction tree' layer has input feature collections on its main input channel.
 			const GPlatesAppLogic::LayerInputChannelName::Type main_input_channel =
-					it->get_main_input_feature_collection_channel();
+					layer.get_main_input_feature_collection_channel();
 			const std::vector<GPlatesAppLogic::Layer::InputConnection> main_inputs =
-					it->get_channel_inputs(main_input_channel);
+					layer.get_channel_inputs(main_input_channel);
 
 			// Loop over all input connections to get the files (feature collections) for the current target layer.
 			BOOST_FOREACH(const GPlatesAppLogic::Layer::InputConnection& main_input_connection, main_inputs)
 			{
-				boost::optional<GPlatesAppLogic::Layer::InputFile> input_file =
-						main_input_connection.get_input_file();
+				boost::optional<GPlatesAppLogic::Layer::InputFile> input_file = main_input_connection.get_input_file();
 				// If it's not a file (ie, it's a layer) then continue to the next file.
-				if(!input_file)
+				// This shouldn't happen for 'reconstruction tree' layers though.
+				if (!input_file)
 				{
 					continue;
 				}
-				d_loaded_reconstruction_files.push_back(&(input_file->get_file().get_file()));
+				d_loaded_reconstruction_files.push_back(&input_file->get_file().get_file());
 			}
 		}
 	}

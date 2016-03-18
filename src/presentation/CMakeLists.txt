@@ -34,7 +34,7 @@ set(srcs
     Session.h
     SessionManagement.cc
     SessionManagement.h
-    TopologyBoundaryVisualLayerParams.h
+    TopologyGeometryVisualLayerParams.h
     TopologyNetworkVisualLayerParams.cc
     TopologyNetworkVisualLayerParams.h
     TranscribeSession.cc

@@ -44,6 +44,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
+	class MergeReconstructionLayersDialog;
 	class ViewportWindow;
 
 	/**
@@ -81,6 +82,9 @@ namespace GPlatesQtWidgets
 		handle_view_total_reconstruction_poles_link_activated();
 
 		void
+		handle_merge_reconstruction_tree_layers_link_activated();
+
+		void
 		handle_keep_as_default_checkbox_clicked(
 				bool checked);
 
@@ -93,9 +97,11 @@ namespace GPlatesQtWidgets
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
+
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
+		MergeReconstructionLayersDialog *d_merge_reconstruction_layers_dialog;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

@@ -339,6 +339,9 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MergeReconstructionLayersDialog.cc
+    MergeReconstructionLayersDialog.h
+    MergeReconstructionLayersDialogUi.ui
     MetadataDialog.cc
     MetadataDialog.h
     MetadataDialogUi.ui
@@ -508,9 +511,9 @@ set(srcs
     TimeDependentRasterPage.cc
     TimeDependentRasterPage.h
     TimeDependentRasterPageUi.ui
-    TopologyBoundaryResolverLayerOptionsWidget.cc
-    TopologyBoundaryResolverLayerOptionsWidget.h
-    TopologyBoundaryResolverLayerOptionsWidgetUi.ui
+    TopologyGeometryResolverLayerOptionsWidget.cc
+    TopologyGeometryResolverLayerOptionsWidget.h
+    TopologyGeometryResolverLayerOptionsWidgetUi.ui
     TopologyNetworkResolverLayerOptionsWidget.cc
     TopologyNetworkResolverLayerOptionsWidget.h
     TopologyNetworkResolverLayerOptionsWidgetUi.ui
