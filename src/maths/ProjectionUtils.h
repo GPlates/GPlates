@@ -154,6 +154,9 @@ namespace GPlatesMaths
 		private:
 
 			const LatLonPoint d_center_of_projection;
+			const double d_sin_center_of_projection_latitude;
+			const double d_cos_center_of_projection_latitude;
+
 			const double d_projection_scale;
 		};
 	}

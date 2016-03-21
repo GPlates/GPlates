@@ -33,6 +33,10 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
 		const LatLonPoint &center_of_projection,
 		const double &projection_scale) :
 	d_center_of_projection(center_of_projection),
+	d_sin_center_of_projection_latitude(
+			std::sin(convert_deg_to_rad(d_center_of_projection.latitude()))),
+	d_cos_center_of_projection_latitude(
+			std::cos(convert_deg_to_rad(d_center_of_projection.latitude()))),
 	d_projection_scale(projection_scale)
 {
 }
@@ -42,6 +46,10 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
 		const PointOnSphere &center_of_projection,
 		const double &projection_scale) :
 	d_center_of_projection(make_lat_lon_point(center_of_projection)),
+	d_sin_center_of_projection_latitude(
+			std::sin(convert_deg_to_rad(d_center_of_projection.latitude()))),
+	d_cos_center_of_projection_latitude(
+			std::cos(convert_deg_to_rad(d_center_of_projection.latitude()))),
 	d_projection_scale(projection_scale)
 {
 }
@@ -51,14 +59,13 @@ QPointF
 GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::project_from_lat_lon(
 		const LatLonPoint &point) const
 {
-	const double phi_0 = convert_deg_to_rad(d_center_of_projection.latitude()); // center of projection lat
 	const double lam_0 = convert_deg_to_rad(d_center_of_projection.longitude()); // center of projection lon
 
-	const double sin_phi_0 = std::sin(phi_0);
-	const double cos_phi_0 = std::cos(phi_0);
+	const double sin_phi_0 = d_sin_center_of_projection_latitude;
+	const double cos_phi_0 = d_cos_center_of_projection_latitude;
 
-	const double phi	= convert_deg_to_rad(point.latitude()); // Node latitude
-	const double lam 	= convert_deg_to_rad(point.longitude()); // Node longitude
+	const double phi = convert_deg_to_rad(point.latitude()); // Node latitude
+	const double lam = convert_deg_to_rad(point.longitude()); // Node longitude
 
 	const double sin_phi = std::sin(phi);
 	const double cos_phi = std::cos(phi);
@@ -89,21 +96,31 @@ GPlatesMaths::LatLonPoint
 GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::unproject_to_lat_lon(
 		const QPointF &point) const
 {
-	const double phi_0 = convert_deg_to_rad(d_center_of_projection.latitude()); // center of projection lat
-	const double lam_0 = convert_deg_to_rad(d_center_of_projection.longitude()); // center of projection lon
-
-	const double sin_phi_0 = std::sin(phi_0);
-	const double cos_phi_0 = std::cos(phi_0);
-
 	const double x = point.x();
 	const double y = point.y();
 
 	const double rho = std::sqrt(x * x + y * y);
+
+	// If point is at centre of projection then return it now.
+	// This avoids dividing by zero when calculating 'phi' below.
+	if (GPlatesMaths::are_almost_exactly_equal(rho, 0))
+	{
+		return LatLonPoint(
+				d_center_of_projection.latitude(),
+				d_center_of_projection.longitude());
+	}
+
 	const double a = rho / (2.0 * d_projection_scale);
 	const double c = 2 * std::asin(a);
 
 	const double sin_c = std::sin(c);
 	const double cos_c = std::cos(c);
+
+	const double phi_0 = convert_deg_to_rad(d_center_of_projection.latitude()); // center of projection lat
+	const double lam_0 = convert_deg_to_rad(d_center_of_projection.longitude()); // center of projection lon
+
+	const double sin_phi_0 = d_sin_center_of_projection_latitude;
+	const double cos_phi_0 = d_cos_center_of_projection_latitude;
 
 	// Latitude in Radians
 	const double phi = std::asin(cos_c * sin_phi_0 + y * sin_c * cos_phi_0 / rho);
