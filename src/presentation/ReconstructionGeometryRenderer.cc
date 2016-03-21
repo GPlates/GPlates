@@ -1394,7 +1394,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	for ( ; finite_vertices_2_iter != finite_vertices_2_end; ++finite_vertices_2_iter)
 	{
 		const GPlatesMaths::PointOnSphere &point = finite_vertices_2_iter->get_point_on_sphere();
-		const GPlatesMaths::Vector3D &velocity_vector = finite_vertices_2_iter->get_velocity_vector();
+		const GPlatesMaths::Vector3D velocity_vector = finite_vertices_2_iter->calc_velocity_vector();
 
 		// Create a RenderedGeometry using the velocity vector.
 		const GPlatesViewOperations::RenderedGeometry rendered_vector =

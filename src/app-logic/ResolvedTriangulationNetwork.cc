@@ -288,7 +288,9 @@ boost::optional<
 				boost::optional<const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &>,
 				GPlatesMaths::Vector3D> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
-		const GPlatesMaths::PointOnSphere &point) const
+		const GPlatesMaths::PointOnSphere &point,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
 	if (!is_point_in_network(point))
 	{
@@ -300,7 +302,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 	if (rigid_block)
 	{
 		const GPlatesMaths::Vector3D rigid_block_velocity =
-				calculate_rigid_block_velocity(point, rigid_block.get());
+				calculate_rigid_block_velocity(
+						point,
+						rigid_block.get(),
+						velocity_delta_time,
+						velocity_delta_time_type);
 
 		return std::make_pair(rigid_block, rigid_block_velocity);
 	}
@@ -321,7 +327,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 			ResolvedTriangulation::linear_interpolation_2(
 					natural_neighbor_coordinates,
 					CGAL::Data_access<delaunay_point_2_to_velocity_map_type>(
-							get_delaunay_point_2_to_velocity_map()));
+							get_delaunay_point_2_to_velocity_map(
+									velocity_delta_time,
+									velocity_delta_time_type)));
 
 	return std::make_pair(rigid_block/*boost::none*/, interpolated_velocity);
 }
@@ -582,35 +590,35 @@ qDebug() << "compute_spherical_delaunay_2(): face_index = " << face_index;
 			// Vertex 1
 			const double x1 = v1->point().x();
 			const double y1 = v1->point().y();
-			double ux1 = v1->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy1 = -( v1->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux1 = v1->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy1 = -( v1->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
             double phi1   = (       GPlatesMaths::make_lat_lon_point(v1->get_point_on_sphere()).longitude() );
             double theta1 = (90.0 - GPlatesMaths::make_lat_lon_point(v1->get_point_on_sphere()).latitude() );
-			double uphi1   = v1->get_velocity_colat_lon().get_vector_longitude().dval();
-			double utheta1 = v1->get_velocity_colat_lon().get_vector_colatitude().dval();
+			double uphi1   = v1->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double utheta1 = v1->calc_velocity_colat_lon().get_vector_colatitude().dval();
 
 			// Vertex 2
 			const double x2 = v2->point().x();
 			const double y2 = v2->point().y();
-			double ux2 = v2->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy2 = -( v2->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux2 = v2->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy2 = -( v2->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
             double phi2   = (       GPlatesMaths::make_lat_lon_point(v2->get_point_on_sphere()).longitude() );
             double theta2 = (90.0 - GPlatesMaths::make_lat_lon_point(v2->get_point_on_sphere()).latitude() );
-			double uphi2   = v2->get_velocity_colat_lon().get_vector_longitude().dval();
-			double utheta2 = v2->get_velocity_colat_lon().get_vector_colatitude().dval();
+			double uphi2   = v2->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double utheta2 = v2->calc_velocity_colat_lon().get_vector_colatitude().dval();
 
 			// Vertex 3
 			const double x3 = v3->point().x();
 			const double y3 = v3->point().y();
-			double ux3 = v3->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy3 = -( v3->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux3 = v3->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy3 = -( v3->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
             double phi3   = (       GPlatesMaths::make_lat_lon_point(v3->get_point_on_sphere()).longitude() );
             double theta3 = (90.0 - GPlatesMaths::make_lat_lon_point(v3->get_point_on_sphere()).latitude() );
-			double utheta3 = v3->get_velocity_colat_lon().get_vector_colatitude().dval();
-			double uphi3   = v3->get_velocity_colat_lon().get_vector_longitude().dval();
+			double utheta3 = v3->calc_velocity_colat_lon().get_vector_colatitude().dval();
+			double uphi3   = v3->calc_velocity_colat_lon().get_vector_longitude().dval();
 
 			// convert Spherical coords to radians
 			phi    = GPlatesMaths::convert_deg_to_rad( phi );
@@ -907,11 +915,11 @@ qDebug() << "smooth_delaunay_2(): face_index = " << face_index << "; di.dil =" <
 		vertex_sph_sec = sph_sec_sum / area_sum;
 
 		// Set the dilitation value at this vertex
-		finite_vertex_iter->get_dilitation( vertex_dil) ;
-		finite_vertex_iter->get_second_invariant( vertex_sec) ;
+		finite_vertex_iter->set_dilitation(vertex_dil);
+		finite_vertex_iter->set_second_invariant(vertex_sec);
 
-		finite_vertex_iter->get_sph_dilitation( vertex_sph_dil) ;
-		finite_vertex_iter->get_sph_second_invariant( vertex_sph_sec) ;
+		finite_vertex_iter->set_sph_dilitation(vertex_sph_dil);
+		finite_vertex_iter->set_sph_second_invariant(vertex_sph_sec);
 
 #ifdef DEBUG_VERBOSE
 qDebug() << "smooth_delaunay_2(): vertex_dil = " << vertex_dil;
@@ -929,14 +937,14 @@ qDebug() << "smooth_delaunay_2(): vertex_sph_sec = " << vertex_sph_sec;
 	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter, ++face_index)
 	{
 		// Compute the average of the three verts
-		const double d_0 = finite_faces_2_iter->vertex(0)->get_dilitation(0);
-		const double d_1 = finite_faces_2_iter->vertex(1)->get_dilitation(0);
-		const double d_2 = finite_faces_2_iter->vertex(2)->get_dilitation(0);
+		const double d_0 = finite_faces_2_iter->vertex(0)->get_dilitation();
+		const double d_1 = finite_faces_2_iter->vertex(1)->get_dilitation();
+		const double d_2 = finite_faces_2_iter->vertex(2)->get_dilitation();
 		const double d_A = ( d_0 + d_1 + d_2 ) / 3.0;
 
-		const double sph_d_0 = finite_faces_2_iter->vertex(0)->get_sph_dilitation(0);
-		const double sph_d_1 = finite_faces_2_iter->vertex(1)->get_sph_dilitation(0);
-		const double sph_d_2 = finite_faces_2_iter->vertex(2)->get_sph_dilitation(0);
+		const double sph_d_0 = finite_faces_2_iter->vertex(0)->get_sph_dilitation();
+		const double sph_d_1 = finite_faces_2_iter->vertex(1)->get_sph_dilitation();
+		const double sph_d_2 = finite_faces_2_iter->vertex(2)->get_sph_dilitation();
 		const double sph_d_A = ( sph_d_0 + sph_d_1 + sph_d_2 ) / 3.0;
 
 #ifdef DEBUG_VERBOSE
@@ -1354,22 +1362,42 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_3() const
 
 
 const GPlatesAppLogic::ResolvedTriangulation::Network::delaunay_point_2_to_velocity_map_type &
-GPlatesAppLogic::ResolvedTriangulation::Network::get_delaunay_point_2_to_velocity_map() const
+GPlatesAppLogic::ResolvedTriangulation::Network::get_delaunay_point_2_to_velocity_map(
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
-	if (!d_delaunay_point_2_to_velocity_map)
+	const velocity_delta_time_params_type velocity_delta_time_params =
+			std::make_pair(GPlatesMaths::Real(velocity_delta_time), velocity_delta_time_type);
+
+	// Look for an existing map associated with the velocity delta time parameters.
+	velocity_delta_time_to_velocity_map_type::iterator velocity_delta_time_to_velocity_map_iter =
+			d_velocity_delta_time_to_velocity_map.find(velocity_delta_time_params);
+	if (velocity_delta_time_to_velocity_map_iter == d_velocity_delta_time_to_velocity_map.end())
 	{
-		create_delaunay_point_2_to_velocity_map();
+		std::pair<velocity_delta_time_to_velocity_map_type::iterator, bool> inserted =
+				d_velocity_delta_time_to_velocity_map.insert(
+						velocity_delta_time_to_velocity_map_type::value_type(
+								velocity_delta_time_params,
+								delaunay_point_2_to_velocity_map_type()));
+		velocity_delta_time_to_velocity_map_iter = inserted.first;
+
+		// Add a new map associated with the velocity delta time parameters.
+		create_delaunay_point_2_to_velocity_map(
+				velocity_delta_time_to_velocity_map_iter->second,
+				velocity_delta_time,
+				velocity_delta_time_type);
 	}
 
-	return d_delaunay_point_2_to_velocity_map.get();
+	return velocity_delta_time_to_velocity_map_iter->second;
 }
 
 
 void
-GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_point_2_to_velocity_map() const
+GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_point_2_to_velocity_map(
+		delaunay_point_2_to_velocity_map_type &delaunay_point_2_to_velocity_map,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
-	d_delaunay_point_2_to_velocity_map = delaunay_point_2_to_velocity_map_type();
-
 	const Delaunay_2 &delaunay_2 = get_delaunay_2();
 
 	// Iterate over the vertices of the delaunay triangulation.
@@ -1378,11 +1406,13 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_point_2_to_velo
 	for ( ; finite_vertices_iter != finite_vertices_end; ++finite_vertices_iter)
 	{
 		// Map the triangulation vertex 2D point to its associated velocity.
-		d_delaunay_point_2_to_velocity_map->insert(
+		delaunay_point_2_to_velocity_map.insert(
 				delaunay_point_2_to_velocity_map_type::value_type(
 						finite_vertices_iter->point(),
 						// Store velocity as 3D vectors since colat/lon cannot be interpolated...
-						finite_vertices_iter->get_velocity_vector()));
+						finite_vertices_iter->calc_velocity_vector(
+								velocity_delta_time,
+								velocity_delta_time_type)));
 	}
 }
 
@@ -1709,7 +1739,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_closest_delaunay_convex_hul
 GPlatesMaths::Vector3D
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 		const GPlatesMaths::PointOnSphere &point,
-		const RigidBlock &rigid_block) const
+		const RigidBlock &rigid_block,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
 	ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
 			rigid_block.get_reconstructed_feature_geometry();
@@ -1724,13 +1756,15 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 		rigid_block_plate_id = 0;
 	}
 
+	const double reconstruction_time = rigid_block_rfg->get_reconstruction_time();
+	const std::pair<double, double> time_range =
+			VelocityDeltaTime::get_time_range(velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 	// Get the reconstruction trees to calculate velocity with.
 	const ReconstructionTree::non_null_ptr_to_const_type rigid_block_recon_tree1 =
-			rigid_block_rfg->get_reconstruction_tree();
+			rigid_block_rfg->get_reconstruction_tree_creator().get_reconstruction_tree(time_range.second/*young*/);
 	const ReconstructionTree::non_null_ptr_to_const_type rigid_block_recon_tree2 =
-			rigid_block_rfg->get_reconstruction_tree_creator().get_reconstruction_tree(
-					// FIXME:  Should this '1' should be user controllable? ...
-					rigid_block_recon_tree1->get_reconstruction_time() + 1);
+			rigid_block_rfg->get_reconstruction_tree_creator().get_reconstruction_tree(time_range.first/*old*/);
 
 	// Get the finite rotations for this plate id.
 	const GPlatesMaths::FiniteRotation &rigid_block_finite_rotation1 =

@@ -113,24 +113,24 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 		debug_qts << "# face_index = " << finite_faces_2_iter->get_face_index() << "\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(0)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(0)->calc_velocity_colat_lon().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(1)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(1)->calc_velocity_colat_lon().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(2)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(2)->v().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
 		const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &deformation_info =

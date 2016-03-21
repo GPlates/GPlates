@@ -37,6 +37,7 @@
 #include "ResolvedTriangulationConstrainedDelaunay2.h"
 #include "ResolvedTriangulationDelaunay2.h"
 #include "ResolvedTriangulationDelaunay3.h"
+#include "VelocityDeltaTime.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -364,15 +365,22 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional< std::pair<boost::optional<const RigidBlock &>, GPlatesMaths::Vector3D> >
 			calculate_velocity(
-					const GPlatesMaths::PointOnSphere &point) const;
+					const GPlatesMaths::PointOnSphere &point,
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
 
 			//! Convenient overload.
 			template <class Point2Type>
 			boost::optional< std::pair<boost::optional<const RigidBlock &>, GPlatesMaths::Vector3D> >
 			calculate_velocity(
-					const Point2Type &point_2) const
+					const Point2Type &point_2,
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
 			{
-				return calculate_velocity(d_projection.unproject_to_point_on_sphere(point_2));
+				return calculate_velocity(
+						d_projection.unproject_to_point_on_sphere(point_2),
+						velocity_delta_time,
+						velocity_delta_time_type);
 			}
 
 
@@ -468,6 +476,12 @@ namespace GPlatesAppLogic
 					delaunay_point_2_to_velocity_map_type;
 
 
+			typedef std::pair<GPlatesMaths::Real, VelocityDeltaTime::Type> velocity_delta_time_params_type;
+			//! Typedef for a mapping of velocity delta-time parameter to 2D delaunay triangulation points-to-velocities maps.
+			typedef std::map<velocity_delta_time_params_type, delaunay_point_2_to_velocity_map_type>
+					velocity_delta_time_to_velocity_map_type;
+
+
 			/**
 			 * The reconstruction time this triangulation network was build at.
 			 */
@@ -507,10 +521,12 @@ namespace GPlatesAppLogic
 			mutable boost::optional<Delaunay_3> d_delaunay_3;
 
 			/**
-			 * Stores the velocities at the delaunay triangulation points so they can be looked up
-			 * during velocity interpolation between vertices of the delaunay triangulation.
+			 * Maps velocity delta-time parameters to velocity maps.
+			 *
+			 * Each velocity map in turn stores the velocities at the delaunay triangulation points so they
+			 * can be looked up during velocity interpolation between vertices of the delaunay triangulation.
 			 */
-			mutable boost::optional<delaunay_point_2_to_velocity_map_type> d_delaunay_point_2_to_velocity_map;
+			mutable velocity_delta_time_to_velocity_map_type d_velocity_delta_time_to_velocity_map;
 
 
 			// TODO: Re-use one earth radius constant across of all GPlates.
@@ -585,10 +601,15 @@ namespace GPlatesAppLogic
 			create_delaunay_3() const;
 
 			const delaunay_point_2_to_velocity_map_type &
-			get_delaunay_point_2_to_velocity_map() const;
+			get_delaunay_point_2_to_velocity_map(
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const;
 
 			void
-			create_delaunay_point_2_to_velocity_map() const;
+			create_delaunay_point_2_to_velocity_map(
+					delaunay_point_2_to_velocity_map_type &delaunay_point_2_to_velocity_map,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const;
 
 			/**
 			 * Calculate the natural neighbour coorinates of the specified point.
@@ -631,7 +652,9 @@ namespace GPlatesAppLogic
 			GPlatesMaths::Vector3D
 			calculate_rigid_block_velocity(
 					const GPlatesMaths::PointOnSphere &point,
-					const RigidBlock &rigid_block) const;
+					const RigidBlock &rigid_block,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const;
 		};
 	}
 }

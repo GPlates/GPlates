@@ -73,6 +73,7 @@ POP_MSVC_WARNINGS
 
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
+#include "VelocityDeltaTime.h"
 
 #include "model/types.h"
 
@@ -250,71 +251,101 @@ namespace GPlatesAppLogic
 				return d_vertex_info->reconstruction_tree_creator;
 			}
 
-			//! Returns the velocity vector of this vertex (calculates if first time called).
-			const GPlatesMaths::Vector3D &
-			get_velocity_vector() const
-			{
-				if (!d_velocity_vector)
-				{
-					calculate_velocity_vector();
-				}
+			//! Calculates the velocity vector of this vertex.
+			GPlatesMaths::Vector3D
+			calc_velocity_vector(
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
 
-				return d_velocity_vector.get();
+			//! Calculates the velocity colat/lon of this vertex.
+			GPlatesMaths::VectorColatitudeLongitude
+			calc_velocity_colat_lon(
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+			{
+				return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
+						get_point_on_sphere(),
+						calc_velocity_vector(velocity_delta_time, velocity_delta_time_type));
 			}
 
-			//! Returns the velocity colat/lon of this vertex (calculates if first time called).
-			const GPlatesMaths::VectorColatitudeLongitude &
-			get_velocity_colat_lon() const
-			{
-				if (!d_velocity_colat_lon)
-				{
-					// All those cosine, sine and arc-tangent conversion calculations are worth caching.
-					d_velocity_colat_lon = GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
-							get_point_on_sphere(),
-							get_velocity_vector());
-				}
-
-				return d_velocity_colat_lon.get();
-			}
 
 			const double &
-			get_dilitation(double d) const
+			get_dilitation() const
 			{
-				if (!d_dilitation)
-				{
-					calculate_dilitation( d );
-				}
-				return d_dilitation.get();
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->dilitation;
 			}
 
-			const double &
-			get_second_invariant(double d) const
+			void
+			set_dilitation(
+					const double &dilitation)
 			{
-				if (!d_dilitation)
-				{
-					calculate_second_invariant( d );
-				}
-				return d_dilitation.get();
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				d_vertex_info->dilitation = dilitation;
 			}
 
-			const double &
-			get_sph_dilitation(double d) const
-			{
-				if (!d_sph_dilitation)
-				{
-					calculate_sph_dilitation( d );
-				}
-				return d_sph_dilitation.get();
-			}
 
 			const double &
-			get_sph_second_invariant(double d) const
+			get_second_invariant() const
 			{
-				if (!d_sph_second_invariant)
-				{
-					calculate_sph_second_invariant( d );
-				}
-				return d_sph_dilitation.get();
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->second_invariant;
+			}
+
+			void
+			set_second_invariant(
+					const double &second_invariant)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				d_vertex_info->second_invariant = second_invariant;
+			}
+
+
+			const double &
+			get_sph_dilitation() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->sph_dilitation;
+			}
+
+			void
+			set_sph_dilitation(
+					const double &sph_dilitation)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				d_vertex_info->sph_dilitation = sph_dilitation;
+			}
+
+
+			const double &
+			get_sph_second_invariant() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->sph_second_invariant;
+			}
+
+			void
+			set_sph_second_invariant(
+					const double &sph_second_invariant)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				d_vertex_info->sph_second_invariant = sph_second_invariant;
 			}
 
 		private:
@@ -328,11 +359,19 @@ namespace GPlatesAppLogic
 						const GPlatesMaths::PointOnSphere &point_on_sphere_,
 						GPlatesModel::integer_plate_id_type plate_id_,
 						const ReconstructionTreeCreator &reconstruction_tree_creator_,
-						const double &reconstruction_time_) :
+						const double &reconstruction_time_,
+						const double &dilitation_ = 0.0,
+						const double &second_invariant_ = 0.0,
+						const double &sph_dilitation_ = 0.0,
+						const double &sph_second_invariant_ = 0.0) :
 					point_on_sphere(point_on_sphere_),
 					plate_id(plate_id_),
 					reconstruction_tree_creator(reconstruction_tree_creator_),
-					reconstruction_time(reconstruction_time_)
+					reconstruction_time(reconstruction_time_),
+					dilitation(dilitation_),
+					second_invariant(second_invariant_),
+					sph_dilitation(sph_dilitation_),
+					sph_second_invariant(sph_second_invariant_)
 				{  }
 
 				GPlatesMaths::PointOnSphere point_on_sphere;
@@ -340,37 +379,14 @@ namespace GPlatesAppLogic
 				ReconstructionTreeCreator reconstruction_tree_creator;
 
 				double reconstruction_time;
+
+				double dilitation;
+				double second_invariant;
+				double sph_dilitation;
+				double sph_second_invariant;
 			};
 
 			boost::optional<VertexInfo> d_vertex_info;
-
-			//
-			// Derived values - these are mutable since they are calculated on first call.
-			//
-
-			mutable boost::optional<GPlatesMaths::Vector3D> d_velocity_vector;
-			mutable boost::optional<GPlatesMaths::VectorColatitudeLongitude> d_velocity_colat_lon;
-
-			mutable boost::optional<double> d_dilitation;
-			mutable boost::optional<double> d_second_invariant;
-			mutable boost::optional<double> d_sph_dilitation;
-			mutable boost::optional<double> d_sph_second_invariant;
-
-			void
-			calculate_velocity_vector() const;
-
-			void
-			calculate_dilitation(double d) const;
-
-			void
-			calculate_second_invariant(double d) const;
-
-			void
-			calculate_sph_dilitation(double d) const;
-
-			void
-			calculate_sph_second_invariant(double d) const;
-
 		};
 
 
@@ -668,38 +684,10 @@ namespace GPlatesAppLogic
 		//
 
 		template < typename GT, typename Vb >
-		void
-		DelaunayVertex_2<GT, Vb>::calculate_dilitation(double d) const
-		{
-			d_dilitation = d;
-		}
-
-		template < typename GT, typename Vb >
-		void
-		DelaunayVertex_2<GT, Vb>::calculate_second_invariant(double d) const
-		{
-			d_second_invariant = d;
-		}
-
-
-		template < typename GT, typename Vb >
-		void
-		DelaunayVertex_2<GT, Vb>::calculate_sph_dilitation(double d) const
-		{
-			d_sph_dilitation = d;
-		}
-
-		template < typename GT, typename Vb >
-		void
-		DelaunayVertex_2<GT, Vb>::calculate_sph_second_invariant(double d) const
-		{
-			d_sph_second_invariant = d;
-		}
-
-
-		template < typename GT, typename Vb >
-		void
-		DelaunayVertex_2<GT, Vb>::calculate_velocity_vector() const
+		GPlatesMaths::Vector3D
+		DelaunayVertex_2<GT, Vb>::calc_velocity_vector(
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type) const
 		{
 			//
 			// Currently we assume the geometry was reconstructed by plate id which precludes,
@@ -710,17 +698,15 @@ namespace GPlatesAppLogic
 
 			const GPlatesModel::integer_plate_id_type vertex_plate_id = get_plate_id();
 			const double &vertex_reconstruction_time = get_reconstruction_time();
-			const ReconstructionTreeCreator vertex_reconstruction_tree_creator =
-					get_reconstruction_tree_creator();
+			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+					velocity_delta_time_type, vertex_reconstruction_time, velocity_delta_time);
+			const ReconstructionTreeCreator vertex_reconstruction_tree_creator = get_reconstruction_tree_creator();
 
 			// Get the reconstruction trees to calculate velocity with.
 			const ReconstructionTree::non_null_ptr_to_const_type vertex_recon_tree1 =
-					vertex_reconstruction_tree_creator.get_reconstruction_tree(
-							vertex_reconstruction_time);
+					vertex_reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/);
 			const ReconstructionTree::non_null_ptr_to_const_type vertex_recon_tree2 =
-					vertex_reconstruction_tree_creator.get_reconstruction_tree(
-							// FIXME:  Should this '1' should be user controllable? ...
-							vertex_reconstruction_time + 1);
+					vertex_reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
 
 			// Get the finite rotations for this plate id.
 			const GPlatesMaths::FiniteRotation &vertex_finite_rotation1 =
@@ -728,16 +714,17 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::FiniteRotation &vertex_finite_rotation2 =
 					vertex_recon_tree2->get_composed_absolute_rotation(vertex_plate_id).first;
 
-			d_velocity_vector = GPlatesMaths::calculate_velocity_vector(
-							get_point_on_sphere(),
-							vertex_finite_rotation1,
-							vertex_finite_rotation2);
+			return GPlatesMaths::calculate_velocity_vector(
+					get_point_on_sphere(),
+					vertex_finite_rotation1,
+					vertex_finite_rotation2);
 		}
 
 
 		//
 		// Face Implementation
 		//
+
 		template < typename GT, typename Fb >
 		void
 		DelaunayFace_2<GT, Fb>::calculate_centroid() const
@@ -751,9 +738,8 @@ namespace GPlatesAppLogic
 			points.push_back( this->vertex(2)->get_point_on_sphere() );
 
 			// compute the centroid 
-			GPlatesMaths::UnitVector3D centroid_uv3d = GPlatesMaths::Centroid::calculate_points_centroid(
-			points.begin(),
-				points.end() );
+			GPlatesMaths::UnitVector3D centroid_uv3d =
+					GPlatesMaths::Centroid::calculate_points_centroid(points.begin(), points.end() );
 
 			const GPlatesMaths::PointOnSphere centroid = GPlatesMaths::PointOnSphere(centroid_uv3d);
 			d_centroid = centroid;
@@ -781,20 +767,20 @@ namespace GPlatesAppLogic
 			// vertex 1
 			const double x1 = v1->point().x();
 			const double y1 = v1->point().y();
-			double ux1 = v1->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy1 = -( v1->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux1 = v1->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy1 = -( v1->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// vertex 2
 			const double x2 = v2->point().x();
 			const double y2 = v2->point().y();
-			double ux2 = v2->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy2 = -( v2->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux2 = v2->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy2 = -( v2->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// vertex 3
 			const double x3 = v3->point().x();
 			const double y3 = v3->point().y();
-			double ux3 = v3->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy3 = -( v3->get_velocity_colat_lon().get_vector_colatitude().dval() );
+			double ux3 = v3->calc_velocity_colat_lon().get_vector_longitude().dval();
+			double uy3 = -( v3->calc_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// Establish coeficients for linear interpolation over the element
 			// x,y data is in meters from projection;
