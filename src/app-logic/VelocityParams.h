@@ -29,6 +29,8 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
+#include "VelocityDeltaTime.h"
+
 #include "maths/MathsUtils.h"
 
 
@@ -61,11 +63,14 @@ namespace GPlatesAppLogic
 		VelocityParams() :
 			// Default to using surfaces since that's how GPlates started out calculating velocities...
 			d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS),
+			d_delta_time_type(VelocityDeltaTime::T_PLUS_DELTA_T_TO_T),
+			d_delta_time(1.0),
 			d_is_boundary_smoothing_enabled(false),
 			d_boundary_smoothing_angular_half_extent_degrees(1.0),
 			// Default to no smoothing inside deforming regions...
 			d_exclude_deforming_regions_from_smoothing(true)
 		{  }
+
 
 		SolveVelocitiesMethodType
 		get_solve_velocities_method() const
@@ -80,6 +85,35 @@ namespace GPlatesAppLogic
 			d_solve_velocities_method = solve_velocities_method;
 		}
 
+
+		VelocityDeltaTime::Type
+		get_delta_time_type() const
+		{
+			return d_delta_time_type;
+		}
+
+		void
+		set_delta_time_type(
+				VelocityDeltaTime::Type delta_time_calculation)
+		{
+			d_delta_time_type = delta_time_calculation;
+		}
+
+
+		double
+		get_delta_time() const
+		{
+			return d_delta_time.dval();
+		}
+
+		void
+		set_delta_time(
+				const double &delta_time)
+		{
+			d_delta_time = delta_time;
+		}
+
+
 		bool
 		get_is_boundary_smoothing_enabled() const
 		{
@@ -93,6 +127,7 @@ namespace GPlatesAppLogic
 			d_is_boundary_smoothing_enabled = is_boundary_smoothing_enabled;
 		}
 
+
 		/**
 		 * Specifies the angular distance (radians) over which velocities are smoothed across
 		 * a plate/network boundary.
@@ -105,10 +140,10 @@ namespace GPlatesAppLogic
 		 *
 		 * The smoothing occurs over boundaries of topological boundaries/networks and static polygons.
 		 */
-		const double &
+		double
 		get_boundary_smoothing_angular_half_extent_degrees() const
 		{
-			return d_boundary_smoothing_angular_half_extent_degrees;
+			return d_boundary_smoothing_angular_half_extent_degrees.dval();
 		}
 
 		void
@@ -117,6 +152,7 @@ namespace GPlatesAppLogic
 		{
 			d_boundary_smoothing_angular_half_extent_degrees = boundary_smoothing_angular_half_extent_degrees;
 		}
+
 
 		bool
 		get_exclude_deforming_regions_from_smoothing() const
@@ -138,12 +174,13 @@ namespace GPlatesAppLogic
 				const VelocityParams &rhs) const
 		{
 			return d_solve_velocities_method == rhs.d_solve_velocities_method &&
+					d_delta_time_type == rhs.d_delta_time_type &&
+					d_delta_time == rhs.d_delta_time &&
 					d_is_boundary_smoothing_enabled == rhs.d_is_boundary_smoothing_enabled &&
 					d_exclude_deforming_regions_from_smoothing ==
 						rhs.d_exclude_deforming_regions_from_smoothing &&
-					GPlatesMaths::are_almost_exactly_equal(
-							d_boundary_smoothing_angular_half_extent_degrees,
-							rhs.d_boundary_smoothing_angular_half_extent_degrees);
+					d_boundary_smoothing_angular_half_extent_degrees ==
+						rhs.d_boundary_smoothing_angular_half_extent_degrees;
 		}
 
 		//! Less than comparison operator.
@@ -156,6 +193,24 @@ namespace GPlatesAppLogic
 				return true;
 			}
 			if (d_solve_velocities_method > rhs.d_solve_velocities_method)
+			{
+				return false;
+			}
+
+			if (d_delta_time_type < rhs.d_delta_time_type)
+			{
+				return true;
+			}
+			if (d_delta_time_type > rhs.d_delta_time_type)
+			{
+				return false;
+			}
+
+			if (d_delta_time < rhs.d_delta_time)
+			{
+				return true;
+			}
+			if (d_delta_time > rhs.d_delta_time)
 			{
 				return false;
 			}
@@ -194,8 +249,11 @@ namespace GPlatesAppLogic
 
 		SolveVelocitiesMethodType d_solve_velocities_method;
 
+		VelocityDeltaTime::Type d_delta_time_type;
+		GPlatesMaths::Real d_delta_time;
+
 		bool d_is_boundary_smoothing_enabled;
-		double d_boundary_smoothing_angular_half_extent_degrees;
+		GPlatesMaths::Real d_boundary_smoothing_angular_half_extent_degrees;
 		bool d_exclude_deforming_regions_from_smoothing;
 
 	};
