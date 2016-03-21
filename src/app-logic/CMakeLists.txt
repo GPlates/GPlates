@@ -228,6 +228,8 @@ set(srcs
     TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
+    VelocityDeltaTime.cc
+    VelocityDeltaTime.h
     VelocityFieldCalculatorLayerProxy.cc
     VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
