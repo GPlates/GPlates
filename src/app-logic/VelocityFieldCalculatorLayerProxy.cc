@@ -194,6 +194,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
 					resolved_topological_networks,
+					velocity_params.get_delta_time(),
+					velocity_params.get_delta_time_type(),
 					velocity_smoothing_options);
 		}
 		else

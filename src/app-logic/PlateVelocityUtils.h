@@ -35,6 +35,7 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructionTreeCreator.h"
+#include "VelocityDeltaTime.h"
 
 #include "file-io/FileInfo.h"
 
@@ -130,6 +131,10 @@ namespace GPlatesAppLogic
 		 * static polygons and resolved topological plates/networks and the velocities then depend
 		 * on these surfaces.
 		 *
+		 * @a velocity_delta_time is the time interval over which velocities are calculated - defaults to 1My.
+		 * @a velocity_delta_time_type is the offset of the delta-time interval relative to the reconstruction time -
+		 * defaults to (t+dt, t) since this never results in negative times for t>=0.
+		 *
 		 * If @a velocity_smoothing_options is specified then it provides the angular distance (radians)
 		 * over which velocities are smoothed across a plate/network boundary and whether smoothing
 		 * should occur for points within a deforming region (including network rigid blocks).
@@ -165,6 +170,8 @@ namespace GPlatesAppLogic
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 				const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
 
 
@@ -253,7 +260,9 @@ namespace GPlatesAppLogic
 							const ReconstructionGeometry *,
 							GPlatesMaths::Vector3D> >
 			calculate_velocity(
-					const GPlatesMaths::PointOnSphere &point) const;
+					const GPlatesMaths::PointOnSphere &point,
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
 
 		private:
 

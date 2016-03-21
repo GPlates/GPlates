@@ -242,10 +242,15 @@ namespace GPlatesAppLogic
 		solve_velocities_on_network(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			boost::optional< std::pair<const ReconstructionGeometry *, GPlatesMaths::Vector3D > >
-					network_velocity = resolved_networks_query.calculate_velocity(domain_point);
+					network_velocity = resolved_networks_query.calculate_velocity(
+							domain_point,
+							velocity_delta_time,
+							velocity_delta_time_type);
 			if (!network_velocity)
 			{
 				return false;
@@ -289,7 +294,9 @@ namespace GPlatesAppLogic
 		solve_velocities_on_rigid_plates(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
-				const GeometryCookieCutter &rigid_plates_query)
+				const GeometryCookieCutter &rigid_plates_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			const boost::optional<const ReconstructionGeometry *> rigid_plate_containing_point =
 					rigid_plates_query.partition_point(domain_point);
@@ -319,15 +326,19 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 
 			GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt.get();
 
+			const double reconstruction_time = rigid_plate_containing_point.get()->get_reconstruction_time();
+			const std::pair<double, double> time_range =
+					VelocityDeltaTime::get_time_range(velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 			// Get the reconstruction trees to calculate velocity with.
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree1 =
 				ReconstructionGeometryUtils::get_reconstruction_tree(
-						rigid_plate_containing_point.get());
+						rigid_plate_containing_point.get(),
+						time_range.second/*young*/);
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree2 =
 				ReconstructionGeometryUtils::get_reconstruction_tree(
 						rigid_plate_containing_point.get(),
-						// FIXME:  Should this '1' should be user controllable? ...
-						rigid_plate_containing_point.get()->get_reconstruction_time() + 1);
+						time_range.first/*old*/);
 			// This should succeed since resolved topological boundaries and RFGs (static polygons)
 			// support reconstruction trees.
 			if (!recon_tree1 || !recon_tree2)
@@ -375,13 +386,20 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const GeometryCookieCutter &rigid_plates_query,
-				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			//
 			// First check whether domain point is inside any topological networks.
 			// This includes points inside interior rigid blocks on the networks.
 			//
-			if (solve_velocities_on_network(domain_point, range_element, resolved_networks_query))
+			if (solve_velocities_on_network(
+					domain_point,
+					range_element,
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type))
 			{
 				return true;
 			}
@@ -390,7 +408,12 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			// Next see if point is inside any topological boundaries or static (reconstructed) polygons.
 			//
 
-			if (solve_velocities_on_rigid_plates(domain_point, range_element, rigid_plates_query))
+			if (solve_velocities_on_rigid_plates(
+					domain_point,
+					range_element,
+					rigid_plates_query,
+					velocity_delta_time,
+					velocity_delta_time_type))
 			{
 				return true;
 			}
@@ -426,7 +449,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				boost::optional<GPlatesMaths::Vector3D> &velocity_outside_polygon_boundary,
 				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
 				const GeometryCookieCutter &rigid_plates_query,
-				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			// Sample the velocity at the point sample.
 			boost::optional<MultiPointVectorField::CodomainElement> velocity_sample;
@@ -434,7 +459,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					point_sample,
 					velocity_sample,
 					rigid_plates_query,
-					resolved_networks_query))
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type))
 			{
 				// Didn't sample a surface.
 				return;
@@ -479,7 +506,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const GPlatesMaths::PointOnSphere &domain_point,
 				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
 				const GeometryCookieCutter &rigid_plates_query,
-				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			// We need both a velocity just inside and just outside the polygon boundary before
 			// we can calculate the average velocity at boundary.
@@ -518,7 +547,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
 					rigid_plates_query,
-					resolved_networks_query);
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 			// To get point sample inside polygon boundary we rotate the point outside by 180 degrees.
 			GPlatesMaths::Rotation rotation_180_about_polygon_boundary_point =
@@ -531,7 +562,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
 					rigid_plates_query,
-					resolved_networks_query);
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -558,7 +591,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
 					rigid_plates_query,
-					resolved_networks_query);
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -573,7 +608,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					velocity_outside_polygon_boundary,
 					polygon_recon_geom_containing_domain_point,
 					rigid_plates_query,
-					resolved_networks_query);
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -612,7 +649,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 							velocity_outside_polygon_boundary,
 							polygon_recon_geom_containing_domain_point,
 							rigid_plates_query,
-							resolved_networks_query);
+							resolved_networks_query,
+							velocity_delta_time,
+							velocity_delta_time_type);
 
 					if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 					{
@@ -643,7 +682,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 						velocity_outside_polygon_boundary,
 						polygon_recon_geom_containing_domain_point,
 						rigid_plates_query,
-						resolved_networks_query);
+						resolved_networks_query,
+						velocity_delta_time,
+						velocity_delta_time_type);
 
 				if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 				{
@@ -681,6 +722,8 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
 				const double &boundary_smoothing_half_angle_radians,
 				const GPlatesMaths::AngularExtent &boundary_smoothing_angular_half_extent,
 				bool exclude_deforming_regions_from_smoothing)
@@ -690,7 +733,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					domain_point,
 					range_element,
 					rigid_plates_query,
-					resolved_networks_query))
+					resolved_networks_query,
+					velocity_delta_time,
+					velocity_delta_time_type))
 			{
 				// Domain point is not inside any surfaces.
 				return false;
@@ -777,7 +822,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 							domain_point,
 							boundary_recon_geom,
 							rigid_plates_query,
-							resolved_networks_query);
+							resolved_networks_query,
+							velocity_delta_time,
+							velocity_delta_time_type);
 			if (!average_boundary_velocity)
 			{
 				// Unable to calculate average since unable to sample adjacent polygon -
@@ -872,6 +919,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
 		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {
 	PROFILE_FUNC();
@@ -964,6 +1013,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						range_element,
 						rigid_plates_query,
 						resolved_networks_query,
+						velocity_delta_time,
+						velocity_delta_time_type,
 						velocity_smoothing_options->angular_half_extent_radians,
 						boundary_smoothing_angular_half_extent,
 						exclude_deforming_regions_from_smoothing);
@@ -974,7 +1025,9 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						domain_point,
 						range_element,
 						rigid_plates_query,
-						resolved_networks_query);
+						resolved_networks_query,
+						velocity_delta_time,
+						velocity_delta_time_type);
 			}
 		}
 
@@ -1039,7 +1092,9 @@ boost::optional<
 				const GPlatesAppLogic::ReconstructionGeometry *,
 				GPlatesMaths::Vector3D> >
 GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_velocity(
-		const GPlatesMaths::PointOnSphere &point) const
+		const GPlatesMaths::PointOnSphere &point,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &network, d_networks)
 	{
@@ -1047,7 +1102,10 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 				std::pair<
 						boost::optional<const ResolvedTriangulation::Network::RigidBlock &>,
 						GPlatesMaths::Vector3D> >
-				velocity = network->get_triangulation_network().calculate_velocity(point);
+				velocity = network->get_triangulation_network().calculate_velocity(
+						point,
+						velocity_delta_time,
+						velocity_delta_time_type);
 		if (velocity)
 		{
 			const GPlatesMaths::Vector3D &velocity_vector = velocity->second;
