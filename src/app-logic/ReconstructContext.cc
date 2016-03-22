@@ -498,7 +498,9 @@ GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const context_state_reference_type &context_state_ref,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
 	//PROFILE_FUNC();
 
@@ -515,7 +517,9 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 				reconstructed_feature_velocities,
 				reconstruct_handle,
 				context_state_ref->d_reconstruct_method_context,
-				reconstruction_time);
+				reconstruction_time,
+				velocity_delta_time,
+				velocity_delta_time_type);
 	}
 
 	return reconstruct_handle;

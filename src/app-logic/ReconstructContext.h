@@ -42,6 +42,7 @@
 #include "ReconstructMethodInterface.h"
 #include "ReconstructMethodType.h"
 #include "TimeSpanUtils.h"
+#include "VelocityDeltaTime.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -532,7 +533,9 @@ namespace GPlatesAppLogic
 		reconstruct_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const context_state_reference_type &context_state_ref,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
 
 	private:
 

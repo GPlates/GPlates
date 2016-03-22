@@ -41,6 +41,7 @@
 #include "ReconstructionLayerProxy.h"
 #include "TimeSpanUtils.h"
 #include "TopologyNetworkResolverLayerProxy.h"
+#include "VelocityDeltaTime.h"
 
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
@@ -512,10 +513,16 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
-				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities)
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, d_current_reconstruct_params, d_current_reconstruction_time);
+					reconstructed_feature_velocities,
+					d_current_reconstruct_params,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -526,10 +533,16 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
-				const ReconstructParams &reconstruct_params)
+				const ReconstructParams &reconstruct_params,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, reconstruct_params, d_current_reconstruction_time);
+					reconstructed_feature_velocities,
+					reconstruct_params,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -540,10 +553,16 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, d_current_reconstruct_params, reconstruction_time);
+					reconstructed_feature_velocities,
+					d_current_reconstruct_params,
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -557,7 +576,9 @@ namespace GPlatesAppLogic
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0);
 
 
 		//
@@ -840,12 +861,21 @@ namespace GPlatesAppLogic
 			boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
 					cached_reconstructions_spatial_partition;
 
+			//
+			// Velocities.
+			//
 
 			/**
 			 * The reconstruct handle that identifies all cached reconstructed feature *velocities*
 			 * in this structure.
 			 */
 			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_velocities_handle;
+
+			/**
+			 * Cached velocity delta time.
+			 */
+			boost::optional< std::pair<VelocityDeltaTime::Type, GPlatesMaths::real_t> >
+					cached_velocity_delta_time_params;
 
 			/**
 			 * The cached reconstructed feature velocities.
@@ -1127,7 +1157,9 @@ namespace GPlatesAppLogic
 		std::vector<MultiPointVectorField::non_null_ptr_type> &
 		cache_reconstructed_feature_velocities(
 				ReconstructionInfo &reconstruction_info,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				const double &velocity_delta_time);
 
 
 		/**

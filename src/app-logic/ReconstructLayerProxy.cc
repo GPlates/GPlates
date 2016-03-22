@@ -453,7 +453,9 @@ GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_velocities(
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const ReconstructParams &reconstruct_params,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
@@ -462,11 +464,25 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_velocities(
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
 	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
-	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
+	// If the velocity delta time parameters have changed then remove the velocities from the cache.
+	if (reconstruction_info.cached_velocity_delta_time_params !=
+		std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time)))
+	{
+		reconstruction_info.cached_reconstructed_feature_velocities = boost::none;
+
+		reconstruction_info.cached_velocity_delta_time_params =
+				std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time));
+	}
+
+	// If the cached velocities have not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructed_feature_velocities)
 	{
 		// Calculate velocities at the reconstructed feature geometry positions.
-		cache_reconstructed_feature_velocities(reconstruction_info, reconstruction_time); 
+		cache_reconstructed_feature_velocities(
+				reconstruction_info,
+				reconstruction_time,
+				velocity_delta_time_type,
+				velocity_delta_time);
 	}
 
 	// Append our cached velocities to the caller's sequence.
@@ -475,7 +491,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_velocities(
 			reconstruction_info.cached_reconstructed_feature_velocities->begin(),
 			reconstruction_info.cached_reconstructed_feature_velocities->end());
 
-	return reconstruction_info.cached_reconstructed_feature_geometries_handle.get();
+	return reconstruction_info.cached_reconstructed_feature_velocities_handle.get();
 }
 
 
@@ -975,7 +991,9 @@ GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructions_spatial_partition(
 std::vector<GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type> &
 GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructed_feature_velocities(
 		ReconstructionInfo &reconstruction_info,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
 {
 	// If they're already cached then nothing to do.
 	if (reconstruction_info.cached_reconstructed_feature_velocities)
@@ -992,7 +1010,9 @@ GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructed_feature_velocities(
 			d_reconstruct_context.reconstruct_feature_velocities(
 					reconstruction_info.cached_reconstructed_feature_velocities.get(),
 					reconstruction_info.context_state,
-					reconstruction_time);
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	return reconstruction_info.cached_reconstructed_feature_velocities.get();
 }
