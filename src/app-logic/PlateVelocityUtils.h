@@ -184,7 +184,7 @@ namespace GPlatesAppLogic
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
-		calc_velocity_colat_lon(
+		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
 				const GPlatesMaths::FiniteRotation &finite_rotation2);
@@ -194,9 +194,13 @@ namespace GPlatesAppLogic
 		 * nearby reconstruction times represented by @a reconstruction_tree1
 		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
 		 * to lookup the two rotations.
+		 *
+		 * If the plate ID is not found in either reconstruction tree then the zero vector is returned.
+		 * This avoids extraneously large velocities when plate ID is found in one reconstruction tree (time)
+		 * but not the other.
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
-		calc_velocity_colat_lon(
+		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
 				const ReconstructionTree &reconstruction_tree1,
 				const ReconstructionTree &reconstruction_tree2,
@@ -208,7 +212,7 @@ namespace GPlatesAppLogic
 		 */
 		inline
 		GPlatesMaths::Vector3D
-		calc_velocity_vector(
+		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
 				const GPlatesMaths::FiniteRotation &finite_rotation2)
@@ -221,9 +225,13 @@ namespace GPlatesAppLogic
 		 * nearby reconstruction times represented by @a reconstruction_tree1
 		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
 		 * to lookup the two rotations.
+		 *
+		 * If the plate ID is not found in either reconstruction tree then the zero vector is returned.
+		 * This avoids extraneously large velocities when plate ID is found in one reconstruction tree (time)
+		 * but not the other.
 		 */
 		GPlatesMaths::Vector3D
-		calc_velocity_vector(
+		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
 				const ReconstructionTree &reconstruction_tree1,
 				const ReconstructionTree &reconstruction_tree2,

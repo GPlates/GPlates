@@ -353,7 +353,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 
 			// Compute the velocity for this domain point.
 			const GPlatesMaths::Vector3D vector_xyz =
-					PlateVelocityUtils::calc_velocity_vector(
+					PlateVelocityUtils::calculate_velocity_vector(
 							domain_point,
 							*recon_tree1.get(),
 							*recon_tree2.get(),
@@ -1037,43 +1037,51 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 
 
 GPlatesMaths::Vector3D
-GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
 		const GPlatesMaths::PointOnSphere &point,
 		const ReconstructionTree &reconstruction_tree1,
 		const ReconstructionTree &reconstruction_tree2,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
-	// Get the finite rotation for this plate id.
-	const GPlatesMaths::FiniteRotation &fr_t1 =
-			reconstruction_tree1.get_composed_absolute_rotation(reconstruction_plate_id).first;
+	// Get the finite rotation results for the plate id.
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_t1 =
+			reconstruction_tree1.get_composed_absolute_rotation(reconstruction_plate_id);
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_t2 =
+			reconstruction_tree2.get_composed_absolute_rotation(reconstruction_plate_id);
 
-	const GPlatesMaths::FiniteRotation &fr_t2 =
-			reconstruction_tree2.get_composed_absolute_rotation(reconstruction_plate_id).first;
+	// Return zero velocity if either finite rotation not found.
+	if (fr_t1.second == ReconstructionTree::NoPlateIdMatchesFound ||
+		fr_t2.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		return GPlatesMaths::Vector3D();
+	}
 
-	return GPlatesMaths::calculate_velocity_vector(point, fr_t1, fr_t2);
+	// Calculate the velocity.
+	return GPlatesMaths::calculate_velocity_vector(point, fr_t1.first, fr_t2.first);
 }
 
 
 GPlatesMaths::VectorColatitudeLongitude
-GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &finite_rotation1,
 		const GPlatesMaths::FiniteRotation &finite_rotation2)
 {
-	const GPlatesMaths::Vector3D vector_xyz = calc_velocity_vector(point, finite_rotation1, finite_rotation2);
+	const GPlatesMaths::Vector3D vector_xyz =
+			GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
 }
 
 
 GPlatesMaths::VectorColatitudeLongitude
-GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
 		const ReconstructionTree &reconstruction_tree1,
 		const ReconstructionTree &reconstruction_tree2,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
-	const GPlatesMaths::Vector3D vector_xyz = calc_velocity_vector(
+	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
 			point, reconstruction_tree1, reconstruction_tree2, reconstruction_plate_id);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
