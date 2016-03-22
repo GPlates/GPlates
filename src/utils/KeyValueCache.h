@@ -88,6 +88,16 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Constructor that creates new value objects using the default constructor of ValueType.
+		 *
+		 * @throws @a PreconditionViolationError if @a maximum_num_values_in_cache is zero.
+		 */
+		explicit
+		KeyValueCache(
+				unsigned int maximum_num_values_in_cache);
+
+
+		/**
 		 * Sets the maximum number of values in the cache.
 		 *
 		 * If the current number of values exceeds the maximum then the least-recently used
@@ -179,6 +189,17 @@ namespace GPlatesUtils
 		unsigned int d_num_value_objects_in_cache;
 
 
+		/**
+		 * The @a create_value_object_function_type used when value objects are default constructed.
+		 */
+		static
+		value_type
+		default_create_value_object_function(
+				const key_type &)
+		{
+			return value_type();
+		}
+
 		void
 		remove_least_recently_used_value();
 	};
@@ -194,6 +215,19 @@ namespace GPlatesUtils
 			const create_value_object_function_type &create_value_object_function,
 			unsigned int maximum_num_values_in_cache) :
 		d_create_value_object_function(create_value_object_function),
+		d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
+		d_num_value_objects_in_cache(0)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				maximum_num_values_in_cache > 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	
+	template <typename KeyType, typename ValueType>
+	KeyValueCache<KeyType,ValueType>::KeyValueCache(
+			unsigned int maximum_num_values_in_cache) :
+		d_create_value_object_function(&default_create_value_object_function),
 		d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
 		d_num_value_objects_in_cache(0)
 	{
