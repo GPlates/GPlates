@@ -40,7 +40,9 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const ReconstructHandle::type &reconstruct_handle,
 		const Context &context,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
 	// Get the feature's reconstruction plate id and begin/end time.
 	ReconstructionFeatureProperties reconstruction_feature_properties;
@@ -63,6 +65,9 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 		reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
 	}
 
+	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
 	get_present_day_feature_geometries(present_day_geometries);
@@ -70,13 +75,15 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 	{
 		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 				context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
+				context.reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/);
 		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
-				context.reconstruction_tree_creator.get_reconstruction_tree(
-						// FIXME:  Should this '1' should be user controllable? ...
-						reconstruction_time + 1);
+				context.reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
 
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
+		const GPlatesMaths::FiniteRotation &finite_rotation_1 =
+				reconstruction_tree_1->get_composed_absolute_rotation(reconstruction_plate_id).first;
 		const GPlatesMaths::FiniteRotation &finite_rotation_2 =
 				reconstruction_tree_2->get_composed_absolute_rotation(reconstruction_plate_id).first;
 
@@ -127,7 +134,7 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 			const GPlatesMaths::Vector3D vector_xyz =
 					GPlatesMaths::calculate_velocity_vector(
 							*domain_iter,
-							finite_rotation,
+							finite_rotation_1,
 							finite_rotation_2);
 
 			*field_iter = MultiPointVectorField::CodomainElement(

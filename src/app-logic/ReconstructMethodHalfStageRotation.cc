@@ -859,7 +859,9 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const ReconstructHandle::type &reconstruct_handle,
 		const Context &context,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
 	// Get the feature's reconstruction left/right plate ids.
 	ReconstructionFeatureProperties reconstruction_feature_properties;
@@ -871,6 +873,9 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		return;
 	}
 
+	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
 	get_present_day_feature_geometries(present_day_geometries);
@@ -879,21 +884,34 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		// Get the half-stage rotation.
 		GPlatesModel::integer_plate_id_type left_plate_id;
 		GPlatesModel::integer_plate_id_type right_plate_id;
-		const GPlatesMaths::FiniteRotation finite_rotation =
+		const GPlatesMaths::FiniteRotation finite_rotation_1 =
 				get_half_stage_rotation(
 						left_plate_id,
 						right_plate_id,
-						reconstruction_time,
+						time_range.second/*young*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
 		const GPlatesMaths::FiniteRotation finite_rotation_2 =
 				get_half_stage_rotation(
 						left_plate_id,
 						right_plate_id,
-						// FIXME:  Should this '1' should be user controllable? ...
-						reconstruction_time + 1,
+						time_range.first/*old*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
+
+		// Use either the young or old half-stage rotations if the reconstruction time matches.
+		// Otherwise calculate a new half-stage rotation.
+		const GPlatesMaths::FiniteRotation finite_rotation =
+				GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.second/*young*/)
+				? finite_rotation_1
+				: (GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.first/*old*/)
+						? finite_rotation_2
+						: get_half_stage_rotation(
+								left_plate_id,
+								right_plate_id,
+								reconstruction_time,
+								reconstruction_feature_properties,
+								context.reconstruction_tree_creator));
 
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the
@@ -942,7 +960,7 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 			const GPlatesMaths::Vector3D vector_xyz =
 					GPlatesMaths::calculate_velocity_vector(
 							*domain_iter,
-							finite_rotation,
+							finite_rotation_1,
 							finite_rotation_2);
 
 			*field_iter = MultiPointVectorField::CodomainElement(

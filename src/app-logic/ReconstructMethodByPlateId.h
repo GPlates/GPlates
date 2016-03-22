@@ -110,7 +110,9 @@ namespace GPlatesAppLogic
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructHandle::type &reconstruct_handle,
 				const Context &context,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 
 		/**

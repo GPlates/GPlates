@@ -38,6 +38,7 @@
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodType.h"
 #include "ReconstructParams.h"
+#include "VelocityDeltaTime.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -223,14 +224,18 @@ namespace GPlatesAppLogic
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructHandle::type &reconstruct_handle,
 				const Context &context,
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type)
 		{
 			// The default implementation is sufficient for some derived classes.
 			reconstruct_feature_velocities_by_plate_id(
 					reconstructed_feature_velocities,
 					reconstruct_handle,
 					context,
-					reconstruction_time);
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 		}
 
 
@@ -283,7 +288,9 @@ namespace GPlatesAppLogic
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructHandle::type &reconstruct_handle,
 				const Context &context,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 	private:
 
