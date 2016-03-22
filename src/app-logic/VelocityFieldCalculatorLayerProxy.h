@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_VELOCITYFIELDCALCULATORLAYERPROXY_H
 #define GPLATES_APP_LOGIC_VELOCITYFIELDCALCULATORLAYERPROXY_H
 
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -39,6 +40,7 @@
 #include "VelocityFieldCalculatorLayerTask.h"
 #include "VelocityParams.h"
 
+#include "utils/KeyValueCache.h"
 #include "utils/SubjectObserverToken.h"
 
 
@@ -61,14 +63,34 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * The maximum number of velocity results to cache for different reconstruction time / velocity param
+		 * combinations - each combination represents one cached object.
+		 *
+		 * A value of 2 is suitable since rendering a velocity layer will typically use one velocity
+		 * delta time while the export velocity animation might use another.
+		 *
+		 * WARNING: This value has a direct affect on the memory used by GPlates.
+		 * The cache is mainly to allow multiple clients to make different velocity
+		 * requests (eg, different reconstruction time and/or velocity params) without
+		 * each one invalidating the cache and forcing already calculated results (for a
+		 * particular reconstruction time / velocity params pair) to be calculated again
+		 * in the same frame).
+		 */
+		static const unsigned int MAX_NUM_VELOCITY_RESULTS_IN_CACHE = 2;
+
+
+		/**
 		 * Creates a @a VelocityFieldCalculatorLayerProxy object.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				const VelocityParams &velocity_params = VelocityParams())
+				const VelocityParams &velocity_params = VelocityParams(),
+				unsigned int max_num_velocity_results_in_cache = MAX_NUM_VELOCITY_RESULTS_IN_CACHE)
 		{
-			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy(velocity_params));
+			return non_null_ptr_type(
+					new VelocityFieldCalculatorLayerProxy(
+							velocity_params, max_num_velocity_results_in_cache));
 		}
 
 
@@ -261,6 +283,32 @@ namespace GPlatesAppLogic
 	private:
 
 		/**
+		 * Contains optional multi-point velocity fields.
+		 *
+		 * Each instance of this structure represents cached velocity information for
+		 * a specific reconstruction time and velocity parameters.
+		 */
+		struct VelocityInfo
+		{
+			/**
+			 * The cached velocities.
+			 */
+			boost::optional< std::vector<MultiPointVectorField::non_null_ptr_type> > cached_multi_point_velocity_fields;
+		};
+
+		//! Typedef for the key type to the velocity cache (reconstruction time and velocity params).
+		typedef std::pair<GPlatesMaths::real_t, VelocityParams> velocity_cache_key_type;
+
+		//! Typedef for the value type stored in the velocity cache.
+		typedef VelocityInfo velocity_cache_value_type;
+
+		/**
+		 * Typedef for a cache of velocity information keyed by reconstruction time and velocity params.
+		 */
+		typedef GPlatesUtils::KeyValueCache<velocity_cache_key_type, velocity_cache_value_type> velocity_cache_type;
+
+
+		/**
 		 * Used to get reconstructed static polygon surfaces to calculate velocities on.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
@@ -295,20 +343,9 @@ namespace GPlatesAppLogic
 		VelocityParams d_current_velocity_params;
 
 		/**
-		 * The cached velocities.
+		 * The velocities cached according to reconstruction time and velocity params.
 		 */
-		boost::optional< std::vector<multi_point_vector_field_non_null_ptr_type> >
-				d_cached_multi_point_velocity_fields;
-
-		/**
-		 * Cached reconstruction time.
-		 */
-		boost::optional<GPlatesMaths::real_t> d_cached_reconstruction_time;
-
-		/**
-		 * Cached velocity parameters.
-		 */
-		boost::optional<VelocityParams> d_cached_velocity_params;
+		velocity_cache_type d_cached_velocities;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -318,7 +355,8 @@ namespace GPlatesAppLogic
 
 		explicit
 		VelocityFieldCalculatorLayerProxy(
-				const VelocityParams &velocity_params);
+				const VelocityParams &velocity_params,
+				unsigned int max_num_velocity_results_in_cache);
 
 
 		/**
@@ -346,6 +384,17 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+
+		/**
+		 * Generates velocities for the specified velocity params and reconstruction time
+		 * if they're not already cached.
+		 */
+		std::vector<MultiPointVectorField::non_null_ptr_type> &
+		cache_velocities(
+				VelocityInfo &velocity_info,
+				const VelocityParams &velocity_params,
+				const double &reconstruction_time);
 	};
 }
 
