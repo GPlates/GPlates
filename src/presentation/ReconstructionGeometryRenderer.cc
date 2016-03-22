@@ -1408,7 +1408,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
 		//
-		// This means the resolved topological network can be selected by clicking on of
+		// This means the resolved topological network can be selected by clicking one of
 		// its velocity arrows (note: currently arrows cannot be selected so this will
 		// not do anything).
 		const GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geometry =

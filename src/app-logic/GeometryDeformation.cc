@@ -761,6 +761,8 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		std::vector<GPlatesMaths::Vector3D> &velocities,
 		std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span)
 {
@@ -799,7 +801,8 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		if (resolved_networks_query)
 		{
 			boost::optional< std::pair<const ReconstructionGeometry *, GPlatesMaths::Vector3D > >
-					network_velocity = resolved_networks_query->calculate_velocity(domain_point);
+					network_velocity = resolved_networks_query->calculate_velocity(
+							domain_point, velocity_delta_time, velocity_delta_time_type);
 			if (network_velocity)
 			{
 				// The network 'component' could be the network's deforming region or an interior
@@ -820,11 +823,13 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 
 		if (!finite_rotations)
 		{
+			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+					velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 			finite_rotations = boost::in_place(
-					reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+					reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/)
 							->get_composed_absolute_rotation(d_reconstruction_plate_id).first,
-					// FIXME:  Should this '1' should be user controllable? ...
-					reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time + 1)
+					reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/)
 							->get_composed_absolute_rotation(d_reconstruction_plate_id).first);
 		}
 
@@ -832,8 +837,8 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		const GPlatesMaths::Vector3D velocity_vector =
 				GPlatesMaths::calculate_velocity_vector(
 						domain_point,
-						finite_rotations->first,   // at reconstruction_time
-						finite_rotations->second); // at reconstruction_time + 1
+						finite_rotations->first,   // at young time
+						finite_rotations->second); // at old time
 
 		// Add the velocity - there was no surface (ie, resolved network) intersection though.
 		velocities.push_back(velocity_vector);

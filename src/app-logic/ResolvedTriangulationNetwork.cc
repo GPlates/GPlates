@@ -1757,8 +1757,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 	}
 
 	const double reconstruction_time = rigid_block_rfg->get_reconstruction_time();
-	const std::pair<double, double> time_range =
-			VelocityDeltaTime::get_time_range(velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
 	// Get the reconstruction trees to calculate velocity with.
 	const ReconstructionTree::non_null_ptr_to_const_type rigid_block_recon_tree1 =

@@ -32,6 +32,7 @@
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TimeSpanUtils.h"
+#include "VelocityDeltaTime.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/GeometryType.h"
@@ -235,6 +236,8 @@ namespace GPlatesAppLogic
 					std::vector<GPlatesMaths::Vector3D> &velocities,
 					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
 					const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span);
 

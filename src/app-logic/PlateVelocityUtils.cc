@@ -327,8 +327,8 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt.get();
 
 			const double reconstruction_time = rigid_plate_containing_point.get()->get_reconstruction_time();
-			const std::pair<double, double> time_range =
-					VelocityDeltaTime::get_time_range(velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+					velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
 			// Get the reconstruction trees to calculate velocity with.
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree1 =
