@@ -43,6 +43,7 @@
 #include "ResolvedTriangulationNetwork.h"
 
 #include "GeometryUtils.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionTree.h"
 #include "ResolvedTriangulationUtils.h"
 
@@ -1766,14 +1767,10 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 	const ReconstructionTree::non_null_ptr_to_const_type rigid_block_recon_tree2 =
 			rigid_block_rfg->get_reconstruction_tree_creator().get_reconstruction_tree(time_range.first/*old*/);
 
-	// Get the finite rotations for this plate id.
-	const GPlatesMaths::FiniteRotation &rigid_block_finite_rotation1 =
-			rigid_block_recon_tree1->get_composed_absolute_rotation(rigid_block_plate_id.get()).first;
-	const GPlatesMaths::FiniteRotation &rigid_block_finite_rotation2 =
-			rigid_block_recon_tree2->get_composed_absolute_rotation(rigid_block_plate_id.get()).first;
-
-	return GPlatesMaths::calculate_velocity_vector(
+	// Calculate the velocity for this plate id.
+	return PlateVelocityUtils::calculate_velocity_vector(
 			point,
-			rigid_block_finite_rotation1,
-			rigid_block_finite_rotation2);
+			*rigid_block_recon_tree1,
+			*rigid_block_recon_tree2,
+			rigid_block_plate_id.get());
 }

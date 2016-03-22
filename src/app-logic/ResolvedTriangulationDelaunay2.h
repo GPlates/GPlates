@@ -71,6 +71,7 @@ POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
 
+#include "PlateVelocityUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "VelocityDeltaTime.h"
@@ -708,16 +709,12 @@ namespace GPlatesAppLogic
 			const ReconstructionTree::non_null_ptr_to_const_type vertex_recon_tree2 =
 					vertex_reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
 
-			// Get the finite rotations for this plate id.
-			const GPlatesMaths::FiniteRotation &vertex_finite_rotation1 =
-					vertex_recon_tree1->get_composed_absolute_rotation(vertex_plate_id).first;
-			const GPlatesMaths::FiniteRotation &vertex_finite_rotation2 =
-					vertex_recon_tree2->get_composed_absolute_rotation(vertex_plate_id).first;
-
-			return GPlatesMaths::calculate_velocity_vector(
+			// Calculate the velocity for this plate id.
+			return PlateVelocityUtils::calculate_velocity_vector(
 					get_point_on_sphere(),
-					vertex_finite_rotation1,
-					vertex_finite_rotation2);
+					*vertex_recon_tree1,
+					*vertex_recon_tree2,
+					vertex_plate_id);
 		}
 
 

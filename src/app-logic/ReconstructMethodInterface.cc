@@ -28,6 +28,7 @@
 #include "ReconstructMethodInterface.h"
 
 #include "GeometryUtils.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionFeatureProperties.h"
 
 #include "maths/CalculateVelocity.h"
@@ -82,10 +83,6 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
-		const GPlatesMaths::FiniteRotation &finite_rotation_1 =
-				reconstruction_tree_1->get_composed_absolute_rotation(reconstruction_plate_id).first;
-		const GPlatesMaths::FiniteRotation &finite_rotation_2 =
-				reconstruction_tree_2->get_composed_absolute_rotation(reconstruction_plate_id).first;
 
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the
@@ -132,10 +129,11 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 		{
 			// Calculate the velocity.
 			const GPlatesMaths::Vector3D vector_xyz =
-					GPlatesMaths::calculate_velocity_vector(
+					PlateVelocityUtils::calculate_velocity_vector(
 							*domain_iter,
-							finite_rotation_1,
-							finite_rotation_2);
+							*reconstruction_tree_1,
+							*reconstruction_tree_2,
+							reconstruction_plate_id);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,
