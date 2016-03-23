@@ -29,6 +29,7 @@
 #include <list>
 #include <map>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
 #include <loki/ScopeGuard.h>
 
 #include "global/AssertionFailureException.h"
@@ -131,6 +132,9 @@ namespace GPlatesUtils
 		 * Creates a new value object from the specified key if the object is not cached
 		 * (either because never previously requested from cache or because it was evicted).
 		 *
+		 * If @a new_value_created is specified then it signals whether a new value was returned or
+		 * an existing value.
+		 *
 		 * NOTE: If the least-recently used value is evicted (due to exceeding maximum number of
 		 * cached value objects) then it will be evicted *after* the new value is created.
 		 * This is beneficial for a few use cases where the new value depends (indirectly)
@@ -145,7 +149,8 @@ namespace GPlatesUtils
 		 */
 		value_type &
 		get_value(
-				const key_type &key);
+				const key_type &key,
+				boost::optional<bool &> new_value_created = boost::none);
 
 	private:
 		//! Typedef for this class.
@@ -280,7 +285,8 @@ namespace GPlatesUtils
 	template <typename KeyType, typename ValueType>
 	typename KeyValueCache<KeyType,ValueType>::value_type &
 	KeyValueCache<KeyType,ValueType>::get_value(
-			const key_type &key)
+			const key_type &key,
+			boost::optional<bool &> new_value_created)
 	{
 		// See if 'key' is in the cache.
 		std::pair<typename key_value_map_type::iterator, bool> key_value_insert_result =
@@ -288,6 +294,12 @@ namespace GPlatesUtils
 						typename key_value_map_type::value_type(
 								key,
 								d_value_objects.end()/*dummy iterator*/));
+
+		// Let caller know if a new value was created (if requested).
+		if (new_value_created)
+		{
+			new_value_created.get() = key_value_insert_result.second;
+		}
 
 		// If the key exists in the map (ie, was *not* inserted) then return the associated value object.
 		if (!key_value_insert_result.second)
