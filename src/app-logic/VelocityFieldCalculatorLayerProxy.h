@@ -67,7 +67,7 @@ namespace GPlatesAppLogic
 		 * combinations - each combination represents one cached object.
 		 *
 		 * A value of 2 is suitable since rendering a velocity layer will typically use one velocity
-		 * delta time while the export velocity animation might use another.
+		 * delta time while the export velocity animation might override it and use another.
 		 *
 		 * WARNING: This value has a direct affect on the memory used by GPlates.
 		 * The cache is mainly to allow multiple clients to make different velocity

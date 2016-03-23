@@ -44,6 +44,7 @@
 #include "maths/ProjectionUtils.h"
 #include "maths/Vector3D.h"
 
+#include "utils/KeyValueCache.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -474,11 +475,21 @@ namespace GPlatesAppLogic
 			//! Typedef for a mapping of 2D delaunay triangulation points to velocities.
 			typedef std::map<delaunay_point_2_type, GPlatesMaths::Vector3D, delaunay_kernel_2_type::Less_xy_2>
 					delaunay_point_2_to_velocity_map_type;
-
+			/**
+			 *
+			 * NOTE: Avoid compiler warning 4503 'decorated name length exceeded' in Visual Studio 2008.
+			 * Seems we get the warning, which gets (correctly) treated as error due to /WX switch,
+			 * even if we disable the 4503 warning. So prevent warning by reducing name length of
+			 * identifier - which we do by inheritance instead of using a typedef.
+			 */
+			struct DelaunayPoint2ToVelocityMapContainer :
+					public delaunay_point_2_to_velocity_map_type
+			{  };
 
 			typedef std::pair<GPlatesMaths::Real, VelocityDeltaTime::Type> velocity_delta_time_params_type;
+
 			//! Typedef for a mapping of velocity delta-time parameter to 2D delaunay triangulation points-to-velocities maps.
-			typedef std::map<velocity_delta_time_params_type, delaunay_point_2_to_velocity_map_type>
+			typedef GPlatesUtils::KeyValueCache<velocity_delta_time_params_type, DelaunayPoint2ToVelocityMapContainer>
 					velocity_delta_time_to_velocity_map_type;
 
 
@@ -529,7 +540,6 @@ namespace GPlatesAppLogic
 			mutable velocity_delta_time_to_velocity_map_type d_velocity_delta_time_to_velocity_map;
 
 
-			// TODO: Re-use one earth radius constant across of all GPlates.
 			static const double EARTH_RADIUS_METRES;
 
 
@@ -564,7 +574,13 @@ namespace GPlatesAppLogic
 						constrained_delaunay_geometries_begin, constrained_delaunay_geometries_end,
 						scattered_points_begin_, scattered_points_end_,
 						seed_points_begin, seed_points_end,
-						refined_mesh_shape_factor, refined_mesh_max_edge)
+						refined_mesh_shape_factor, refined_mesh_max_edge),
+				// Set the number of cached velocity maps (eg, for different velocity delta time parameters).
+				//
+				// A value of 2 is suitable since a network layer will typically be asked to use one
+				// velocity delta time when rendering velocity layers while the export velocity
+				// animation might override it and use another...
+				d_velocity_delta_time_to_velocity_map(2/*maximum_num_values_in_cache*/)
 			{  }
 
 			void

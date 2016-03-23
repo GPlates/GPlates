@@ -1371,25 +1371,21 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_delaunay_point_2_to_velocit
 			std::make_pair(GPlatesMaths::Real(velocity_delta_time), velocity_delta_time_type);
 
 	// Look for an existing map associated with the velocity delta time parameters.
-	velocity_delta_time_to_velocity_map_type::iterator velocity_delta_time_to_velocity_map_iter =
-			d_velocity_delta_time_to_velocity_map.find(velocity_delta_time_params);
-	if (velocity_delta_time_to_velocity_map_iter == d_velocity_delta_time_to_velocity_map.end())
+	bool new_delaunay_point_2_to_velocity_map;
+	DelaunayPoint2ToVelocityMapContainer &delaunay_point_2_to_velocity_map =
+			d_velocity_delta_time_to_velocity_map.get_value(
+					velocity_delta_time_params,
+					new_delaunay_point_2_to_velocity_map);
+	if (new_delaunay_point_2_to_velocity_map)
 	{
-		std::pair<velocity_delta_time_to_velocity_map_type::iterator, bool> inserted =
-				d_velocity_delta_time_to_velocity_map.insert(
-						velocity_delta_time_to_velocity_map_type::value_type(
-								velocity_delta_time_params,
-								delaunay_point_2_to_velocity_map_type()));
-		velocity_delta_time_to_velocity_map_iter = inserted.first;
-
-		// Add a new map associated with the velocity delta time parameters.
+		// Create a new map associated with the velocity delta time parameters.
 		create_delaunay_point_2_to_velocity_map(
-				velocity_delta_time_to_velocity_map_iter->second,
+				delaunay_point_2_to_velocity_map,
 				velocity_delta_time,
 				velocity_delta_time_type);
 	}
 
-	return velocity_delta_time_to_velocity_map_iter->second;
+	return delaunay_point_2_to_velocity_map;
 }
 
 
