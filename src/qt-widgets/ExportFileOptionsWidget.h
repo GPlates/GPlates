@@ -89,8 +89,8 @@ namespace GPlatesQtWidgets
 			d_export_file_options.separate_output_directory_per_file =
 					checkBox_separate_output_directory_per_file->isChecked();
 
-			// Enable "Separate output directory per input file/layer" checkbox only if outputting multiple files.
-			checkBox_separate_output_directory_per_file->setEnabled(checkBox_export_to_multiple_files->isChecked());
+			// Display "Separate output directory per input file/layer" checkbox only if outputting multiple files.
+			checkBox_separate_output_directory_per_file->setVisible(checkBox_export_to_multiple_files->isChecked());
 		}
 
 	private:
@@ -121,8 +121,8 @@ namespace GPlatesQtWidgets
 					d_export_file_options.separate_output_directory_per_file
 					? Qt::Checked
 					: Qt::Unchecked);
-			// Enable "Separate output directory per input file/layer" checkbox only if outputting multiple files.
-			checkBox_separate_output_directory_per_file->setEnabled(d_export_file_options.export_to_multiple_files);
+			// Display "Separate output directory per input file/layer" checkbox only if outputting multiple files.
+			checkBox_separate_output_directory_per_file->setVisible(d_export_file_options.export_to_multiple_files);
 
 			make_signal_slot_connections();
 		}

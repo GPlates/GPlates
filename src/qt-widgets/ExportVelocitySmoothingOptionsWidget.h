@@ -83,8 +83,8 @@ namespace GPlatesQtWidgets
 			d_export_velocity_smoothing_options.is_boundary_smoothing_enabled =
 					velocity_smoothing_check_box->isChecked();
 
-			// Only enable velocity smoothing controls if velocity smoothing is enabled.
-			velocity_smoothing_controls->setEnabled(
+			// Only display velocity smoothing controls if velocity smoothing is enabled.
+			velocity_smoothing_controls->setVisible(
 					d_export_velocity_smoothing_options.is_boundary_smoothing_enabled);
 		}
 
@@ -129,8 +129,8 @@ namespace GPlatesQtWidgets
 					? Qt::Checked
 					: Qt::Unchecked);
 
-			// Enable velocity smoothing controls if smoothing is enabled.
-			velocity_smoothing_controls->setEnabled(
+			// Display velocity smoothing controls if smoothing is enabled.
+			velocity_smoothing_controls->setVisible(
 					d_export_velocity_smoothing_options.is_boundary_smoothing_enabled);
 
 			make_signal_slot_connections();
