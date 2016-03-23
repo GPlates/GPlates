@@ -1056,8 +1056,10 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
 		return GPlatesMaths::Vector3D();
 	}
 
+	const double delta_time = reconstruction_tree2.get_reconstruction_time() - reconstruction_tree1.get_reconstruction_time();
+
 	// Calculate the velocity.
-	return GPlatesMaths::calculate_velocity_vector(point, fr_t1.first, fr_t2.first);
+	return GPlatesMaths::calculate_velocity_vector(point, fr_t1.first, fr_t2.first, delta_time);
 }
 
 
@@ -1065,10 +1067,11 @@ GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &finite_rotation1,
-		const GPlatesMaths::FiniteRotation &finite_rotation2)
+		const GPlatesMaths::FiniteRotation &finite_rotation2,
+		const double &delta_time)
 {
 	const GPlatesMaths::Vector3D vector_xyz =
-			GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2);
+			GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2, delta_time);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
 }

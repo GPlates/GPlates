@@ -49,13 +49,15 @@ GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
 		const PointOnSphere &point, 
 		const FiniteRotation &fr_t1,
-		const FiniteRotation &fr_t2)
+		const FiniteRotation &fr_t2,
+		const double &delta_time)
 {
 	const std::pair<Vector3D, real_t/*omega (angular velocity)*/> velocity_xyz_and_omega =
 			calculate_velocity_vector_and_omega(
 					point,
 					fr_t1,
 					fr_t2,
+					delta_time,
 					// The axis hint does not affect our results because, in our velocity calculation,
 					// the signs of the axis and angle cancel each other out so it doesn't matter if
 					// axis/angle or -axis/-angle...
@@ -143,6 +145,7 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &fr_t1,
 		const GPlatesMaths::FiniteRotation &fr_t2,
+		const double &delta_time,
 		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint)
 {
 	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
@@ -182,8 +185,10 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 
 	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(axis_hint);
 
-	// Angular velocity of rotation (radians per million years).
-	real_t omega = params.angle;
+	// Angular velocity of rotation.
+	// 'params.angle' is radians per 'delta_time' million years.
+	// 'omega' is radians per million years.
+	real_t omega = params.angle / delta_time;
 
 	// Axis of roation
 	UnitVector3D rotation_axis = params.axis;

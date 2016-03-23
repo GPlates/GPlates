@@ -276,7 +276,8 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 					GPlatesMaths::calculate_velocity_vector(
 							*domain_iter,
 							finite_rotation_1,
-							finite_rotation_2);
+							finite_rotation_2,
+							time_range.first/*old*/ - time_range.second/*young*/);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

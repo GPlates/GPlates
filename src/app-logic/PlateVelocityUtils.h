@@ -182,12 +182,16 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
+		 *
+		 * @a delta_time should be t2-t1.
+		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
 		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
-				const GPlatesMaths::FiniteRotation &finite_rotation2);
+				const GPlatesMaths::FiniteRotation &finite_rotation2,
+				const double &delta_time);
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between two
@@ -209,15 +213,19 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
+		 *
+		 * @a delta_time should be t2-t1.
+		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
 		inline
 		GPlatesMaths::Vector3D
 		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
-				const GPlatesMaths::FiniteRotation &finite_rotation2)
+				const GPlatesMaths::FiniteRotation &finite_rotation2,
+				const double &delta_time)
 		{
-			return GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2);
+			return GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2, delta_time);
 		}
 
 		/**

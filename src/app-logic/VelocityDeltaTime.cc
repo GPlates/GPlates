@@ -67,12 +67,14 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 		const double old_time = time + half_delta_time;
 		return std::make_pair(old_time, young_time);
 	}
+	else
+	{
+		// Update this source code if more enumeration values have been added (or removed).
+		BOOST_STATIC_ASSERT(NUM_TYPES == 3);
 
-	// Update this source code if more enumeration values have been added (or removed).
-	BOOST_STATIC_ASSERT(NUM_TYPES == 3);
-
-	// Shouldn't get here.
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
 
 	// Return a dummy value to keep compiler happy - shouldn't get here though.
 	return std::make_pair(0.0, 0.0);

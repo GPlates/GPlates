@@ -631,8 +631,6 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		return;
 	}
 
-	double one_over_dtime = 1./(dtime);
-
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
 			d_application_state.get_current_reconstruction()
 					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
@@ -686,8 +684,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		// I have to generate the stage pole, so I'm probably duplicating work here. There may be a neater way of getting this.
 		FiniteRotation stage_pole_rotation = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree_t1,*tree_t2,d_moving_id,d_anchor_id);
 		boost::optional<UnitVector3D> stage_pole_axis = stage_pole_rotation.axis_hint();
-		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,stage_pole_axis);
-		Vector3D v = velocity_and_omega_pair.first*one_over_dtime;
+		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime,stage_pole_axis);
+		Vector3D v = velocity_and_omega_pair.first;
 
 		VectorColatitudeLongitude vcl = convert_vector_from_xyz_to_colat_lon(p,v);
 		std::pair<real_t,real_t> mag_azimuth =
@@ -710,7 +708,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		results.d_velocity_azimuth = convert_rad_to_deg(mag_azimuth.second.dval());
         results.d_velocity_colat = vcl.get_vector_colatitude().dval(); // south component
         results.d_velocity_lon = vcl.get_vector_longitude().dval(); // east component
-		results.d_angular_velocity = convert_rad_to_deg(velocity_and_omega_pair.second.dval())*one_over_dtime;
+		results.d_angular_velocity = convert_rad_to_deg(velocity_and_omega_pair.second.dval());
 #if 0
 		qDebug() << "rot: " << results.d_angular_velocity;
 		double delta_azimuth = previous_azimuth - results.d_velocity_azimuth;
