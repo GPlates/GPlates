@@ -701,19 +701,13 @@ namespace GPlatesAppLogic
 			const double &vertex_reconstruction_time = get_reconstruction_time();
 			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
 					velocity_delta_time_type, vertex_reconstruction_time, velocity_delta_time);
-			const ReconstructionTreeCreator vertex_reconstruction_tree_creator = get_reconstruction_tree_creator();
-
-			// Get the reconstruction trees to calculate velocity with.
-			const ReconstructionTree::non_null_ptr_to_const_type vertex_recon_tree1 =
-					vertex_reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/);
-			const ReconstructionTree::non_null_ptr_to_const_type vertex_recon_tree2 =
-					vertex_reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
 
 			// Calculate the velocity for this plate id.
 			return PlateVelocityUtils::calculate_velocity_vector(
 					get_point_on_sphere(),
-					*vertex_recon_tree1,
-					*vertex_recon_tree2,
+					get_reconstruction_tree_creator(),
+					time_range.second/*young*/,
+					time_range.first/*old*/,
 					vertex_plate_id);
 		}
 

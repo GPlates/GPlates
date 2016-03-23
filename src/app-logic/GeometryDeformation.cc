@@ -785,10 +785,8 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		resolved_networks_query = boost::in_place(resolved_networks.get());
 	}
 
-	// The reconstruction trees used to calculate velocities by rigid rotation.
-	// It's optional because we only create if needed.
-	boost::optional< std::pair<ReconstructionTree::non_null_ptr_to_const_type, ReconstructionTree::non_null_ptr_to_const_type> >
-			reconstruction_trees;
+	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
 	// Iterate over the domain points and calculate their velocities (and surfaces).
 	std::vector<GPlatesMaths::PointOnSphere>::const_iterator domain_points_iter = domain_points.begin();
@@ -822,25 +820,13 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		// Domain point was not in a resolved network (or there were no resolved networks).
 		// So calculate velocity using rigid rotation.
 
-		if (!reconstruction_trees)
-		{
-			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-					velocity_delta_time_type, reconstruction_time, velocity_delta_time);
-
-			const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
-					reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/);
-			const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
-					reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
-
-			reconstruction_trees = boost::in_place(reconstruction_tree_1, reconstruction_tree_2);
-		}
-
 		// Calculate the velocity.
 		const GPlatesMaths::Vector3D velocity_vector =
 				PlateVelocityUtils::calculate_velocity_vector(
 						domain_point,
-						*reconstruction_trees->first,   // at young time
-						*reconstruction_trees->second,  // at old time
+						reconstruction_tree_creator,
+						time_range.second/*young*/,
+						time_range.first/*old*/,
 						d_reconstruction_plate_id);
 
 		// Add the velocity - there was no surface (ie, resolved network) intersection though.

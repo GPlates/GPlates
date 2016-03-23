@@ -66,6 +66,11 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 		reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
 	}
 
+	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+	const GPlatesMaths::FiniteRotation &finite_rotation =
+			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
+
 	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
 			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
@@ -74,16 +79,6 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 	get_present_day_feature_geometries(present_day_geometries);
 	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
 	{
-		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
-				context.reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/);
-		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
-				context.reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/);
-
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
-
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the
 		// geometry property iterator (referenced by the MultiPointVectorField) could be a
@@ -131,8 +126,9 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 			const GPlatesMaths::Vector3D vector_xyz =
 					PlateVelocityUtils::calculate_velocity_vector(
 							*domain_iter,
-							*reconstruction_tree_1,
-							*reconstruction_tree_2,
+							context.reconstruction_tree_creator,
+							time_range.second/*young*/,
+							time_range.first/*old*/,
 							reconstruction_plate_id);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
