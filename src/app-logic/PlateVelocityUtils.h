@@ -195,19 +195,25 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times represented by @a reconstruction_tree1
-		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
-		 * to lookup the two rotations.
+		 * nearby reconstruction times @a young_time and @a old_time using
+		 * @a reconstruction_plate_id to lookup the two rotations.
 		 *
-		 * If the plate ID is not found in either reconstruction tree then the zero vector is returned.
-		 * This avoids extraneously large velocities when plate ID is found in one reconstruction tree (time)
-		 * but not the other.
+		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
+		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
+		 *
+		 * Except if @a young_time is negative (and @a old_time non-negative) and the plate ID is *not*
+		 * found at @a young_time (but is found at @a old_time) then the velocity delta time interval is
+		 * moved to (old_time - young_time, 0) and retried.
+		 * This enables rare users to support negative (future) times in rotation files if they wish
+		 * but also supports most users having only non-negative rotations yet still supplying a valid
+		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
 		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
-				const ReconstructionTree &reconstruction_tree1,
-				const ReconstructionTree &reconstruction_tree2,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &young_time,
+				const double &old_time,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
 
 
@@ -230,19 +236,25 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times represented by @a reconstruction_tree1
-		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
-		 * to lookup the two rotations.
+		 * nearby reconstruction times represented @a young_time and @a old_time using
+		 * @a reconstruction_plate_id to lookup the two rotations.
 		 *
-		 * If the plate ID is not found in either reconstruction tree then the zero vector is returned.
-		 * This avoids extraneously large velocities when plate ID is found in one reconstruction tree (time)
-		 * but not the other.
+		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
+		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
+		 *
+		 * Except if @a young_time is negative (and @a old_time non-negative) and the plate ID is *not*
+		 * found at @a young_time (but is found at @a old_time) then the velocity delta time interval is
+		 * moved to (old_time - young_time, 0) and retried.
+		 * This enables rare users to support negative (future) times in rotation files if they wish
+		 * but also supports most users having only non-negative rotations yet still supplying a valid
+		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
 		 */
 		GPlatesMaths::Vector3D
 		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
-				const ReconstructionTree &reconstruction_tree1,
-				const ReconstructionTree &reconstruction_tree2,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &young_time,
+				const double &old_time,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
 
 

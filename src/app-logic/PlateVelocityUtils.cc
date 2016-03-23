@@ -330,18 +330,13 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
 					velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
-			// Get the reconstruction trees to calculate velocity with.
-			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree1 =
-				ReconstructionGeometryUtils::get_reconstruction_tree(
-						rigid_plate_containing_point.get(),
-						time_range.second/*young*/);
-			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree2 =
-				ReconstructionGeometryUtils::get_reconstruction_tree(
-						rigid_plate_containing_point.get(),
-						time_range.first/*old*/);
+			// Get the reconstruction tree creator to calculate velocity with.
+			boost::optional<ReconstructionTreeCreator> recon_tree_creator =
+				ReconstructionGeometryUtils::get_reconstruction_tree_creator(
+						rigid_plate_containing_point.get());
 			// This should succeed since resolved topological boundaries and RFGs (static polygons)
 			// support reconstruction trees.
-			if (!recon_tree1 || !recon_tree2)
+			if (!recon_tree_creator)
 			{
 				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
 				range_element = MultiPointVectorField::CodomainElement(
@@ -355,8 +350,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			const GPlatesMaths::Vector3D vector_xyz =
 					PlateVelocityUtils::calculate_velocity_vector(
 							domain_point,
-							*recon_tree1.get(),
-							*recon_tree2.get(),
+							recon_tree_creator.get(),
+							time_range.second/*young*/,
+							time_range.first/*old*/,
 							recon_plate_id);
 
 			// Determine if point was in a resolved topological boundary or RFG (static polygon).
@@ -1039,27 +1035,63 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 GPlatesMaths::Vector3D
 GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
 		const GPlatesMaths::PointOnSphere &point,
-		const ReconstructionTree &reconstruction_tree1,
-		const ReconstructionTree &reconstruction_tree2,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &young_time,
+		const double &old_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
 	// Get the finite rotation results for the plate id.
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_t1 =
-			reconstruction_tree1.get_composed_absolute_rotation(reconstruction_plate_id);
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_t2 =
-			reconstruction_tree2.get_composed_absolute_rotation(reconstruction_plate_id);
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_young =
+			reconstruction_tree_creator.get_reconstruction_tree(young_time)
+					->get_composed_absolute_rotation(reconstruction_plate_id);
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_old =
+			reconstruction_tree_creator.get_reconstruction_tree(old_time)
+					->get_composed_absolute_rotation(reconstruction_plate_id);
 
-	// Return zero velocity if either finite rotation not found.
-	if (fr_t1.second == ReconstructionTree::NoPlateIdMatchesFound ||
-		fr_t2.second == ReconstructionTree::NoPlateIdMatchesFound)
+	const double delta_time = old_time - young_time;
+
+	// If both plate IDs found then calculate velocity as normal.
+	if (fr_young.second != ReconstructionTree::NoPlateIdMatchesFound &&
+		fr_old.second != ReconstructionTree::NoPlateIdMatchesFound)
 	{
-		return GPlatesMaths::Vector3D();
+		// Calculate the velocity.
+		return GPlatesMaths::calculate_velocity_vector(point, fr_young.first, fr_old.first, delta_time);
 	}
 
-	const double delta_time = reconstruction_tree2.get_reconstruction_time() - reconstruction_tree1.get_reconstruction_time();
+	// Return zero velocity if either finite rotation not found.
+	//
+	// Except if the youngest time in the delta time interval is negative *and* the oldest time
+	// is non-negative *and* the oldest time found a plate ID match.
+	// This happens when the reconstruction time is non-negative but happens samples a negative time
+	// when calculating the velocity - if only the negative time matches no plate ID then we will
+	// shift the delta time interval to (delta_time, 0) and try again.
+	// This enables rare users to support negative (future) times in rotation files if they wish
+	// but also supports most users having only non-negative rotations yet still supplying a valid
+	// velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
+	if (fr_young.second == ReconstructionTree::NoPlateIdMatchesFound &&
+		fr_old.second != ReconstructionTree::NoPlateIdMatchesFound &&
+		young_time < 0 &&
+		old_time >= 0)
+	{
+		// Shift velocity calculation such that the time interval (delta_time, 0) is non-negative.
+		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_zero =
+				reconstruction_tree_creator.get_reconstruction_tree(0)
+						->get_composed_absolute_rotation(reconstruction_plate_id);
+		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_delta =
+				reconstruction_tree_creator.get_reconstruction_tree(delta_time)
+						->get_composed_absolute_rotation(reconstruction_plate_id);
 
-	// Calculate the velocity.
-	return GPlatesMaths::calculate_velocity_vector(point, fr_t1.first, fr_t2.first, delta_time);
+		// If both plate IDs found then calculate velocity.
+		if (fr_zero.second != ReconstructionTree::NoPlateIdMatchesFound &&
+			fr_delta.second != ReconstructionTree::NoPlateIdMatchesFound)
+		{
+			// Calculate the velocity.
+			return GPlatesMaths::calculate_velocity_vector(point, fr_zero.first, fr_delta.first, delta_time);
+		}
+	}
+
+	// Unable to calculate velocity - return zero velocity.
+	return GPlatesMaths::Vector3D();
 }
 
 
@@ -1080,12 +1112,13 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
-		const ReconstructionTree &reconstruction_tree1,
-		const ReconstructionTree &reconstruction_tree2,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &young_time,
+		const double &old_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
 	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
-			point, reconstruction_tree1, reconstruction_tree2, reconstruction_plate_id);
+			point, reconstruction_tree_creator, young_time, old_time, reconstruction_plate_id);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
 }

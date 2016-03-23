@@ -49,18 +49,22 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the time range giving a time, delta time and delta time type.
 		 *
-		 * If @a force_non_negative_range is true (the default) and the younger time is negative then the
-		 * returned range is (delta_time, 0) in order to always return a time interval spanning @a delta_time.
-		 * This is useful when the rotation file does not include rotations for negative times.
-		 *
 		 * The first time in the returned pair is older (larger) than the second time.
+		 *
+		 * If @a allow_negative_range is true (the default) then the returned time range can include
+		 * negative times, otherwise if the younger time is negative then the returned range is
+		 * (delta_time, 0).
+		 * In general it's probably better to allow negative times because if the rotation file does not
+		 * include rotations for negative times then the velocities will be zero due to not finding
+		 * the plate ID in rotation sequence for negative times. Also there may be some rare users
+		 * who have rotations into the future (ie, negative reconstruction times).
 		 */
 		std::pair<double, double>
 		get_time_range(
 				Type delta_time_type,
 				const double &time,
 				const double &delta_time = 1.0,
-				bool force_non_negative_range = true);
+				bool allow_negative_range = true);
 	}
 }
 

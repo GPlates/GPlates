@@ -35,7 +35,7 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 		Type delta_time_type,
 		const double &time,
 		const double &delta_time,
-		bool force_non_negative_range)
+		bool allow_negative_range)
 {
 	if (delta_time_type == T_PLUS_DELTA_T_TO_T)
 	{
@@ -44,7 +44,7 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 	else if (delta_time_type == T_TO_T_MINUS_DELTA_T)
 	{
 		const double young_time = time - delta_time;
-		if (force_non_negative_range &&
+		if (!allow_negative_range &&
 			young_time < 0)
 		{
 			// The time interval is always 'delta_time'.
@@ -57,7 +57,7 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 	{
 		const double half_delta_time = 0.5 * delta_time;
 		const double young_time = time - half_delta_time;
-		if (force_non_negative_range &&
+		if (!allow_negative_range &&
 			young_time < 0)
 		{
 			// The time interval is always 'delta_time'.
