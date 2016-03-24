@@ -465,8 +465,10 @@ GPlatesGui::register_default_export_animation_types(
 	// Export velocities
 	//
 
-	// Default velocity smoothing options for all velocity exports.
-	const ExportOptionsUtils::ExportVelocitySmoothingOptions default_velocity_smoothing_export_options(
+	// Default velocity calculation options for all velocity exports.
+	const ExportOptionsUtils::ExportVelocityCalculationOptions default_velocity_calculation_export_options(
+			/*delta_time_type*/GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+			/*delta_time*/1.0,
 			/*is_boundary_smoothing_enabled_*/false,
 			/*boundary_smoothing_angular_half_extent_degrees_*/1.0,
 			/*exclude_deforming_regions_*/true);
@@ -483,7 +485,7 @@ GPlatesGui::register_default_export_animation_types(
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::GpmlConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GPML),
-							default_velocity_smoothing_export_options,
+							default_velocity_calculation_export_options,
 							default_velocity_file_export_options)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
@@ -503,7 +505,7 @@ GPlatesGui::register_default_export_animation_types(
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::GMTConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GMT),
-							default_velocity_smoothing_export_options,
+							default_velocity_calculation_export_options,
 							default_velocity_file_export_options,
 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
 							1.0/*velocity_scale*/,
@@ -541,7 +543,7 @@ GPlatesGui::register_default_export_animation_types(
 							// An example Terra filename is "gpt.0025.100" which must have
 							// 3 digits for the reconstruction time (which must be an integer)...
 							add_export_filename_extension("gpt.%P.%03d", ExportAnimationType::TERRA_TEXT),
-							default_velocity_smoothing_export_options,
+							default_velocity_calculation_export_options,
 							default_terra_grid_filename_template)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
@@ -569,7 +571,7 @@ GPlatesGui::register_default_export_animation_types(
 							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
 							// time (which must be an integer) and 9 is the cap number...
 							add_export_filename_extension("bvel%d.%P", ExportAnimationType::CITCOMS_GLOBAL),
-							default_velocity_smoothing_export_options,
+							default_velocity_calculation_export_options,
 							default_citcoms_grid_filename_template,
 							true/*include_gmt_export*/,
 							1.0/*gmt_velocity_scale*/,

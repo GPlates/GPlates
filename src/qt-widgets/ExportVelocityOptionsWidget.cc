@@ -28,7 +28,7 @@
 #include "ExportVelocityOptionsWidget.h"
 
 #include "ExportFileOptionsWidget.h"
-#include "ExportVelocitySmoothingOptionsWidget.h"
+#include "ExportVelocityCalculationOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
 #include "file-io/ExportTemplateFilenameSequence.h"
@@ -46,7 +46,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 			boost::dynamic_pointer_cast<
 					GPlatesGui::ExportVelocityAnimationStrategy::Configuration>(
 							export_configuration->clone())),
-	d_export_velocity_smoothing_options_widget(NULL),
+	d_export_velocity_calculation_options_widget(NULL),
 	d_export_file_options_widget(NULL)
 {
 	setupUi(this);
@@ -54,13 +54,13 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	// Delegate to the export file options widget to collect the file options.
 	// Note that not all formats support this.
 
-	// All velocity layers have velocity smoothing options.
-	d_export_velocity_smoothing_options_widget =
-			ExportVelocitySmoothingOptionsWidget::create(
+	// All velocity layers have velocity calculation options.
+	d_export_velocity_calculation_options_widget =
+			ExportVelocityCalculationOptionsWidget::create(
 					parent_,
-					d_export_configuration->velocity_smoothing_options);
+					d_export_configuration->velocity_calculation_options);
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_export_velocity_smoothing_options_widget,
+			d_export_velocity_calculation_options_widget,
 			widget_velocity_smoothing_options);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML)
@@ -219,11 +219,11 @@ GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
-	// Get the export velocity smoothing options from the export velocity smoothing options widget.
-	if (d_export_velocity_smoothing_options_widget)
+	// Get the export velocity calculation options from the export velocity calculation options widget.
+	if (d_export_velocity_calculation_options_widget)
 	{
-		d_export_configuration->velocity_smoothing_options =
-				d_export_velocity_smoothing_options_widget->get_export_velocity_smoothing_options();
+		d_export_configuration->velocity_calculation_options =
+				d_export_velocity_calculation_options_widget->get_export_velocity_calculation_options();
 	}
 
 	// Get the export file options from the export file options widget, if any.

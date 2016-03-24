@@ -102,16 +102,20 @@ namespace
 	const QString HELP_VELOCITY_TIME_DELTA_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<p>The velocity time step (dt) specifies the delta time interval used in velocity calculations.</p>"
-			"<p>The following radio button options determines the delta time interval relative to the "
-			"reconstruction time. The example is for a reconstruction time T=10Ma and a delta time interval "
-			"dt=1My:</p>"
+			"<p>The following radio button options determine the delta time interval relative to the "
+			"reconstruction time. The following example is for a reconstruction time T=10Ma and a "
+			"delta time interval dt=1My:</p>"
 			"<ul>"
 			"<li>(T+dt, T)  ->  (11, 10)<li>"
 			"<li>(T, T-dt)  ->  (10, 9)<li>"
 			"<li>(T+dt/2, T-dt/2)  ->  (10.5, 9.5)<li>"
 			"</ul>"
-			"<p>The time intervals always remains positive. For example, an interval of (0.5, -0.5) "
-			"becomes (1, 0) such that it becomes positive while still retaining the interval length (1My).</p>"
+			"<p>If the time interval straddles present day, such as (0, -1), then it is shifted to end "
+			"at present day, such as (1, 0), while still retaining the interval length (in this case 1My). "
+			"However this is only done when the velocity cannot be calculated for the original, "
+			"un-shifted time interval - this happens when there is no plate rotation information for "
+			"negative times (the usual case) - if there are rotations for future (negative) times then "
+			"they will be used instead of shifting the time interval.</p>"
 			"</body></html>\n");
 }
 

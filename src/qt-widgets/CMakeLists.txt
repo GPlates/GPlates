@@ -239,11 +239,11 @@ set(srcs
     ExportSvgOptionsWidget.cc
     ExportSvgOptionsWidget.h
     ExportTotalRotationOptionsWidget.h
+    ExportVelocityCalculationOptionsWidget.h
+    ExportVelocityCalculationOptionsWidgetUi.ui
     ExportVelocityOptionsWidget.cc
     ExportVelocityOptionsWidget.h
     ExportVelocityOptionsWidgetUi.ui
-    ExportVelocitySmoothingOptionsWidget.h
-    ExportVelocitySmoothingOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
