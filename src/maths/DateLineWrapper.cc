@@ -474,8 +474,11 @@ GPlatesMaths::DateLineWrapper::output_non_intersecting_polygon_rings(
 		GPLATES_ASSERTION_SOURCE);
 
 	// If there are no non-intersecting rings then nothing to do.
-	if (std::count(ring_intersection_results.begin(), ring_intersection_results.end(),
-			IntersectionGraph::INTERSECTS_DATELINE) == num_rings)
+	const unsigned int num_rings_intersecting_dateline = std::count(
+			ring_intersection_results.begin(),
+			ring_intersection_results.end(),
+			IntersectionGraph::INTERSECTS_DATELINE);
+	if (num_rings_intersecting_dateline == num_rings)
 	{
 		return;
 	}
@@ -484,8 +487,11 @@ GPlatesMaths::DateLineWrapper::output_non_intersecting_polygon_rings(
 	// and interior rings (but get them from the intersection graph since it's faster).
 	// This avoids us having to work out which rings below to which output polygons as is needed
 	// when a polygon is clipped/wrapped.
-	if (std::count(ring_intersection_results.begin(), ring_intersection_results.end(),
-			IntersectionGraph::ENTIRELY_OFF_DATELINE) == num_rings)
+	const unsigned int num_rings_entirely_off_dateline = std::count(
+			ring_intersection_results.begin(),
+			ring_intersection_results.end(),
+			IntersectionGraph::ENTIRELY_OFF_DATELINE);
+	if (num_rings_entirely_off_dateline == num_rings)
 	{
 		LatLonPolygon lat_lon_polygon;
 
