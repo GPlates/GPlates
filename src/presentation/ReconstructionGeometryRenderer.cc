@@ -475,7 +475,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 		// Get the deformed geometry points.
 		deformed_geometry_points_seq_type deformed_geometry_points;
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*dfg->reconstructed_geometry(),
 				deformed_geometry_points);
 
@@ -1007,7 +1007,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
 
-	const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &resolved_triangulation_projection =
+	const GPlatesMaths::AzimuthalEqualAreaProjection &resolved_triangulation_projection =
 			resolved_triangulation_network.get_projection();
 
 	const GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2 &

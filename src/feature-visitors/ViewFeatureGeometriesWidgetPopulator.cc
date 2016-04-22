@@ -28,6 +28,7 @@
 #include <QLocale>
 #include <QDebug>
 #include <QList>
+#include <utility>
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -116,28 +117,29 @@ namespace
 	}
 	
 	/**
-	 * Iterates over the vertices of the polygon, setting the coordinates in the
+	 * Iterates over the vertices of the polygon ring, setting the coordinates in the
 	 * column of each QTreeWidget corresponding to 'period'.
 	 */
 	void
-	populate_coordinates_from_polygon(
+	populate_coordinates_from_polygon_ring(
 			GPlatesGui::TreeWidgetBuilder &tree_widget_builder,
 			item_handle_seq_type &coordinate_widgets,
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon,
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end,
 			CoordinatePeriods::CoordinatePeriod period)
 	{
 		// This whole polygon function is essentially a copy of the line_string function. 
 		static QLocale locale;
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon->vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
 		
 		// Ensure we have enough blank QTreeWidgetItems in the list to populate.
 		fill_coordinates_with_blank_items(
-				tree_widget_builder, coordinate_widgets, polygon->number_of_vertices());
+				tree_widget_builder, coordinate_widgets, std::distance(ring_begin, ring_end));
 		
 		// Then fill in the appropriate column.
-		for (unsigned point_index = 0; iter != end; ++iter, ++point_index) {
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_iter = ring_begin;
+		for (unsigned point_index = 0; ring_iter != ring_end; ++ring_iter, ++point_index)
+		{
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*ring_iter);
 			QString lat = locale.toString(llp.latitude());
 			QString lon = locale.toString(llp.longitude());
 			QString point;
@@ -637,30 +639,28 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.exterior();
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.polygon();
 
 	write_polygon_ring(polygon_ptr);
 
 	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-
-	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_ptr->number_of_interior_rings();
+		++interior_ring_index)
 	{
 		QString interior;
 		interior.append(QObject::tr("gml:interior"));
 		interior.append(QObject::tr(" #"));
-		interior.append(QString().setNum(ring_number));
+		interior.append(QString().setNum(interior_ring_index + 1));
 
 		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
 				add_child_to_current_item(d_tree_widget_builder, interior);
 
 		d_tree_widget_builder.push_current_item(interior_item_handle);
 
-		write_polygon_ring(*iter,ring_number);
+		write_polygon_ring(polygon_ptr, interior_ring_index);
 
 		d_tree_widget_builder.pop_current_item();
 	}
@@ -704,18 +704,18 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 
 boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
-		const GPlatesModel::FeatureHandle::iterator property,
-		unsigned idx)
+		const GPlatesModel::FeatureHandle::iterator property)
 {
 	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
 	geometries_for_property_const_iterator end = d_rfg_geometries.end();
-	unsigned i = 0;
-	for ( ; it != end; ++it) {
-		if (it->d_property == property && i == idx) {
+	for ( ; it != end; ++it)
+	{
+		if (it->d_property == property)
+		{
 			return it->d_geometry;
 		}
-		i++;
 	}
+
 	return boost::none;
 }
 
@@ -736,21 +736,28 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_vis
 
 void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring(
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr,
-		unsigned idx)
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon,
+		boost::optional<unsigned int> interior_ring_index)
 {
 	// Now, prepare the coords in present-day and reconstructed time.
 	item_handle_seq_type coordinate_widgets;
 
-	populate_coordinates_from_polygon(d_tree_widget_builder,
-			coordinate_widgets, polygon_ptr,
+	populate_coordinates_from_polygon_ring(
+			d_tree_widget_builder,
+			coordinate_widgets,
+			interior_ring_index
+				? polygon->interior_ring_vertex_begin(interior_ring_index.get())
+				: polygon->exterior_ring_vertex_begin(),
+			interior_ring_index
+				? polygon->interior_ring_vertex_end(interior_ring_index.get())
+				: polygon->exterior_ring_vertex_end(),
 			CoordinatePeriods::PRESENT);
 
 	// The reconstructed polyline, which may not be available. And test current_top_level_propiter(),
 	// because someone might attempt to call us without invoking visit_feature_handle.
 	if (current_top_level_propiter()) {
 		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
-				get_reconstructed_geometry_for_property(*current_top_level_propiter(), idx);
+				get_reconstructed_geometry_for_property(*current_top_level_propiter());
 		if (recon_geometry) {
 			// We use a dynamic cast here (despite the fact that dynamic casts are
 			// generally considered bad form) because we only care about one specific
@@ -762,11 +769,15 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring
 			const GPlatesMaths::PolygonOnSphere *recon_polygon =
 					dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(recon_geometry->get());
 			if (recon_polygon) {
-				populate_coordinates_from_polygon(d_tree_widget_builder,
+				populate_coordinates_from_polygon_ring(
+						d_tree_widget_builder,
 						coordinate_widgets,
-						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type(
-								recon_polygon,
-								GPlatesUtils::NullIntrusivePointerHandler()),
+						interior_ring_index
+							? recon_polygon->interior_ring_vertex_begin(interior_ring_index.get())
+							: recon_polygon->exterior_ring_vertex_begin(),
+						interior_ring_index
+							? recon_polygon->interior_ring_vertex_end(interior_ring_index.get())
+							: recon_polygon->exterior_ring_vertex_end(),
 						CoordinatePeriods::RECONSTRUCTED);
 			}
 		}

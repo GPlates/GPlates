@@ -584,25 +584,6 @@ namespace
 		add_spreading_asymmetry_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
-
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-	create_multi_point_from_points(
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &points)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> vector_of_points;
-		
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-				it = points.begin(),
-				end = points.end();
-
-		for (; it != end ; ++it)
-		{
-			vector_of_points.push_back(**it);
-		}
-		
-		return GPlatesMaths::MultiPointOnSphere::create_on_heap(vector_of_points);
-
-	}
 	
 	/*!
 	 * \brief add_or_replace_model_kvd - Add @a kvd to the feature given by @a feature_handle.
@@ -1395,28 +1376,26 @@ namespace
 	void
 	write_point_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &point_geometries,
+			const std::vector<GPlatesMaths::PointOnSphere> &point_geometries,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
+		if (point_geometries.empty())
+		{
+			return;
+		}
+
 		if (point_geometries.size() > 1)
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point =
-					create_multi_point_from_points(point_geometries);
-
-			ogr_writer->write_multi_point_feature(multi_point,key_value_dictionary);
+			ogr_writer->write_multi_point_feature(
+					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+							point_geometries.begin(),
+							point_geometries.end()),
+					key_value_dictionary);
 		}
 		else
 		{
-			std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-					iter = point_geometries.begin(),
-					end = point_geometries.end();
-
-			for ( ; iter != end ; ++iter)
-			{
-				ogr_writer->write_point_feature(*iter,key_value_dictionary);
-			}
-
+			ogr_writer->write_point_feature(point_geometries.front(), key_value_dictionary);
 		}
 	}
 
@@ -1718,7 +1697,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_point_geometries.push_back(gml_point.point());
+	d_point_geometries.push_back(*gml_point.point());
 }
 
 void
@@ -1746,8 +1725,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Do something about interior rings....
-	d_polygon_geometries.push_back(gml_polygon.exterior());
+	d_polygon_geometries.push_back(gml_polygon.polygon());
 }
 
 void

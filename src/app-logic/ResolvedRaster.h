@@ -73,7 +73,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
-				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
+				const std::vector<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxies,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy)
 		{
@@ -82,7 +82,7 @@ namespace GPlatesAppLogic
 							feature_handle,
 							reconstruction_time,
 							raster_layer_proxy,
-							reconstructed_polygons_layer_proxy,
+							reconstructed_polygons_layer_proxies,
 							age_grid_raster_layer_proxy,
 							normal_map_raster_layer_proxy));
 		}
@@ -99,12 +99,12 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the optional reconstructed polygons layer proxy.
+		 * Returns the optional reconstructed polygons layer proxies.
 		 */
-		const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &
-		get_reconstructed_polygons_layer_proxy() const
+		const std::vector<reconstruct_layer_proxy_non_null_ptr_type> &
+		get_reconstructed_polygons_layer_proxies() const
 		{
-			return d_reconstructed_polygons_layer_proxy;
+			return d_reconstructed_polygons_layer_proxies;
 		}
 
 
@@ -161,7 +161,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
-				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
+				const std::vector<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxies,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy);
 
@@ -173,9 +173,9 @@ namespace GPlatesAppLogic
 		raster_layer_proxy_non_null_ptr_type d_raster_layer_proxy;
 
 		/**
-		 * The optional reconstructed polygons layer proxy.
+		 * The optional reconstructed polygons layer proxies.
 		 */
-		boost::optional<reconstruct_layer_proxy_non_null_ptr_type> d_reconstructed_polygons_layer_proxy;
+		std::vector<reconstruct_layer_proxy_non_null_ptr_type> d_reconstructed_polygons_layer_proxies;
 
 		/**
 		 * The optional age grid layer proxy.

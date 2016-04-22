@@ -31,6 +31,7 @@
 
 #include "ExtractRasterFeatureProperties.h"
 #include "RasterLayerProxy.h"
+#include "ReconstructLayerProxy.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -77,7 +78,7 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::RECONSTRUCTED_POLYGONS,
-					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCT));
 	
 	// Channel definition for the age grid raster.
@@ -228,8 +229,7 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 						ReconstructLayerProxy>(layer_proxy);
 		if (reconstruct_layer_proxy)
 		{
-			// We only allow one input reconstructed polygon layer.
-			d_raster_layer_proxy->set_current_reconstructed_polygons_layer_proxy(
+			d_raster_layer_proxy->add_current_reconstructed_polygons_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 	}
@@ -268,13 +268,13 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 	if (input_channel_name == LayerInputChannelName::RECONSTRUCTED_POLYGONS)
 	{
 		// Make sure the input layer proxy is a reconstruct layer proxy.
-		boost::optional<const ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<
-						const ReconstructLayerProxy>(layer_proxy);
+						ReconstructLayerProxy>(layer_proxy);
 		if (reconstruct_layer_proxy)
 		{
-			// We only allow one input reconstructed polygon layer.
-			d_raster_layer_proxy->set_current_reconstructed_polygons_layer_proxy(boost::none);
+			d_raster_layer_proxy->remove_current_reconstructed_polygons_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 	}
 	else if (input_channel_name == LayerInputChannelName::AGE_GRID_RASTER)

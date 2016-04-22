@@ -714,17 +714,19 @@ namespace
 				// This should happen rarely since most topological sections
 				// will be polylines and not polygons - so the expense of conversion
 				// should happen rarely if at all.
-				d_first_geom_as_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+				d_first_geom_as_polyline = GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+						*polygon_on_sphere,
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 				break;
 			case VISITING_SECOND_GEOM_TO_GET_POLYLINE:
 				// This should happen rarely since most topological sections
 				// will be polylines and not polygons - so the expense of conversion
 				// should happen rarely if at all.
-				d_second_geom_as_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+				d_second_geom_as_polyline = GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+						*polygon_on_sphere,
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 				break;
 			}
 		}
@@ -1833,7 +1835,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 			++sub_segment_iter)
 		{
 			// Add the current deforming point to the merged deforming polyline.
-			GeometryUtils::get_geometry_points(
+			GeometryUtils::get_geometry_exterior_points(
 					*sub_segment_iter->get_geometry(),
 					merged_deforming_polyline_points,
 					false/*reverse_points*/);
@@ -1890,7 +1892,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 					GPlatesMaths::PointOnSphere/*start point*/,
 					GPlatesMaths::PointOnSphere/*end point*/>
 						prev_sub_segment_geometry_end_points =
-							GeometryUtils::get_geometry_end_points(
+							GeometryUtils::get_geometry_exterior_end_points(
 									*prev_sub_segment->get_geometry(),
 									prev_sub_segment->get_use_reverse());
 				merged_deforming_polyline_points.push_back(
@@ -1898,7 +1900,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 			}
 
 			// Add the current deforming point to the merged deforming polyline.
-			GeometryUtils::get_geometry_points(
+			GeometryUtils::get_geometry_exterior_points(
 					*sub_segment.get_geometry(),
 					merged_deforming_polyline_points,
 					false/*reverse_points*/);
@@ -1913,7 +1915,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 					GPlatesMaths::PointOnSphere/*start point*/,
 					GPlatesMaths::PointOnSphere/*end point*/>
 						sub_segment_geometry_end_points =
-							GeometryUtils::get_geometry_end_points(
+							GeometryUtils::get_geometry_exterior_end_points(
 									*sub_segment.get_geometry(),
 									sub_segment.get_use_reverse());
 				merged_deforming_polyline_points.push_back(

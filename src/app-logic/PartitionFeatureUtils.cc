@@ -128,34 +128,7 @@ namespace
 		visit_gml_polygon(
 				const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 		{
-			// We'll partition exterior and the interior polygons into this.
-			GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &
-					partition_geometry_property = add_geometry_property();
-
-			// Partition the exterior polygon.
-			partition_geometry(gml_polygon.exterior(), partition_geometry_property);
-
-			// Iterate over the interior polygons.
-			//
-			// FIXME: We are losing the distinction between exterior polygon and interior
-			// polygons because when it comes time to build the GmlPolygon (which only
-			// happens if we're partitioning geometry as opposed to assigning the entire
-			// geometry property to a plate) then if there are interior polygons that
-			// are fully inside a plate boundary they will be added to a feature as
-			// an exterior polygon.
-			// For now this is adequate since at least the user don't lose there
-			// interior polygons (they just can reappear as exterior polygons).
-			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_iter =
-					gml_polygon.interiors_begin();
-			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_end =
-					gml_polygon.interiors_end();
-			for ( ; interior_iter != interior_end; ++interior_iter)
-			{
-				const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
-
-				// Partition interior polygon.
-				partition_geometry(interior_polygon, partition_geometry_property);
-			}
+			partition_geometry(gml_polygon.polygon());
 		}
 
 
@@ -285,8 +258,7 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			d_arc_distance += calculate_arc_distance(
-					polygon_on_sphere->begin(), polygon_on_sphere->end());
+			d_arc_distance += polygon_on_sphere->get_arc_length();
 			d_using_arc_distance = true;
 		}
 
@@ -295,8 +267,7 @@ namespace
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
-			d_arc_distance += calculate_arc_distance(
-					polyline_on_sphere->begin(), polyline_on_sphere->end());
+			d_arc_distance += polyline_on_sphere->get_arc_length();
 			d_using_arc_distance = true;
 		}
 

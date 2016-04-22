@@ -81,44 +81,8 @@ void
 GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// Rotate the exterior polygon.
-	gml_polygon.set_exterior(
-			d_finite_rotation * gml_polygon.exterior());
-
-	// Reserver space for rotated interior polygons.
-	GPlatesPropertyValues::GmlPolygon::ring_sequence_type rotated_interior_polygons;
-	rotated_interior_polygons.reserve(
-			std::distance(gml_polygon.interiors_begin(), gml_polygon.interiors_end()));
-
-	// Rotate the interior polygons into temporary storage first.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_iter =
-			gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_end =
-			gml_polygon.interiors_end();
-	for ( ; interior_iter != interior_end; ++interior_iter)
-	{
-		const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
-
-		GPlatesPropertyValues::GmlPolygon::ring_type rotated_interior_polygon =
-				d_finite_rotation * interior_polygon;
-
-		rotated_interior_polygons.push_back(rotated_interior_polygon);
-	}
-
-	gml_polygon.clear_interiors();
-
-	// Add the rotated interior polygons to the GmlPolygon.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator rotated_interior_iter =
-			rotated_interior_polygons.begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator rotated_interior_end =
-			rotated_interior_polygons.end();
-	for ( ; rotated_interior_iter != rotated_interior_end; ++rotated_interior_iter)
-	{
-		const GPlatesPropertyValues::GmlPolygon::ring_type &rotated_interior_polygon =
-				*rotated_interior_iter;
-
-		gml_polygon.add_interior(rotated_interior_polygon);
-	}
+	gml_polygon.set_polygon(
+			d_finite_rotation * gml_polygon.polygon());
 }
 
 

@@ -963,7 +963,7 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 
 		// Each point in the geometry contributes a seed point.
 		// We're only expecting single point geometries though.
-		GeometryUtils::get_geometry_points(*seed_geometry.d_geometry, all_seed_points);
+		GeometryUtils::get_geometry_exterior_points(*seed_geometry.d_geometry, all_seed_points);
 	}
 
 	// A rigid block is any interior geometry that is a polygon *and* contains a seed point.
@@ -1073,7 +1073,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reco
 	// Get the points for this boundary section.
 	// The section reversal order doesn't matter here - we're just adding independent points.
 	std::vector<GPlatesMaths::PointOnSphere> boundary_section_points;
-	GeometryUtils::get_geometry_points(boundary_section_geometry, boundary_section_points);
+	GeometryUtils::get_geometry_exterior_points(boundary_section_geometry, boundary_section_points);
 
 #ifdef DEBUG
 qDebug() << "boundary section's points size	  	= " << boundary_section_points.size();
@@ -1125,7 +1125,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 	// Note that we do *not* take into account its reversal because we want to proceed in the same
 	// order its sub-segment components (although each of those will need appropriate reversal).
 	std::vector<GPlatesMaths::PointOnSphere> boundary_section_points;
-	GeometryUtils::get_geometry_points(boundary_section_geometry, boundary_section_points);
+	GeometryUtils::get_geometry_exterior_points(boundary_section_geometry, boundary_section_points);
 
 	const std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_begin =
 			boundary_section_points.begin();
@@ -1170,7 +1170,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		// Note that we *do* take into account sub-segment reversal to keep the order of points
 		// aligned with the (un-reversed) boundary section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*sub_segment.get_geometry(),
 				sub_segment_points,
 				sub_segment.get_use_reverse());
@@ -1404,7 +1404,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
 	{
 		// this is probably one of a collection of points; 
 		// save and add to constrained triangulation later
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
 				boundary_points,
 				boundary_section.d_use_reverse);
@@ -1416,7 +1416,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
 	if (section_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)
 	{
 		// Get the points for this geom
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
 				boundary_points,
 				boundary_section.d_use_reverse);
@@ -1428,7 +1428,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
 	if (section_geometry_type == GPlatesMaths::GeometryType::POLYLINE)
 	{
 		// this is a single line feature, possibly clipped by intersections
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
 				boundary_points,
 				boundary_section.d_use_reverse);
@@ -1440,7 +1440,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
 	if (section_geometry_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		// this is a single polygon feature
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
 				boundary_points,
 				boundary_section.d_use_reverse);
@@ -1488,7 +1488,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reco
 
 	// Get the points for this interior geometry.
 	std::vector<GPlatesMaths::PointOnSphere> interior_geometry_points;
-	GeometryUtils::get_geometry_points(interior_geometry, interior_geometry_points);
+	GeometryUtils::get_geometry_exterior_points(interior_geometry, interior_geometry_points);
 
 #ifdef DEBUG
 qDebug() << "interior's points size	  	= " << interior_geometry_points.size();
@@ -1558,7 +1558,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reso
 
 		// Get the points for this sub-segment.
 		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-		GeometryUtils::get_geometry_points(*sub_segment.get_geometry(), sub_segment_points);
+		GeometryUtils::get_geometry_exterior_points(*sub_segment.get_geometry(), sub_segment_points);
 
 #if 0
 		// NOTE: save for example using all_network_points
@@ -1600,7 +1600,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_constrained_delaunay_poin
 	{
 		// this is probably one of a collection of points; 
 		// save and add to constrained triangulation later
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*interior_geometry.d_geometry,
 				all_scattered_points);
 

@@ -1916,7 +1916,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			focus_feature_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						*focused_geometry.get());
 
 	//
@@ -3324,7 +3324,7 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_boundary_section_info(visible_section).d_table_row.get_reverse());
 	// Set the section start and end points.
@@ -3385,7 +3385,7 @@ GPlatesGui::TopologyTools::assign_interior_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_interior_section_info(visible_section).d_table_row.get_reverse());
 
@@ -3569,7 +3569,7 @@ GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
 					get_unreversed_sub_segment(reverse_order);
 
 	// Return the start and end points of the current boundary subsegment.
-	return GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+	return GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 			*geometry, reverse_order);
 }
 
@@ -3712,7 +3712,7 @@ GPlatesGui::TopologyTools::update_boundary_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_boundary_section_info(visible_section).d_table_row.get_reverse());
@@ -3783,7 +3783,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_interior_section_info(visible_section).d_table_row.get_reverse());
@@ -3791,7 +3791,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 		// Get the vertices for just this section
 		section_vertices.clear();
 
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				section_vertices,
 				get_interior_section_info(visible_section).d_table_row.get_reverse());

@@ -300,12 +300,6 @@ namespace GPlatesMaths {
 	cross(
 			const Vector3D &v1,
 			const Vector3D &v2);
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_Vector3D();
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_

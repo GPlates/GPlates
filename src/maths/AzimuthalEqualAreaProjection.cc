@@ -23,13 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ProjectionUtils.h"
+#include "AzimuthalEqualAreaProjection.h"
 
 #include "MathsUtils.h"
 #include "types.h"
 
 
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
+GPlatesMaths::AzimuthalEqualAreaProjection::AzimuthalEqualAreaProjection(
 		const LatLonPoint &center_of_projection,
 		const double &projection_scale) :
 	d_center_of_projection(center_of_projection),
@@ -42,7 +42,7 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
 }
 
 
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
+GPlatesMaths::AzimuthalEqualAreaProjection::AzimuthalEqualAreaProjection(
 		const PointOnSphere &center_of_projection,
 		const double &projection_scale) :
 	d_center_of_projection(make_lat_lon_point(center_of_projection)),
@@ -56,7 +56,7 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::AzimuthalEqualArea(
 
 
 QPointF
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::project_from_lat_lon(
+GPlatesMaths::AzimuthalEqualAreaProjection::project_from_lat_lon(
 		const LatLonPoint &point) const
 {
 	const double lam_0 = convert_deg_to_rad(d_center_of_projection.longitude()); // center of projection lon
@@ -85,7 +85,7 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::project_from_lat_lon(
 
 
 QPointF
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::project_from_point_on_sphere(
+GPlatesMaths::AzimuthalEqualAreaProjection::project_from_point_on_sphere(
 		const PointOnSphere &point) const
 {
 	return project_from_lat_lon(make_lat_lon_point(point));
@@ -93,7 +93,7 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::project_from_point_on_sphere(
 
 
 GPlatesMaths::LatLonPoint
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::unproject_to_lat_lon(
+GPlatesMaths::AzimuthalEqualAreaProjection::unproject_to_lat_lon(
 		const QPointF &point) const
 {
 	const double x = point.x();
@@ -151,7 +151,7 @@ GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::unproject_to_lat_lon(
 
 
 GPlatesMaths::PointOnSphere
-GPlatesMaths::ProjectionUtils::AzimuthalEqualArea::unproject_to_point_on_sphere(
+GPlatesMaths::AzimuthalEqualAreaProjection::unproject_to_point_on_sphere(
 		const QPointF &point) const
 {
 	return make_point_on_sphere(unproject_to_lat_lon(point));

@@ -23,33 +23,87 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/optional.hpp>
+
 #include "PolygonOrientation.h"
 
-#include "Centroid.h"
+#include "AngularDistance.h"
+#include "GnomonicProjection.h"
+#include "MathsUtils.h"
 #include "PolygonOnSphere.h"
 #include "SphericalArea.h"
 #include "Vector3D.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "utils/Profile.h"
 
 
-namespace
+namespace GPlatesMaths
 {
-	/**
-	 * Projects a unit vector point onto the plane whose normal is @a plane_normal and
-	 * returns normalised version of projected point.
-	 */
-	GPlatesMaths::UnitVector3D
-	get_orthonormal_vector(
-			const GPlatesMaths::UnitVector3D &point,
-			const GPlatesMaths::UnitVector3D &plane_normal)
+	namespace
 	{
-		// The projection of 'point' in the direction of 'plane_normal'.
-		GPlatesMaths::Vector3D proj = dot(point, plane_normal) * plane_normal;
+		/**
+		 * If any 3D point (in polygon) is further than this angle from the polygon centroid
+		 * then the gnomonic projection fails.
+		 */
+		const double MAXIMUM_PROJECTION_ANGLE_DEGREES = 45;
 
-		// The projection of 'point' perpendicular to the direction of
-		// 'plane_normal'.
-		return (GPlatesMaths::Vector3D(point) - proj).get_normalisation();
+
+		/**
+		 * Iterate through the vertices of the polygon ring and project onto the plane and
+		 * calculate the signed area of the projected ring.
+		 *
+		 * Returns none if unable to project a point in the ring (due to angle between point and
+		 * projection tangent point being too large).
+		 */
+		boost::optional<real_t>
+		calculate_polygon_ring_projected_signed_area(
+				const PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_begin,
+				const PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_end,
+				const GnomonicProjection &gnomonic_projection)
+		{
+			real_t ring_projected_signed_area = 0;
+
+			QPointF last_proj_point;
+
+			PolygonOnSphere::ring_vertex_const_iterator ring_vertex_iter = ring_vertex_begin;
+			if (ring_vertex_iter != ring_vertex_end)
+			{
+				const PointOnSphere &vertex = *ring_vertex_iter;
+
+				boost::optional<QPointF> point =
+						gnomonic_projection.project_from_point_on_sphere(vertex);
+				if (!point)
+				{
+					return boost::none;
+				}
+
+				last_proj_point = point.get();
+				++ring_vertex_iter;
+			}
+
+			for ( ; ring_vertex_iter != ring_vertex_end; ++ring_vertex_iter)
+			{
+				const PointOnSphere &vertex = *ring_vertex_iter;
+
+				boost::optional<QPointF> point =
+						gnomonic_projection.project_from_point_on_sphere(vertex);
+				if (!point)
+				{
+					return boost::none;
+				}
+
+				ring_projected_signed_area +=
+						last_proj_point.x() * point->y() -
+						last_proj_point.y() * point->x();
+
+				last_proj_point = point.get();
+			}
+
+			return ring_projected_signed_area;
+		}
 	}
 }
 
@@ -60,80 +114,161 @@ GPlatesMaths::PolygonOrientation::calculate_polygon_orientation(
 {
 	//PROFILE_BLOCK("poly orientation test");
 
-	// Iterate through the polygon vertices and calculate the sum of vertex positions.
-	const GPlatesMaths::Vector3D summed_vertex_position =
-			Centroid::calculate_sum_points(
-					polygon.vertex_begin(), polygon.vertex_end());
+	// Project the polygon onto a tangent plane using a gnomonic projection.
+	//
+	// We'll calculate signed areas of the projected 2D triangles since that's less expensive
+	// than calculating signed areas of spherical triangles (but we'll calculate spherical triangles
+	// if we have trouble projecting onto a tangent plane).
+	//
+	// Get the centroid of the polygon to use as our tangent point.
+	const PointOnSphere tangent_point(polygon.get_boundary_centroid());
+	const GnomonicProjection gnomonic_projection(
+			tangent_point,
+			// If any 3D point (in polygon) is further than this angle from the tangent point
+			// then the projection fails and we'll calculate signed triangle areas without
+			// projecting (ie, signed triangle areas directly on the spherical polygon)...
+			AngularDistance::create_from_angle(convert_deg_to_rad(MAXIMUM_PROJECTION_ANGLE_DEGREES)));
 
-	// If the average magnitude of the summed vertex position is too small then it means
-	// all the points averaged to a small vector which means our projection onto a tangent
-	// plane is not such a good idea anymore because the points are distributed around the globe.
-	// When the magnitude gets too small divert to a more expensive but more accurate test.
-	if (summed_vertex_position.magSqrd() <=
-		polygon.number_of_vertices() * 0.7/*polygon forms cone of roughly 90 degrees*/)
+	// Calculate projected signed area of exterior ring.
+	const boost::optional<real_t> exterior_ring_projected_signed_area =
+			calculate_polygon_ring_projected_signed_area(
+					polygon.exterior_ring_vertex_begin(),
+					polygon.exterior_ring_vertex_end(),
+					gnomonic_projection);
+	if (!exterior_ring_projected_signed_area)
 	{
-		// Put a profile in to count the percentage of times this is called.
-		//PROFILE_BLOCK("poly orientation test: diversion to accurate test");
-
 		// Get an accurate polygon signed area.
+		//
 		// NOTE: We have to be a little bit careful here in case PolygonOnSphere methods
 		// like 'get_area()' use methods like the one we're currently in to calculate its
 		// results - however the signed area calculation is safe - there won't be any infinite recursion.
 		// If in doubt call 'SphericalArea::calculate_polygon_signed_area()' directly.
-		const real_t polygon_signed_area = polygon.get_signed_area();
-
-		return polygon_signed_area.is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
+		return polygon.get_signed_area().is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
 	}
 
-	// Calculate a unit vector from the sum to use as our plane normal.
-	const GPlatesMaths::UnitVector3D proj_plane_normal =
-			summed_vertex_position.get_normalisation();
+	real_t total_projected_signed_area = exterior_ring_projected_signed_area.get();
 
-	// First try starting with the global x axis - if it's too close to the plane normal
-	// then choose the global y axis.
-	GPlatesMaths::UnitVector3D proj_plane_x_axis_test_point(0, 0, 1); // global x-axis
-	if (dot(proj_plane_x_axis_test_point, proj_plane_normal) > 1 - 1e-2)
+	// Calculate projected signed area of interior rings.
+	const unsigned int num_interior_rings = polygon.number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < num_interior_rings;
+		++interior_ring_index)
 	{
-		proj_plane_x_axis_test_point = GPlatesMaths::UnitVector3D(0, 1, 0); // global y-axis
+		const boost::optional<real_t> interior_ring_projected_signed_area =
+				calculate_polygon_ring_projected_signed_area(
+						polygon.interior_ring_vertex_begin(interior_ring_index),
+						polygon.interior_ring_vertex_end(interior_ring_index),
+						gnomonic_projection);
+		if (!interior_ring_projected_signed_area)
+		{
+			// Get an accurate polygon signed area.
+			//
+			// NOTE: We have to be a little bit careful here in case PolygonOnSphere methods
+			// like 'get_area()' use methods like the one we're currently in to calculate its
+			// results - however the signed area calculation is safe - there won't be any infinite recursion.
+			// If in doubt call 'SphericalArea::calculate_polygon_signed_area()' directly.
+			return polygon.get_signed_area().is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
+		}
+
+		// Force the interior ring areas to have the opposite sign of the exterior area.
+		// This way the interior rings reduce the absolute area of the exterior ring because
+		// they are holes in the polygon. We need to do this since we don't know the orientation
+		// of the interior rings (ie, we never forced them to have the opposite orientation of
+		// the exterior ring like some software does).
+		// This is the same as what is done in 'SphericalArea::calculate_polygon_signed_area()'.
+		if (exterior_ring_projected_signed_area->is_precisely_greater_than(0))
+		{
+			total_projected_signed_area -= abs(interior_ring_projected_signed_area.get());
+		}
+		else // exterior_ring_projected_signed_area is negative...
+		{
+			total_projected_signed_area += abs(interior_ring_projected_signed_area.get());
+		}
 	}
-	const GPlatesMaths::UnitVector3D proj_plane_axis_x = get_orthonormal_vector(
-			proj_plane_x_axis_test_point, proj_plane_normal);
 
-	// Determine the y axis of the plane.
-	const GPlatesMaths::UnitVector3D proj_plane_axis_y(
-			cross(proj_plane_normal, proj_plane_axis_x));
+	// Note that the interior rings shouldn't normally affect the orientation because they have the
+	// opposite sign (area) to the exterior ring and the interior rings should normally be fully
+	// inside the exterior ring and hence should not have enough area to flip the signed area.
+	// However if the rings intersect the exterior then it's possible (though unlikely) that they
+	// will have enough area to flip the sign.
 
-	// Iterate through the vertices and project onto the plane and
-	// also calculate the signed area of the projected polygon.
-	GPlatesMaths::real_t signed_poly_area = 0;
-	GPlatesMaths::real_t last_proj_point_x = 0;
-	GPlatesMaths::real_t last_proj_point_y = 0;
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
-	const GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
-	if (vertex_iter != vertex_end)
+	return total_projected_signed_area.is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
+}
+
+
+GPlatesMaths::PolygonOrientation::Orientation
+GPlatesMaths::PolygonOrientation::calculate_polygon_exterior_ring_orientation(
+		const PolygonOnSphere &polygon)
+{
+	// Project the polygon ring onto a tangent plane using a gnomonic projection.
+	//
+	// We'll calculate signed areas of the projected 2D triangles since that's less expensive
+	// than calculating signed areas of spherical triangles (but we'll calculate spherical triangles
+	// if we have trouble projecting onto a tangent plane).
+	//
+	// Get the centroid of the polygon to use as our tangent point.
+	const PointOnSphere tangent_point(polygon.get_boundary_centroid());
+	const GnomonicProjection gnomonic_projection(
+			tangent_point,
+			// If any 3D point (in polygon) is further than this angle from the tangent point
+			// then the projection fails and we'll calculate signed triangle areas without
+			// projecting (ie, signed triangle areas directly on the spherical polygon)...
+			AngularDistance::create_from_angle(convert_deg_to_rad(MAXIMUM_PROJECTION_ANGLE_DEGREES)));
+
+	// Calculate projected signed area of polygon ring.
+	boost::optional<real_t> ring_projected_signed_area =
+			calculate_polygon_ring_projected_signed_area(
+					polygon.exterior_ring_vertex_begin(),
+					polygon.exterior_ring_vertex_end(),
+					gnomonic_projection);
+
+	if (!ring_projected_signed_area)
 	{
-		const GPlatesMaths::PointOnSphere &vertex = *vertex_iter;
-		const GPlatesMaths::UnitVector3D &point = vertex.position_vector();
-
-		last_proj_point_x = dot(proj_plane_axis_x, point);
-		last_proj_point_y = dot(proj_plane_axis_y, point);
-		++vertex_iter;
+		// Get an accurate polygon ring signed area.
+		ring_projected_signed_area = SphericalArea::calculate_polygon_exterior_ring_signed_area(polygon);
 	}
-	for ( ; vertex_iter != vertex_end; ++vertex_iter)
+
+	return ring_projected_signed_area->is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
+}
+
+
+GPlatesMaths::PolygonOrientation::Orientation
+GPlatesMaths::PolygonOrientation::calculate_polygon_interior_ring_orientation(
+		const PolygonOnSphere &polygon,
+		unsigned int interior_ring_index)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			interior_ring_index < polygon.number_of_interior_rings(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Project the polygon ring onto a tangent plane using a gnomonic projection.
+	//
+	// We'll calculate signed areas of the projected 2D triangles since that's less expensive
+	// than calculating signed areas of spherical triangles (but we'll calculate spherical triangles
+	// if we have trouble projecting onto a tangent plane).
+	//
+	// Get the centroid of the polygon to use as our tangent point.
+	const PointOnSphere tangent_point(polygon.get_boundary_centroid());
+	const GnomonicProjection gnomonic_projection(
+			tangent_point,
+			// If any 3D point (in polygon) is further than this angle from the tangent point
+			// then the projection fails and we'll calculate signed triangle areas without
+			// projecting (ie, signed triangle areas directly on the spherical polygon)...
+			AngularDistance::create_from_angle(convert_deg_to_rad(MAXIMUM_PROJECTION_ANGLE_DEGREES)));
+
+	// Calculate projected signed area of polygon ring.
+	boost::optional<real_t> ring_projected_signed_area =
+			calculate_polygon_ring_projected_signed_area(
+					polygon.interior_ring_vertex_begin(interior_ring_index),
+					polygon.interior_ring_vertex_end(interior_ring_index),
+					gnomonic_projection);
+
+	if (!ring_projected_signed_area)
 	{
-		const GPlatesMaths::PointOnSphere &vertex = *vertex_iter;
-		const GPlatesMaths::UnitVector3D &point = vertex.position_vector();
-
-		const GPlatesMaths::real_t proj_point_x = dot(proj_plane_axis_x, point);
-		const GPlatesMaths::real_t proj_point_y = dot(proj_plane_axis_y, point);
-
-		signed_poly_area +=
-				last_proj_point_x * proj_point_y -
-				last_proj_point_y * proj_point_x;
-
-		last_proj_point_x = proj_point_x;
-		last_proj_point_y = proj_point_y;
+		// Get an accurate polygon ring signed area.
+		ring_projected_signed_area =
+				SphericalArea::calculate_polygon_interior_ring_signed_area(polygon, interior_ring_index);
 	}
 
-	return (signed_poly_area < 0) ? CLOCKWISE : COUNTERCLOCKWISE;
+	return ring_projected_signed_area->is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
 }

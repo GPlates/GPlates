@@ -206,6 +206,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 #if 0
 	//////////////////////////////////////////////////////////////////////////////////////
 	// Force triangle rendering for testing. This lets me easily create triangles via the
@@ -235,7 +239,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Vertex representing the point's position and colour.
 	// Convert colour from floats to bytes to use less vertex memory.
-	const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
+	const coloured_vertex_type vertex(pos, rgba8_colour);
 
 	// Used to add points to the stream.
 	stream_primitives_type::Points stream_points(stream);
@@ -334,10 +338,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 				colour.get(),
 				rendered_polyline_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(
 				*polyline_on_sphere,
-				fill_colour,
+				rgba8_fill_colour,
 				d_current_spatial_partition_location.get());
 
 		return;
@@ -350,10 +357,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 	paint_great_circle_arcs(
 			polyline_on_sphere->begin(),
 			polyline_on_sphere->end(),
-			colour.get(),
+			rgba8_colour,
 			stream);
 }
 
@@ -391,10 +401,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 				colour.get(),
 				rendered_polygon_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(
 				*polygon_on_sphere,
-				fill_colour,
+				rgba8_fill_colour,
 				d_current_spatial_partition_location.get());
 
 		return;
@@ -407,11 +420,27 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
+	// Paint the polygon's exterior ring.
 	paint_great_circle_arcs(
-			polygon_on_sphere->begin(),
-			polygon_on_sphere->end(),
-			colour.get(),
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end(),
+			rgba8_colour,
 			stream);
+
+	// Paint the polygon's interior rings.
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_on_sphere->number_of_interior_rings();
+		++interior_ring_index)
+	{
+		paint_great_circle_arcs(
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index),
+				rgba8_colour,
+				stream);
+	}
 }
 
 
@@ -451,6 +480,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surf
 			continue;
 		}
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 		const GPlatesMaths::GreatCircleArc edge[1] =
 		{
 				GPlatesMaths::GreatCircleArc::create(
@@ -459,7 +491,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surf
 		};
 
 		// Paint the current single great circle arc edge (it might get tessellated into smaller arcs).
-		paint_great_circle_arcs(edge, edge + 1, colour.get(), stream);
+		paint_great_circle_arcs(edge, edge + 1, rgba8_colour, stream);
 	}
 }
 
@@ -498,12 +530,15 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_
 			continue;
 		}
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 		// Add the current filled triangle.
 		filled_polygons.add_filled_triangle_to_mesh(
 				mesh_vertices[mesh_triangle.vertex_indices[0]],
 				mesh_vertices[mesh_triangle.vertex_indices[1]],
 				mesh_vertices[mesh_triangle.vertex_indices[2]],
-				colour.get());
+				rgba8_colour);
 	}
 
 	// Add the filled mesh at the current location (if any) in the rendered geometries spatial partition.
@@ -1004,13 +1039,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		return;
 	}
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 	const float line_width = rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	paint_ellipse(rendered_ellipse, colour.get(), stream);
+	paint_ellipse(rendered_ellipse, rgba8_colour, stream);
 }
 
 
@@ -1031,6 +1069,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		return;
 	}
 
+	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
@@ -1080,7 +1119,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	paint_great_circle_arcs(
 		polyline->begin(),
 		polyline->end(),
-		colour.get(),
+		rgba8_colour,
 		lines_stream);
 }
 
@@ -1099,6 +1138,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
     {
             return;
     }
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
     bool filled = rendered_triangle_symbol.get_is_filled();
 
@@ -1150,9 +1192,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	vc = r3 * vc;
 
 
-	coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
-	coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
-	coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
+	coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(), rgba8_colour);
+	coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(), rgba8_colour);
+	coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(), rgba8_colour);
 
 	if (filled)
 	{
@@ -1203,6 +1245,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	    return;
     }
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
     bool filled = rendered_square_symbol.get_is_filled();
 
     // Define the square in the tangent plane at the north pole,
@@ -1252,11 +1297,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
     v3d_e = r3 * v3d_e;
 
 
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(), rgba8_colour);
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(), rgba8_colour);
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(), rgba8_colour);
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(), rgba8_colour);
+    coloured_vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(), rgba8_colour);
 
     if (filled)
     {
@@ -1311,6 +1356,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 	    return;
     }
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
     bool filled = rendered_circle_symbol.get_is_filled();
 	
 
@@ -1329,7 +1377,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		// Vertex representing the point's position and colour.
 		// Convert colour from floats to bytes to use less vertex memory.
-		const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
+		const coloured_vertex_type vertex(pos, rgba8_colour);
 
 		// Used to add points to the stream.
 		stream_primitives_type::Points stream_points(stream);
@@ -1348,9 +1396,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 		stream_primitives_type &stream =
 				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-		// Convert colour from floats to bytes to use less vertex memory.
-		const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
-
 		const GPlatesMaths::SmallCircle small_circle = GPlatesMaths::SmallCircle::create_colatitude(
 				rendered_circle_symbol.get_centre().position_vector(),
 				radius);
@@ -1365,7 +1410,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		for (unsigned int i = 0; i < points.size(); ++i)
 		{
-			stream_line_loops.add_vertex(coloured_vertex_type(points[i].position_vector(), rgba8_color));
+			stream_line_loops.add_vertex(coloured_vertex_type(points[i].position_vector(), rgba8_colour));
 		}
 
 		stream_line_loops.end_line_loop();
@@ -1390,7 +1435,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	    return;
     }
 
-    //
+ 	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
+   //
     // Reminder about coordinate system:
     // x is out of the screen as we look at the globe on startup.
     // y is towards right (east) as we look at the globe on startup.
@@ -1427,10 +1475,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
     v3d_d = r3 * v3d_d;
 
 
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(), rgba8_colour);
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(), rgba8_colour);
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(), rgba8_colour);
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(), rgba8_colour);
 
 
     const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
@@ -1467,6 +1515,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
     {
 	    return;
     }
+
+ 	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
     // Define the square in the tangent plane at the north pole,
     // then rotate down to required latitude, and
@@ -1542,10 +1593,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
     v3d_d = r3 * v3d_d;
 
 
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(), rgba8_colour);
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(), rgba8_colour);
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(), rgba8_colour);
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(), rgba8_colour);
 
     const float line_width = rendered_strain_marker_symbol.get_line_width_hint() * STRAIN_LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -1803,16 +1854,13 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 		GreatCircleArcForwardIter begin_arcs,
 		GreatCircleArcForwardIter end_arcs,
-		const Colour &colour,
+		rgba8_t rgba8_color,
 		stream_primitives_type &lines_stream)
 {
 	if (begin_arcs == end_arcs)
 	{
 		return;
 	}
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line strips to the stream.
 	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
@@ -1859,7 +1907,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
-		const Colour &colour,
+		rgba8_t rgba8_color,
 		stream_primitives_type &lines_stream)
 {
 	// We could make this zoom dependent, but:
@@ -1888,9 +1936,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 			rendered_ellipse.get_semi_major_axis_radians(),
 			rendered_ellipse.get_semi_minor_axis_radians(),
 			rendered_ellipse.get_axis());
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line loops to the stream.
 	stream_primitives_type::LineLoops stream_line_loops(lines_stream);

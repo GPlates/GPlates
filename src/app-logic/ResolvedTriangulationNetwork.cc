@@ -1019,7 +1019,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::insert_geometries_into_constrai
 
 		// Get the points in the current geometry.
 		std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-		GeometryUtils::get_geometry_points(
+		GeometryUtils::get_geometry_exterior_points(
 				*constrained_delaunay_geometry.geometry,
 				geometry_points);
 

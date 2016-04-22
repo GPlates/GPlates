@@ -996,6 +996,12 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * PolygonMesh objects are mesh refined such that all mesh edge lengths are below this threshold.
+		 */
+		static const double POLYGON_MESH_EDGE_LENGTH_THRESHOLD_RADIANS;
+
+
+		/**
 		 * Used to associate features with reconstruct methods.
 		 */
 		const ReconstructMethodRegistry &d_reconstruct_method_registry;

@@ -28,11 +28,8 @@ set(srcs
     DataSelector.h
     DataTable.cc
     DataTable.h
-    DualGeometryVisitor.h
     GetValueFromPropertyVisitor.cc
     GetValueFromPropertyVisitor.h
-    IsCloseEnoughChecker.cc
-    IsCloseEnoughChecker.h
     LookupReducer.cc
     LookupReducer.h
     MaxReducer.h

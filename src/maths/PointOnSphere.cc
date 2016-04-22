@@ -47,7 +47,8 @@ const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::south_pole =
 const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::PointOnSphere::get_non_null_pointer() const
 {
-	if (get_reference_count() == 0) {
+	if (get_reference_count() == 0)
+	{
 		// There are no intrusive-pointers referencing this class.  Hence, this instance is
 		// either on the stack or on the heap managed by a non-intrusive-pointer mechanism.
 		// 
@@ -63,12 +64,12 @@ GPlatesMaths::PointOnSphere::get_non_null_pointer() const
 		//		<< std::endl;
 
 		return clone_as_point();
-	} else {
+	}
+	else
+	{
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.
-		return non_null_ptr_to_const_type(
-				this,
-				GPlatesUtils::NullIntrusivePointerHandler());
+		return non_null_ptr_to_const_type(this);
 	}
 }
 

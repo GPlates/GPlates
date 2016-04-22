@@ -418,7 +418,7 @@ namespace GPlatesGui
 		paint_great_circle_arcs(
 				GreatCircleArcForwardIter begin_arcs,
 				GreatCircleArcForwardIter end_arcs,
-				const Colour &colour,
+				rgba8_t rgba8_color,
 				stream_primitives_type &lines_stream);
 
 		/**
@@ -427,7 +427,7 @@ namespace GPlatesGui
 		void
 		paint_ellipse(
 				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
-				const Colour &colour,
+				rgba8_t rgba8_color,
 				stream_primitives_type &lines_stream);
 
 		/**

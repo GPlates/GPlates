@@ -30,6 +30,7 @@
 #include "RasterLayerProxy.h"
 
 #include "ExtractRasterFeatureProperties.h"
+#include "ReconstructLayerProxy.h"
 #include "ReconstructUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -104,12 +105,21 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 		return boost::none;
 	}
 
+	// Extract the reconstruct layer proxies from their InputLayerProxy wrappers.
+	std::vector<ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_proxies;
+	BOOST_FOREACH(
+			const LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstruct_layer_proxy,
+			d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
+	{
+		reconstruct_layer_proxies.push_back(reconstruct_layer_proxy.get_input_layer_proxy());
+	}
+
 	// Create a resolved raster reconstruction geometry.
 	return ResolvedRaster::create(
 			*d_current_raster_feature.get().handle_ptr(),
 			reconstruction_time,
 			GPlatesUtils::get_non_null_pointer(this),
-			d_current_reconstructed_polygons_layer_proxy.get_optional_input_layer_proxy(),
+			reconstruct_layer_proxies,
 			d_current_age_grid_raster_layer_proxy.get_optional_input_layer_proxy(),
 			d_current_normal_map_raster_layer_proxy.get_optional_input_layer_proxy());
 }
@@ -246,10 +256,10 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 		d_cached_multi_resolution_data_raster.cached_data_raster = multi_resolution_raster;
 	}
 
-	// If we are not currently connected to reconstructed polygons *and* we are not using an age grid
+	// If we are not currently connected to any reconstructed polygons *and* we are not using an age grid
 	// then just return the *unreconstructed* raster.
-	// Note that we don't require reconstructed polygon to continue past this point.
-	if (!d_current_reconstructed_polygons_layer_proxy &&
+	// Note that we don't require reconstructed polygons to continue past this point.
+	if (d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies().empty() &&
 		!d_current_age_grid_raster_layer_proxy)
 	{
 		return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
@@ -289,17 +299,22 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	const bool reconstructing_with_age_grid =
 			d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster;
 
-	// Get the reconstructed polygon meshes from the layer containing the reconstructed polygons.
-	boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;
-	if (d_current_reconstructed_polygons_layer_proxy)
+	// Get the reconstructed polygon meshes from the layers containing the reconstructed polygons.
+	std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;
+	if (!d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies().empty())
 	{
-		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_ptr =
-				d_current_reconstructed_polygons_layer_proxy.get_input_layer_proxy()
-						->get_reconstructed_static_polygon_meshes(
-								renderer,
-								reconstructing_with_age_grid,
-								reconstruction_time);
-		reconstructed_polygon_meshes = reconstructed_polygon_meshes_ptr;
+		BOOST_FOREACH(
+				const LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
+				d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
+		{
+			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_ptr =
+					reconstructed_polygons_layer_proxy.get_input_layer_proxy()
+							->get_reconstructed_static_polygon_meshes(
+									renderer,
+									reconstructing_with_age_grid,
+									reconstruction_time);
+			reconstructed_polygon_meshes.push_back(reconstructed_polygon_meshes_ptr);
+		}
 	}
 	else // *not* reconstructing raster, but still using age grid...
 	{
@@ -312,8 +327,8 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 		}
 	}
 
-	// If reconstructed polygon meshes is a different object then it must have been rebuilt by
-	// the reconstructed polygons layer since last we accessed it.
+	// If reconstructed polygon meshes are different objects then they must have been rebuilt by
+	// the reconstructed polygons layers since last we accessed them.
 	// Note that changes *within* a GLReconstructedStaticPolygonMeshes object are detected and
 	// handled by the reconstructed raster so we don't need to worry about that.
 	if (d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes != reconstructed_polygon_meshes)
@@ -354,12 +369,12 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 
 		// This handles age-grid masking both with and without reconstructing the raster (with polygons).
 		GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
-				d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes
+				!d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.empty()
 				? GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
 						renderer,
 						reconstruction_time,
 						d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
-						d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get(),
+						d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes,
 						d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster)
 				: GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
 						renderer,
@@ -589,14 +604,19 @@ GPlatesAppLogic::RasterLayerProxy::get_subject_token()
 	// This is because we get notified of all changes to input except input layer proxies which
 	// we have to poll to see if they changed since we last accessed them - so we do that now.
 
-	// See if the reconstructed polygons layer proxy has changed.
-	if (!d_current_reconstructed_polygons_layer_proxy.is_up_to_date())
+	// See if the reconstructed polygons layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
+			d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
 	{
-		// This raster layer proxy is now invalid.
-		d_subject_token.invalidate();
+		if (!reconstructed_polygons_layer_proxy.is_up_to_date())
+		{
+			// This raster layer proxy is now invalid.
+			d_subject_token.invalidate();
 
-		// We're now up-to-date with the reconstructed polygons layer proxy.
-		d_current_reconstructed_polygons_layer_proxy.set_up_to_date();
+			// We're now up-to-date with the reconstructed polygons layer proxy.
+			reconstructed_polygons_layer_proxy.set_up_to_date();
+		}
 	}
 
 	// See if the age grid raster layer proxy has changed.
@@ -668,10 +688,21 @@ GPlatesAppLogic::RasterLayerProxy::set_current_reconstruction_time(
 
 
 void
-GPlatesAppLogic::RasterLayerProxy::set_current_reconstructed_polygons_layer_proxy(
-		boost::optional<ReconstructLayerProxy::non_null_ptr_type> reconstructed_polygons_layer_proxy)
+GPlatesAppLogic::RasterLayerProxy::add_current_reconstructed_polygons_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy)
 {
-	d_current_reconstructed_polygons_layer_proxy.set_input_layer_proxy(reconstructed_polygons_layer_proxy);
+	d_current_reconstructed_polygons_layer_proxies.add_input_layer_proxy(reconstructed_polygons_layer_proxy);
+
+	// This raster layer proxy has now changed.
+	invalidate();
+}
+
+
+void
+GPlatesAppLogic::RasterLayerProxy::remove_current_reconstructed_polygons_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy)
+{
+	d_current_reconstructed_polygons_layer_proxies.remove_input_layer_proxy(reconstructed_polygons_layer_proxy);
 
 	// This raster layer proxy has now changed.
 	invalidate();

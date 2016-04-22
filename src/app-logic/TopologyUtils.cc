@@ -203,7 +203,7 @@ namespace GPlatesAppLogic
 				std::pair<
 						GPlatesMaths::PointOnSphere/*start point*/,
 						GPlatesMaths::PointOnSphere/*end point*/> sub_segment_end_points =
-								GeometryUtils::get_geometry_end_points(
+								GeometryUtils::get_geometry_exterior_end_points(
 										*sub_segment_info.sub_segment.get_geometry());
 
 				enum { START, END };
@@ -885,7 +885,10 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 		// The section geometry is either a polyline or a polygon.
 		// Convert it to a polyline (in most cases, due to intersections, it will already be a polyline).
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> section_polyline_opt =
-				GeometryUtils::convert_geometry_to_polyline(*section_geometry.get());
+				GeometryUtils::convert_geometry_to_polyline(
+						*section_geometry.get(),
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 		// A polyline or polygon should always be convertible to a polyline.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				section_polyline_opt,

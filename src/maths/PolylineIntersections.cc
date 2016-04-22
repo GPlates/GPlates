@@ -1972,8 +1972,8 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
  const PolygonOnSphere &polygon2)
 {
 	return ::partition_intersecting_geometries(
-			polygon1.begin(), polygon1.end(),
-			polygon2.begin(), polygon2.end());
+			polygon1.exterior_ring_begin(), polygon1.exterior_ring_end(),
+			polygon2.exterior_ring_begin(), polygon2.exterior_ring_end());
 }
 
 
@@ -1984,7 +1984,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
 {
 	return ::partition_intersecting_geometries(
 			polyline.begin(), polyline.end(),
-			polygon.begin(), polygon.end());
+			polygon.exterior_ring_begin(), polygon.exterior_ring_end());
 }
 
 
@@ -1994,7 +1994,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
  const PolylineOnSphere &polyline)
 {
 	return ::partition_intersecting_geometries(
-			polygon.begin(), polygon.end(),
+			polygon.exterior_ring_begin(), polygon.exterior_ring_end(),
 			polyline.begin(), polyline.end());
 }
 

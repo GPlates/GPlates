@@ -45,7 +45,7 @@ namespace GPlatesPropertyValues
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:Polygon".
 	 */
-	class GmlPolygon:
+	class GmlPolygon :
 			public GPlatesModel::PropertyValue
 	{
 	public:
@@ -61,73 +61,22 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * A convenience typedef for the ring representation used internally.
+		 * A convenience typedef for the internal polygon representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> ring_type;
-		
-		/**
-		 * Typedef for a sequence of rings -- used to hold the interior ring definition.
-		 */
-		typedef std::vector<ring_type> ring_sequence_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> internal_polygon_type;
 
-		/**
-		 * Typedef for a const iterator over the ring_sequence_type.
-		 */
-		typedef ring_sequence_type::const_iterator ring_const_iterator;
 
 		virtual
 		~GmlPolygon()
 		{  }
 
 		/**
-		 * Create a GmlPolygon instance which contains an exterior ring only (no interior
-		 * rings).
-		 *
-		 * This function will store a copy of @a exterior_ring (which is a pointer).
+		 * Create a GmlPolygon instance which contains a copy of @a polygon_.
 		 */
 		static
 		const non_null_ptr_type
 		create(
-				const ring_type &exterior_ring)
-		{
-			// Because PolygonOnSphere can only ever be handled via a
-			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
-			// can be changed.  Hence, it is safe to store a pointer to the instance
-			// which was passed into this 'create' function.
-			return non_null_ptr_type(
-					new GmlPolygon(exterior_ring));
-		}
-
-		/**
-		 * Create a GmlPolygon instance which contains an exterior ring and some number of
-		 * interior rings.
-		 *
-		 * It is assumed that @a interior_ring_collection is an STL-like container of
-		 * ring_type.  Specifically, the template parameter-type @a C should provide the
-		 * following member functions:
-		 *  -# begin, which returns a "begin" forward-iterator which dereferences to an
-		 * instance of ring_type.
-		 *  -# end, which returns an "end" forward-iterator which dereferences to an
-		 * instance of ring_type.
-		 *  -# size, which returns the number of elements in the container.
-		 *
-		 * This function will store a copy of @a exterior_ring (which is a pointer) and
-		 * each ring in @a interior_ring_collection (which are pointers).
-		 */
-		template<typename C>
-		static
-		const non_null_ptr_type
-		create(
-				const ring_type &exterior_ring,
-				const C &interior_ring_collection)
-		{
-			// Because PolygonOnSphere can only ever be handled via a
-			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
-			// can be changed.  Hence, it is safe to store a pointer to the instance
-			// which was passed into this 'create' function.
-			return non_null_ptr_type(
-					new GmlPolygon(exterior_ring, interior_ring_collection));
-		}
+				const internal_polygon_type &polygon_);
 
 		const non_null_ptr_type
 		clone() const
@@ -145,65 +94,30 @@ namespace GPlatesPropertyValues
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
+
 		/**
-		 * Access the GPlatesMaths::PolygonOnSphere which encodes the exterior geometry of this instance.
+		 * Access the GPlatesMaths::PolygonOnSphere which encodes the geometry of this instance.
+		 *
+		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
+		 * a non-const GPlatesMaths::PolygonOnSphere.  The GPlatesMaths::PolygonOnSphere
+		 * within this instance should not be modified directly; to alter the
+		 * GPlatesMaths::PolygonOnSphere within this instance, set a new value using the
+		 * function @a set_polygon below.
 		 */
-		const ring_type
-		exterior() const
+		const internal_polygon_type
+		polygon() const
 		{
-			return d_exterior;
+			return d_polygon;
 		}
 
 		/**
-		 * Set the exterior polygon within this instance to @a exterior.
+		 * Set the polygon within this instance to @a p.
 		 */
 		void
-		set_exterior(
-				const ring_type &r)
+		set_polygon(
+				const internal_polygon_type &p)
 		{
-			d_exterior = r;
-			update_instance_id();
-		}
-		
-		/**
-		 * Return the "begin" const iterator to iterate over the interior rings of this
-		 * GmlPolygon.
-		 */
-		ring_const_iterator
-		interiors_begin() const
-		{
-			return d_interiors.begin();
-		}
-
-		/**
-		 * Return the "end" const iterator for iterating over the interior rings of this
-		 * GmlPolygon.
-		 */
-		ring_const_iterator
-		interiors_end() const
-		{
-			return d_interiors.end();
-		}
-		
-		/**
-		 * Add an interior polygon @a r to the list of interiors of this instance.
-		 */
-		void
-		add_interior(
-				const ring_type &r)
-		{
-			d_interiors.push_back(r);
-			update_instance_id();
-		}
-		
-		
-		/**
-		 * Removes all interior rings from this GmlPolygon.
-		 */
-		void
-		clear_interiors()
-		{
-			d_interiors.clear();
+			d_polygon = p;
 			update_instance_id();
 		}
 		
@@ -257,26 +171,11 @@ namespace GPlatesPropertyValues
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
-		 *
-		 * This constructor creates a GmlPolygon with a single exterior and no interior
-		 * rings.
 		 */
 		GmlPolygon(
-				const ring_type &exterior_ring):
+				const internal_polygon_type &polygon_):
 			PropertyValue(),
-			d_exterior(exterior_ring)
-		{  }
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		GmlPolygon(
-				const ring_type &exterior_ring,
-				const ring_sequence_type &interior_rings):
-			PropertyValue(),
-			d_exterior(exterior_ring),
-			d_interiors(interior_rings)
+			d_polygon(polygon_)
 		{  }
 
 
@@ -288,35 +187,12 @@ namespace GPlatesPropertyValues
 		GmlPolygon(
 				const GmlPolygon &other):
 			PropertyValue(other), /* share instance id */
-			d_exterior(other.d_exterior),
-			d_interiors(other.d_interiors)
+			d_polygon(other.d_polygon)
 		{  }
 
 	private:
 
-		/**
-		 * This is the GPlatesMaths::PolygonOnSphere which defines the exterior ring of this
-		 * GmlPolygon. A GmlPolygon contains exactly one exterior ring, and zero or more interior
-		 * rings.
-		 *
-		 * Note that this conflicts with the ESRI Shapefile definition which allows for multiple
-		 * exterior rings.
-		 *
-		 * Also note that the GPlates model creates polygons by implicitly joining the first and last
-		 * vertex fed to it; supplying three points creates a triangle, four points creates a
-		 * quadrilateral. In contrast, the ESRI Shapefile spec and GML Polygons are supposed to be
-		 * read from disk and written to disk with the first and last vertices coincident - four
-		 * points creates a triangle, and three points are invalid. This is especially important
-		 * to keep in mind as GPlates cannot create a GreatCircleArc between coincident points.
-		 */
-		ring_type d_exterior;
-		
-		/**
-		 * This is the sequence of GPlatesMaths::PolygonOnSphere which defines the interior ring(s)
-		 * of this GmlPolygon.  A GmlPolygon contains exactly one exterior ring, and zero or more
-		 * interior rings.
-		 */
-		ring_sequence_type d_interiors;
+		internal_polygon_type d_polygon;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -38,6 +38,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/CubeQuadTreePartitionUtils.h"
+#include "maths/MathsUtils.h"
 #include "maths/types.h"
 
 #include "utils/Profile.h"
@@ -78,6 +79,10 @@ namespace GPlatesAppLogic
 		}
 	}
 }
+
+
+const double GPlatesAppLogic::ReconstructLayerProxy::POLYGON_MESH_EDGE_LENGTH_THRESHOLD_RADIANS =
+		GPlatesMaths::convert_deg_to_rad(5);
 
 
 GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
@@ -531,7 +536,9 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_polygon_meshes()
 			// Create the polygon mesh from the present day geometry.
 			// Note that the returned polygon mesh could be boost::none (but we add it anyway).
 			present_day_polygon_meshes.push_back(
-					GPlatesMaths::PolygonMesh::create(present_day_geometry));
+					GPlatesMaths::PolygonMesh::create(
+							present_day_geometry,
+							POLYGON_MESH_EDGE_LENGTH_THRESHOLD_RADIANS));
 		}
 	}
 

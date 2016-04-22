@@ -349,14 +349,14 @@ namespace
 	format_geometry_polygon(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
 	{
-		QString begin_str = format_point_or_vertex(polygon->first_vertex());
-		QString end_str = format_point_or_vertex(polygon->last_vertex());
+		QString begin_str = format_point_or_vertex(polygon->first_exterior_ring_vertex());
+		QString end_str = format_point_or_vertex(polygon->last_exterior_ring_vertex());
 		QString middle_str;
-		if (polygon->number_of_vertices() == 3) {
+		if (polygon->number_of_vertices_in_exterior_ring() == 3) {
 			middle_str = QObject::tr("... 1 more vertex ... ");
-		} else if (polygon->number_of_vertices() > 3) {
+		} else if (polygon->number_of_vertices_in_exterior_ring() > 3) {
 			middle_str = QObject::tr("... %1 more vertices ... ")
-					.arg(polygon->number_of_vertices() - 2);
+					.arg(polygon->number_of_vertices_in_exterior_ring() - 2);
 		}
 		return QObject::tr("polygon: %1 %3%2")
 				.arg(begin_str)

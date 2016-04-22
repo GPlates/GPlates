@@ -312,11 +312,10 @@ namespace GPlatesAppLogic
 			visit_gml_polygon(
 					GPlatesPropertyValues::GmlPolygon &gml_polygon)
 			{
-				// TODO: Add interior polygons when PolygonOnSphere contains interior polygons.
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_polygon.exterior()));
+								gml_polygon.polygon()));
 			}
 
 			virtual

@@ -403,19 +403,31 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 	GPlatesModel::XmlElementNode::non_null_ptr_type
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
+	typedef boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> > ring_type;
+
 	// GmlPolygon has exactly one exterior gml:LinearRing
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		exterior = find_and_create_one(elem, &create_linear_ring, EXTERIOR, gpml_version, read_errors);
+	ring_type exterior_ring = find_and_create_one(elem, &create_linear_ring, EXTERIOR, gpml_version, read_errors);
 
 	// GmlPolygon has zero or more interior gml:LinearRing
-	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> interiors;
-	find_and_create_zero_or_more(
-			elem, &create_linear_ring, INTERIOR, interiors, gpml_version, read_errors);
+	std::vector<ring_type> interior_rings;
+	find_and_create_zero_or_more(elem, &create_linear_ring, INTERIOR, interior_rings, gpml_version, read_errors);
+
+	const std::vector<GPlatesMaths::PointOnSphere> &exterior = *exterior_ring;
+
+	// 'PolygonOnSphere::create_on_heap()' requires interior rings that are sequences (not intrusive_ptrs of sequence)
+	// so convert without copying all the interior points (instead swap them).
+	std::vector< std::vector<GPlatesMaths::PointOnSphere> > interiors(interior_rings.size());
+	for (unsigned int interior_index = 0; interior_index < interior_rings.size(); ++interior_index)
+	{
+		interiors[interior_index].swap(*interior_rings[interior_index]);
+	}
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
+			GPlatesMaths::PolygonOnSphere::create_on_heap(exterior, interiors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
-	return GPlatesPropertyValues::GmlPolygon::create<
-			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> >(exterior, interiors);
+	return GPlatesPropertyValues::GmlPolygon::create(polygon);
 }
 
 

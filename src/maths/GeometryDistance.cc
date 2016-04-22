@@ -1252,7 +1252,7 @@ GPlatesMaths::minimum_distance(
 		boost::optional<UnitVector3D &> closest_position_on_polygon_outline,
 		boost::optional<unsigned int &> closest_segment_index_in_polygon)
 {
-	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_exterior_ring_bounding_tree();
 
 	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
 			polygon_bounding_tree.get_root_node();
@@ -1711,7 +1711,7 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polyline*/, unsigned int &/*polygon*/> > closest_segment_indices)
 {
 	const PolylineOnSphere::bounding_tree_type &polyline_bounding_tree = polyline.get_bounding_tree();
-	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_exterior_ring_bounding_tree();
 
 	const PolylineOnSphere::bounding_tree_type::node_type polyline_bounding_tree_root_node =
 			polyline_bounding_tree.get_root_node();
@@ -1894,8 +1894,8 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*polygon1*/, UnitVector3D &/*polygon2*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*polygon1*/, unsigned int &/*polygon2*/> > closest_segment_indices)
 {
-	const PolygonOnSphere::bounding_tree_type &polygon1_bounding_tree = polygon1.get_bounding_tree();
-	const PolygonOnSphere::bounding_tree_type &polygon2_bounding_tree = polygon2.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon1_bounding_tree = polygon1.get_exterior_ring_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon2_bounding_tree = polygon2.get_exterior_ring_bounding_tree();
 
 	const PolygonOnSphere::bounding_tree_type::node_type polygon1_bounding_tree_root_node =
 			polygon1_bounding_tree.get_root_node();
@@ -1949,7 +1949,7 @@ GPlatesMaths::minimum_distance(
 		// If polygon2 is completely inside polygon1 then we only need to test if one of
 		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
 		// polygon2 did not intersect polygon1's boundary).
-		if (polygon1.is_point_in_polygon(polygon2.first_vertex()/*arbitrary*/))
+		if (polygon1.is_point_in_polygon(polygon2.first_exterior_ring_vertex()/*arbitrary*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -1995,7 +1995,7 @@ GPlatesMaths::minimum_distance(
 		// If polygon1 is completely inside polygon2 then we only need to test if one of
 		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
 		// polygon1 did not intersect polygon2's boundary).
-		if (polygon2.is_point_in_polygon(polygon1.first_vertex()/*arbitrary*/))
+		if (polygon2.is_point_in_polygon(polygon1.first_exterior_ring_vertex()/*arbitrary*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)

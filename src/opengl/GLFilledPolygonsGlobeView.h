@@ -205,7 +205,7 @@ namespace GPlatesOpenGL
 			void
 			add_filled_polygon(
 					const GPlatesMaths::PolygonOnSphere &polygon,
-					const GPlatesGui::Colour &colour,
+					GPlatesGui::rgba8_t rgba8_color,
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
@@ -217,7 +217,7 @@ namespace GPlatesOpenGL
 			void
 			add_filled_polygon(
 					const GPlatesMaths::PolylineOnSphere &polyline,
-					const GPlatesGui::Colour &colour,
+					GPlatesGui::rgba8_t rgba8_color,
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
@@ -249,7 +249,7 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::PointOnSphere &vertex1,
 					const GPlatesMaths::PointOnSphere &vertex2,
 					const GPlatesMaths::PointOnSphere &vertex3,
-					const GPlatesGui::Colour &colour);
+					GPlatesGui::rgba8_t rgba8_color);
 
 		private:
 			/**
@@ -307,24 +307,27 @@ namespace GPlatesOpenGL
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
-			 * Adds a polygon as a fan mesh (with the polygon centroid as the fan apex).
+			 * Adds a polygon ring as a fan mesh (with the polygon centroid as the fan apex).
 			 *
 			 * Adds a sequence of @a PointOnSphere points as vertices/indices in global vertex array.
 			 */
 			template <typename PointOnSphereForwardIter>
 			void
-			add_polygon_mesh_to_current_filled_drawable(
+			add_polygon_ring_mesh_to_current_filled_drawable(
 					const PointOnSphereForwardIter begin_points,
 					const unsigned int num_points,
 					const GPlatesMaths::UnitVector3D &centroid,
-					const GPlatesGui::rgba8_t &colour)
+					GPlatesGui::rgba8_t rgba8_color)
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						d_current_drawable,
 						GPLATES_ASSERTION_SOURCE);
 
+				// Alpha blending will be set up for pre-multiplied alpha.
+				const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_colour = pre_multiply_alpha(rgba8_color);
+
 				//
-				// Create the OpenGL coloured vertices for the filled polygon (fan) mesh.
+				// Create the OpenGL coloured vertices for the filled polygon ring (fan) mesh.
 				//
 
 				const GLsizei initial_vertex_elements_size = d_drawable_vertex_elements.size();
@@ -332,14 +335,15 @@ namespace GPlatesOpenGL
 				drawable_vertex_element_type vertex_index = base_vertex_index;
 
 				// First vertex is the centroid.
-				d_drawable_vertices.push_back(drawable_vertex_type(centroid, colour));
+				d_drawable_vertices.push_back(drawable_vertex_type(centroid, pre_multiplied_alpha_rgba8_colour));
 				++vertex_index;
 
 				// The remaining vertices form the boundary.
 				PointOnSphereForwardIter points_iter = begin_points;
 				for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++points_iter)
 				{
-					d_drawable_vertices.push_back(drawable_vertex_type(points_iter->position_vector(), colour));
+					d_drawable_vertices.push_back(
+							drawable_vertex_type(points_iter->position_vector(), pre_multiplied_alpha_rgba8_colour));
 
 					d_drawable_vertex_elements.push_back(base_vertex_index); // Centroid.
 					d_drawable_vertex_elements.push_back(vertex_index); // Current boundary point.
@@ -348,7 +352,7 @@ namespace GPlatesOpenGL
 
 				// Wraparound back to the first boundary vertex to close off the polygon.
 				d_drawable_vertices.push_back(
-						drawable_vertex_type(begin_points->position_vector(), colour));
+						drawable_vertex_type(begin_points->position_vector(), pre_multiplied_alpha_rgba8_colour));
 
 				// Update the current filled drawable.
 				d_current_drawable->end = vertex_index;

@@ -142,7 +142,6 @@ GPlatesUnitTest::CoregTest::test(double time)
 	ReconstructUtils::reconstruct(
 			reconstructed_seeds,
 			time,
-			0, //anchor plate
 			reconstruct_method_registry,
 			d_seed_fc,
 			reconstruction_tree_creator);
@@ -152,14 +151,11 @@ GPlatesUnitTest::CoregTest::test(double time)
 	ReconstructUtils::reconstruct(
 			reconstructed_coreg,
 			time,
-			0, //anchor plate
 			reconstruct_method_registry,
 			d_coreg_fc,
 			reconstruction_tree_creator);
 
-	CoRegistrationData::non_null_ptr_type data_ptr =
-			CoRegistrationData::create(
-					reconstruction_tree_creator.get_reconstruction_tree(time, 0/*anchor_plate_id*/));
+	CoRegistrationData::non_null_ptr_type data_ptr = CoRegistrationData::create(time);
 
 	CoRegConfigurationTable input_table;
 	populate_cfg_table(input_table,cfg_file);

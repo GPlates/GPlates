@@ -244,6 +244,16 @@ namespace GPlatesGui
 
 
 	/**
+	 * Return a colour with the RGB components multiplied by the alpha component.
+	 *
+	 * This is used in some alpha-blended rendering scenarios to avoid double-blending artifacts.
+	 */
+	rgba8_t
+	pre_multiply_alpha(
+			rgba8_t rgba8_color);
+
+
+	/**
 	 * Writes a single @a rgba8_t pixel to the output stream.
 	 *
 	 * NOTE: It is *much* faster to use @a output_pixels instead.
@@ -467,6 +477,8 @@ namespace GPlatesGui
 		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
 		 * interpreted as where the returned colour lies in the range between the
 		 * first colour and the second colour.
+		 *
+		 * NOTE: The alpha values are ignored (the alpha of the returned colour is 1.0).
 		 */
 		static
 		Colour
@@ -483,6 +495,16 @@ namespace GPlatesGui
 		modulate(
 				const Colour &first,
 				const Colour &second);
+
+		/**
+		 * Return a colour with the RGB components multiplied by the alpha component.
+		 *
+		 * This is used in some alpha-blended rendering scenarios to avoid double-blending artifacts.
+		 */
+		static
+		Colour
+		pre_multiply_alpha(
+				const Colour &colour);
 
 		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,

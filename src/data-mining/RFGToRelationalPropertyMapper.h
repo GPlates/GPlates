@@ -31,7 +31,6 @@
 #include <boost/foreach.hpp>
 
 #include "CoRegMapper.h"
-#include "DualGeometryVisitor.h"
 #include "Types.h"
 #include "DataMiningUtils.h"
 

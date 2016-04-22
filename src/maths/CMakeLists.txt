@@ -15,10 +15,13 @@ set(srcs
     AngularDistance.h
     AngularExtent.cc
     AngularExtent.h
+    AzimuthalEqualAreaProjection.cc
+    AzimuthalEqualAreaProjection.h
     CalculateVelocity.cc
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
+    Centroid.cc
     Centroid.h
     ConstGeometryOnSphereVisitor.h
     CubeCoordinateFrame.cc
@@ -44,6 +47,8 @@ set(srcs
     GeometryInterpolation.h
     GeometryOnSphere.h
     GeometryType.h
+    GnomonicProjection.cc
+    GnomonicProjection.h
     GreatCircle.cc
     GreatCircle.h
     GreatCircleArc.cc
@@ -95,8 +100,6 @@ set(srcs
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
-    ProjectionUtils.cc
-    ProjectionUtils.h
     ProximityCriteria.cc
     ProximityCriteria.h
     ProximityHitDetail.cc
@@ -116,7 +119,6 @@ set(srcs
     SmallCircleCoverageMesh.cc
     SmallCircleCoverageMesh.h
     SmallCircleProximityHitDetail.h
-    SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
     TrailingLatLonCoordinateException.cc

@@ -109,8 +109,8 @@ namespace GPlatesViewOperations
 			{
 				d_undo_operation = d_geom_builder->set_geometry(
 						GPlatesMaths::GeometryType::POLYGON,
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end());
 			}
 
 			virtual

@@ -30,6 +30,9 @@
 #ifndef GPLATES_FILEIO_OGRREADER_H
 #define GPLATES_FILEIO_OGRREADER_H
 
+#include <list>
+#include <vector>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #ifdef HAVE_CONFIG_H
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
@@ -233,14 +236,15 @@ namespace GPlatesFileIO
 		create_polygon_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &exterior_ring,
+				const std::list< std::vector<GPlatesMaths::PointOnSphere> > &interior_rings,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_line_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
@@ -254,7 +258,7 @@ namespace GPlatesFileIO
 		create_multi_point_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		void
@@ -282,7 +286,7 @@ namespace GPlatesFileIO
 		void
 		add_ring_to_points_list(
 				OGRLinearRing *ring,
-				std::list<GPlatesMaths::PointOnSphere> &list,
+				std::vector<GPlatesMaths::PointOnSphere> &ring_points,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);

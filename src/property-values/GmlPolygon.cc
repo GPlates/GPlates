@@ -30,6 +30,17 @@
 #include "GmlPolygon.h"
 
 
+const GPlatesPropertyValues::GmlPolygon::non_null_ptr_type
+GPlatesPropertyValues::GmlPolygon::create(
+		const internal_polygon_type &polygon_)
+{
+	// Because PolygonOnSphere can only ever be handled via a non_null_ptr_to_const_type,
+	// there is no way a PolygonOnSphere instance can be changed.  Hence, it is safe to store
+	// a pointer to the instance which was passed into this 'create' function.
+	return non_null_ptr_type(new GmlPolygon(polygon_));
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GmlPolygon::print_to(
 		std::ostream &os) const

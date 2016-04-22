@@ -362,16 +362,39 @@ GPlatesMaths::operator*(
 		const Rotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
-	std::vector<PointOnSphere> rotated_points;
-	rotated_points.reserve(p->number_of_vertices());
+	std::vector<PointOnSphere> rotated_exterior_ring;
+	rotated_exterior_ring.reserve(p->number_of_vertices_in_exterior_ring());
 
-	PolygonOnSphere::vertex_const_iterator iter = p->vertex_begin();
-	PolygonOnSphere::vertex_const_iterator end = p->vertex_end();
-	for ( ; iter != end; ++iter) {
-		rotated_points.push_back(r * (*iter));
+	// Rotate the exterior ring.
+	PolygonOnSphere::ring_vertex_const_iterator exterior_iter = p->exterior_ring_vertex_begin();
+	PolygonOnSphere::ring_vertex_const_iterator exterior_end = p->exterior_ring_vertex_end();
+	for ( ; exterior_iter != exterior_end; ++exterior_iter)
+	{
+		rotated_exterior_ring.push_back(PointOnSphere(r * exterior_iter->position_vector()));
 	}
 
-	return PolygonOnSphere::create_on_heap(rotated_points);
+	const unsigned int num_interior_rings = p->number_of_interior_rings();
+	if (num_interior_rings == 0)
+	{
+		return PolygonOnSphere::create_on_heap(rotated_exterior_ring);
+	}
+
+	std::vector< std::vector<PointOnSphere> > rotated_interior_rings(num_interior_rings);
+
+	// Rotate the interior rings.
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; interior_ring_index++)
+	{
+		rotated_interior_rings[interior_ring_index].reserve(p->number_of_vertices_in_interior_ring(interior_ring_index));
+
+		PolygonOnSphere::ring_vertex_const_iterator interior_iter = p->interior_ring_vertex_begin(interior_ring_index);
+		PolygonOnSphere::ring_vertex_const_iterator interior_end = p->interior_ring_vertex_end(interior_ring_index);
+		for ( ; interior_iter != interior_end; ++interior_iter)
+		{
+			rotated_interior_rings[interior_ring_index].push_back(PointOnSphere(r * interior_iter->position_vector()));
+		}
+	} // loop over interior rings
+
+	return PolygonOnSphere::create_on_heap(rotated_exterior_ring, rotated_interior_rings);
 }
 
 

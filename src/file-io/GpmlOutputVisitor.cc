@@ -172,12 +172,13 @@ namespace
 	
 	
 	/**
-	 * Convenience function to help write GmlPolygon's exterior and interior rings.
+	 * Convenience function to help write PolygonOnSphere's exterior and interior rings.
 	 */
 	void
 	write_gml_linear_ring(
 			GPlatesFileIO::XmlWriter &xml_output,
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end)
 	{
 		xml_output.writeStartGmlElement("LinearRing");
 	
@@ -209,14 +210,12 @@ namespace
 		//   (one for each segment start-point, plus one for the final end-point
 		//   (all other end-points are the start-point of the next segment, so are not counted)),
 		//   times two, since each point is a (lat, lon) duple.
-		pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
+		pos_list.reserve((std::distance(ring_begin, ring_end) + 1) * 2);
 	
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator begin = polygon_ptr->vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = begin;
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
-		for ( ; iter != end; ++iter) 
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_iter = ring_begin;
+		for ( ; ring_iter != ring_end; ++ring_iter) 
 		{
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*ring_iter);
 	
 			// NOTE: We are assuming GPML is using (lat,lon) ordering.
 			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
@@ -225,9 +224,14 @@ namespace
 		}
 		// When writing gml:Polygons, the last point must be identical to the first point,
 		// because the format wasn't verbose enough.
-		GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*begin);
-		pos_list.push_back(begin_llp.latitude());
-		pos_list.push_back(begin_llp.longitude());
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_last_point_iter = ring_end;
+		--ring_last_point_iter;
+		if (*ring_last_point_iter != *ring_begin)
+		{
+			GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*ring_begin);
+			pos_list.push_back(begin_llp.latitude());
+			pos_list.push_back(begin_llp.longitude());
+		}
 		
 		// Now that we have assembled the coordinates, write them into the XML.
 		xml_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
@@ -991,17 +995,23 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_polygon(
 {
 	d_output.writeStartGmlElement("Polygon");
 	
-	// GmlPolygon has exactly one exterior ring.
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon = gml_polygon.polygon();
+
+	// The polygon has exactly one exterior ring.
 	d_output.writeStartGmlElement("exterior");
-	write_gml_linear_ring(d_output, gml_polygon.exterior());
+	write_gml_linear_ring(d_output, polygon->exterior_ring_vertex_begin(), polygon->exterior_ring_vertex_end());
 	d_output.writeEndElement(); // </gml:exterior>
 	
-	// GmlPolygon has zero or more interior rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-	for ( ; it != end; ++it) {
+	// The polygon has zero or more interior rings.
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon->number_of_interior_rings();
+		++interior_ring_index)
+	{
 		d_output.writeStartGmlElement("interior");
-		write_gml_linear_ring(d_output, *it);
+		write_gml_linear_ring(
+				d_output,
+				polygon->interior_ring_vertex_begin(interior_ring_index),
+				polygon->interior_ring_vertex_end(interior_ring_index));
 		d_output.writeEndElement(); // </gml:interior>
 	}
 

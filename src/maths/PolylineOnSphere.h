@@ -31,7 +31,7 @@
 #ifndef GPLATES_MATHS_POLYLINEONSPHERE_H
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
-#include <algorithm>  // std::swap
+#include <algorithm>
 #include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <utility>  // std::pair
 #include <vector>
@@ -92,33 +92,25 @@ namespace GPlatesMaths
 	 * you subsequently iterate through the vertices of this polyline, you
 	 * will get the same sequence of points back again: A, B, C, D.
 	 *
-	 * Note that PolylineOnSphere does have mutators (non-const member functions
-	 * which enable the modification of the class internals), in particular
-	 * the copy-assignment operator.
+	 * Note that PolylineOnSphere does *not* have mutators (non-const member functions
+	 * which enable the modification of the class internals).
 	 */
 	class PolylineOnSphere:
 			public GeometryOnSphere
 	{
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>.
 		 * 
 		 * Note that this typedef is indeed meant to be private.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> non_null_ptr_to_const_type;
 
 
 		/**
@@ -381,10 +373,8 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The possible return values from the construction-parameter
-		 * validation functions
-		 * @a evaluate_construction_parameter_validity and
-		 * @a evaluate_segment_endpoint_validity.
+		 * The possible return values from the construction-parameter validation function
+		 * @a evaluate_construction_parameter_validity.
 		 */
 		enum ConstructionParameterValidity
 		{
@@ -415,13 +405,6 @@ namespace GPlatesMaths
 		 * fairly unsympathetic if your parameters @em do turn out to
 		 * be invalid.
 		 *
-		 * @a invalid_points is a return-parameter; if the
-		 * construction-parameters are found to be invalid due to
-		 * antipodal adjacent points, the value of this return-parameter
-		 * will be set to the pair of iterator of type PointForwardIter which
-		 * point to the guilty points.  If no adjacent points are found
-		 * to be antipodal, this parameter will not be modified.
-		 *
 		 * If @a check_distinct_points is 'true' then the sequence of points
 		 * is validated for insufficient *distinct* points, otherwise it is validated
 		 * for insufficient points (regardless of whether they are distinct or not).
@@ -429,80 +412,29 @@ namespace GPlatesMaths
 		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient *indistinct* points.
 		 */
-		template<typename PointForwardIter>
+		template <typename PointForwardIter>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
 				PointForwardIter begin,
 				PointForwardIter end,
-				std::pair<PointForwardIter, PointForwardIter> &invalid_points,
 				bool check_distinct_points = false);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
 		 *
-		 * What this actually means in plain(er) English is that you
-		 * can use this function to check whether you would be able to
-		 * construct a polyline instance from a given set of parameters
-		 * (ie, your collection of points in @a coll).
-		 *
-		 * If you pass this function what turns out to be invalid
-		 * construction-parameters, it will politely return an error
-		 * diagnostic.  If you were to pass these same invalid
-		 * parameters to the creation functions down below, you would
-		 * get an exception thrown back at you.
-		 *
-		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (no antipodal adjacent points;
-		 * at least two distinct points in the collection -- nothing
-		 * particularly unreasonable) but the creation functions are
-		 * fairly unsympathetic if your parameters @em do turn out to
-		 * be invalid.
-		 *
 		 * @a coll should be a sequential STL container (list, vector,
 		 * ...) of PointOnSphere.
-		 *
-		 * @a invalid_points is a return-parameter; if the
-		 * construction-parameters are found to be invalid due to
-		 * antipodal adjacent points, the value of this return-parameter
-		 * will be set to the pair of const_iterators of @a coll which
-		 * point to the guilty points.  If no adjacent points are found
-		 * to be antipodal, this parameter will not be modified.
-		 *
-		 * If @a check_distinct_points is 'true' then the sequence of points
-		 * is validated for insufficient *distinct* points, otherwise it is validated
-		 * for insufficient points (regardless of whether they are distinct or not).
-		 * Distinct points are points that are separated by an epsilon distance (any
-		 * points within epsilon distance from each other are counted as one point).
-		 * The default is to validate for insufficient *indistinct* points.
 		 */
-		template<typename C>
+		template <typename C>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
 				const C &coll,
-				std::pair<typename C::const_iterator, typename C::const_iterator> & invalid_points,
 				bool check_distinct_points = false)
 		{
-			return evaluate_construction_parameter_validity(
-					coll.begin(), coll.end(), invalid_points, check_distinct_points);
+			return evaluate_construction_parameter_validity(coll.begin(), coll.end(), check_distinct_points);
 		}
-
-
-		/**
-		 * Evaluate the validity of the points @a p1 and @a p2 for use
-		 * in the creation of a polyline line-segment.
-		 *
-		 * You won't ever @em need to call this function
-		 * (@a evaluate_construction_parameter_validity will do all the
-		 * calling for you), but it's here in case you ever, you know,
-		 * @em want to...
-		 */
-		static
-		ConstructionParameterValidity
-		evaluate_segment_endpoint_validity(
-				const PointOnSphere &p1,
-				const PointOnSphere &p2);
 
 
 		/**
@@ -516,12 +448,9 @@ namespace GPlatesMaths
 		 * Distinct points are points that are separated by an epsilon distance (ie, any
 		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient *indistinct* points.
-		 *
-		 * This flag is 'false' by default but should be set to 'true' whenever data is loaded
-		 * into GPlates (ie, at any input to GPlates such as file IO). This flag was added to
-		 * prevent exceptions being thrown when reconstructing very small polylines containing only
-		 * a few points (eg, a polyline with 4 points might contain 2 distinct points when it's
-		 * loaded from a file but, due to numerical precision, contain only 1 distinct point after
+		 * This flag was added to prevent exceptions being thrown when reconstructing very small polylines
+		 * containing only a few points (eg, a polyline with 4 points might contain 2 distinct points when
+		 * it's loaded from a file but, due to numerical precision, contain only 1 distinct point after
 		 * it is rotated to a new polyline thus raising an exception when one it not really needed
 		 * or desired - because the polyline was good enough to load into GPlates therefore any
 		 * rotation of it should also be successful).
@@ -573,10 +502,7 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(
-					new PolylineOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return GeometryOnSphere::non_null_ptr_to_const_type(new PolylineOnSphere(*this));
 		}
 
 
@@ -589,10 +515,7 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_polyline() const
 		{
-			non_null_ptr_to_const_type dup(
-					new PolylineOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return non_null_ptr_to_const_type(new PolylineOnSphere(*this));
 		}
 
 
@@ -636,26 +559,6 @@ namespace GPlatesMaths
 		void
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const;
-
-
-		/**
-		 * Copy-assign the value of @a other to this.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 *
-		 * This copy-assignment operator should act exactly the same as the default
-		 * (auto-generated) copy-assignment operator would, except that it should not
-		 * assign the ref-count of @a other to this.
-		 */
-		PolylineOnSphere &
-		operator=(
-				const PolylineOnSphere &other)
-		{
-			// Use the copy+swap idiom to enable strong exception safety.
-			PolylineOnSphere dup(other);
-			this->swap(dup);
-			return *this;
-		}
 
 
 		/**
@@ -785,21 +688,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Swap the contents of this polyline with @a other.
-		 *
-		 * This function does not throw.
-		 */
-		void
-		swap(
-				PolylineOnSphere &other)
-		{
-			// Obviously, we should not swap the ref-counts of the instances.
-			d_seq.swap(other.d_seq);
-			d_cached_calculations.swap(other.d_cached_calculations);
-		}
-
-
-		/**
 		 * Evaluate whether @a test_point is "close" to this polyline.
 		 *
 		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
@@ -913,6 +801,24 @@ namespace GPlatesMaths
 				const PolylineOnSphere &other);
 
 
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment.
+		PolylineOnSphere &
+		operator=(
+				const PolylineOnSphere &other);
+
+
+		/**
+		 * Evaluate the validity of the points @a p1 and @a p2 for use
+		 * in the creation of a polyline line-segment.
+		 */
+		static
+		ConstructionParameterValidity
+		evaluate_segment_endpoint_validity(
+				const PointOnSphere &p1,
+				const PointOnSphere &p2);
+
+
 		/**
 		 * Generate a sequence of polyline segments from the sequence
 		 * of points in the range @a begin / @a end, using the points to
@@ -1020,7 +926,6 @@ namespace GPlatesMaths
 	PolylineOnSphere::evaluate_construction_parameter_validity(
 			PointForwardIter begin,
 			PointForwardIter end,
-			std::pair<PointForwardIter, PointForwardIter> &invalid_points,
 			bool check_distinct_points)
 	{
 		const unsigned num_points =
@@ -1063,8 +968,6 @@ namespace GPlatesMaths
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 
-				invalid_points.first = prev;
-				invalid_points.second = iter;
 				return v;
 			}
 		}
@@ -1081,8 +984,7 @@ namespace GPlatesMaths
 			PointForwardIter end,
 			bool check_distinct_points)
 	{
-		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
-				GPlatesUtils::NullIntrusivePointerHandler());
+		non_null_ptr_type ptr(new PolylineOnSphere());
 		generate_segments_and_swap(*ptr, begin, end, check_distinct_points);
 		return ptr;
 	}
@@ -1141,14 +1043,12 @@ namespace GPlatesMaths
 			PointForwardIter end,
 			bool check_distinct_points)
 	{
-		std::pair<PointForwardIter, PointForwardIter> invalid_points;
 		// NOTE: We ignore determination of insufficient distinct points if we are *not*
 		// throwing an exception for it.
 		ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(
 						begin,
 						end,
-						invalid_points,
 						check_distinct_points);
 		if (v != VALID)
 		{
@@ -1204,31 +1104,6 @@ namespace GPlatesMaths
 
 		// Create the final concatenated polyline.
 		return PolylineOnSphere::create_on_heap(all_points.begin(), all_points.end());
-	}
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_PolylineOnSphere();
-
-}
-
-namespace std
-{
-	/**
-	 * This is a template specialisation of the standard function @a swap.
-	 *
-	 * See Josuttis, section 4.4.2, "Swapping Two Values", for more information.
-	 */
-	template<>
-	inline
-	void
-	swap<GPlatesMaths::PolylineOnSphere>(
-			GPlatesMaths::PolylineOnSphere &p1,
-			GPlatesMaths::PolylineOnSphere &p2)
-	{
-		p1.swap(p2);
 	}
 }
 

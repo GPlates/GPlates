@@ -211,7 +211,7 @@ namespace GPlatesAppLogic
 					const GPlatesModel::PropertyName &range_property_name = range_property_name_opt.get();
 
 					const unsigned int num_domain_geometry_points =
-							GeometryUtils::get_num_geometry_points(*domain.geometry);
+							GeometryUtils::get_num_geometry_exterior_points(*domain.geometry);
 
 					// Search the ranges found for the matching range property name.
 					boost::optional<Range> matching_range;
@@ -262,7 +262,7 @@ namespace GPlatesAppLogic
 								if ((*remaining_domain.property)->property_name() == domain_property_name)
 								{
 									// See if the number of geometry points matches.
-									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_points(*remaining_domain.geometry))
+									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_exterior_points(*remaining_domain.geometry))
 									{
 										break;
 									}
@@ -392,7 +392,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_polygon_type &gml_polygon)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_polygon.exterior()));
+						Domain(this->current_top_level_propiter().get(), gml_polygon.polygon()));
 			}
 
 		private:

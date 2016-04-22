@@ -47,7 +47,7 @@
 #include "global/IntrusivePointerZeroRefCountException.h"
 #include "global/NotYetImplementedException.h"
 
-#include "maths/ProjectionUtils.h"
+#include "maths/AzimuthalEqualAreaProjection.h"
 
 #include "model/PropertyName.h"
 #include "model/WeakObserverVisitor.h"
@@ -77,7 +77,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 	const double t = get_reconstruction_time();
 
 	// Compute the centroid of the boundary polygon and get lat lon for projection
-	const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &projection =
+	const GPlatesMaths::AzimuthalEqualArea &projection =
 			get_delaunay_triangulation_2().get_projection();
 
 	// create and open a file and set up a Q text stream to write 

@@ -27,6 +27,8 @@
 
 #include <ostream>
 #include <sstream>
+#include <vector>
+#include <boost/shared_ptr.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "Centroid.h"
@@ -74,8 +76,10 @@ namespace GPlatesMaths
 						GPLATES_ASSERTION_SOURCE);
 			}
 
-			boost::optional<real_t> arc_length;
-			boost::optional<UnitVector3D> boundary_centroid;
+			boost::optional<real_t> exterior_ring_arc_length;
+			boost::optional< std::vector<real_t> > interior_ring_arc_lengths;
+			boost::optional<UnitVector3D> outline_centroid_including_interior_rings;
+			boost::optional<UnitVector3D> outline_centroid_excluding_interior_rings;
 			boost::optional<UnitVector3D> interior_centroid;
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
 			boost::optional<real_t> signed_area;
@@ -84,7 +88,8 @@ namespace GPlatesMaths
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
 			unsigned int num_point_in_polygon_calls;
 			boost::optional<PointInPolygon::Polygon> point_in_polygon_tester;
-			boost::optional<PolygonOnSphere::bounding_tree_type> polygon_bounding_tree;
+			boost::optional<PolygonOnSphere::bounding_tree_type> exterior_polygon_bounding_tree;
+			boost::optional< std::vector< boost::shared_ptr<PolygonOnSphere::bounding_tree_type> > > interior_polygon_bounding_trees;
 		};
 
 
@@ -115,6 +120,91 @@ namespace GPlatesMaths
 					: PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE;
 		}
 	}
+
+
+	namespace
+	{
+		void
+		is_close_to_polygon_ring(
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end,
+				const PointOnSphere &test_point,
+				const AngularExtent &closeness_angular_extent_threshold,
+				real_t &closest_closeness_so_far,
+				boost::optional<PointOnSphere> &closest_point)
+		{
+			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
+			for ( ; ring_iter != ring_end; ++ring_iter)
+			{
+				const GreatCircleArc &gca = *ring_iter;
+
+				// No need to initialise this to -1 (ie, min-dot-product).
+				real_t gca_closeness;
+
+				boost::optional<PointOnSphere> gca_closest_point =
+						gca.is_close_to(
+								test_point,
+								closeness_angular_extent_threshold,
+								gca_closeness);
+				if (gca_closest_point)
+				{
+					if (!closest_point ||
+						gca_closeness.is_precisely_greater_than(closest_closeness_so_far.dval()))
+					{
+						closest_closeness_so_far = gca_closeness;
+						closest_point = gca_closest_point.get();
+					}
+				}
+			}
+		}
+
+
+		real_t
+		calculate_ring_arc_length(
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end)
+		{
+			real_t ring_arc_length(0);
+
+			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
+			for ( ; ring_iter != ring_end; ++ring_iter)
+			{
+				const GreatCircleArc &gca = *ring_iter;
+
+				ring_arc_length += acos(gca.dot_of_endpoints());
+			}
+
+			return ring_arc_length;
+		}
+
+
+		void
+		tessellate_ring(
+				std::vector<PointOnSphere> &tessellated_ring_points,
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end,
+				const real_t &max_angular_extent)
+		{
+			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
+			for ( ; ring_iter != ring_end; ++ring_iter)
+			{
+				const GreatCircleArc &gca = *ring_iter;
+
+				// Tessellate the current great circle arc.
+				tessellate(tessellated_ring_points, gca, max_angular_extent);
+
+				// Remove the tessellated arc's end point.
+				// Otherwise the next arc's start point will duplicate it.
+				//
+				// NOTE: We also remove the *last* arc's end point because otherwise the start point
+				// of the *first* arc will duplicate it.
+				//
+				// Tessellating a great circle arc should always add at least two points.
+				// So we should always be able to remove one point (the arc end point).
+				tessellated_ring_points.pop_back();
+			}
+		}
+	}
 }
 
 
@@ -141,7 +231,8 @@ GPlatesMaths::PolygonOnSphere::PolygonOnSphere() :
 GPlatesMaths::PolygonOnSphere::PolygonOnSphere(
 		const PolygonOnSphere &other) :
 	GeometryOnSphere(),
-	d_seq(other.d_seq),
+	d_exterior_ring(other.d_exterior_ring),
+	d_interior_rings(other.d_interior_rings),
 	// Since PolygonOnSphere is immutable we can just share the cached calculations.
 	d_cached_calculations(other.d_cached_calculations)
 {
@@ -161,18 +252,17 @@ GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 
 	// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly enabled by
 	// "-Wall"), will help to ensure that no cases are missed.
-	switch (cpv) {
-
+	switch (cpv)
+	{
 	case GreatCircleArc::VALID:
-
 		// Continue after switch block so that we don't get warnings
 		// about "control reach[ing] end of non-void function".
 		break;
 
 	case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
-
 		return INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
 	}
+
 	return VALID;
 }
 
@@ -186,12 +276,15 @@ GPlatesMaths::PolygonOnSphere::test_proximity(
 	// a segment was hit).
 
 	real_t closeness;  // Don't bother initialising this.
-	if (this->is_close_to(criteria.test_point(), criteria.closeness_angular_extent_threshold(), closeness)) {
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_angular_extent_threshold(), closeness))
+	{
 		// OK, this polygon is close to the test point.
 		return make_maybe_null_ptr(PolygonProximityHitDetail::create(
 				this->get_non_null_pointer(),
 				closeness.dval()));
-	} else {
+	}
+	else
+	{
 		return ProximityHitDetail::null;
 	}
 }
@@ -199,11 +292,11 @@ GPlatesMaths::PolygonOnSphere::test_proximity(
 
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::PolygonOnSphere::test_vertex_proximity(
-	const ProximityCriteria &criteria) const
+		const ProximityCriteria &criteria) const
 {
-	vertex_const_iterator 
-		v_it = vertex_begin(),
-		v_end = vertex_end();
+	ring_vertex_const_iterator 
+		v_it = exterior_ring_vertex_begin(),
+		v_end = exterior_ring_vertex_end();
 
 	real_t closeness;
 	real_t closest_closeness_so_far = 0.;
@@ -257,68 +350,107 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
 	boost::optional<PointOnSphere> closest_point;
 
-	const_iterator iter = begin(), the_end = end();
-	for ( ; iter != the_end; ++iter)
+	is_close_to_polygon_ring(
+			exterior_ring_begin(),
+			exterior_ring_end(),
+			test_point,
+			closeness_angular_extent_threshold,
+			closest_closeness_so_far,
+			closest_point);
+
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < number_of_interior_rings();
+		++interior_ring_index)
 	{
-		const GreatCircleArc &the_gca = *iter;
-
-		// No need to initialise this - to -1 (ie, min-dot-product).
-		real_t gca_closeness;
-
-		boost::optional<PointOnSphere> gca_closest_point =
-				the_gca.is_close_to(
-						test_point,
-						closeness_angular_extent_threshold,
-						gca_closeness);
-		if (gca_closest_point)
-		{
-			if (closest_point)
-			{
-				if (gca_closeness.is_precisely_greater_than(closest_closeness_so_far.dval()))
-				{
-					closest_closeness_so_far = gca_closeness;
-					closest_point = gca_closest_point.get();
-				}
-				// else, do nothing.
-			}
-			else
-			{
-				closest_closeness_so_far = gca_closeness;
-				closest_point = gca_closest_point.get();
-			}
-		}
+		is_close_to_polygon_ring(
+				interior_ring_begin(interior_ring_index),
+				interior_ring_end(interior_ring_index),
+				test_point,
+				closeness_angular_extent_threshold,
+				closest_closeness_so_far,
+				closest_point);
 	}
 
 	return closest_point;
 }
 
 
-const GPlatesMaths::real_t &
+GPlatesMaths::real_t
 GPlatesMaths::PolygonOnSphere::get_arc_length() const
+{
+	real_t arc_length = get_exterior_ring_arc_length();
+
+	// Handle common case where polygon has no interior rings.
+	const unsigned int num_interior_rings = number_of_interior_rings();
+	if (num_interior_rings == 0)
+	{
+		return arc_length;
+	}
+
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < num_interior_rings;
+		++interior_ring_index)
+	{
+		arc_length += get_interior_ring_arc_length(interior_ring_index);
+	}
+
+	return arc_length;
+}
+
+
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_exterior_ring_arc_length() const
 {
 	if (!d_cached_calculations)
 	{
 		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
 	}
 
-	// Calculate the total arc length if it's not cached.
-	if (!d_cached_calculations->arc_length)
+	// Calculate the total exterior arc length if it's not cached.
+	if (!d_cached_calculations->exterior_ring_arc_length)
 	{
-		real_t arc_length(0);
-
-		const_iterator gca_iter = begin();
-		const_iterator gca_end = end();
-		for ( ; gca_iter != gca_end; ++gca_iter)
-		{
-			const GreatCircleArc &gca = *gca_iter;
-
-			arc_length += acos(gca.dot_of_endpoints());
-		}
-
-		d_cached_calculations->arc_length = arc_length;
+		d_cached_calculations->exterior_ring_arc_length = calculate_ring_arc_length(
+				exterior_ring_begin(),
+				exterior_ring_end());
 	}
 
-	return d_cached_calculations->arc_length.get();
+	return d_cached_calculations->exterior_ring_arc_length.get();
+}
+
+
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_interior_ring_arc_length(
+		size_type interior_ring_index) const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	const unsigned int num_interior_rings = number_of_interior_rings();
+
+	// Calculate the total arc length of each interior ring if they're not cached.
+	if (!d_cached_calculations->interior_ring_arc_lengths)
+	{
+		d_cached_calculations->interior_ring_arc_lengths = std::vector<real_t>();
+		std::vector<real_t> &interior_arc_lengths = d_cached_calculations->interior_ring_arc_lengths.get();
+
+		interior_arc_lengths.reserve(num_interior_rings);
+
+		for (unsigned int i = 0; i < num_interior_rings; ++i)
+		{
+			interior_arc_lengths.push_back(
+					calculate_ring_arc_length(
+							interior_ring_begin(i),
+							interior_ring_end(i)));
+		}
+	}
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			interior_ring_index < num_interior_rings,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_cached_calculations->interior_ring_arc_lengths.get()[interior_ring_index];
 }
 
 
@@ -472,13 +604,47 @@ GPlatesMaths::PolygonOnSphere::get_boundary_centroid() const
 		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
 	}
 
-	// Calculate the centroid if it's not cached.
-	if (!d_cached_calculations->boundary_centroid)
+	// Calculate the centroid excluding interior rings if it's not cached.
+	if (!d_cached_calculations->outline_centroid_excluding_interior_rings)
 	{
-		d_cached_calculations->boundary_centroid = Centroid::calculate_outline_centroid(*this);
+		d_cached_calculations->outline_centroid_excluding_interior_rings =
+				Centroid::calculate_outline_centroid(*this, false/*use_interior_rings*/);
 	}
 
-	return d_cached_calculations->boundary_centroid.get();
+	return d_cached_calculations->outline_centroid_excluding_interior_rings.get();
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::PolygonOnSphere::get_outline_centroid(
+		bool use_interior_rings) const
+{
+	if (!use_interior_rings)
+	{
+		return get_boundary_centroid();
+	}
+
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the centroid including interior rings if it's not cached.
+	if (!d_cached_calculations->outline_centroid_including_interior_rings)
+	{
+		// If there are no interior rings then just re-use the boundary centroid and cache it.
+		if (number_of_interior_rings() == 0)
+		{
+			d_cached_calculations->outline_centroid_including_interior_rings = get_boundary_centroid();
+		}
+		else
+		{
+			d_cached_calculations->outline_centroid_including_interior_rings =
+					Centroid::calculate_outline_centroid(*this, true/*use_interior_rings*/);
+		}
+	}
+
+	return d_cached_calculations->outline_centroid_including_interior_rings.get();
 }
 
 
@@ -533,27 +699,67 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 
 
 const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
-GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
+GPlatesMaths::PolygonOnSphere::get_exterior_ring_bounding_tree() const
 {
 	if (!d_cached_calculations)
 	{
 		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
 	}
 
-	// Calculate the small circle bounding tree if it's not cached.
-	if (!d_cached_calculations->polygon_bounding_tree)
+	// Calculate the exterior small circle bounding tree if it's not cached.
+	if (!d_cached_calculations->exterior_polygon_bounding_tree)
 	{
 		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
 		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
-		d_cached_calculations->polygon_bounding_tree =
-				boost::in_place(
-						GPlatesUtils::get_non_null_pointer(this),
-						// Note that we ask the bounding tree *not* to keep a shared reference to us
-						// otherwise we get circular shared pointer references and a memory leak...
-						false/*keep_shared_reference_to_polygon*/);
+		//
+		// Note that we *don't* ask the bounding tree to keep a shared reference to us
+		// otherwise we get circular shared pointer references and a memory leak.
+		d_cached_calculations->exterior_polygon_bounding_tree = boost::in_place(exterior_ring_begin(), exterior_ring_end());
 	}
 
-	return d_cached_calculations->polygon_bounding_tree.get();
+	return d_cached_calculations->exterior_polygon_bounding_tree.get();
+}
+
+
+const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
+GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
+		size_type interior_ring_index) const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	const unsigned int num_interior_rings = number_of_interior_rings();
+
+	// Calculate the small circle bounding tree of each interior ring if they're not cached.
+	if (!d_cached_calculations->interior_polygon_bounding_trees)
+	{
+		typedef std::vector< boost::shared_ptr<bounding_tree_type> > bounding_tree_seq_type;
+
+		d_cached_calculations->interior_polygon_bounding_trees = bounding_tree_seq_type();
+		bounding_tree_seq_type &interior_polygon_bounding_trees =
+				d_cached_calculations->interior_polygon_bounding_trees.get();
+
+		interior_polygon_bounding_trees.reserve(num_interior_rings);
+
+		for (unsigned int i = 0; i < num_interior_rings; ++i)
+		{
+			// Note that we *don't* ask the bounding tree to keep a shared reference to us
+			// otherwise we get circular shared pointer references and a memory leak.
+			interior_polygon_bounding_trees.push_back(
+					boost::shared_ptr<bounding_tree_type>(
+							new bounding_tree_type(
+									interior_ring_begin(i),
+									interior_ring_end(i))));
+		}
+	}
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			interior_ring_index < num_interior_rings,
+			GPLATES_ASSERTION_SOURCE);
+
+	return *d_cached_calculations->interior_polygon_bounding_trees.get()[interior_ring_index];
 }
 
 
@@ -562,29 +768,39 @@ GPlatesMaths::tessellate(
 		const PolygonOnSphere &polygon,
 		const real_t &max_angular_extent)
 {
-	std::vector<PointOnSphere> tessellated_points;
+	// Tessellate the exterior ring.
+	std::vector<PointOnSphere> tessellated_exterior_ring;
+	tessellate_ring(
+			tessellated_exterior_ring,
+			polygon.exterior_ring_begin(),
+			polygon.exterior_ring_end(),
+			max_angular_extent);
 
-	PolygonOnSphere::const_iterator gca_iter = polygon.begin();
-	PolygonOnSphere::const_iterator gca_end = polygon.end();
-	for ( ; gca_iter != gca_end; ++gca_iter)
+	if (polygon.number_of_interior_rings() == 0)
 	{
-		const GreatCircleArc &gca = *gca_iter;
-
-		// Tessellate the current great circle arc.
-		tessellate(tessellated_points, gca, max_angular_extent);
-
-		// Remove the tessellated arc's end point.
-		// Otherwise the next arc's start point will duplicate it.
-		//
-		// NOTE: We also remove the *last* arc's end point because otherwise the start point
-		// of the *first* arc will duplicate it.
-		//
-		// Tessellating a great circle arc should always add at least two points.
-		// So we should always be able to remove one point (the arc end point).
-		tessellated_points.pop_back();
+		return PolygonOnSphere::create_on_heap(tessellated_exterior_ring);
 	}
 
-	return PolygonOnSphere::create_on_heap(tessellated_points);
+	// Tessellate the interior rings.
+	std::vector< std::vector<PointOnSphere> > tessellated_interior_rings;
+	tessellated_interior_rings.resize(polygon.number_of_interior_rings());
+
+	unsigned int interior_ring_index = 0;
+	PolygonOnSphere::ring_sequence_const_iterator interior_rings_iter = polygon.interior_rings_begin();
+	PolygonOnSphere::ring_sequence_const_iterator interior_rings_end = polygon.interior_rings_end();
+	for ( ; interior_rings_iter != interior_rings_end; ++interior_rings_iter, ++interior_ring_index)
+	{
+		tessellate_ring(
+				tessellated_interior_rings[interior_ring_index],
+				interior_rings_iter->begin(),
+				interior_rings_iter->end(),
+				max_angular_extent);
+	}
+
+	return PolygonOnSphere::create_on_heap(
+			tessellated_exterior_ring,
+			tessellated_interior_rings.begin(),
+			tessellated_interior_rings.end());
 }
 
 

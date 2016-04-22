@@ -693,7 +693,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*section.d_final_segment_unreversed_geom.get(),
 				polygon_points,
 				section.d_use_reverse);
@@ -804,7 +804,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the resolved line points.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*section.d_final_segment_unreversed_geom.get(),
 				resolved_line_points,
 				section.d_use_reverse);

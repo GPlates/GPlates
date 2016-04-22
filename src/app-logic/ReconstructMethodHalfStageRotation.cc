@@ -594,11 +594,10 @@ namespace GPlatesAppLogic
 			visit_gml_polygon(
 					GPlatesPropertyValues::GmlPolygon &gml_polygon)
 			{
-				// TODO: Add interior polygons when PolygonOnSphere contains interior polygons.
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_polygon.exterior()));
+								gml_polygon.polygon()));
 			}
 
 			virtual
@@ -756,35 +755,13 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_polygon.exterior(),
+								gml_polygon.polygon(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),
 								d_reconstruction_params.get_time_of_appearance(),
 								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
-					
-				// Repeat the same procedure for each of the interior rings, if any.
-				GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
-				GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-				for ( ; it != end; ++it) 
-				{
-					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_interior = *it;
-
-					const ReconstructedFeatureGeometry::non_null_ptr_type rfg_p =
-							ReconstructedFeatureGeometry::create(
-									d_reconstruction_tree,
-									d_reconstruction_tree_creator,
-									*property.handle_weak_ref(),
-									property,
-									polygon_interior,
-									d_reconstruction_rotation.get(),
-									ReconstructMethod::HALF_STAGE_ROTATION,
-									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance(),
-									d_reconstruct_handle);
-					d_reconstructed_feature_geometries.push_back(rfg_p);
-				}
 			}
 
 

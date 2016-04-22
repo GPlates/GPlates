@@ -40,12 +40,12 @@
 #include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
 
+#include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonIntersections.h"
-#include "maths/ProjectionUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
 

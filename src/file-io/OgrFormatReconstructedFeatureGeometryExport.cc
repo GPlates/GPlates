@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <vector>
 #include <QDebug>
 #include <QFile>
 #include <QStringList>
@@ -134,10 +135,9 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 		}
 
 		// Iterate through the reconstructed geometries of the current feature.
-		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_geoms.begin();
-			rfg_iter != feature_geom_group.recon_geoms.end();
-			++rfg_iter)
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter = feature_geom_group.recon_geoms.begin();
+		reconstructed_feature_geom_seq_type::const_iterator rfg_end = feature_geom_group.recon_geoms.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 			rfg->reconstructed_geometry()->accept_visitor(finder);
@@ -190,19 +190,23 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 					feature_ref,kvd_for_export);
 
 
-		// Iterate through the reconstructed geometries of the current feature and write to output.
-		// Note that this will export each geometry as a separate entry in the shapefile, even if they
-		// come from the same feature. 
-		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_geoms.begin();
-			rfg_iter != feature_geom_group.recon_geoms.end();
-			++rfg_iter)
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> reconstructed_geometries;
+
+		// Iterate through the reconstructed geometries of the current feature and collect the geometries.
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter = feature_geom_group.recon_geoms.begin();
+		reconstructed_feature_geom_seq_type::const_iterator rfg_end = feature_geom_group.recon_geoms.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
-			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rfg->reconstructed_geometry(),kvd_for_export); 
+			reconstructed_geometries.push_back(rfg->reconstructed_geometry());
 		}
+
+		// Write the reconstructed geometries as a single feature.
+		geom_exporter.export_geometries(
+				reconstructed_geometries.begin(),
+				reconstructed_geometries.end(),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(kvd_for_export)); 
 	}
 
 }
@@ -217,9 +221,6 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		const double &reconstruction_time,
 		bool wrap_to_dateline)
 {
-
-
-
 	// Iterate through the reconstructed geometries and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
@@ -246,10 +247,9 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 
 
 		// Iterate through the reconstructed geometries of the current feature.
-		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_geoms.begin();
-			rfg_iter != feature_geom_group.recon_geoms.end();
-			++rfg_iter)
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter = feature_geom_group.recon_geoms.begin();
+		reconstructed_feature_geom_seq_type::const_iterator rfg_end = feature_geom_group.recon_geoms.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 			rfg->reconstructed_geometry()->accept_visitor(finder);
@@ -324,19 +324,23 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		}
 
 
-		// Iterate through the reconstructed geometries of the current feature and write to output.
-		// Note that this will export each geometry as a separate entry in the shapefile, even if they
-		// come from the same feature. 
-		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_geoms.begin();
-			rfg_iter != feature_geom_group.recon_geoms.end();
-			++rfg_iter)
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> reconstructed_geometries;
+
+		// Iterate through the reconstructed geometries of the current feature and collect the geometries.
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter = feature_geom_group.recon_geoms.begin();
+		reconstructed_feature_geom_seq_type::const_iterator rfg_end = feature_geom_group.recon_geoms.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
-			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rfg->reconstructed_geometry(),kvd_for_export); 
+			reconstructed_geometries.push_back(rfg->reconstructed_geometry());
 		}
+
+		// Write the reconstructed geometries as a single feature.
+		geom_exporter.export_geometries(
+				reconstructed_geometries.begin(),
+				reconstructed_geometries.end(),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(kvd_for_export)); 
 	}
 }
 

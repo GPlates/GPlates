@@ -27,6 +27,7 @@
 #define GPLATES_APP_LOGIC_RASTERLAYERPROXY_H
 
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "LayerProxy.h"
@@ -509,8 +510,15 @@ namespace GPlatesAppLogic
 		 * Adds the specified reconstructed polygons layer proxy.
 		 */
 		void
-		set_current_reconstructed_polygons_layer_proxy(
-				boost::optional<ReconstructLayerProxy::non_null_ptr_type> reconstructed_polygons_layer_proxy);
+		add_current_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
+
+		/**
+		 * Removes the specified reconstructed polygons layer proxy.
+		 */
+		void
+		remove_current_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
 
 		/**
 		 * Set the age grid raster layer proxy.
@@ -595,7 +603,7 @@ namespace GPlatesAppLogic
 				cached_data_reconstructed_raster = boost::none;
 
 				// Invalidate structures from other layers used to reconstruct the raster.
-				cached_reconstructed_polygon_meshes = boost::none;
+				cached_reconstructed_polygon_meshes.clear();
 				cached_age_grid_mask_cube_raster = boost::none;
 			}
 
@@ -625,9 +633,9 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_data_cube_raster;
 
 			/**
-			 * Cached OpenGL reconstructed polygon meshes (from another layer) for reconstructing the raster.
+			 * Cached OpenGL reconstructed polygon meshes (from other layers) for reconstructing the raster.
 			 */
-			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+			std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					cached_reconstructed_polygon_meshes;
 
 			/**
@@ -724,7 +732,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The input reconstructed polygons, if any connected to our input.
 		 */
-		LayerProxyUtils::OptionalInputLayerProxy<ReconstructLayerProxy> d_current_reconstructed_polygons_layer_proxy;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_reconstructed_polygons_layer_proxies;
 
 		/**
 		 * Optional age grid raster input.

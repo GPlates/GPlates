@@ -68,6 +68,15 @@ namespace GPlatesMaths
 		/**
 		 * Tests if @a point is inside @a polygon which can be a non-simple (eg, self-intersecting) polygon.
 		 *
+		 * The point-in-polygon test is done by counting the number of polygon edges crossed
+		 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
+		 * the point being tested. This means that if an interior ring intersects the exterior ring
+		 * then it is possible for a test point, that is outside the exterior ring but inside the
+		 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
+		 * similar to how filled polygons are currently rendered and so at least there is some
+		 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
+		 * a polygon mesh so it's consistent too).
+		 *
 		 * This is useful *only* when testing fewer than a handful of points against a specific polygon
 		 * (determined by profiling). Unless you know this for sure it is best to use
 		 * class @a Polygon instead.
@@ -135,6 +144,15 @@ namespace GPlatesMaths
 
 			/**
 			 * Tests if @a point is inside the polygon passed into the constructor.
+			 *
+			 * The point-in-polygon test is done by counting the number of polygon edges crossed
+			 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
+			 * the point being tested. This means that if an interior ring intersects the exterior ring
+			 * then it is possible for a test point, that is outside the exterior ring but inside the
+			 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
+			 * similar to how filled polygons are currently rendered and so at least there is some
+			 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
+			 * a polygon mesh so it's consistent too).
 			 *
 			 * Note that "point *on* polygon" is not available due to the use of floating-point
 			 * numbers instead of exact arithmetic.

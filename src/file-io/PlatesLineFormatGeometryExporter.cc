@@ -168,12 +168,6 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_multi_point_on_sphere(
 		// Skip-to then draw-to the same location, producing a point.
 		print_plates_coordinate_line(*d_stream_ptr, *it, PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
-			
-	// The following line will export a "2" code after each point.
-#if 0
-		print_plates_coordinate_line(*d_stream_ptr, *it, PenPositions::PEN_DRAW_TO_POINT,
-			d_reverse_coordinate_order);
-#endif
 	}
 }
 
@@ -187,11 +181,6 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
 	// Skip-to then draw-to the same location, producing a point.
 	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
-	// The following line will export a "2" code after each ponit.
-#if 0
-	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_DRAW_TO_POINT,
-			d_reverse_coordinate_order);
-#endif
 }
 
 
@@ -202,27 +191,18 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_polygon_on_sphere(
 #if 0
 	qDebug(Q_FUNC_INFO);
 #endif
-	// Write out each point of the polygon.
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
 
-	// The first point will need to be a "skip-to" to put the pen in the correct location.
-	print_plates_coordinate_line(*d_stream_ptr, *iter, PenPositions::PEN_SKIP_TO_POINT,
-			d_reverse_coordinate_order);
-	++iter;
+	// Write out the exterior ring.
+	write_polygon_ring(
+			polygon_on_sphere->exterior_ring_vertex_begin(),
+			polygon_on_sphere->exterior_ring_vertex_end());
 
-	// All subsequent points are "draw-to" to produce the line segments.
-	for ( ; iter != end; ++iter) {
-		print_plates_coordinate_line(*d_stream_ptr, *iter, PenPositions::PEN_DRAW_TO_POINT,
-				d_reverse_coordinate_order);
-	}
-	
-	// Finally, to produce a closed polygon ring with PLATES4 draw commands, we should
-	// return to the initial point (Assuming that option was specified, which it is
-	// by default)
-	if (d_polygon_terminating_point) {
-		print_plates_coordinate_line(*d_stream_ptr, *polygon_on_sphere->vertex_begin(),
-				PenPositions::PEN_DRAW_TO_POINT, d_reverse_coordinate_order);
+	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		write_polygon_ring(
+				polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_vertex_end(interior_ring_index));
 	}
 }
 
@@ -244,9 +224,37 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_polyline_on_sphere(
 	++iter;
 
 	// All subsequent points are "draw-to" to produce the line segments.
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter)
+	{
 		print_plates_coordinate_line(*d_stream_ptr, *iter, PenPositions::PEN_DRAW_TO_POINT,
 				d_reverse_coordinate_order);
+	}
+}
+
+
+void
+GPlatesFileIO::PlatesLineFormatGeometryExporter::write_polygon_ring(
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_begin,
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_end)
+{
+	// The first point will need to be a "skip-to" to put the pen in the correct location.
+	print_plates_coordinate_line(
+			*d_stream_ptr, *ring_vertex_begin, PenPositions::PEN_SKIP_TO_POINT, d_reverse_coordinate_order);
+
+	// All subsequent points are "draw-to" to produce the line segments.
+	GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_vertex_iter = ring_vertex_begin;
+	for (++ring_vertex_iter; ring_vertex_iter != ring_vertex_end; ++ring_vertex_iter)
+	{
+		print_plates_coordinate_line(
+				*d_stream_ptr, *ring_vertex_iter, PenPositions::PEN_DRAW_TO_POINT, d_reverse_coordinate_order);
+	}
+
+	// Finally, to produce a closed polygon ring with PLATES4 draw commands, we should return
+	// to the initial point (Assuming that option was specified, which it is by default)
+	if (d_polygon_terminating_point)
+	{
+		print_plates_coordinate_line(
+				*d_stream_ptr, *ring_vertex_begin, PenPositions::PEN_DRAW_TO_POINT, d_reverse_coordinate_order);
 	}
 }
 

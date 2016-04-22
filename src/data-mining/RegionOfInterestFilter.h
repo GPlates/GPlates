@@ -30,9 +30,13 @@
 #include <boost/foreach.hpp>
 
 #include "CoRegFilter.h"
-#include "IsCloseEnoughChecker.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
+#include "maths/GeometryDistance.h"
+#include "maths/MathsUtils.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesDataMining
@@ -174,10 +178,28 @@ namespace GPlatesDataMining
 						const GPlatesAppLogic::ReconstructContext::Reconstruction &reconstructed_seed_geom,
 						reconstructed_seed_geometries)
 				{
-					if (is_close_enough(
+					// Convert range from kms to radians.
+					double range_in_radians = d_range / GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
+					if (range_in_radians > GPlatesMaths::PI)
+					{
+						range_in_radians = GPlatesMaths::PI;
+					}
+
+					// Calculate minimum distance between the two geometries.
+					//
+					// The returned distance will either be less than 'range_in_radians' threshold or
+					// AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+					const GPlatesMaths::AngularDistance min_dist = minimum_distance(
 							*reconstructed_seed_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
 							*reconstructed_target_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
-							d_range))
+							// If either (or both) geometry is a polygon then the distance will be zero
+							// if the other geometry overlaps its interior...
+							true/*geometry1_interior_is_solid*/,
+							true/*geometry2_interior_is_solid*/,
+							GPlatesMaths::AngularExtent::create_from_angle(range_in_radians));
+
+					// If the minimum distance was less than the threshold 'range_in_radians'...
+					if (min_dist != GPlatesMaths::AngularDistance::PI)
 					{
 						filtered_reconstructed_target_geometries.push_back(
 								GPlatesAppLogic::ReconstructContext::Reconstruction(

@@ -33,6 +33,7 @@
 namespace GPlatesMaths
 {
 	class GreatCircleArc;
+	class PointOnSphere;
 	class PolygonOnSphere;
 
 	namespace SphericalArea
@@ -43,8 +44,17 @@ namespace GPlatesMaths
 		 * If the polygon is clockwise, when viewed from above the surface of the sphere,
 		 * the returned value will be negative, otherwise it will be positive.
 		 *
+		 * The interior rings reduce the absolute area of the exterior ring (regardless of their
+		 * orientation) because they are holes in the polygon and are meant to cutout the internal area.
+		 * So if the signed area of exterior ring is positive then any interior rings will reduce that, and
+		 * if the signed area of exterior ring is negative then any interior rings will make that less negative.
+		 * Note that the orientation of the interior rings can be arbitrary (ie, the interior orientations
+		 * are not forced to have the opposite orientation to the exterior ring like some software does)
+		 * and they will still correctly affect the signed area.
+		 *
 		 * The signed area assumes a unit radius sphere.
-		 * To get the signed area on the Earth, multiply by the square of the Earth's radius.
+		 * To get the signed area on the Earth, multiply by the square of the Earth's radius
+		 * (see GPlatesUtils::Earth).
 		 */
 		real_t
 		calculate_polygon_signed_area(
@@ -72,36 +82,103 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Calculates the *signed* spherical area of the spherical triangle bounded by the specified edges.
-		 *
-		 * Note that the edges must connect end-to-end in a loop - in other words the end point of
-		 * @a first_edge must be the start point of @a second_edge, etc, ... the end point of
-		 * @a third_edge must be the start point of @a first_edge.
-		 *
-		 * If any of the edges are zero length then the area returned will be zero.
-		 *
-		 * The area assumes a unit radius sphere.
-		 * To get the area on the Earth, multiply by the square of the Earth's radius.
+		 * Calculates the *signed* spherical area of the exterior ring of a polygon.
 		 */
 		real_t
-		calculate_spherical_triangle_signed_area(
-				const GreatCircleArc &first_edge,
-				const GreatCircleArc &second_edge,
-				const GreatCircleArc &third_edge);
+		calculate_polygon_exterior_ring_signed_area(
+				const PolygonOnSphere &polygon);
+
+		/**
+		 * Same as @a calculate_polygon_exterior_ring_signed_area but returns the absolute value of the area.
+		 */
+		inline
+		real_t
+		calculate_polygon_exterior_ring_area(
+				const PolygonOnSphere &polygon)
+		{
+			return abs(calculate_polygon_exterior_ring_signed_area(polygon));
+		}
+
+		/**
+		 * Calculates the *signed* spherical area of the interior ring at the specified interior ring
+		 * index of a polygon.
+		 */
+		real_t
+		calculate_polygon_interior_ring_signed_area(
+				const PolygonOnSphere &polygon,
+				unsigned int interior_ring_index);
+
+		/**
+		 * Same as @a calculate_polygon_interior_ring_signed_area but returns the absolute value of the area.
+		 */
+		inline
+		real_t
+		calculate_polygon_interior_ring_area(
+				const PolygonOnSphere &polygon,
+				unsigned int interior_ring_index)
+		{
+			return abs(calculate_polygon_interior_ring_signed_area(polygon, interior_ring_index));
+		}
 
 
 		/**
-		 * Same as @a calculate_spherical_triangle_signed_area but returns the
-		 * absolute value of the area.
+		 * Calculates the *signed* spherical area of the spherical triangle bounded by the specified point and edge.
+		 *
+		 * The direction of the edge (ie, its start to end point) determines the orientation of the
+		 * spherical triangle and hence whether its signed area is negative or positive.
+		 * In other words the direction is from @a point to the edge start point to the edge end point
+		 * and back to @a point.
+		 *
+		 * The area assumes a unit radius sphere.
+		 * To get the area on the Earth, multiply by the square of the Earth's radius (see GPlatesUtils::Earth).
+		 */
+		real_t
+		calculate_spherical_triangle_signed_area(
+				const PointOnSphere &point,
+				const GreatCircleArc &edge);
+
+		/**
+		 * Calculates the *signed* spherical area of the spherical triangle bounded by the specified points.
+		 *
+		 * The orientation of the spherical triangle is from first point to second to third and back to
+		 * the first point. This orientation determines whether the signed area is negative or positive.
+		 *
+		 * The area assumes a unit radius sphere.
+		 * To get the area on the Earth, multiply by the square of the Earth's radius (see GPlatesUtils::Earth).
+		 *
+		 * Note: If you have an edge (a @a GreatCircleArc) and a point then it is more efficient to
+		 * use the other overload of @a calculate_spherical_triangle_signed_area instead.
+		 */
+		real_t
+		calculate_spherical_triangle_signed_area(
+				const PointOnSphere &first_point,
+				const PointOnSphere &second_point,
+				const PointOnSphere &third_point);
+
+
+		/**
+		 * Same as @a calculate_spherical_triangle_signed_area but returns the absolute value of the area.
 		 */
 		inline
 		real_t
 		calculate_spherical_triangle_area(
-				const GreatCircleArc &first_edge,
-				const GreatCircleArc &second_edge,
-				const GreatCircleArc &third_edge)
+				const PointOnSphere &point,
+				const GreatCircleArc &edge)
 		{
-			return abs(calculate_spherical_triangle_signed_area(first_edge, second_edge, third_edge));
+			return abs(calculate_spherical_triangle_signed_area(point, edge));
+		}
+
+		/**
+		 * Same as @a calculate_spherical_triangle_signed_area but returns the absolute value of the area.
+		 */
+		inline
+		real_t
+		calculate_spherical_triangle_area(
+				const PointOnSphere &first_point,
+				const PointOnSphere &second_point,
+				const PointOnSphere &third_point)
+		{
+			return abs(calculate_spherical_triangle_signed_area(first_point, second_point, third_point));
 		}
 	}
 }

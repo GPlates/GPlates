@@ -39,9 +39,9 @@
 #include "ResolvedTriangulationDelaunay3.h"
 #include "VelocityDeltaTime.h"
 
+#include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
-#include "maths/ProjectionUtils.h"
 #include "maths/Vector3D.h"
 
 #include "utils/KeyValueCache.h"
@@ -206,7 +206,7 @@ namespace GPlatesAppLogic
 			 * Returns the projection used by this triangulation to convert from 3D points to
 			 * 2D points and vice versa.
 			 */
-			const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &
+			const GPlatesMaths::AzimuthalEqualAreaProjection &
 			get_projection() const
 			{
 				return d_projection;
@@ -509,7 +509,7 @@ namespace GPlatesAppLogic
 			rigid_block_seq_type d_rigid_blocks;
 
 			//! Used to project from 3D to 2D (for 2D triangulation).
-			GPlatesMaths::ProjectionUtils::AzimuthalEqualArea d_projection;
+			GPlatesMaths::AzimuthalEqualAreaProjection d_projection;
 
 			/**
 			 * Information used to build the internal triangulation (building delayed in case not needed).

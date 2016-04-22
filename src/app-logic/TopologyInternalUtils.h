@@ -461,7 +461,8 @@ namespace GPlatesAppLogic
 		 *
 		 * If either geometries is a point or multi-point then the geometries are
 		 * not intersectable and false is returned. If the two geometries consist of polylines
-		 * and/or polygons then the polygon geometries get converted to polylines before returning.
+		 * and/or polygons then the polygon geometries get converted to polylines before returning
+		 * (however only the exterior rings of polygons are used - interior rings are ignored).
 		 *
 		 * The output of this function is designed to be used with
 		 * @a PolylineIntersections::partition_intersecting_polylines.

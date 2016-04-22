@@ -79,13 +79,9 @@ namespace GPlatesMaths
 		static const PointOnSphere south_pole;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> non_null_ptr_to_const_type;
 
 
 		/**
@@ -221,15 +217,6 @@ namespace GPlatesMaths
 		}
 
 
-		PointOnSphere &
-		operator=(
-				const UnitVector3D &position_vec)
-		{
-			d_position_vector = position_vec;
-			return *this;
-		}
-
-
 		const UnitVector3D &
 		position_vector() const
 		{
@@ -280,10 +267,7 @@ namespace GPlatesMaths
 	PointOnSphere::create_on_heap(
 			const UnitVector3D &position_vector_)
 	{
-		non_null_ptr_to_const_type ptr(
-				new PointOnSphere(position_vector_),
-				GPlatesUtils::NullIntrusivePointerHandler());
-		return ptr;
+		return non_null_ptr_to_const_type(new PointOnSphere(position_vector_));
 	}
 
 

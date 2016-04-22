@@ -231,10 +231,8 @@ GPlatesOpenGL::GLFilledPolygonsMapView::write_filled_drawables_to_vertex_array(
 void
 GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 		const std::vector<QPointF> &line_geometry,
-		const GPlatesGui::Colour &colour)
+		GPlatesGui::rgba8_t rgba8_color)
 {
-	PROFILE_FUNC();
-
 	const unsigned int num_points = line_geometry.size();
 
 	// Need at least three points for a polygon.
@@ -245,9 +243,48 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 
 	begin_filled_drawable();
 
+	add_line_geometry_to_current_filled_drawable(line_geometry, rgba8_color);
+
+	end_filled_drawable();
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
+		const std::vector< std::vector<QPointF> > &line_geometries,
+		GPlatesGui::rgba8_t rgba8_color)
+{
+	if (line_geometries.empty())
+	{
+		return;
+	}
+
+	begin_filled_drawable();
+
+	for (unsigned int line_geometry_index = 0; line_geometry_index < line_geometries.size(); ++line_geometry_index)
+	{
+		add_line_geometry_to_current_filled_drawable(line_geometries[line_geometry_index], rgba8_color);
+	}
+
+	end_filled_drawable();
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_line_geometry_to_current_filled_drawable(
+		const std::vector<QPointF> &line_geometry,
+		GPlatesGui::rgba8_t rgba8_color)
+{
+	const unsigned int num_points = line_geometry.size();
+	// Need at least three points for a polygon ring.
+	if (num_points < 3)
+	{
+		return;
+	}
+
 	unsigned int n;
 
-	// Calculate centroid of polygon.
+	// Calculate centroid of polygon ring.
 	QPointF centroid;
 	for (n = 0; n < num_points; ++n)
 	{
@@ -256,13 +293,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 	centroid /= num_points;
 
 	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::rgba8_t pre_multiplied_alpha_colour =
-			GPlatesGui::Colour::to_rgba8(
-					GPlatesGui::Colour(
-							colour.red() * colour.alpha(),
-							colour.green() * colour.alpha(),
-							colour.blue() * colour.alpha(),
-							colour.alpha()));
+	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_colour = pre_multiply_alpha(rgba8_color);
 
 	//
 	// Create the OpenGL coloured vertices for the filled polygon (fan) mesh.
@@ -278,7 +309,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 					centroid.x(),
 					centroid.y(),
 					0/*z*/,
-					pre_multiplied_alpha_colour));
+					pre_multiplied_alpha_rgba8_colour));
 	++vertex_index;
 
 	// The remaining vertices form the boundary.
@@ -289,20 +320,20 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 						line_geometry[n].x(),
 						line_geometry[n].y(),
 						0/*z*/,
-						pre_multiplied_alpha_colour));
+						pre_multiplied_alpha_rgba8_colour));
 
 		d_drawable_vertex_elements.push_back(base_vertex_index); // Centroid.
 		d_drawable_vertex_elements.push_back(vertex_index); // Current boundary point.
 		d_drawable_vertex_elements.push_back(vertex_index + 1); // Next boundary point.
 	}
 
-	// Wraparound back to the first boundary vertex to close off the polygon (in case it's a polyline).
+	// Wraparound back to the first boundary vertex to close off the polygon.
 	d_drawable_vertices.push_back(
 			drawable_vertex_type(
 					line_geometry[0].x(),
 					line_geometry[0].y(),
 					0/*z*/,
-					pre_multiplied_alpha_colour));
+					pre_multiplied_alpha_rgba8_colour));
 
 	// Update the current filled drawable.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -310,8 +341,6 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 			GPLATES_ASSERTION_SOURCE);
 	d_current_drawable->end = vertex_index;
 	d_current_drawable->count += d_drawable_vertex_elements.size() - initial_vertex_elements_size;
-
-	end_filled_drawable();
 }
 
 
@@ -320,26 +349,20 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_triangle_to_
 		const QPointF &vertex1,
 		const QPointF &vertex2,
 		const QPointF &vertex3,
-		const GPlatesGui::Colour &colour)
+		GPlatesGui::rgba8_t rgba8_color)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_current_drawable,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::rgba8_t rgba_colour =
-			GPlatesGui::Colour::to_rgba8(
-					GPlatesGui::Colour(
-							colour.red() * colour.alpha(),
-							colour.green() * colour.alpha(),
-							colour.blue() * colour.alpha(),
-							colour.alpha()));
+	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_colour = pre_multiply_alpha(rgba8_color);
 
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.x(), vertex1.y(), 0/*z*/, rgba_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.x(), vertex2.y(), 0/*z*/, rgba_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.x(), vertex3.y(), 0/*z*/, rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.x(), vertex1.y(), 0/*z*/, pre_multiplied_alpha_rgba8_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.x(), vertex2.y(), 0/*z*/, pre_multiplied_alpha_rgba8_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.x(), vertex3.y(), 0/*z*/, pre_multiplied_alpha_rgba8_colour));
 
 	d_drawable_vertex_elements.push_back(base_vertex_index);
 	d_drawable_vertex_elements.push_back(base_vertex_index + 1);

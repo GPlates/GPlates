@@ -174,9 +174,9 @@ namespace GPlatesViewOperations
 		{
 			std::vector<GPlatesMaths::PointOnSphere> new_points;
 
-			GPlatesMaths::PolygonOnSphere::vertex_const_iterator 
-				it = polygon_on_sphere->vertex_begin(),
-				end = polygon_on_sphere->vertex_end();
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator 
+				it = polygon_on_sphere->exterior_ring_vertex_begin(),
+				end = polygon_on_sphere->exterior_ring_vertex_end();
 
 			for (; it != end ; ++it)
 			{
@@ -266,13 +266,13 @@ namespace GPlatesViewOperations
 		visit_polygon_on_sphere(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			if (d_index >= polygon_on_sphere->number_of_vertices())
+			if (d_index >= polygon_on_sphere->number_of_vertices_in_exterior_ring())
 			{
 				return;
 			}
 
-			GPlatesMaths::PolygonOnSphere::vertex_const_iterator
-				it = polygon_on_sphere->vertex_begin();				
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator
+				it = polygon_on_sphere->exterior_ring_vertex_begin();				
 			std::advance(it,d_index);
 			d_vertex.reset(*it);
 		}	

@@ -176,6 +176,32 @@ GPlatesGui::convert_rgba8_to_argb32(
 }
 
 
+GPlatesGui::rgba8_t
+GPlatesGui::pre_multiply_alpha(
+		rgba8_t rgba8_color)
+{
+	const unsigned int alpha = rgba8_color.alpha;
+
+	unsigned int red = rgba8_color.red;
+	unsigned int green = rgba8_color.green;
+	unsigned int blue = rgba8_color.blue;
+
+	// Avoid using floating-point arithmetic, and especially float-to-integer conversion - it's much faster.
+	// Also avoid integer division by 255 (division is also slow) by using ((x+1)*257)>>16
+	// (see http://research.swtch.com/divmult).
+	// So instead of '(rgb * alpha) / 255' we have '(((rgb * alpha) + 1) * 257) >> 16'
+	red = (((red * alpha) + 1) * 257) >> 16;
+	green = (((green * alpha) + 1) * 257) >> 16;
+	blue = (((blue * alpha) + 1) * 257) >> 16;
+
+	return rgba8_t(
+			static_cast<boost::uint8_t>(red),
+			static_cast<boost::uint8_t>(green),
+			static_cast<boost::uint8_t>(blue),
+			rgba8_color.alpha);
+}
+
+
 GPlatesGui::Colour::Colour(
 		const GLfloat &red_,
 		const GLfloat &green_,
@@ -282,6 +308,18 @@ GPlatesGui::Colour::modulate(
 			static_cast<GLfloat>(first.green() * second.green()),
 			static_cast<GLfloat>(first.blue()  * second.blue()),
 			static_cast<GLfloat>(first.alpha() * second.alpha()));
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::Colour::pre_multiply_alpha(
+		const Colour &colour)
+{
+	return GPlatesGui::Colour(
+			colour.red() * colour.alpha(),
+			colour.green() * colour.alpha(),
+			colour.blue() * colour.alpha(),
+			colour.alpha());
 }
 
 

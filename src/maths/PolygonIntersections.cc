@@ -487,8 +487,8 @@ GPlatesMaths::PolygonIntersections::partition_polygon(
 		// partitioning polygon. Any points will do. Pick the first and second points.
 		// It's a polygon so we know it has at least three vertices.
 		const Result result = partition_polyline_or_polygon_fully_inside_or_outside(
-				*polygon_to_be_partitioned->vertex_begin(),
-				*++polygon_to_be_partitioned->vertex_begin());
+				*polygon_to_be_partitioned->exterior_ring_vertex_begin(),
+				*++polygon_to_be_partitioned->exterior_ring_vertex_begin());
 
 		// Count intersecting (in this case just touching) as inside even though
 		// it shouldn't have intersected otherwise we'd have an intersection graph.

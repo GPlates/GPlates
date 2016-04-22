@@ -101,7 +101,7 @@ namespace GPlatesMaths
 		 *
 		 * NOTE: The sequence of great circle arcs must form a continuous connected sequence -
 		 * in other words the end of one arc must be the beginning of the next, etc, as is
-		 * the case for a subsection of a polygon or polyline.
+		 * the case for a subsection of a polygon ring or polyline.
 		 */
 		template <typename GreatCircleArcForwardIter>
 		Result
@@ -137,25 +137,23 @@ namespace GPlatesMaths
 		/**
 		 * Test a polygon against the bounding region.
 		 *
-		 * Note that, like a polyline, this only tests if the boundary of the polygon
+		 * Note that, like a polyline, this only tests if the outline of the polygon
 		 * intersects the bounding small circle.
+		 * Note that the polygon outline includes the exterior ring and any interior rings.
 		 */
 		Result
 		test(
-				const PolygonOnSphere &polygon) const
-		{
-			return test(polygon.begin(), polygon.end());
-		}
+				const PolygonOnSphere &polygon) const;
 
 
 		/**
 		 * Test a filled polygon against the bounding region.
 		 *
 		 * This test differs from the regular polygon test in that we are not just
-		 * testing if the boundary of the polygon intersects the bounding region
-		 * but also if the interior of the polygon intersects the bounding region.
+		 * testing if the outline of the polygon intersects the bounding region
+		 * but also if the filled interior of the polygon intersects the bounding region.
 		 *
-		 * If the polygon boundary is completely outside the small circle *and*
+		 * If the polygon outline is completely outside the small circle *and*
 		 * the polygon surrounds the small circle then 'INTERSECTING_BOUNDS' is returned.
 		 */
 		Result
@@ -545,20 +543,26 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Adds the great circle arcs in a polygon - the inner/outer bounds are contracted/expanded
-		 * if necessary to bound the polygon.
+		 * Adds the great circle arcs in a polygon - the bound is expanded if necessary to bound them.
+		 *
+		 * Note that the concept of inside/outside polygon (eg, point-in-polygon test) does not apply here.
+		 * The polygon's exterior ring and interior rings are added as if they were independent GCA sequences.
 		 */
 		void
 		add(
 				const PolygonOnSphere &polygon)
 		{
-			add(polygon.begin(), polygon.end());
+			add(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+
+			for (unsigned int i = 0; i < polygon.number_of_interior_rings(); ++i)
+			{
+				add(polygon.interior_ring_begin(i), polygon.interior_ring_end(i));
+			}
 		}
 
 
 		/**
-		 * Adds the great circle arcs in a polyline - the inner/outer bounds are contracted/expanded
-		 * if necessary to bound the polyline.
+		 * Adds the great circle arcs in a polyline - the bound is expanded if necessary to bound them.
 		 */
 		void
 		add(
@@ -657,7 +661,7 @@ namespace GPlatesMaths
 		 *
 		 * NOTE: The sequence of great circle arcs must form a continuous connected sequence -
 		 * in other words the end of one arc must be the beginning of the next, etc, as is
-		 * the case for a subsection of a polygon or polyline.
+		 * the case for a subsection of a polygon ring or polyline.
 		 */
 		template <typename GreatCircleArcForwardIter>
 		Result
@@ -690,23 +694,30 @@ namespace GPlatesMaths
 		}
 
 
-		//! Test a polygon against the bounding region.
+		/**
+		 * Test a polygon against the bounding region.
+		 *
+		 * Note that, like a polyline, this only tests if the outline of the polygon
+		 * intersects the bounding region.
+		 * Note that the polygon outline includes the exterior ring and any interior rings.
+		 *
+		 * If one or more polygon rings are outside outer bounds and one or more are inside
+		 * inner bounds (eg, exterior ring is outside outer bounds and its one interior ring
+		 * is inside inner bounds) then this is considered intersecting.
+		 */
 		Result
 		test(
-				const PolygonOnSphere &polygon) const
-		{
-			return test(polygon.begin(), polygon.end());
-		}
+				const PolygonOnSphere &polygon) const;
 
 
 		/**
 		 * Test a filled polygon against the bounding region.
 		 *
 		 * This test differs from the regular polygon test in that we are not just
-		 * testing if the boundary of the polygon intersects the bounding region
+		 * testing if the outline of the polygon intersects the bounding region
 		 * but also if the interior of the polygon intersects the bounding region.
 		 *
-		 * If the polygon boundary is completely outside the outer small circle *and*
+		 * If the polygon outline is completely outside the outer small circle *and*
 		 * the polygon surrounds the outer small circle then 'INTERSECTING_BOUNDS' is returned.
 		 */
 		Result
@@ -1266,12 +1277,20 @@ namespace GPlatesMaths
 		/**
 		 * Adds the great circle arcs in a polygon - the inner/outer bounds are contracted/expanded
 		 * if necessary to bound the polygon.
+		 *
+		 * Note that the concept of inside/outside polygon (eg, point-in-polygon test) does not apply here.
+		 * The polygon's exterior ring and interior rings are added as if they were independent GCA sequences.
 		 */
 		void
 		add(
 				const PolygonOnSphere &polygon)
 		{
-			add(polygon.begin(), polygon.end());
+			add(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+
+			for (unsigned int i = 0; i < polygon.number_of_interior_rings(); ++i)
+			{
+				add(polygon.interior_ring_begin(i), polygon.interior_ring_end(i));
+			}
 		}
 
 

@@ -116,7 +116,7 @@ namespace GPlatesAppLogic
 		{
 			// Get the points of the present day geometry.
 			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-			GeometryUtils::get_geometry_points(geometry, geometry_points);
+			GeometryUtils::get_geometry_exterior_points(geometry, geometry_points);
 
 			return geometry_points;
 		}

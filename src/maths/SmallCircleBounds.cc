@@ -131,13 +131,59 @@ GPlatesMaths::BoundingSmallCircle::test(
 
 
 GPlatesMaths::BoundingSmallCircle::Result
+GPlatesMaths::BoundingSmallCircle::test(
+		const PolygonOnSphere &polygon) const
+{
+	const Result result = test(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+
+	// Handle common case of polygon with no interior rings first.
+	const unsigned int num_interior_rings = polygon.number_of_interior_rings();
+	if (num_interior_rings == 0)
+	{
+		return result;
+	}
+
+	// If exterior ring intersects the bounds then it doesn't matter what the interior rings do.
+	if (result == INTERSECTING_BOUNDS)
+	{
+		return INTERSECTING_BOUNDS;
+	}
+
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		const Result interior_ring_result = test(
+				polygon.interior_ring_begin(interior_ring_index),
+				polygon.interior_ring_end(interior_ring_index));
+
+		// If current interior ring intersects the bounds then it doesn't matter what any other rings do.
+		if (interior_ring_result == INTERSECTING_BOUNDS)
+		{
+			return INTERSECTING_BOUNDS;
+		}
+
+		// 'interior_ring_result' is now either 'INSIDE_BOUNDS' or 'OUTSIDE_BOUNDS'.
+		// The same is true for 'result'.
+		// If they are not equal then it means one polygon ring is inside and another outside.
+		// In this case the entire polygon is neither inside nor outside, so it's intersecting.
+		if (interior_ring_result != result)
+		{
+			return INTERSECTING_BOUNDS;
+		}
+	}
+
+	// 'result' is now either 'INSIDE_BOUNDS' or 'OUTSIDE_BOUNDS'.
+	return result;
+}
+
+
+GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 		const PolygonOnSphere &polygon) const
 {
 	// Test the boundary of the polygon.
 	Result result = test(polygon);
 
-	// If the polygon boundary is outside the small circle then it's still possible
+	// If the polygon outline is outside the small circle then it's still possible
 	// for the polygon to completely surround the small circle in which case it's
 	// actually intersecting the bounding region.
 	// We test this by seeing if the small circle centre is inside the polygon.
@@ -497,13 +543,60 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 
 
 GPlatesMaths::InnerOuterBoundingSmallCircle::Result
+GPlatesMaths::InnerOuterBoundingSmallCircle::test(
+		const PolygonOnSphere &polygon) const
+{
+	const Result result = test(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+
+	// Handle common case of polygon with no interior rings first.
+	const unsigned int num_interior_rings = polygon.number_of_interior_rings();
+	if (num_interior_rings == 0)
+	{
+		return result;
+	}
+
+	// If exterior ring intersects the bounds then it doesn't matter what the interior rings do.
+	if (result == INTERSECTING_BOUNDS)
+	{
+		return INTERSECTING_BOUNDS;
+	}
+
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		const Result interior_ring_result = test(
+				polygon.interior_ring_begin(interior_ring_index),
+				polygon.interior_ring_end(interior_ring_index));
+
+		// If current interior ring intersects the bounds then it doesn't matter what any other rings do.
+		if (interior_ring_result == INTERSECTING_BOUNDS)
+		{
+			return INTERSECTING_BOUNDS;
+		}
+
+		// 'interior_ring_result' is now either 'INSIDE_INNER_BOUNDS' or 'OUTSIDE_OUTER_BOUNDS'.
+		// The same is true for 'result'.
+		// If they are not equal then it means one polygon ring is inside the inner bounds and
+		// another is outside the outer bounds.
+		// In this case the entire polygon is neither, so it's intersecting.
+		if (interior_ring_result != result)
+		{
+			return INTERSECTING_BOUNDS;
+		}
+	}
+
+	// 'result' is now either 'INSIDE_INNER_BOUNDS' or 'OUTSIDE_OUTER_BOUNDS'.
+	return result;
+}
+
+
+GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test_filled_polygon(
 		const PolygonOnSphere &polygon) const
 {
 	// Test the boundary of the polygon.
 	Result result = test(polygon);
 
-	// If the polygon boundary is outside the outer small circle then it's still possible
+	// If the polygon outline is outside the outer small circle then it's still possible
 	// for the polygon to completely surround the outer small circle in which case it's
 	// actually intersecting the bounding region.
 	// We test this by seeing if the outer small circle centre is inside the polygon.

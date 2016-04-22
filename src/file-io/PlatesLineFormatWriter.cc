@@ -106,7 +106,7 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			d_number_of_points = polygon_on_sphere->number_of_vertices() + 1;
+			d_number_of_points = polygon_on_sphere->number_of_vertices_in_exterior_ring() + 1;
 		}
 
 		virtual
@@ -293,8 +293,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Handle interior rings. Requires a bit of restructuring.
-	d_feature_accumulator.add_geometry(gml_polygon.exterior());
+	d_feature_accumulator.add_geometry(gml_polygon.polygon());
 }
 
 void

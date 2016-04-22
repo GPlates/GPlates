@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "ReadErrors.h"
 
@@ -654,8 +655,8 @@ namespace GPlatesFileIO
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		create_polygon(
+		boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> >
+		create_polygon_ring(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
@@ -664,7 +665,7 @@ namespace GPlatesFileIO
 		/**
 		 * This function is used by create_gml_polygon to traverse the LinearRing intermediate junk.
 		 */
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> >
 		create_linear_ring(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 				const GPlatesModel::GpgimVersion &gpml_version,
