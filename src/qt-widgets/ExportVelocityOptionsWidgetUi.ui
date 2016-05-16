@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_13">
    <item>
-    <widget class="QWidget" name="widget_velocity_smoothing_options" native="true"/>
+    <widget class="QWidget" name="widget_velocity_calculation_options" native="true"/>
    </item>
    <item>
     <widget class="QWidget" name="widget_file_options" native="true"/>

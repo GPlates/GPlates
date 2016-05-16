@@ -219,13 +219,9 @@ namespace GPlatesGui
 			TerraTextConfiguration(
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
-					const QString &terra_grid_filename_template_,
-					bool is_boundary_smoothing_enabled_ = false,
-					const double &boundary_smoothing_angular_half_extent_degrees_ = 1.0) :
+					const QString &terra_grid_filename_template_) :
 				Configuration(filename_template_, TERRA_TEXT, export_velocity_calculation_options_),
-				terra_grid_filename_template(terra_grid_filename_template_),
-				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
-				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_)
+				terra_grid_filename_template(terra_grid_filename_template_)
 			{  }
 
 			virtual
@@ -236,8 +232,6 @@ namespace GPlatesGui
 			}
 
 			QString terra_grid_filename_template;
-			bool is_boundary_smoothing_enabled;
-			double boundary_smoothing_angular_half_extent_degrees;
 		};
 
 

@@ -61,7 +61,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 					d_export_configuration->velocity_calculation_options);
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_export_velocity_calculation_options_widget,
-			widget_velocity_smoothing_options);
+			widget_velocity_calculation_options);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML)
 	{
