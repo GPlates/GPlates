@@ -52,6 +52,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "property-values/RasterType.h"
+
 #include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportImageOptionsWidget.h"
@@ -1072,6 +1074,15 @@ namespace GPlatesGui
 					continue;
 				}
 
+				// By default, raster compression is not supported (ie, boost::none).
+				boost::optional<bool> default_raster_compress;
+				if (format_info.has_option_to_compress)
+				{
+					// Switch on ability to compress (ie, no longer boost::none)
+					// but turn compression off by default.
+					default_raster_compress = false;
+				}
+
 				registry.register_exporter(
 						ExportAnimationType::get_export_id(
 								ExportAnimationType::COLOUR_RASTER,
@@ -1081,7 +1092,8 @@ namespace GPlatesGui
 										add_export_filename_extension("raster_%P_%0.2fMa", format),
 										ExportRasterAnimationStrategy::Configuration::COLOUR,
 										default_raster_resolution_in_degrees,
-										default_raster_lat_lon_extents)),
+										default_raster_lat_lon_extents,
+										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(
 								// 'static_cast' is because some compilers have trouble determining
@@ -1143,10 +1155,19 @@ namespace GPlatesGui
 				// Make sure the format supports writing 'float' rasters.
 				// All our (possibly reconstructed) numerical rasters are in float format (even if loaded from integers).
 				const GPlatesFileIO::RasterWriter::FormatInfo &format_info = supported_formats_iter->second;
-				if (std::find(format_info.band_types.begin(), format_info.band_types.end(),
-					GPlatesPropertyValues::RasterType::FLOAT) == format_info.band_types.end())
+				if (std::find_if(format_info.band_types.begin(), format_info.band_types.end(),
+					&GPlatesPropertyValues::RasterType::is_floating_point) == format_info.band_types.end())
 				{
 					continue;
+				}
+
+				// By default, raster compression is not supported (ie, boost::none).
+				boost::optional<bool> default_raster_compress;
+				if (format_info.has_option_to_compress)
+				{
+					// Switch on ability to compress (ie, no longer boost::none)
+					// but turn compression off by default.
+					default_raster_compress = false;
 				}
 
 				registry.register_exporter(
@@ -1158,7 +1179,8 @@ namespace GPlatesGui
 										add_export_filename_extension("raster_data_%P_%0.2fMa", format),
 										ExportRasterAnimationStrategy::Configuration::NUMERICAL,
 										default_raster_resolution_in_degrees,
-										default_raster_lat_lon_extents)),
+										default_raster_lat_lon_extents,
+										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(
 								// 'static_cast' is because some compilers have trouble determining
