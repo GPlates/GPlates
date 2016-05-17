@@ -100,6 +100,16 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
 	right_extents_spinbox->setMinimum(export_configuration->lat_lon_extents.left - 360);
 	left_extents_spinbox->setMaximum(export_configuration->lat_lon_extents.left + 360);
 
+	// If raster compression is an option then initialise it, otherwise hide it.
+	if (d_export_configuration.compress)
+	{
+		enable_compression_checkbox->setChecked(d_export_configuration.compress.get());
+	}
+	else
+	{
+		compression_group_box->hide();
+	}
+
 	update_raster_dimensions();
 
 	make_signal_slot_connections();
@@ -152,7 +162,13 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::make_signal_slot_connections()
 			use_global_extents_button,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_use_global_extents_button_clicked()));
+			SLOT(react_use_global_extents_button_clicked()));
+
+	QObject::connect(
+			enable_compression_checkbox,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_enable_compression_check_box_clicked()));
 }
 
 
@@ -233,7 +249,7 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_right_extents_spin_box_value_
 
 
 void
-GPlatesQtWidgets::ExportRasterOptionsWidget::handle_use_global_extents_button_clicked()
+GPlatesQtWidgets::ExportRasterOptionsWidget::react_use_global_extents_button_clicked()
 {
 	const double left = -180;
 	const double right = 180;
@@ -248,4 +264,11 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::handle_use_global_extents_button_cl
 	bottom_extents_spinbox->setValue(-90);
 	left_extents_spinbox->setValue(left);
 	right_extents_spinbox->setValue(right);
+}
+
+
+void
+GPlatesQtWidgets::ExportRasterOptionsWidget::react_enable_compression_check_box_clicked()
+{
+	d_export_configuration.compress = enable_compression_checkbox->isChecked();
 }

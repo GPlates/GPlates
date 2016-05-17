@@ -89,7 +89,10 @@ namespace GPlatesQtWidgets
 				double value);
 
 		void
-		handle_use_global_extents_button_clicked();
+		react_use_global_extents_button_clicked();
+
+		void
+		react_enable_compression_check_box_clicked();
 
 	private:
 
