@@ -1079,8 +1079,8 @@ namespace GPlatesGui
 				if (format_info.has_option_to_compress)
 				{
 					// Switch on ability to compress (ie, no longer boost::none)
-					// but turn compression off by default.
-					default_raster_compress = false;
+					// and turn compression on by default.
+					default_raster_compress = true;
 				}
 
 				registry.register_exporter(
@@ -1166,8 +1166,8 @@ namespace GPlatesGui
 				if (format_info.has_option_to_compress)
 				{
 					// Switch on ability to compress (ie, no longer boost::none)
-					// but turn compression off by default.
-					default_raster_compress = false;
+					// and turn compression on by default.
+					default_raster_compress = true;
 				}
 
 				registry.register_exporter(
