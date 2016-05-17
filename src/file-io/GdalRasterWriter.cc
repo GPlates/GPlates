@@ -288,12 +288,21 @@ GPlatesFileIO::GDALRasterWriter::get_supported_formats(
 	// HFA driver does not export statistics by default.
 	std::vector<std::string> hfa_general_creation_options;
 	hfa_general_creation_options.push_back("STATISTICS=YES");
+
+	InternalFormatInfo hfa_creation_options("HFA", hfa_general_creation_options);
+
+	// Compression options.
+	std::vector<std::string> hfa_compression_creation_options;
+	hfa_compression_creation_options.push_back("COMPRESSED=YES");
+	hfa_creation_options.set_compression_creation_options(hfa_compression_creation_options);
+
 	add_supported_format(
 			supported_formats,
 			"img", // filename_extension
 			"Erdas Imagine", // format_description
 			"application/x-erdas-hfa", // format_mime_type
-			InternalFormatInfo("HFA", hfa_general_creation_options));
+			hfa_creation_options);
+
 
 	add_supported_format(
 			supported_formats,
