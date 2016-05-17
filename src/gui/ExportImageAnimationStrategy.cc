@@ -26,6 +26,7 @@
 #include <exception>
 #include <QDebug>
 #include <QImage>
+#include <QImageWriter>
 
 #include "ExportImageAnimationStrategy.h"
 
@@ -110,8 +111,18 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 			return false;
 		}
 
+		QImageWriter image_writer(full_filename);
+
+		// If format is TIFF then compress.
+		//
+		// FIXME: Should probably give the user an option to compress (for file formats supporting it).
+		if (d_configuration->image_type == Configuration::TIFF)
+		{
+			image_writer.setCompression(1); // LZW-compression
+		}
+
 		// Save the image to file.
-		image.save(full_filename);
+		image_writer.write(image);
 
 		// Restore previous rendered layer active state.
 		rendered_geometry_collection.restore_main_layer_active_state(prev_rendered_layer_active_state);
