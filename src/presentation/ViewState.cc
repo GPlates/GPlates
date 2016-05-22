@@ -49,6 +49,7 @@
 #include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/FileIODirectoryConfigurations.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/PythonManager.h"
@@ -63,6 +64,8 @@
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
+
+#include "qt-widgets/PreferencesPaneFiles.h"
 
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
@@ -140,7 +143,9 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
 	d_main_viewport_dimensions(0, 0),
-	d_last_open_directory(QDir::currentPath()),
+	d_file_io_directory_configurations(
+			new GPlatesGui::FileIODirectoryConfigurations(
+				*this)),
 	d_show_stars(false),	// Overriden by UserPreferences: view/show_stars
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
@@ -175,38 +180,6 @@ GPlatesPresentation::ViewState::ViewState(
 			*d_visual_layer_registry,
 			d_application_state,
 			*this);
-
-#if 0
-	// Set up a symbol map for testing
-	GPlatesModel::FeatureType gpml_volcano_type =
-		GPlatesModel::FeatureType::create_gpml("Volcano");
-	GPlatesModel::FeatureType gpml_hot_spot_type =
-		GPlatesModel::FeatureType::create_gpml("HotSpot");
-	GPlatesModel::FeatureType gpml_magnetic_pick_type =
-		GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification");
-
-
-	GPlatesGui::Symbol volcano_symbol(
-		    GPlatesGui::Symbol::TRIANGLE,
-		    1,
-		    true);
-	GPlatesGui::Symbol hotspot_symbol(
-		    GPlatesGui::Symbol::SQUARE,
-		    1,
-		    true);
-	GPlatesGui::Symbol magnetic_pick_symbol(
-		    GPlatesGui::Symbol::SQUARE,
-		    1,
-		    false);
-
-
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_volcano_type,volcano_symbol));
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_hot_spot_type,hotspot_symbol));
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_magnetic_pick_type,magnetic_pick_symbol));
-#endif
 
 	// Set up the ExportAnimationRegistry.
 	register_default_export_animation_types(
@@ -460,7 +433,6 @@ GPlatesPresentation::ViewState::get_last_open_directory() const
 	return d_last_open_directory;
 }
 
-
 bool
 GPlatesPresentation::ViewState::get_show_stars() const
 {
@@ -551,5 +523,11 @@ GPlatesPresentation::ViewState::get_topology_boundary_sections_container()
 GPlatesGui::TopologySectionsContainer &
 GPlatesPresentation::ViewState::get_topology_interior_sections_container()
 {
-	return *d_topology_interior_sections_container_ptr;	
+	return *d_topology_interior_sections_container_ptr;
+}
+
+GPlatesGui::FileIODirectoryConfigurations &
+GPlatesPresentation::ViewState::get_file_io_directory_configurations()
+{
+	return *d_file_io_directory_configurations;
 }

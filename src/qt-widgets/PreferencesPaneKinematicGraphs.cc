@@ -52,13 +52,16 @@ GPlatesQtWidgets::PreferencesPaneKinematicGraphs::PreferencesPaneKinematicGraphs
 														  "tools/kinematics/velocity_delta_time",0);
 
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->velocity_yellow_spinbox(), prefs,
-                                                          "tools/kinematics/velocity_warning_1",0);
+														  "tools/kinematics/velocity_warning_1",0);
 
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->velocity_red_spinbox(), prefs,
-                                                          "tools/kinematics/velocity_warning_2",0);
+														  "tools/kinematics/velocity_warning_2",0);
 
-	GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(d_configuration_widget->velocity_method_button_group(), prefs,
-																"tools/kinematics/velocity_method",0);
+	GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(d_configuration_widget->velocity_method_button_group(),
+																prefs,
+																"tools/kinematics/velocity_method",
+																GPlatesQtWidgets::KinematicGraphsConfigurationWidget::build_velocity_method_description_map(),
+																0);
 
 }
 

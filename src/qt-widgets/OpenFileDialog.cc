@@ -1,12 +1,12 @@
 /* $Id: SaveFileDialog.cc 10510 2010-12-11 02:25:34Z elau $ */
 
 /**
- * @file 
+ * @file
  * Contains implementation of OpenFileDialog.
  *
  * $Revision: 10510 $
- * $Date: 2010-12-11 13:25:34 +1100 (Sat, 11 Dec 2010) $ 
- * 
+ * $Date: 2010-12-11 13:25:34 +1100 (Sat, 11 Dec 2010) $
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -31,15 +31,15 @@
 #include "OpenFileDialog.h"
 
 
-GPlatesQtWidgets::OpenFileDialog::OpenFileDialog(
-		QWidget *parent,
-		const QString &caption,
-		const QString &filter,
-		GPlatesPresentation::ViewState &view_state) :
+GPlatesQtWidgets::OpenFileDialog::OpenFileDialog(QWidget *parent,
+												 const QString &caption,
+												 const QString &filter,
+												 GPlatesPresentation::ViewState &view_state) :
 	d_parent(parent),
 	d_caption(caption),
-	d_last_open_directory(view_state.get_last_open_directory()),
-	d_filter(filter)
+	d_filter(filter),
+	d_directory_configuration(
+		view_state.get_file_io_directory_configurations().feature_collection_configuration())
 {  }
 
 
@@ -47,14 +47,15 @@ QString
 GPlatesQtWidgets::OpenFileDialog::get_open_file_name()
 {
 	QString file_name = QFileDialog::getOpenFileName(
-			d_parent,
-			d_caption,
-			d_last_open_directory,
-			d_filter,
-			&d_selected_filter);
+				d_parent,
+				d_caption,
+				d_directory_configuration.directory(),
+				d_filter,
+				&d_selected_filter);
 	if (!file_name.isEmpty())
 	{
-		d_last_open_directory = QFileInfo(file_name).path();
+		d_directory_configuration.update_last_used_directory(
+					QFileInfo(file_name).path());
 	}
 
 	return file_name;
@@ -65,16 +66,19 @@ QStringList
 GPlatesQtWidgets::OpenFileDialog::get_open_file_names()
 {
 	QStringList file_names = QFileDialog::getOpenFileNames(
-			d_parent,
-			d_caption,
-			d_last_open_directory,
-			d_filter,
-			&d_selected_filter);
+				d_parent,
+				d_caption,
+				d_directory_configuration.directory(),
+				d_filter,
+				&d_selected_filter);
 	if (!file_names.isEmpty())
 	{
-		d_last_open_directory = QFileInfo(file_names.first()).path();
+		d_directory_configuration.update_last_used_directory(
+					QFileInfo(file_names.first()).path());
 	}
 
 	return file_names;
 }
+
+
 

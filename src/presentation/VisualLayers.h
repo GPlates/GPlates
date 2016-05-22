@@ -170,6 +170,18 @@ namespace GPlatesPresentation
 		const_iterator
 		order_end() const;
 
+		/**
+		 * Set visibility of all visual layers to true
+		 */
+		void
+		show_all();
+
+		/**
+		 * Set visibility of all visual layers to false
+		 */
+		void
+		hide_all();
+
 	public Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments

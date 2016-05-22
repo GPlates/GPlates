@@ -78,6 +78,7 @@
 
 #include "qt-widgets/FileDialogFilter.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
+#include "qt-widgets/PreferencesPaneFiles.h"
 #include "qt-widgets/ViewportWindow.h"
 
 namespace
@@ -502,6 +503,7 @@ namespace
 		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
 		files_not_loaded_warning_dialog->exec();
 	}
+
 }
 
 
@@ -526,27 +528,27 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			d_viewport_window_ptr,
 			tr("Save File As"),
 			GPlatesQtWidgets::SaveFileDialog::filter_list_type(),
-			view_state_),
+			view_state_.get_file_io_directory_configurations().feature_collection_configuration()),
 	d_save_file_copy_dialog(
 			d_viewport_window_ptr,
 			tr("Save a copy of the file with a different name"),
 			GPlatesQtWidgets::SaveFileDialog::filter_list_type(),
-			view_state_),
+			view_state_.get_file_io_directory_configurations().feature_collection_configuration()),
 	d_save_project_dialog(
 			d_viewport_window_ptr,
 			tr("Save Project"),
 			get_load_save_project_filters(),
-			view_state_),
+			view_state_.get_file_io_directory_configurations().project_configuration()),
 	d_open_files_dialog(
 			d_viewport_window_ptr,
 			tr("Open Files"),
 			get_load_file_filters(app_state_.get_feature_collection_file_format_registry()),
-			view_state_),
+			view_state_.get_file_io_directory_configurations().feature_collection_configuration()),
 	d_open_project_dialog(
 			d_viewport_window_ptr,
 			tr("Open Project"),
 			get_load_save_project_filters(),
-			view_state_),
+			view_state_.get_file_io_directory_configurations().project_configuration()),
 	d_files_not_loaded_warning_dialog_ptr(
 			new GPlatesQtWidgets::FilesNotLoadedWarningDialog(
 					d_viewport_window_ptr)),
@@ -1279,7 +1281,7 @@ GPlatesGui::FileIOFeedback::save_project()
 	{
 		// User cancelled save.
 		return false;
-	}
+	}	
 
 	return save_project(project_filename.get());
 }

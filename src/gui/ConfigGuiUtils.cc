@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include <QDebug>
 #include <QHeaderView>
 
 #include "ConfigGuiUtils.h"
@@ -31,7 +31,6 @@
 #include "gui/ConfigModel.h"
 #include "gui/ConfigValueDelegate.h"
 
-#include "qt-widgets/KinematicGraphsDialog.h"
 #include "qt-widgets/PreferencesDialog.h"
 
 GPlatesQtWidgets::ConfigTableView *
@@ -43,7 +42,7 @@ GPlatesGui::ConfigGuiUtils::link_config_interface_to_table(
 	// We allocate the memory for this new table widget, and give it the parent supplied
 	// by the caller so that Qt will handle cleanup of said memory.
 	GPlatesQtWidgets::ConfigTableView *tableview_ptr = new GPlatesQtWidgets::ConfigTableView(parent);
-		
+
 	// We also create a ConfigModel to act as the intermediary between ConfigBundle and
 	// the table, and parent that to the table view widget so that it also gets cleaned
 	// up when appropriate.
@@ -76,7 +75,7 @@ GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
 		QAbstractButton *reset_button)
 {
 	ConfigGuiUtils::ConfigWidgetAdapter *adapter = new ConfigGuiUtils::ConfigWidgetAdapter(
-			widget, config, key);
+				widget, config, key);
 	// When the config key changes, update the widget.
 	QObject::connect(adapter, SIGNAL(value_changed(const QString &)), widget, SLOT(setText(const QString &)));
 	// When Enter is pressed or the QLineEdit loses input focus, update the key.
@@ -103,7 +102,7 @@ GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
 		QAbstractButton *reset_button)
 {
 	ConfigGuiUtils::ConfigWidgetAdapter *adapter = new ConfigGuiUtils::ConfigWidgetAdapter(
-			widget, config, key);
+				widget, config, key);
 	// When the config key changes, update the widget.
 	QObject::connect(adapter, SIGNAL(value_changed(bool)), widget, SLOT(setChecked(bool)));
 	// When the widget changes, update the key.
@@ -127,7 +126,7 @@ GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
 		QAbstractButton *reset_button)
 {
 	ConfigGuiUtils::ConfigWidgetAdapter *adapter = new ConfigGuiUtils::ConfigWidgetAdapter(
-			widget, config, key);
+				widget, config, key);
 	// When the config key changes, update the widget.
 	QObject::connect(adapter, SIGNAL(value_changed(int)), widget, SLOT(setValue(int)));
 	// When the widget changes, update the key.
@@ -151,7 +150,7 @@ GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
 		QAbstractButton *reset_button)
 {
 	ConfigGuiUtils::ConfigWidgetAdapter *adapter = new ConfigGuiUtils::ConfigWidgetAdapter(
-			widget, config, key);
+				widget, config, key);
 	// When the config key changes, update the widget.
 	QObject::connect(adapter, SIGNAL(value_changed(double)), widget, SLOT(setValue(double)));
 	// When the widget changes, update the key.
@@ -171,10 +170,11 @@ GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(
 		QButtonGroup *button_group,
 		GPlatesUtils::ConfigInterface &config,
 		const QString &key,
+		const ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type &map,
 		QAbstractButton *reset_button)
 {
 	ConfigGuiUtils::ConfigButtonGroupAdapter *adapter = new ConfigGuiUtils::ConfigButtonGroupAdapter(
-				button_group,config,key);
+				button_group,config,key,map);
 	QObject::connect(adapter,SIGNAL(value_changed(int)),adapter,SLOT(set_checked_button(int)));
 
 	QObject::connect(button_group,SIGNAL(buttonClicked(int)),adapter,SLOT(handle_checked_button_changed(int)));
@@ -289,11 +289,13 @@ GPlatesGui::ConfigGuiUtils::ConfigWidgetAdapter::handle_reset_clicked()
 GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::ConfigButtonGroupAdapter(
 		QButtonGroup *button_group,
 		GPlatesUtils::ConfigInterface &config,
-		const QString &key):
+		const QString &key,
+		const button_enum_to_description_map_type &button_to_description_map):
 	QObject(button_group),
 	d_button_group_ptr(button_group),
 	d_config(config),
-	d_key(key)
+	d_key(key),
+	d_button_to_description_map(button_to_description_map)
 {
 	connect(&config, SIGNAL(key_value_updated(QString)), this, SLOT(handle_key_value_updated(QString)));
 }
@@ -309,37 +311,32 @@ GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::handle_key_value_updated(
 
 	// Otherwise re-emit signals that are more useful to the various widgets.
 	QVariant value = d_config.get_value(key);
+	MapValueEquals map_value_equals(value.toString());
 
-    static const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type
-            map = GPlatesQtWidgets::KinematicGraphsDialog::build_velocity_method_description_map();
-
-    GPlatesQtWidgets::KinematicGraphsDialog::MapValueEquals map_value_equals(value.toString());
-
-    const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type::const_iterator
-            it = std::find_if(map.begin(),map.end(),map_value_equals);
+	button_enum_to_description_map_type::const_iterator
+			it = std::find_if(
+				d_button_to_description_map.begin(),
+				d_button_to_description_map.end(),
+				map_value_equals);
 
 
-    if (it != map.end())
-    {
-        Q_EMIT value_changed(it.key());
-    }
+	if (it != d_button_to_description_map.end())
+	{
+		Q_EMIT value_changed(it.key());
+	}
 }
 
 void
 GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::handle_checked_button_changed(
 		int index)
 {
+	button_enum_to_description_map_type::const_iterator
+			it = d_button_to_description_map.find(index);
 
-    static const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type
-            map = GPlatesQtWidgets::KinematicGraphsDialog::build_velocity_method_description_map();
-
-    GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type::const_iterator
-            it = map.find(static_cast<GPlatesQtWidgets::KinematicGraphsDialog::VelocityMethod>(index));
-
-    if (it != map.end())
-    {
-        d_config.set_value(d_key,QVariant(*it));
-    }
+	if (it != d_button_to_description_map.end())
+	{
+		d_config.set_value(d_key,QVariant(*it));
+	}
 }
 
 void

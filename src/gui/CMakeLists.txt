@@ -122,6 +122,8 @@ set(srcs
     FeatureTypeColourPalette.h
     FeedbackOpenGLToQPainter.cc
     FeedbackOpenGLToQPainter.h
+    FileIODirectoryConfigurations.cc
+    FileIODirectoryConfigurations.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc

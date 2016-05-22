@@ -1,8 +1,8 @@
 /**
- * \file 
+ * \file
  * $Revision: 8188 $
- * $Date: 2010-04-23 12:25:09 +0200 (Fri, 23 Apr 2010) $ 
- * 
+ * $Date: 2010-04-23 12:25:09 +0200 (Fri, 23 Apr 2010) $
+ *
  * Copyright (C) 2014, 2015 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -20,7 +20,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_KINEMATICGRAPHSDIALOG_H
 #define GPLATES_QTWIDGETS_KINEMATICGRAPHSDIALOG_H
 
@@ -28,10 +28,11 @@
 #include <QScopedPointer>
 
 #include "maths/LatLonPoint.h"
-#include "maths/Real.h"
+
 #include "model/types.h"
 #include "GPlatesDialog.h"
 #include "SaveFileDialog.h"
+#include "KinematicGraphsConfigurationWidget.h"
 
 #include "KinematicGraphsDialogUi.h"
 
@@ -84,52 +85,12 @@ namespace GPlatesQtWidgets
 
 
 	class KinematicGraphsDialog:
-		public GPlatesDialog,
-		protected Ui_KinematicGraphsDialog
+			public GPlatesDialog,
+			protected Ui_KinematicGraphsDialog
 	{
 		Q_OBJECT
 
 	public:
-
-        class
-        MapValueEquals:
-                public std::unary_function<QString,bool>
-        {
-        public:
-            explicit
-            MapValueEquals(
-                    QString value):
-                d_value(value)
-            {}
-
-            bool
-            operator()(
-                const QString &value) const
-            {
-                return (value == d_value);
-            }
-        private:
-            QString d_value;
-        };
-
-		enum VelocityMethod{
-            T_TO_T_MINUS_DT = 0,
-            T_PLUS_DT_TO_T,
-			T_PLUS_MINUS_HALF_DT
-		};
-
-        typedef QMap<VelocityMethod,QString> velocity_method_description_map_type;
-
-        static const velocity_method_description_map_type &
-        build_velocity_method_description_map()
-        {
-            static velocity_method_description_map_type map;
-            map[T_PLUS_DT_TO_T] = "(T+dt)_to_T";
-            map[T_TO_T_MINUS_DT] = "T_to_(T-dt)";
-            map[T_PLUS_MINUS_HALF_DT] = "(T+dt/2)_to_(T-dt/2)";
-            return map;
-        }
-
 
 		struct Configuration
 		{
@@ -137,13 +98,13 @@ namespace GPlatesQtWidgets
 				d_delta_t(INITIAL_DELTA_T),
 				d_yellow_threshold(INITIAL_THRESHOLD_YELLOW),
 				d_red_threshold(INITIAL_THRESHOLD_RED),
-				d_velocity_method(T_TO_T_MINUS_DT)
+				d_velocity_method(GPlatesQtWidgets::KinematicGraphsConfigurationWidget::T_TO_T_MINUS_DT)
 			{}
 
 			double d_delta_t;
 			double d_yellow_threshold;
 			double d_red_threshold;
-			VelocityMethod d_velocity_method;
+			GPlatesQtWidgets::KinematicGraphsConfigurationWidget::VelocityMethod d_velocity_method;
 		};
 
 		enum KinematicGraphType{
@@ -156,7 +117,7 @@ namespace GPlatesQtWidgets
 			ANGULAR_VELOCITY_GRAPH_TYPE,
 
 			NUM_GRAPH_TYPES,
-// Temp re-ordering to disable rotation rate.
+			// Temp re-ordering to disable rotation rate.
 			ROTATION_RATE_GRAPH_TYPE,
 		};
 
@@ -172,7 +133,7 @@ namespace GPlatesQtWidgets
 			VELOCITY_LON_COLUMN,
 			ANGULAR_VELOCITY_COLUMN,
 			NUM_COLUMNS,
-// Temp re-ordering to disable rotation rate.
+			// Temp re-ordering to disable rotation rate.
 			ROTATION_RATE_COLUMN,
 		};
 
@@ -195,8 +156,8 @@ namespace GPlatesQtWidgets
 
 
 		KinematicGraphsDialog(
-			GPlatesPresentation::ViewState &view_state,
-			QWidget *parent_ = NULL);
+				GPlatesPresentation::ViewState &view_state,
+				QWidget *parent_ = NULL);
 
 	private Q_SLOTS:
 
@@ -264,6 +225,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_stretch_y_clicked();
+
+		/**
+		 * @brief handle_flip_horizontal_axis -handle the "flip horizontal axis" button.
+		 */
+		void
+		handle_flip_horizontal_axis();
 
 
 	private:

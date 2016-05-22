@@ -97,6 +97,7 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/SymbolFileReader.h"
 
+#include "global/Constants.h"
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"

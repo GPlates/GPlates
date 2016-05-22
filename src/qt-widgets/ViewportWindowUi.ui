@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>24</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -868,6 +868,9 @@
    <property name="text">
     <string>&amp;Export...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+E</string>
+   </property>
   </action>
   <action name="action_Set_Projection">
    <property name="text">
@@ -1159,7 +1162,7 @@
     <string>Open &amp;Kinematics Tool...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+K</string>
+    <string>Ctrl+Shift+K</string>
    </property>
   </action>
  </widget>

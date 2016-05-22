@@ -34,6 +34,10 @@
 
 #include "SaveFileDialog.h"
 
+namespace GPlatesGui
+{
+	class DirectoryConfiguration;
+}
 
 namespace GPlatesPresentation
 {
@@ -88,7 +92,7 @@ namespace GPlatesQtWidgets
 					QWidget *parent_,
 					const QString &caption,
 					const filter_list_type &filters,
-					GPlatesPresentation::ViewState &view_state);
+					GPlatesGui::DirectoryConfiguration &directory_configuration);
 
 			boost::optional<QString>
 			get_file_name(
@@ -107,13 +111,14 @@ namespace GPlatesQtWidgets
 			QWidget *d_parent_ptr;
 			QString d_caption;
 			QString d_filters;
-			GPlatesPresentation::ViewState &d_view_state;
 			QString d_last_file_name;
 
 			/**
 			 * Maps file extension to filter text
 			 */
 			std::map<QString, QString> d_filter_map_ext_to_text;
+
+			GPlatesGui::DirectoryConfiguration &d_directory_configuration;
 		};
 
 
@@ -150,7 +155,7 @@ namespace GPlatesQtWidgets
 					QWidget *parent_,
 					const QString &caption,
 					const filter_list_type &filters,
-					GPlatesPresentation::ViewState &view_state);
+					GPlatesGui::DirectoryConfiguration &directory_configuration);
 
 			boost::optional<QString>
 			get_file_name(
@@ -164,6 +169,7 @@ namespace GPlatesQtWidgets
 			select_file(
 					const QString &file_path);
 
+
 		private Q_SLOTS:
 
 			void
@@ -171,7 +177,6 @@ namespace GPlatesQtWidgets
 
 		private:
 
-			GPlatesPresentation::ViewState &d_view_state;
 			boost::scoped_ptr<QFileDialog> d_file_dialog_ptr;
 
 			/**
@@ -183,6 +188,8 @@ namespace GPlatesQtWidgets
 			 * Maps file extension to filter text
 			 */
 			std::map<QString, QString> d_filter_map_ext_to_text;
+
+			GPlatesGui::DirectoryConfiguration &d_directory_configuration;
 		};
 	}
 }

@@ -182,6 +182,34 @@ GPlatesPresentation::VisualLayers::order_end() const
 	return d_layer_order.end();
 }
 
+void
+GPlatesPresentation::VisualLayers::show_all()
+{
+	for (unsigned int n = 0; n < size() ; ++n)
+	{
+		boost::shared_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+				visual_layer_at(n).lock();
+		if (visual_layer)
+		{
+			visual_layer->set_visible(true);
+		}
+	}
+}
+
+void
+GPlatesPresentation::VisualLayers::hide_all()
+{
+	for (unsigned int n = 0; n < size() ; ++n)
+	{
+		boost::shared_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+				visual_layer_at(n).lock();
+		if (visual_layer)
+		{
+			visual_layer->set_visible(false);
+		}
+	}
+}
+
 
 const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &
 GPlatesPresentation::VisualLayers::get_layer_order() const

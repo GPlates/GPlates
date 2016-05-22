@@ -343,9 +343,6 @@ namespace GPlatesQtWidgets
 		void
 		set_internal_release_window_title();
 
-
-	
-		
 		private Q_SLOTS:
 
 		void

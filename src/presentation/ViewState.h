@@ -70,6 +70,7 @@ namespace GPlatesGui
 	class ExportAnimationRegistry;
 	class FeatureTableModel;
 	class FeatureFocus;
+	class FileIODirectoryConfigurations;
 	class GraticuleSettings;
 	class MapTransform;
 	class PythonManager;
@@ -253,14 +254,13 @@ namespace GPlatesPresentation
 		int
 		get_main_viewport_max_dimension() const;
 
-
+		// TODO: the get_last_open_directory methods should be obsolete now, but retain
+		// until the FileIODirectoryConfiguration stuff has been tested further.
 		QString &
 		get_last_open_directory();
 
-
 		const QString &
 		get_last_open_directory() const;
-
 
 		bool
 		get_show_stars() const;
@@ -319,6 +319,11 @@ namespace GPlatesPresentation
 		{
 			return *d_python_manager_ptr;
 		}
+
+		GPlatesGui::FileIODirectoryConfigurations&
+		get_file_io_directory_configurations();
+
+
 
 	private Q_SLOTS:
 
@@ -435,8 +440,16 @@ namespace GPlatesPresentation
 		/**
 		 * Stores the directory containing the files last opened, or the last opened
 		 * directory.
+		 *
+		 * This should be obsolete now that FileIODirectoryConfigurations are being
+		 * used, but will retain for the time being.
 		 */
 		QString d_last_open_directory;
+
+		/**
+		 * Stores last-used directories, preferred behaviour etc for various file types
+		 */
+		boost::scoped_ptr<GPlatesGui::FileIODirectoryConfigurations> d_file_io_directory_configurations;
 
 		/**
 		 * Whether to draw stars behind the 3D globe.
