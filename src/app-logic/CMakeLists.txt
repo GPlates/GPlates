@@ -76,6 +76,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
+    NetRotationUtils.cc
+    NetRotationUtils.h
     PalaeomagUtils.cc
     PalaeomagUtils.h
     PartitionFeatureTask.cc

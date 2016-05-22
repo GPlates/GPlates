@@ -60,6 +60,7 @@ namespace GPlatesGui
 				export_type_name_map[EQUIVALENT_STAGE_ROTATION]   =QObject::tr("Equivalent Stage Rotation");
 				export_type_name_map[FLOWLINES]                   =QObject::tr("Flowlines");
 				export_type_name_map[MOTION_PATHS]                =QObject::tr("Motion Paths");
+				export_type_name_map[NET_ROTATIONS]               =QObject::tr("Net Rotations");
 				export_type_name_map[CO_REGISTRATION]             =QObject::tr("Co-registration data");
 
 				return export_type_name_map;
@@ -194,6 +195,11 @@ namespace GPlatesGui
 						QObject::tr(
 							"<html><body>"
 							"<p>Export motion tracks.</p>"
+							"</body></html>");
+				export_type_description_map[NET_ROTATIONS] =
+						QObject::tr(
+							"<html><body>"
+							"<p>Export net rotations.</p>"
 							"</body></html>");
 				export_type_description_map[CO_REGISTRATION] =
 						QObject::tr(

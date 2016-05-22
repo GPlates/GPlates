@@ -38,6 +38,7 @@
 #include "ExportFlowlineAnimationStrategy.h"
 #include "ExportImageAnimationStrategy.h"
 #include "ExportMotionPathAnimationStrategy.h"
+#include "ExportNetRotationAnimationStrategy.h"
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 #include "ExportResolvedTopologyAnimationStrategy.h"
@@ -58,6 +59,7 @@
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportImageOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
+#include "qt-widgets/ExportNetRotationOptionsWidget.h"
 #include "qt-widgets/ExportRasterOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
 #include "qt-widgets/ExportResolvedTopologyOptionsWidget.h"
@@ -1542,6 +1544,72 @@ GPlatesGui::register_default_export_animation_types(
 	// Export velocities
 	//
 	register_default_export_velocity_animation_types(registry);
+
+
+	//
+	// Export net rotations
+	//
+	ExportOptionsUtils::ExportNetRotationOptions default_net_rotation_options(
+				10. /* time interval, Ma */,
+				GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT /*velocity method */);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::NET_ROTATIONS,
+					ExportAnimationType::CSV_COMMA),
+			ExportNetRotationAnimationStrategy::const_configuration_ptr(
+					new ExportNetRotationAnimationStrategy::Configuration(
+							add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_COMMA),
+							ExportNetRotationAnimationStrategy::Configuration::CSV_COMMA,
+							default_net_rotation_options)),
+			&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+				boost::bind(
+				static_cast<create_export_options_widget_function_pointer_type>(
+						&create_export_options_widget<
+						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+						ExportNetRotationAnimationStrategy> ),
+					_1,_2,_3),
+			// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+				ExportAnimationType::get_export_id(
+					ExportAnimationType::NET_ROTATIONS,
+					ExportAnimationType::CSV_TAB),
+				ExportNetRotationAnimationStrategy::const_configuration_ptr(
+					new ExportNetRotationAnimationStrategy::Configuration(
+						add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_TAB),
+						ExportNetRotationAnimationStrategy::Configuration::CSV_TAB,
+						default_net_rotation_options)),
+				&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+				boost::bind(
+				static_cast<create_export_options_widget_function_pointer_type>(
+						&create_export_options_widget<
+						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+						ExportNetRotationAnimationStrategy> ),
+					_1,_2,_3),
+				// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+				ExportAnimationType::get_export_id(
+					ExportAnimationType::NET_ROTATIONS,
+					ExportAnimationType::CSV_SEMICOLON),
+				ExportNetRotationAnimationStrategy::const_configuration_ptr(
+					new ExportNetRotationAnimationStrategy::Configuration(
+						add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_SEMICOLON),
+						ExportNetRotationAnimationStrategy::Configuration::CSV_SEMICOLON,
+						default_net_rotation_options)),
+				&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+				boost::bind(
+				static_cast<create_export_options_widget_function_pointer_type>(
+						&create_export_options_widget<
+						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+						ExportNetRotationAnimationStrategy> ),
+					_1,_2,_3),
+				// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
 
 	//
 	// Export resolved topologies (general)

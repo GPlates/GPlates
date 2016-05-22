@@ -59,6 +59,7 @@ namespace GPlatesGui
 			FLOWLINES,
 			MOTION_PATHS,
 			CO_REGISTRATION,
+			NET_ROTATIONS,
 
 			NUM_TYPES,
 

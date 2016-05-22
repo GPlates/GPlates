@@ -91,6 +91,8 @@ set(srcs
     ExportImageAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
+    ExportNetRotationAnimationStrategy.cc
+    ExportNetRotationAnimationStrategy.h
     ExportOptionsUtils.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h

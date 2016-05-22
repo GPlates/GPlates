@@ -223,6 +223,7 @@ set(srcs
     ExportImageResolutionOptionsWidget.h
     ExportImageResolutionOptionsWidgetUi.ui
     ExportMotionPathOptionsWidget.h
+    ExportNetRotationOptionsWidget.h
     ExportOptionsWidget.h
     ExportRasterOptionsWidget.cc
     ExportRasterOptionsWidget.h
@@ -534,6 +535,9 @@ set(srcs
     VelocityFieldCalculatorLayerOptionsWidget.cc
     VelocityFieldCalculatorLayerOptionsWidget.h
     VelocityFieldCalculatorLayerOptionsWidgetUi.ui
+    VelocityMethodWidget.cc
+    VelocityMethodWidget.h
+    VelocityMethodWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui
