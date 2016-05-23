@@ -956,6 +956,76 @@ namespace GPlatesGui
 
 
 		/**
+		 * Registers information about the default net rotation export animation types with the given @a registry.
+		 */
+		void
+		register_default_export_net_rotation_animation_types(
+				ExportAnimationRegistry &registry)
+		{
+			ExportOptionsUtils::ExportNetRotationOptions default_net_rotation_options(
+						10. /* time interval, Ma */,
+						GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT /*velocity method */);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::NET_ROTATIONS,
+							ExportAnimationType::CSV_COMMA),
+					ExportNetRotationAnimationStrategy::const_configuration_ptr(
+							new ExportNetRotationAnimationStrategy::Configuration(
+									add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_COMMA),
+									ExportNetRotationAnimationStrategy::Configuration::CSV_COMMA,
+									default_net_rotation_options)),
+					&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+						boost::bind(
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+								GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+								ExportNetRotationAnimationStrategy> ),
+							_1,_2,_3),
+					// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+						ExportAnimationType::get_export_id(
+							ExportAnimationType::NET_ROTATIONS,
+							ExportAnimationType::CSV_TAB),
+						ExportNetRotationAnimationStrategy::const_configuration_ptr(
+							new ExportNetRotationAnimationStrategy::Configuration(
+								add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_TAB),
+								ExportNetRotationAnimationStrategy::Configuration::CSV_TAB,
+								default_net_rotation_options)),
+						&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+						boost::bind(
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+								GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+								ExportNetRotationAnimationStrategy> ),
+							_1,_2,_3),
+						// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+						&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+						ExportAnimationType::get_export_id(
+							ExportAnimationType::NET_ROTATIONS,
+							ExportAnimationType::CSV_SEMICOLON),
+						ExportNetRotationAnimationStrategy::const_configuration_ptr(
+							new ExportNetRotationAnimationStrategy::Configuration(
+								add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_SEMICOLON),
+								ExportNetRotationAnimationStrategy::Configuration::CSV_SEMICOLON,
+								default_net_rotation_options)),
+						&create_animation_strategy<ExportNetRotationAnimationStrategy>,
+						boost::bind(
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+								GPlatesQtWidgets::ExportNetRotationOptionsWidget,
+								ExportNetRotationAnimationStrategy> ),
+							_1,_2,_3),
+						// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
+						&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+		}
+
+
+		/**
 		 * Registers information about the default image (screenshots) export animation types with the given @a registry.
 		 */
 		void
@@ -1545,72 +1615,6 @@ GPlatesGui::register_default_export_animation_types(
 	//
 	register_default_export_velocity_animation_types(registry);
 
-
-	//
-	// Export net rotations
-	//
-	ExportOptionsUtils::ExportNetRotationOptions default_net_rotation_options(
-				10. /* time interval, Ma */,
-				GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT /*velocity method */);
-
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::NET_ROTATIONS,
-					ExportAnimationType::CSV_COMMA),
-			ExportNetRotationAnimationStrategy::const_configuration_ptr(
-					new ExportNetRotationAnimationStrategy::Configuration(
-							add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_COMMA),
-							ExportNetRotationAnimationStrategy::Configuration::CSV_COMMA,
-							default_net_rotation_options)),
-			&create_animation_strategy<ExportNetRotationAnimationStrategy>,
-				boost::bind(
-				static_cast<create_export_options_widget_function_pointer_type>(
-						&create_export_options_widget<
-						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
-						ExportNetRotationAnimationStrategy> ),
-					_1,_2,_3),
-			// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
-
-	registry.register_exporter(
-				ExportAnimationType::get_export_id(
-					ExportAnimationType::NET_ROTATIONS,
-					ExportAnimationType::CSV_TAB),
-				ExportNetRotationAnimationStrategy::const_configuration_ptr(
-					new ExportNetRotationAnimationStrategy::Configuration(
-						add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_TAB),
-						ExportNetRotationAnimationStrategy::Configuration::CSV_TAB,
-						default_net_rotation_options)),
-				&create_animation_strategy<ExportNetRotationAnimationStrategy>,
-				boost::bind(
-				static_cast<create_export_options_widget_function_pointer_type>(
-						&create_export_options_widget<
-						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
-						ExportNetRotationAnimationStrategy> ),
-					_1,_2,_3),
-				// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
-				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
-
-	registry.register_exporter(
-				ExportAnimationType::get_export_id(
-					ExportAnimationType::NET_ROTATIONS,
-					ExportAnimationType::CSV_SEMICOLON),
-				ExportNetRotationAnimationStrategy::const_configuration_ptr(
-					new ExportNetRotationAnimationStrategy::Configuration(
-						add_export_filename_extension("net_rotation_%0.2fMa", ExportAnimationType::CSV_SEMICOLON),
-						ExportNetRotationAnimationStrategy::Configuration::CSV_SEMICOLON,
-						default_net_rotation_options)),
-				&create_animation_strategy<ExportNetRotationAnimationStrategy>,
-				boost::bind(
-				static_cast<create_export_options_widget_function_pointer_type>(
-						&create_export_options_widget<
-						GPlatesQtWidgets::ExportNetRotationOptionsWidget,
-						ExportNetRotationAnimationStrategy> ),
-					_1,_2,_3),
-				// P is for per-plate-polygon export.We might want to provide this option for net-rotation later.
-				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
-
-
 	//
 	// Export resolved topologies (general)
 	//
@@ -1625,6 +1629,11 @@ GPlatesGui::register_default_export_animation_types(
 	// Export rotations
 	//
 	register_default_export_rotation_animation_types(registry);
+
+	//
+	// Export net rotations
+	//
+	register_default_export_net_rotation_animation_types(registry);
 
 	//
 	// Export images (screenshots of viewport)
