@@ -186,8 +186,6 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-//qDebug() << "SetDeformationParametersDialog::handle_apply() : if(locked_visual_layer)";
-
 		// Acquire a pointer to a @a ReconstructParams.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 		GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
@@ -195,7 +193,6 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 					&layer.get_layer_task_params());
 		if (!layer_task_params)
 		{
-//qDebug() << "SetDeformationParametersDialog::handle_apply() : if(!layer_task_params)";
 			accept();
 		}
 
@@ -208,13 +205,20 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 			accept();
 		}
 
-		// Handle settings
-		layer_task_params->get_reconstruct_params().set_deformation_end_time(
-			spinbox_end_time->value());
-		layer_task_params->get_reconstruct_params().set_deformation_begin_time(
-			spinbox_begin_time->value());
-		layer_task_params->get_reconstruct_params().set_deformation_time_increment(
-			spinbox_time_increment->value());
+		{
+			// Delay any calls to 'ApplicationState::reconstruct()' until scope exit.
+			GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(d_application_state);
+
+			// Handle settings
+			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_task_params->get_reconstruct_params();
+			reconstruct_params.set_deformation_end_time(spinbox_end_time->value());
+			reconstruct_params.set_deformation_begin_time(spinbox_begin_time->value());
+			reconstruct_params.set_deformation_time_increment(spinbox_time_increment->value());
+			layer_task_params->set_reconstruct_params(reconstruct_params);
+
+			// If any reconstruct parameters were modified then 'ApplicationState::reconstruct()'
+			// will get called here (at scope exit).
+		}
 
 		// Show deformed feature geometries.
 		visual_layer_params->set_show_deformed_feature_geometries(
@@ -226,12 +230,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 		// Set strain accumulation scale.
 		visual_layer_params->set_strain_accumulation_scale(
 				strain_accumulation_scale_spinbox->value());
-
-//qDebug() << "SetDeformationParametersDialog::handle_apply() : PRE d_application_state.reconstruct()";
-		// Tell GPlates to reconstruct now so that the updated render settings are used. 
-		d_application_state.reconstruct();	
 	}
 
 	accept();
-//qDebug() << "SetDeformationParametersDialog::handle_apply() : POST accept;";
 }

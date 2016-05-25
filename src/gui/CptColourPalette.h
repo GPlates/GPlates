@@ -131,6 +131,9 @@ namespace GPlatesGui
 		can_handle(
 				value_type value) const
 		{
+			// Note: We're *not* using epsilon comparisons here - this should still create airtight
+			// lookups where values don't slip through the cracks (but is more efficient than epsilon
+			// comparison - particularly when looking up millions of raster pixels)...
 			return d_lower_value.dval() <= value.dval() && value.dval() <= d_upper_value.dval();
 		}
 
@@ -808,7 +811,11 @@ namespace GPlatesGui
 		{
 			// Background colour is used if value comes before first slice.
 			return d_entries.empty() ||
-				value < d_entries.front();
+					// Note: We're *not* using epsilon comparisons here since not using them in
+					// ColourSlice::can_handle() either - this should still create airtight lookups
+					// where values don't slip through the cracks (but is more efficient than epsilon
+					// comparison - particularly when looking up millions of raster pixels)...
+					value <= d_entries.front().lower_value().dval();
 		}
 
 		virtual
@@ -818,7 +825,11 @@ namespace GPlatesGui
 		{
 			// Foreground colour is used if value comes after last slice.
 			return !d_entries.empty() &&
-				value > d_entries.back();
+					// Note: We're *not* using epsilon comparisons here since not using them in
+					// ColourSlice::can_handle() either - this should still create airtight lookups
+					// where values don't slip through the cracks (but is more efficient than epsilon
+					// comparison - particularly when looking up millions of raster pixels)...
+					value >= d_entries.back().upper_value().dval();
 		}
 
 	private:
@@ -888,6 +899,46 @@ namespace GPlatesGui
 				// not integral, we use the label as the value type, and there is no requirement
 				// that the labels are presented in sorted order (in fact, there may be no order).
 				return false;
+			}
+		};
+
+		template<typename T, class Enable = void>
+		struct GetRange;
+
+		template<typename T>
+		struct GetRange<T, typename boost::enable_if<boost::is_integral<T> >::type>
+		{
+			template<typename EntryType>
+			static
+			boost::optional< std::pair<T, T> >
+			get_range(
+					const std::vector<EntryType> &entries)
+			{
+				if (entries.empty())
+				{
+					return boost::none;
+				}
+
+				// The CPT entries should have monotonically increasing (integer) keys.
+				// Foreground colour is used if value comes after last slice.
+				return std::make_pair(
+						entries.front().key(),
+						entries.back().key());
+			}
+		};
+
+		template<typename T>
+		struct GetRange<T, typename boost::disable_if<boost::is_integral<T> >::type>
+		{
+			template<typename EntryType>
+			static
+			boost::optional< std::pair<T, T> >
+			get_range(
+					const std::vector<EntryType> &entries)
+			{
+				// For categorical CPT files whose value type is not integral it does not
+				// make sense to have a range of value (lower/upper bound).
+				return boost::none;
 			}
 		};
 
@@ -1013,14 +1064,7 @@ namespace GPlatesGui
 		boost::optional< std::pair<T, T> >
 		get_range() const
 		{
-			if (d_entries.empty())
-			{
-				return boost::none;
-			}
-
-			return std::make_pair(
-					d_entries.front().key(),
-					d_entries.back().key());
+			return CategoricalCptColourPaletteInternals::GetRange<T>::get_range(d_entries);
 		}
 
 	protected:

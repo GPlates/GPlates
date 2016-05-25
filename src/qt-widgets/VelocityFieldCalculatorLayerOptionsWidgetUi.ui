@@ -43,6 +43,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="push_button_help_solve_velocities_method">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="toolTip">
           <string>What does this mean?</string>
          </property>
@@ -118,6 +121,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="push_button_help_velocity_time_delta">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="toolTip">
              <string>What does this mean?</string>
             </property>
@@ -231,6 +237,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="push_button_help_velocity_smoothing">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="toolTip">
              <string>What does this mean?</string>
             </property>
@@ -414,6 +423,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="push_button_help_arrow_scale">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="toolTip">
           <string>What does this mean?</string>
          </property>
@@ -467,6 +479,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="push_button_unlimited_arrow_spacing">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="toolTip">
           <string>Not limited</string>
          </property>
@@ -494,6 +509,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="push_button_help_arrow_spacing">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="toolTip">
           <string>What does this mean?</string>
          </property>

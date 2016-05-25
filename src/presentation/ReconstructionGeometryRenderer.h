@@ -118,12 +118,23 @@ namespace GPlatesPresentation
 			float ratio_arrow_unit_vector_direction_to_globe_radius;
 			float ratio_arrowhead_size_to_globe_radius;
 
+			//
 			// Scalar field render parameters.
+			//
+
 			GPlatesViewOperations::ScalarField3DRenderParameters scalar_field_render_parameters;
+
+			//
+			// Scalar-coverage-specific parameters.
+			//
+
+			//! Scalar colour palette.
+			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type scalar_coverage_colour_palette;
 
 			//
 			// Raster-specific parameters.
 			//
+
 			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
 			/**
@@ -140,15 +151,21 @@ namespace GPlatesPresentation
 			 */
 			float normal_map_height_field_scale_factor;
 
+			//
 			// VGP-specific parameters.
+			//
 			bool vgp_draw_circular_error;
 
+			//
 			// Deformed feature geoemetry settings.
+			//
 			bool show_deformed_feature_geometries;
 			bool show_strain_accumulation;
 			double strain_accumulation_scale;
 
-			// Topological network settings:
+			//
+			// Topological network settings.
+			//
 			bool show_topological_network_delaunay_triangulation;
 			bool show_topological_network_constrained_triangulation;
 			bool show_topological_network_mesh_triangulation;
@@ -156,8 +173,8 @@ namespace GPlatesPresentation
 			bool show_topological_network_segment_velocity;
 			int topological_network_color_index;
 
-			// 
-			GPlatesGui::UserColourPalette::non_null_ptr_type user_colour_palette;
+			//! Delaunay triangulation colour palette.
+			boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> delaunay_colour_palette;
 		};
 
 
@@ -347,7 +364,7 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsf);
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
         virtual
         void

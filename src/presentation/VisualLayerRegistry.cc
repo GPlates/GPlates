@@ -431,6 +431,26 @@ GPlatesPresentation::register_default_visual_layers(
 			&ReconstructVisualLayerParams::create,
 			true);
 
+	// Need to put reconstructed scalar coverages in same group (BASIC_DATA) as
+	// reconstructed feature geometries because the scalar coverages are coloured
+	// per-point and this needs to be displayed on top of the feature geometries
+	// which have a constant colour across the entire geometry.
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(RECONSTRUCT_SCALAR_COVERAGE),
+			VisualLayerGroup::BASIC_DATA,
+			"Reconstructed Scalar Coverages",
+			"Geometries containing a scalar value at each point.",
+			*html_colours.get_colour("lightslategray"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				RECONSTRUCT_SCALAR_COVERAGE),
+			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
+			boost::bind(
+					&ReconstructScalarCoverageVisualLayerParams::create,
+					_1),
+			true);
+
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(RECONSTRUCTION),
 			VisualLayerGroup::BASIC_DATA,
@@ -549,27 +569,6 @@ GPlatesPresentation::register_default_visual_layers(
 				&default_visual_layer_params,
 				true);
 	}
-
-	// Temporarily disable until it's ready...
-	//
-	// Also need to sort out Scribe serialisation to handle backwards compatibility with GPlates 1.5...
-#if 0
-	registry.register_visual_layer_type(
-			VisualLayerType::Type(RECONSTRUCT_SCALAR_COVERAGE),
-			VisualLayerGroup::DERIVED_DATA,
-			"Reconstructed Scalar Coverages",
-			"Geometries containing a scalar value at each point.",
-			*html_colours.get_colour("peachpuff"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				RECONSTRUCT_SCALAR_COVERAGE),
-			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
-			boost::bind(
-					&ReconstructScalarCoverageVisualLayerParams::create,
-					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
-			true);
-#endif
 
 	//
 	// The following visual layer types do not have corresponding app-logic layers

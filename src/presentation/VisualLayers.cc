@@ -279,6 +279,17 @@ GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 					bool)));
 	QObject::connect(
 			reconstruct_graph,
+			SIGNAL(layer_task_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerTaskParams &)),
+			this,
+			SLOT(handle_layer_task_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerTaskParams &)));
+	QObject::connect(
+			reconstruct_graph,
 			SIGNAL(layer_added_input_connection(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
@@ -652,6 +663,19 @@ GPlatesPresentation::VisualLayers::handle_layer_activation_changed(
 		GPlatesAppLogic::Layer layer,
 		bool activation)
 {
+	handle_layer_modified(layer);
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_layer_task_params_changed(
+		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+		GPlatesAppLogic::Layer layer,
+		GPlatesAppLogic::LayerTaskParams &layer_task_params)
+{
+	// First notify the visual layer parameters (in case they depend on the app-logic layer params).
+	// Then refresh the layer (in case layer options widget needs changing).
+	notify_visual_layer_params(layer);
 	handle_layer_modified(layer);
 }
 

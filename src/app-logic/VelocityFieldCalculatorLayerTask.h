@@ -58,6 +58,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			explicit
+			Params(
+					VelocityFieldCalculatorLayerTask &layer_task);
+
 			/**
 			 * Returns the 'const' velocity parameters.
 			 */
@@ -66,8 +70,6 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Sets the velocity parameters.
-			 *
-			 * NOTE: This will flush any cached velocity multi-point vector fields in this layer.
 			 */
 			void
 			set_velocity_params(
@@ -75,21 +77,9 @@ namespace GPlatesAppLogic
 
 		private:
 
+			VelocityFieldCalculatorLayerTask &d_layer_task;
+
 			VelocityParams d_velocity_params;
-
-			/**
-			 * Is true if @a set_velocity_params has been called.
-			 *
-			 * Used to let VelocityFieldCalculatorLayerTask know that an external client has modified this state.
-			 *
-			 * VelocityFieldCalculatorLayerTask will reset this explicitly.
-			 */
-			bool d_set_velocity_params_called;
-
-			Params();
-
-			// Make friend so can access constructor and @a d_set_velocity_params_called.
-			friend class VelocityFieldCalculatorLayerTask;
 		};
 
 

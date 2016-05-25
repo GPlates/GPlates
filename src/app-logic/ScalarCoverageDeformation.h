@@ -27,6 +27,7 @@
 #define GPLATES_APP_LOGIC_SCALARCOVERAGEDEFORMATION_H
 
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "ScalarCoverageEvolution.h"
 #include "TimeSpanUtils.h"
@@ -123,6 +124,11 @@ namespace GPlatesAppLogic
 					const double &closest_younger_sample_time,
 					const scalar_value_seq_type &closest_younger_sample);
 
+			static
+			boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &>
+			get_deformation_infos(
+					const domain_reconstruction_time_span_type &domain_reconstruction_time_span,
+					unsigned int time_slot);
 
 			explicit
 			ScalarCoverageTimeSpan(

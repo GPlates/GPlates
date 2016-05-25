@@ -27,9 +27,9 @@
  
 #include "TopologyNetworkVisualLayerParams.h"
 
-#include "app-logic/ExtractRasterFeatureProperties.h"
 #include "app-logic/Layer.h"
-#include "app-logic/RasterLayerTask.h"
+
+#include "gui/DefaultColourPalettes.h"
 
 #include "maths/MathsUtils.h"
 
@@ -56,8 +56,7 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLaye
 	d_mid_colour( 						GPlatesGui::Colour(1, 1, 1) ),
 	d_min_colour(						GPlatesGui::Colour(0, 0, 1) ),
 	d_bg_colour(						GPlatesGui::Colour(1, 1, 1) ),
-	d_colour_palette_filename(QString()),
-	d_colour_palette(GPlatesGui::RasterColourPalette::create())
+	d_colour_palette_filename(QString())
 {
 
 }
@@ -69,8 +68,8 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::handle_layer_modified(
 {
 	if (d_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
 	{
-		d_colour_palette = GPlatesGui::RasterColourPalette::create<double>(
-			GPlatesGui::DeformationColourPalette::create(
+		d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
 				d_range1_max, 
 				d_range1_min, 
 				d_range2_max, 
@@ -97,8 +96,8 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::update(
 	// if the colour palette currently in place was not loaded from a file.
 	if (d_colour_palette_filename.isEmpty())
 	{
-		d_colour_palette = GPlatesGui::RasterColourPalette::create<double>(
-			GPlatesGui::DeformationColourPalette::create(
+		d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
 				d_range1_max, 
 				d_range1_min, 
 				d_range2_max, 
@@ -120,7 +119,7 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::update(
 
 	if (!colour_palette_valid)
 	{
-		d_colour_palette = GPlatesGui::RasterColourPalette::create();
+		d_colour_palette = boost::none;
 		colour_palette_changed = true;
 	}
 
@@ -141,7 +140,7 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::get_colour_palette_filena
 void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::set_colour_palette(
 		const QString &filename,
-		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
 {
 	d_colour_palette_filename = filename;
 	d_colour_palette = colour_palette;
@@ -157,7 +156,7 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::user_generated_colour_pal
 }
 
 
-GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
+boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
 GPlatesPresentation::TopologyNetworkVisualLayerParams::get_colour_palette() const
 {
 	return d_colour_palette;

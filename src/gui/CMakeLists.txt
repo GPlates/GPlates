@@ -31,6 +31,8 @@ set(srcs
     ColourPalette.h
     ColourPaletteAdapter.h
     ColourPaletteRangeRemapper.h
+    ColourPaletteUtils.cc
+    ColourPaletteUtils.h
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
@@ -59,6 +61,8 @@ set(srcs
     CsvExport.h
     CustomCompleter.cc
     CustomCompleter.h
+    DefaultColourPalettes.cc
+    DefaultColourPalettes.h
     Dialogs.cc
     Dialogs.h
     DigitisationCanvasToolWorkflow.cc

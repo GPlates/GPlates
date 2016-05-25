@@ -54,6 +54,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
+#include "app-logic/ReconstructedScalarCoverage.h"
 #include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -219,6 +220,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
 	ratio_arrowhead_size_to_globe_radius(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius()),
+	scalar_coverage_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	fill_modulate_colour(1, 1, 1, 1),
 	normal_map_height_field_scale_factor(1),
@@ -231,8 +233,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
 	show_topological_network_total_triangulation( show_topological_network_total_triangulation_),
 	show_topological_network_segment_velocity( show_topological_network_segment_velocity_),
-	topological_network_color_index( topological_network_color_index_),
-	user_colour_palette(GPlatesGui::UserColourPalette::create())
+	topological_network_color_index( topological_network_color_index_)
 {
 }
 
@@ -241,7 +242,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_raster_visual_layer_params(
 		const RasterVisualLayerParams &params)
 {
-	d_render_params.raster_colour_palette = params.get_colour_palette();
+	d_render_params.raster_colour_palette = params.get_colour_palette_parameters().get_colour_palette();
 	d_render_params.fill_modulate_colour = params.get_modulate_colour();
 	d_render_params.normal_map_height_field_scale_factor = params.get_surface_relief_scale();
 }
@@ -251,6 +252,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_scalar_coverage_visual_layer_params(
 		const ReconstructScalarCoverageVisualLayerParams &params)
 {
+	d_render_params.scalar_coverage_colour_palette = params.get_current_colour_palette_parameters().get_colour_palette();
 }
 
 
@@ -296,7 +298,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 	d_render_params.show_topological_network_segment_velocity = params.show_segment_velocity();
 	d_render_params.fill_polygons = params.show_fill();
 	d_render_params.topological_network_color_index = params.color_index();
-	d_render_params.raster_colour_palette = params.get_colour_palette();
+	d_render_params.delaunay_colour_palette = params.get_colour_palette();
 }
 
 
@@ -911,8 +913,60 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsf)
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
 {
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_rendered_geometry_layer,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the domain geometry points.
+	std::vector<GPlatesMaths::PointOnSphere> domain_points;
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_geometry =
+			rsc->get_reconstructed_geometry();
+	GPlatesAppLogic::GeometryUtils::get_geometry_points(*domain_geometry, domain_points);
+
+	// Get the scalar values.
+	const GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type &scalar_values =
+			rsc->get_reconstructed_point_scalar_values();
+
+	// The number of domain points should match the number of scalars.
+	// If it doesn't then there's a problem - but we won't assert (since don't want to assert on data)
+	// and we won't log a warning (since it will spam the log due to many render calls).
+	if (domain_points.size() != scalar_values.size())
+	{
+		return;
+	}
+
+	// We should have a real-valued colour palette.
+	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> scalar_colour_palette =
+			GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(
+					*d_render_params.scalar_coverage_colour_palette);
+	if (!scalar_colour_palette)
+	{
+		return;
+	}
+
+	// Iterate over the points/scalars.
+	unsigned int num_points = domain_points.size();
+	for (unsigned int point_index = 0; point_index < num_points; ++point_index)
+	{
+		const GPlatesMaths::PointOnSphere &point = domain_points[point_index];
+		const double scalar = scalar_values[point_index];
+
+		// Look up the scalar value in the colour palette.
+		boost::optional<GPlatesGui::Colour> colour = scalar_colour_palette.get()->get_colour(scalar);
+
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						point.get_non_null_pointer(),
+						rsc,
+						d_render_params,
+						GPlatesGui::ColourProxy(colour),
+						d_reconstruction_adjustment,
+						d_feature_type_symbol_map);
+		render_reconstruction_geometry_on_sphere(rendered_geometry);
+	}
 }
 
 void
@@ -1248,12 +1302,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		boost::optional<GPlatesGui::Colour> colour;
 
 		// Check if a render_value was set for this panel.
-		if (render_value)
+		if (render_value &&
+			d_render_params.delaunay_colour_palette)
 		{
 			// Get the colour for this value
-			colour = GPlatesGui::RasterColourPaletteColour::get_colour(
-				*d_render_params.raster_colour_palette,
-				render_value.get());
+			colour = d_render_params.delaunay_colour_palette.get()->get_colour(render_value.get());
 		}
 		// Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
 		else if (d_colour)

@@ -34,6 +34,8 @@
 #include "model/FeatureHandle.h"
 #include "model/WeakObserver.h"
 
+#include "property-values/ValueObjectType.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -77,6 +79,7 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const point_scalar_value_seq_type &reconstructed_point_scalar_values,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
@@ -84,6 +87,7 @@ namespace GPlatesAppLogic
 					new ReconstructedScalarCoverage(
 							reconstructed_domain_geometry,
 							range_property_iterator,
+							scalar_type,
 							reconstructed_point_scalar_values,
 							reconstruct_handle_));
 		}
@@ -104,6 +108,26 @@ namespace GPlatesAppLogic
 			return d_reconstructed_domain_geometry;
 		}
 
+
+		/**
+		 * Access the feature property which contained the reconstructed domain geometry.
+		 */
+		const GPlatesModel::FeatureHandle::iterator
+		get_domain_property() const
+		{
+			return d_reconstructed_domain_geometry->property();
+		}
+
+		/**
+		 * Returns the reconstructed domain geometry.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		get_reconstructed_geometry() const
+		{
+			return d_reconstructed_domain_geometry->reconstructed_geometry();
+		}
+
+
 		/**
 		 * Access the feature property from which the scalar values were reconstructed.
 		 */
@@ -114,9 +138,21 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns the type of the scalar values.
+		 *
+		 * The range property contains one or more scalar sequences.
+		 * Each scalar sequence is identified by a scalar type.
+		 */
+		const GPlatesPropertyValues::ValueObjectType &
+		get_scalar_type() const
+		{
+			return d_scalar_type;
+		}
+
+		/**
 		 * Returns the per-geometry-point scalar values.
 		 *
-		 * Note: Each scalar maps to a point in @a get_reconstructed_domain_geometry.
+		 * Note: Each scalar maps to a point in @a get_reconstructed_geometry.
 		 */
 		const point_scalar_value_seq_type &
 		get_reconstructed_point_scalar_values() const
@@ -221,6 +257,11 @@ namespace GPlatesAppLogic
 		GPlatesModel::FeatureHandle::iterator d_range_property_iterator;
 
 		/**
+		 * The type of the scalar values.
+		 */
+		GPlatesPropertyValues::ValueObjectType d_scalar_type;
+
+		/**
 		 * Per-geometry-point scalar values.
 		 */
 		point_scalar_value_seq_type d_reconstructed_point_scalar_values;
@@ -235,6 +276,7 @@ namespace GPlatesAppLogic
 		ReconstructedScalarCoverage(
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const point_scalar_value_seq_type &reconstructed_point_scalar_values,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_) :
 			ReconstructionGeometry(
@@ -243,6 +285,7 @@ namespace GPlatesAppLogic
 			WeakObserverType(*reconstructed_domain_geometry->feature_handle_ptr()),
 			d_reconstructed_domain_geometry(reconstructed_domain_geometry),
 			d_range_property_iterator(range_property_iterator),
+			d_scalar_type(scalar_type),
 			d_reconstructed_point_scalar_values(reconstructed_point_scalar_values)
 		{  }
 

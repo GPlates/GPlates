@@ -40,6 +40,7 @@
 #include "ReconstructScalarCoverageLayerTask.h"
 #include "ReconstructScalarCoverageParams.h"
 #include "ScalarCoverageDeformation.h"
+#include "ScalarCoverageFeatureProperties.h"
 
 #include "model/FeatureHandle.h"
 
@@ -231,6 +232,13 @@ namespace GPlatesAppLogic
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 				const double &reconstruction_time);
+
+
+		/**
+		 * Gets all scalar coverages available across the scalar coverage features.
+		 */
+		const std::vector<ScalarCoverageFeatureProperties::Coverage> &
+		get_scalar_coverages();
 
 
 		/**
@@ -431,6 +439,11 @@ namespace GPlatesAppLogic
 		boost::optional< std::vector<GPlatesPropertyValues::ValueObjectType> > d_cached_scalar_types;
 
 		/**
+		 * Cached scalar coverages associated with the reconstructed domain *features*.
+		 */
+		boost::optional< std::vector<ScalarCoverageFeatureProperties::Coverage> > d_cached_scalar_coverages;
+
+		/**
 		 * Cached scalar coverages parameters associated with @a d_cached_scalar_coverage_time_spans.
 		 */
 		boost::optional<ReconstructScalarCoverageParams> d_cached_reconstruct_scalar_coverage_params;
@@ -484,6 +497,13 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+
+		/**
+		 * Cache all scalar coverages of all scalar coverage features.
+		 */
+		void
+		cache_scalar_coverages();
 
 
 		/**

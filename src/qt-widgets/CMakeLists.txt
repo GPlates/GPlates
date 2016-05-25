@@ -438,6 +438,9 @@ set(srcs
     ReconstructScalarCoverageLayerOptionsWidget.cc
     ReconstructScalarCoverageLayerOptionsWidget.h
     ReconstructScalarCoverageLayerOptionsWidgetUi.ui
+    RemappedColourPaletteWidget.cc
+    RemappedColourPaletteWidget.h
+    RemappedColourPaletteWidgetUi.ui
     ResizeToContentsTextEdit.cc
     ResizeToContentsTextEdit.h
     SaveFileDialog.cc

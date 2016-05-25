@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 #include <QString>
 
-#include "gui/ColourPalette.h"
+#include "presentation/RemappedColourPaletteParameters.h"
 
 
 namespace GPlatesViewOperations
@@ -84,138 +84,6 @@ namespace GPlatesViewOperations
 			CROSS_SECTION_COLOUR_MODE_GRADIENT,
 
 			NUM_CROSS_SECTION_COLOUR_MODES // This must be last.
-		};
-
-
-		/**
-		 * The colour palette and range used when colouring (eg, by scalar value or by gradient magnitude).
-		 */
-		class ColourPalette
-		{
-		public:
-
-			//! The type of colour palette.
-			enum Type
-			{
-				SCALAR,
-				GRADIENT
-			};
-
-			explicit
-			ColourPalette(
-					Type type);
-
-			/**
-			 * Returns the colour palette - this is the mapped palette if mapping is currently used.
-			 */
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type
-			get_colour_palette() const;
-
-			/**
-			 * Returns the palette range - this is the mapped range if mapping is currently used.
-			 */
-			const std::pair<double, double> &
-			get_palette_range() const;
-
-			/**
-			 * Returns the filename of the file from which the current colour palette was loaded,
-			 * if it was loaded from a file.
-			 * If the current colour palette is the auto-generated default palette, returns the empty string.
-			 */
-			QString
-			get_colour_palette_filename() const;
-
-			/**
-			 * Causes the current colour palette to be the auto-generated default palette,
-			 * and sets the filename field to be the empty string.
-			 *
-			 * If the previous palette is mapped then the new (default) palette will be mapped to the same range.
-			 */
-			void
-			use_default_colour_palette();
-
-			/**
-			 * Sets the current colour palette to be one that is loaded from a file.
-			 * @a filename must not be the empty string.
-			 *
-			 * If the previous palette is mapped then the new palette will be mapped to the same range.
-			 */
-			void
-			set_colour_palette(
-					const QString &filename,
-					const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette,
-					const std::pair<double, double> &palette_range);
-
-			/**
-			 * Remaps the value range of the colour palette (the palette colours remain unchanged).
-			 *
-			 * Returns false if mapping failed, in which case palette range is unmapped.
-			 */
-			bool
-			map_palette_range(
-					const double &lower_bound,
-					const double &upper_bound);
-
-			/**
-			 * Unmaps the current colour palette.
-			 *
-			 * The palette range will revert to the original range loaded from the palette file, or default palette.
-			 */
-			void
-			unmap_palette_range();
-
-			/**
-			 * Returns true if the palette range is currently mapped.
-			 */
-			bool
-			is_palette_range_mapped() const;
-
-			/**
-			 * Returns the *mapped* palette range - returns the last mapped palette range even
-			 * if the palette is not currently mapped.
-			 */
-			const std::pair<double, double> &
-			get_mapped_palette_range() const;
-
-			/**
-			 * Sets the deviation-from-mean parameter (number of standard deviations).
-			 *
-			 * Only used to keep track of the deviation parameter for when it's used to
-			 * generate a mapped palette range.
-			 *
-			 * For colour-by-scalar this range is [mean - deviation, mean + deviation].
-			 * For colour-by-gradient this range is [-mean - deviation, mean + deviation].
-			 */
-			void
-			set_deviation_from_mean(
-					const double &deviation_from_mean);
-
-			/**
-			 * Returns the deviation-from-mean parameter (number of standard deviations).
-			 */
-			const double &
-			get_deviation_from_mean() const;
-
-		private:
-
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type d_default_colour_palette;
-			std::pair<double, double> d_default_palette_range;
-
-			//! The palette loaded from the file (or the default palette).
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type d_colour_palette;
-			//! The palette range of the palette loaded from the file (or the default palette).
-			std::pair<double, double> d_palette_range;
-
-			// Is boost::none if the default palette is being used.
-			boost::optional<QString> d_colour_palette_filename;
-
-			// If boost::none then the original colour palette is used...
-			boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_mapped_colour_palette;
-			//! The last mapped palette range (even if not currently mapped).
-			std::pair<double, double> d_mapped_palette_range;
-
-			double d_deviation_from_mean;
-
 		};
 
 
@@ -325,8 +193,8 @@ namespace GPlatesViewOperations
 				IsosurfaceDeviationWindowMode isosurface_deviation_window_mode,
 				IsosurfaceColourMode isosurface_colour_mode,
 				CrossSectionColourMode cross_section_colour_mode,
-				const ColourPalette &scalar_colour_palette,
-				const ColourPalette &gradient_colour_palette,
+				const GPlatesPresentation::RemappedColourPaletteParameters &scalar_colour_palette_parameters,
+				const GPlatesPresentation::RemappedColourPaletteParameters &gradient_colour_palette_parameters,
 				const IsovalueParameters &isovalue_parameters,
 				const DeviationWindowRenderOptions &deviation_window_render_options,
 				const SurfacePolygonsMask &surface_polygons_mask,
@@ -390,33 +258,33 @@ namespace GPlatesViewOperations
 		/**
 		 * The colour palette used to colour by scalar value.
 		 */
-		const ColourPalette &
-		get_scalar_colour_palette() const
+		const GPlatesPresentation::RemappedColourPaletteParameters &
+		get_scalar_colour_palette_parameters() const
 		{
-			return d_scalar_colour_palette;
+			return d_scalar_colour_palette_parameters;
 		}
 
 		void
-		set_scalar_colour_palette(
-				const ColourPalette &scalar_colour_palette)
+		set_scalar_colour_palette_parameters(
+				const GPlatesPresentation::RemappedColourPaletteParameters &scalar_colour_palette_parameters)
 		{
-			d_scalar_colour_palette = scalar_colour_palette;
+			d_scalar_colour_palette_parameters = scalar_colour_palette_parameters;
 		}
 
 		/**
 		 * The colour palette used to colour by gradient magnitude.
 		 */
-		const ColourPalette &
-		get_gradient_colour_palette() const
+		const GPlatesPresentation::RemappedColourPaletteParameters &
+		get_gradient_colour_palette_parameters() const
 		{
-			return d_gradient_colour_palette;
+			return d_gradient_colour_palette_parameters;
 		}
 
 		void
-		set_gradient_colour_palette(
-				const ColourPalette &gradient_colour_palette)
+		set_gradient_colour_palette_parameters(
+				const GPlatesPresentation::RemappedColourPaletteParameters &gradient_colour_palette_parameters)
 		{
-			d_gradient_colour_palette = gradient_colour_palette;
+			d_gradient_colour_palette_parameters = gradient_colour_palette_parameters;
 		}
 
 		const IsovalueParameters &
@@ -510,10 +378,10 @@ namespace GPlatesViewOperations
 		CrossSectionColourMode d_cross_section_colour_mode;
 
 		//! The colour palette used to colour by scalar value.
-		ColourPalette d_scalar_colour_palette;
+		GPlatesPresentation::RemappedColourPaletteParameters d_scalar_colour_palette_parameters;
 
 		//! The colour palette used to colour by gradient magnitude.
-		ColourPalette d_gradient_colour_palette;
+		GPlatesPresentation::RemappedColourPaletteParameters d_gradient_colour_palette_parameters;
 
 		IsovalueParameters d_isovalue_parameters;
 

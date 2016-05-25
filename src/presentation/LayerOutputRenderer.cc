@@ -32,9 +32,11 @@
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedScalarCoverage.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructMethodFiniteRotation.h"
+#include "app-logic/ReconstructScalarCoverageLayerProxy.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ScalarField3DLayerProxy.h"
@@ -249,6 +251,21 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &reconstruct_scalar_coverage_layer_proxy)
 {
+	// Get the reconstructed scalar coverages for the current reconstruction time.
+	std::vector<GPlatesAppLogic::reconstructed_scalar_coverage_non_null_ptr_type> reconstructed_scalar_coverages;
+	reconstruct_scalar_coverage_layer_proxy->get_reconstructed_scalar_coverages(reconstructed_scalar_coverages);
+
+	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
+
+	// Render each reconstructed scalar coverage.
+	BOOST_FOREACH(
+			const GPlatesAppLogic::reconstructed_scalar_coverage_non_null_ptr_type &reconstructed_scalar_coverage,
+			reconstructed_scalar_coverages)
+	{
+		d_reconstruction_geometry_renderer.render(reconstructed_scalar_coverage);
+	}
+
+	d_reconstruction_geometry_renderer.end_render();
 }
 
 

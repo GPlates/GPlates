@@ -32,6 +32,7 @@
 
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
+	d_layer_task_params(*this),
 	d_velocity_field_calculator_layer_proxy(
 			VelocityFieldCalculatorLayerProxy::create())
 {
@@ -245,15 +246,6 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 {
 	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(
 			reconstruction->get_reconstruction_time());
-
-	// If the layer task params have been modified then update our velocity layer proxy.
-	if (d_layer_task_params.d_set_velocity_params_called)
-	{
-		d_velocity_field_calculator_layer_proxy->set_current_velocity_params(
-				d_layer_task_params.d_velocity_params);
-
-		d_layer_task_params.d_set_velocity_params_called = false;
-	}
 }
 
 
@@ -264,8 +256,9 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_layer_proxy()
 }
 
 
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::Params() :
-	d_set_velocity_params_called(false)
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::Params(
+		VelocityFieldCalculatorLayerTask &layer_task) :
+	d_layer_task(layer_task)
 {
 }
 
@@ -281,8 +274,15 @@ void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_velocity_params(
 		const VelocityParams &velocity_params)
 {
+	if (d_velocity_params == velocity_params)
+	{
+		return;
+	}
+
 	d_velocity_params = velocity_params;
 
-	d_set_velocity_params_called = true;
+	// Update our velocity layer proxy.
+	d_layer_task.d_velocity_field_calculator_layer_proxy->set_current_velocity_params(d_velocity_params);
+
 	emit_modified();
 }

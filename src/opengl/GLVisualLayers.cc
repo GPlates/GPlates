@@ -51,6 +51,7 @@
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
+
 GPlatesOpenGL::GLVisualLayers::GLVisualLayers(
 		const GLContext::non_null_ptr_type &opengl_context,
 		GPlatesAppLogic::ApplicationState &application_state) :
@@ -290,7 +291,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 			gl_scalar_field_layer.get_scalar_field_3d_layer_usage();
 
 	// Determine the field colour palette if any is needed.
-	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> colour_palette;
+	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette;
 	boost::optional< std::pair<double, double> > colour_palette_value_range;
 	switch (render_parameters.get_render_mode())
 	{
@@ -298,12 +299,14 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		switch (render_parameters.get_isosurface_colour_mode())
 		{
 		case GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_SCALAR:
-			colour_palette = render_parameters.get_scalar_colour_palette().get_colour_palette();
-			colour_palette_value_range = render_parameters.get_scalar_colour_palette().get_palette_range();
+			colour_palette = GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(
+					*render_parameters.get_scalar_colour_palette_parameters().get_colour_palette());
+			colour_palette_value_range = render_parameters.get_scalar_colour_palette_parameters().get_palette_range();
 			break;
 		case GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_GRADIENT:
-			colour_palette = render_parameters.get_gradient_colour_palette().get_colour_palette();
-			colour_palette_value_range = render_parameters.get_gradient_colour_palette().get_palette_range();
+			colour_palette = GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(
+					*render_parameters.get_gradient_colour_palette_parameters().get_colour_palette());
+			colour_palette_value_range = render_parameters.get_gradient_colour_palette_parameters().get_palette_range();
 			break;
 		default:
 			break;
@@ -313,12 +316,14 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		switch (render_parameters.get_cross_section_colour_mode())
 		{
 		case GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR:
-			colour_palette = render_parameters.get_scalar_colour_palette().get_colour_palette();
-			colour_palette_value_range = render_parameters.get_scalar_colour_palette().get_palette_range();
+			colour_palette = GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(
+					*render_parameters.get_scalar_colour_palette_parameters().get_colour_palette());
+			colour_palette_value_range = render_parameters.get_scalar_colour_palette_parameters().get_palette_range();
 			break;
 		case GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT:
-			colour_palette = render_parameters.get_gradient_colour_palette().get_colour_palette();
-			colour_palette_value_range = render_parameters.get_gradient_colour_palette().get_palette_range();
+			colour_palette = GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(
+					*render_parameters.get_gradient_colour_palette_parameters().get_colour_palette());
+			colour_palette_value_range = render_parameters.get_gradient_colour_palette_parameters().get_palette_range();
 			break;
 		default:
 			break;
@@ -328,11 +333,18 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		break;
 	}
 
+	// Convert to 'const' colour palette.
+	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> const_colour_palette;
+	if (colour_palette)
+	{
+		const_colour_palette = colour_palette.get();
+	}
+
 	// We have a regular, unreconstructed scalar field - although it can still be time-dependent.
 	boost::optional<GLScalarField3D::non_null_ptr_type> scalar_field =
 			scalar_field_layer_usage->get_scalar_field_3d(
 				renderer,
-				colour_palette,
+				const_colour_palette,
 				colour_palette_value_range,
 				d_list_objects->get_light(renderer));
 

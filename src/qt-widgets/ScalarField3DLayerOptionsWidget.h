@@ -35,7 +35,9 @@
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"
 
-#include "gui/ColourPalette.h"
+#include "app-logic/Layer.h"
+
+#include "gui/RasterColourPalette.h"
 
 #include "view-operations/ScalarField3DRenderParameters.h"
 
@@ -54,9 +56,8 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
-	class ColourScaleWidget;
-	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
+	class RemappedColourPaletteWidget;
 	class ViewportWindow;
 
 	/**
@@ -115,10 +116,15 @@ namespace GPlatesQtWidgets
 		handle_use_default_scalar_palette_button_clicked();
 
 		void
-		handle_scalar_palette_range_check_box_changed();
+		handle_scalar_palette_range_check_box_changed(
+				int state);
 
 		void
-		handle_scalar_palette_spinbox_changed(
+		handle_scalar_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_scalar_palette_max_line_editing_finished(
 				double value);
 
 		void
@@ -138,10 +144,15 @@ namespace GPlatesQtWidgets
 		handle_use_default_gradient_palette_button_clicked();
 
 		void
-		handle_gradient_palette_range_check_box_changed();
+		handle_gradient_palette_range_check_box_changed(
+				int state);
 
 		void
-		handle_gradient_palette_spinbox_changed(
+		handle_gradient_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_gradient_palette_max_line_editing_finished(
 				double value);
 
 		void
@@ -250,7 +261,7 @@ namespace GPlatesQtWidgets
 		get_depth_min_max(
 				GPlatesAppLogic::Layer &layer) const;
 
-		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
 		load_colour_palette(
 				const QString &palette_file_name,
 				std::pair<double, double> &colour_palette_range);
@@ -266,11 +277,9 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 
-		FriendlyLineEdit *d_scalar_palette_filename_lineedit;
-		FriendlyLineEdit *d_gradient_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
-		ColourScaleWidget *d_scalar_colour_scale_widget;
-		ColourScaleWidget *d_gradient_colour_scale_widget;
+		RemappedColourPaletteWidget *d_scalar_colour_palette_widget;
+		RemappedColourPaletteWidget *d_gradient_colour_palette_widget;
 
 		std::vector<float> d_shader_test_variables;
 

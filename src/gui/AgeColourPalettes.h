@@ -91,7 +91,7 @@ namespace GPlatesGui
 			d_lower_bound = lower_bound_;
 		}
 
-		boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> >
+		std::pair<GPlatesMaths::Real, GPlatesMaths::Real>
 		get_range() const
 		{
 			return std::make_pair(d_lower_bound, d_upper_bound);

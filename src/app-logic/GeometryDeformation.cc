@@ -71,6 +71,11 @@
 #endif
 
 
+// Comment out this to avoid writing out intermediate file...
+// FIXME: Replace with proper scalar coverage export.
+#define OUTPUT_DEF_TEST_FILE
+
+
 namespace GPlatesAppLogic
 {
 	namespace
@@ -253,11 +258,6 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometryTimeSpan(
 	initialise_time_windows(
 			resolved_network_time_span,
 			reconstruction_tree_creator);
-
-	// We should have at least one geometry sample (containing the present day geometry).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_time_window_span->empty(),
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -556,7 +556,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				d_time_window_span->get_sample_in_time_slot(time_slot);
 
 		// If the current geometry sample is not in a deformation region at the current time slot
-		// then skip it - we're only accumulating strain during in deformation regions because
+		// then skip it - we're only accumulating strain in deformation regions because
 		// it doesn't accumulate in rigid regions - this also saves memory.
 		// If we don't have a previous sample yet then we've got nothing to accumulate from.
 		if (!curr_geometry_sample ||
@@ -567,7 +567,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 
 		// DEF_TEST
 
-#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+#ifdef OUTPUT_DEF_TEST_FILE
 		// string to hold filename
 		std::string def_test_file_name = "DEF_TEST_t";
         // Compute a recon time value from begin and geom sample index 
@@ -614,7 +614,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 			const double S33 = prev_deformation_info.S33 + curr_deformation_info.SR33 * 3.15569e13;
 			const double S23 = prev_deformation_info.S23 + curr_deformation_info.SR23 * 3.15569e13;
 
-#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+#ifdef OUTPUT_DEF_TEST_FILE
 			// DEF_TEST
 			const double dilitation = curr_deformation_info.dilitation; 
 			const double sph_dilitation = curr_deformation_info.sph_dilitation; 
@@ -650,10 +650,10 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 			curr_deformation_info.S_DIR = S_DIR;
 
 		
-#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+#ifdef OUTPUT_DEF_TEST_FILE
 			// DEF_TEST
 			// Get all the points into a vector ; will use the point index to get coordinates
-			GPlatesMaths::PointOnSphere p = curr_geometry_sample.get_points()[point_index];
+			GPlatesMaths::PointOnSphere p = curr_geometry_sample->get_points()[point_index];
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point( p );
 			double lat = llp.latitude();
 			double lon = llp.longitude();
@@ -673,7 +673,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 #endif
 		}
 
-#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+#ifdef OUTPUT_DEF_TEST_FILE
 		// DEF_TEST
 		// close file for this recon time 
 		def_test_file.close();

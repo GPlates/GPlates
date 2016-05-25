@@ -34,10 +34,14 @@
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
 #include "ReconstructScalarCoverageParams.h"
+#include "ScalarCoverageFeatureProperties.h"
 
 #include "model/FeatureCollectionHandle.h"
 
+#include "property-values/ScalarCoverageStatistics.h"
 #include "property-values/ValueObjectType.h"
+
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesAppLogic
@@ -66,19 +70,17 @@ namespace GPlatesAppLogic
 		{
 		public:
 
-			//! Returns the scalar type.
+			explicit
+			Params(
+					ReconstructScalarCoverageLayerTask &layer_task);
+
+			//! Returns the scalar type currently selected for visualisation/processing.
 			const GPlatesPropertyValues::ValueObjectType &
-			get_scalar_type() const
-			{
-				return d_scalar_type;
-			}
+			get_scalar_type() const;
 
 			//! Returns the list of scalar types available in the scalar coverage features.
 			const std::vector<GPlatesPropertyValues::ValueObjectType> &
-			get_scalar_types() const
-			{
-				return d_scalar_types;
-			}
+			get_scalar_types() const;
 
 			//! Sets the scalar type, of the scalar coverage, for visualisation/processing.
 			void
@@ -104,44 +106,45 @@ namespace GPlatesAppLogic
 			set_reconstruct_scalar_coverage_params(
 					const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params);
 
-		private:
+			/**
+			 * Gets all scalar coverages available across the scalar coverage features.
+			 */
+			const std::vector<ScalarCoverageFeatureProperties::Coverage> &
+			get_scalar_coverages() const;
 
 			/**
-			 * The scalar type that has been selected for visualisation/processing.
+			 * Returns the scalar statistics across all scalar coverages of the specified scalar type,
+			 * or none if no coverages.
+			 *
+			 * NOTE: This is a statistic of the scalar coverages at present day.
 			 */
-			GPlatesPropertyValues::ValueObjectType d_scalar_type;
+			boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
+			get_scalar_statistics(
+					const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
 
-			//! The list of scalar types available in the scalar coverage features.
-			std::vector<GPlatesPropertyValues::ValueObjectType> d_scalar_types;
+		private:
+
+			ReconstructScalarCoverageLayerTask &d_layer_task;
+
+			/**
+			 * Detect any changes in the layer proxy (due to changes in its dependencies).
+			 *
+			 * We need this since we don't get notified *directly* of changes in the Reconstruct layer
+			 * that our Reconstruct Scalar Coverage layer is connected to. For example, if the
+			 * scalar coverage features are reloaded from file they might no longer contain
+			 * the currently selected scalar type.
+			 */
+			GPlatesUtils::ObserverToken d_layer_proxy_observer_token;
 
 			ReconstructScalarCoverageParams d_reconstruct_scalar_coverage_params;
 
-			/**
-			 * Is true if @a set_scalar_type has been called.
-			 *
-			 * Used to let ReconstructScalarCoverageLayerTask know that an external client has modified this state.
-			 *
-			 * ReconstructScalarCoverageLayerTask will reset this explicitly.
-			 */
-			bool d_set_scalar_type_called;
 
 			/**
-			 * Is true if @a set_reconstruct_scalar_coverage_params has been called.
-			 *
-			 * Used to let ReconstructScalarCoverageLayerTask know that an external client has modified this state.
-			 *
-			 * ReconstructScalarCoverageLayerTask will reset this explicitly.
+			 * See if the layer proxy has been updated
 			 */
-			bool d_set_reconstruct_scalar_coverage_params_called;
-
-			Params();
-
 			void
-			update(
-					const GPlatesPropertyValues::ValueObjectType &scalar_type,
-					const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types);
+			update();
 
-			// Make friend so can access constructor and @a d_set_reconstruct_scalar_coverage_params_called.
 			friend class ReconstructScalarCoverageLayerTask;
 		};
 

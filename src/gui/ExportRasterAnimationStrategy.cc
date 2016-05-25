@@ -280,7 +280,7 @@ namespace
 						ColourRaster(
 								visible_raster_visual_layer->get_name()/*layer_name*/,
 								resolved_raster.get(),
-								raster_layer_params->get_colour_palette(),
+								raster_layer_params->get_colour_palette_parameters().get_colour_palette(),
 								raster_layer_params->get_modulate_colour(),
 								raster_layer_params->get_surface_relief_scale()));
 			}

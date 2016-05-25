@@ -48,8 +48,11 @@
 #include "gui/AgeColourPalettes.h"
 #include "gui/Colour.h"
 #include "gui/ColourPaletteAdapter.h"
+#include "gui/ColourPaletteUtils.h"
 #include "gui/ColourPaletteVisitor.h"
+#include "gui/CptColourPalette.h"
 #include "gui/Dialogs.h"
+
 
 namespace
 {
@@ -330,55 +333,7 @@ namespace
 			visit_age_colour_palette(
 					GPlatesGui::AgeColourPalette &colour_palette)
 			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_default_raster_colour_palette(
-					GPlatesGui::DefaultRasterColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_user_colour_palette(
-					GPlatesGui::UserColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_deformation_colour_palette(
-					GPlatesGui::DeformationColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_default_scalar_field_scalar_colour_palette(
-					GPlatesGui::DefaultScalarFieldScalarColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_default_scalar_field_gradient_colour_palette(
-					GPlatesGui::DefaultScalarFieldGradientColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
-			}
-
-			virtual
-			void
-			visit_regular_cpt_colour_palette(
-					GPlatesGui::RegularCptColourPalette &colour_palette)
-			{
-				do_visit(colour_palette);
+				do_visit(colour_palette, colour_palette.get_range());
 			}
 
 			virtual
@@ -386,7 +341,10 @@ namespace
 			visit_int32_categorical_cpt_colour_palette(
 					GPlatesGui::CategoricalCptColourPalette<boost::int32_t> &colour_palette)
 			{
-				do_visit(colour_palette);
+				if (colour_palette.get_range())
+				{
+					do_visit(colour_palette, colour_palette.get_range().get());
+				}
 			}
 
 			virtual
@@ -394,7 +352,21 @@ namespace
 			visit_uint32_categorical_cpt_colour_palette(
 					GPlatesGui::CategoricalCptColourPalette<boost::uint32_t> &colour_palette)
 			{
-				do_visit(colour_palette);
+				if (colour_palette.get_range())
+				{
+					do_visit(colour_palette, colour_palette.get_range().get());
+				}
+			}
+
+			virtual
+			void
+			visit_regular_cpt_colour_palette(
+					GPlatesGui::RegularCptColourPalette &colour_palette)
+			{
+				if (colour_palette.get_range())
+				{
+					do_visit(colour_palette, colour_palette.get_range().get());
+				}
 			}
 
 		private:
@@ -403,19 +375,16 @@ namespace
 			inline
 			void
 			do_visit(
-					ColourPaletteType &colour_palette)
+					ColourPaletteType &colour_palette,
+					const std::pair<
+							typename ColourPaletteType::key_type,
+							typename ColourPaletteType::key_type> &range)
 			{
 				typedef typename ColourPaletteType::key_type key_type;
 				typedef typename ::ColourPaletteConverter<key_type>::type converter_type;
 
-				boost::optional< std::pair<key_type, key_type> > range = colour_palette.get_range();
-				if (!range)
-				{
-					return;
-				}
-
-				d_minimum_value = get_double_value(range->first);
-				d_maximum_value = get_double_value(range->second);
+				d_minimum_value = get_double_value(range.first);
+				d_maximum_value = get_double_value(range.second);
 
 				typename ColourPaletteType::non_null_ptr_type colour_palette_ptr(&colour_palette);
 				d_adapted_colour_palette = GPlatesGui::convert_colour_palette<

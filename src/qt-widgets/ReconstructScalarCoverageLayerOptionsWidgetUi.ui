@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Layers</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_8">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
@@ -34,6 +34,9 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QWidget" name="palette_placeholder_widget" native="true"/>
    </item>
   </layout>
  </widget>

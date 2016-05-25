@@ -32,8 +32,8 @@
 #include "VisualLayerParams.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
-#include "gui/RasterColourPalette.h"
 
 
 namespace GPlatesPresentation
@@ -220,7 +220,7 @@ namespace GPlatesPresentation
 		void
 		set_colour_palette(
 				const QString &filename,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
 
 		/**
 		 * Causes the current colour palette to be generated from the gui controls
@@ -229,9 +229,11 @@ namespace GPlatesPresentation
 		user_generated_colour_palette();
 		
 		/**
-		 * Return the current colour palette 
+		 * Return the current colour palette.
+		 *
+		 * Returns none if no colour palette has been set.
 		 */
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
 		get_colour_palette() const;
 
 	protected:
@@ -278,7 +280,7 @@ namespace GPlatesPresentation
 		 * The current colour palette for this layer, whether set explicitly as
 		 * loaded from a file, or auto-generated.
 		 */
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_colour_palette;
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_colour_palette;
 	};
 }
 

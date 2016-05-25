@@ -25,9 +25,12 @@ set(srcs
     RasterVisualLayerParams.h
     ReconstructionGeometryRenderer.cc
     ReconstructionGeometryRenderer.h
+    ReconstructScalarCoverageVisualLayerParams.cc
     ReconstructScalarCoverageVisualLayerParams.h
     ReconstructVisualLayerParams.cc
     ReconstructVisualLayerParams.h
+    RemappedColourPaletteParameters.cc
+    RemappedColourPaletteParameters.h
     ScalarField3DVisualLayerParams.cc
     ScalarField3DVisualLayerParams.h
     Session.cc

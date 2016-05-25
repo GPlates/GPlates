@@ -36,6 +36,7 @@
 #include "model/FeatureVisitor.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/RawRasterUtils.h"
 #include "property-values/TextContent.h"
 
 
@@ -357,6 +358,20 @@ GPlatesAppLogic::RasterLayerTask::Params::get_band_names() const
 }
 
 
+GPlatesPropertyValues::RasterStatistics
+GPlatesAppLogic::RasterLayerTask::Params::get_band_statistic() const
+{
+	return d_band_statistic;
+}
+
+
+const std::vector<GPlatesPropertyValues::RasterStatistics> &
+GPlatesAppLogic::RasterLayerTask::Params::get_band_statistics() const
+{
+	return d_band_statistics;
+}
+
+
 const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
 GPlatesAppLogic::RasterLayerTask::Params::get_georeferencing() const
 {
@@ -368,6 +383,13 @@ const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_pt
 GPlatesAppLogic::RasterLayerTask::Params::get_spatial_reference_system() const
 {
 	return d_spatial_reference_system;
+}
+
+
+GPlatesPropertyValues::RasterType::Type
+GPlatesAppLogic::RasterLayerTask::Params::get_raster_type() const
+{
+	return d_raster_type;
 }
 
 
@@ -391,17 +413,22 @@ GPlatesAppLogic::RasterLayerTask::Params::set_raster_feature(
 void
 GPlatesAppLogic::RasterLayerTask::Params::updated_raster_feature()
 {
+	// Clear everything (except band name) in case error (and return early).
+	d_band_names.clear();
+	d_band_statistic = GPlatesPropertyValues::RasterStatistics();
+	d_band_statistics.clear();
+	d_georeferencing = boost::none;
+	d_spatial_reference_system = boost::none;
+	d_raster_type = GPlatesPropertyValues::RasterType::UNKNOWN;
+
 	// If there is no raster feature then clear everything.
 	if (!d_raster_feature)
 	{
-		d_band_name = GPlatesUtils::UnicodeString();
-		d_band_names.clear();
-		d_georeferencing = boost::none;
-		d_spatial_reference_system = boost::none;
-
 		return;
 	}
 
+	// NOTE: We are visiting properties at (default) present day.
+	// Raster statistics, for example, will change over time for time-dependent rasters.
 	GPlatesAppLogic::ExtractRasterFeatureProperties visitor;
 	visitor.visit_feature(d_raster_feature.get());
 
@@ -411,25 +438,49 @@ GPlatesAppLogic::RasterLayerTask::Params::updated_raster_feature()
 	// Get the spatial reference system.
 	d_spatial_reference_system = visitor.get_spatial_reference_system();
 
-	// If there are no raster band names...
-	if (!visitor.get_raster_band_names() ||
-		visitor.get_raster_band_names().get().empty())
+	// If there are raster band names...
+	boost::optional<std::size_t> band_name_index;
+	if (visitor.get_raster_band_names() &&
+		!visitor.get_raster_band_names()->empty())
 	{
-		d_band_name = GPlatesUtils::UnicodeString();
-		d_band_names.clear();
-		return;
+		d_band_names = visitor.get_raster_band_names().get();
+
+		// Is the selected band name one of the available bands in the raster?
+		// If not, then change the band name to be the first of the available bands.
+		band_name_index = find_raster_band_name(d_band_names, d_band_name);
+		if (!band_name_index)
+		{
+			// Set the band name using the default band index of zero.
+			band_name_index = 0;
+			d_band_name = d_band_names[band_name_index.get()]->value();
+		}
 	}
 
-	d_band_names = visitor.get_raster_band_names().get();
-
-	// Is the selected band name one of the available bands in the raster?
-	// If not, then change the band name to be the first of the available bands.
-	boost::optional<std::size_t> band_name_index_opt =
-			find_raster_band_name(d_band_names, d_band_name);
-	if (!band_name_index_opt)
+	if (visitor.get_proxied_rasters())
 	{
-		// Set the band name using the default band index of zero.
-		d_band_name = d_band_names[0]->value();
+		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters =
+				visitor.get_proxied_rasters().get();
+
+		BOOST_FOREACH(GPlatesPropertyValues::RawRaster::non_null_ptr_type proxied_raster, proxied_rasters)
+		{
+			GPlatesPropertyValues::RasterStatistics *raster_statistics =
+					GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*proxied_raster);
+
+			d_band_statistics.push_back(
+					raster_statistics
+							? *raster_statistics
+							: GPlatesPropertyValues::RasterStatistics());
+
+			// Get the raster type as an enumeration.
+			// All band types should be the same - if they're not then the type will get set to the last band.
+			d_raster_type = GPlatesPropertyValues::RawRasterUtils::get_raster_type(*proxied_raster);
+		}
+
+		if (band_name_index &&
+			band_name_index.get() < d_band_statistics.size())
+		{
+			d_band_statistic = d_band_statistics[band_name_index.get()];
+		}
 	}
 
 	// TODO: Notify observers (such as RasterVisualLayerParams) that the band name(s) have

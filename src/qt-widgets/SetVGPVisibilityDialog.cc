@@ -210,35 +210,45 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 			accept();
 		}
 
-		// Handle visibility setting.
-		if (radiobutton_always_visible->isChecked())
-		{
-			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructParams::ALWAYS_VISIBLE);
-		}
-		else if (radiobutton_time_window->isChecked())
-		{
-			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructParams::TIME_WINDOW);
-		}
-		else if (radiobutton_delta_t_around_age->isChecked())
-		{
-			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructParams::DELTA_T_AROUND_AGE);
-		}
 
-		// Handle earliest and latest times.
-		GPlatesPropertyValues::GeoTimeInstant begin_time = checkbox_past->isChecked() ?
-			GPlatesPropertyValues::GeoTimeInstant::create_distant_past() :
-			GPlatesPropertyValues::GeoTimeInstant(spinbox_begin->value());
-		layer_task_params->get_reconstruct_params().set_vgp_earliest_time(begin_time);
-		GPlatesPropertyValues::GeoTimeInstant end_time = checkbox_future->isChecked() ?
-			GPlatesPropertyValues::GeoTimeInstant::create_distant_future() :
-			GPlatesPropertyValues::GeoTimeInstant(spinbox_end->value());
-		layer_task_params->get_reconstruct_params().set_vgp_latest_time(end_time);
+		{
+			// Delay any calls to 'ApplicationState::reconstruct()' until scope exit.
+			GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(d_application_state);
 
-		// Handle delta t.
-		layer_task_params->get_reconstruct_params().set_vgp_delta_t(spinbox_delta->value());
+			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_task_params->get_reconstruct_params();
+
+			// Handle visibility setting.
+			if (radiobutton_always_visible->isChecked())
+			{
+				reconstruct_params.set_vgp_visibility_setting(GPlatesAppLogic::ReconstructParams::ALWAYS_VISIBLE);
+			}
+			else if (radiobutton_time_window->isChecked())
+			{
+				reconstruct_params.set_vgp_visibility_setting(GPlatesAppLogic::ReconstructParams::TIME_WINDOW);
+			}
+			else if (radiobutton_delta_t_around_age->isChecked())
+			{
+				reconstruct_params.set_vgp_visibility_setting(GPlatesAppLogic::ReconstructParams::DELTA_T_AROUND_AGE);
+			}
+
+			// Handle earliest and latest times.
+			GPlatesPropertyValues::GeoTimeInstant begin_time = checkbox_past->isChecked() ?
+					GPlatesPropertyValues::GeoTimeInstant::create_distant_past() :
+					GPlatesPropertyValues::GeoTimeInstant(spinbox_begin->value());
+			reconstruct_params.set_vgp_earliest_time(begin_time);
+			GPlatesPropertyValues::GeoTimeInstant end_time = checkbox_future->isChecked() ?
+					GPlatesPropertyValues::GeoTimeInstant::create_distant_future() :
+					GPlatesPropertyValues::GeoTimeInstant(spinbox_end->value());
+			reconstruct_params.set_vgp_latest_time(end_time);
+
+			// Handle delta t.
+			reconstruct_params.set_vgp_delta_t(spinbox_delta->value());
+
+			layer_task_params->set_reconstruct_params(reconstruct_params);
+
+			// If any reconstruct parameters were modified then 'ApplicationState::reconstruct()'
+			// will get called here (at scope exit).
+		}
 
 		// Handle circular error.
 		if (visual_layer_params->get_vgp_draw_circular_error() != checkbox_error->isChecked())

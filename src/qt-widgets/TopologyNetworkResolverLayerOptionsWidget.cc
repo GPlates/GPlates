@@ -40,10 +40,10 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourPaletteAdapter.h"
+#include "gui/ColourPaletteUtils.h"
 #include "gui/ColourSpectrum.h"
-#include "gui/CptColourPalette.h"
 #include "gui/Dialogs.h"
+#include "gui/RasterColourPalette.h"
 
 #include "presentation/TopologyNetworkVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
@@ -305,7 +305,18 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_black() )	{bg_index = 6;}
 			bg_colour_combobox->setCurrentIndex( bg_index );
 
-			d_colour_scale_widget->populate(params->get_colour_palette());
+			if (params->get_colour_palette())
+			{
+				d_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create<double>(
+								params->get_colour_palette().get()));
+			}
+			else
+			{
+				d_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create());
+			}
+
 			colour_scale_placeholder_widget->setVisible(true);
 		}
 	}
@@ -545,78 +556,36 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_palet
 			return;
 		}
 
-		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
-		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		GPlatesFileIO::RegularCptReader regular_cpt_reader;
-		GPlatesFileIO::ReadErrorAccumulation regular_errors;
-		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
-			regular_cpt_reader.read_file(palette_file_name, regular_errors);
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+				GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+						palette_file_name,
+						// We only allow real-valued colour palettes since our data is real-valued...
+						false/*allow_integer_colour_palette*/,
+						cpt_read_errors);
 
-		// There is a slight complication in the detection of whether a
-		// CPT file is regular or categorical. For the most part, a line
-		// in a categorical CPT file looks nothing like a line in a
-		// regular CPT file and will not be successfully parsed; the
-		// exception to the rule are the "BFN" lines, the format of
-		// which is common to both regular and categorical CPT files.
-		// For that reason, we also check if the regular_palette has any
-		// ColourSlices.
-		//
-		// Note: this flow of code is very similar to that in class IntegerCptReader.
-		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
+		// If we successfully read a real-valued colour palette.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+				GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+		if (colour_palette)
 		{
-			// Add all the errors reported to read_errors.
-			read_errors.accumulate(regular_errors);
-
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
-				GPlatesGui::convert_colour_palette<
-					GPlatesMaths::Real,
-					double
-				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
-
-			params->set_colour_palette(
-					palette_file_name,
-					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
+			params->set_colour_palette(palette_file_name, colour_palette.get());
 
 			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
 		}
-		else
+
+		// Show any read errors.
+		if (cpt_read_errors.size() > 0)
 		{
-			// Attempt to read the file as a regular CPT file has failed.
-			// Now, let's try to parse it as a categorical CPT file.
-			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
-			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
-			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
-				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
+			ReadErrorAccumulationDialog &read_errors_dialog =
+					d_viewport_window->dialogs().read_error_accumulation_dialog();
 
-			if (categorical_colour_palette_opt)
-			{
-				// This time, we return the colour palette even if it just
-				// contains "BFN" lines and no ColourEntrys.
-
-				// Add all the errors reported to errors.
-				read_errors.accumulate(categorical_errors);
-
-				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
-						categorical_colour_palette_opt.get());
-
-				params->set_colour_palette(
-						palette_file_name,
-						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
-
-				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
-			}
-		}
-
-		read_errors_dialog.update();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-		if (num_initial_errors != num_final_errors)
-		{
+			read_errors_dialog.read_errors().accumulate(cpt_read_errors);
+			read_errors_dialog.update();
 			read_errors_dialog.show();
 		}
-
-		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 	}
 }
 

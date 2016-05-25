@@ -156,7 +156,6 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
 		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-// qDebug() << "\n\nReconstructLayerTask::add_input_layer_proxy_connection()";
 	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_TREE)
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
@@ -230,17 +229,6 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 {
 	d_reconstruct_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
-	// If the layer task params have been modified then update our reconstruct layer proxy.
-	if (d_layer_task_params.d_non_const_get_reconstruct_params_called)
-	{
-		// NOTE: This should call the non-const version of 'Params::get_reconstruct_params()'
-		// so that it doesn't think we're modifying it.
-		d_reconstruct_layer_proxy->set_current_reconstruct_params(
-				d_layer_task_params.get_reconstruct_params());
-
-		d_layer_task_params.d_non_const_get_reconstruct_params_called = false;
-	}
-
 	// If our layer proxy is currently using the default reconstruction layer proxy then
 	// tell our layer proxy about the new default reconstruction layer proxy.
 	if (d_using_default_reconstruction_layer_proxy)
@@ -257,8 +245,9 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 }
 
 
-GPlatesAppLogic::ReconstructLayerTask::Params::Params() :
-	d_non_const_get_reconstruct_params_called(false)
+GPlatesAppLogic::ReconstructLayerTask::Params::Params(
+		ReconstructLayerTask &layer_task) :
+	d_layer_task(layer_task)
 {
 }
 
@@ -270,15 +259,19 @@ GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params() const
 }
 
 
-GPlatesAppLogic::ReconstructParams &
-GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params()
+void
+GPlatesAppLogic::ReconstructLayerTask::Params::set_reconstruct_params(
+		const ReconstructParams &reconstruct_params)
 {
-	d_non_const_get_reconstruct_params_called = true;
+	if (d_reconstruct_params == reconstruct_params)
+	{
+		return;
+	}
 
-	// FIXME: Should probably call 'emit_modified()' but first need to change 'get_reconstruct_params()'
-	// to 'set_reconstruct_params()' so that a signal is emitted *after* modifications have been made.
-	// Currently this is not needed because 'SetVGPVisibilityDialog::handle_apply()'
-	// explicitly does a reconstruction which ensures an update after all modifications are made.
+	d_reconstruct_params = reconstruct_params;
 
-	return d_reconstruct_params;
+	// Update our reconstruct layer proxy.
+	d_layer_task.d_reconstruct_layer_proxy->set_current_reconstruct_params(d_reconstruct_params);
+
+	emit_modified();
 }

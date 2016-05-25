@@ -44,9 +44,9 @@ namespace GPlatesAppLogic
 	 */
 	typedef boost::function<
 			void (
-					std::vector<double> &,                                    // per-point output scalars
-					const std::vector<double> &,                              // per-point input scalars
-					const std::vector<GeometryDeformation::DeformationInfo> &,// per-point input deform info
+					std::vector<double> &,                                    // per-point input/output scalars
+					const std::vector<GeometryDeformation::DeformationInfo> &,// initial per-point input deform info
+					const std::vector<GeometryDeformation::DeformationInfo> &,// final per-point input deform info
 					const double &,                                           // initial time
 					const double &)>                                          // final time
 							scalar_evolution_function_type;
@@ -72,21 +72,19 @@ namespace GPlatesAppLogic
 	namespace ScalarCoverageEvolution
 	{
 		/**
-		 * Evolves the crustal thickness from @a input_crustal_thickness to @a output_crustal_thickness.
+		 * Evolves the crustal thickness values in @a input_output_crustal_thickness.
 		 *
-		 * Output values are appended to @a output_crustal_thickness.
+		 * Each values in @a input_output_crustal_thickness is replaced with its updated value.
 		 *
 		 * Throws exception if the sizes of the input arrays do not match.
 		 */
 		void
 		crustal_thinning(
-			std::vector<double> &output_crustal_thickness,
-			const std::vector<double> &input_crustal_thickness,
-			const std::vector<GeometryDeformation::DeformationInfo> &deformation_info,
-			const double &initial_time,
-			const double &final_time,
-			const double &oceanic_density,
-			const double &continental_density);
+				std::vector<double> &input_output_crustal_thickness,
+				const std::vector<GeometryDeformation::DeformationInfo> &initial_deformation_info,
+				const std::vector<GeometryDeformation::DeformationInfo> &final_deformation_info,
+				const double &initial_time,
+				const double &final_time);
 	}
 }
 

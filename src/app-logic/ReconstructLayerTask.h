@@ -60,6 +60,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			explicit
+			Params(
+					ReconstructLayerTask &layer_task);
+
 			/**
 			 * Returns the 'const' reconstruct parameters.
 			 */
@@ -67,30 +71,17 @@ namespace GPlatesAppLogic
 			get_reconstruct_params() const;
 
 			/**
-			 * Returns the reconstruct parameters for modification.
-			 *
-			 * NOTE: This will flush any cached reconstructed feature geometries in this layer.
+			 * Sets the reconstruct parameters.
 			 */
-			ReconstructParams &
-			get_reconstruct_params();
+			void
+			set_reconstruct_params(
+					const ReconstructParams &reconstruct_params);
 
 		private:
 
+			ReconstructLayerTask &d_layer_task;
+
 			ReconstructParams d_reconstruct_params;
-
-			/**
-			 * Is true if the non-const version of @a get_reconstruct_params has been called.
-			 *
-			 * Used to let ReconstructLayerTask know that an external client has modified this state.
-			 *
-			 * ReconstructLayerTask will reset this explicitly.
-			 */
-			bool d_non_const_get_reconstruct_params_called;
-
-			Params();
-
-			// Make friend so can access constructor and @a d_non_const_get_reconstruct_params_called.
-			friend class ReconstructLayerTask;
 		};
 
 
@@ -209,12 +200,13 @@ namespace GPlatesAppLogic
 		//! Constructor.
 		ReconstructLayerTask(
 				const ReconstructMethodRegistry &reconstruct_method_registry) :
-				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-				d_using_default_reconstruction_layer_proxy(true),
-				d_reconstruct_layer_proxy(
-						ReconstructLayerProxy::create(
-								reconstruct_method_registry,
-								d_layer_task_params.d_reconstruct_params))
+			d_layer_task_params(*this),
+			d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+			d_using_default_reconstruction_layer_proxy(true),
+			d_reconstruct_layer_proxy(
+					ReconstructLayerProxy::create(
+							reconstruct_method_registry,
+							d_layer_task_params.get_reconstruct_params()))
 		{  }
 	};
 }

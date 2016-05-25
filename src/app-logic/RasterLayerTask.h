@@ -42,6 +42,8 @@
 
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
+#include "property-values/RasterStatistics.h"
+#include "property-values/RasterType.h"
 #include "property-values/RawRaster.h"
 #include "property-values/SpatialReferenceSystem.h"
 #include "property-values/TextContent.h"
@@ -83,6 +85,22 @@ namespace GPlatesAppLogic
 			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
 			get_band_names() const;
 
+			/**
+			 * Returns the raster statistics of the band of the raster selected for processing.
+			 *
+			 * NOTE: For time-dependent rasters these are the statistics of the raster at present day.
+			 */
+			GPlatesPropertyValues::RasterStatistics
+			get_band_statistic() const;
+
+			/**
+			 * Returns the list of raster statistics for the raster bands.
+			 *
+			 * NOTE: For time-dependent rasters these are the statistics of the raster at present day.
+			 */
+			const std::vector<GPlatesPropertyValues::RasterStatistics> &
+			get_band_statistics() const;
+
 			//! Returns the georeferencing of the raster feature.
 			const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
 			get_georeferencing() const;
@@ -90,6 +108,10 @@ namespace GPlatesAppLogic
 			//! Returns the raster feature's spatial reference system.
 			const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
 			get_spatial_reference_system() const;
+
+			//! Returns the raster's type.
+			GPlatesPropertyValues::RasterType::Type
+			get_raster_type() const;
 
 			//! Returns the raster feature or boost::none if one is currently not set on the layer.
 			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
@@ -102,11 +124,20 @@ namespace GPlatesAppLogic
 			//! The list of band names that were in the raster feature the last time we examined it.
 			GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_band_names;
 
+			//! The raster statistics of the band of the raster selected for processing.
+			GPlatesPropertyValues::RasterStatistics d_band_statistic;
+
+			//! The list of raster statistics for the raster bands.
+			std::vector<GPlatesPropertyValues::RasterStatistics> d_band_statistics;
+
 			//! The georeferencing of the raster.
 			boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
 
 			//! The raster's spatial reference system.
 			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_spatial_reference_system;
+
+			//! The raster's type.
+			GPlatesPropertyValues::RasterType::Type d_raster_type;
 
 			//! The raster feature.
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_raster_feature;

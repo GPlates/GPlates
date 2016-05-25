@@ -218,10 +218,10 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 	// Let clients know of the new layer.
 	Q_EMIT layer_added(*this, layer);
 
-	// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
+	// Emit signal each time the layer's task parameters are modified.
 	QObject::connect(
-			&layer_task->get_layer_task_params(), SIGNAL(modified()),
-			&d_application_state, SLOT(reconstruct()));
+			&layer_task->get_layer_task_params(), SIGNAL(modified(GPlatesAppLogic::LayerTaskParams &)),
+			this, SLOT(handle_layer_task_params_changed(GPlatesAppLogic::LayerTaskParams &)));
 
 	// End the add layers group.
 	add_layers_group.end_add_or_remove_layers();
@@ -639,11 +639,11 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layers()
 						// So this is somewhat flakey and likely to break in the future.
 
 						// See if both layers (receiving and giving) are connected to the same input file.
-						const std::vector<GPlatesAppLogic::Layer::InputConnection>
+						const std::vector<Layer::InputConnection>
 								layer_receiving_input_file_connections =
 										layer_receiving_input.get_channel_inputs(
 												layer_receiving_input.get_main_input_feature_collection_channel());
-						const std::vector<GPlatesAppLogic::Layer::InputConnection>
+						const std::vector<Layer::InputConnection>
 								layer_giving_output_file_connections =
 										layer_giving_output.get_channel_inputs(
 												layer_giving_output.get_main_input_feature_collection_channel());
@@ -839,6 +839,28 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 
 
 void
+GPlatesAppLogic::ReconstructGraph::handle_layer_task_params_changed(
+		LayerTaskParams &layer_task_params)
+{
+	// Find the layer that owns the layer task params.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
+	{
+		if (&layer->get_layer_task_params() == &layer_task_params)
+		{
+			emit_layer_task_params_changed(Layer(layer), layer_task_params);
+
+			return;
+		}
+	}
+
+	// Shouldn't really be able to get here.
+	//
+	// However we won't treat it as an error in case a layer's task params get modified
+	// just as (or after) the layer is getting removed for some reason.
+}
+
+
+void
 GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 {
 	qDebug() << "\nRECONSTRUCT GRAPH:-";
@@ -904,9 +926,18 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
 
 
 void
+GPlatesAppLogic::ReconstructGraph::emit_layer_task_params_changed(
+		const Layer &layer,
+		LayerTaskParams &layer_task_params)
+{
+	Q_EMIT layer_task_params_changed(*this, layer, layer_task_params);
+}
+
+
+void
 GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
-		GPlatesAppLogic::Layer layer,
-		GPlatesAppLogic::Layer::InputConnection input_connection)
+		Layer layer,
+		Layer::InputConnection input_connection)
 {
 	Q_EMIT layer_added_input_connection(*this, layer, input_connection);
 }
@@ -914,8 +945,8 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
-		GPlatesAppLogic::Layer layer,
-		GPlatesAppLogic::Layer::InputConnection input_connection)
+		Layer layer,
+		Layer::InputConnection input_connection)
 {
 	Q_EMIT layer_about_to_remove_input_connection(*this, layer, input_connection);
 }
@@ -923,7 +954,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
-		GPlatesAppLogic::Layer layer)
+		Layer layer)
 {
 	Q_EMIT layer_removed_input_connection(*this, layer);
 }

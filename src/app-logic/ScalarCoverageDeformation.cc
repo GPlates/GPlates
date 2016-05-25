@@ -24,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/optional.hpp>
 
 #include "ScalarCoverageDeformation.h"
 
@@ -74,62 +75,63 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 		const scalar_evolution_function_type &scalar_evolution_function,
 		const domain_reconstruction_time_span_type &domain_reconstruction_time_span)
 {
+	// An array of zero strain deformation infos of size equal to the number of scalars being evolved
+	// (which is also the same as the number of points in the deformed geometry).
+	// This is in case either of two adjacent time slots have no deformation samples (which means the
+	// missing time slot has zero strain).
+	const std::vector<GeometryDeformation::DeformationInfo> zero_strain_deformation_infos(
+			d_scalar_values_time_span->get_present_day_sample().size());
+
 	// The time range of both the reconstructed domain features and the scalar values.
 	const TimeSpanUtils::TimeRange time_range = d_scalar_values_time_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
+	/*signed*/ int time_slot = num_time_slots - 1;
+
+	// Get the deformation strains (if any) for the first time slot in the loop.
+	boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &> current_deformation_infos =
+			get_deformation_infos(domain_reconstruction_time_span, time_slot);
+
 	// Iterate over the time range going *backwards* in time from the end of the
 	// time range (most recent) to the beginning (least recent).
-	for (/*signed*/ int time_slot = num_time_slots - 1; time_slot > 0; --time_slot)
+	for ( ; time_slot > 0; --time_slot)
 	{
 		const double current_time = time_range.get_time(time_slot);
 		const double next_time = current_time + time_range.get_time_increment();
 
-		boost::optional<const ReconstructedFeatureGeometry::non_null_ptr_type &> domain_rfg =
-				domain_reconstruction_time_span.get_sample_in_time_slot(time_slot);
-		// If there is no RFG for the current time slot then continue to the next time slot.
-		// Geometry will not be stored for the current time.
-		if (!domain_rfg)
+		// Get the deformation strains (if any) for the next time slot.
+		boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &> next_deformation_infos =
+				get_deformation_infos(domain_reconstruction_time_span, time_slot - 1);
+
+		// If there is no deformation info for the current and next time slots then the deformation strains
+		// will have no effect on evolving the scalar values.
+		// In which case we won't store scalar values for the current time.
+		// Leaving the time slot empty means the closest younger time slot is used when the empty
+		// time slot is accessed (the scalar values have not evolved/changed since the younger time slot).
+		if (!current_deformation_infos &&
+			!next_deformation_infos)
 		{
-			// Finished with the current time sample.
 			continue;
 		}
-
-		boost::optional<const DeformedFeatureGeometry *> dfg =
-				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<const DeformedFeatureGeometry *>(
-						domain_rfg.get());
-		// If the RFG is not a DeformedFeatureGeometry then we have no deformation strain information and
-		// hence the scalar values do not evolve for the current time step so continue to the next time slot.
-		// Geometry will not be stored for the current time.
-		if (!dfg)
-		{
-			// Finished with the current time sample.
-			continue;
-		}
-
-		// Get the current (per-point) deformation strain info.
-		const std::vector<GeometryDeformation::DeformationInfo> &current_deformation_infos =
-				dfg.get()->get_point_deformation_information();
-
-		// TODO: Skip current time sample if all (per-point) instanstaneous strains are zero.
 
 		// Get the scalar values for the current time.
 		// This gets the scalar values for the closest younger (deformed) scalar values if needed
 		// since the scalar values do not evolve during rigid periods.
-		const scalar_value_seq_type current_scalar_values =
+		scalar_value_seq_type current_scalar_values =
 				d_scalar_values_time_span->get_or_create_sample(current_time);
 
 		// Evolve the current scalar values to the next time slot.
-		scalar_value_seq_type next_scalar_values;
 		scalar_evolution_function(
-				next_scalar_values,
 				current_scalar_values,
-				current_deformation_infos,
+				current_deformation_infos ? current_deformation_infos.get() : zero_strain_deformation_infos,
+				next_deformation_infos ? next_deformation_infos.get() : zero_strain_deformation_infos,
 				current_time,
 				next_time);
 
 		// Set the (evolved) scalar values for the next time slot.
-		d_scalar_values_time_span->set_sample_in_time_slot(next_scalar_values, time_slot - 1);
+		d_scalar_values_time_span->set_sample_in_time_slot(current_scalar_values, time_slot - 1);
+
+		current_deformation_infos = next_deformation_infos;
 	}
 }
 
@@ -151,4 +153,33 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create_rigid
 	// Simply return the closest younger sample.
 	// We are in a rigid region so the scalar values have not changed since deformation (closest younger sample).
 	return closest_younger_sample;
+}
+
+
+boost::optional<const std::vector<GPlatesAppLogic::GeometryDeformation::DeformationInfo> &>
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_deformation_infos(
+		const domain_reconstruction_time_span_type &domain_reconstruction_time_span,
+		unsigned int time_slot)
+{
+	boost::optional<const ReconstructedFeatureGeometry::non_null_ptr_type &> domain_rfg =
+			domain_reconstruction_time_span.get_sample_in_time_slot(time_slot);
+	if (!domain_rfg)
+	{
+		return boost::none;
+	}
+
+	boost::optional<const DeformedFeatureGeometry *> dfg =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<const DeformedFeatureGeometry *>(
+					domain_rfg.get());
+	// If the RFG is not a DeformedFeatureGeometry then we have no deformation strain information and
+	// hence the scalar values won't evolve for the current time.
+	if (!dfg)
+	{
+		return boost::none;
+	}
+
+	// Return the current (per-point) deformation strain info.
+	return dfg.get()->get_point_deformation_information();
+
+	// TODO: Skip current time sample if all (per-point) instantaneous strains are zero.
 }

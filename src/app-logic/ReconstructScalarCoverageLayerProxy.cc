@@ -36,7 +36,6 @@
 #include "ReconstructedScalarCoverage.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ScalarCoverageEvolution.h"
-#include "ScalarCoverageFeatureProperties.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -61,7 +60,7 @@ namespace GPlatesAppLogic
 		 * Each integer indexes into the scalar types in the coverage's range that match @a scalar_type.
 		 */
 		void
-		get_scalar_coverages(
+		get_scalar_coverages_of_scalar_type_from_feature(
 				std::vector<scalar_coverage_type> &scalar_coverages,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const GPlatesModel::FeatureHandle::weak_ref &feature)
@@ -169,6 +168,24 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_c
 			reconstruction_info.cached_reconstructed_scalar_coverages->end());
 
 	return reconstruction_info.cached_reconstructed_scalar_coverages_handle.get();
+}
+
+
+const std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> &
+GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_coverages()
+{
+	// See if any input layer proxies have changed.
+	//
+	// Note: We actually only need to detect if the domain *features* have changed,
+	// but it's easier to just check for *any* changes (though means updating more than necessary).
+	check_input_layer_proxies();
+
+	if (!d_cached_scalar_coverages)
+	{
+		cache_scalar_coverages();
+	}
+
+	return d_cached_scalar_coverages.get();
 }
 
 
@@ -287,6 +304,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::reset_cache()
 	// Clear the cache scalar types (associated with the domain features).
 	d_cached_scalar_types = boost::none;
 
+	// Clear the cache scalar coverages (associated with the domain features).
+	d_cached_scalar_coverages = boost::none;
+
 	// Clear any cached scalar coverage time spans for the currently cached scalar type and
 	// reconstruct scalar coverage params.
 	d_cached_scalar_coverage_time_spans = boost::none;
@@ -330,19 +350,16 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::check_input_layer_proxies(
 
 
 void
-GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
+GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverages()
 {
 	// If already cached then return.
-	if (d_cached_scalar_types)
+	if (d_cached_scalar_coverages)
 	{
 		return;
 	}
 
 	// Create an empty vector.
-	d_cached_scalar_types = std::vector<GPlatesPropertyValues::ValueObjectType>();
-
-	// Get the coverages from all domain features.
-	std::vector<ScalarCoverageFeatureProperties::Coverage> coverages;
+	d_cached_scalar_coverages = std::vector<ScalarCoverageFeatureProperties::Coverage>();
 
 	// Iterate over the reconstructed domain layer proxies.
 	BOOST_FOREACH(
@@ -363,16 +380,33 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 		{
 			const GPlatesModel::FeatureHandle::weak_ref &domain_feature = *domain_features_iter;
 
-			ScalarCoverageFeatureProperties::get_coverages(coverages, domain_feature);
+			ScalarCoverageFeatureProperties::get_coverages(d_cached_scalar_coverages.get(), domain_feature);
 		}
 	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
+{
+	// If already cached then return.
+	if (d_cached_scalar_types)
+	{
+		return;
+	}
+
+	// Create an empty vector.
+	d_cached_scalar_types = std::vector<GPlatesPropertyValues::ValueObjectType>();
+
+	const std::vector<ScalarCoverageFeatureProperties::Coverage> &scalar_coverages =
+			get_scalar_coverages();
 
 	// Iterate over the coverages to find the set of unique scalar types.
 	std::set<GPlatesPropertyValues::ValueObjectType> unique_scalar_types;
 	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-			coverages_iter = coverages.begin();
+			coverages_iter = scalar_coverages.begin();
 	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-			coverages_end = coverages.end();
+			coverages_end = scalar_coverages.end();
 	for ( ; coverages_iter != coverages_end; ++coverages_iter)
 	{
 		const ScalarCoverageFeatureProperties::Coverage &coverage = *coverages_iter;
@@ -437,7 +471,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 
 				// Find scalar coverages in the domain feature matching the requested scalar type.
 				std::vector<scalar_coverage_type> scalar_coverages;
-				get_scalar_coverages(scalar_coverages, scalar_type, domain_feature);
+				get_scalar_coverages_of_scalar_type_from_feature(scalar_coverages, scalar_type, domain_feature);
 
 				// Iterate over the matching scalar coverages.
 				std::vector<scalar_coverage_type>::const_iterator scalar_coverages_iter = scalar_coverages.begin();
@@ -514,7 +548,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 
 			// Find scalar coverages in the domain feature matching the requested scalar type.
 			std::vector<scalar_coverage_type> scalar_coverages;
-			get_scalar_coverages(scalar_coverages, scalar_type, domain_feature);
+			get_scalar_coverages_of_scalar_type_from_feature(scalar_coverages, scalar_type, domain_feature);
 
 			// Iterate over the matching scalar coverages.
 			std::vector<scalar_coverage_type>::const_iterator scalar_coverages_iter = scalar_coverages.begin();
@@ -593,7 +627,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_cached_scalar_coverage_time_spans,
+			d_cached_scalar_coverage_time_spans &&
+				d_cached_scalar_type &&
+				d_cached_reconstruct_scalar_coverage_params,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get the next global reconstruct handle - it'll be stored in each RSC.
@@ -640,6 +676,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 				ReconstructedScalarCoverage::create(
 						reconstructed_domain_feature_geometry,
 						scalar_coverage_range_property,
+						d_cached_scalar_type.get(),
 						scalar_coverage_time_span->get_scalar_values(reconstruction_time),
 						reconstruction_info.cached_reconstructed_scalar_coverages_handle.get()));
 	}

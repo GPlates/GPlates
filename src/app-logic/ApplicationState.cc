@@ -391,6 +391,14 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(reconstruct()));
 	QObject::connect(
 			d_reconstruct_graph.get(),
+			SIGNAL(layer_task_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerTaskParams &)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
 			SIGNAL(default_reconstruction_tree_layer_changed(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,

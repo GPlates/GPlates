@@ -49,6 +49,9 @@
      </item>
      <item>
       <widget class="QDoubleSpinBox" name="fill_opacity_spinbox">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="maximum">
         <double>1.000000000000000</double>
        </property>
@@ -82,6 +85,9 @@
      </item>
      <item>
       <widget class="QDoubleSpinBox" name="fill_intensity_spinbox">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="maximum">
         <double>1.000000000000000</double>
        </property>

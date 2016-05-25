@@ -76,56 +76,88 @@ namespace GPlatesAppLogic
 				return d_maximum_depth_layer_radius;
 			}
 
-			//! Returns the minimum scalar value across the entire scalar field or none if no field.
+			/**
+			 * Returns the minimum scalar value across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_scalar_min() const
 			{
 				return d_scalar_min;
 			}
 
-			//! Returns the maximum scalar value across the entire scalar field or none if no field.
+			/**
+			 * Returns the maximum scalar value across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_scalar_max() const
 			{
 				return d_scalar_max;
 			}
 
-			//! Returns the mean scalar value across the entire scalar field or none if no field.
+			/**
+			 * Returns the mean scalar value across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_scalar_mean() const
 			{
 				return d_scalar_mean;
 			}
 
-			//! Returns the standard deviation of scalar values across the entire scalar field or none if no field.
+			/**
+			 * Returns the standard deviation of scalar values across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_scalar_standard_deviation() const
 			{
 				return d_scalar_standard_deviation;
 			}
 
-			//! Returns the minimum gradient magnitude across the entire scalar field or none if no field.
+			/**
+			 * Returns the minimum gradient magnitude across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_gradient_magnitude_min() const
 			{
 				return d_gradient_magnitude_min;
 			}
 
-			//! Returns the maximum gradient magnitude across the entire scalar field or none if no field.
+			/**
+			 * Returns the maximum gradient magnitude across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_gradient_magnitude_max() const
 			{
 				return d_gradient_magnitude_max;
 			}
 
-			//! Returns the mean gradient magnitude across the entire scalar field or none if no field.
+			/**
+			 * Returns the mean gradient magnitude across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_gradient_magnitude_mean() const
 			{
 				return d_gradient_magnitude_mean;
 			}
 
-			//! Returns the standard deviation of gradient magnitudes across the entire scalar field or none if no field.
+			/**
+			 * Returns the standard deviation of gradient magnitudes across the entire scalar field or none if no field.
+			 *
+			 * NOTE: When time-dependent fields are supported this will be a statistic of the field at present day.
+			 */
 			boost::optional<double>
 			get_gradient_magnitude_standard_deviation() const
 			{

@@ -58,7 +58,8 @@ namespace GPlatesAppLogic
 		 * Emitted when any aspect of the parameters has been modified.
 		 */
 		void
-		modified();
+		modified(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params);
 
 	protected:
 
@@ -68,7 +69,7 @@ namespace GPlatesAppLogic
 		void
 		emit_modified()
 		{
-			Q_EMIT modified();
+			Q_EMIT modified(*this);
 		}
 	};
 }

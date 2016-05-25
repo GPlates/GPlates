@@ -26,22 +26,20 @@
 #include <boost/shared_ptr.hpp>
 #include <QDir>
 #include <QFileInfo>
-#include <QPalette>
 
 #include "RasterLayerOptionsWidget.h"
 
-#include "ColourScaleWidget.h"
-#include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
+#include "RemappedColourPaletteWidget.h"
 #include "ViewportWindow.h"
 
+#include "app-logic/Layer.h"
 #include "app-logic/RasterLayerTask.h"
 
-#include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 
-#include "gui/ColourPaletteAdapter.h"
+#include "gui/ColourPaletteUtils.h"
 #include "gui/CptColourPalette.h"
 #include "gui/Dialogs.h"
 
@@ -70,46 +68,80 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_palette_filename_lineedit(
-			new FriendlyLineEdit(
-				QString(),
-				tr("Default Palette"),
-				this)),
 	d_open_file_dialog(
 			this,
 			tr("Open CPT File"),
 			tr("Regular CPT file (*.cpt);;All files (*)"),
 			view_state),
-	d_colour_scale_widget(
-			new ColourScaleWidget(
-				view_state,
-				viewport_window,
-				this))
+	d_use_age_palette_button(new QToolButton(this)),
+	d_colour_palette_widget(
+			new RemappedColourPaletteWidget(view_state, viewport_window, this, d_use_age_palette_button))
 {
 	setupUi(this);
+
+
 	band_combobox->setCursor(QCursor(Qt::ArrowCursor));
-	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
-	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
-	use_age_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			band_combobox, SIGNAL(activated(const QString &)),
+			this, SLOT(handle_band_combobox_activated(const QString &)));
 
-	d_palette_filename_lineedit->setReadOnly(true);
-	QtWidgetUtils::add_widget_to_placeholder(
-			d_palette_filename_lineedit,
-			palette_filename_placeholder_widget);
-
-	QtWidgetUtils::add_widget_to_placeholder(
-			d_colour_scale_widget,
-			colour_scale_placeholder_widget);
-	QPalette colour_scale_palette = d_colour_scale_widget->palette();
-	colour_scale_palette.setColor(QPalette::Window, Qt::white);
-	d_colour_scale_widget->setPalette(colour_scale_palette);
+	d_use_age_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	d_use_age_palette_button->setText(QObject::tr("Age"));
+	QObject::connect(
+			d_use_age_palette_button, SIGNAL(clicked()),
+			this, SLOT(handle_use_age_palette_button_clicked()));
 
 	opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			opacity_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_opacity_spinbox_changed(double)));
+
 	intensity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			intensity_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_intensity_spinbox_changed(double)));
 
 	surface_relief_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			surface_relief_scale_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_surface_relief_scale_spinbox_changed(double)));
 
-	make_signal_slot_connections();
+	//
+	// Colour palette.
+	//
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_colour_palette_widget,
+			palette_placeholder_widget);
+	d_colour_palette_widget->setCursor(QCursor(Qt::ArrowCursor));
+
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(select_palette_filename_button_clicked()),
+			this, SLOT(handle_select_palette_filename_button_clicked()));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(use_default_palette_button_clicked()),
+			this, SLOT(handle_use_default_palette_button_clicked()));
+
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(range_check_box_changed(int)),
+			this, SLOT(handle_palette_range_check_box_changed(int)));
+
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(min_line_editing_finished(double)),
+			this, SLOT(handle_palette_min_line_editing_finished(double)));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(max_line_editing_finished(double)),
+			this, SLOT(handle_palette_max_line_editing_finished(double)));
+
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(range_restore_min_max_button_clicked()),
+			this, SLOT(handle_palette_range_restore_min_max_button_clicked()));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(range_restore_mean_deviation_button_clicked()),
+			this, SLOT(handle_palette_range_restore_mean_deviation_button_clicked()));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(range_restore_mean_deviation_spinbox_changed(double)),
+			this, SLOT(handle_palette_range_restore_mean_deviation_spinbox_changed(double)));
 }
 
 
@@ -170,20 +202,17 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 		if (visual_layer_params)
 		{
 			// Hide colour palette-related widgets if raster type is RGBA8.
-			bool is_rgba8 = (visual_layer_params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8);
-			palette_label->setVisible(!is_rgba8);
-			palette_widget->setVisible(!is_rgba8);
-			bool show_colour_scale = false;
-			if (!is_rgba8)
+			if (visual_layer_params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8)
 			{
-				show_colour_scale = d_colour_scale_widget->populate(visual_layer_params->get_colour_palette());
+				palette_placeholder_widget->setVisible(false);
 			}
-			colour_scale_placeholder_widget->setVisible(show_colour_scale);
-
-			if (!is_rgba8)
+			else
 			{
-				// Populate the palette filename.
-				d_palette_filename_lineedit->setText(visual_layer_params->get_colour_palette_filename());
+				palette_placeholder_widget->setVisible(true);
+
+				// Set the colour palette.
+				d_colour_palette_widget->set_parameters(
+						visual_layer_params->get_colour_palette_parameters());
 			}
 
 			// Setting the values in the spin boxes will emit signals if the value changes
@@ -247,8 +276,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 
 
 void
-GPlatesQtWidgets::RasterLayerOptionsWidget::set_colour_palette(
-		const QString &palette_file_name)
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_button_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -261,95 +289,32 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_colour_palette(
 			return;
 		}
 
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
 		if (palette_file_name.isEmpty())
 		{
 			return;
 		}
 
-		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
-		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		GPlatesFileIO::RegularCptReader regular_cpt_reader;
-		GPlatesFileIO::ReadErrorAccumulation regular_errors;
-		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
-			regular_cpt_reader.read_file(palette_file_name, regular_errors);
-
-		// There is a slight complication in the detection of whether a
-		// CPT file is regular or categorical. For the most part, a line
-		// in a categorical CPT file looks nothing like a line in a
-		// regular CPT file and will not be successfully parsed; the
-		// exception to the rule are the "BFN" lines, the format of
-		// which is common to both regular and categorical CPT files.
-		// For that reason, we also check if the regular_palette has any
-		// ColourSlices.
-		//
-		// Note: this flow of code is very similar to that in class IntegerCptReader.
-		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
+		std::pair<double, double> colour_palette_range;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type colour_palette =
+				load_colour_palette(palette_file_name, colour_palette_range, *params);
+		if (GPlatesGui::RasterColourPaletteType::get_type(*colour_palette) ==
+			GPlatesGui::RasterColourPaletteType::INVALID)
 		{
-			// Add all the errors reported to read_errors.
-			read_errors.accumulate(regular_errors);
-
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
-				GPlatesGui::convert_colour_palette<
-					GPlatesMaths::Real,
-					double
-				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
-
-			params->set_colour_palette(palette_file_name,
-					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
-
-			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
-		}
-		else
-		{
-			// Attempt to read the file as a regular CPT file has failed.
-			// Now, let's try to parse it as a categorical CPT file.
-			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
-			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
-			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
-				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
-
-			if (categorical_colour_palette_opt)
-			{
-				// This time, we return the colour palette even if it just
-				// contains "BFN" lines and no ColourEntrys.
-
-				// Add all the errors reported to errors.
-				read_errors.accumulate(categorical_errors);
-
-				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
-						categorical_colour_palette_opt.get());
-
-				params->set_colour_palette(palette_file_name,
-						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
-
-				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
-			}
+			return;
 		}
 
-		read_errors_dialog.update();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-		if (num_initial_errors != num_final_errors)
-		{
-			read_errors_dialog.show();
-		}
+		// Update the colour palette in the layer params.
+		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+				params->get_colour_palette_parameters();
+		colour_palette_parameters.set_colour_palette(
+				palette_file_name,
+				colour_palette,
+				colour_palette_range);
+		params->set_colour_palette_parameters(colour_palette_parameters);
 	}
-}
-
-
-void
-GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_button_clicked()
-{
-	QString palette_file_name = d_open_file_dialog.get_open_file_name();
-	if (palette_file_name.isEmpty())
-	{
-		return;
-	}
-
-	set_colour_palette(palette_file_name);
-
-	d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 }
 
 
@@ -364,7 +329,10 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->use_auto_generated_colour_palette();
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_colour_palette_parameters();
+			colour_palette_parameters.use_default_colour_palette();
+			params->set_colour_palette_parameters(colour_palette_parameters);
 		}
 	}
 }
@@ -373,7 +341,216 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 void
 GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicked()
 {
-	set_colour_palette(AGE_CPT_FILE_NAME);
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		std::pair<double, double> age_colour_palette_range;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type age_colour_palette =
+				load_colour_palette(AGE_CPT_FILE_NAME, age_colour_palette_range, *params);
+		if (GPlatesGui::RasterColourPaletteType::get_type(*age_colour_palette) ==
+			GPlatesGui::RasterColourPaletteType::INVALID)
+		{
+			return;
+		}
+
+		// Update the colour palette in the layer params.
+		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+				params->get_colour_palette_parameters();
+		colour_palette_parameters.set_colour_palette(
+				AGE_CPT_FILE_NAME,
+				age_colour_palette,
+				age_colour_palette_range);
+		params->set_colour_palette_parameters(colour_palette_parameters);
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_range_check_box_changed(
+		int state)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_colour_palette_parameters();
+			// Map or unmap the colour palette range.
+			if (state == Qt::Checked)
+			{
+				colour_palette_parameters.map_palette_range(
+						colour_palette_parameters.get_mapped_palette_range().first,
+						colour_palette_parameters.get_mapped_palette_range().second);
+			}
+			else
+			{
+				colour_palette_parameters.unmap_palette_range();
+			}
+			params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_min_line_editing_finished(
+		double min_value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
+		{
+			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+			const std::pair<double, double> raster_scalar_min_max = get_raster_scalar_min_max(layer);
+			const double min_range_delta = 0.0001 * (raster_scalar_min_max.second - raster_scalar_min_max.first);
+
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					visual_layer_params->get_colour_palette_parameters();
+
+			// Ensure min not greater than max.
+			if (min_value > colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta)
+			{
+				min_value = colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta;
+			}
+
+			colour_palette_parameters.map_palette_range(
+					min_value/*min*/,
+					colour_palette_parameters.get_palette_range().second/*max*/);
+
+			visual_layer_params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_max_line_editing_finished(
+		double max_value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
+		{
+			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+			const std::pair<double, double> raster_scalar_min_max = get_raster_scalar_min_max(layer);
+			const double min_range_delta = 0.0001 * (raster_scalar_min_max.second - raster_scalar_min_max.first);
+
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					visual_layer_params->get_colour_palette_parameters();
+
+			// Ensure max not less than min.
+			if (max_value < colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta)
+			{
+				max_value = colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta;
+			}
+
+			colour_palette_parameters.map_palette_range(
+					colour_palette_parameters.get_palette_range().first/*min*/,
+					max_value/*max*/);
+
+			visual_layer_params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_range_restore_min_max_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+			const std::pair<double, double> raster_scalar_min_max = get_raster_scalar_min_max(layer);
+
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_colour_palette_parameters();
+
+			colour_palette_parameters.map_palette_range(
+					raster_scalar_min_max.first,
+					raster_scalar_min_max.second);
+
+			params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_range_restore_mean_deviation_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+			const std::pair<double, double> raster_scalar_mean_std_dev = get_raster_scalar_mean_std_dev(layer);
+
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_colour_palette_parameters();
+
+			double range_min = raster_scalar_mean_std_dev.first -
+					colour_palette_parameters.get_deviation_from_mean() * raster_scalar_mean_std_dev.second;
+			double range_max = raster_scalar_mean_std_dev.first +
+					colour_palette_parameters.get_deviation_from_mean() * raster_scalar_mean_std_dev.second;
+
+			colour_palette_parameters.map_palette_range(range_min, range_max);
+
+			params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_range_restore_mean_deviation_spinbox_changed(
+		double deviation_from_mean)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
+		{
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					visual_layer_params->get_colour_palette_parameters();
+
+			colour_palette_parameters.set_deviation_from_mean(deviation_from_mean);
+
+			visual_layer_params->set_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
 }
 
 
@@ -431,43 +608,105 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_surface_relief_scale_spinbox_
 }
 
 
-void
-GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
+std::pair<double, double>
+GPlatesQtWidgets::RasterLayerOptionsWidget::get_raster_scalar_min_max(
+		GPlatesAppLogic::Layer &layer) const
 {
-	QObject::connect(
-			band_combobox,
-			SIGNAL(activated(const QString &)),
-			this,
-			SLOT(handle_band_combobox_activated(const QString &)));
-	QObject::connect(
-			select_palette_filename_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_select_palette_filename_button_clicked()));
-	QObject::connect(
-			use_default_palette_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_use_default_palette_button_clicked()));
-	QObject::connect(
-			use_age_palette_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_use_age_palette_button_clicked()));
-	QObject::connect(
-			opacity_spinbox,
-			SIGNAL(valueChanged(double)),
-			this,
-			SLOT(handle_opacity_spinbox_changed(double)));
-	QObject::connect(
-			intensity_spinbox,
-			SIGNAL(valueChanged(double)),
-			this,
-			SLOT(handle_intensity_spinbox_changed(double)));
-	QObject::connect(
-			surface_relief_scale_spinbox,
-			SIGNAL(valueChanged(double)),
-			this,
-			SLOT(handle_surface_relief_scale_spinbox_changed(double)));
+	const GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+		dynamic_cast<const GPlatesAppLogic::RasterLayerTask::Params *>(
+				&layer.get_layer_task_params());
+
+	// Default values result in clearing the colour scale widget.
+	double raster_scalar_min = 0;
+	double raster_scalar_max = 0;
+	if (layer_task_params)
+	{
+		const GPlatesPropertyValues::RasterStatistics raster_statistic =
+				layer_task_params->get_band_statistic();
+		if (raster_statistic.minimum &&
+			raster_statistic.maximum)
+		{
+			raster_scalar_min = raster_statistic.minimum.get();
+			raster_scalar_max = raster_statistic.maximum.get();
+		}
+	}
+
+	return std::make_pair(raster_scalar_min, raster_scalar_max);
 }
 
+
+std::pair<double, double>
+GPlatesQtWidgets::RasterLayerOptionsWidget::get_raster_scalar_mean_std_dev(
+		GPlatesAppLogic::Layer &layer) const
+{
+	const GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+		dynamic_cast<const GPlatesAppLogic::RasterLayerTask::Params *>(
+				&layer.get_layer_task_params());
+
+	// Default values result in clearing the colour scale widget.
+	double raster_scalar_mean = 0;
+	double raster_scalar_std_dev = 0;
+	if (layer_task_params)
+	{
+		const GPlatesPropertyValues::RasterStatistics raster_statistic =
+				layer_task_params->get_band_statistic();
+		if (raster_statistic.mean &&
+			raster_statistic.standard_deviation)
+		{
+			raster_scalar_mean = raster_statistic.mean.get();
+			raster_scalar_std_dev = raster_statistic.standard_deviation.get();
+		}
+	}
+
+	return std::make_pair(raster_scalar_mean, raster_scalar_std_dev);
+}
+
+
+GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
+GPlatesQtWidgets::RasterLayerOptionsWidget::load_colour_palette(
+		const QString &palette_file_name,
+		std::pair<double, double> &colour_palette_range,
+		const GPlatesPresentation::RasterVisualLayerParams &params)
+{
+	// Only allow loading an integer colour palette if the raster is integer-valued and
+	// the user is not remapping the colour palette.
+	bool allow_integer_colour_palette = false;
+	if (GPlatesPropertyValues::RasterType::is_integer(params.get_raster_type()) &&
+		!params.get_colour_palette_parameters().is_palette_range_mapped())
+	{
+		allow_integer_colour_palette = true;
+	}
+
+	GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
+	GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+			GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+					palette_file_name,
+					allow_integer_colour_palette,
+					cpt_read_errors);
+
+	// Copy the input value range to the caller.
+	boost::optional< std::pair<double, double> > range =
+			GPlatesGui::ColourPaletteUtils::get_range(*raster_colour_palette);
+	if (range)
+	{
+		colour_palette_range = std::make_pair(range->first, range->second);
+	}
+	else
+	{
+		// Null range for empty colour palette.
+		colour_palette_range = std::pair<double, double>(0,0);
+	}
+
+	// Show any read errors.
+	if (cpt_read_errors.size() > 0)
+	{
+		ReadErrorAccumulationDialog &read_errors_dialog =
+				d_viewport_window->dialogs().read_error_accumulation_dialog();
+
+		read_errors_dialog.read_errors().accumulate(cpt_read_errors);
+		read_errors_dialog.update();
+		read_errors_dialog.show();
+	}
+
+	return raster_colour_palette;
+}
