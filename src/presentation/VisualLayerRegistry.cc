@@ -431,6 +431,8 @@ GPlatesPresentation::register_default_visual_layers(
 			&ReconstructVisualLayerParams::create,
 			true);
 
+	// Temporarily disable until it's ready...
+#if 0
 	// Need to put reconstructed scalar coverages in same group (BASIC_DATA) as
 	// reconstructed feature geometries because the scalar coverages are coloured
 	// per-point and this needs to be displayed on top of the feature geometries
@@ -450,6 +452,7 @@ GPlatesPresentation::register_default_visual_layers(
 					&ReconstructScalarCoverageVisualLayerParams::create,
 					_1),
 			true);
+#endif
 
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(RECONSTRUCTION),

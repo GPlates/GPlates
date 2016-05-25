@@ -221,8 +221,6 @@ GPlatesAppLogic::register_default_layer_task_types(
 			GPlatesAppLogic::LayerTaskType::CO_REGISTRATION);
 
 	// Temporarily disable until it's ready...
-	//
-	// Also need to sort out Scribe serialisation to handle backwards compatibility with GPlates 1.5...
 #if 0
 	// Layer task to reconstruct scalar coverages.
 	layer_task_registry.register_layer_task_type(
