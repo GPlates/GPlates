@@ -51,96 +51,34 @@ GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	bool wrap_to_dateline):
 	d_filename(filename),
 	d_multiple_geometries(multiple_geometries),
-	d_ogr_writer(0)
+	d_ogr_writer(new OgrWriter(d_filename,multiple_geometries,wrap_to_dateline))
 {
-	try{
-		d_ogr_writer = new OgrWriter(d_filename,multiple_geometries,wrap_to_dateline);
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught creating OgrWriter: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught creating OgrWriter: Unknown error";
-	}
 }
 
 GPlatesFileIO::OgrGeometryExporter::~OgrGeometryExporter()
 {
-	if (d_ogr_writer)
-	{
-		delete d_ogr_writer;
-	};
+	delete d_ogr_writer;
 }
 
 void
 GPlatesFileIO::OgrGeometryExporter::visit_multi_point_on_sphere(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
-	if (!d_ogr_writer)
-	{
-		return;
-	}
-	try
-	{
-		d_ogr_writer->write_multi_point_feature(multi_point_on_sphere,d_key_value_dictionary);
-
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught writing multi-point to shapefile: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught writing multi-point to shapefile: Unknown error";
-	}
+	d_ogr_writer->write_multi_point_feature(multi_point_on_sphere,d_key_value_dictionary);
 }
 
 void
 GPlatesFileIO::OgrGeometryExporter::visit_point_on_sphere(
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
-	if (!d_ogr_writer)
-	{
-		return;
-	}
-	try
-	{
-		d_ogr_writer->write_point_feature(point_on_sphere,d_key_value_dictionary);
-
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught writing point to shapefile: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught writing point to shapefile: Unknown error";
-	}
+	d_ogr_writer->write_point_feature(point_on_sphere,d_key_value_dictionary);
 }
 
 void
 GPlatesFileIO::OgrGeometryExporter::visit_polygon_on_sphere(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
-	if (!d_ogr_writer)
-	{
-		return;
-	}
-	try
-	{
-		d_ogr_writer->write_polygon_feature(polygon_on_sphere,d_key_value_dictionary);
-
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught writing polygon to shapefile: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught writing polygon to shapefile: Unknown error";
-	}
+	d_ogr_writer->write_polygon_feature(polygon_on_sphere,d_key_value_dictionary);
 }
 
 
@@ -148,22 +86,7 @@ void
 GPlatesFileIO::OgrGeometryExporter::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
-	if (!d_ogr_writer)
-	{
-		return;
-	}
-	try
-	{
-		d_ogr_writer->write_polyline_feature(polyline_on_sphere,d_key_value_dictionary);
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught writing polyline to shapefile: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught writing polyline to shapefile: Unknown error";
-	}
+	d_ogr_writer->write_polyline_feature(polyline_on_sphere,d_key_value_dictionary);
 }
 
 void
