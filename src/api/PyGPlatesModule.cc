@@ -25,6 +25,8 @@
 
 #include "global/python.h"
 
+#include "maths/MathsUtils.h"
+
 #include "PyGPlatesModule.h"
 
 
@@ -243,6 +245,16 @@ GPlatesApi::get_builtin_next()
 BOOST_PYTHON_MODULE(pygplates)
 {
 	namespace bp = boost::python;
+
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	if (!GPlatesMaths::has_infinity_and_nan())
+	{
+		PyErr_SetString(
+				PyExc_ImportError,
+				"Python implementation must support infinity, quiet NaN and signaling NaN for float and double types.");
+		bp::throw_error_already_set();
+	}
 
 	// The 'pygplates' module is the current scope.
 	pygplates_module = bp::scope();

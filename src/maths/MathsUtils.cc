@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <QDebug>
 
 #include "MathsUtils.h"
 
@@ -36,7 +37,7 @@ namespace
 {
 	template<typename T>
 	bool
-	has_infinity_and_nan()
+	type_has_infinity_and_nan()
 	{
 		return std::numeric_limits<T>::has_infinity &&
 			std::numeric_limits<T>::has_quiet_NaN &&
@@ -45,12 +46,21 @@ namespace
 }
 
 
+bool
+GPlatesMaths::has_infinity_and_nan()
+{
+	return type_has_infinity_and_nan<float>() &&
+		type_has_infinity_and_nan<double>();
+}
+
+
+
 void
 GPlatesMaths::assert_has_infinity_and_nan()
 {
-	if (!(has_infinity_and_nan<float>() && has_infinity_and_nan<double>()))
+	if (!has_infinity_and_nan())
 	{
-		std::cerr << "float and double types must have infinity, quiet NaN and signaling NaN" << std::endl;
+		qWarning() << "Float and double types must have infinity, quiet NaN and signaling NaN.";
 		exit(1);
 	}
 }
