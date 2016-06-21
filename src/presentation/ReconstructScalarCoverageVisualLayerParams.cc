@@ -47,7 +47,7 @@ void
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
-	bool modified = false;
+	bool modified_ = false;
 
 	//
 	// Assume that the scalar types have changed, so:
@@ -64,7 +64,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 		{
 			// Ensure a colour palette exists for the scalar type.
 			create_colour_palette_parameters(scalar_type);
-			modified = true;
+			modified_ = true;
 		}
 	}
 
@@ -81,7 +81,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 			++colour_palette_parameters_iter;
 
 			d_colour_palette_parameters_map.erase(erase_iter);
-			modified = true;
+			modified_ = true;
 		}
 		else
 		{
@@ -89,7 +89,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 		}
 	}
 
-	if (modified)
+	if (modified_)
 	{
 		emit_modified();
 	}
