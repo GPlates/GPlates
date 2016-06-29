@@ -32,6 +32,10 @@
 #include "VelocityDeltaTime.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesAppLogic
@@ -56,20 +60,13 @@ namespace GPlatesAppLogic
 			// Calculates velocity of reconstructed domain geometry itself.
 			SOLVE_VELOCITIES_OF_DOMAIN_POINTS,
 
+			// NOTE: Any new values should also be added to @a transcribe.
+
 			NUM_SOLVE_VELOCITY_METHODS    // This must be last.
 		};
 
 
-		VelocityParams() :
-			// Default to using surfaces since that's how GPlates started out calculating velocities...
-			d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS),
-			d_delta_time_type(VelocityDeltaTime::T_PLUS_DELTA_T_TO_T),
-			d_delta_time(1.0),
-			d_is_boundary_smoothing_enabled(false),
-			d_boundary_smoothing_angular_half_extent_degrees(1.0),
-			// Default to no smoothing inside deforming regions...
-			d_exclude_deforming_regions_from_smoothing(true)
-		{  }
+		VelocityParams();
 
 
 		SolveVelocitiesMethodType
@@ -171,79 +168,12 @@ namespace GPlatesAppLogic
 		//! Equality comparison operator.
 		bool
 		operator==(
-				const VelocityParams &rhs) const
-		{
-			return d_solve_velocities_method == rhs.d_solve_velocities_method &&
-					d_delta_time_type == rhs.d_delta_time_type &&
-					d_delta_time == rhs.d_delta_time &&
-					d_is_boundary_smoothing_enabled == rhs.d_is_boundary_smoothing_enabled &&
-					d_exclude_deforming_regions_from_smoothing ==
-						rhs.d_exclude_deforming_regions_from_smoothing &&
-					d_boundary_smoothing_angular_half_extent_degrees ==
-						rhs.d_boundary_smoothing_angular_half_extent_degrees;
-		}
+				const VelocityParams &rhs) const;
 
 		//! Less than comparison operator.
 		bool
 		operator<(
-				const VelocityParams &rhs) const
-		{
-			if (d_solve_velocities_method < rhs.d_solve_velocities_method)
-			{
-				return true;
-			}
-			if (d_solve_velocities_method > rhs.d_solve_velocities_method)
-			{
-				return false;
-			}
-
-			if (d_delta_time_type < rhs.d_delta_time_type)
-			{
-				return true;
-			}
-			if (d_delta_time_type > rhs.d_delta_time_type)
-			{
-				return false;
-			}
-
-			if (d_delta_time < rhs.d_delta_time)
-			{
-				return true;
-			}
-			if (d_delta_time > rhs.d_delta_time)
-			{
-				return false;
-			}
-
-			if (d_is_boundary_smoothing_enabled < rhs.d_is_boundary_smoothing_enabled)
-			{
-				return true;
-			}
-			if (d_is_boundary_smoothing_enabled > rhs.d_is_boundary_smoothing_enabled)
-			{
-				return false;
-			}
-
-			if (d_boundary_smoothing_angular_half_extent_degrees < rhs.d_boundary_smoothing_angular_half_extent_degrees)
-			{
-				return true;
-			}
-			if (d_boundary_smoothing_angular_half_extent_degrees > rhs.d_boundary_smoothing_angular_half_extent_degrees)
-			{
-				return false;
-			}
-
-			if (d_exclude_deforming_regions_from_smoothing < rhs.d_exclude_deforming_regions_from_smoothing)
-			{
-				return true;
-			}
-			if (d_exclude_deforming_regions_from_smoothing > rhs.d_exclude_deforming_regions_from_smoothing)
-			{
-				return false;
-			}
-
-			return false;
-		}
+				const VelocityParams &rhs) const;
 
 	private:
 
@@ -256,7 +186,25 @@ namespace GPlatesAppLogic
 		GPlatesMaths::Real d_boundary_smoothing_angular_half_extent_degrees;
 		bool d_exclude_deforming_regions_from_smoothing;
 
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			VelocityParams::SolveVelocitiesMethodType &solve_velocities_method_type,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_APP_LOGIC_VELOCITYPARAMS_H

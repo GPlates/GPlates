@@ -51,6 +51,7 @@
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
+#include "presentation/VisualLayerRegistry.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -76,16 +77,58 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::reset(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
+GPlatesQtWidgets::DrawStyleDialog::reset()
 {
-	//qDebug() << "reseting draw style dialog...";
+	d_combo_box->set_selected_visual_layer(d_visual_layer);
+	init_category_table();
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
+	}
+	else // all layers ...
+	{
+		focus_style(d_style_of_all);
+	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::reset(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer,
+		boost::optional<const GPlatesGui::StyleAdapter *> style_)
+{
 	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
 	init_category_table();
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
+		//
+		// FIXME: DrawStyleDialog should update its GUI when the draw style changes in visual layer params.
+		//
+		// Currently DrawStyleDialog clobbers the draw style in the visual layer params.
+		// DrawStyleDialog should just be one observer of visual layer params
+		// (ie, it is not the only one who can change its state).
+		//
+		// As a temporary hack to get around this we allow another observer to set the draw style via
+		// DrawStyleDialog using the following style parameter (this also sets it in the layer's visual params).
+		// This means that when DrawStyleDialog is popped up by the user it will reset the draw style
+		// (to the state that is stored in its GUI) but that state will be up-to-date (ie, not old state).
+		//
+		if (style_)
+		{
+			locked_visual_layer->get_visual_layer_params()->set_style_adapter(style_.get());
+		}
+
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
+	}
+	else // all layers ...
+	{
+		if (style_)
+		{
+			d_style_of_all = style_.get();
+		}
+
+		focus_style(d_style_of_all);
 	}
 }
 
@@ -135,34 +178,41 @@ void
 GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
 {
-	if(!isVisible() || (layer.lock().get() == d_visual_layer.lock().get()))
+	// Return early if the layer hasn't actually changed.
+	//
+	// This includes testing for "All" layers which is identified by an invalid weak ptr
+	// (ie, a NULL shared ptr return by 'lock()').
+	if (layer.lock() == d_visual_layer.lock())
+	{
 		return;
+	}
 
 	d_visual_layer = layer;
+
+	//
+	// NOTE: We focus the layer's style (or style associate with "All" layers) even if this dialog
+	// is not visible. This is because 'focus_style()' sets the current index in both 'categories_table'
+	// and 'style_list' to match the new style. If we don't do this then the GUI does not remain
+	// in sync with the new layer's style and things get out-of-whack.
+	//
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
-		const GPlatesGui::StyleAdapter* t_style = 
-			locked_visual_layer->get_visual_layer_params()->style_adapter();
-		
-		if(t_style)
-		{
-			focus_style(t_style);
-		}
+		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
 	}
 	else
 	{
-		if(d_style_of_all)
-		{
-			focus_style(d_style_of_all);
-		}
-		else
-		{
-			categories_table->clearSelection();
-			categories_table->setCurrentIndex(QModelIndex());
-		
-			style_list->clearSelection();
-			style_list->clear();
-		}
+		//
+		// NOTE: We no longer need to clear 'categories_table' and 'style_list' if 'd_style_of_all' is NULL.
+		// This was done previously because if a layer was removed then the layers combo box might have
+		// changed to the "All" layers selection which would normally set all layers to use the same
+		// colouring (effectively wiping out any individual layer settings) - clearing the tables avoided this.
+		// This is no longer necessary because the combo box will never automatically switch to the "All" layers
+		// selection if there is an individual layer present.
+		//
+
+		// Focus the current style for "All". It can be NULL (it's handled by 'focus_style()'.
+		focus_style(d_style_of_all);
 	}
 }
 
@@ -175,7 +225,104 @@ GPlatesQtWidgets::LayerGroupComboBox::insert_all()
 	QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
 	static const QIcon empty_icon(QPixmap(":/gnome_stock_color_16.png"));
 	insertItem(0, empty_icon, "(All)", qv);
-	setCurrentIndex(0);
+}
+
+
+void
+GPlatesQtWidgets::LayerGroupComboBox::populate()
+{
+	// Remember which visual layer (if any) was selected before repopulating the combobox.
+	boost::weak_ptr<GPlatesPresentation::VisualLayer> selected = get_selected_visual_layer();
+	int index_to_select = -1;
+	int curr_index = 0;
+
+	// Suppress signal first.
+	QObject::disconnect(
+			this,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(handle_current_index_changed(int)));
+
+	clear();
+
+	// The first populated item is "All" (representing all layers).
+	insert_all();
+
+	// If the currently selected layer is "All" (ie, an invalid weak pointer) then set the selected index.
+	if (!selected.lock())
+	{
+		index_to_select = 0;
+	}
+	++curr_index;
+
+	// Populate the individual layers.
+	for (size_t i = d_visual_layers.size(); i != 0; --i)
+	{
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> curr = d_visual_layers.visual_layer_at(i - 1);
+		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr = curr.lock())
+		{
+			GPlatesPresentation::VisualLayerType::Type type = locked_curr->get_layer_type();
+			if (d_predicate(type))
+			{
+				QVariant qv;
+				qv.setValue(curr);
+				addItem(d_visual_layer_registry.get_icon(type), locked_curr->get_name(), qv);
+				
+				if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_selected = selected.lock())
+				{
+					if (locked_selected == locked_curr)
+					{
+						index_to_select = curr_index;
+					}
+				}
+
+				++curr_index;
+			}
+		}
+	}
+
+	if (index_to_select >= 0)
+	{
+		setCurrentIndex(index_to_select);
+	}
+	else // previously selected layer not found...
+	{
+		// Avoid selecting "All" (if there are any individual layers) since that will change styles for all layers.
+		// Instead select the last added layer.
+		setCurrentIndex(curr_index - 1);
+	}
+
+	// Reconnect signals and manually emit signal.
+	QObject::connect(
+			this,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(handle_current_index_changed(int)));
+	handle_current_index_changed(currentIndex());
+}
+
+
+void
+GPlatesQtWidgets::LayerGroupComboBox::set_selected_visual_layer(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	if (visual_layer.lock())
+	{
+		VisualLayersComboBox::set_selected_visual_layer(visual_layer);
+	}
+	else // set to 'all' visual layers (represented by an invalid weak_ptr) ...
+	{
+		for (int i = 0; i != count(); ++i)
+		{
+			boost::weak_ptr<GPlatesPresentation::VisualLayer> curr = itemData(i).value<
+					boost::weak_ptr<GPlatesPresentation::VisualLayer> >();
+			if (!curr.lock())
+			{
+				setCurrentIndex(i);
+				return;
+			}
+		}
+	}
 }
 
 
@@ -187,7 +334,7 @@ GPlatesQtWidgets::DrawStyleDialog::apply_style_to_all_layers()
 	{
 		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_layer = layers.visual_layer_at(i).lock())
 		{
-			locked_layer->get_visual_layer_params()->set_style_adaper(d_style_of_all);
+			locked_layer->get_visual_layer_params()->set_style_adapter(d_style_of_all);
 		}
 	}
 }
@@ -351,6 +498,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
 		return;
 	}
 
+	// Only draw preview icons when the mouse is released (to avoid constantly redrawing as the
+	// user drags the mouse) and when this dialog is visible and when the icons are being displayed.
 	if (!mouse_down && isVisible() && d_show_thumbnails)
 	{
 		show_preview_icons();
@@ -400,13 +549,26 @@ GPlatesQtWidgets::DrawStyleDialog::set_style(
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
-		if(locked_visual_layer->get_visual_layer_params()->style_adapter() == _style)
-			return;
-		else
+		if (locked_visual_layer->get_visual_layer_params()->style_adapter() != _style)
 		{
-			locked_visual_layer->get_visual_layer_params()->set_style_adaper(_style);
-			d_style_of_all = NULL;
+			locked_visual_layer->get_visual_layer_params()->set_style_adapter(_style);
 		}
+		// Note: We don't return early if the style did not change because we might be here because
+		// the style's configuration changed, so we need to update/redraw the style.
+
+		//
+		// NOTE: We no longer need to set 'd_style_of_all' to NULL to signal to 'handle_layer_changed()'
+		// to clear 'categories_table' and 'style_list'.
+		// This was done previously because if a layer was removed then the layers combo box might have
+		// changed to the "All" layers selection which would normally set all layers to use the same
+		// colouring (effectively wiping out any individual layer settings) - clearing the tables avoided this.
+		// This is no longer necessary because the combo box will never automatically switch to the "All" layers
+		// selection if there is an individual layer present.
+		//
+		// Also *not* setting 'd_style_of_all' to NULL means the previous style that the user selected
+		// for "All" layers is not lost (is not reset to the default draw style) when switching
+		// back to "All".
+		//
 	}
 	else
 	{
@@ -516,7 +678,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 {
 	if(current_row < 0)
 	{
-		qDebug() << "The index of current row is negative number. Do nothing and return.";
+		//qDebug() << "The index of current row is negative number. Do nothing and return.";
 		return;
 	}
 	QTableWidgetItem* item = categories_table->currentItem();
@@ -537,6 +699,9 @@ GPlatesQtWidgets::DrawStyleDialog::load_category(
 	using namespace GPlatesGui;
 
 	DrawStyleManager::StyleContainer styles = d_style_mgr->get_styles(cata);
+
+	// Remember the current row so we can re-select it.
+	const int current_style_index = style_list->currentRow();
 	style_list->clear();
 	
 	BOOST_FOREACH(StyleAdapter* sa, styles)
@@ -549,8 +714,13 @@ GPlatesQtWidgets::DrawStyleDialog::load_category(
 		style_list->addItem(item);
 	}
 
+	// Restore the current row.
+	style_list->setCurrentRow(current_style_index);
+
 	// Set the rendering chain in motion.
-	if (d_show_thumbnails)
+	// Don't need to show preview icons if this dialog is not visible
+	// (because they'll get drawn when the dialog becomes visible).
+	if (isVisible() && d_show_thumbnails)
 	{
 		show_preview_icons();
 	}
@@ -797,23 +967,6 @@ GPlatesQtWidgets::DrawStyleDialog::generate_new_valid_style_name(
 			else
 				c++;
 		}
-	}
-}
-
-
-void
-GPlatesQtWidgets::DrawStyleDialog::focus_style()
-{
-	if(!isVisible())
-		return;
-
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
-	{
-		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
-	}
-	else
-	{
-		focus_style(d_style_of_all);
 	}
 }
 

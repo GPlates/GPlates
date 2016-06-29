@@ -36,6 +36,9 @@
 #include "maths/GeometryDistance.h"
 #include "maths/MathsUtils.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/Earth.h"
 
 
@@ -118,6 +121,21 @@ namespace GPlatesDataMining
 
 		private:
 			double d_range;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<Config> &config);
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 		void
@@ -189,6 +207,8 @@ namespace GPlatesDataMining
 					//
 					// The returned distance will either be less than 'range_in_radians' threshold or
 					// AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+					const GPlatesMaths::AngularExtent range_angular_extent =
+							GPlatesMaths::AngularExtent::create_from_angle(range_in_radians);
 					const GPlatesMaths::AngularDistance min_dist = minimum_distance(
 							*reconstructed_seed_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
 							*reconstructed_target_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
@@ -196,7 +216,7 @@ namespace GPlatesDataMining
 							// if the other geometry overlaps its interior...
 							true/*geometry1_interior_is_solid*/,
 							true/*geometry2_interior_is_solid*/,
-							GPlatesMaths::AngularExtent::create_from_angle(range_in_radians));
+							range_angular_extent);
 
 					// If the minimum distance was less than the threshold 'range_in_radians'...
 					if (min_dist != GPlatesMaths::AngularDistance::PI)

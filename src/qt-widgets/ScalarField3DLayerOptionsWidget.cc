@@ -33,20 +33,17 @@
 #include "ScalarField3DLayerOptionsWidget.h"
 
 #include "QtWidgetUtils.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "RemappedColourPaletteWidget.h"
 #include "ViewportWindow.h"
 #include "VisualLayersDialog.h"
 
-#include "app-logic/ScalarField3DLayerTask.h"
+#include "app-logic/ScalarField3DLayerParams.h"
 
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "gui/ColourPaletteUtils.h"
-#include "gui/Dialogs.h"
 #include "gui/RasterColourPalette.h"
 
 #include "maths/MathsUtils.h"
@@ -941,11 +938,8 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 			//
 
 			d_shader_test_variables = visual_layer_params->get_shader_test_variables();
-			// If not yet set then use default values.
-			if (d_shader_test_variables.empty())
-			{
-				d_shader_test_variables.resize(NUM_SHADER_TEST_VARIABLES, 0.0f);
-			}
+			// If not yet set (or not size 16) then use default values.
+			d_shader_test_variables.resize(NUM_SHADER_TEST_VARIABLES, 0.0f);
 
 			QObject::disconnect(
 					test_variable_0_spinbox, SIGNAL(valueChanged(double)),
@@ -1638,23 +1632,20 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_select_scalar_palette_
 
 		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		std::pair<double, double> colour_palette_range;
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type colour_palette =
-				load_colour_palette(palette_file_name, colour_palette_range);
-		if (GPlatesGui::RasterColourPaletteType::get_type(*colour_palette) ==
-			GPlatesGui::RasterColourPaletteType::INVALID)
-		{
-			return;
-		}
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
 
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
 				params->get_scalar_colour_palette_parameters();
-		scalar_colour_palette_parameters.set_colour_palette(
-				palette_file_name,
-				colour_palette,
-				colour_palette_range);
+		// We only allow real-valued colour palettes since our data is real-valued...
+		scalar_colour_palette_parameters.load_colour_palette(palette_file_name, cpt_read_errors);
 		params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
+
+		// Show any CPT read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
@@ -1884,23 +1875,20 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_select_gradient_palett
 
 		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		std::pair<double, double> colour_palette_range;
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type colour_palette =
-				load_colour_palette(palette_file_name, colour_palette_range);
-		if (GPlatesGui::RasterColourPaletteType::get_type(*colour_palette) ==
-			GPlatesGui::RasterColourPaletteType::INVALID)
-		{
-			return;
-		}
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
 
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
 				params->get_gradient_colour_palette_parameters();
-		gradient_colour_palette_parameters.set_colour_palette(
-				palette_file_name,
-				colour_palette,
-				colour_palette_range);
+		// We only allow real-valued colour palettes since our data is real-valued...
+		gradient_colour_palette_parameters.load_colour_palette(palette_file_name, cpt_read_errors);
 		params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
+
+		// Show any CPT read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
@@ -3154,19 +3142,19 @@ std::pair<double, double>
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::get_scalar_value_min_max(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerParams *>(
+				layer.get_layer_params().get());
 
 	double scalar_field_min = 0; // Default value.
 	double scalar_field_max = 1; // Default value
-	if (layer_task_params)
+	if (layer_params)
 	{
-		if (layer_task_params->get_scalar_min() &&
-			layer_task_params->get_scalar_max())
+		if (layer_params->get_scalar_min() &&
+			layer_params->get_scalar_max())
 		{
-			scalar_field_min = layer_task_params->get_scalar_min().get();
-			scalar_field_max = layer_task_params->get_scalar_max().get();
+			scalar_field_min = layer_params->get_scalar_min().get();
+			scalar_field_max = layer_params->get_scalar_max().get();
 		}
 	}
 
@@ -3178,19 +3166,19 @@ std::pair<double, double>
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::get_scalar_value_mean_std_dev(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerParams *>(
+				layer.get_layer_params().get());
 
 	double scalar_field_mean = 0; // Default value.
 	double scalar_field_std_dev = 0; // Default value
-	if (layer_task_params)
+	if (layer_params)
 	{
-		if (layer_task_params->get_scalar_mean() &&
-			layer_task_params->get_scalar_standard_deviation())
+		if (layer_params->get_scalar_mean() &&
+			layer_params->get_scalar_standard_deviation())
 		{
-			scalar_field_mean = layer_task_params->get_scalar_mean().get();
-			scalar_field_std_dev = layer_task_params->get_scalar_standard_deviation().get();
+			scalar_field_mean = layer_params->get_scalar_mean().get();
+			scalar_field_std_dev = layer_params->get_scalar_standard_deviation().get();
 		}
 	}
 
@@ -3202,19 +3190,19 @@ std::pair<double, double>
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::get_gradient_magnitude_min_max(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerParams *>(
+				layer.get_layer_params().get());
 
 	double gradient_magnitude_min = 0; // Default value.
 	double gradient_magnitude_max = 1; // Default value
-	if (layer_task_params)
+	if (layer_params)
 	{
-		if (layer_task_params->get_gradient_magnitude_min() &&
-			layer_task_params->get_gradient_magnitude_max())
+		if (layer_params->get_gradient_magnitude_min() &&
+			layer_params->get_gradient_magnitude_max())
 		{
-			gradient_magnitude_min = layer_task_params->get_gradient_magnitude_min().get();
-			gradient_magnitude_max = layer_task_params->get_gradient_magnitude_max().get();
+			gradient_magnitude_min = layer_params->get_gradient_magnitude_min().get();
+			gradient_magnitude_max = layer_params->get_gradient_magnitude_max().get();
 		}
 	}
 
@@ -3226,19 +3214,19 @@ std::pair<double, double>
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::get_gradient_magnitude_mean_std_dev(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerParams *>(
+				layer.get_layer_params().get());
 
 	double gradient_magnitude_mean = 0; // Default value.
 	double gradient_magnitude_std_dev = 0; // Default value
-	if (layer_task_params)
+	if (layer_params)
 	{
-		if (layer_task_params->get_gradient_magnitude_mean() &&
-			layer_task_params->get_gradient_magnitude_standard_deviation())
+		if (layer_params->get_gradient_magnitude_mean() &&
+			layer_params->get_gradient_magnitude_standard_deviation())
 		{
-			gradient_magnitude_mean = layer_task_params->get_gradient_magnitude_mean().get();
-			gradient_magnitude_std_dev = layer_task_params->get_gradient_magnitude_standard_deviation().get();
+			gradient_magnitude_mean = layer_params->get_gradient_magnitude_mean().get();
+			gradient_magnitude_std_dev = layer_params->get_gradient_magnitude_standard_deviation().get();
 		}
 	}
 
@@ -3269,64 +3257,23 @@ std::pair<double, double>
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::get_depth_min_max(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ScalarField3DLayerParams *>(
+				layer.get_layer_params().get());
 
 	double depth_min = 0; // Default value.
 	double depth_max = 1; // Default value
-	if (layer_task_params)
+	if (layer_params)
 	{
-		if (layer_task_params->get_minimum_depth_layer_radius())
+		if (layer_params->get_minimum_depth_layer_radius())
 		{
-			depth_min = layer_task_params->get_minimum_depth_layer_radius().get();
+			depth_min = layer_params->get_minimum_depth_layer_radius().get();
 		}
-		if (layer_task_params->get_maximum_depth_layer_radius())
+		if (layer_params->get_maximum_depth_layer_radius())
 		{
-			depth_max = layer_task_params->get_maximum_depth_layer_radius().get();
+			depth_max = layer_params->get_maximum_depth_layer_radius().get();
 		}
 	}
 
 	return std::make_pair(depth_min, depth_max);
-}
-
-
-GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::load_colour_palette(
-		const QString &palette_file_name,
-		std::pair<double, double> &colour_palette_range)
-{
-	GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
-	GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
-			GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
-					palette_file_name,
-					// We only allow real-valued colour palettes since our data is real-valued...
-					false/*allow_integer_colour_palette*/,
-					cpt_read_errors);
-
-	// Copy the input value range to the caller.
-	boost::optional< std::pair<double, double> > range =
-			GPlatesGui::ColourPaletteUtils::get_range(*raster_colour_palette);
-	if (range)
-	{
-		colour_palette_range = std::make_pair(range->first, range->second);
-	}
-	else
-	{
-		// Null range for empty colour palette.
-		colour_palette_range = std::pair<double, double>(0,0);
-	}
-
-	// Show any read errors.
-	if (cpt_read_errors.size() > 0)
-	{
-		ReadErrorAccumulationDialog &read_errors_dialog =
-				d_viewport_window->dialogs().read_error_accumulation_dialog();
-
-		read_errors_dialog.read_errors().accumulate(cpt_read_errors);
-		read_errors_dialog.update();
-		read_errors_dialog.show();
-	}
-
-	return raster_colour_palette;
 }

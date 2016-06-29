@@ -29,6 +29,7 @@
 
 #include "LayerProxyUtils.h"
 #include "PartitionFeatureTask.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructLayerProxy.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
@@ -114,14 +115,14 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Contains the reconstructed static polygons used for cookie-cutting.
-	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_static_polygons;
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
-	std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+	std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 
 	const double reconstruction_time = reconstruction_tree->get_reconstruction_time();
 

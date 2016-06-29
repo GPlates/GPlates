@@ -99,7 +99,7 @@
  *		...
  *		SCRIBE_EXPORT_EXTERNAL
  *
- * And each source code sub-directory that export registers class for the scribe system should
+ * And each source code sub-directory that export registers classes for the scribe system should
  * define a macro named 'SCRIBE_EXPORT_<sub-dir-name>' that contains a list of those classes and
  * types that need to be export registered by the scribe system.
  * For example:

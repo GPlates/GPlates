@@ -30,21 +30,18 @@
 #include "ReconstructScalarCoverageLayerOptionsWidget.h"
 
 #include "QtWidgetUtils.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "RemappedColourPaletteWidget.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructScalarCoverageLayerTask.h"
+#include "app-logic/ReconstructScalarCoverageLayerParams.h"
 #include "app-logic/ReconstructScalarCoverageParams.h"
 
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "global/GPlatesAssert.h"
 
-#include "gui/ColourPaletteUtils.h"
 #include "gui/CptColourPalette.h"
-#include "gui/Dialogs.h"
 
 #include "presentation/ReconstructScalarCoverageVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
@@ -139,20 +136,20 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
 			// Populate the scalar type combobox with the list of scalar types, and ensure that
 			// the correct one is selected.
 			int scalar_type_index = -1;
 			const GPlatesPropertyValues::ValueObjectType &selected_scalar_type =
-					layer_task_params->get_scalar_type();
+					layer_params->get_scalar_type();
 
 			scalar_type_combobox->clear();
 			const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types =
-				layer_task_params->get_scalar_types();
+				layer_params->get_scalar_types();
 			for (int i = 0; i != static_cast<int>(scalar_types.size()); ++i)
 			{
 				const GPlatesPropertyValues::ValueObjectType &curr_scalar_type = scalar_types[i];
@@ -196,17 +193,17 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_scalar_typ
 	{
 		// Set the scalar type in the app-logic layer params.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
 			boost::optional<GPlatesPropertyValues::ValueObjectType> scalar_type =
 					GPlatesModel::convert_qstring_to_qualified_xml_name<
 							GPlatesPropertyValues::ValueObjectType>(text);
 			if (scalar_type)
 			{
-				layer_task_params->set_scalar_type(scalar_type.get());
+				layer_params->set_scalar_type(scalar_type.get());
 			}
 		}
 	}
@@ -235,23 +232,20 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_select_pal
 
 		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		std::pair<double, double> colour_palette_range;
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type colour_palette =
-				load_colour_palette(palette_file_name, colour_palette_range);
-		if (GPlatesGui::RasterColourPaletteType::get_type(*colour_palette) ==
-			GPlatesGui::RasterColourPaletteType::INVALID)
-		{
-			return;
-		}
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
 
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_current_colour_palette_parameters();
-		colour_palette_parameters.set_colour_palette(
-				palette_file_name,
-				colour_palette,
-				colour_palette_range);
+		// We only allow real-valued colour palettes since our data is real-valued...
+		colour_palette_parameters.load_colour_palette(palette_file_name, cpt_read_errors);
 		params->set_current_colour_palette_parameters(colour_palette_parameters);
+
+		// Show any CPT read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
@@ -461,17 +455,17 @@ std::pair<double, double>
 GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::get_scalar_min_max(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+				layer.get_layer_params().get());
 
 	// Default values result in clearing the colour scale widget.
 	double scalar_min = 0;
 	double scalar_max = 0;
-	if (layer_task_params)
+	if (layer_params)
 	{
 		boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics> statistics =
-				layer_task_params->get_scalar_statistics(layer_task_params->get_scalar_type());
+				layer_params->get_scalar_statistics(layer_params->get_scalar_type());
 		if (statistics)
 		{
 			scalar_min = statistics->minimum;
@@ -487,17 +481,17 @@ std::pair<double, double>
 GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::get_scalar_mean_std_dev(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+				layer.get_layer_params().get());
 
 	// Default values result in clearing the colour scale widget.
 	double scalar_mean = 0;
 	double scalar_std_dev = 0;
-	if (layer_task_params)
+	if (layer_params)
 	{
 		boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics> statistics =
-				layer_task_params->get_scalar_statistics(layer_task_params->get_scalar_type());
+				layer_params->get_scalar_statistics(layer_params->get_scalar_type());
 		if (statistics)
 		{
 			scalar_mean = statistics->mean;
@@ -506,45 +500,4 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::get_scalar_mean_s
 	}
 
 	return std::make_pair(scalar_mean, scalar_std_dev);
-}
-
-
-GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::load_colour_palette(
-		const QString &palette_file_name,
-		std::pair<double, double> &colour_palette_range)
-{
-	GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
-	GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
-			GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
-					palette_file_name,
-					// We only allow real-valued colour palettes since our data is real-valued...
-					false/*allow_integer_colour_palette*/,
-					cpt_read_errors);
-
-	// Copy the input value range to the caller.
-	boost::optional< std::pair<double, double> > range =
-			GPlatesGui::ColourPaletteUtils::get_range(*raster_colour_palette);
-	if (range)
-	{
-		colour_palette_range = std::make_pair(range->first, range->second);
-	}
-	else
-	{
-		// Null range for empty colour palette.
-		colour_palette_range = std::pair<double, double>(0,0);
-	}
-
-	// Show any read errors.
-	if (cpt_read_errors.size() > 0)
-	{
-		ReadErrorAccumulationDialog &read_errors_dialog =
-				d_viewport_window->dialogs().read_error_accumulation_dialog();
-
-		read_errors_dialog.read_errors().accumulate(cpt_read_errors);
-		read_errors_dialog.update();
-		read_errors_dialog.show();
-	}
-
-	return raster_colour_palette;
 }

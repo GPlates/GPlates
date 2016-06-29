@@ -32,7 +32,6 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"

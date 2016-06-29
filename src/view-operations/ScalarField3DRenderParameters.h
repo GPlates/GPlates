@@ -33,6 +33,9 @@
 
 #include "presentation/RemappedColourPaletteParameters.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -48,6 +51,8 @@ namespace GPlatesViewOperations
 			RENDER_MODE_ISOSURFACE,
 			RENDER_MODE_CROSS_SECTIONS,
 
+			// NOTE: Any new values should also be added to @a transcribe.
+
 			NUM_RENDER_MODES // This must be last.
 		};
 
@@ -59,6 +64,8 @@ namespace GPlatesViewOperations
 			ISOSURFACE_DEVIATION_WINDOW_MODE_NONE,
 			ISOSURFACE_DEVIATION_WINDOW_MODE_SINGLE,
 			ISOSURFACE_DEVIATION_WINDOW_MODE_DOUBLE,
+
+			// NOTE: Any new values should also be added to @a transcribe.
 
 			NUM_ISOSURFACE_DEVIATION_WINDOW_MODES // This must be last.
 		};
@@ -72,6 +79,8 @@ namespace GPlatesViewOperations
 			ISOSURFACE_COLOUR_MODE_SCALAR,
 			ISOSURFACE_COLOUR_MODE_GRADIENT,
 
+			// NOTE: Any new values should also be added to @a transcribe.
+
 			NUM_ISOSURFACE_COLOUR_MODES // This must be last.
 		};
 
@@ -82,6 +91,8 @@ namespace GPlatesViewOperations
 		{
 			CROSS_SECTION_COLOUR_MODE_SCALAR,
 			CROSS_SECTION_COLOUR_MODE_GRADIENT,
+
+			// NOTE: Any new values should also be added to @a transcribe.
 
 			NUM_CROSS_SECTION_COLOUR_MODES // This must be last.
 		};
@@ -106,6 +117,15 @@ namespace GPlatesViewOperations
 			float upper_deviation2;
 
 			bool symmetric_deviation;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -127,6 +147,15 @@ namespace GPlatesViewOperations
 			float opacity_deviation_window_volume_rendering;
 			bool surface_deviation_window;
 			unsigned int surface_deviation_window_isoline_frequency;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -149,6 +178,15 @@ namespace GPlatesViewOperations
 			bool treat_polylines_as_polygons;
 			bool show_polygon_walls;
 			bool only_show_boundary_walls;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -163,6 +201,15 @@ namespace GPlatesViewOperations
 
 			float min_depth_radius_restriction;
 			float max_depth_radius_restriction;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -183,6 +230,15 @@ namespace GPlatesViewOperations
 			// during globe rotation when the mouse is dragged...
 			bool enable_reduce_rate_during_drag_globe;
 			unsigned int reduce_rate_during_drag_globe;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -398,6 +454,43 @@ namespace GPlatesViewOperations
 		 */
 		std::vector<float> d_shader_test_variables;
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ScalarField3DRenderParameters::RenderMode &render_mode,
+			bool transcribed_construct_data);
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode &isosurface_deviation_window_mode,
+			bool transcribed_construct_data);
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ScalarField3DRenderParameters::IsosurfaceColourMode &isosurface_colour_mode,
+			bool transcribed_construct_data);
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ScalarField3DRenderParameters::CrossSectionColourMode &cross_section_colour_mode,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_VIEW_OPERATIONS_SCALARFIELD3DRENDERPARAMETERS_H

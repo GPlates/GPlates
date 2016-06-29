@@ -28,6 +28,7 @@
 #include <QDebug>
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/MultiPointVectorField.h"
 #include "app-logic/NetRotationUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
@@ -146,13 +147,13 @@ namespace
 	void
 	get_vector_field_seq(
 			vector_field_seq_type &vector_field_seq,
-			const std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields)
+			const std::vector<GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type> &multi_point_velocity_fields)
 	{
 		using namespace GPlatesAppLogic;
 
 		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
 		BOOST_FOREACH(
-					const multi_point_vector_field_non_null_ptr_type &multi_point_velocity_field,
+					const GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type &multi_point_velocity_field,
 					multi_point_velocity_fields)
 		{
 			vector_field_seq.push_back(multi_point_velocity_field.get());
@@ -182,7 +183,7 @@ namespace
 		get_velocity_field_calculator_layer_proxies(velocity_field_outputs, application_state);
 
 		// Iterate over the layers that have velocity field calculator outputs.
-		std::vector<multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
+		std::vector<GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type> multi_point_velocity_fields;
 
 		BOOST_FOREACH(
 					const VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_output,

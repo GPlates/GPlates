@@ -34,7 +34,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeCoordinateFrame.h"
 #include "maths/UnitVector3D.h"
 

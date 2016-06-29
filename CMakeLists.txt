@@ -23,15 +23,6 @@ add_subdirectory(src)
 #
 add_subdirectory(doc)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py")
-    install(FILES "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py"
-        DESTINATION share/gplates/scripts/)
-endif()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger.py")
     install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger.py"

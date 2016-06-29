@@ -162,7 +162,7 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
 		const GPlatesUtils::UnicodeString raster_band_name(config_row.attr_name);
 
 		// Associate the config row with the raster.
-		const raster_id_type raster_id = std::make_pair(config_row.target_layer, raster_band_name);
+		const raster_id_type raster_id = std::make_pair(target_layer, raster_band_name);
 		config_rows_from_raster_layer_lookup[raster_id].push_back(config_row_index);
 	}
 

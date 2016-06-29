@@ -30,8 +30,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
-
-#include "AppLogicFwd.h"
+#include "ScalarField3DLayerProxy.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
@@ -69,7 +68,7 @@ namespace GPlatesAppLogic
 		create(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const scalar_field_3d_layer_proxy_non_null_ptr_type &scalar_field_layer_proxy)
+				const ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy)
 		{
 			return non_null_ptr_type(
 					new ResolvedScalarField3D(
@@ -92,7 +91,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the scalar field layer proxy.
 		 */
-		const scalar_field_3d_layer_proxy_non_null_ptr_type &
+		const ScalarField3DLayerProxy::non_null_ptr_type &
 		get_scalar_field_3d_layer_proxy() const
 		{
 			return d_scalar_field_layer_proxy;
@@ -131,7 +130,7 @@ namespace GPlatesAppLogic
 		ResolvedScalarField3D(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const scalar_field_3d_layer_proxy_non_null_ptr_type &scalar_field_layer_proxy);
+				const ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy);
 
 	private:
 		/**
@@ -142,7 +141,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The scalar field layer proxy.
 		 */
-		scalar_field_3d_layer_proxy_non_null_ptr_type d_scalar_field_layer_proxy;
+		ScalarField3DLayerProxy::non_null_ptr_type d_scalar_field_layer_proxy;
 	};
 }
 

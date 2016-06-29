@@ -28,25 +28,15 @@
 #define GPLATES_APP_LOGIC_RASTERLAYERTASK_H
 
 #include <utility>
-#include <vector>
-#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
-#include "AppLogicFwd.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
+#include "RasterLayerParams.h"
+#include "RasterLayerProxy.h"
 
-#include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
-
-#include "property-values/Georeferencing.h"
-#include "property-values/GpmlRasterBandNames.h"
-#include "property-values/RasterStatistics.h"
-#include "property-values/RasterType.h"
-#include "property-values/RawRaster.h"
-#include "property-values/SpatialReferenceSystem.h"
-#include "property-values/TextContent.h"
 
 
 namespace GPlatesAppLogic
@@ -61,109 +51,12 @@ namespace GPlatesAppLogic
 	 * (eg, ocean floor near mid-ocean ridge).
 	 */
 	class RasterLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a raster layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-			//! Sets the name of the band, of the raster, selected for processing.
-			void
-			set_band_name(
-					const GPlatesPropertyValues::TextContent &band_name);
-
-
-			//! Returns the name of the band of the raster selected for processing.
-			const GPlatesPropertyValues::TextContent &
-			get_band_name() const;
-
-			//! Returns the list of band names that are in the raster feature.
-			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
-			get_band_names() const;
-
-			/**
-			 * Returns the raster statistics of the band of the raster selected for processing.
-			 *
-			 * NOTE: For time-dependent rasters these are the statistics of the raster at present day.
-			 */
-			GPlatesPropertyValues::RasterStatistics
-			get_band_statistic() const;
-
-			/**
-			 * Returns the list of raster statistics for the raster bands.
-			 *
-			 * NOTE: For time-dependent rasters these are the statistics of the raster at present day.
-			 */
-			const std::vector<GPlatesPropertyValues::RasterStatistics> &
-			get_band_statistics() const;
-
-			//! Returns the georeferencing of the raster feature.
-			const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-			get_georeferencing() const;
-
-			//! Returns the raster feature's spatial reference system.
-			const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
-			get_spatial_reference_system() const;
-
-			//! Returns the raster's type.
-			GPlatesPropertyValues::RasterType::Type
-			get_raster_type() const;
-
-			//! Returns the raster feature or boost::none if one is currently not set on the layer.
-			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
-			get_raster_feature() const;
-
-		private:
-			//! The name of the band of the raster that has been selected for processing.
-			GPlatesPropertyValues::TextContent d_band_name;
-
-			//! The list of band names that were in the raster feature the last time we examined it.
-			GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_band_names;
-
-			//! The raster statistics of the band of the raster selected for processing.
-			GPlatesPropertyValues::RasterStatistics d_band_statistic;
-
-			//! The list of raster statistics for the raster bands.
-			std::vector<GPlatesPropertyValues::RasterStatistics> d_band_statistics;
-
-			//! The georeferencing of the raster.
-			boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
-
-			//! The raster's spatial reference system.
-			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_spatial_reference_system;
-
-			//! The raster's type.
-			GPlatesPropertyValues::RasterType::Type d_raster_type;
-
-			//! The raster feature.
-			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_raster_feature;
-
-			/**
-			 * Is true if @a set_band_name has been called - RasterLayerTask will reset this explicitly.
-			 *
-			 * Used to let RasterLayerTask know that an external client has modified this state.
-			 */
-			bool d_set_band_name_called;
-
-			Params();
-
-			//! Modifies the selected raster band and list of raster band names according to new feature.
-			void
-			set_raster_feature(
-					boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref);
-
-			//! Update state to reflect a new, or modified, raster feature.
-			void
-			updated_raster_feature();
-
-			// Make friend so can access constructor, @a d_set_band_name_called and private methods.
-			friend class RasterLayerTask;
-		};
-
 
 		static
 		bool
@@ -177,9 +70,6 @@ namespace GPlatesAppLogic
 		{
 			return boost::shared_ptr<RasterLayerTask>(new RasterLayerTask());
 		}
-
-
-		~RasterLayerTask();
 
 
 		virtual
@@ -251,23 +141,29 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
+
+	private Q_SLOTS:
+
+		void
+		handle_band_name_modified(
+				GPlatesAppLogic::RasterLayerParams &layer_params);
 
 	private:
 
 		/**
 		 * Extra parameters for this layer.
 		 */
-		Params d_layer_task_params;
+		RasterLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Resolves raster.
 		 */
-		raster_layer_proxy_non_null_ptr_type d_raster_layer_proxy;
+		RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
 
 
 		//! Constructor.

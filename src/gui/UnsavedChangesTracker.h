@@ -41,6 +41,11 @@ namespace GPlatesGui
 	class FileIOFeedback;
 }
 
+namespace GPlatesPresentation
+{
+	class SessionManagement;
+}
+
 namespace GPlatesQtWidgets
 {
 	// Forward declaration of ViewportWindow to avoid spaghetti.
@@ -73,11 +78,24 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
+
+		/**
+		 * The result of the close, clear, load previous session and load project event hooks.
+		 */
+		enum UnsavedChangesResult
+		{
+			NO_UNSAVED_CHANGES,          // There are no unsaved changes - can proceed with action.
+			DISCARD_UNSAVED_CHANGES,     // There are unsaved changes, but user is discarding them.
+			DONT_DISCARD_UNSAVED_CHANGES // There are unsaved changes and user doesn't want to discard them.
+		};
+
+
 		explicit
 		UnsavedChangesTracker(
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+				GPlatesPresentation::SessionManagement &session_management_,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -100,31 +118,43 @@ namespace GPlatesGui
 		 * This could delegate to an app-state level thing later on.
 		 */
 		bool
-		has_unsaved_changes();
+		has_unsaved_feature_collections();
 
 
 		/**
-		 * List of file names with unsaved changes, for listing in the
+		 * List of file names of unsaved feature collections, for listing in the
 		 * UnsavedChangesWarningDialog.
 		 */
 		QStringList
-		list_unsaved_filenames();
+		list_unsaved_feature_collection_filenames();
 
 
 		/**
-		 * Hook called when ViewportWindow is closing. Returns true if closing
-		 * is ok, false if the user wants to abort.
+		 * Hook called when ViewportWindow is closing.
 		 */
-		bool
+		UnsavedChangesResult
 		close_event_hook();
 
 
 		/**
-		 * Called when the user wants to clear the session. Returns true if clearing
-		 * the existing session is ok, false if the user does not want to clear the session.
+		 * Called when the user wants to clear the session.
 		 */
-		bool
+		UnsavedChangesResult
 		clear_session_event_hook();
+
+
+		/**
+		 * Called when the user wants to load a previous session.
+		 */
+		UnsavedChangesResult
+		load_previous_session_event_hook();
+
+
+		/**
+		 * Called when the user wants to load a project.
+		 */
+		UnsavedChangesResult
+		load_project_event_hook();
 
 	
 	public Q_SLOTS:
@@ -227,6 +257,11 @@ namespace GPlatesGui
 		 * Handles loading/unloading of feature collections.
 		 */
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io_ptr;
+
+		/**
+		 * Detects unsaved changes in loaded projects.
+		 */
+		GPlatesPresentation::SessionManagement *d_session_management_ptr;
 
 
 		/**

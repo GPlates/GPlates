@@ -24,21 +24,12 @@
  */
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <QDebug>
-#include <QFileInfo>
 
 #include "ScalarField3DLayerTask.h"
 
 #include "ExtractScalarField3DFeatureProperties.h"
 #include "ScalarField3DLayerProxy.h"
-
-#include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/ScalarField3DFileFormatReader.h"
-
-#include "model/FeatureVisitor.h"
-
-#include "utils/UnicodeStringUtils.h"
 
 
 bool
@@ -50,16 +41,9 @@ GPlatesAppLogic::ScalarField3DLayerTask::can_process_feature_collection(
 
 
 GPlatesAppLogic::ScalarField3DLayerTask::ScalarField3DLayerTask() :
+	d_layer_params(ScalarField3DLayerParams::create()),
 	d_scalar_field_layer_proxy(ScalarField3DLayerProxy::create())
 {
-	// Defined in ".cc" file because non_null_ptr_type requires complete type for its destructor.
-	// Data member destructors can get called if exception thrown in this constructor.
-}
-
-
-GPlatesAppLogic::ScalarField3DLayerTask::~ScalarField3DLayerTask()
-{
-	// Defined in ".cc" file because non_null_ptr_type requires complete type for its destructor.
 }
 
 
@@ -134,11 +118,11 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_file_connection(
 		// Set the scalar field feature in the layer proxy.
 		const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
 
-		// Let the layer task params know of the new scalar field feature.
-		d_layer_task_params.set_scalar_field_feature(feature_ref);
+		// Let the layer params know of the new scalar field feature.
+		d_layer_params->set_scalar_field_feature(feature_ref);
 
 		// Let the layer proxy know of the scalar field and let it know of the new parameters.
-		d_scalar_field_layer_proxy->set_current_scalar_field_feature(feature_ref, d_layer_task_params);
+		d_scalar_field_layer_proxy->set_current_scalar_field_feature(feature_ref, *d_layer_params);
 
 		// A raster feature collection should have only one feature.
 		if (++features_iter != features_end)
@@ -166,11 +150,11 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_file_connection(
 			return;
 		}
 
-		// Let the layer task params know of that there's now no scalar field feature.
-		d_layer_task_params.set_scalar_field_feature(boost::none);
+		// Let the layer params know of that there's now no scalar field feature.
+		d_layer_params->set_scalar_field_feature(boost::none);
 
 		// Set the scalar field feature to none in the layer proxy and let it know of the new parameters.
-		d_scalar_field_layer_proxy->set_current_scalar_field_feature(boost::none, d_layer_task_params);
+		d_scalar_field_layer_proxy->set_current_scalar_field_feature(boost::none, *d_layer_params);
 
 		// A scalar field feature collection should have only one feature.
 		if (++features_iter != features_end)
@@ -207,11 +191,11 @@ GPlatesAppLogic::ScalarField3DLayerTask::modified_input_file(
 		// Set the scalar field feature in the layer proxy.
 		const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
 
-		// Let the layer task params know of the new scalar field feature.
-		d_layer_task_params.set_scalar_field_feature(feature_ref);
+		// Let the layer params know of the new scalar field feature.
+		d_layer_params->set_scalar_field_feature(feature_ref);
 
 		// Let the layer proxy know of the scalar field and let it know of the new parameters.
-		d_scalar_field_layer_proxy->set_current_scalar_field_feature(feature_ref, d_layer_task_params);
+		d_scalar_field_layer_proxy->set_current_scalar_field_feature(feature_ref, *d_layer_params);
 
 		// A scalar field feature collection should have only one feature.
 		if (++features_iter != features_end)
@@ -375,94 +359,4 @@ GPlatesAppLogic::LayerProxy::non_null_ptr_type
 GPlatesAppLogic::ScalarField3DLayerTask::get_layer_proxy()
 {
 	return d_scalar_field_layer_proxy;
-}
-
-
-const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
-GPlatesAppLogic::ScalarField3DLayerTask::Params::get_scalar_field_feature() const
-{
-	return d_scalar_field_feature;
-}
-
-
-GPlatesAppLogic::ScalarField3DLayerTask::Params::Params()
-{
-}
-
-
-void
-GPlatesAppLogic::ScalarField3DLayerTask::Params::set_scalar_field_feature(
-		boost::optional<GPlatesModel::FeatureHandle::weak_ref> scalar_field_feature)
-{
-	d_scalar_field_feature = scalar_field_feature;
-
-	updated_scalar_field_feature();
-}
-
-
-void
-GPlatesAppLogic::ScalarField3DLayerTask::Params::updated_scalar_field_feature()
-{
-	// Clear everything in case error (and return early).
-	d_minimum_depth_layer_radius = boost::none;
-	d_maximum_depth_layer_radius = boost::none;
-	d_scalar_min = boost::none;
-	d_scalar_max = boost::none;
-	d_scalar_mean = boost::none;
-	d_scalar_standard_deviation = boost::none;
-	d_gradient_magnitude_min = boost::none;
-	d_gradient_magnitude_max = boost::none;
-	d_gradient_magnitude_mean = boost::none;
-	d_gradient_magnitude_standard_deviation = boost::none;
-
-	// If there is no scalar field feature then clear everything.
-	if (!d_scalar_field_feature)
-	{
-		return;
-	}
-
-	GPlatesAppLogic::ExtractScalarField3DFeatureProperties visitor;
-	visitor.visit_feature(d_scalar_field_feature.get());
-
-	if (!visitor.get_scalar_field_filename())
-	{
-		return;
-	}
-
-	const QString scalar_field_file_name =
-			GPlatesUtils::make_qstring(*visitor.get_scalar_field_filename());
-
-	if (!QFileInfo(scalar_field_file_name).exists())
-	{
-		return;
-	}
-
-	// Catch exceptions due to incorrect version or bad formatting.
-	try
-	{
-		// Scalar field reader to access parameters in scalar field file.
-		const GPlatesFileIO::ScalarField3DFileFormat::Reader scalar_field_reader(scalar_field_file_name);
-
-		// Read the scalar field depth range.
-		d_minimum_depth_layer_radius = scalar_field_reader.get_minimum_depth_layer_radius();
-		d_maximum_depth_layer_radius = scalar_field_reader.get_maximum_depth_layer_radius();
-
-		// Read the scalar field statistics.
-		d_scalar_min = scalar_field_reader.get_scalar_min();
-		d_scalar_max = scalar_field_reader.get_scalar_max();
-		d_scalar_mean = scalar_field_reader.get_scalar_mean();
-		d_scalar_standard_deviation = scalar_field_reader.get_scalar_standard_deviation();
-		d_gradient_magnitude_min = scalar_field_reader.get_gradient_magnitude_min();
-		d_gradient_magnitude_max = scalar_field_reader.get_gradient_magnitude_max();
-		d_gradient_magnitude_mean = scalar_field_reader.get_gradient_magnitude_mean();
-		d_gradient_magnitude_standard_deviation = scalar_field_reader.get_gradient_magnitude_standard_deviation();
-	}
-	catch (GPlatesFileIO::ScalarField3DFileFormat::UnsupportedVersion &exc)
-	{
-		qWarning() << exc;
-	}
-	catch (GPlatesFileIO::FileFormatNotSupportedException &exc)
-	{
-		qWarning() << exc;
-	}
 }

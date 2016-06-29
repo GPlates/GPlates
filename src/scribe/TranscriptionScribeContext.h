@@ -26,13 +26,12 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIPTIONSCRIBECONTEXT_H
 #define GPLATES_SCRIBE_TRANSCRIPTIONSCRIBECONTEXT_H
 
-#include <map>
 #include <stack>
 #include <string>
-#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "ScribeObjectTag.h"
 #include "Transcription.h"
 
 
@@ -53,10 +52,20 @@ namespace GPlatesScribe
 		 */
 		typedef Transcription::object_id_type object_id_type;
 
+
 		/**
-		 * Typedef for an integer object tag version.
+		 * A value of 0 is used to identify NULL pointers.
+		 *
+		 * Ie, the pointed-to object has an object id of 0 (not the pointer 'object' itself).
 		 */
-		typedef Transcription::object_tag_version_type object_tag_version_type;
+		static const object_id_type NULL_POINTER_OBJECT_ID = 0;
+
+		/**
+		 * The object id of the root object used to store root-level transcribe calls.
+		 *
+		 * It's not a real object - it's just we need to reserve an ID to emulate a root object.
+		 */
+		static const object_id_type ROOT_OBJECT_ID = 1;
 
 
 		/**
@@ -65,14 +74,10 @@ namespace GPlatesScribe
 		 * Saving or loading should be set (via @a is_saving_) depending on whether the
 		 * transcription is empty (saving) or whether the transcription has been
 		 * loaded from an archive (loading).
-		 *
-		 * @a root_object_id is the object id of the root object used to store root-level transcribe
-		 * calls. It's not a real object - it's just we need to reserve an id to emulate a root object.
 		 */
 		explicit
 		TranscriptionScribeContext(
 				const Transcription::non_null_ptr_type &transcription,
-				object_id_type root_object_id,
 				bool is_saving_);
 
 
@@ -96,19 +101,55 @@ namespace GPlatesScribe
 		}
 
 
+		/**
+		 * Allocate the next available object id.
+		 *
+		 * This is only needed for the 'save' path in class Scribe.
+		 */
+		object_id_type
+		allocate_save_object_id();
+
+
+		/**
+		 * Determines whether the specified object tag exists in the transcription
+		 * (transcription is either being written to, on save path, or read from, on load path).
+		 *
+		 * As with @a transcribe_object_id the object tag is relative to the scope of the parent
+		 * transcribed object (if any) - see @a push_transcribed_object.
+		 */
+		boost::optional<object_id_type>
+		is_in_transcription(
+				const ObjectTag &object_tag) const;
+
+
+		/**
+		 * Transcribe the (child) object ID associated with the object tag that is relative to the
+		 * currently pushed transcribed (parent) object (see @a push_transcribed_object).
+		 *
+		 * The first call will be relative to the root object.
+		 */
+		bool
+		transcribe_object_id(
+				object_id_type &object_id,
+				const ObjectTag &object_tag);
+
+
+		/**
+		 * All subsequent @a transcribe and @a transcribe_object_id calls will now be
+		 * relative to the specified object (@a object_id).
+		 *
+		 * If @a transcribe is subsequently called then @a object_id will be a primitive object.
+		 *
+		 * If @a transcribe_object_id is subsequently called then @a object_id will be a composite object
+		 * (with the @a transcribe_object_id call and associated call to @a push_transcribed_object
+		 * referring to one of its child objects which, in turn, could be a composite or primitive object).
+		 */
 		void
 		push_transcribed_object(
 				object_id_type object_id);
 
 		void
 		pop_transcribed_object();
-
-
-		bool
-		transcribe_object_id(
-				object_id_type &object_id,
-				const char *object_tag,
-				object_tag_version_type object_tag_version);
 
 
 		/**
@@ -210,43 +251,6 @@ namespace GPlatesScribe
 
 			//! Object id of this transcribed object.
 			object_id_type object_id;
-
-
-			/**
-			 * Load the next child object id associated with the child object key.
-			 *
-			 * Does not apply if this is a primitive (non-composite) object.
-			 */
-			void
-			save_child_object_id(
-					object_id_type child_object_id,
-					const Transcription::object_key_type &object_key,
-					Transcription::CompositeObject &composite_object)
-			{
-				composite_object.add_child(object_key, child_object_id);
-			}
-
-			/**
-			 * Load the next child object id associated with the child object key.
-			 *
-			 * Does not apply if this is a primitive (non-composite) object.
-			 */
-			bool
-			load_child_object_id(
-					object_id_type &child_object_id,
-					const Transcription::object_key_type &object_key,
-					const Transcription::CompositeObject &composite_object);
-
-		private:
-
-			//! Typedef for a range of child object id indices associated with a specific object key.
-			typedef std::pair<unsigned int/*index*/, unsigned int/*num_with_key*/> range_type;
-
-			//! Typedef for a map of object keys to child object id indices.
-			typedef std::map<Transcription::object_key_type, range_type> child_object_id_map_type;
-
-			//! Used to keep track of which child objects have already been loaded.
-			child_object_id_map_type d_child_object_id_map;
 		};
 
 		typedef std::stack<TranscribedObject> transcribed_object_stack_type;
@@ -255,9 +259,58 @@ namespace GPlatesScribe
 		//! Whether transcription was read from an archive or will be written to one.
 		bool d_is_saving;
 
+		//! The next available object id for the *save* path.
+		unsigned int d_next_save_object_id;
+
 		Transcription::non_null_ptr_type d_transcription;
 
 		transcribed_object_stack_type d_transcribed_object_stack;
+
+
+		void
+		save_tag_section(
+				const std::string &tag_name,
+				unsigned int tag_version,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id);
+		bool
+		load_tag_section(
+				const std::string &tag_name,
+				unsigned int tag_version,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id) const;
+
+
+		void
+		save_array_index_section(
+				const std::string &array_item_tag_name,
+				unsigned int array_item_tag_version,
+				unsigned int array_index,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id);
+
+		bool
+		load_array_index_section(
+				const std::string &array_item_tag_name,
+				unsigned int array_item_tag_version,
+				unsigned int array_index,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id) const;
+
+
+		void
+		save_array_size_section(
+				const std::string &array_size_tag_name,
+				unsigned int array_size_tag_version,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id);
+
+		bool
+		load_array_size_section(
+				const std::string &array_size_tag_name,
+				unsigned int array_size_tag_version,
+				Transcription::CompositeObject *&section_composite_object,
+				boost::optional<object_id_type &> object_id) const;
 	};
 }
 

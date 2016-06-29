@@ -39,6 +39,8 @@
 
 #include "TranscribeResult.h"
 
+#include "global/CompilerWarnings.h"
+
 
 /**
  * The maximum number of object constructor arguments supported in Access::construct_object().
@@ -108,7 +110,7 @@ namespace GPlatesScribe
 			//          template <typename ObjectType>
 			//          TranscribeResult GPlatesScribe::transcribe(Scribe &, ObjectType &, bool);
 			//          
-			//       ...(see "Transcribe.h") to match your 'ObjectType' class, or
+			//       ...to match your 'ObjectType' class (see "Transcribe.h"), or
 			//       
 			//   (2) Provide a *private* 'transcribe()' method in your 'ObjectType' class and
 			//       make the scribe system a friend of your 'ObjectType' class using:
@@ -152,6 +154,15 @@ namespace GPlatesScribe
 		}
 
 
+		// Disable MSVC warning C4345:
+		//
+		//   "behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized"
+		//
+		// ...that happens when 'new (object) ObjectType()' is called on a POD type.
+		//
+		PUSH_MSVC_WARNINGS
+		DISABLE_MSVC_WARNING(4345)
+
 		template <typename ObjectType>
 		static
 		void
@@ -181,10 +192,14 @@ namespace GPlatesScribe
 			//
 			// NOTE: If you have already done one of the above then check that the function signature
 			// is correct. For example, you may have the wrong 'ObjectType' in the
-			// 'ConstructObject<ObjectType> &' part of the signature.
+			// 'ConstructObject<ObjectType> &' part of the signature, or you may have missed
+			// adding the 'static' keyword when using the static method approach.
 			//
 			new (object) ObjectType();
 		}
+
+		POP_MSVC_WARNINGS
+
 
 		//
 		// The following preprocessor macros generate the following code:

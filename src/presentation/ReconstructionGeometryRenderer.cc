@@ -92,7 +92,7 @@ namespace
 	 */
 	boost::optional<GPlatesGui::Symbol>
 	get_symbol(
-	    const boost::optional<GPlatesGui::symbol_map_type> &symbol_map,
+	    boost::optional<const GPlatesGui::symbol_map_type &> symbol_map,
 	    const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
 	{
 	    if (symbol_map)
@@ -170,7 +170,7 @@ namespace
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const GPlatesGui::ColourProxy &colour_proxy,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
-			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none)
+			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none)
 	{
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
@@ -316,7 +316,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const RenderParams &render_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
-		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map,
+		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
 	d_colour(colour),
@@ -1054,7 +1054,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_constrained_delaunay_triangulation(
-		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
 		bool clip_to_mesh,
 		const GPlatesGui::ColourProxy &colour)
 {
@@ -1204,7 +1204,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_triangulation(
-		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
 		bool clip_to_mesh)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
@@ -1424,7 +1424,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_velocities(
-		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn)
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
 	const GPlatesGui::Colour &velocity_colour = d_colour
 			? d_colour.get()

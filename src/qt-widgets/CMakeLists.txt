@@ -252,8 +252,6 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
-    FilesNotLoadedWarningDialog.h
-    FilesNotLoadedWarningDialogUi.ui
     FiniteRotationCalculatorDialog.cc
     FiniteRotationCalculatorDialog.h
     FiniteRotationCalculatorDialogUi.ui
@@ -346,6 +344,9 @@ set(srcs
     MetadataDialog.cc
     MetadataDialog.h
     MetadataDialogUi.ui
+    MissingSessionFilesDialog.cc
+    MissingSessionFilesDialog.h
+    MissingSessionFilesDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -360,6 +361,9 @@ set(srcs
     OpenDirectoryDialog.h
     OpenFileDialog.cc
     OpenFileDialog.h
+    OpenProjectRelativeOrAbsoluteDialog.cc
+    OpenProjectRelativeOrAbsoluteDialog.h
+    OpenProjectRelativeOrAbsoluteDialogUi.ui
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui

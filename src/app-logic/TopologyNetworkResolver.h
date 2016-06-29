@@ -35,10 +35,12 @@
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
 
-#include "AppLogicFwd.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometry.h"
+#include "ResolvedTopologicalLine.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "TopologyIntersections.h"
 
@@ -87,7 +89,7 @@ namespace GPlatesAppLogic
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 */
 		TopologyNetworkResolver(
-				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				ReconstructHandle::type reconstruct_handle,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
@@ -251,7 +253,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The resolved topological networks we're generating.
 		 */
-		std::vector<resolved_topological_network_non_null_ptr_type> &d_resolved_topological_networks;
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &d_resolved_topological_networks;
 
 		/**
 		 * The time at which topologies are being resolved.
@@ -349,7 +351,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_boundary_delaunay_points_from_reconstructed_feature_geometry(
-				const reconstructed_feature_geometry_non_null_ptr_type &boundary_section_rfg,
+				const ReconstructedFeatureGeometry::non_null_ptr_type &boundary_section_rfg,
 				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
 
@@ -358,7 +360,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_boundary_delaunay_points_from_resolved_topological_line(
-				const resolved_topological_line_non_null_ptr_type &boundary_section_rtl,
+				const ResolvedTopologicalLine::non_null_ptr_type &boundary_section_rtl,
 				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
 
@@ -375,17 +377,17 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_interior_delaunay_points_from_reconstructed_feature_geometry(
-				const reconstructed_feature_geometry_non_null_ptr_type &interior_rfg,
+				const ReconstructedFeatureGeometry::non_null_ptr_type &interior_rfg,
 				const GPlatesMaths::GeometryOnSphere &interior_geometry,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points,
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &all_interior_polygons);
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &all_interior_polygons);
 
 		/**
 		 * Add interior points for delaunay triangulation from a resolved topological *line*.
 		 */
 		void
 		add_interior_delaunay_points_from_resolved_topological_line(
-				const resolved_topological_line_non_null_ptr_type &interior_rtl,
+				const ResolvedTopologicalLine::non_null_ptr_type &interior_rtl,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
 
 		/**

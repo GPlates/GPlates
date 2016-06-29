@@ -71,13 +71,13 @@
 #include "presentation/TranscribeSession.h"
 #include "presentation/ViewState.h"
 
-#include "qt-widgets/FilesNotLoadedWarningDialog.h"
-#include "qt-widgets/GpgimVersionWarningDialog.h"
-
 #include "scribe/ScribeExceptions.h"
 
 #include "qt-widgets/FileDialogFilter.h"
+#include "qt-widgets/GpgimVersionWarningDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
+#include "qt-widgets/MissingSessionFilesDialog.h"
+#include "qt-widgets/OpenProjectRelativeOrAbsoluteDialog.h"
 #include "qt-widgets/PreferencesPaneFiles.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -402,17 +402,20 @@ namespace
 
 
 	/**
-	 * Shows the unsaved changes message box, if necessary, to inform the user they need to first
-	 * either save or discard any unsaved changes before they can open a recent session or project.
+	 * Shows the unsaved feature collections message box, if necessary, to inform the user they need to
+	 * first either save or discard any unsaved feature collections before they can save the current
+	 * session as a project file.
 	 *
-	 * Returns true if there are unsaved changes.
+	 * Returns true if there are unsaved feature collections.
+	 *
+	 * Note: This is different than unsaved session state changes (eg, changing a layer setting).
 	 */
 	bool
-	show_open_session_unsaved_changes_message_box_if_necessary(
+	show_save_project_unsaved_feature_collections_message_box_if_necessary(
 			QWidget *parent_widget,
 			GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker)
 	{
-		if (!unsaved_changes_tracker.has_unsaved_changes())
+		if (!unsaved_changes_tracker.has_unsaved_feature_collections())
 		{
 			return false;
 		}
@@ -420,90 +423,241 @@ namespace
 		QMessageBox::information(
 			// Pop-up dialogs need a parent so that they don't just blindly appear in the centre of the screen...
 			parent_widget,
-			parent_widget->tr("Unsaved Changes"),
-			parent_widget->tr("You have unsaved changes.\n" "Please save them or clear the session."));
+			parent_widget->tr("Unsaved Feature Collections"),
+			parent_widget->tr("Please save all feature collections before saving a project."));
 
 		return true;
 	}
 
 
 	/**
-	 * Shows the unsaved changes message box, if necessary, to inform the user they need to
-	 * first either save or discard any unsaved changes before they can save the current session
-	 * as a project file.
-	 *
-	 * Returns true if there are unsaved changes.
+	 * Helps convert FeatureCollectionFileIO::load_files() to signature required by
+	 * 'try_catch_file_or_session_load_with_feedback()' by making return parameter an argument.
 	 */
 	bool
-	show_save_project_unsaved_changes_message_box_if_necessary(
-			QWidget *parent_widget,
-			GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker)
+	open_files_try_catch_function(
+			GPlatesAppLogic::FeatureCollectionFileIO &file_io,
+			const QStringList &filenames,
+			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &loaded_files)
 	{
-		if (!unsaved_changes_tracker.has_unsaved_changes())
-		{
-			return false;
-		}
+		loaded_files = file_io.load_files(filenames);
+		return true;
+	}
 
-		QMessageBox::information(
-			// Pop-up dialogs need a parent so that they don't just blindly appear in the centre of the screen...
-			parent_widget,
-			parent_widget->tr("Unsaved Changes"),
-			parent_widget->tr("Before a project can be saved, there must be no unsaved changes."));
 
+	/**
+	 * Helps convert FeatureCollectionFileIO::reload_file() to signature required by
+	 * 'try_catch_file_or_session_load_with_feedback()' which requires a boolean return value.
+	 */
+	bool
+	reload_file_try_catch_function(
+			GPlatesAppLogic::FeatureCollectionFileIO &file_io,
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file)
+	{
+		file_io.reload_file(file);
 		return true;
 	}
 
 
 	/**
 	 * Helps convert SessionManagement::load_previous_session() to signature required by
-	 * 'try_catch_file_or_session_load_with_feedback()' by making return parameter an argument.
+	 * 'try_catch_file_or_session_load_with_feedback()' which requires a boolean return value.
 	 */
-	void
-	load_previous_session(
+	bool
+	open_previous_session_try_catch_function(
 			GPlatesPresentation::SessionManagement &sm,
 			int session_slot_to_load,
-			QStringList &files_not_loaded)
+			bool save_current_session,
+			GPlatesQtWidgets::MissingSessionFilesDialog *missing_session_files_dialog_ptr)
 	{
-		files_not_loaded = sm.load_previous_session(session_slot_to_load);
-	}
+		boost::optional<GPlatesPresentation::SessionManagement::InternalSessionInfo> session_info =
+				sm.get_previous_session_info(session_slot_to_load);
 
-
-	/**
-	 * Helps convert SessionManagement::load_project_session() to signature required by
-	 * 'try_catch_file_or_session_load_with_feedback()' by making return parameter an argument.
-	 */
-	void
-	load_project_session(
-			GPlatesPresentation::SessionManagement &sm,
-			const QString &project_filename,
-			QStringList &files_not_loaded)
-	{
-		files_not_loaded = sm.load_project_session(project_filename);
-	}
-
-
-	/**
-	 * Shows the files-not-loaded warning dialog, if necessary.
-	 *
-	 * This can happen when some files are not loaded during session/project restore.
-	 */
-	void
-	show_files_not_loaded_dialog_if_necessary(
-			QStringList files_not_loaded,
-			GPlatesQtWidgets::FilesNotLoadedWarningDialog *files_not_loaded_warning_dialog)
-	{
-		// Only show warning if there were files not loaded.
-		if (files_not_loaded.isEmpty())
+		if (!session_info)
 		{
-			return;
+			return false;
 		}
 
-		files_not_loaded_warning_dialog->set_filename_list(files_not_loaded);
+		// Get the file paths that exist (and those missing) in the current file system.
+		QStringList existing_file_paths;
+		QStringList missing_file_paths;
+		session_info->get_file_paths(existing_file_paths, missing_file_paths);
 
-		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
-		files_not_loaded_warning_dialog->exec();
+		// If there are missing session files then ask the user to locate them.
+		if (!missing_file_paths.isEmpty())
+		{
+			missing_session_files_dialog_ptr->populate(
+					GPlatesQtWidgets::MissingSessionFilesDialog::LOAD_SESSION,
+					missing_file_paths);
+
+			// Exec the dialog and get the user's choice.
+			if (missing_session_files_dialog_ptr->exec() != QDialogButtonBox::Ok)
+			{
+				// User decided to abort loading the session.
+				return false;
+			}
+
+			// Set the remapping of missing files to existing files (if user remapped any).
+			session_info->set_remapped_file_paths(
+					missing_session_files_dialog_ptr->get_file_path_remapping());
+		}
+
+		sm.load_previous_session(session_info.get(), save_current_session);
+
+		return true;
 	}
 
+
+	/**
+	 * Helps convert SessionManagement::load_project() to signature required by
+	 * 'try_catch_file_or_session_load_with_feedback()' which requires a boolean return value.
+	 */
+	bool
+	open_project_try_catch_function(
+			GPlatesPresentation::SessionManagement &sm,
+			const QString &project_filename,
+			bool save_current_session,
+			GPlatesQtWidgets::OpenProjectRelativeOrAbsoluteDialog *open_project_relative_or_absolute_dialog_ptr,
+			GPlatesQtWidgets::MissingSessionFilesDialog *missing_session_files_dialog_ptr)
+	{
+		GPlatesPresentation::SessionManagement::ProjectInfo project_info = sm.get_project_info(project_filename);
+
+		// Get the absolute and relative file paths that exist in the current file system.
+		QStringList existing_absolute_file_paths;
+		QStringList missing_absolute_file_paths;
+		project_info.get_absolute_file_paths(existing_absolute_file_paths, missing_absolute_file_paths);
+		QStringList existing_relative_file_paths;
+		QStringList missing_relative_file_paths;
+		project_info.get_relative_file_paths(existing_relative_file_paths, missing_relative_file_paths);
+
+		//
+		// Determine whether to load absolute or relative file paths.
+		//
+		
+		bool load_relative_file_paths = false;
+
+		if (existing_absolute_file_paths.empty() &&
+			existing_relative_file_paths.empty())
+		{
+			// There are no currently existing absolute or relative file paths.
+			// All file loads will fail regardless of whether we use absolute or relative paths.
+			// However if the project file has moved then lets show the user the relative paths
+			// (when file loads fail) instead of absolute paths in case the project file moved
+			// to a different machine (eg, Linux -> Windows) in which case the relative paths
+			// will be the local paths (rather than the original machine's paths) and hence be
+			// more recognisable to the user.
+			if (project_info.has_project_file_moved())
+			{
+				load_relative_file_paths = true;
+
+				//qDebug() << "Relative (project moved) none exist";
+			}
+			else
+			{
+				//qDebug() << "Absolute none exist";
+			}
+		}
+		else if (existing_relative_file_paths.empty())
+		{
+			// There are no currently existing relative file paths, but there are existing absolute file paths.
+			// This means the project file (being loaded) has moved location from where it was saved,
+			// but none of the data files have moved (to be relative to it).
+			// In this case we load absolute file paths.
+			// So we don't need to ask the user whether to load absolute or relative paths.
+
+			//qDebug() << "Absolute (project moved)";
+		}
+		else if (existing_absolute_file_paths.empty())
+		{
+			// There are no currently existing absolute file paths, but there are existing relative file paths.
+			// This means the project file (being loaded) has moved location from where it was saved,
+			// and all the data files have also moved (to be relative to it).
+			// In this case we load relative file paths.
+			// So we don't need to ask the user whether to load absolute or relative paths.
+			load_relative_file_paths = true;
+
+			//qDebug() << "Relative (project moved)";
+		}
+		else if (!project_info.has_project_file_moved() ||
+			// Probably don't need this (above condition is sufficient) but add just in case...
+			existing_absolute_file_paths == existing_relative_file_paths)
+		{
+			// All currently existing absolute and relative file paths are the same.
+			// This means the project file (being loaded) has not moved location from where it was saved.
+			// In this case we load absolute file paths (doesn't matter either way since the same).
+			// So we don't need to ask the user whether to load absolute or relative paths.
+
+			//qDebug() << "Absolute/relative (project not moved)";
+		}
+		else
+		{
+			// It's not clear whether to load absolute or relative file paths.
+			// So we need to ask the user.
+			//
+			// Set up the absolute or relative file paths dialog.
+			open_project_relative_or_absolute_dialog_ptr->set_file_paths(
+					existing_absolute_file_paths, missing_absolute_file_paths,
+					existing_relative_file_paths, missing_relative_file_paths);
+
+			// Exec the dialog and get the user's choice.
+			const int dialog_result = open_project_relative_or_absolute_dialog_ptr->exec();
+			if (dialog_result == GPlatesQtWidgets::OpenProjectRelativeOrAbsoluteDialog::ABORT_OPEN)
+			{
+				// The user has chosen to abort the project load.
+
+				//qDebug() << "Aborted (project moved)";
+				return false;
+			}
+			else if (dialog_result == GPlatesQtWidgets::OpenProjectRelativeOrAbsoluteDialog::OPEN_RELATIVE)
+			{
+				// The user has chosen to open files relative to the loaded project file.
+				load_relative_file_paths = true;
+
+				//qDebug() << "Relative ambiguous (project moved)";
+			}
+			else
+			{
+				// The user has chosen to open the absolute file paths saved in the project file.
+
+				//qDebug() << "Absolute ambiguous (project moved)";
+			}
+		}
+
+		if (load_relative_file_paths)
+		{
+			project_info.set_load_relative_file_paths();
+		}
+
+		// If there are missing session files then ask the user to locate them.
+		const QStringList missing_file_paths = load_relative_file_paths
+				? missing_relative_file_paths
+				: missing_absolute_file_paths;
+		if (!missing_file_paths.isEmpty())
+		{
+			missing_session_files_dialog_ptr->populate(
+					GPlatesQtWidgets::MissingSessionFilesDialog::LOAD_PROJECT,
+					missing_file_paths);
+
+			// Exec the dialog and get the user's choice.
+			if (missing_session_files_dialog_ptr->exec() != QDialogButtonBox::Ok)
+			{
+				// User decided to abort loading the project.
+				return false;
+			}
+
+			// Set the remapping of missing files to existing files (if user remapped any).
+			project_info.set_remapped_file_paths(
+					missing_session_files_dialog_ptr->get_file_path_remapping());
+		}
+
+		//
+		// Finally we load the project.
+		//
+
+		sm.load_project(project_info, save_current_session);
+
+		return true;
+	}
 }
 
 
@@ -549,9 +703,12 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			tr("Open Project"),
 			get_load_save_project_filters(),
 			view_state_.get_file_io_directory_configurations().project_configuration()),
-	d_files_not_loaded_warning_dialog_ptr(
-			new GPlatesQtWidgets::FilesNotLoadedWarningDialog(
-					d_viewport_window_ptr)),
+	d_open_project_relative_or_absolute_dialog_ptr(
+			new GPlatesQtWidgets::OpenProjectRelativeOrAbsoluteDialog(&viewport_window())),
+	d_missing_session_files_dialog_ptr(
+			new GPlatesQtWidgets::MissingSessionFilesDialog(
+					*d_view_state_ptr,
+					&viewport_window())),
 	d_gpgim_version_warning_dialog_ptr(
 			new GPlatesQtWidgets::GpgimVersionWarningDialog(
 					// We no longer show the dialog when *loading* files since it's too annoying.
@@ -582,11 +739,16 @@ GPlatesGui::FileIOFeedback::open_files(
 	// Collect the files loaded over the current scope.
 	CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
 
-	try_catch_file_or_session_load_with_feedback(
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files;
+	if (!try_catch_file_or_session_load_with_feedback(
 			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,
-					d_feature_collection_file_io_ptr,
-					filenames));
+					&open_files_try_catch_function,
+					boost::ref(*d_feature_collection_file_io_ptr),
+					filenames,
+					boost::ref(loaded_files))))
+	{
+		return;
+	}
 
 	// Warn the user if they have loaded files with different GPGIM versions than the files
 	// were originally created with. The user might then decide not to modify files since they
@@ -602,41 +764,35 @@ void
 GPlatesGui::FileIOFeedback::open_previous_session(
 		int session_slot_to_load)
 {
-	// If there are unsaved changes then the user must deal with them first before they can
-	// open a previous session (which effectively discards the current session).
-	if (show_open_session_unsaved_changes_message_box_if_necessary(
-		&viewport_window(),
-		unsaved_changes_tracker()))
+	// If loading a new session would scrap some existing feature collection changes and/or session
+	// state changes (if a project is currently loaded), warn the user about it first.
+	// This is much the same situation as quitting GPlates without having saved.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			unsaved_changes_tracker().load_previous_session_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
 	{
 		return;
 	}
-	GPlatesPresentation::SessionManagement &sm = view_state().get_session_management();
-	
-	// Unload all empty-filename feature collections, triggering the removal of their layer info,
-	// so that the Session we record as being the user's previous session is self-consistent.
-	sm.unload_all_unnamed_files();
+
+	// Save current session (before loading previous session) unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	const bool save_current_session =
+			unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
 
 	// Collect the files loaded over the current scope.
-	//
-	// TODO: Once the Scribe session save/restore functionality is merged we won't be able
-	// to rely on file added signals so we'll then need to query all loaded files (since the
-	// session restore replaces all loaded files).
 	CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
 
-	QStringList files_not_loaded;
-
 	// Load the new session.
-	try_catch_file_or_session_load_with_feedback(
+	if (!try_catch_file_or_session_load_with_feedback(
 			boost::bind(
-					&load_previous_session,
-					boost::ref(sm),
+					&open_previous_session_try_catch_function,
+					boost::ref(view_state().get_session_management()),
 					session_slot_to_load,
-					boost::ref(files_not_loaded)));
-
-	// If there were any files not loaded then notify user.
-	show_files_not_loaded_dialog_if_necessary(
-			files_not_loaded,
-			d_files_not_loaded_warning_dialog_ptr);
+					save_current_session,
+					d_missing_session_files_dialog_ptr)))
+	{
+		return;
+	}
 
 	// Warn the user if they have loaded files with different GPGIM versions than the files
 	// were originally created with. The user might then decide not to modify files since they
@@ -651,11 +807,12 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 void
 GPlatesGui::FileIOFeedback::open_project()
 {
-	// If there are unsaved changes then the user must deal with them first before they can
-	// open a project (which effectively discards the current session).
-	if (show_open_session_unsaved_changes_message_box_if_necessary(
-		&viewport_window(),
-		unsaved_changes_tracker()))
+	// If loading a new project would scrap some existing feature collection changes and/or session
+	// state changes (if a project is currently loaded), warn the user about it first.
+	// This is much the same situation as quitting GPlates without having saved.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			unsaved_changes_tracker().load_project_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
 	{
 		return;
 	}
@@ -666,7 +823,12 @@ GPlatesGui::FileIOFeedback::open_project()
 		return;
 	}
 
-	open_project(project_filename);
+	// Save current session (before loading project) unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	const bool save_current_session =
+			unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
+
+	open_project_internal(project_filename, save_current_session);
 }
 
 
@@ -674,36 +836,45 @@ void
 GPlatesGui::FileIOFeedback::open_project(
 		const QString &project_filename)
 {
-	// If there are unsaved changes then the user must deal with them first before they can
-	// open a project (which effectively discards the current session).
-	if (show_open_session_unsaved_changes_message_box_if_necessary(
-		&viewport_window(),
-		unsaved_changes_tracker()))
+	// If loading a new project would scrap some existing feature collection changes and/or session
+	// state changes (if a project is currently loaded), warn the user about it first.
+	// This is much the same situation as quitting GPlates without having saved.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			unsaved_changes_tracker().load_project_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
 	{
 		return;
 	}
 
-	GPlatesPresentation::SessionManagement &sm = view_state().get_session_management();
-	
-	// Unload all empty-filename feature collections, triggering the removal of their layer info,
-	// so that the Session we record as being the user's previous session is self-consistent.
-	sm.unload_all_unnamed_files();
+	// Save current session (before loading project) unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	const bool save_current_session =
+			unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
 
-	QStringList files_not_loaded;
+	open_project_internal(project_filename, save_current_session);
+}
+
+
+void
+GPlatesGui::FileIOFeedback::open_project_internal(
+		const QString &project_filename,
+		bool save_current_session)
+{
+	GPlatesPresentation::SessionManagement &sm = view_state().get_session_management();
 
 	// Load the new session from the project file.
-	try_catch_file_or_session_load_with_feedback(
+	if (!try_catch_file_or_session_load_with_feedback(
 			boost::bind(
-					&load_project_session,
+					&open_project_try_catch_function,
 					boost::ref(sm),
 					project_filename,
-					boost::ref(files_not_loaded)),
-			GPlatesFileIO::FileInfo(project_filename).get_display_name(false/*use_absolute_path_name*/));
-
-	// If there were any files not loaded then notify user.
-	show_files_not_loaded_dialog_if_necessary(
-			files_not_loaded,
-			d_files_not_loaded_warning_dialog_ptr);
+					save_current_session,
+					d_open_project_relative_or_absolute_dialog_ptr,
+					d_missing_session_files_dialog_ptr),
+			GPlatesFileIO::FileInfo(project_filename).get_display_name(false/*use_absolute_path_name*/)))
+	{
+		return;
+	}
 }
 
 
@@ -731,12 +902,15 @@ GPlatesGui::FileIOFeedback::reload_file(
 		}
 	}
 
-	try_catch_file_or_session_load_with_feedback(
+	if (!try_catch_file_or_session_load_with_feedback(
 			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::reload_file,
-					d_feature_collection_file_io_ptr,
+					&reload_file_try_catch_function,
+					boost::ref(*d_feature_collection_file_io_ptr),
 					file),
-			file.get_file().get_file_info().get_display_name(false/*use_absolute_path_name*/));
+			file.get_file().get_file_info().get_display_name(false/*use_absolute_path_name*/)))
+	{
+		return;
+	}
 
 	if (focused_property_name)
 	{
@@ -1231,21 +1405,25 @@ GPlatesGui::FileIOFeedback::extract_feature_collection_filenames_from_file_urls(
 bool
 GPlatesGui::FileIOFeedback::clear_session()
 {
-	// Check for unsaved changes and potentially give the user a chance to discard the changes
-	// before clearing the session or abort the session clear altogether.
-	if (!unsaved_changes_tracker().clear_session_event_hook())
+	// If clearing the session would scrap some existing feature collection changes and/or session
+	// state changes (if a project is currently loaded), warn the user about it first.
+	// This is much the same situation as quitting GPlates without having saved.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			unsaved_changes_tracker().clear_session_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
 	{
 		// User is Not OK with clearing the session at this point.
 		return false;
 	}
 
-	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
-	// the screen.
-	QWidget *parent_widget = &(viewport_window());
+	// Save current session (before clearing session) unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	const bool save_current_session =
+			unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
 
 	try
 	{
-		view_state().get_session_management().clear_session();
+		view_state().get_session_management().clear_session(save_current_session);
 	}
 	catch (GPlatesGlobal::Exception &exc)
 	{
@@ -1253,6 +1431,10 @@ GPlatesGui::FileIOFeedback::clear_session()
 		QTextStream(&message)
 				<< tr("Error: GPlates was unable to clear the session: \n")
 				<< exc;
+
+		// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
+		// the screen.
+		QWidget *parent_widget = &(viewport_window());
 
 		QMessageBox::critical(parent_widget, tr("Error Clearing Session"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
@@ -1268,8 +1450,27 @@ GPlatesGui::FileIOFeedback::clear_session()
 bool
 GPlatesGui::FileIOFeedback::save_project()
 {
-	// If there are unsaved changes then the user must deal with them first before they can save a project.
-	if (show_save_project_unsaved_changes_message_box_if_necessary(
+	// If the current session is a project then save to it,
+	// otherwise query the user for a project file to save to.
+	boost::optional<GPlatesPresentation::SessionManagement::ProjectInfo> current_project =
+			view_state().get_session_management().is_current_session_a_project();
+	if (current_project)
+	{
+		return save_project(current_project->get_project_filename());
+	}
+	else
+	{
+		return save_project_as();
+	}
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::save_project_as()
+{
+	// If there are unsaved feature collections then the user must deal with them first
+	// before they can save a project.
+	if (show_save_project_unsaved_feature_collections_message_box_if_necessary(
 		&viewport_window(),
 		unsaved_changes_tracker()))
 	{
@@ -1295,8 +1496,9 @@ GPlatesGui::FileIOFeedback::save_project(
 	// the screen.
 	QWidget *parent_widget = &(viewport_window());
 
-	// If there are unsaved changes then the user must deal with them first before they can save a project.
-	if (show_save_project_unsaved_changes_message_box_if_necessary(
+	// If there are unsaved feature collections then the user must deal with them first
+	// before they can save a project.
+	if (show_save_project_unsaved_feature_collections_message_box_if_necessary(
 		parent_widget,
 		unsaved_changes_tracker()))
 	{
@@ -1305,7 +1507,7 @@ GPlatesGui::FileIOFeedback::save_project(
 
 	try
 	{
-		view_state().get_session_management().save_session_to_project(project_filename);
+		view_state().get_session_management().save_project(project_filename);
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &exc)
 	{
@@ -1351,9 +1553,9 @@ GPlatesGui::FileIOFeedback::save_project(
 }
 
 
-void
+bool
 GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
-		boost::function<void ()> file_or_session_load_func,
+		boost::function<bool ()> file_or_session_load_func,
 		boost::optional<QString> filename)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
@@ -1363,7 +1565,7 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 	// FIXME: Try to ensure the filename is in these error dialogs.
 	try
 	{
-		file_or_session_load_func();
+		return file_or_session_load_func();
 	}
 	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &exc)
 	{
@@ -1490,6 +1692,9 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 				QMessageBox::Ok, QMessageBox::Ok);
 		qWarning() << message; // Also log the detailed error message.
 	}
+
+	// Failed - we got here because we caught an exception.
+	return false;
 }
 
 

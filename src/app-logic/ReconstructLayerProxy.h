@@ -31,8 +31,6 @@
 #include <map>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
-
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "MultiPointVectorField.h"
@@ -40,8 +38,9 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
 #include "TimeSpanUtils.h"
-#include "TopologyNetworkResolverLayerProxy.h"
 #include "VelocityDeltaTime.h"
+
+#include "global/PointerTraits.h"
 
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
@@ -58,6 +57,7 @@ namespace GPlatesAppLogic
 {
 	class ReconstructParams;
 	class ReconstructMethodRegistry;
+	class TopologyNetworkResolverLayerProxy;
 
 	/**
 	 * A layer proxy for reconstructing regular (non-topological) features containing vector geometry.
@@ -782,14 +782,16 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_topological_network_resolver_layer_proxy(
-				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+				const GPlatesGlobal::PointerTraits<TopologyNetworkResolverLayerProxy>::non_null_ptr_type &
+						topological_network_resolver_layer_proxy);
 
 		/**
 		 * Remove a topological network resolver layer proxy.
 		 */
 		void
 		remove_topological_network_resolver_layer_proxy(
-				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+				const GPlatesGlobal::PointerTraits<TopologyNetworkResolverLayerProxy>::non_null_ptr_type &
+						topological_network_resolver_layer_proxy);
 
 		/**
 		 * Returns true if one or more topological network resolver layers are currently connected.

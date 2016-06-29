@@ -31,13 +31,11 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructedScalarCoverage.h"
 #include "ReconstructHandle.h"
 #include "ReconstructLayerProxy.h"
-#include "ReconstructScalarCoverageLayerTask.h"
 #include "ReconstructScalarCoverageParams.h"
 #include "ScalarCoverageDeformation.h"
 #include "ScalarCoverageFeatureProperties.h"
@@ -114,7 +112,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages)
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages)
 		{
 			return get_reconstructed_scalar_coverages(
 					reconstructed_scalar_coverages,
@@ -129,7 +127,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type)
 		{
 			return get_reconstructed_scalar_coverages(
@@ -145,7 +143,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
 		{
 			return get_reconstructed_scalar_coverages(
@@ -161,7 +159,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const double &reconstruction_time)
 		{
 			return get_reconstructed_scalar_coverages(
@@ -177,7 +175,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
 		{
@@ -194,7 +192,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const double &reconstruction_time)
 		{
@@ -211,7 +209,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 				const double &reconstruction_time)
 		{
@@ -228,7 +226,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_scalar_coverages(
-				std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+				std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 				const double &reconstruction_time);

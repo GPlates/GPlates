@@ -1125,7 +1125,7 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 
 
 GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::TopologicalNetworksVelocities(
-		const std::vector<resolved_topological_network_non_null_ptr_type> &networks) :
+		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &networks) :
 	d_networks(networks)
 {
 }

@@ -90,9 +90,9 @@ GPlatesScribe::BinaryArchiveWriter::write_transcription(
 	const unsigned int num_object_tags = transcription.get_num_object_tags();
 	write(num_object_tags);
 
-	for (unsigned int object_tag_id = 0; object_tag_id < num_object_tags; ++object_tag_id)
+	for (unsigned int object_tag_name_id = 0; object_tag_name_id < num_object_tags; ++object_tag_name_id)
 	{
-		write(transcription.get_object_tag(object_tag_id));
+		write(transcription.get_object_tag_name(object_tag_name_id));
 	}
 
 
@@ -342,6 +342,8 @@ void
 GPlatesScribe::BinaryArchiveWriter::write(
 		const float object)
 {
+	// QDataStream handles infinity and NaN so we don't need any special code to handle it like
+	// the other archive writers.
 	d_output_stream << object;
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
@@ -355,6 +357,8 @@ void
 GPlatesScribe::BinaryArchiveWriter::write(
 		const double &object)
 {
+	// QDataStream handles infinity and NaN so we don't need any special code to handle it like
+	// the other archive writers.
 	d_output_stream << object;
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(

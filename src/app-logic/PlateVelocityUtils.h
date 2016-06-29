@@ -33,8 +33,10 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
+#include "MultiPointVectorField.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "VelocityDeltaTime.h"
 
 #include "file-io/FileInfo.h"
@@ -55,6 +57,8 @@
 
 namespace GPlatesAppLogic
 {
+	class ResolvedTopologicalNetwork;
+
 	namespace PlateVelocityUtils
 	{
 		/**
@@ -161,15 +165,15 @@ namespace GPlatesAppLogic
 		 */
 		void
 		solve_velocities_on_surfaces(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_velocity_fields,
 				const double &reconstruction_time,
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_domains,
-				// NOTE: Not specifying default arguments because that forces definition of the recon geom classes
-				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring recon geom definition)
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+				// NOTE: Not specifying default arguments because that forces definition of class ResolvedTopologicalNetwork
+				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring ResolvedTopologicalNetwork definition)
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
-				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+				const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 				const double &velocity_delta_time = 1.0,
 				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
@@ -272,7 +276,7 @@ namespace GPlatesAppLogic
 
 			explicit
 			TopologicalNetworksVelocities(
-					const std::vector<resolved_topological_network_non_null_ptr_type> &networks);
+					const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &networks);
 
 			/**
 			 * Returns the velocity at location @a point if it's inside any network's boundary,
@@ -294,7 +298,7 @@ namespace GPlatesAppLogic
 
 		private:
 
-			typedef std::vector<resolved_topological_network_non_null_ptr_type> network_seq_type;
+			typedef std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> network_seq_type;
 
 			network_seq_type d_networks;
 		};

@@ -30,13 +30,13 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "GeometryDeformation.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 
 #include "global/PointerTraits.h"
@@ -91,7 +91,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_networks(
-				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks)
 		{
 			return get_resolved_topological_networks(resolved_topological_networks, d_current_reconstruction_time);
 		}
@@ -103,7 +103,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_networks(
-				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time);
 
 
@@ -229,7 +229,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological networks.
 			 */
-			boost::optional< std::vector<resolved_topological_network_non_null_ptr_type> >
+			boost::optional< std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> >
 					cached_resolved_topological_networks;
 
 			/**
@@ -314,7 +314,7 @@ namespace GPlatesAppLogic
 		 * Generates resolved topological networks for the specified reconstruction time
 		 * if they're not already cached.
 		 */
-		std::vector<resolved_topological_network_non_null_ptr_type> &
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &
 		cache_resolved_topological_networks(
 				const double &reconstruction_time);
 
@@ -332,7 +332,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		create_resolved_topological_networks(
-				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time);
 	};
 }

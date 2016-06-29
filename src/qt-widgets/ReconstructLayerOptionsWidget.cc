@@ -76,11 +76,9 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_deformation_parameters_dialog()));
-
 	
 	LinkWidget *draw_style_link = new LinkWidget(
-			tr("Draw Style Setting..."), this);
-
+			tr("Set Draw style..."), this);
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
 			draw_style_placeholder_widget);
@@ -89,6 +87,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_draw_style_setting_dlg()));
+
 	
 	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(

@@ -261,11 +261,6 @@ namespace GPlatesQtWidgets
 		get_depth_min_max(
 				GPlatesAppLogic::Layer &layer) const;
 
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-		load_colour_palette(
-				const QString &palette_file_name,
-				std::pair<double, double> &colour_palette_range);
-
 
 		/**
 		 * The number of QDoubleSpinBox's used for shader test variables.

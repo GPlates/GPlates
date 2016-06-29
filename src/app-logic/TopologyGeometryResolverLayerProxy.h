@@ -29,7 +29,6 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
@@ -83,7 +82,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_geometries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_geometries,
+				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none)
 		{
 			get_resolved_topological_geometries(
@@ -98,7 +97,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_geometries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_geometries,
+				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 				const double &reconstruction_time,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
@@ -121,7 +120,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries)
 		{
 			return get_resolved_topological_boundaries(
 					resolved_topological_boundaries, 
@@ -134,7 +133,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const double &reconstruction_time);
 
 
@@ -150,7 +149,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines)
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines)
 		{
 			return get_resolved_topological_lines(
 					resolved_topological_lines, 
@@ -163,7 +162,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const double &reconstruction_time);
 
 
@@ -296,7 +295,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological boundaries.
 			 */
-			boost::optional< std::vector<resolved_topological_boundary_non_null_ptr_type> >
+			boost::optional< std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> >
 					cached_resolved_topological_boundaries;
 
 			/**
@@ -327,7 +326,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological lines.
 			 */
-			boost::optional< std::vector<resolved_topological_line_non_null_ptr_type> >
+			boost::optional< std::vector<ResolvedTopologicalLine::non_null_ptr_type> >
 					cached_resolved_topological_lines;
 
 			/**

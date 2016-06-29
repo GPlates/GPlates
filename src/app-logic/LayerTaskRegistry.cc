@@ -220,12 +220,9 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&CoRegistrationLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::CO_REGISTRATION);
 
-	// Temporarily disable until it's ready...
-#if 0
 	// Layer task to reconstruct scalar coverages.
 	layer_task_registry.register_layer_task_type(
 			&ReconstructScalarCoverageLayerTask::create_layer_task,
 			&ReconstructScalarCoverageLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::RECONSTRUCT_SCALAR_COVERAGE);
-#endif
 }

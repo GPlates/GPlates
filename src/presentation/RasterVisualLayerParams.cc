@@ -31,7 +31,7 @@
 
 #include "app-logic/ExtractRasterFeatureProperties.h"
 #include "app-logic/Layer.h"
-#include "app-logic/RasterLayerTask.h"
+#include "app-logic/RasterLayerParams.h"
 
 #include "gui/DefaultColourPalettes.h"
 
@@ -39,8 +39,8 @@
 
 
 GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
-	VisualLayerParams(layer_task_params),
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
+	VisualLayerParams(layer_params),
 	d_colour_palette_parameters_initialised_from_raster(false),
 	d_colour_palette_parameters(
 			GPlatesGui::RasterColourPalette::create<double>(
@@ -57,12 +57,12 @@ void
 GPlatesPresentation::RasterVisualLayerParams::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
-	GPlatesAppLogic::RasterLayerTask::Params *raster_layer_task_params =
-		dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
-				&get_layer_task_params());
+	GPlatesAppLogic::RasterLayerParams *raster_layer_params =
+		dynamic_cast<GPlatesAppLogic::RasterLayerParams *>(
+				get_layer_params().get());
 
-	if (raster_layer_task_params &&
-		raster_layer_task_params->get_raster_feature())
+	if (raster_layer_params &&
+		raster_layer_params->get_raster_feature())
 	{
 		//
 		// Need to initialise some parameters that depend on the raster data (eg, mean/std_dev).
@@ -79,7 +79,7 @@ GPlatesPresentation::RasterVisualLayerParams::handle_layer_modified(
 			double raster_scalar_std_dev = 0;
 
 			const GPlatesPropertyValues::RasterStatistics raster_statistic =
-					raster_layer_task_params->get_band_statistic();
+					raster_layer_params->get_band_statistic();
 			if (raster_statistic.mean &&
 				raster_statistic.standard_deviation)
 			{
@@ -94,7 +94,7 @@ GPlatesPresentation::RasterVisualLayerParams::handle_layer_modified(
 			d_colour_palette_parameters_initialised_from_raster = true;
 		}
 
-		d_raster_type = raster_layer_task_params->get_raster_type();
+		d_raster_type = raster_layer_params->get_raster_type();
 	}
 	// ...else there's no raster feature...
 

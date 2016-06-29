@@ -34,6 +34,8 @@
 
 #include "DeprecatedSessionRestore.h"
 
+#include "Application.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
@@ -45,9 +47,11 @@
 #include "app-logic/LayerTaskRegistry.h"
 
 #include "file-io/FileInfo.h"
+#include "file-io/ReadErrorAccumulation.h"
+#include "file-io/ReadErrorOccurrence.h"
+#include "file-io/ReadErrors.h"
 
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
+#include "qt-widgets/ViewportWindow.h"
 
 
 namespace
@@ -99,12 +103,6 @@ namespace
 			ID_LAYER_TASK_TYPE_MAP["TopologyNetworkResolver"] = GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER;
 			ID_LAYER_TASK_TYPE_MAP["VelocityFieldCalculator"] = GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR;
 			ID_LAYER_TASK_TYPE_MAP["CoRegistration"] = GPlatesAppLogic::LayerTaskType::CO_REGISTRATION;
-
-			// For the latest session version we check to make sure all the layer task type enumerations
-			// have been mapped - this helps detect situations where an enumeration is added or removed.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					ID_LAYER_TASK_TYPE_MAP.size() == GPlatesAppLogic::LayerTaskType::NUM_BUILT_IN_TYPES,
-					GPLATES_ASSERTION_SOURCE);
 
 			initialised_map = true;
 		}
@@ -540,14 +538,14 @@ namespace
 }
 
 
-QStringList
+void
 GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 		int version,
 		const QDateTime &time,
 		const QStringList &loaded_files,
-		const QString &layers_state,
-		GPlatesAppLogic::ApplicationState &app_state)
+		const QString &layers_state)
 {
+	GPlatesAppLogic::ApplicationState &app_state = GPlatesPresentation::Application::instance().get_application_state();
 	GPlatesAppLogic::FeatureCollectionFileIO &file_io = app_state.get_feature_collection_file_io();
 
 	// Loading session depends on the version...
@@ -592,9 +590,34 @@ GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 		break;
 	}
 
-	// Return the files that were *not* loaded.
-	return QStringList::fromSet(
+	//
+	// Report the files that were *not* loaded to the read errors dialog.
+	//
+
+	const QStringList files_not_loaded = QStringList::fromSet(
 			// Remove items from 'loaded_files' that are also in 'strip_bad_filenames(...)'.
 			QSet<QString>::fromList(loaded_files).subtract(
 					strip_bad_filenames(QSet<QString>::fromList(loaded_files))));
+	if (files_not_loaded.size() > 0)
+	{
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+
+		for (int n = 0; n < files_not_loaded.size(); ++n)
+		{
+			boost::shared_ptr<GPlatesFileIO::DataSource> source(
+					new GPlatesFileIO::LocalFileDataSource(
+							files_not_loaded[n],
+							GPlatesFileIO::DataFormats::Unspecified));
+			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
+					new GPlatesFileIO::LineNumber(0));
+			read_errors.d_failures_to_begin.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+							source,
+							location,
+							GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
+							GPlatesFileIO::ReadErrors::FileNotLoaded));
+		}
+
+		Application::instance().get_main_window().handle_read_errors(read_errors);
+	}
 }

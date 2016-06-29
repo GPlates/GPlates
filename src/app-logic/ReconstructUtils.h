@@ -35,8 +35,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "AppLogicFwd.h"
 #include "ReconstructContext.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
@@ -160,7 +160,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		reconstruct(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -210,7 +210,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		reconstruct(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,

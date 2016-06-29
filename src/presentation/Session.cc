@@ -43,9 +43,11 @@ namespace
 		QStringList blist = b.split('/', QString::SkipEmptyParts);
 		QStringList rlist;
 		for (int i = 0; i < alist.size() && i < blist.size(); ++i) {
-			if (alist.at(i) == blist.at(i)) {
-				rlist << alist.at(i);
+			if (alist.at(i) != blist.at(i)) {
+				break;
 			}
+
+			rlist << alist.at(i);
 		}
 		return rlist.join("/");
 	}

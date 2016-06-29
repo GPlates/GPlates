@@ -26,12 +26,25 @@
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonUtils.h"
 
-#include "PythonConfiguration.h"
-#include "DrawStyleManager.h"
 #include "Colour.h"
+#include "DrawStyleManager.h"
 #include "Palette.h"
+#include "PythonConfiguration.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
+
+
+GPlatesGui::PythonCfgItem::~PythonCfgItem()
+{
+	// If our Python object is going to be destroyed then do it while holding the Python GIL.
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
+	// If holding only reference to Python object then force its destruction at end of scope.
+	boost::python::object py_obj = d_py_obj;
+	d_py_obj = boost::python::object();
+}
+
 
 GPlatesGui::PythonCfgColor::PythonCfgColor(
 		const QString& cfg_name,
@@ -52,6 +65,9 @@ void
 GPlatesGui::PythonCfgColor::set_value(const QVariant& val)
 {
 	d_value = val;
+
+	// Previous Python object could get destroyed.
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	
 	d_py_obj = bp::object(Colour(QColor(val.toString())));
 }
@@ -95,27 +111,25 @@ GPlatesGui::PythonCfgPalette::set_value(const QVariant& val)
 			d_palette.reset();
 			ex.write(std::cerr);
 		}
+
+		// Previous Python object could get destroyed.
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
 		d_py_obj = bp::object(GPlatesApi::Palette(d_palette.get()));
 	}
 	else
 	{
+		// Previous Python object could get destroyed.
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
 		d_py_obj = bp::object(GPlatesApi::Palette(built_in_palette(filename)));
 	}
 }
 
+bool
+GPlatesGui::PythonCfgPalette::is_built_in_palette() const
+{
+	return built_in_palette(d_value.toString()) != NULL;
+}
 
 #endif //GPLATES_NO_PYTHON
-
-
-
-
-
-
-
-
-
-
-
-
-
-

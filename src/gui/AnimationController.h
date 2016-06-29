@@ -404,10 +404,6 @@ namespace GPlatesGui
 		animation_state_changed(
 				bool is_playing);
 
-		void
-		send_time_to_stdout(
-			double time);
-
 	private Q_SLOTS:
 
 		/**

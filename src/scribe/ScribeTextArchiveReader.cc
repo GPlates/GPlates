@@ -25,6 +25,7 @@
 
 #include <iomanip>
 #include <locale>
+#include <sstream>
 
 #include "ScribeTextArchiveReader.h"
 
@@ -32,6 +33,8 @@
 #include "ScribeExceptions.h"
 
 #include "global/GPlatesAssert.h"
+
+#include "maths/Real.h"
 
 
 GPlatesScribe::TextArchiveReader::TextArchiveReader(
@@ -104,11 +107,11 @@ GPlatesScribe::TextArchiveReader::read_transcription()
 
 	const unsigned int num_object_tags = read<unsigned int>();
 
-	for (unsigned int object_tag_id = 0; object_tag_id < num_object_tags; ++object_tag_id)
+	for (unsigned int object_tag_name_id = 0; object_tag_name_id < num_object_tags; ++object_tag_name_id)
 	{
-		const std::string object_tag = read<std::string>();
+		const std::string object_tag_name = read<std::string>();
 
-		transcription->add_object_tag(object_tag);
+		transcription->add_object_tag_name(object_tag_name);
 	}
 
 	//
@@ -213,11 +216,11 @@ GPlatesScribe::TextArchiveReader::read(
 	for (unsigned int key_index = 0; key_index < num_keys; ++key_index)
 	{
 		// Read the current child key.
-		const Transcription::object_tag_id_type object_tag_id =
-				read<Transcription::object_tag_id_type>();
+		const Transcription::object_tag_name_id_type object_tag_name_id =
+				read<Transcription::object_tag_name_id_type>();
 		const Transcription::object_tag_version_type object_tag_version =
 				read<Transcription::object_tag_version_type>();
-		const Transcription::object_key_type object_key(object_tag_id, object_tag_version);
+		const Transcription::object_key_type object_key(object_tag_name_id, object_tag_version);
 
 		const unsigned int num_children_with_key = read<unsigned int>();
 
@@ -227,7 +230,7 @@ GPlatesScribe::TextArchiveReader::read(
 			const Transcription::object_id_type object_id =
 					read<Transcription::object_id_type>();
 
-			composite_object.add_child(object_key, object_id);
+			composite_object.set_child(object_key, object_id, child_index);
 		}
 	}
 }
@@ -243,7 +246,89 @@ GPlatesScribe::TextArchiveReader::read()
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
 			d_input_stream,
 			GPLATES_ASSERTION_SOURCE,
-			"Archive stream error detected reading integral/floating-point primitive.");
+			"Archive stream error detected reading integral primitive.");
+
+	return object;
+}
+
+
+template <>
+float
+GPlatesScribe::TextArchiveReader::read<float>()
+{
+	std::string float_string;
+	d_input_stream >> float_string;
+
+	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+			d_input_stream,
+			GPLATES_ASSERTION_SOURCE,
+			"Archive stream error detected reading float primitive.");
+
+	float object;
+
+	if (float_string == ArchiveCommon::TEXT_POSITIVE_INFINITY_VALUE)
+	{
+		object = GPlatesMaths::positive_infinity<float>();
+	}
+	else if (float_string == ArchiveCommon::TEXT_NEGATIVE_INFINITY_VALUE)
+	{
+		object = GPlatesMaths::negative_infinity<float>();
+	}
+	else if (float_string == ArchiveCommon::TEXT_NAN_VALUE)
+	{
+		object = GPlatesMaths::quiet_nan<float>();
+	}
+	else // finite ....
+	{
+		std::istringstream float_string_stream(float_string);
+		float_string_stream >> object;
+
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				float_string_stream,
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected parsing float primitive.");
+	}
+
+	return object;
+}
+
+
+template <>
+double
+GPlatesScribe::TextArchiveReader::read<double>()
+{
+	std::string double_string;
+	d_input_stream >> double_string;
+
+	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+			d_input_stream,
+			GPLATES_ASSERTION_SOURCE,
+			"Archive stream error detected reading double primitive.");
+
+	double object;
+
+	if (double_string == ArchiveCommon::TEXT_POSITIVE_INFINITY_VALUE)
+	{
+		object = GPlatesMaths::positive_infinity<double>();
+	}
+	else if (double_string == ArchiveCommon::TEXT_NEGATIVE_INFINITY_VALUE)
+	{
+		object = GPlatesMaths::negative_infinity<double>();
+	}
+	else if (double_string == ArchiveCommon::TEXT_NAN_VALUE)
+	{
+		object = GPlatesMaths::quiet_nan<double>();
+	}
+	else // finite ....
+	{
+		std::istringstream double_string_stream(double_string);
+		double_string_stream >> object;
+
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				double_string_stream,
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected parsing double primitive.");
+	}
 
 	return object;
 }

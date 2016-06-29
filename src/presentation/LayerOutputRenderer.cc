@@ -28,7 +28,6 @@
 
 #include "LayerOutputRenderer.h"
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -37,6 +36,8 @@
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructMethodFiniteRotation.h"
 #include "app-logic/ReconstructScalarCoverageLayerProxy.h"
+#include "app-logic/ResolvedScalarField3D.h"
+#include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ScalarField3DLayerProxy.h"
@@ -252,14 +253,14 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &reconstruct_scalar_coverage_layer_proxy)
 {
 	// Get the reconstructed scalar coverages for the current reconstruction time.
-	std::vector<GPlatesAppLogic::reconstructed_scalar_coverage_non_null_ptr_type> reconstructed_scalar_coverages;
+	std::vector<GPlatesAppLogic::ReconstructedScalarCoverage::non_null_ptr_type> reconstructed_scalar_coverages;
 	reconstruct_scalar_coverage_layer_proxy->get_reconstructed_scalar_coverages(reconstructed_scalar_coverages);
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each reconstructed scalar coverage.
 	BOOST_FOREACH(
-			const GPlatesAppLogic::reconstructed_scalar_coverage_non_null_ptr_type &reconstructed_scalar_coverage,
+			const GPlatesAppLogic::ReconstructedScalarCoverage::non_null_ptr_type &reconstructed_scalar_coverage,
 			reconstructed_scalar_coverages)
 	{
 		d_reconstruction_geometry_renderer.render(reconstructed_scalar_coverage);
@@ -302,14 +303,14 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_geometry_resolver_layer_proxy_type> &topology_geometry_resolver_layer_proxy)
 {
 	// Get the resolved topological geometries for the current reconstruction time.
-	std::vector<GPlatesAppLogic::resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
+	std::vector<GPlatesAppLogic::ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_geometries;
 	topology_geometry_resolver_layer_proxy->get_resolved_topological_geometries(resolved_topological_geometries);
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each resolved topological geometry.
 	BOOST_FOREACH(
-			const GPlatesAppLogic::resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+			const GPlatesAppLogic::ResolvedTopologicalGeometry::non_null_ptr_type&resolved_topological_geometry,
 			resolved_topological_geometries)
 	{
 		d_reconstruction_geometry_renderer.render(resolved_topological_geometry);
@@ -324,7 +325,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_network_resolver_layer_proxy_type> &topology_network_resolver_layer_proxy)
 {
 	// Get the resolved topological networks for the current reconstruction time.
-	std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 
 	topology_network_resolver_layer_proxy->get_resolved_topological_networks(resolved_topological_networks);
 
@@ -332,7 +333,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 	// Render each resolved topological network.
 	BOOST_FOREACH(
-			const GPlatesAppLogic::resolved_topological_network_non_null_ptr_type &resolved_topological_network,
+			const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network,
 			resolved_topological_networks)
 	{
 		d_reconstruction_geometry_renderer.render(resolved_topological_network);
@@ -347,14 +348,14 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<velocity_field_calculator_layer_proxy_type> &velocity_field_calculator_layer_proxy)
 {
 	// Get the velocity vector fields for the current reconstruction time.
-	std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> multi_point_vector_fields;
+	std::vector<GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type> multi_point_vector_fields;
 	velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_vector_fields);
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each velocity vector field.
 	BOOST_FOREACH(
-			const GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type &multi_point_vector_field,
+			const GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type &multi_point_vector_field,
 			multi_point_vector_fields)
 	{
 		d_reconstruction_geometry_renderer.render(multi_point_vector_field);

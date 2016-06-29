@@ -84,7 +84,7 @@ def parse_variance_params(min_str, max_str):
 # ArbitraryColours : Just pick a damned colour based on featureId.
 class ArbitraryColours:
 	def __init__(self):
-		print "ArbitraryColours::init()"
+		#print "ArbitraryColours::init()"
 		#self.cfg['Vary'] = 'Saturation' # If I do anything here, script never gets registered. why?
 		return
 			
@@ -175,7 +175,7 @@ class ArbitraryColours:
 		
 	def set_config(self, config):
 		# I don't think this is getting called and don't know why.
-		print "ArbitraryColours::set_config()"
+		#print "ArbitraryColours::set_config()"
 		self.cfg = config
 
 

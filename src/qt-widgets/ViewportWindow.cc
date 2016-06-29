@@ -211,6 +211,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				*this,
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
+				get_view_state().get_session_management(),
 				this)),
 	d_file_io_feedback_ptr(
 			new GPlatesGui::FileIOFeedback(
@@ -370,11 +371,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(
 			&get_application_state().get_feature_collection_file_io(),
 			SIGNAL(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
 					const GPlatesFileIO::ReadErrorAccumulation &)),
 			this,
 			SLOT(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
 					const GPlatesFileIO::ReadErrorAccumulation &)));
 
 
@@ -418,8 +417,16 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(layer_added(size_t)),
 			this,
 			SLOT(handle_visual_layer_added(size_t)));
-	
-	set_internal_release_window_title();
+
+	// Get notified about project filename changes so we can change the project filename in
+	// the window title.
+	QObject::connect(
+			&(get_view_state().get_session_management()),
+			SIGNAL(changed_project_filename(boost::optional<QString>)),
+			this,
+			SLOT(handle_changed_project_filename(boost::optional<QString>)));
+
+	set_window_title();
 
     // Create the visual layers dialog (but don't show it yet).
     // This is so it can listen for signals before it first pops up
@@ -479,7 +486,6 @@ GPlatesQtWidgets::ViewportWindow::display()
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_read_errors(
-		GPlatesAppLogic::FeatureCollectionFileIO &,
 		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
 {
 	// Pop up errors only if we have new read errors.
@@ -551,8 +557,29 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 	QObject::connect(action_Save_Project, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(save_project()));
 
+	QObject::connect(action_Save_Project_As, SIGNAL(triggered()),
+			d_file_io_feedback_ptr, SLOT(save_project_as()));
+
 	QObject::connect(action_Clear_Session, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(clear_session()));
+
+	// Show the status tips related to projects/sessions in the status bar.
+	// This is needed since the status tips don't appear to show on some platforms.
+	QObject::connect(
+			action_Open_Project, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Save_Project, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Save_Project_As, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Clear_Session, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			menu_Open_Recent_Session, SIGNAL(aboutToShow()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
 
 	// ----
 	// Import submenu logic is handled by the ImportMenu class.
@@ -703,6 +730,9 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_multipoint_display()));
 	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
 			this, SLOT(enable_arrows_display()));
+	// Also update the GUI when the RenderSettings change.
+	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
+			this, SLOT(handle_render_settings_changed()));
 }
 
 
@@ -1138,22 +1168,25 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	//        and then merely call it from here (checking the bool return value naturally)
 
 	// STEP 1: UNSAVED CHANGES WARNING
-	
-	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
-	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
-	if ( ! close_ok) {
+
+	// Check for unsaved changes and ask the user what to do if there are any.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			d_unsaved_changes_tracker_ptr->close_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
+	{
 		// User is Not OK with quitting GPlates at this point.
 		close_event->ignore();
 		return;
 	}
 
 	// STEP 2: RECORDING SESSION DETAILS
-	
-	// Unload all empty-filename feature collections, triggering the removal of their layer info,
-	// so that the Session we record as being the user's previous session is self-consistent.
-	get_view_state().get_session_management().unload_all_unnamed_files();
-	// Remember the current set of loaded files for next time.
-	get_view_state().get_session_management().close_event_hook();
+
+	// Remember the current session for next time unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	if (unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES)
+	{
+		get_view_state().get_session_management().close_event_hook();
+	}
 
 	// STEP 3: FINAL TIDY-UP BEFORE QUITTING
 
@@ -1292,6 +1325,20 @@ GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
 {
 	get_view_state().get_render_settings().set_show_arrows(
 			action_Show_Arrow_Decorations->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
+{
+	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
+
+	// Note: Calling 'setChecked()' does not result in the QAction 'triggered' signal so
+	// we don't need to worry about infinite recursion.
+	action_Show_Point_Features->setChecked(render_settings.show_points());
+	action_Show_Line_Features->setChecked(render_settings.show_lines());
+	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
+	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
+	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
 }
 
 void
@@ -1453,6 +1500,54 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_changed_project_filename(
+		boost::optional<QString> project_filename)
+{
+	// Add the project filename (if any) in the window title.
+	if (project_filename)
+	{
+		// 'completeBaseName()' removes the path and the last extension.
+		const QString project_file_display_name = QFileInfo(project_filename.get()).completeBaseName();
+
+		set_window_title(project_file_display_name);
+	}
+	else
+	{
+		set_window_title();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::show_menu_item_status_tip_in_status_bar()
+{
+	// Get the QObject that triggered this slot.
+	QObject *signal_sender = sender();
+	// Return early in case this slot not activated by a signal - shouldn't happen.
+	if (!signal_sender)
+	{
+		return;
+	}
+
+	// See if a QAction triggered this slot.
+	QAction *action = qobject_cast<QAction *>(signal_sender);
+	if (action)
+	{
+		status_message(action->statusTip());
+		return;
+	}
+
+	// See if a QMenu triggered this slot.
+	QMenu *menu = qobject_cast<QMenu *>(signal_sender);
+	if (menu)
+	{
+		status_message(menu->statusTip());
+		return;
+	}
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 {
 	// Add the GUI Debug menu and associated functionality.
@@ -1475,8 +1570,11 @@ GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
+GPlatesQtWidgets::ViewportWindow::set_window_title(
+		boost::optional<QString> project_filename)
 {
+	QString window_title("GPlates");
+
 	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
 
 	// If the subversion branch name is the empty string, that should mean that
@@ -1485,7 +1583,6 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 	if (!subversion_branch_name.isEmpty())
 	{
 		QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
-		QString window_title = windowTitle();
 
 		if (subversion_version_number.isEmpty())
 		{
@@ -1498,9 +1595,16 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 
 			window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
 		}
-
-		setWindowTitle(window_title);
 	}
+
+	// Add the project filename if there is one.
+	if (project_filename)
+	{
+		window_title.append(" - ");
+		window_title.append(project_filename.get());
+	}
+
+	setWindowTitle(window_title);
 }
 
 

@@ -27,21 +27,15 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTSCALARCOVERAGELAYERTASK_H
 
 #include <utility>
-#include <vector>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 
-#include "AppLogicFwd.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
-#include "ReconstructScalarCoverageParams.h"
+#include "ReconstructScalarCoverageLayerParams.h"
+#include "ReconstructScalarCoverageLayerProxy.h"
 #include "ScalarCoverageFeatureProperties.h"
 
 #include "model/FeatureCollectionHandle.h"
-
-#include "property-values/ScalarCoverageStatistics.h"
-#include "property-values/ValueObjectType.h"
-
-#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesAppLogic
@@ -59,95 +53,12 @@ namespace GPlatesAppLogic
 	 * then the scalar values are not modified (they remain constant over time).
 	 */
 	class ReconstructScalarCoverageLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a reconstructing coverages layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-
-			explicit
-			Params(
-					ReconstructScalarCoverageLayerTask &layer_task);
-
-			//! Returns the scalar type currently selected for visualisation/processing.
-			const GPlatesPropertyValues::ValueObjectType &
-			get_scalar_type() const;
-
-			//! Returns the list of scalar types available in the scalar coverage features.
-			const std::vector<GPlatesPropertyValues::ValueObjectType> &
-			get_scalar_types() const;
-
-			//! Sets the scalar type, of the scalar coverage, for visualisation/processing.
-			void
-			set_scalar_type(
-					const GPlatesPropertyValues::ValueObjectType &scalar_type);
-
-
-			/**
-			 * Returns the 'const' reconstructing coverage parameters.
-			 */
-			const ReconstructScalarCoverageParams &
-			get_reconstruct_scalar_coverage_params() const
-			{
-				return d_reconstruct_scalar_coverage_params;
-			}
-
-			/**
-			 * Sets the reconstructing coverage parameters.
-			 *
-			 * NOTE: This will flush any cached reconstructed scalar coverages in this layer.
-			 */
-			void
-			set_reconstruct_scalar_coverage_params(
-					const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params);
-
-			/**
-			 * Gets all scalar coverages available across the scalar coverage features.
-			 */
-			const std::vector<ScalarCoverageFeatureProperties::Coverage> &
-			get_scalar_coverages() const;
-
-			/**
-			 * Returns the scalar statistics across all scalar coverages of the specified scalar type,
-			 * or none if no coverages.
-			 *
-			 * NOTE: This is a statistic of the scalar coverages at present day.
-			 */
-			boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
-			get_scalar_statistics(
-					const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
-
-		private:
-
-			ReconstructScalarCoverageLayerTask &d_layer_task;
-
-			/**
-			 * Detect any changes in the layer proxy (due to changes in its dependencies).
-			 *
-			 * We need this since we don't get notified *directly* of changes in the Reconstruct layer
-			 * that our Reconstruct Scalar Coverage layer is connected to. For example, if the
-			 * scalar coverage features are reloaded from file they might no longer contain
-			 * the currently selected scalar type.
-			 */
-			GPlatesUtils::ObserverToken d_layer_proxy_observer_token;
-
-			ReconstructScalarCoverageParams d_reconstruct_scalar_coverage_params;
-
-
-			/**
-			 * See if the layer proxy has been updated
-			 */
-			void
-			update();
-
-			friend class ReconstructScalarCoverageLayerTask;
-		};
-
 
 		static
 		bool
@@ -225,27 +136,38 @@ namespace GPlatesAppLogic
 
 		virtual
 		LayerProxy::non_null_ptr_type
-		get_layer_proxy();
+		get_layer_proxy()
+		{
+			return d_reconstruct_scalar_coverage_layer_proxy;
+		}
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
+
+	private Q_SLOTS:
+
+		void
+		handle_reconstruct_scalar_coverage_params_modified(
+				GPlatesAppLogic::ReconstructScalarCoverageLayerParams &layer_params);
 
 	private:
 
 		/**
-		 * Parameters used when calculating velocities.
-		 */
-		Params d_layer_task_params;
-
-		/**
 		 * Evolves scalar values for coverages that support it (eg, crustal thickness).
 		 */
-		reconstruct_scalar_coverage_layer_proxy_non_null_ptr_type d_reconstruct_scalar_coverage_layer_proxy;
+		ReconstructScalarCoverageLayerProxy::non_null_ptr_type d_reconstruct_scalar_coverage_layer_proxy;
+
+		/**
+		 * Parameters used when calculating reconstructed scalar coverages.
+		 *
+		 * NOTE: Should be declared after @a d_reconstruct_scalar_coverage_layer_proxy.
+		 */
+		ReconstructScalarCoverageLayerParams::non_null_ptr_type d_layer_params;
 
 
 		//! Constructor.

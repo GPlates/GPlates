@@ -86,7 +86,7 @@
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 		const double &reconstruction_time,
 		ReconstructHandle::type reconstruct_handle,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles) :

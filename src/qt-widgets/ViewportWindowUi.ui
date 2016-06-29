@@ -50,6 +50,9 @@
      <string>&amp;File</string>
     </property>
     <widget class="QMenu" name="menu_Open_Recent_Session">
+     <property name="statusTip">
+      <string>Open a previously saved session. Saves current session to list (if any files loaded). Closes current project (if currently open).</string>
+     </property>
      <property name="title">
       <string>O&amp;pen Recent Session</string>
      </property>
@@ -61,8 +64,11 @@
     </widget>
     <addaction name="separator"/>
     <addaction name="action_Open_Feature_Collection"/>
+    <addaction name="separator"/>
     <addaction name="action_Open_Project"/>
     <addaction name="action_Save_Project"/>
+    <addaction name="action_Save_Project_As"/>
+    <addaction name="separator"/>
     <addaction name="menu_Open_Recent_Session"/>
     <addaction name="action_Clear_Session"/>
     <addaction name="separator"/>
@@ -1140,13 +1146,19 @@
    <property name="text">
     <string>Open Project...</string>
    </property>
+   <property name="statusTip">
+    <string>Open a project file. Becomes currently open project.</string>
+   </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="action_Save_Project">
+  <action name="action_Save_Project_As">
    <property name="text">
-    <string>Save Project...</string>
+    <string>Save Project As...</string>
+   </property>
+   <property name="statusTip">
+    <string>Save to a new project file. Becomes currently open project.</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1156,6 +1168,9 @@
    <property name="text">
     <string>Clear Session</string>
    </property>
+   <property name="statusTip">
+    <string>Clear all session state. Closes current project (if currently open).</string>
+   </property>
   </action>
   <action name="action_Open_Kinematics_Tool">
    <property name="text">
@@ -1163,6 +1178,20 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+K</string>
+   </property>
+  </action>
+  <action name="action_Save_Project">
+   <property name="text">
+    <string>Save Project</string>
+   </property>
+   <property name="toolTip">
+    <string>Save Project</string>
+   </property>
+   <property name="statusTip">
+    <string>Save current project. If no project currently open then save to a new project file (becomes currently open project).</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>

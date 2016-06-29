@@ -376,7 +376,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 			}
 			else
 			{
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);//the current token ends.
 				token = "";
 				inside_token = false;
@@ -397,7 +397,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 			}else
 			{
 				//the end of quotation marks
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);
 				token = "";
 				inside_quotes = false;
@@ -415,7 +415,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 				{
 					token.append(*it);
 				}
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);
 				token = "";
 				break;
@@ -431,7 +431,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 				//start a new token
 				if(!token.isEmpty())
 				{
-					qDebug() << "token: " << token;
+					//qDebug() << "token: " << token;
 					tokens.append(token);
 					token = "";
 				}
@@ -442,7 +442,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 	}
 	if(!token.isEmpty())
 	{
-		qDebug() << "token: " << token;
+		//qDebug() << "token: " << token;
 		tokens.append(token);
 	}
 	return tokens;

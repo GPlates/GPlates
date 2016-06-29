@@ -51,9 +51,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new RasterVisualLayerParams(layer_task_params);
+			return new RasterVisualLayerParams(layer_params);
 		}
 
 		/**
@@ -169,7 +169,7 @@ namespace GPlatesPresentation
 
 		explicit
 		RasterVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
 

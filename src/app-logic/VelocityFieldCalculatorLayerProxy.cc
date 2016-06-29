@@ -62,7 +62,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::~VelocityFieldCalculatorLaye
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vector_fields(
-		std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+		std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_vector_fields,
 		const VelocityParams &velocity_params,
 		const double &reconstruction_time)
 {

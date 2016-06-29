@@ -30,14 +30,13 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
-#include "VelocityFieldCalculatorLayerTask.h"
 #include "VelocityParams.h"
 
 #include "utils/KeyValueCache.h"
@@ -107,7 +106,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields)
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_vector_fields)
 		{
 			return get_velocity_multi_point_vector_fields(
 					multi_point_vector_fields, d_current_velocity_params, d_current_reconstruction_time);
@@ -119,7 +118,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_vector_fields,
 				const VelocityParams &velocity_params)
 		{
 			return get_velocity_multi_point_vector_fields(
@@ -132,7 +131,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_vector_fields,
 				const double &reconstruction_time)
 		{
 			return get_velocity_multi_point_vector_fields(
@@ -145,7 +144,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_vector_fields,
 				const VelocityParams &velocity_params,
 				const double &reconstruction_time);
 

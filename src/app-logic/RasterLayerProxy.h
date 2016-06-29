@@ -32,9 +32,10 @@
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
-#include "RasterLayerTask.h"
+#include "RasterLayerParams.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedRaster.h"
+
+#include "global/PointerTraits.h"
 
 #include "maths/types.h"
 
@@ -68,6 +69,8 @@ namespace GPlatesOpenGL
 
 namespace GPlatesAppLogic
 {
+	class ResolvedRaster;
+
 	/**
 	 * A layer proxy for resolving, and optionally reconstructing, a raster.
 	 */
@@ -213,18 +216,15 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
-		get_resolved_raster()
-		{
-			return get_resolved_raster(d_current_reconstruction_time);
-		}
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type>
+		get_resolved_raster();
 
 		/**
 		 * Returns the resolved raster for the specified time.
 		 *
 		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type>
 		get_resolved_raster(
 				const double &reconstruction_time);
 
@@ -540,7 +540,7 @@ namespace GPlatesAppLogic
 		void
 		set_current_raster_feature(
 				boost::optional<GPlatesModel::FeatureHandle::weak_ref> raster_feature,
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 
 		/**
@@ -548,14 +548,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_current_raster_band_name(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 		/**
 		 * The raster feature has been modified.
 		 */
 		void
 		modified_raster_feature(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 	private:
 		/**
@@ -831,7 +831,7 @@ namespace GPlatesAppLogic
 		//! Sets some raster parameters.
 		void
 		set_raster_params(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 	};
 }
 

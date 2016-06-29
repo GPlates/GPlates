@@ -24,32 +24,54 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
-#define GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
+#ifndef GPLATES_APP_LOGIC_LAYERPARAMS_H
+#define GPLATES_APP_LOGIC_LAYERPARAMS_H
 
 #include <QObject>
+
+#include "LayerParamsVisitor.h"
+
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
 {
 	/**
-	 * LayerTaskParams can be used to store additional parameters and
-	 * configuration options needed by a layer task to do its job.
-	 *
-	 * If a layer task does not need additional parameters, it may simply store
-	 * an instance of LayerTaskParams. If a layer task wishes to store
-	 * additional parameters, it can, instead, store an instance of a subclass
-	 * of LayerTaskParams.
+	 * This is the base class of classes that store parameters and options specific
+	 * to particular types of layers (layer task types).
 	 */
-	class LayerTaskParams :
-			public QObject
+	class LayerParams :
+			public QObject,
+			public GPlatesUtils::ReferenceCount<LayerParams>
 	{
 		Q_OBJECT
 
 	public:
 
+		typedef GPlatesUtils::non_null_intrusive_ptr<LayerParams> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const LayerParams> non_null_ptr_to_const_type;
+
+		static
+		non_null_ptr_type
+		create()
+		{
+			return non_null_ptr_type(new LayerParams());
+		}
+
 		virtual
-		~LayerTaskParams()
+		~LayerParams()
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				ConstLayerParamsVisitor &visitor) const
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				LayerParamsVisitor &visitor)
 		{  }
 
 	Q_SIGNALS:
@@ -59,7 +81,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		modified(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams &layer_params);
 
 	protected:
 
@@ -74,4 +96,4 @@ namespace GPlatesAppLogic
 	};
 }
 
-#endif // GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
+#endif // GPLATES_APP_LOGIC_LAYERPARAMS_H

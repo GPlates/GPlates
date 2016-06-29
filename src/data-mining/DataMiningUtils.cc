@@ -26,7 +26,6 @@
 #include <utility>
 #include <boost/foreach.hpp>
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"

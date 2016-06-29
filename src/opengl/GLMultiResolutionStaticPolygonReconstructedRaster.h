@@ -50,7 +50,6 @@
 
 #include "gui/SceneLightingParameters.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"

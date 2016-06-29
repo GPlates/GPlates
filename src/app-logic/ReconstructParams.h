@@ -33,6 +33,9 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -56,6 +59,8 @@ namespace GPlatesAppLogic
 			ALWAYS_VISIBLE, /**< all vgps are displayed at all times */
 			TIME_WINDOW, /**< all vgps are displayed between a specified time interval */
 			DELTA_T_AROUND_AGE /**< vgps are displayed if the reconstruction time is within a time window around the VGP's age */
+
+			// NOTE: Any new values should also be added to @a transcribe.
 		};
 
 		ReconstructParams();
@@ -232,7 +237,26 @@ namespace GPlatesAppLogic
 		GPlatesMaths::real_t d_deformation_end_time;
 		GPlatesMaths::real_t d_deformation_begin_time;
 		GPlatesMaths::real_t d_deformation_time_increment;
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ReconstructParams::VGPVisibilitySetting &vgp_visibility_setting,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H

@@ -53,7 +53,6 @@
 
 #include "gui/Colour.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/Centroid.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/CubeQuadTree.h"

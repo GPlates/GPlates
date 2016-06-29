@@ -35,6 +35,7 @@ GPlatesAppLogic::LayerInputChannelName::transcribe(
 		bool transcribed_construct_data)
 {
 	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
 	static const GPlatesScribe::EnumValue enum_values[] =
 	{
 		GPlatesScribe::EnumValue("RECONSTRUCTION_FEATURES", RECONSTRUCTION_FEATURES),

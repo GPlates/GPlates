@@ -14,6 +14,7 @@ set(srcs
     CheckAttrTypeVisitor.h
     CoRegConfigurationTable.cc
     CoRegConfigurationTable.h
+    CoRegFilter.cc
     CoRegFilter.h
     CoRegFilterCache.cc
     CoRegFilterCache.h
@@ -47,6 +48,8 @@ set(srcs
     RegionOfInterestFilter.h
     RFGToPropertyValueMapper.h
     RFGToRelationalPropertyMapper.h
+    ScribeExportDataMining.h
+    SeedSelfFilter.cc
     SeedSelfFilter.h
     Types.h
     VoteReducer.h

@@ -38,8 +38,8 @@
 // NOTE: these are the defaults for a RTN; and they control the GUI defaults
 //
 GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
-	VisualLayerParams(layer_task_params),
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
+	VisualLayerParams(layer_params),
 	d_show_delaunay_triangulation(      true),
 	d_show_constrained_triangulation(   false),
 	d_show_mesh_triangulation(          false),
@@ -58,7 +58,6 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLaye
 	d_bg_colour(						GPlatesGui::Colour(1, 1, 1) ),
 	d_colour_palette_filename(QString())
 {
-
 }
 
 
@@ -86,58 +85,6 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::handle_layer_modified(
 
 
 void
-GPlatesPresentation::TopologyNetworkVisualLayerParams::update(
-		bool always_emit_modified_signal)
-{
-	bool colour_palette_changed = false;
-	bool colour_palette_valid = false;
-
-	// Create a new colour palette 
-	// if the colour palette currently in place was not loaded from a file.
-	if (d_colour_palette_filename.isEmpty())
-	{
-		d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
-			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
-				d_range1_max, 
-				d_range1_min, 
-				d_range2_max, 
-				d_range2_min, 
-				d_fg_colour, 
-				d_max_colour, 
-				d_mid_colour, 
-				d_min_colour,
-				d_bg_colour
-			));
-
-		colour_palette_changed = true;
-		colour_palette_valid = true;
-	}
-	else
-	{
-		colour_palette_valid = true;
-	}
-
-	if (!colour_palette_valid)
-	{
-		d_colour_palette = boost::none;
-		colour_palette_changed = true;
-	}
-
-	if (always_emit_modified_signal || colour_palette_changed )
-	{
-		emit_modified();
-	}
-}
-
-
-const QString &
-GPlatesPresentation::TopologyNetworkVisualLayerParams::get_colour_palette_filename() const
-{
-	return d_colour_palette_filename;
-}
-
-
-void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::set_colour_palette(
 		const QString &filename,
 		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
@@ -152,13 +99,13 @@ void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::user_generated_colour_palette()
 {
 	d_colour_palette_filename = QString();
-	update(true /* emit modified signal for us */);
+
+	// Create a default colour palette.
+	d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
+					d_range1_max, d_range1_min,
+					d_range2_max, d_range2_min,
+					d_fg_colour, d_max_colour, d_mid_colour, d_min_colour, d_bg_colour));
+
+	emit_modified();
 }
-
-
-boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
-GPlatesPresentation::TopologyNetworkVisualLayerParams::get_colour_palette() const
-{
-	return d_colour_palette;
-}
-

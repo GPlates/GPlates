@@ -74,6 +74,8 @@ set(srcs
     TopLevelPropertyInline.h
     TopLevelPropertyRef.cc
     TopLevelPropertyRef.h
+    TranscribeQualifiedXmlName.h
+    TranscribeStringContentTypeGenerator.h
     types.h
     WeakObserver.h
     WeakObserverPublisher.h

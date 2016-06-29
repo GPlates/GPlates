@@ -90,7 +90,7 @@ void
 GPlatesGui::DirectoryConfiguration::update_last_used_directory(
 		const QString &directory_)
 {
-	qDebug() << "updating last used to :" << directory_;
+	//qDebug() << "updating last used to :" << directory_;
 	d_last_used_directory = directory_;
 
 	d_prefs.set_value(

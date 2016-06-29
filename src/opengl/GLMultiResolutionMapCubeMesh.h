@@ -38,14 +38,12 @@
 #include "GLUtils.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "OpenGLFwd.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "gui/MapProjection.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeCoordinateFrame.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreeLocation.h"

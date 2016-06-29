@@ -53,26 +53,12 @@ GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	d_filename(filename),
 	d_ogr_writer(0)
 {
-	try
-	{
-		d_ogr_writer = new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline);
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Exception caught creating OgrWriter: " << exc.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Exception caught creating OgrWriter: Unknown error";
-	}
+	d_ogr_writer = new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline);
 }
 
 GPlatesFileIO::OgrGeometryExporter::~OgrGeometryExporter()
 {
-	if (d_ogr_writer)
-	{
-		delete d_ogr_writer;
-	}
+	delete d_ogr_writer;
 }
 
 void
@@ -150,66 +136,55 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 	// the appropriate file of the shapefile set.
 	// This means that we're potentially splitting up a feature across different files.
 
-	try
+	// Write the point geometries.
+	if (!d_point_geometries.empty())
 	{
-		// Write the point geometries.
-		if (!d_point_geometries.empty())
+		if (d_point_geometries.size() == 1)
 		{
-			if (d_point_geometries.size() == 1)
-			{
-				d_ogr_writer->write_point_feature(d_point_geometries.front(), d_key_value_dictionary);
-			}
-			else
-			{
-				// We have more than one point in the feature, so we should handle this as a multi-point.
-				d_ogr_writer->write_multi_point_feature(
-						GPlatesMaths::MultiPointOnSphere::create_on_heap(
-								d_point_geometries.begin(),
-								d_point_geometries.end()),
-						d_key_value_dictionary);
-			}
+			d_ogr_writer->write_point_feature(d_point_geometries.front(), d_key_value_dictionary);
 		}
-
-		// Write the multi-point geometries.
-		BOOST_FOREACH(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point,
-				d_multi_point_geometries)
+		else
 		{
-			d_ogr_writer->write_multi_point_feature(multi_point, d_key_value_dictionary);
-		}
-
-		// Write the polyline geometries.
-		if (!d_polyline_geometries.empty())
-		{
-			if (d_polyline_geometries.size() == 1)
-			{
-				d_ogr_writer->write_polyline_feature(d_polyline_geometries.front(), d_key_value_dictionary);
-			}
-			else
-			{
-				d_ogr_writer->write_multi_polyline_feature(d_polyline_geometries, d_key_value_dictionary);
-			}
-		}
-
-		// Write the polygon geometries.
-		if (!d_polygon_geometries.empty())
-		{
-			if (d_polygon_geometries.size() == 1)
-			{
-				d_ogr_writer->write_polygon_feature(d_polygon_geometries.front(), d_key_value_dictionary);
-			}
-			else
-			{
-				d_ogr_writer->write_multi_polygon_feature(d_polygon_geometries, d_key_value_dictionary);
-			}
+			// We have more than one point in the feature, so we should handle this as a multi-point.
+			d_ogr_writer->write_multi_point_feature(
+					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+							d_point_geometries.begin(),
+							d_point_geometries.end()),
+					d_key_value_dictionary);
 		}
 	}
-	catch (std::exception &exc)
+
+	// Write the multi-point geometries.
+	BOOST_FOREACH(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point,
+			d_multi_point_geometries)
 	{
-		qWarning() << "Exception caught writing geometry to shapefile: " << exc.what();
+		d_ogr_writer->write_multi_point_feature(multi_point, d_key_value_dictionary);
 	}
-	catch(...)
+
+	// Write the polyline geometries.
+	if (!d_polyline_geometries.empty())
 	{
-		qWarning() << "Exception caught writing geometry to shapefile: Unknown error";
+		if (d_polyline_geometries.size() == 1)
+		{
+			d_ogr_writer->write_polyline_feature(d_polyline_geometries.front(), d_key_value_dictionary);
+		}
+		else
+		{
+			d_ogr_writer->write_multi_polyline_feature(d_polyline_geometries, d_key_value_dictionary);
+		}
+	}
+
+	// Write the polygon geometries.
+	if (!d_polygon_geometries.empty())
+	{
+		if (d_polygon_geometries.size() == 1)
+		{
+			d_ogr_writer->write_polygon_feature(d_polygon_geometries.front(), d_key_value_dictionary);
+		}
+		else
+		{
+			d_ogr_writer->write_multi_polygon_feature(d_polygon_geometries, d_key_value_dictionary);
+		}
 	}
 }

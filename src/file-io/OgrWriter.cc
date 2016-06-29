@@ -35,6 +35,7 @@
 #include <QVariant>
 
 
+#include "ErrorOpeningFileForWritingException.h"
 #include "OgrException.h"
 #include "OgrUtils.h"
 #include "OgrWriter.h"
@@ -313,6 +314,9 @@ namespace{
 				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
 			if (*ogr_layer == NULL)
 			{
+				// Set to none to avoid NULL pointer dereference if try to write another feature
+				// (after catching exception for current feature).
+				ogr_layer = boost::none;
 				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR layer.");
 			}
 			if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -841,6 +845,16 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	// exported to "path-name/collection-name/collection-name_point.shp" and
 	// "path-name/collection-name/collection-name_polyline.shp".
 	QString path = q_file_info_original.absolutePath();
+
+	// If the base level path (directory) does not exist then we cannot open the file(s) for writing.
+	// We do create a sub-directory in this path (if needed) when there are multiple geometry types,
+	// but we expect the original path (dir) to exist (this mirrors other file writers).
+	if (!QDir(path).exists())
+	{
+		throw ErrorOpeningFileForWritingException(
+				GPLATES_EXCEPTION_SOURCE,
+				q_file_info_original.filePath());
+	}
 
 	QString basename = q_file_info_original.completeBaseName();
 	if (d_multiple_geometry_types)

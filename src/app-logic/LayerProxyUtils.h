@@ -34,9 +34,10 @@
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
-#include "AppLogicFwd.h"
 #include "LayerProxyVisitor.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
+#include "ResolvedTopologicalLine.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
@@ -119,7 +120,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_reconstructed_feature_geometries(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
 				const Reconstruction &reconstruction);
 
@@ -140,7 +141,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
 				const Reconstruction &reconstruction);
 
@@ -151,7 +152,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		find_reconstructed_feature_geometries_of_feature(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				const Reconstruction &reconstruction);
 

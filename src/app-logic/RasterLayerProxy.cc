@@ -32,6 +32,7 @@
 #include "ExtractRasterFeatureProperties.h"
 #include "ReconstructLayerProxy.h"
 #include "ReconstructUtils.h"
+#include "ResolvedRaster.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -80,6 +81,13 @@ GPlatesAppLogic::RasterLayerProxy::get_proxied_rasters(
 	}
 
 	return d_cached_resolved_raster_feature_properties.cached_proxied_rasters;
+}
+
+
+boost::optional<GPlatesAppLogic::ResolvedRaster::non_null_ptr_type>
+GPlatesAppLogic::RasterLayerProxy::get_resolved_raster()
+{
+	return get_resolved_raster(d_current_reconstruction_time);
 }
 
 
@@ -734,7 +742,7 @@ GPlatesAppLogic::RasterLayerProxy::set_current_normal_map_raster_layer_proxy(
 void
 GPlatesAppLogic::RasterLayerProxy::set_current_raster_feature(
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> raster_feature,
-		const RasterLayerTask::Params &raster_params)
+		const RasterLayerParams &raster_params)
 {
 	d_current_raster_feature = raster_feature;
 
@@ -747,7 +755,7 @@ GPlatesAppLogic::RasterLayerProxy::set_current_raster_feature(
 
 void
 GPlatesAppLogic::RasterLayerProxy::set_current_raster_band_name(
-		const RasterLayerTask::Params &raster_params)
+		const RasterLayerParams &raster_params)
 {
 	set_raster_params(raster_params);
 
@@ -758,7 +766,7 @@ GPlatesAppLogic::RasterLayerProxy::set_current_raster_band_name(
 
 void
 GPlatesAppLogic::RasterLayerProxy::modified_raster_feature(
-		const RasterLayerTask::Params &raster_params)
+		const RasterLayerParams &raster_params)
 {
 	set_raster_params(raster_params);
 
@@ -769,7 +777,7 @@ GPlatesAppLogic::RasterLayerProxy::modified_raster_feature(
 
 void
 GPlatesAppLogic::RasterLayerProxy::set_raster_params(
-		const RasterLayerTask::Params &raster_params)
+		const RasterLayerParams &raster_params)
 {
 	d_current_raster_band_name = raster_params.get_band_name();
 	d_current_raster_band_names = raster_params.get_band_names();

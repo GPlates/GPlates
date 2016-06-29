@@ -48,9 +48,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new ReconstructScalarCoverageVisualLayerParams(layer_task_params);
+			return new ReconstructScalarCoverageVisualLayerParams(layer_params);
 		}
 
 
@@ -66,6 +66,39 @@ namespace GPlatesPresentation
 		void
 		set_current_colour_palette_parameters(
 				const RemappedColourPaletteParameters &colour_palette_parameters);
+
+
+		/**
+		 * Returns the colour palette associated with the specified scalar type.
+		 */
+		boost::optional<const RemappedColourPaletteParameters &>
+		get_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
+
+		/**
+		 * Sets the colour palette associated with the specified scalar type.
+		 */
+		void
+		set_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
+				const RemappedColourPaletteParameters &colour_palette_parameters);
+
+
+		/**
+		 * Returns the currently selected scalar type.
+		 *
+		 * Delegates to app-logic ReconstructScalarCoverageLayerParams::get_scalar_type().
+		 */
+		const GPlatesPropertyValues::ValueObjectType &
+		get_current_scalar_type() const;
+
+		/**
+		 * Returns the list of scalar types available in the scalar coverage features.
+		 *
+		 * Delegates to app-logic ReconstructScalarCoverageLayerParams::get_scalar_types().
+		 */
+		const std::vector<GPlatesPropertyValues::ValueObjectType> &
+		get_scalar_types() const;
 
 
 		virtual
@@ -93,7 +126,7 @@ namespace GPlatesPresentation
 
 		explicit 
 		ReconstructScalarCoverageVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
 
@@ -114,20 +147,6 @@ namespace GPlatesPresentation
 		 */
 		mutable colour_palette_parameters_map_type d_colour_palette_parameters_map;
 
-
-		const GPlatesPropertyValues::ValueObjectType &
-		get_current_scalar_type() const;
-
-		const std::vector<GPlatesPropertyValues::ValueObjectType> &
-		get_scalar_types() const;
-
-		boost::optional<const RemappedColourPaletteParameters &>
-		get_colour_palette_parameters(
-				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
-
-		boost::optional<RemappedColourPaletteParameters &>
-		get_colour_palette_parameters(
-				const GPlatesPropertyValues::ValueObjectType &scalar_type);
 
 		const RemappedColourPaletteParameters &
 		create_colour_palette_parameters(

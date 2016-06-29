@@ -123,7 +123,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::~ReconstructScalarCoverage
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_coverages(
-		std::vector<reconstructed_scalar_coverage_non_null_ptr_type> &reconstructed_scalar_coverages,
+		std::vector<ReconstructedScalarCoverage::non_null_ptr_type> &reconstructed_scalar_coverages,
 		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 		const double &reconstruction_time)

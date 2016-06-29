@@ -29,6 +29,8 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "scribe/TranscribeEnumProtocol.h"
+
 
 std::pair<double, double>
 GPlatesAppLogic::VelocityDeltaTime::get_time_range(
@@ -78,4 +80,28 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 
 	// Return a dummy value to keep compiler happy - shouldn't get here though.
 	return std::make_pair(0.0, 0.0);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::VelocityDeltaTime::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		Type &velocity_delta_time,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("T_PLUS_DELTA_T_TO_T", T_PLUS_DELTA_T_TO_T),
+		GPlatesScribe::EnumValue("T_TO_T_MINUS_DELTA_T", T_TO_T_MINUS_DELTA_T),
+		GPlatesScribe::EnumValue("T_PLUS_MINUS_HALF_DELTA_T", T_PLUS_MINUS_HALF_DELTA_T)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			velocity_delta_time,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

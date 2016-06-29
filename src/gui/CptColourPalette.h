@@ -70,31 +70,29 @@ namespace GPlatesGui
 
 namespace GPlatesUtils
 {
-	using namespace GPlatesGui;
-
 	// Specialisation of Parse for ColourScaleAnnotation::Type.
 	template<>
-	struct Parse<ColourScaleAnnotation::Type>
+	struct Parse<GPlatesGui::ColourScaleAnnotation::Type>
 	{
-		ColourScaleAnnotation::Type
+		GPlatesGui::ColourScaleAnnotation::Type
 		operator()(
 				const QString &s)
 		{
 			if (s.isEmpty())
 			{
-				return ColourScaleAnnotation::NONE;
+				return GPlatesGui::ColourScaleAnnotation::NONE;
 			}
 			else if (s == "L")
 			{
-				return ColourScaleAnnotation::LOWER;
+				return GPlatesGui::ColourScaleAnnotation::LOWER;
 			}
 			else if (s == "U")
 			{
-				return ColourScaleAnnotation::UPPER;
+				return GPlatesGui::ColourScaleAnnotation::UPPER;
 			}
 			else if (s == "B")
 			{
-				return ColourScaleAnnotation::BOTH;
+				return GPlatesGui::ColourScaleAnnotation::BOTH;
 			}
 			else
 			{

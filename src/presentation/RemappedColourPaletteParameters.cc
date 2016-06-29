@@ -30,8 +30,21 @@
 #include "gui/ColourPaletteRangeRemapper.h"
 #include "gui/ColourPaletteUtils.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 
 const double GPlatesPresentation::RemappedColourPaletteParameters::DEFAULT_DEVIATION_FROM_MEAN = 2.0;
+
+
+namespace GPlatesPresentation
+{
+	namespace
+	{
+		//! The age CPT file.
+		const QString AGE_CPT_FILE_NAME = ":/age.cpt";
+	}
+}
 
 
 GPlatesPresentation::RemappedColourPaletteParameters::RemappedColourPaletteParameters(
@@ -72,6 +85,18 @@ GPlatesPresentation::RemappedColourPaletteParameters::get_palette_range() const
 	}
 
 	return d_unmapped_colour_palette_info.palette_range;
+}
+
+
+boost::optional<GPlatesPresentation::RemappedColourPaletteParameters::ConvenientPaletteType>
+GPlatesPresentation::RemappedColourPaletteParameters::get_convenient_palette_type() const
+{
+	if (d_colour_palette_filename == AGE_CPT_FILE_NAME)
+	{
+		return AGE_PALETTE;
+	}
+
+	return boost::none;
 }
 
 
@@ -130,6 +155,56 @@ GPlatesPresentation::RemappedColourPaletteParameters::set_colour_palette(
 
 
 bool
+GPlatesPresentation::RemappedColourPaletteParameters::load_colour_palette(
+		const QString &filename,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors,
+		bool allow_integer_colour_palette)
+{
+	GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+			GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+					filename,
+					allow_integer_colour_palette,
+					read_errors);
+
+	if (GPlatesGui::RasterColourPaletteType::get_type(*raster_colour_palette) ==
+		GPlatesGui::RasterColourPaletteType::INVALID)
+	{
+		return false;
+	}
+
+	// The palette range.
+	boost::optional< std::pair<double, double> > range =
+			GPlatesGui::ColourPaletteUtils::get_range(*raster_colour_palette);
+	if (!range)
+	{
+		// Null range for empty colour palette.
+		range = std::pair<double, double>(0,0);
+	}
+
+	return set_colour_palette(filename, raster_colour_palette, range.get());
+}
+
+
+bool
+GPlatesPresentation::RemappedColourPaletteParameters::load_convenient_colour_palette(
+		ConvenientPaletteType convenient_palette_type,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors,
+		bool allow_integer_colour_palette)
+{
+	switch (convenient_palette_type)
+	{
+	case AGE_PALETTE:
+		return load_colour_palette(AGE_CPT_FILE_NAME, read_errors, allow_integer_colour_palette);
+
+	default:
+		break;
+	}
+
+	return false;
+}
+
+
+bool
 GPlatesPresentation::RemappedColourPaletteParameters::map_palette_range(
 		const double &lower_bound,
 		const double &upper_bound)
@@ -153,4 +228,26 @@ GPlatesPresentation::RemappedColourPaletteParameters::map_palette_range(
 	d_is_currently_mapped = true;
 
 	return true;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPresentation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		RemappedColourPaletteParameters::ConvenientPaletteType &convenient_palette_type,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("AGE_PALETTE", RemappedColourPaletteParameters::AGE_PALETTE)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			convenient_palette_type,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

@@ -33,15 +33,14 @@
 
 // We give names that are unlikely to conflict with names used by scribe clients.
 // So we prepend with "scribe_".
-const char * GPlatesScribe::Scribe::POINTS_TO_OBJECT_TAG = "scribe_points_to_object";
-const char * GPlatesScribe::Scribe::POINTS_TO_CLASS_TAG = "scribe_points_to_class";
+const GPlatesScribe::ObjectTag GPlatesScribe::Scribe::POINTS_TO_OBJECT_TAG("scribe_points_to_object");
+const GPlatesScribe::ObjectTag GPlatesScribe::Scribe::POINTS_TO_CLASS_TAG("scribe_points_to_class");
 
 
 GPlatesScribe::Scribe::Scribe() :
 	d_is_saving(true),
 	d_transcription(Transcription::create()),
-	d_transcription_context(d_transcription, ROOT_OBJECT_ID, d_is_saving),
-	d_next_save_object_id(ROOT_OBJECT_ID + 1),
+	d_transcription_context(d_transcription, d_is_saving),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -53,8 +52,7 @@ GPlatesScribe::Scribe::Scribe(
 		const Transcription::non_null_ptr_type &transcription) :
 	d_is_saving(false),
 	d_transcription(transcription),
-	d_transcription_context(transcription, ROOT_OBJECT_ID, d_is_saving),
-	d_next_save_object_id(ROOT_OBJECT_ID + 1),
+	d_transcription_context(transcription, d_is_saving),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -63,6 +61,14 @@ GPlatesScribe::Scribe::Scribe(
 	GPlatesGlobal::Assert<Exceptions::TranscriptionIncomplete>(
 			d_transcription->is_complete(NULL_POINTER_OBJECT_ID, false/*emit_warnings*/),
 			GPLATES_ASSERTION_SOURCE);
+}
+
+
+bool
+GPlatesScribe::Scribe::is_in_transcription(
+		const ObjectTag &object_tag) const
+{
+	return d_transcription_context.is_in_transcription(object_tag);
 }
 
 
@@ -220,30 +226,31 @@ GPlatesScribe::Scribe::pre_transcribe(
 		// The following example can trigger this assertion:
 		//
 		//   A a;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 		//   d_array[0] = a;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"); // Error: have already transcribed to object address "&a".
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK); // Error: have already transcribed to object address "&a".
 		//   d_array[1] = a;
 		//
 		// ...which can be solved by...
 		//
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, d_array[0], "a");
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, d_array[1], "a"); // Is fine since &d_array[1] != &d_array[0]
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, d_array[0], "a", GPlatesScribe::TRACK);
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, d_array[1], "a", GPlatesScribe::TRACK); // Is fine since &d_array[1] != &d_array[0]
 		//
 		// ...or...
 		//
 		//   A a;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 		//   d_array[0] = a;
 		//   scribe.relocated(TRANSCRIBE_SOURCE, d_array[0], a); // Now registers &d_array[0] as the object address.
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"); // Is fine since &a != &d_array[0]
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK); // Is fine since &a != &d_array[0]
 		//   d_array[1] = a;
 		//   scribe.relocated(TRANSCRIBE_SOURCE, d_array[1], a); // Now registers &d_array[1] as the object address.
 		//
 		GPlatesGlobal::Assert<Exceptions::AlreadyTranscribedObject>(
 				false,
 				GPLATES_ASSERTION_SOURCE,
-				*class_info.object_type_info.get());
+				*class_info.object_type_info.get(),
+				is_saving());
 	}
 
 	// The object is currently being transcribed.
@@ -275,7 +282,7 @@ GPlatesScribe::Scribe::pre_transcribe(
 void
 GPlatesScribe::Scribe::post_transcribe(
 		object_id_type object_id,
-		Options options,
+		unsigned int options,
 		bool discard,
 		bool is_object_initialised)
 {
@@ -299,14 +306,15 @@ GPlatesScribe::Scribe::post_transcribe(
 	// Note that untracked objects include those that failed to be transcribed
 	// (in addition to those explicitly specified as untracked by scribe clients).
 	if (discard ||
-		(options.get_flags() & DONT_TRACK.get()))
+		((options & TRACK) == 0))
 	{
-		// The object is not being tracked so we need to un-track it and all its sub-objects
-		// (or child-objects if discarding).
-		// We have not disabled tracking of sub-objects until now in order that our sub-objects can
+		// The object is not being tracked so we need to un-track it and all its child-objects.
+		// We have not disabled tracking of child-objects until now in order that they can
 		// get relocated as they are transcribed - this can happen when transcribing with non-default
 		// object constructors whereby the transcribed constructor parameters need to be relocated
-		// inside the object once the object constructor returns.
+		// inside the object (hence becoming sub-objects) once the object constructor returns -
+		// it can also happen when transcribing objects like std::vector since the transcribed
+		// vector elements still need to get relocated into the vector.
 		unmap_tracked_object_address_to_object_id(object_id, discard);
 	}
 	else
@@ -314,8 +322,8 @@ GPlatesScribe::Scribe::post_transcribe(
 		// Initialise all pointers (referencing our object) with our object's address.
 		// In the save path this just records the pointers as initialised.
 		//
-		// Note: We don't do this for *untracked* objects because pointers to untracked objects
-		// are not allowed - those pointers will never get initialised.
+		// Note: We don't do this for *untracked* (or discarded) objects because pointers to
+		// untracked objects are not allowed - those pointers will never get initialised.
 		resolve_pointers_referencing_object(object_id);
 	}
 
@@ -327,8 +335,7 @@ GPlatesScribe::Scribe::post_transcribe(
 bool
 GPlatesScribe::Scribe::transcribe_object_id(
 		const object_address_type &save_object_address,
-		const char *object_tag,
-		unsigned int version,
+		const ObjectTag &object_tag,
 		boost::optional<object_id_type &> return_object_id)
 {
 	object_id_type object_id;
@@ -348,9 +355,9 @@ GPlatesScribe::Scribe::transcribe_object_id(
 		}
 	}
 
-	if (!d_transcription_context.transcribe_object_id(object_id, object_tag, version))
+	if (!d_transcription_context.transcribe_object_id(object_id, object_tag))
 	{
-		// Couldn't find 'object_tag' + 'version' (in the load path) within parent object scope.
+		// Couldn't find 'object_tag' (in the load path) within parent object scope.
 
 		// Record the reason for transcribe failure.
 		set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_INCOMPATIBLE);
@@ -363,7 +370,7 @@ GPlatesScribe::Scribe::transcribe_object_id(
 		if (object_id != NULL_POINTER_OBJECT_ID)
 		{
 			// Create an ObjectInfo for the object id.
-			// This has already been done in the save path in 'transcribe_object_id()'.
+			// This has already been done in the save path in this method.
 			get_or_create_load_object_info(object_id);
 
 			// NOTE: We wait until transcribing has started on the object before we map its tracked
@@ -408,7 +415,7 @@ GPlatesScribe::Scribe::transcribe_class_name(
 		// Throw exception if the object's type has not been export registered.
 		//
 		// If this assertion is triggered then it means:
-		//   * The object's derived type was not export registered in 'ScribeExportRegistration.h'.
+		//   * The object's derived type was not export registered (see 'ScribeExportRegistration.h').
 		//
 		GPlatesGlobal::Assert<Exceptions::UnregisteredClassType>(
 				export_class_type,
@@ -422,9 +429,9 @@ GPlatesScribe::Scribe::transcribe_class_name(
 	//
 	// Note: This is one of the only times when an object is transcribed that does not actually
 	// belong to the scribe client.
-	if (!transcribe(TRANSCRIBE_SOURCE, class_name, POINTS_TO_CLASS_TAG, (Version(POINTS_TO_CLASS_VERSION), DONT_TRACK)))
+	if (!transcribe(TRANSCRIBE_SOURCE, class_name, POINTS_TO_CLASS_TAG))
 	{
-		// Couldn't find 'object_tag' + 'version' (in the load path) within parent object scope.
+		// Couldn't find 'object_tag' (in the load path) within parent object scope.
 
 		// Record the reason for transcribe failure.
 		// We don't really need to do this since the above 'transcribe()' call has done this.
@@ -633,10 +640,7 @@ GPlatesScribe::Scribe::get_or_create_save_object_id_and_map_tracked_object_addre
 		//
 
 		// Get the next save object id.
-		object_id = d_next_save_object_id;
-
-		// Increment the save object id for next time.
-		++d_next_save_object_id;
+		object_id = d_transcription_context.allocate_save_object_id();
 
 		// Create an ObjectInfo from the pool.
 		ObjectInfo *object_info = d_object_info_pool.construct(object_id);
@@ -653,7 +657,7 @@ GPlatesScribe::Scribe::get_or_create_save_object_id_and_map_tracked_object_addre
 		// Note: In this save path there should be no NULLs in 'd_object_infos' except at
 		// 'NULL_POINTER_OBJECT_ID'.
 		// On the load path there can be NULLs though (due to not transcribing objects from an
-		// archive generated by a future GPlates because not recognised).
+		// archive generated by a future GPlates because some future objects were not recognised).
 
 		// Assign new object id to the inserted map entry.
 		object_address_inserted.first->second = object_id;
@@ -684,7 +688,7 @@ GPlatesScribe::Scribe::get_or_create_load_object_info(
 	}
 
 	// Note: On this load path there can be extra NULLs (due to not loading some objects from an
-	// archive generated by a future GPlates because some future objects not recognised).
+	// archive generated by a future GPlates because some future objects were not recognised).
 
 	// Create ObjectInfo for 'object_id' if hasn't already been created.
 	ObjectInfo *object_info = d_object_infos[object_id];
@@ -727,65 +731,58 @@ GPlatesScribe::Scribe::unmap_tracked_object_address_to_object_id(
 	ObjectInfo &object_info = get_object_info(object_id);
 
 	//
-	// Note that we recurse into child/sub objects first since they will remove themselves as
+	// Note that we recurse into child objects first since they will remove themselves as
 	// children from the current object (so we need to keep current object around for that to happen).
 	//
 
 	// Recurse into child-objects...
-	if (discard)
+	//
+	// The parent object is either being discarded or it's being untracked (ie, client requested no tracking).
+	//
+	// Discarding means that the object will probably get destructed and take with it any objects
+	// it references with shared pointers. So we must untrack all of these child objects.
+	// For example the objects referenced by shared pointers are child objects - they are not
+	// sub-objects because they are not inside the memory area of the (parent) object.
+	//
+	// Untracking means that, while the object may not get destructed immediately (because client
+	// is not discarding it), we cannot know how long the object will hang around. For example,
+	// the client might copy it (and destroy the original) - but that means any tracked child objects
+	// will now be tracking the wrong memory location (eg, moving a std::vector will also move its
+	// child objects - the vector elements - to a new location inside the new vector, but the vector
+	// did not get relocated because you can't relocate an untracked vector).
+	// So, like discarding, we are forced to untrack all child objects.
+	//
+	// However this brings up the issue of multiple shared pointers referencing an object.
+	// What if the first transcribed shared pointer is fine but the second one is discarded ?
+	// The second one shouldn't untrack the object (because first one still references it).
+	// It turns out that when the second shared pointer was transcribed it didn't need to
+	// transcribe the object (because first pointer transcribed it) and hence it did not
+	// record the object as a child object and hence it won't get untracked here.
+	// But what if the first transcribed shared pointer was discarded and the second one was fine ?
+	// When the first one is discarded it gets untracked. When the second one is transcribed
+	// there is no knowledge of the first one having been transcribed (its ObjectInfo gets
+	// removed - set to NULL) and so it gets transcribed a second time.
+	//
+	// A similar situation is multiple *untracked* shared pointers referencing an object.
+	// The first shared pointer to transcribe the object will immediately untrack the object.
+	// When the second shared pointer looks for the object it doesn't find it (since it's untracked)
+	// and so it transcribes a new object. Same with the third, etc, shared pointers.
+	// This means each shared pointer will have its own copy of the object instead of all sharing one object.
+	// This basically means that shared pointers should always be transcribed with tracking enabled
+	// (if want multiple pointers to share a single object).
+	//
+	// Iterate over the child-objects.
+	object_ids_list_type::const_iterator child_objects_iter = object_info.child_objects.begin();
+	object_ids_list_type::const_iterator child_objects_end = object_info.child_objects.end();
+	for ( ; child_objects_iter != child_objects_end; )
 	{
-		// Discarding means that the object will probably get destructed and take with it any objects
-		// it references with shared pointers. So we must untrack all of these child objects.
-		// For example the objects referenced by shared pointers are child objects - they are not
-		// sub-objects because they are not inside the memory area of the (parent) object.
-		//
-		// However this brings up the issue of multiple shared pointers referencing an object.
-		// What if the first transcribed shared pointer is fine but the second one is discarded ?
-		// The second one shouldn't untrack the object (because first one still references it).
-		// It turns out that when the second shared pointer was transcribed it didn't need to
-		// transcribe the object (because first pointer transcribed it) and hence it did not
-		// record the object as a child object and hence it won't get untracked here.
-		// But what if the first transcribed shared pointer was discarded and the second one was fine ?
-		// When the first one is discarded it gets untracked. When the second one is transcribed
-		// there is no knowledge of the first one having been transcribed (its ObjectInfo gets
-		// removed - set to NULL) and so it gets transcribed a second time.
-		//
-		// Iterate over the child-objects.
-		object_ids_list_type::const_iterator child_objects_iter = object_info.child_objects.begin();
-		object_ids_list_type::const_iterator child_objects_end = object_info.child_objects.end();
-		for ( ; child_objects_iter != child_objects_end; )
-		{
-			// Get the child-object id.
-			const object_id_type child_object_id = *child_objects_iter;
+		// Get the child-object id.
+		const object_id_type child_object_id = *child_objects_iter;
 
-			// Increment iterator before child object removes itself from our list (thus invalidating it).
-			++child_objects_iter;
+		// Increment iterator before child object removes itself from our list (thus invalidating it).
+		++child_objects_iter;
 
-			unmap_tracked_object_address_to_object_id(child_object_id, discard);
-		}
-	}
-	else // Recurse into sub-objects (a subset of child-objects)...
-	{
-		// We're not discarding the object just untracking it. This means that the object will
-		// not get destructed and hence won't destruct any objects it references with shared pointers.
-		// So we only need to untrack the sub-objects.
-		// For example the objects referenced by shared pointers are child objects but not
-		// sub-objects because they are not inside the memory area of the (parent) object and
-		// hence will get left alone (won't get untracked).
-		//
-		// Iterate over the sub-objects.
-		object_ids_list_type::const_iterator sub_objects_iter = object_info.sub_objects.begin();
-		object_ids_list_type::const_iterator sub_objects_end = object_info.sub_objects.end();
-		for ( ; sub_objects_iter != sub_objects_end; )
-		{
-			// Get the sub-object id.
-			const object_id_type sub_object_id = *sub_objects_iter;
-
-			// Increment iterator before child object removes itself from our list (thus invalidating it).
-			++sub_objects_iter;
-
-			unmap_tracked_object_address_to_object_id(sub_object_id, discard);
-		}
+		unmap_tracked_object_address_to_object_id(child_object_id, discard);
 	}
 
 	// There should not be any untracked pointers or references referencing this untracked object.
@@ -806,9 +803,12 @@ GPlatesScribe::Scribe::unmap_tracked_object_address_to_object_id(
 		// If this assertion is triggered then it means:
 		//   * Scribe client has transcribed an *untracked* object and has transcribed
 		//     pointers/references to it. To fix this either track the object or avoid
-		//     transcribing pointers to it. Otherwise it's a case of a failed or discarded
-		//     transcribed object that happens to have pointers/references to it and not much
-		//     can be done about that - it will result in a failed load from archive.
+		//     transcribing pointers to it, or
+		//   * It's a case of a failed or discarded transcribed object that happens to have
+		//     references or *untracked* pointers to it. It's possible that whatever is referencing
+		//     it will also get discarded (and hence there will be no problem), but we can't know that
+		//     (because references and untracked pointers are not tracked) and so we are forced to
+		//     trigger an assertion here.
 		//
 		// The object is *not* being tracked so it cannot have any pointers/references to it because we
 		// cannot assume the object will remain at its current address once we return from transcribing it
@@ -856,9 +856,13 @@ GPlatesScribe::Scribe::unmap_tracked_object_address_to_object_id(
 	}
 
 	// Unresolve/un-initialise pointers referencing this object.
-	// This happens when this object is being discarded - it's not an error (yet) because the
-	// object may get transcribed again later (and succeed) in which case its referenced pointers will
-	// get re-resolved again (otherwise the load will fail at the end due to incomplete transcription).
+	//
+	// There will only be pointers referencing this object if we're discarding this object
+	// (because if we were only untracking this object then an exception would have been thrown above).
+	//
+	// It's not an error (yet) because the object may get transcribed again later (and succeed) in
+	// which case its referenced pointers will get re-resolved again (otherwise the load will fail
+	// at the end due to incomplete transcription).
 	unresolve_pointers_referencing_object(object_id);
 
 	// If this object (being untracked) is a pointer then remove itself from the pointed-to object's
@@ -870,6 +874,14 @@ GPlatesScribe::Scribe::unmap_tracked_object_address_to_object_id(
 
 	// Remove this object from the parent pointer of the child objects (if has any).
 	remove_parent_object_from_children(object_id);
+
+	// If the object is being discarded and is a pointer that currently references another object then
+	// set it to NULL in case clients accidentally try to use it.
+	if (discard &&
+		object_info.object_referenced_by_pointer)
+	{
+		unresolve_pointer_reference_to_object(object_id/*pointer_object_id*/);
+	}
 
 	// Remove the object's address from the mapping of tracked addresses.
 	d_tracked_object_address_to_id_map.erase(get_object_address(object_id));
@@ -1062,7 +1074,7 @@ GPlatesScribe::Scribe::get_class_info_from_object(
 }
 
 
-GPlatesScribe::Scribe::transcribe_context_stack_type &
+boost::optional<GPlatesScribe::Scribe::transcribe_context_stack_type &>
 GPlatesScribe::Scribe::get_transcribe_context_stack(
 		const std::type_info &class_type_info)
 {
@@ -1070,12 +1082,10 @@ GPlatesScribe::Scribe::get_transcribe_context_stack(
 	class_type_to_id_map_type::iterator class_type_iter =
 			d_class_type_to_id_map.find(&class_type_info);
 
-	GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
-			class_type_iter != d_class_type_to_id_map.end(),
-			GPLATES_ASSERTION_SOURCE,
-			std::string("No transcribe context available for the object type '") +
-					class_type_info.name() +
-					"'.");
+	if (class_type_iter == d_class_type_to_id_map.end())
+	{
+		return boost::none;
+	}
 
 	const class_id_type class_id = class_type_iter->second;
 
@@ -1092,7 +1102,8 @@ GPlatesScribe::Scribe::push_transcribed_object(
 {
 	// If we're not transcribing at the root level then we will have a parent transcribed object and we will:
 	//  1) Set the transcribed parent object of the transcribed object, and
-	//  2) Add the transcribed object to the transcribed parent's sub-objects list.
+	//  2) Add the transcribed object to the transcribed parent's child-objects list, and
+	//     to the sub-objects list if lies within memory area of parent).
 	if (!d_transcribed_object_stack.empty())
 	{
 		ObjectInfo &transcribed_object_info = get_object_info(transcribed_object_id);
@@ -1108,7 +1119,7 @@ GPlatesScribe::Scribe::push_transcribed_object(
 
 		// Add as a sub-object of the parent (if lies within memory area of parent).
 		//
-		// Note that if the transcribed object does not currently lie within the memory are of the
+		// Note that if the transcribed object does not currently lie within the memory area of the
 		// parent (and hence is not yet a sub-object of parent) it can still become a sub-object
 		// later if the client relocates it from outside the parent's object memory area to inside.
 		// In which case it gets added as a sub-object when that relocation happens.
@@ -1119,7 +1130,7 @@ GPlatesScribe::Scribe::push_transcribed_object(
 		add_child_as_sub_object_if_inside_parent(transcribed_object_id);
 	}
 
-	// The sub-object now becomes the parent object.
+	// The child-object now becomes the parent object.
 	d_transcribed_object_stack.push(transcribed_object_id);
 
 	// Prepare the transcription for a new transcribed object.
@@ -1135,7 +1146,7 @@ GPlatesScribe::Scribe::pop_transcribed_object(
 			!d_transcribed_object_stack.empty() &&
 				d_transcribed_object_stack.top() == transcribed_object_id,
 			GPLATES_ASSERTION_SOURCE,
-			"Unexpected transcribed sub-object.");
+			"Unexpected transcribed child-object.");
 
 	// The previous parent object now becomes the current parent object.
 	d_transcribed_object_stack.pop();
@@ -1218,7 +1229,7 @@ GPlatesScribe::Scribe::add_child_as_sub_object_if_inside_parent(
 
 	ObjectInfo &parent_object_info = get_object_info(parent_object_id.get());
 
-	// The sub-object is contained *inline* within the parent object so it will be a sub-object and
+	// The child-object is contained *inline* within the parent object so it will be a sub-object and
 	// will be directly affected by relocation of the parent object.
 	// In other words the sub-object will also get relocated.
 	//
@@ -1256,7 +1267,7 @@ GPlatesScribe::Scribe::remove_child_as_sub_object_if_outside_parent(
 
 	ObjectInfo &parent_object_info = get_object_info(parent_object_id.get());
 
-	// The sub-object is not contained *inline* within the parent object so it will no longer be a
+	// The child-object is not contained *inline* within the parent object so it will no longer be a
 	// sub-object and will no longer be directly affected by relocation of the parent object.
 
 	// Find and remove from parent's sub-objects.
@@ -1591,6 +1602,7 @@ GPlatesScribe::Scribe::resolve_pointer_reference_to_object(
 		//		template <typename T>
 		//		class A
 		//		{
+		//		public:
 		//			virtual ~A() { }
 		//		};
 		//
@@ -1601,16 +1613,16 @@ GPlatesScribe::Scribe::resolve_pointer_reference_to_object(
 		// ...where saving on machine X with 'std::size_t' typedef'ed to 'unsigned int'...
 		//
 		//		boost::shared_ptr< A<std::size_t> > b(new B<std::size_t>());
-		//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b");
+		//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK);
 		//		A<std::size_t> *a = b;
-		//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+		//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 		//
 		// ...where loading on machine Y with 'std::size_t' typedef'ed to 'unsigned long'...
 		//
 		//		boost::shared_ptr< A<std::size_t> > b;
-		//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b");  // Actually this would fail first
+		//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK);  // Actually this would fail first
 		//		A<std::size_t> *a;
-		//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+		//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 		//
 		// ...where 'b' is saved on machine X as 'B<unsigned int>' and 'b' is also loaded on
 		// machine Y as 'B<unsigned int>' (since that's the class name stored in the transcription).

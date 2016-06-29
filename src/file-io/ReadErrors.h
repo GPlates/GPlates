@@ -121,7 +121,7 @@ namespace GPlatesFileIO
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
 			UnableToMatchOgrGeometryWithFeature,
-                        NoGeometriesFoundInMultiGeometry,
+			NoGeometriesFoundInMultiGeometry,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -208,8 +208,10 @@ namespace GPlatesFileIO
 
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
+			FileFormatNotSupported,
 			FileIsEmpty,
-			NoFeaturesFoundInFile
+			NoFeaturesFoundInFile,
+			ErrorReadingFile // Arbitrary error reading file (usually results in 'FileNotLoaded').
 		}; // enum Description
 
 		enum Result

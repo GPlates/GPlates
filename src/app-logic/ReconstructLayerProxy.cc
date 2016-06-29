@@ -787,7 +787,7 @@ GPlatesAppLogic::ReconstructLayerProxy::modified_reconstructable_feature_collect
 
 void
 GPlatesAppLogic::ReconstructLayerProxy::add_topological_network_resolver_layer_proxy(
-		const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy)
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
 {
 	d_current_topological_network_resolver_layer_proxies.add_input_layer_proxy(
 			topological_network_resolver_layer_proxy);
@@ -811,7 +811,7 @@ GPlatesAppLogic::ReconstructLayerProxy::add_topological_network_resolver_layer_p
 
 void
 GPlatesAppLogic::ReconstructLayerProxy::remove_topological_network_resolver_layer_proxy(
-		const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy)
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
 {
 	d_current_topological_network_resolver_layer_proxies.remove_input_layer_proxy(
 			topological_network_resolver_layer_proxy);

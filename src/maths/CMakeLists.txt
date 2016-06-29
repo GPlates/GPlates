@@ -69,7 +69,6 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
-    MathsFwd.h
     MathsUtils.cc
     MathsUtils.h
     MultiPointOnSphere.cc

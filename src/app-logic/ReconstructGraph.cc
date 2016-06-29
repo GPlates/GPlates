@@ -36,9 +36,9 @@
 
 
 #include "ApplicationState.h"
+#include "LayerParams.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
@@ -220,8 +220,8 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 
 	// Emit signal each time the layer's task parameters are modified.
 	QObject::connect(
-			&layer_task->get_layer_task_params(), SIGNAL(modified(GPlatesAppLogic::LayerTaskParams &)),
-			this, SLOT(handle_layer_task_params_changed(GPlatesAppLogic::LayerTaskParams &)));
+			layer_task->get_layer_params().get(), SIGNAL(modified(GPlatesAppLogic::LayerParams &)),
+			this, SLOT(handle_layer_params_changed(GPlatesAppLogic::LayerParams &)));
 
 	// End the add layers group.
 	add_layers_group.end_add_or_remove_layers();
@@ -839,15 +839,15 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 
 
 void
-GPlatesAppLogic::ReconstructGraph::handle_layer_task_params_changed(
-		LayerTaskParams &layer_task_params)
+GPlatesAppLogic::ReconstructGraph::handle_layer_params_changed(
+		LayerParams &layer_params)
 {
-	// Find the layer that owns the layer task params.
+	// Find the layer that owns the layer params.
 	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
-		if (&layer->get_layer_task_params() == &layer_task_params)
+		if (layer->get_layer_params().get() == &layer_params)
 		{
-			emit_layer_task_params_changed(Layer(layer), layer_task_params);
+			emit_layer_params_changed(Layer(layer), layer_params);
 
 			return;
 		}
@@ -855,7 +855,7 @@ GPlatesAppLogic::ReconstructGraph::handle_layer_task_params_changed(
 
 	// Shouldn't really be able to get here.
 	//
-	// However we won't treat it as an error in case a layer's task params get modified
+	// However we won't treat it as an error in case a layer's params get modified
 	// just as (or after) the layer is getting removed for some reason.
 }
 
@@ -926,11 +926,11 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
 
 
 void
-GPlatesAppLogic::ReconstructGraph::emit_layer_task_params_changed(
+GPlatesAppLogic::ReconstructGraph::emit_layer_params_changed(
 		const Layer &layer,
-		LayerTaskParams &layer_task_params)
+		LayerParams &layer_params)
 {
-	Q_EMIT layer_task_params_changed(*this, layer, layer_task_params);
+	Q_EMIT layer_params_changed(*this, layer, layer_params);
 }
 
 

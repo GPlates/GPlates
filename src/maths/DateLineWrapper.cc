@@ -1260,6 +1260,15 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_polylines(
 			GPLATES_ASSERTION_SOURCE);
 	const vertex_list_type &polyline_vertices = *d_line_geometries.front().vertices;
 
+	// Note that it is possible that all the original polyline line segments got swallowed by the dateline.
+	// This can happen if the original polyline is entirely *on* the dateline which is considered
+	// to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
+	// a very thin area of size epsilon around the dateline arc).
+	if (polyline_vertices.begin() == polyline_vertices.end())
+	{
+		return;
+	}
+
 	double central_meridian_longitude = 0;
 	boost::optional<Rotation> rotate_from_dateline_frame;
 	if (central_meridian)

@@ -72,6 +72,7 @@ namespace GPlatesQtWidgets
 		boost::weak_ptr<GPlatesPresentation::VisualLayer>
 		get_selected_visual_layer() const;
 
+		virtual
 		void
 		set_selected_visual_layer(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);

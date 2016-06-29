@@ -52,7 +52,6 @@
 #include "GLReconstructedStaticPolygonMeshes.h"
 #include "GLTexture.h"
 #include "GLVisualRasterSource.h"
-#include "OpenGLFwd.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerProxy.h"

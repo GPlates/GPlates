@@ -33,7 +33,6 @@
 #include "ColourScaleWidget.h"
 #include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "ViewportWindow.h"
 
 #include "file-io/CptReader.h"
@@ -42,7 +41,6 @@
 #include "gui/Colour.h"
 #include "gui/ColourPaletteUtils.h"
 #include "gui/ColourSpectrum.h"
-#include "gui/Dialogs.h"
 #include "gui/RasterColourPalette.h"
 
 #include "presentation/TopologyNetworkVisualLayerParams.h"
@@ -169,7 +167,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 
 #if 0
 	LinkWidget *draw_style_link = new LinkWidget(
-			tr("Draw Style Setting..."), this);
+			tr("Set Draw style..."), this);
 
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
@@ -579,12 +577,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_palet
 		// Show any read errors.
 		if (cpt_read_errors.size() > 0)
 		{
-			ReadErrorAccumulationDialog &read_errors_dialog =
-					d_viewport_window->dialogs().read_error_accumulation_dialog();
-
-			read_errors_dialog.read_errors().accumulate(cpt_read_errors);
-			read_errors_dialog.update();
-			read_errors_dialog.show();
+			d_viewport_window->handle_read_errors(cpt_read_errors);
 		}
 	}
 }

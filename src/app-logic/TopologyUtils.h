@@ -33,9 +33,11 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTopologicalSection.h"
 #include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
@@ -118,7 +120,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		resolve_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
@@ -160,7 +162,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		resolve_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
@@ -212,7 +214,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		resolve_topological_networks(
-				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
@@ -229,8 +231,8 @@ namespace GPlatesAppLogic
 		void
 		find_resolved_topological_sections(
 				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks);
 	}
 }
 

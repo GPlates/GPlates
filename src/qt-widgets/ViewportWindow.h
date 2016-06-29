@@ -27,16 +27,18 @@
 #ifndef GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 #define GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 
-#include <vector>
-#include <string>
 #include <list>
 #include <memory>
+#include <string>
+#include <vector>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QtCore/QTimer>
-#include <QPointer>
 #include <QCloseEvent>
 #include <QMainWindow>
+#include <QPointer>
+#include <QString>
 #include <QStringList>
 #include <QUndoGroup>
 
@@ -232,7 +234,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_read_errors(
-				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
 
 		/**
@@ -341,9 +342,11 @@ namespace GPlatesQtWidgets
 		set_up_task_panel_actions();
 
 		void
-		set_internal_release_window_title();
+		set_window_title(
+				boost::optional<QString> project_filename = boost::none);
 
-		private Q_SLOTS:
+
+	private Q_SLOTS:
 
 		void
 		set_visual_layers_dialog_visibility(
@@ -366,6 +369,9 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_arrows_display();
+
+		void
+		handle_render_settings_changed();
 
 		void
 		enable_stars_display();
@@ -395,6 +401,13 @@ namespace GPlatesQtWidgets
 		handle_canvas_tool_activated(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
+
+		void
+		handle_changed_project_filename(
+				boost::optional<QString> project_filename);
+
+		void
+		show_menu_item_status_tip_in_status_bar();
 
 		void
 		pop_up_import_raster_dialog();

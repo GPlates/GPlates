@@ -321,7 +321,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangl
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
-		const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
+		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		const GPlatesGui::Colour &raster_modulate_colour,
 		float normal_map_height_field_scale_factor)
@@ -339,7 +339,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
-		const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
+		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
 		const ScalarField3DRenderParameters &scalar_field_render_parameters)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(

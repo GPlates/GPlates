@@ -33,6 +33,23 @@
 #include "TopologyNetworkResolverLayerProxy.h"
 
 
+GPlatesAppLogic::ReconstructLayerTask::ReconstructLayerTask(
+		const ReconstructMethodRegistry &reconstruct_method_registry) :
+	d_layer_params(ReconstructLayerParams::create()),
+	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+	d_using_default_reconstruction_layer_proxy(true),
+	d_reconstruct_layer_proxy(
+			ReconstructLayerProxy::create(
+					reconstruct_method_registry,
+					d_layer_params->get_reconstruct_params()))
+{
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_reconstruct_params(GPlatesAppLogic::ReconstructLayerParams &)),
+			this, SLOT(handle_reconstruct_params_modified(GPlatesAppLogic::ReconstructLayerParams &)));
+}
+
+
 bool
 GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
@@ -245,33 +262,10 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 }
 
 
-GPlatesAppLogic::ReconstructLayerTask::Params::Params(
-		ReconstructLayerTask &layer_task) :
-	d_layer_task(layer_task)
-{
-}
-
-
-const GPlatesAppLogic::ReconstructParams &
-GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params() const
-{
-	return d_reconstruct_params;
-}
-
-
 void
-GPlatesAppLogic::ReconstructLayerTask::Params::set_reconstruct_params(
-		const ReconstructParams &reconstruct_params)
+GPlatesAppLogic::ReconstructLayerTask::handle_reconstruct_params_modified(
+		ReconstructLayerParams &layer_params)
 {
-	if (d_reconstruct_params == reconstruct_params)
-	{
-		return;
-	}
-
-	d_reconstruct_params = reconstruct_params;
-
 	// Update our reconstruct layer proxy.
-	d_layer_task.d_reconstruct_layer_proxy->set_current_reconstruct_params(d_reconstruct_params);
-
-	emit_modified();
+	d_reconstruct_layer_proxy->set_current_reconstruct_params(layer_params.get_reconstruct_params());
 }

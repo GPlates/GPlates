@@ -58,8 +58,8 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class LayerParams;
 	class LayerTask;
-	class LayerTaskParams;
 	class LayerTaskRegistry;
 
 	namespace ReconstructGraphImpl
@@ -455,10 +455,10 @@ namespace GPlatesAppLogic
 		 * Emitted when layer @a layer has been activated or deactivated.
 		 */
 		void
-		layer_task_params_changed(
+		layer_params_changed(
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams &layer_params);
 
 		/**
 		 * Emitted when layer @a layer has added a new input connection.
@@ -527,11 +527,11 @@ namespace GPlatesAppLogic
 		//       to not be able to connect them at runtime.
 
 		/**
-		 * Handles changes to the layer task params of a layer.
+		 * Handles changes to the layer params of a layer.
 		 */
 		void
-		handle_layer_task_params_changed(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+		handle_layer_params_changed(
+				GPlatesAppLogic::LayerParams &layer_params);
 
 	private:
 
@@ -549,11 +549,11 @@ namespace GPlatesAppLogic
 				const Layer &layer,
 				bool activation);
 
-		//! Emits the @a layer_task_params_changed signal.
+		//! Emits the @a layer_params_changed signal.
 		void
-		emit_layer_task_params_changed(
+		emit_layer_params_changed(
 				const Layer &layer,
-				LayerTaskParams &layer_task_params);
+				LayerParams &layer_params);
 
 		//! Emits the @a layer_added_input_connection signal.
 		void

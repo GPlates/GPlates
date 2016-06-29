@@ -27,9 +27,15 @@
 #define GPLATES_PRESENTATION_REMAPPEDCOLOURPALETTEPARAMETERS_H
 
 #include <utility>
+#include <boost/optional.hpp>
 #include <QString>
 
+#include "file-io/ReadErrorAccumulation.h"
+
 #include "gui/RasterColourPalette.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesPresentation
@@ -45,6 +51,16 @@ namespace GPlatesPresentation
 	public:
 
 		static const double DEFAULT_DEVIATION_FROM_MEAN;
+
+		/**
+		 * Some pre-defined internal palette types are provided for convenience.
+		 */
+		enum ConvenientPaletteType
+		{
+			AGE_PALETTE
+
+			// NOTE: Any new values should also be added to @a transcribe.
+		};
 
 
 		/**
@@ -70,15 +86,24 @@ namespace GPlatesPresentation
 
 		/**
 		 * Returns the filename of the CPT file from which the current colour palette was loaded,
-		 * if it was loaded from a file.
+		 * if it was loaded from a file (or an internal file resource if a @a ConvenientPaletteType,
+		 * eg, ":/age.cpt").
 		 *
-		 * If the current colour palette is the auto-generated default palette, returns the empty string.
+		 * If the current colour palette is the auto-generated default palette then returns the empty string.
 		 */
 		QString
 		get_colour_palette_filename() const
 		{
 			return d_colour_palette_filename;
 		}
+
+		/**
+		 * Returns the convenient palette type (if current palette was loaded via @a load_convenient_colour_palette).
+		 *
+		 * Returns none if current palette is default colour palette or was loaded from a file.
+		 */
+		boost::optional<ConvenientPaletteType>
+		get_convenient_palette_type() const;
 
 		/**
 		 * Causes the current colour palette to be the auto-generated default palette,
@@ -90,7 +115,7 @@ namespace GPlatesPresentation
 		use_default_colour_palette();
 
 		/**
-		 * Sets the current colour palette to be one that is loaded from a file.
+		 * Sets the current colour palette to be one that has been loaded from a file.
 		 * @a filename must not be the empty string.
 		 *
 		 * If the previous palette is mapped then the new palette will be mapped to the same range.
@@ -103,6 +128,32 @@ namespace GPlatesPresentation
 				const QString &filename,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
 				const std::pair<double, double> &palette_range);
+
+		/**
+		 * Same as @a set_colour_palette but also loads the colour palette from the file @a filename.
+		 *
+		 * If the previous palette is mapped then the new palette will be mapped to the same range.
+		 *
+		 * Only allow loading an integer colour palette if the raster type is integer-valued and
+		 * the colour palette is not being remapped (see @a is_palette_range_mapped).
+		 *
+		 * Returns false if failed to load colour palette file, or if a mapping is applied but failed
+		 * in which case palette range is unmapped (see @a map_palette_range for more details).
+		 */
+		bool
+		load_colour_palette(
+				const QString &filename,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors,
+				bool allow_integer_colour_palette = false);
+
+		/**
+		 * Same as @a load_colour_palette except loads an convenient internal palette type.
+		 */
+		bool
+		load_convenient_colour_palette(
+				ConvenientPaletteType convenient_palette_type,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors,
+				bool allow_integer_colour_palette = false);
 
 		/**
 		 * Remaps the value range of the colour palette (the palette colours remain unchanged).
@@ -194,7 +245,12 @@ namespace GPlatesPresentation
 
 		ColourPaletteInfo d_default_colour_palette_info;
 
-		// Is an empty string if the default palette is being used.
+		/**
+		 * The filename the colour palette was loaded from.
+		 *
+		 * Is an empty string if the default palette is being used.
+		 * Is a string beginning with ":/" (ie, internal filename) if a @a ConvenientPaletteType.
+		 */
 		QString d_colour_palette_filename;
 
 		double d_deviation_from_mean;
@@ -214,6 +270,16 @@ namespace GPlatesPresentation
 		bool d_is_currently_mapped;
 
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			RemappedColourPaletteParameters::ConvenientPaletteType &convenient_palette_type,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_PRESENTATION_REMAPPEDCOLOURPALETTEPARAMETERS_H

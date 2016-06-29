@@ -250,8 +250,8 @@ GPlatesUtils::convert_property_name(
 	boost::optional<GPlatesModel::PropertyName> ret = boost::none;
 	if(prefix.length() == 0 || short_name.length() == 0)
 	{
-		qWarning() << "The prefix or name is empty.";
-		qWarning() << prefix << " : " << short_name;
+		//qWarning() << "The prefix or name is empty.";
+		//qWarning() << prefix << " : " << short_name;
 	}
 
 	if(prefix == "gpml")

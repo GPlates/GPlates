@@ -28,6 +28,9 @@
 
 #include <utility>
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -41,6 +44,8 @@ namespace GPlatesAppLogic
             T_PLUS_DELTA_T_TO_T,       // (t + delta_t -> t)
             T_TO_T_MINUS_DELTA_T,      // (t -> t - delta_t)
 			T_PLUS_MINUS_HALF_DELTA_T, // (t + delta_t/2 -> t - delta_t/2)
+
+			// NOTE: Any new values should also be added to @a transcribe.
 
 			NUM_TYPES                  // this must be last
 		};
@@ -65,6 +70,16 @@ namespace GPlatesAppLogic
 				const double &time,
 				const double &delta_time = 1.0,
 				bool allow_negative_range = true);
+
+
+		/**
+		 * Transcribe for sessions/projects.
+		 */
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				Type &velocity_delta_time,
+				bool transcribed_construct_data);
 	}
 }
 

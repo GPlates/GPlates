@@ -198,7 +198,7 @@ namespace GPlatesViewOperations
 		}
 
 		void
-		set_choose_feature_toolr_clicked_geometry_of_focused_feature_colour(
+		set_choose_feature_tool_clicked_geometry_of_focused_feature_colour(
 				const GPlatesGui::Colour &colour)
 		{
 			d_choose_feature_tool_clicked_geometry_of_focused_feature_colour = colour;

@@ -33,8 +33,8 @@
 
 #include "VisualLayerParamsVisitor.h"
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -262,7 +262,7 @@ namespace GPlatesPresentation
 				const RenderParams &render_params,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
-				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+				boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
 				boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor = boost::none);
 
 
@@ -407,7 +407,7 @@ namespace GPlatesPresentation
 		RenderParams d_render_params;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
-		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
+		boost::optional<const GPlatesGui::symbol_map_type &> d_feature_type_symbol_map;
 		boost::optional<const GPlatesGui::StyleAdapter &> d_style_adapter;
 
 		/**
@@ -470,12 +470,12 @@ namespace GPlatesPresentation
 
 		void
 		render_topological_network_delaunay_triangulation(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
 				bool clip_to_mesh);
 
 		void
 		render_topological_network_constrained_delaunay_triangulation(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
 				bool clip_to_mesh,
 				const GPlatesGui::ColourProxy &colour);
 
@@ -485,7 +485,7 @@ namespace GPlatesPresentation
 		 */
 		void
 		render_topological_network_velocities(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &topological_network);
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &topological_network);
 	};
 
 

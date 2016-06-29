@@ -77,6 +77,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="focused_feature_point_size_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -103,6 +106,9 @@
       </item>
       <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="focused_feature_line_width_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -173,6 +179,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="topology_focus_point_size_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -199,6 +208,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="topology_focus_line_width_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -260,6 +272,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="topology_sections_point_size_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -286,6 +301,9 @@
       </item>
       <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="topology_sections_line_width_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -351,6 +369,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="reconstruction_layer_point_size_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>
@@ -377,6 +398,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="reconstruction_layer_line_width_hint_spinbox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>2</number>
         </property>

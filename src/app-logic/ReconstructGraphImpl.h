@@ -40,6 +40,7 @@
 
 #include "FeatureCollectionFileState.h"
 #include "LayerInputChannelName.h"
+#include "LayerParams.h"
 #include "LayerProxy.h"
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
@@ -53,7 +54,6 @@ namespace GPlatesAppLogic
 {
 	class Layer;
 	class LayerTask;
-	class LayerTaskParams;
 	class ReconstructGraph;
 
 	namespace ReconstructGraphImpl
@@ -430,8 +430,8 @@ namespace GPlatesAppLogic
 				return *d_reconstruct_graph;
 			}
 
-			LayerTaskParams &
-			get_layer_task_params();
+			LayerParams::non_null_ptr_type
+			get_layer_params();
 
 		private:
 

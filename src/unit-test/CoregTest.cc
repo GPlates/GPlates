@@ -78,7 +78,7 @@ GPlatesUnitTest::CoregTest::load_test_data()
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	d_rotation_fc = 
@@ -127,7 +127,7 @@ GPlatesUnitTest::CoregTest::test(double time)
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	ReconstructMethodRegistry reconstruct_method_registry;
@@ -251,7 +251,7 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::populate_cfg_table: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	enum ColName

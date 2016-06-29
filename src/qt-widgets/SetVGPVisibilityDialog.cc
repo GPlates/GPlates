@@ -31,7 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
-#include "app-logic/ReconstructLayerTask.h"
+#include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructParams.h"
 
 #include "presentation/ReconstructVisualLayerParams.h"
@@ -60,14 +60,14 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
 	{
 		// Acquire a pointer to a @a ReconstructParams.
-		// NOTE: Make sure we get a 'const' pointer to the reconstruct layer task params
+		// NOTE: Make sure we get a 'const' pointer to the reconstruct layer params
 		// otherwise it will think we are modifying it which will mean the reconstruct
 		// layer will think it needs to regenerate its reconstructed feature geometries.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		const GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
-			dynamic_cast<const GPlatesAppLogic::ReconstructLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (!layer_task_params)
+		const GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<const GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (!layer_params)
 		{
 			return false;
 		}
@@ -81,9 +81,44 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 			return false;
 		}
 
+		// Handle earliest and latest times.
+		const GPlatesPropertyValues::GeoTimeInstant &begin_time =
+				layer_params->get_reconstruct_params().get_vgp_earliest_time();
+		if (begin_time.is_distant_past())
+		{
+			spinbox_begin->setValue(0.0);
+			checkbox_past->setChecked(true);
+		}
+		else
+		{
+			double begin_value = begin_time.is_distant_future() ? 0.0 : begin_time.value();
+			spinbox_begin->setValue(begin_value);
+			checkbox_past->setChecked(false);
+		}
+		const GPlatesPropertyValues::GeoTimeInstant &end_time =
+				layer_params->get_reconstruct_params().get_vgp_latest_time();
+		if (end_time.is_distant_future())
+		{
+			spinbox_end->setValue(0.0);
+			checkbox_future->setChecked(true);
+		}
+		else
+		{
+			double end_value = end_time.is_distant_past() ? 0.0 : end_time.value();
+			spinbox_end->setValue(end_value);
+			checkbox_future->setChecked(false);
+		}
+
+		// Handle delta t.
+		spinbox_delta->setValue(layer_params->get_reconstruct_params().get_vgp_delta_t());
+
 		// Handle visibility setting.
+		//
+		// Note: We do this after setting the other GUI controls because this code relies on
+		// their state to determine whether they should be enabled or not (this is currently
+		// only the case for the begin/end times).
 		GPlatesAppLogic::ReconstructParams::VGPVisibilitySetting visibility_setting =
-			layer_task_params->get_reconstruct_params().get_vgp_visibility_setting();
+			layer_params->get_reconstruct_params().get_vgp_visibility_setting();
 		switch (visibility_setting)
 		{
 			case GPlatesAppLogic::ReconstructParams::ALWAYS_VISIBLE:
@@ -101,37 +136,6 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 				handle_delta_t();
 				break;
 		}
-
-		// Handle earliest and latest times.
-		const GPlatesPropertyValues::GeoTimeInstant &begin_time =
-				layer_task_params->get_reconstruct_params().get_vgp_earliest_time();
-		if (begin_time.is_distant_past())
-		{
-			spinbox_begin->setValue(0.0);
-			checkbox_past->setChecked(true);
-		}
-		else
-		{
-			double begin_value = begin_time.is_distant_future() ? 0.0 : begin_time.value();
-			spinbox_begin->setValue(begin_value);
-			checkbox_past->setChecked(false);
-		}
-		const GPlatesPropertyValues::GeoTimeInstant &end_time =
-				layer_task_params->get_reconstruct_params().get_vgp_latest_time();
-		if (end_time.is_distant_future())
-		{
-			spinbox_end->setValue(0.0);
-			checkbox_future->setChecked(true);
-		}
-		else
-		{
-			double end_value = end_time.is_distant_past() ? 0.0 : end_time.value();
-			spinbox_end->setValue(end_value);
-			checkbox_future->setChecked(true);
-		}
-
-		// Handle delta t.
-		spinbox_delta->setValue(layer_task_params->get_reconstruct_params().get_vgp_delta_t());
 
 		// Handle circular error.
 		checkbox_error->setChecked(visual_layer_params->get_vgp_draw_circular_error());
@@ -193,10 +197,10 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 	{
 		// Acquire a pointer to a @a ReconstructParams.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (!layer_task_params)
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (!layer_params)
 		{
 			accept();
 		}
@@ -215,7 +219,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 			// Delay any calls to 'ApplicationState::reconstruct()' until scope exit.
 			GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(d_application_state);
 
-			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_task_params->get_reconstruct_params();
+			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
 
 			// Handle visibility setting.
 			if (radiobutton_always_visible->isChecked())
@@ -244,7 +248,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 			// Handle delta t.
 			reconstruct_params.set_vgp_delta_t(spinbox_delta->value());
 
-			layer_task_params->set_reconstruct_params(reconstruct_params);
+			layer_params->set_reconstruct_params(reconstruct_params);
 
 			// If any reconstruct parameters were modified then 'ApplicationState::reconstruct()'
 			// will get called here (at scope exit).
@@ -255,9 +259,6 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 		{
 			visual_layer_params->set_vgp_draw_circular_error(checkbox_error->isChecked());
 		}
-
-		// Tell GPlates to reconstruct now so that the updated render settings are used. 
-		d_application_state.reconstruct();	
 	}
 
 	accept();

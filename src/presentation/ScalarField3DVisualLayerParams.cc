@@ -27,7 +27,7 @@
 
 #include "ViewState.h"
 
-#include "app-logic/ScalarField3DLayerTask.h"
+#include "app-logic/ScalarField3DLayerParams.h"
 
 #include "file-io/ScalarField3DFileFormatReader.h"
 
@@ -74,32 +74,17 @@ namespace GPlatesPresentation
 
 
 GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params,
-		GPlatesPresentation::ViewState &view_state,
-		const GPlatesViewOperations::ScalarField3DRenderParameters &default_render_parameters) :
-	VisualLayerParams(layer_task_params),
-	d_render_mode(default_render_parameters.get_render_mode()),
-	d_isosurface_deviation_window_mode(default_render_parameters.get_isosurface_deviation_window_mode()),
-	d_isosurface_colour_mode(default_render_parameters.get_isosurface_colour_mode()),
-	d_cross_section_colour_mode(default_render_parameters.get_cross_section_colour_mode()),
-	d_scalar_colour_palette_parameters_initialised_from_scalar_field(false),
-	d_scalar_colour_palette_parameters(default_render_parameters.get_scalar_colour_palette_parameters()),
-	d_gradient_colour_palette_parameters_initialised_from_scalar_field(false),
-	d_gradient_colour_palette_parameters(default_render_parameters.get_gradient_colour_palette_parameters()),
-	d_isovalue_parameters_initialised_from_scalar_field(false),
-	d_isovalue_parameters(default_render_parameters.get_isovalue_parameters()),
-	d_deviation_window_render_options(default_render_parameters.get_deviation_window_render_options()),
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+		GPlatesPresentation::ViewState &view_state) :
+	VisualLayerParams(layer_params),
 	d_is_surface_polygons_mask_supported(determine_if_surface_polygons_mask_supported(view_state)),
-	d_surface_polygons_mask(default_render_parameters.get_surface_polygons_mask()),
-	d_depth_restriction_initialised_from_scalar_field(false),
-	d_depth_restriction(default_render_parameters.get_depth_restriction()),
-	d_quality_performance()
+	d_scalar_colour_palette_parameters_initialised_from_scalar_field(false),
+	d_gradient_colour_palette_parameters_initialised_from_scalar_field(false),
+	d_isovalue_parameters_initialised_from_scalar_field(false),
+	d_depth_restriction_initialised_from_scalar_field(false)
 {
 	// If surface polygons mask not supported then disable it.
-	if (!d_is_surface_polygons_mask_supported)
-	{
-		d_surface_polygons_mask.enable_surface_polygons_mask = false;
-	}
+	disable_surface_polygons_mask_if_not_supported();
 }
 
 
@@ -107,12 +92,12 @@ void
 GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
-	GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
-		dynamic_cast<GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
-				&get_layer_task_params());
+	GPlatesAppLogic::ScalarField3DLayerParams *layer_params =
+		dynamic_cast<GPlatesAppLogic::ScalarField3DLayerParams *>(
+				get_layer_params().get());
 
-	if (layer_task_params &&
-		layer_task_params->get_scalar_field_feature())
+	if (layer_params &&
+		layer_params->get_scalar_field_feature())
 	{
 		//
 		// Need to initialise some parameters that depend on the scalar data (eg, min/max/mean/std_dev).
@@ -123,16 +108,21 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 		if (!d_scalar_colour_palette_parameters_initialised_from_scalar_field)
 		{
 			// If we have a scalar field then map the palette range to the scalar mean +/- deviation.
-			if (layer_task_params->get_scalar_mean() &&
-				layer_task_params->get_scalar_standard_deviation())
+			if (layer_params->get_scalar_mean() &&
+				layer_params->get_scalar_standard_deviation())
 			{
-				d_scalar_colour_palette_parameters.map_palette_range(
-						layer_task_params->get_scalar_mean().get() -
-								d_scalar_colour_palette_parameters.get_deviation_from_mean() *
-										layer_task_params->get_scalar_standard_deviation().get(),
-						layer_task_params->get_scalar_mean().get() +
-								d_scalar_colour_palette_parameters.get_deviation_from_mean() *
-										layer_task_params->get_scalar_standard_deviation().get());
+				GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
+						d_scalar_field_3d_render_parameters.get_scalar_colour_palette_parameters();
+
+				scalar_colour_palette_parameters.map_palette_range(
+						layer_params->get_scalar_mean().get() -
+								scalar_colour_palette_parameters.get_deviation_from_mean() *
+										layer_params->get_scalar_standard_deviation().get(),
+						layer_params->get_scalar_mean().get() +
+								scalar_colour_palette_parameters.get_deviation_from_mean() *
+										layer_params->get_scalar_standard_deviation().get());
+
+				d_scalar_field_3d_render_parameters.set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 
 				d_scalar_colour_palette_parameters_initialised_from_scalar_field = true;
 			}
@@ -141,16 +131,21 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 		if (!d_gradient_colour_palette_parameters_initialised_from_scalar_field)
 		{
 			// If we have a scalar field then map the palette range to the gradient +/- (mean + deviation).
-			if (layer_task_params->get_gradient_magnitude_mean() &&
-				layer_task_params->get_gradient_magnitude_standard_deviation())
+			if (layer_params->get_gradient_magnitude_mean() &&
+				layer_params->get_gradient_magnitude_standard_deviation())
 			{
-				d_gradient_colour_palette_parameters.map_palette_range(
-						-layer_task_params->get_gradient_magnitude_mean().get() -
-								d_gradient_colour_palette_parameters.get_deviation_from_mean() *
-										layer_task_params->get_gradient_magnitude_standard_deviation().get(),
-						layer_task_params->get_gradient_magnitude_mean().get() +
-								d_gradient_colour_palette_parameters.get_deviation_from_mean() *
-										layer_task_params->get_gradient_magnitude_standard_deviation().get());
+				GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
+						d_scalar_field_3d_render_parameters.get_gradient_colour_palette_parameters();
+
+				gradient_colour_palette_parameters.map_palette_range(
+						-layer_params->get_gradient_magnitude_mean().get() -
+								gradient_colour_palette_parameters.get_deviation_from_mean() *
+										layer_params->get_gradient_magnitude_standard_deviation().get(),
+						layer_params->get_gradient_magnitude_mean().get() +
+								gradient_colour_palette_parameters.get_deviation_from_mean() *
+										layer_params->get_gradient_magnitude_standard_deviation().get());
+
+				d_scalar_field_3d_render_parameters.set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 
 				d_gradient_colour_palette_parameters_initialised_from_scalar_field = true;
 			}
@@ -159,10 +154,11 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 		if (!d_isovalue_parameters_initialised_from_scalar_field)
 		{
 			// If we have a scalar field then set the isovalue.
-			if (layer_task_params->get_scalar_mean())
+			if (layer_params->get_scalar_mean())
 			{
-				d_isovalue_parameters = GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters(
-						layer_task_params->get_scalar_mean().get());
+				d_scalar_field_3d_render_parameters.set_isovalue_parameters(
+						GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters(
+								layer_params->get_scalar_mean().get()));
 
 				d_isovalue_parameters_initialised_from_scalar_field = true;
 			}
@@ -171,13 +167,13 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 		if (!d_depth_restriction_initialised_from_scalar_field)
 		{
 			// If we have a scalar field then set the depth restriction range.
-			if (layer_task_params->get_minimum_depth_layer_radius() &&
-				layer_task_params->get_maximum_depth_layer_radius())
+			if (layer_params->get_minimum_depth_layer_radius() &&
+				layer_params->get_maximum_depth_layer_radius())
 			{
-				d_depth_restriction =
+				d_scalar_field_3d_render_parameters.set_depth_restriction(
 						GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction(
-								layer_task_params->get_minimum_depth_layer_radius().get(),
-								layer_task_params->get_maximum_depth_layer_radius().get());
+								layer_params->get_minimum_depth_layer_radius().get(),
+								layer_params->get_maximum_depth_layer_radius().get()));
 
 				d_depth_restriction_initialised_from_scalar_field = true;
 			}
@@ -189,20 +185,17 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 }
 
 
-GPlatesViewOperations::ScalarField3DRenderParameters
-GPlatesPresentation::ScalarField3DVisualLayerParams::get_scalar_field_3d_render_parameters() const
+void
+GPlatesPresentation::ScalarField3DVisualLayerParams::disable_surface_polygons_mask_if_not_supported()
 {
-	return GPlatesViewOperations::ScalarField3DRenderParameters(
-			get_render_mode(),
-			get_isosurface_deviation_window_mode(),
-			get_isosurface_colour_mode(),
-			get_cross_section_colour_mode(),
-			get_scalar_colour_palette_parameters(),
-			get_gradient_colour_palette_parameters(),
-			get_isovalue_parameters(),
-			get_deviation_window_render_options(),
-			get_surface_polygons_mask(),
-			get_depth_restriction(),
-			get_quality_performance(),
-			get_shader_test_variables());
+	// If surface polygons mask not supported then disable it.
+	if (!d_is_surface_polygons_mask_supported)
+	{
+		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask =
+				d_scalar_field_3d_render_parameters.get_surface_polygons_mask();
+
+		surface_polygons_mask.enable_surface_polygons_mask = false;
+
+		d_scalar_field_3d_render_parameters.set_surface_polygons_mask(surface_polygons_mask);
+	}
 }

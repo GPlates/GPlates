@@ -155,12 +155,6 @@ namespace GPlatesQtWidgets
 		get_raster_scalar_mean_std_dev(
 				GPlatesAppLogic::Layer &layer) const;
 
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-		load_colour_palette(
-				const QString &palette_file_name,
-				std::pair<double, double> &colour_palette_range,
-				const GPlatesPresentation::RasterVisualLayerParams &params);
-
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;

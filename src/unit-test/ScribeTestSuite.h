@@ -31,6 +31,12 @@
 #include "unit-test/GPlatesTestSuite.h"
 
 
+//
+// To run only Scribe test suite:
+//
+// gplates-unit-test.exe --G_test_to_run=Scribe
+//
+
 namespace GPlatesUnitTest
 {
 	class ScribeTestSuite : 

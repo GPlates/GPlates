@@ -130,9 +130,9 @@ namespace
 	// create_visual_layer_params_function.
 	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 	default_visual_layer_params(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+			GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 	{
-		return GPlatesPresentation::VisualLayerParams::create(layer_task_params);
+		return GPlatesPresentation::VisualLayerParams::create(layer_params);
 	}
 }
 
@@ -350,14 +350,14 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
 		VisualLayerType::Type visual_layer_type,
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) const
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) const
 {
 	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
 	if (iter != d_visual_layer_info_map.end())
 	{
-		return iter->second.create_visual_layer_params_function(layer_task_params);
+		return iter->second.create_visual_layer_params_function(layer_params);
 	}
-	return VisualLayerParams::create(layer_task_params);
+	return VisualLayerParams::create(layer_params);
 }
 
 
@@ -431,8 +431,6 @@ GPlatesPresentation::register_default_visual_layers(
 			&ReconstructVisualLayerParams::create,
 			true);
 
-	// Temporarily disable until it's ready...
-#if 0
 	// Need to put reconstructed scalar coverages in same group (BASIC_DATA) as
 	// reconstructed feature geometries because the scalar coverages are coloured
 	// per-point and this needs to be displayed on top of the feature geometries
@@ -452,7 +450,6 @@ GPlatesPresentation::register_default_visual_layers(
 					&ReconstructScalarCoverageVisualLayerParams::create,
 					_1),
 			true);
-#endif
 
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(RECONSTRUCTION),

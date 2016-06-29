@@ -30,33 +30,20 @@
 #include "RasterLayerOptionsWidget.h"
 
 #include "QtWidgetUtils.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "RemappedColourPaletteWidget.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/Layer.h"
-#include "app-logic/RasterLayerTask.h"
+#include "app-logic/RasterLayerParams.h"
 
 #include "file-io/ReadErrorAccumulation.h"
 
-#include "gui/ColourPaletteUtils.h"
 #include "gui/CptColourPalette.h"
-#include "gui/Dialogs.h"
 
 #include "presentation/RasterVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
 #include "property-values/XsString.h"
-
-
-namespace GPlatesQtWidgets
-{
-	namespace
-	{
-		//! The age CPT file (user can manually select when they load an age grid raster).
-		const QString AGE_CPT_FILE_NAME = ":/age.cpt";
-	}
-}
 
 
 GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
@@ -170,19 +157,19 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::RasterLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
 			// Populate the band combobox with the list of band names, and ensure that
 			// the correct one is selected.
 			int band_name_index = -1;
-			const GPlatesPropertyValues::TextContent &selected_band_name = layer_task_params->get_band_name();
+			const GPlatesPropertyValues::TextContent &selected_band_name = layer_params->get_band_name();
 
 			band_combobox->clear();
 			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &band_names =
-				layer_task_params->get_band_names();
+				layer_params->get_band_names();
 			for (int i = 0; i != static_cast<int>(band_names.size()); ++i)
 			{
 				const GPlatesPropertyValues::TextContent &curr_band_name = band_names[i]->value();
@@ -264,12 +251,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 	{
 		// Set the band name in the app-logic layer params.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::RasterLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			layer_task_params->set_band_name(GPlatesUtils::UnicodeString(text));
+			layer_params->set_band_name(GPlatesUtils::UnicodeString(text));
 		}
 	}
 }
@@ -297,23 +284,25 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 
 		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 
-		std::pair<double, double> colour_palette_range;
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type colour_palette =
-				load_colour_palette(palette_file_name, colour_palette_range, *params);
-		if (GPlatesGui::RasterColourPaletteType::get_type(*colour_palette) ==
-			GPlatesGui::RasterColourPaletteType::INVALID)
-		{
-			return;
-		}
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
 
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
-		colour_palette_parameters.set_colour_palette(
+		colour_palette_parameters.load_colour_palette(
 				palette_file_name,
-				colour_palette,
-				colour_palette_range);
+				cpt_read_errors,
+				// Only allow loading an integer colour palette if the raster is integer-valued and
+				// the user is not remapping the colour palette...
+				GPlatesPropertyValues::RasterType::is_integer(params->get_raster_type()) &&
+					!colour_palette_parameters.is_palette_range_mapped()); /*allow_integer_colour_palette*/
 		params->set_colour_palette_parameters(colour_palette_parameters);
+
+		// Show any CPT read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
@@ -352,23 +341,25 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicke
 			return;
 		}
 
-		std::pair<double, double> age_colour_palette_range;
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type age_colour_palette =
-				load_colour_palette(AGE_CPT_FILE_NAME, age_colour_palette_range, *params);
-		if (GPlatesGui::RasterColourPaletteType::get_type(*age_colour_palette) ==
-			GPlatesGui::RasterColourPaletteType::INVALID)
-		{
-			return;
-		}
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
 
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
-		colour_palette_parameters.set_colour_palette(
-				AGE_CPT_FILE_NAME,
-				age_colour_palette,
-				age_colour_palette_range);
+		colour_palette_parameters.load_convenient_colour_palette(
+				GPlatesPresentation::RemappedColourPaletteParameters::AGE_PALETTE,
+				cpt_read_errors,
+				// Only allow loading an integer colour palette if the raster is integer-valued and
+				// the user is not remapping the colour palette...
+				GPlatesPropertyValues::RasterType::is_integer(params->get_raster_type()) &&
+					!colour_palette_parameters.is_palette_range_mapped()); /*allow_integer_colour_palette*/
 		params->set_colour_palette_parameters(colour_palette_parameters);
+
+		// Show any CPT read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
@@ -612,17 +603,17 @@ std::pair<double, double>
 GPlatesQtWidgets::RasterLayerOptionsWidget::get_raster_scalar_min_max(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::RasterLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::RasterLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::RasterLayerParams *>(
+				layer.get_layer_params().get());
 
 	// Default values result in clearing the colour scale widget.
 	double raster_scalar_min = 0;
 	double raster_scalar_max = 0;
-	if (layer_task_params)
+	if (layer_params)
 	{
 		const GPlatesPropertyValues::RasterStatistics raster_statistic =
-				layer_task_params->get_band_statistic();
+				layer_params->get_band_statistic();
 		if (raster_statistic.minimum &&
 			raster_statistic.maximum)
 		{
@@ -639,17 +630,17 @@ std::pair<double, double>
 GPlatesQtWidgets::RasterLayerOptionsWidget::get_raster_scalar_mean_std_dev(
 		GPlatesAppLogic::Layer &layer) const
 {
-	const GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
-		dynamic_cast<const GPlatesAppLogic::RasterLayerTask::Params *>(
-				&layer.get_layer_task_params());
+	const GPlatesAppLogic::RasterLayerParams *layer_params =
+		dynamic_cast<const GPlatesAppLogic::RasterLayerParams *>(
+				layer.get_layer_params().get());
 
 	// Default values result in clearing the colour scale widget.
 	double raster_scalar_mean = 0;
 	double raster_scalar_std_dev = 0;
-	if (layer_task_params)
+	if (layer_params)
 	{
 		const GPlatesPropertyValues::RasterStatistics raster_statistic =
-				layer_task_params->get_band_statistic();
+				layer_params->get_band_statistic();
 		if (raster_statistic.mean &&
 			raster_statistic.standard_deviation)
 		{
@@ -659,54 +650,4 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::get_raster_scalar_mean_std_dev(
 	}
 
 	return std::make_pair(raster_scalar_mean, raster_scalar_std_dev);
-}
-
-
-GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-GPlatesQtWidgets::RasterLayerOptionsWidget::load_colour_palette(
-		const QString &palette_file_name,
-		std::pair<double, double> &colour_palette_range,
-		const GPlatesPresentation::RasterVisualLayerParams &params)
-{
-	// Only allow loading an integer colour palette if the raster is integer-valued and
-	// the user is not remapping the colour palette.
-	bool allow_integer_colour_palette = false;
-	if (GPlatesPropertyValues::RasterType::is_integer(params.get_raster_type()) &&
-		!params.get_colour_palette_parameters().is_palette_range_mapped())
-	{
-		allow_integer_colour_palette = true;
-	}
-
-	GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
-	GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
-			GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
-					palette_file_name,
-					allow_integer_colour_palette,
-					cpt_read_errors);
-
-	// Copy the input value range to the caller.
-	boost::optional< std::pair<double, double> > range =
-			GPlatesGui::ColourPaletteUtils::get_range(*raster_colour_palette);
-	if (range)
-	{
-		colour_palette_range = std::make_pair(range->first, range->second);
-	}
-	else
-	{
-		// Null range for empty colour palette.
-		colour_palette_range = std::pair<double, double>(0,0);
-	}
-
-	// Show any read errors.
-	if (cpt_read_errors.size() > 0)
-	{
-		ReadErrorAccumulationDialog &read_errors_dialog =
-				d_viewport_window->dialogs().read_error_accumulation_dialog();
-
-		read_errors_dialog.read_errors().accumulate(cpt_read_errors);
-		read_errors_dialog.update();
-		read_errors_dialog.show();
-	}
-
-	return raster_colour_palette;
 }

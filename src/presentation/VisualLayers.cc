@@ -279,15 +279,15 @@ GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 					bool)));
 	QObject::connect(
 			reconstruct_graph,
-			SIGNAL(layer_task_params_changed(
+			SIGNAL(layer_params_changed(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
-					GPlatesAppLogic::LayerTaskParams &)),
+					GPlatesAppLogic::LayerParams &)),
 			this,
-			SLOT(handle_layer_task_params_changed(
+			SLOT(handle_layer_params_changed(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
-					GPlatesAppLogic::LayerTaskParams &)));
+					GPlatesAppLogic::LayerParams &)));
 	QObject::connect(
 			reconstruct_graph,
 			SIGNAL(layer_added_input_connection(
@@ -548,8 +548,7 @@ GPlatesPresentation::VisualLayers::create_rendered_geometries()
 	{
 		const visual_layer_ptr_type &visual_layer = visual_layer_map_entry.second;
 
-		visual_layer->create_rendered_geometries(
-			    d_view_state.get_feature_type_symbol_map());
+		visual_layer->create_rendered_geometries();
 	}
 }
 
@@ -566,6 +565,7 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 				layer,
 				d_rendered_geometry_collection,
 				d_view_state.get_rendered_geometry_parameters(),
+				d_view_state.get_feature_type_symbol_map(),
 				d_next_visual_layer_number));
 
 	++d_next_visual_layer_number;
@@ -668,10 +668,10 @@ GPlatesPresentation::VisualLayers::handle_layer_activation_changed(
 
 
 void
-GPlatesPresentation::VisualLayers::handle_layer_task_params_changed(
+GPlatesPresentation::VisualLayers::handle_layer_params_changed(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer,
-		GPlatesAppLogic::LayerTaskParams &layer_task_params)
+		GPlatesAppLogic::LayerParams &layer_params)
 {
 	// First notify the visual layer parameters (in case they depend on the app-logic layer params).
 	// Then refresh the layer (in case layer options widget needs changing).

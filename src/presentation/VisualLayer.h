@@ -96,6 +96,7 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::Layer &layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+				const GPlatesGui::symbol_map_type &symbol_map,
 				int layer_number);
 
 		/**
@@ -132,9 +133,7 @@ namespace GPlatesPresentation
 		 * @a RenderedGeometryCollection passed into the constructor.
 		 */
 		void
-		create_rendered_geometries(
-		    const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map
-			= boost::none);
+		create_rendered_geometries();
 
 		/**
 		 * Returns whether the given @a section of the visual layer is expanded in the
@@ -242,6 +241,7 @@ namespace GPlatesPresentation
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
+		const GPlatesGui::symbol_map_type &d_symbol_map;
 
 		/**
 		 * The reconstruct graph layer for which this is the counterpart in the

@@ -31,8 +31,10 @@
 
 #include "ExtractScalarField3DFeatureProperties.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "ResolvedScalarField3D.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
+
 
 const boost::optional<GPlatesPropertyValues::TextContent> &
 GPlatesAppLogic::ScalarField3DLayerProxy::get_scalar_field_filename(
@@ -52,6 +54,13 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_scalar_field_filename(
 	}
 
 	return d_cached_resolved_scalar_field_feature_properties.cached_scalar_field_filename;
+}
+
+
+boost::optional<GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_type>
+GPlatesAppLogic::ScalarField3DLayerProxy::get_resolved_scalar_field_3d()
+{
+	return get_resolved_scalar_field_3d(d_current_reconstruction_time);
 }
 
 
@@ -109,7 +118,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		//
 
 		// Static geometries...
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_geometries;
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_static_geometries;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
@@ -121,7 +130,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		}
 		// Iterate over the reconstructed feature geometries.
 		BOOST_FOREACH(
-				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_static_geometry,
+				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_static_geometry,
 				reconstructed_static_geometries)
 		{
 			d_cached_cross_sections.cached_geometries->push_back(
@@ -129,7 +138,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		}
 
 		// Resolved topological geometries...
-		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
+		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_geometries;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
@@ -141,7 +150,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		}
 		// Iterate over the resolved topological geometries.
 		BOOST_FOREACH(
-				const resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+				const ResolvedTopologicalGeometry::non_null_ptr_type &resolved_topological_geometry,
 				resolved_topological_geometries)
 		{
 			d_cached_cross_sections.cached_geometries->push_back(
@@ -149,7 +158,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		}
 
 		// Topological networks...
-		std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
@@ -161,7 +170,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		}
 		// Iterate over the resolved topological networks.
 		BOOST_FOREACH(
-				const resolved_topological_network_non_null_ptr_type &resolved_topological_network,
+				const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network,
 				resolved_topological_networks)
 		{
 			// TODO: Add more than just the network boundary polygon.
@@ -211,7 +220,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		//
 
 		// Static geometries...
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_geometries;
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_static_geometries;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
@@ -223,7 +232,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		}
 		// Iterate over the reconstructed feature geometries.
 		BOOST_FOREACH(
-				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_static_geometry,
+				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_static_geometry,
 				reconstructed_static_geometries)
 		{
 			d_cached_surface_polygons_mask.cached_geometries->push_back(
@@ -231,7 +240,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		}
 
 		// Resolved topological geometries...
-		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
+		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_geometries;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
@@ -243,7 +252,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		}
 		// Iterate over the resolved topological geometries.
 		BOOST_FOREACH(
-				const resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+				const ResolvedTopologicalGeometry::non_null_ptr_type &resolved_topological_geometry,
 				resolved_topological_geometries)
 		{
 			d_cached_surface_polygons_mask.cached_geometries->push_back(
@@ -251,7 +260,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		}
 
 		// Topological networks...
-		std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
@@ -263,7 +272,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		}
 		// Iterate over the resolved topological networks.
 		BOOST_FOREACH(
-				const resolved_topological_network_non_null_ptr_type &resolved_topological_network,
+				const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network,
 				resolved_topological_networks)
 		{
 			// TODO: Add more than just the network boundary polygon.
@@ -331,7 +340,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::set_current_reconstruction_time(
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::set_current_scalar_field_feature(
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> scalar_field_feature,
-		const ScalarField3DLayerTask::Params &scalar_field_params)
+		const ScalarField3DLayerParams &scalar_field_params)
 {
 	d_current_scalar_field_feature = scalar_field_feature;
 
@@ -344,7 +353,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::set_current_scalar_field_feature(
 
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::modified_scalar_field_feature(
-		const ScalarField3DLayerTask::Params &scalar_field_params)
+		const ScalarField3DLayerParams &scalar_field_params)
 {
 	set_scalar_field_params(scalar_field_params);
 
@@ -535,7 +544,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::remove_surface_polygons_mask_topologic
 
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::set_scalar_field_params(
-		const ScalarField3DLayerTask::Params &raster_params)
+		const ScalarField3DLayerParams &raster_params)
 {
 }
 

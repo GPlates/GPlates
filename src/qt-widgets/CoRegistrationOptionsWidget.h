@@ -195,12 +195,14 @@ namespace GPlatesQtWidgets
 				
 				view_result_button->setDisabled(true);
 				
+				co_registration_configuration_button->setCursor(QCursor(Qt::ArrowCursor));
 				QObject::connect(
 						co_registration_configuration_button,
 						SIGNAL(clicked()),
 						this,
 						SLOT(handle_co_registration_configuration_button_clicked()));
 
+				view_result_button->setCursor(QCursor(Qt::ArrowCursor));
 				QObject::connect(
 						view_result_button,
 						SIGNAL(clicked()),

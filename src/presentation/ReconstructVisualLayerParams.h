@@ -46,9 +46,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new ReconstructVisualLayerParams(layer_task_params);
+			return new ReconstructVisualLayerParams(layer_params);
 		}
 
 
@@ -172,7 +172,7 @@ namespace GPlatesPresentation
 
 		explicit
 		ReconstructVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
 
@@ -182,7 +182,7 @@ namespace GPlatesPresentation
 
 		//! The opacity of filled primitives in the range [0,1].
 		double d_fill_opacity;
-		//! The intensity of the raster in the range [0,1].
+		//! The intensity of filled primitives in the range [0,1].
 		double d_fill_intensity;
 
 		bool d_show_deformed_feature_geometries;

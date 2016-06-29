@@ -35,7 +35,7 @@
 
 void
 GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		std::vector<ReconstructHandle::type> &reconstruct_handles,
 		const Reconstruction &reconstruction)
 {
@@ -60,7 +60,7 @@ GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 
 void
 GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
-		std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 		std::vector<ReconstructHandle::type> &reconstruct_handles,
 		const Reconstruction &reconstruction)
 {
@@ -84,7 +84,7 @@ GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
 
 void
 GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_feature(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		const Reconstruction &reconstruction)
 {

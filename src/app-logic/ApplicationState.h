@@ -120,11 +120,19 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
 
+		//! Const overload.
+		const FeatureCollectionFileState &
+		get_feature_collection_file_state() const;
+
 		/**
 		 * Handling file formats for reading and/or writing feature collection files.
 		 */
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
 		get_feature_collection_file_format_registry();
+
+		//! Const overload.
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_feature_collection_file_format_registry() const;
 
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
@@ -132,12 +140,20 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
 
+		//! Const overload.
+		const FeatureCollectionFileIO &
+		get_feature_collection_file_io() const;
+
 		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
 		UserPreferences &
 		get_user_preferences();
-		
+
+		//! Const overload.
+		const UserPreferences &
+		get_user_preferences() const;
+
 
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
@@ -148,17 +164,29 @@ namespace GPlatesAppLogic
 		ReconstructMethodRegistry &
 		get_reconstruct_method_registry();
 
+		//! Const overload.
+		const ReconstructMethodRegistry &
+		get_reconstruct_method_registry() const;
+
 		/**
 		 * Returns the layer task registry used to create layer tasks.
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
 
+		//! Const overload.
+		const LayerTaskRegistry &
+		get_layer_task_registry() const;
+
 		/**
 		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
 		 */
 		LogModel &
 		get_log_model();
+
+		//! Const overload.
+		const LogModel &
+		get_log_model() const;
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -168,6 +196,10 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
+
+		//! Const overload.
+		const ReconstructGraph &
+		get_reconstruct_graph() const;
 
 		/**
 		 * If @a update_default is true, this updates the default reconstruction tree

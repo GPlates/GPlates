@@ -32,7 +32,7 @@
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/VelocityFieldCalculatorLayerTask.h"
+#include "app-logic/VelocityFieldCalculatorLayerParams.h"
 #include "app-logic/VelocityParams.h"
 
 #include "global/GPlatesAssert.h"
@@ -256,13 +256,13 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
 			const GPlatesAppLogic::VelocityParams &velocity_params =
-					layer_task_params->get_velocity_params();
+					layer_params->get_velocity_params();
 
 			// Populate the 'solve velocities' combobox.
 			solve_velocities_method_combobox->clear();
@@ -427,10 +427,10 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
 			if (index < 0 || index >= GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS)
 			{
@@ -438,17 +438,17 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 			}
 
 			// If the combobox choice has not changed then return early.
-			if (index == layer_task_params->get_velocity_params().get_solve_velocities_method())
+			if (index == layer_params->get_velocity_params().get_solve_velocities_method())
 			{
 				return;
 			}
 
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			velocity_params.set_solve_velocities_method(
 					static_cast<GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType>(index));
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 
 			// Only show velocity smoothing options if solve-velocities-of-surfaces is selected.
 			velocity_smoothing_groupbox->setVisible(
@@ -533,12 +533,12 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_del
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			if (radio_t_plus_dt_to_t->isChecked())
 			{
@@ -556,7 +556,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_del
 			// Update this source code if more enumeration values have been added (or removed).
 			BOOST_STATIC_ASSERT(GPlatesAppLogic::VelocityDeltaTime::NUM_TYPES == 3);
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 		}
 	}
 }
@@ -570,16 +570,16 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_del
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			velocity_params.set_delta_time(value);
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 		}
 	}
 }
@@ -592,12 +592,12 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smo
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			velocity_params.set_is_boundary_smoothing_enabled(
 					velocity_smoothing_check_box->isChecked());
@@ -609,7 +609,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smo
 			// already set the visibility (on Windows the spacing between widgets seems to change).
 			velocity_smoothing_controls->setVisible(velocity_params.get_is_boundary_smoothing_enabled());
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 		}
 	}
 }
@@ -623,16 +623,16 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smo
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			velocity_params.set_boundary_smoothing_angular_half_extent_degrees(value);
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 		}
 	}
 }
@@ -645,17 +645,17 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_exclude_smoo
 			d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (layer_task_params)
+		GPlatesAppLogic::VelocityFieldCalculatorLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+			GPlatesAppLogic::VelocityParams velocity_params = layer_params->get_velocity_params();
 
 			velocity_params.set_exclude_deforming_regions_from_smoothing(
 					exclude_smoothing_in_deforming_regions_check_box->isChecked());
 
-			layer_task_params->set_velocity_params(velocity_params);
+			layer_params->set_velocity_params(velocity_params);
 		}
 	}
 }

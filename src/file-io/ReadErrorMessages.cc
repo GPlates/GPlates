@@ -493,12 +493,18 @@ namespace
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file."),
 				QT_TR_NOOP("Error opening the file for reading.") },
+		{ GPlatesFileIO::ReadErrors::FileFormatNotSupported,
+				QT_TR_NOOP("File format not supported."),
+				QT_TR_NOOP("Loading files in this format is currently not supported.") },
 		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
 				QT_TR_NOOP("File is empty."),
 				QT_TR_NOOP("The file contains no data.") },
 		{ GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
 				QT_TR_NOOP("No features in file."),
-				QT_TR_NOOP("The file contains no features.") }
+				QT_TR_NOOP("The file contains no features.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingFile,
+				QT_TR_NOOP("Error reading file."),
+				QT_TR_NOOP("The was an error reading the file.") }
 	};
 	
 	/**

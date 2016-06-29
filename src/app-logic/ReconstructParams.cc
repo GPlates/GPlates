@@ -26,6 +26,9 @@
  
 #include "ReconstructParams.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 
 const double
 GPlatesAppLogic::ReconstructParams::INITIAL_VGP_DELTA_T = 5.;
@@ -183,4 +186,82 @@ GPlatesAppLogic::ReconstructParams::operator<(
 	}
 
 	return false;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructParams::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Provide default values for failed parameters instead of returning failure.
+	// This way a future version of GPlates can add or remove parameters and still be backward/forward compatible.
+	static const ReconstructParams DEFAULT_PARAMS;
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruct_by_plate_id_outside_active_time_period,
+				"reconstruct_by_plate_id_outside_active_time_period"))
+	{
+		d_reconstruct_by_plate_id_outside_active_time_period = DEFAULT_PARAMS.d_reconstruct_by_plate_id_outside_active_time_period;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_earliest_time, "vgp_earliest_time"))
+	{
+		d_vgp_earliest_time = DEFAULT_PARAMS.d_vgp_earliest_time;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_latest_time, "vgp_latest_time"))
+	{
+		d_vgp_latest_time = DEFAULT_PARAMS.d_vgp_latest_time;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_delta_t, "vgp_delta_t"))
+	{
+		d_vgp_delta_t = DEFAULT_PARAMS.d_vgp_delta_t;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_end_time, "deformation_end_time"))
+	{
+		d_deformation_end_time = DEFAULT_PARAMS.d_deformation_end_time;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_begin_time, "deformation_begin_time"))
+	{
+		d_deformation_begin_time = DEFAULT_PARAMS.d_deformation_begin_time;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_time_increment, "deformation_time_increment"))
+	{
+		d_deformation_time_increment = DEFAULT_PARAMS.d_deformation_time_increment;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_visibility_setting, "vgp_visibility_setting"))
+	{
+		d_vgp_visibility_setting = DEFAULT_PARAMS.d_vgp_visibility_setting;
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		ReconstructParams::VGPVisibilitySetting &vgp_visibility_setting,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("ALWAYS_VISIBLE", ReconstructParams::ALWAYS_VISIBLE),
+		GPlatesScribe::EnumValue("TIME_WINDOW", ReconstructParams::TIME_WINDOW),
+		GPlatesScribe::EnumValue("DELTA_T_AROUND_AGE", ReconstructParams::DELTA_T_AROUND_AGE)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			vgp_visibility_setting,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

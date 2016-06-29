@@ -23,7 +23,6 @@
 #ifndef GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 #define GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 
-#include "app-logic/AppLogicFwd.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 #include "model/types.h"

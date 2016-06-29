@@ -312,7 +312,7 @@ GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -410,7 +410,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,

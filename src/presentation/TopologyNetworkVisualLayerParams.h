@@ -49,9 +49,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new TopologyNetworkVisualLayerParams( layer_task_params );
+			return new TopologyNetworkVisualLayerParams( layer_params );
 		}
 
 		bool
@@ -152,19 +152,30 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
+		//
+		// FIXME: Should be calling 'emit_modified()' in the 'set' calls below, but cannot currently
+		// because 'TopologyNetworkResolverLayerOptionsWidget::handle_update_button_clicked()' updates
+		// multiple GUI controls (which results in multiple 'set' calls here which in turn modify
+		// the GUI before all its controls have been updated).
+		//
+		// The fix is for 'TopologyNetworkResolverLayerOptionsWidget' to do an update immediately
+		// after each GUI control is changed (rather than having an 'update' button that updates after
+		// multiple GUI controls have been changed).
+		//
+
 		// set/get data for range1
 		void set_range1_max(double max) { d_range1_max = max; }
 		void set_range1_min(double min) { d_range1_min = min; }
 
-		double get_range1_max() { return d_range1_max; }
-		double get_range1_min() { return d_range1_min; }
+		double get_range1_max() const { return d_range1_max; }
+		double get_range1_min() const { return d_range1_min; }
 
 		// set/get data for range2
 		void set_range2_max(double max) { d_range2_max = max; }
 		void set_range2_min(double min) { d_range2_min = min; }
 
-		double get_range2_max() { return d_range2_max; }
-		double get_range2_min() { return d_range2_min; }
+		double get_range2_max() const { return d_range2_max; }
+		double get_range2_min() const { return d_range2_min; }
 
 		// Set Colours 
 		void set_fg_colour(GPlatesGui::Colour c) { d_fg_colour = c; }
@@ -174,11 +185,11 @@ namespace GPlatesPresentation
 		void set_bg_colour(GPlatesGui::Colour c) { d_bg_colour = c; }
 
 		// Get Colours 
-		GPlatesGui::Colour get_fg_colour() 	{ return d_fg_colour; }
-		GPlatesGui::Colour get_max_colour() { return d_max_colour; }
-		GPlatesGui::Colour get_mid_colour() { return d_mid_colour; }
-		GPlatesGui::Colour get_min_colour() { return d_min_colour; }
-		GPlatesGui::Colour get_bg_colour() 	{ return d_bg_colour; }
+		GPlatesGui::Colour get_fg_colour() const { return d_fg_colour; }
+		GPlatesGui::Colour get_max_colour() const { return d_max_colour; }
+		GPlatesGui::Colour get_mid_colour() const { return d_mid_colour; }
+		GPlatesGui::Colour get_min_colour() const { return d_min_colour; }
+		GPlatesGui::Colour get_bg_colour() const { return d_bg_colour; }
 
 		// Override of virtual metions in  VisualLayerParams base.
 		virtual
@@ -212,7 +223,10 @@ namespace GPlatesPresentation
 		 * If the current colour palette is auto-generated, returns the empty string.
 		 */
 		const QString &
-		get_colour_palette_filename() const;
+		get_colour_palette_filename() const
+		{
+			return d_colour_palette_filename;
+		}
 
 		/** 
 		 * Set the palette 
@@ -234,22 +248,18 @@ namespace GPlatesPresentation
 		 * Returns none if no colour palette has been set.
 		 */
 		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
-		get_colour_palette() const;
+		get_colour_palette() const
+		{
+			return d_colour_palette;
+		}
 
 	protected:
 
 		explicit
 		TopologyNetworkVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
-
-		/**
-		 * See if any params have changed 
-		 */
-		void
-		update(
-			bool emit_modified_signal = false);
 
 		// The various options to show or hide the triangulations 
 		bool d_show_delaunay_triangulation;

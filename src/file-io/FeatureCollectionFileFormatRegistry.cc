@@ -34,6 +34,7 @@
 
 #include "ArbitraryXmlReader.h"
 #include "ErrorOpeningFileForReadingException.h"
+#include "ErrorOpeningPipeFromGzipException.h"
 #include "ExternalProgram.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileFormatNotSupportedException.h"
@@ -56,6 +57,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/GPlatesException.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -570,11 +572,19 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 	const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
 	if (!file_format)
 	{
+		// Add a read error before throwing an exception.
+		read_errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					file_ref.get_file_info().get_qfileinfo().filePath(),
+					DataFormats::Unspecified,
+					0/*line_num*/,
+					ReadErrors::FileFormatNotSupported,
+					ReadErrors::FileNotLoaded));
 
 		throw FileFormatNotSupportedException(
 				GPLATES_EXCEPTION_SOURCE,
 				("No registered file formats for this file: " +
-				file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
+					file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
@@ -603,20 +613,51 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 	}
 	catch (ErrorOpeningFileForReadingException &e)
 	{
-		// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
-		// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
-		// QFileDialog support.
-		boost::shared_ptr<DataSource> e_source(
-				new LocalFileDataSource(
-						e.filename(), DataFormats::Unspecified));
-		boost::shared_ptr<LocationInDataSource> e_location(
-				new LineNumber(0));
+		// FIXME: File readers should probably add a read error in addition to throwing
+		// ErrorOpeningFileForReadingException so that we don't have to do the conversion.
 		read_errors.d_failures_to_begin.push_back(
-				ReadErrorOccurrence(
-						e_source,
-						e_location,
-						ReadErrors::ErrorOpeningFileForReading,
-						ReadErrors::FileNotLoaded));
+				make_read_error_occurrence(
+					e.filename(),
+					DataFormats::Unspecified,
+					0/*line_num*/,
+					ReadErrors::ErrorOpeningFileForReading,
+					ReadErrors::FileNotLoaded));
+
+		// Rethrow the exception to let caller know that an error occurred.
+		// This is important because the caller is expecting a valid feature collection
+		// unless an exception is thrown so if we don't throw one then the caller
+		// will try to dereference the feature collection and crash.
+		throw;
+	}
+	catch (ErrorOpeningPipeFromGzipException &e)
+	{
+		// FIXME: File readers should probably add a read error in addition to throwing
+		// ErrorOpeningFileForReadingException so that we don't have to do the conversion.
+		read_errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					e.filename(),
+					DataFormats::Gpml,
+					0/*line_num*/,
+					ReadErrors::ErrorOpeningFileForReading,
+					ReadErrors::FileNotLoaded));
+
+		// Rethrow the exception to let caller know that an error occurred.
+		// This is important because the caller is expecting a valid feature collection
+		// unless an exception is thrown so if we don't throw one then the caller
+		// will try to dereference the feature collection and crash.
+		throw;
+	}
+	catch (GPlatesGlobal::Exception &)
+	{
+		// We add a generic read error just in case the file reader didn't add a read error
+		// when it threw an exception.
+		read_errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					file_ref.get_file_info().get_qfileinfo().filePath(),
+					DataFormats::Unspecified,
+					0/*line_num*/,
+					ReadErrors::ErrorReadingFile,
+					ReadErrors::FileNotLoaded));
 
 		// Rethrow the exception to let caller know that an error occurred.
 		// This is important because the caller is expecting a valid feature collection

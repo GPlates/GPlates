@@ -34,6 +34,9 @@
 
 #include "Colour.h"
 
+#include "scribe/Scribe.h"
+
+
 // Undefine the min and max macros as they can interfere with the min and
 // max functions in std::numeric_limits<T>, on Visual Studio.
 #if defined(_MSC_VER)
@@ -397,8 +400,10 @@ GPlatesGui::Colour::to_hsv(
 
 namespace
 {
-	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>(std::numeric_limits<boost::uint8_t>::max());
-	static const boost::uint8_t UINT8_MAX_VALUE = std::numeric_limits<boost::uint8_t>::max();
+	// The parentheses around min/max are to prevent the windows min/max macros
+	// from stuffing numeric_limits' min/max.
+	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>((std::numeric_limits<boost::uint8_t>::max)());
+	static const boost::uint8_t UINT8_MAX_VALUE = (std::numeric_limits<boost::uint8_t>::max)();
 
 	inline
 	boost::uint8_t
@@ -464,3 +469,17 @@ GPlatesGui::Colour::to_qrgb(
 	return qcolor.rgba();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::Colour::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe native array (of floats).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_rgba, "rgba"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

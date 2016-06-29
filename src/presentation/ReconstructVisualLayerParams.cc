@@ -29,9 +29,9 @@
 
 
 GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
 	VisualLayerParams(
-			layer_task_params,
+			layer_params,
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
 	d_vgp_draw_circular_error(true),
 	d_fill_polygons(false),

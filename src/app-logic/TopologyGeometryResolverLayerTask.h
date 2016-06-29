@@ -32,8 +32,8 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
+#include "LayerParams.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "ReconstructLayerProxy.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 
@@ -136,15 +136,15 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
 
 	private:
 
-		LayerTaskParams d_layer_task_params;
+		LayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Keep track of the default reconstruction layer proxy.
@@ -169,6 +169,7 @@ namespace GPlatesAppLogic
 
 		//! Constructor.
 		TopologyGeometryResolverLayerTask() :
+				d_layer_params(LayerParams::create()),
 				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
 				d_using_default_reconstruction_layer_proxy(true),
 				d_topology_geometry_resolver_layer_proxy(TopologyGeometryResolverLayerProxy::create())

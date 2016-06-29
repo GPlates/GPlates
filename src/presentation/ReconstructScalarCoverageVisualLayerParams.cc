@@ -28,7 +28,7 @@
 
 #include "ReconstructScalarCoverageVisualLayerParams.h"
 
-#include "app-logic/ReconstructScalarCoverageLayerTask.h"
+#include "app-logic/ReconstructScalarCoverageLayerParams.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -37,8 +37,8 @@
 
 
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::ReconstructScalarCoverageVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
-	VisualLayerParams(layer_task_params)
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
+	VisualLayerParams(layer_params)
 {
 }
 
@@ -47,12 +47,12 @@ void
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
-	bool modified_ = false;
+	bool modified_params = false;
 
 	//
 	// Assume that the scalar types have changed, so:
 	//  (1) Add any new scalar types that weren't there before, and
-	//  (2) Remove any scalar types that aren't not there anymore.
+	//  (2) Remove any scalar types that aren't there anymore.
 	//
 
 	// Add any new scalar types that weren't there before.
@@ -64,11 +64,11 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 		{
 			// Ensure a colour palette exists for the scalar type.
 			create_colour_palette_parameters(scalar_type);
-			modified_ = true;
+			modified_params = true;
 		}
 	}
 
-	// Remove any scalar types that aren't not there anymore.
+	// Remove any scalar types that aren't there anymore.
 	colour_palette_parameters_map_type::iterator colour_palette_parameters_iter = d_colour_palette_parameters_map.begin();
 	while (colour_palette_parameters_iter != d_colour_palette_parameters_map.end())
 	{
@@ -81,7 +81,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 			++colour_palette_parameters_iter;
 
 			d_colour_palette_parameters_map.erase(erase_iter);
-			modified_ = true;
+			modified_params = true;
 		}
 		else
 		{
@@ -89,7 +89,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 		}
 	}
 
-	if (modified_)
+	if (modified_params)
 	{
 		emit_modified();
 	}
@@ -107,57 +107,9 @@ void
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::set_current_colour_palette_parameters(
 		const RemappedColourPaletteParameters &colour_palette_parameters)
 {
-	const GPlatesPropertyValues::ValueObjectType &current_scalar_type = get_current_scalar_type();
-
-	// See if a colour palette already exists for the current scalar type.
-	boost::optional<RemappedColourPaletteParameters &>
-			current_colour_palette_parameters = get_colour_palette_parameters(current_scalar_type);
-	if (current_colour_palette_parameters)
-	{
-		// Overwrite the existing palette map entry.
-		current_colour_palette_parameters.get() = colour_palette_parameters;
-	}
-	else
-	{
-		// Add the palette as a new map entry.
-		d_colour_palette_parameters_map.insert(
-				colour_palette_parameters_map_type::value_type(
-						current_scalar_type,
-						colour_palette_parameters));
-	}
-
-	emit_modified();
-}
-
-
-const GPlatesPropertyValues::ValueObjectType &
-GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_current_scalar_type() const
-{
-	GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-				&get_layer_task_params());
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			layer_task_params,
-			GPLATES_ASSERTION_SOURCE);
-
-	return layer_task_params->get_scalar_type();
-}
-
-
-const std::vector<GPlatesPropertyValues::ValueObjectType> &
-GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_scalar_types() const
-{
-	GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-				&get_layer_task_params());
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			layer_task_params,
-			GPLATES_ASSERTION_SOURCE);
-
-	return layer_task_params->get_scalar_types();
-
+	set_colour_palette_parameters(
+			get_current_scalar_type(),
+			colour_palette_parameters);
 }
 
 
@@ -178,20 +130,61 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_colour_pale
 }
 
 
-boost::optional<GPlatesPresentation::RemappedColourPaletteParameters &>
-GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_colour_palette_parameters(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type)
+void
+GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::set_colour_palette_parameters(
+		const GPlatesPropertyValues::ValueObjectType &scalar_type,
+		const RemappedColourPaletteParameters &colour_palette_parameters)
 {
-	// Look for the colour palette parameters associated with the scalar type.
+	// See if a colour palette already exists for the specified scalar type.
 	colour_palette_parameters_map_type::iterator colour_palette_parameters_iter =
 			d_colour_palette_parameters_map.find(scalar_type);
 
-	if (colour_palette_parameters_iter == d_colour_palette_parameters_map.end())
+	if (colour_palette_parameters_iter != d_colour_palette_parameters_map.end())
 	{
-		return boost::none;
+		// Overwrite the existing palette map entry.
+		colour_palette_parameters_iter->second = colour_palette_parameters;
+	}
+	else
+	{
+		// Add the palette as a new map entry.
+		d_colour_palette_parameters_map.insert(
+				colour_palette_parameters_map_type::value_type(
+						scalar_type,
+						colour_palette_parameters));
 	}
 
-	return colour_palette_parameters_iter->second;
+	emit_modified();
+}
+
+
+const GPlatesPropertyValues::ValueObjectType &
+GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_current_scalar_type() const
+{
+	GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+				get_layer_params().get());
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			layer_params,
+			GPLATES_ASSERTION_SOURCE);
+
+	return layer_params->get_scalar_type();
+}
+
+
+const std::vector<GPlatesPropertyValues::ValueObjectType> &
+GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_scalar_types() const
+{
+	GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+				get_layer_params().get());
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			layer_params,
+			GPLATES_ASSERTION_SOURCE);
+
+	return layer_params->get_scalar_types();
+
 }
 
 
@@ -199,12 +192,12 @@ const GPlatesPresentation::RemappedColourPaletteParameters &
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::create_colour_palette_parameters(
 		const GPlatesPropertyValues::ValueObjectType &scalar_type) const
 {
-	GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *layer_task_params =
-		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params *>(
-				&get_layer_task_params());
+	GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
+		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
+				get_layer_params().get());
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			layer_task_params,
+			layer_params,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new colour palette parameters.
@@ -214,7 +207,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::create_colour_p
 
 	// If we have scalar data then initialise the palette range to the scalar mean +/- deviation.
 	boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics> statistics =
-			layer_task_params->get_scalar_statistics(scalar_type);
+			layer_params->get_scalar_statistics(scalar_type);
 	if (statistics)
 	{
 		const double scalar_mean = statistics->mean;
@@ -237,13 +230,13 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_or_create_c
 		const GPlatesPropertyValues::ValueObjectType &scalar_type) const
 {
 	// See if a colour palette already exists for the scalar type.
-	boost::optional<const RemappedColourPaletteParameters &> colour_palette_parameters =
+	boost::optional<const RemappedColourPaletteParameters &> scalar_type_colour_palette_parameters =
 			get_colour_palette_parameters(scalar_type);
-	if (!colour_palette_parameters)
+	if (!scalar_type_colour_palette_parameters)
 	{
 		// Ensure a colour palette exists for the scalar type.
-		colour_palette_parameters = create_colour_palette_parameters(scalar_type);
+		scalar_type_colour_palette_parameters = create_colour_palette_parameters(scalar_type);
 	}
 
-	return colour_palette_parameters.get();
+	return scalar_type_colour_palette_parameters.get();
 }

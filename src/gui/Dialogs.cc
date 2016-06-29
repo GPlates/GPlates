@@ -387,8 +387,11 @@ GPlatesGui::Dialogs::pop_up_draw_style_dialog()
 {
 	GPlatesQtWidgets::DrawStyleDialog &dialog = draw_style_dialog();
 
-	dialog.init_category_table();
 	dialog.pop_up();
+
+	// Need to prepare the dialog based on its current state
+	// (whether it is currently focused on a layer or on 'all' layers).
+	dialog.reset();
 }
 
 

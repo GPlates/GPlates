@@ -30,8 +30,6 @@
 #include "ScribeInternalAccess.h"
 #include "TranscribeResult.h"
 
-#include "global/GPlatesAssert.h"
-
 #include "utils/CallStackTracker.h"
 
 

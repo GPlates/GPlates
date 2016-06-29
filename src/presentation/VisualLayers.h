@@ -47,7 +47,7 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-	class LayerTaskParams;
+	class LayerParams;
 	class ReconstructGraph;
 }
 
@@ -368,10 +368,10 @@ namespace GPlatesPresentation
 				bool activation);
 
 		void
-		handle_layer_task_params_changed(
+		handle_layer_params_changed(
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams &layer_params);
 
 		void
 		handle_layer_added_input_connection(

@@ -31,7 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
-#include "app-logic/ReconstructLayerTask.h"
+#include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructParams.h"
 
 #include "presentation/ReconstructVisualLayerParams.h"
@@ -64,14 +64,14 @@ GPlatesQtWidgets::SetDeformationParametersDialog::populate(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
 	{
 		// Acquire a pointer to a @a ReconstructParams.
-		// NOTE: Make sure we get a 'const' pointer to the reconstruct layer task params
+		// NOTE: Make sure we get a 'const' pointer to the reconstruct layer params
 		// otherwise it will think we are modifying it which will mean the reconstruct
 		// layer will think it needs to regenerate its reconstructed feature geometries.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		const GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
-			dynamic_cast<const GPlatesAppLogic::ReconstructLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (!layer_task_params)
+		const GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<const GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (!layer_params)
 		{
 			return false;
 		}
@@ -87,11 +87,11 @@ GPlatesQtWidgets::SetDeformationParametersDialog::populate(
 
 		// Handle delta t.
 		spinbox_end_time->setValue(
-			layer_task_params->get_reconstruct_params().get_deformation_end_time());
+			layer_params->get_reconstruct_params().get_deformation_end_time());
 		spinbox_begin_time->setValue(
-			layer_task_params->get_reconstruct_params().get_deformation_begin_time());
+			layer_params->get_reconstruct_params().get_deformation_begin_time());
 		spinbox_time_increment->setValue(
-			layer_task_params->get_reconstruct_params().get_deformation_time_increment());
+			layer_params->get_reconstruct_params().get_deformation_time_increment());
 
 		// Show deformed feature geometries.
 		show_deformed_feature_geometries_checkbox->setChecked(
@@ -188,10 +188,10 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 	{
 		// Acquire a pointer to a @a ReconstructParams.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructLayerTask::Params *>(
-					&layer.get_layer_task_params());
-		if (!layer_task_params)
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (!layer_params)
 		{
 			accept();
 		}
@@ -210,11 +210,11 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 			GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(d_application_state);
 
 			// Handle settings
-			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_task_params->get_reconstruct_params();
+			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
 			reconstruct_params.set_deformation_end_time(spinbox_end_time->value());
 			reconstruct_params.set_deformation_begin_time(spinbox_begin_time->value());
 			reconstruct_params.set_deformation_time_increment(spinbox_time_increment->value());
-			layer_task_params->set_reconstruct_params(reconstruct_params);
+			layer_params->set_reconstruct_params(reconstruct_params);
 
 			// If any reconstruct parameters were modified then 'ApplicationState::reconstruct()'
 			// will get called here (at scope exit).

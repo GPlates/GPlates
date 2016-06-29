@@ -58,7 +58,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::~CoRegistrationLayerProxy()
 }
 
 
-boost::optional<GPlatesAppLogic::coregistration_data_non_null_ptr_type>
+boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &reconstruction_time)
@@ -143,7 +143,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 }
 
 
-boost::optional<GPlatesAppLogic::coregistration_data_non_null_ptr_type>
+boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesModel::FeatureId &feature_id)
@@ -239,7 +239,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 				boost::ref(get_raster_co_registration(renderer).get()));
 	}
 		
-	boost::optional<coregistration_data_non_null_ptr_type> coreg_data = 
+	boost::optional<CoRegistrationData::non_null_ptr_type> coreg_data = 
 		CoRegistrationData::create(reconstruction_time);
 
 	// Does the actual co-registration work.

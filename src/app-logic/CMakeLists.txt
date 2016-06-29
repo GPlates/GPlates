@@ -13,13 +13,14 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     ApplicationState.cc
     ApplicationState.h
-    AppLogicFwd.h
     AppLogicUtils.cc
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
     CoRegistrationData.cc
     CoRegistrationData.h
+    CoRegistrationLayerParams.cc
+    CoRegistrationLayerParams.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
@@ -57,14 +58,16 @@ set(srcs
     LayerInputChannelName.cc
     LayerInputChannelName.h
     LayerInputChannelType.h
+    LayerParams.h
+    LayerParamsVisitor.h
     LayerProxy.h
     LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
     LayerTask.h
-    LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
+    LayerTaskType.cc
     LayerTaskType.h
     LogModel.cc
     LogModel.h
@@ -88,6 +91,8 @@ set(srcs
     PlateVelocityUtils.h
     PropertyExtractors.cc
     PropertyExtractors.h
+    RasterLayerParams.cc
+    RasterLayerParams.h
     RasterLayerProxy.cc
     RasterLayerProxy.h
     RasterLayerTask.cc
@@ -138,6 +143,8 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ReconstructLayerParams.cc
+    ReconstructLayerParams.h
     ReconstructLayerProxy.cc
     ReconstructLayerProxy.h
     ReconstructLayerTask.cc
@@ -162,6 +169,8 @@ set(srcs
     ReconstructMethodVirtualGeomagneticPole.h
     ReconstructParams.cc
     ReconstructParams.h
+    ReconstructScalarCoverageLayerParams.cc
+    ReconstructScalarCoverageLayerParams.h
     ReconstructScalarCoverageLayerProxy.cc
     ReconstructScalarCoverageLayerProxy.h
     ReconstructScalarCoverageLayerTask.cc
@@ -199,6 +208,8 @@ set(srcs
     ScalarCoverageEvolution.h
     ScalarCoverageFeatureProperties.cc
     ScalarCoverageFeatureProperties.h
+    ScalarField3DLayerParams.cc
+    ScalarField3DLayerParams.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
@@ -232,10 +243,13 @@ set(srcs
     UserPreferences.h
     VelocityDeltaTime.cc
     VelocityDeltaTime.h
+    VelocityFieldCalculatorLayerParams.cc
+    VelocityFieldCalculatorLayerParams.h
     VelocityFieldCalculatorLayerProxy.cc
     VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
+    VelocityParams.cc
     VelocityParams.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h

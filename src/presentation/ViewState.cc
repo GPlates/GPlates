@@ -209,9 +209,21 @@ GPlatesPresentation::ViewState::get_application_state()
 	return d_application_state;
 }
 
+const GPlatesAppLogic::ApplicationState &
+GPlatesPresentation::ViewState::get_application_state() const
+{
+	return d_application_state;
+}
+
 
 GPlatesGui::AnimationController&
 GPlatesPresentation::ViewState::get_animation_controller()
+{
+	return *d_animation_controller;
+}
+
+const GPlatesGui::AnimationController&
+GPlatesPresentation::ViewState::get_animation_controller() const
 {
 	return *d_animation_controller;
 }
@@ -223,9 +235,21 @@ GPlatesPresentation::ViewState::get_session_management()
 	return *d_session_management_ptr;
 }
 
+const GPlatesPresentation::SessionManagement &
+GPlatesPresentation::ViewState::get_session_management() const
+{
+	return *d_session_management_ptr;
+}
+
 
 GPlatesViewOperations::RenderedGeometryCollection &
 GPlatesPresentation::ViewState::get_rendered_geometry_collection()
+{
+	return *d_rendered_geometry_collection;
+}
+
+const GPlatesViewOperations::RenderedGeometryCollection &
+GPlatesPresentation::ViewState::get_rendered_geometry_collection() const
 {
 	return *d_rendered_geometry_collection;
 }
@@ -237,9 +261,21 @@ GPlatesPresentation::ViewState::get_feature_focus()
 	return *d_feature_focus;
 }
 
+const GPlatesGui::FeatureFocus &
+GPlatesPresentation::ViewState::get_feature_focus() const
+{
+	return *d_feature_focus;
+}
+
 
 GPlatesGui::FeatureTableModel &
 GPlatesPresentation::ViewState::get_feature_table_model()
+{
+	return *d_feature_table_model_ptr;
+}
+
+const GPlatesGui::FeatureTableModel &
+GPlatesPresentation::ViewState::get_feature_table_model() const
 {
 	return *d_feature_table_model_ptr;
 }
@@ -251,9 +287,21 @@ GPlatesPresentation::ViewState::get_viewport_zoom()
 	return *d_viewport_zoom;
 }
 
+const GPlatesGui::ViewportZoom &
+GPlatesPresentation::ViewState::get_viewport_zoom() const
+{
+	return *d_viewport_zoom;
+}
+
 
 GPlatesGui::ViewportProjection &
 GPlatesPresentation::ViewState::get_viewport_projection()
+{
+	return *d_viewport_projection;
+}
+
+const GPlatesGui::ViewportProjection &
+GPlatesPresentation::ViewState::get_viewport_projection() const
 {
 	return *d_viewport_projection;
 }
@@ -265,9 +313,21 @@ GPlatesPresentation::ViewState::get_digitise_geometry_builder()
 	return *d_digitise_geometry_builder;
 }
 
+const GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_digitise_geometry_builder() const
+{
+	return *d_digitise_geometry_builder;
+}
+
 
 GPlatesViewOperations::GeometryBuilder &
 GPlatesPresentation::ViewState::get_focused_feature_geometry_builder()
+{
+	return *d_focused_feature_geometry_builder;
+}
+
+const GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_focused_feature_geometry_builder() const
 {
 	return *d_focused_feature_geometry_builder;
 }
@@ -279,9 +339,21 @@ GPlatesPresentation::ViewState::get_colour_scheme_container()
 	return *d_colour_scheme_container;
 }
 
+const GPlatesGui::ColourSchemeContainer &
+GPlatesPresentation::ViewState::get_colour_scheme_container() const
+{
+	return *d_colour_scheme_container;
+}
+
 
 GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 GPlatesPresentation::ViewState::get_colour_scheme()
+{
+	return d_colour_scheme;
+}
+
+GPlatesGlobal::PointerTraits<const GPlatesGui::ColourScheme>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme() const
 {
 	return d_colour_scheme;
 }
@@ -293,9 +365,21 @@ GPlatesPresentation::ViewState::get_colour_scheme_delegator()
 	return d_colour_scheme;
 }
 
+GPlatesGlobal::PointerTraits<const GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme_delegator() const
+{
+	return d_colour_scheme;
+}
+
 
 GPlatesGui::RenderSettings &
 GPlatesPresentation::ViewState::get_render_settings()
+{
+	return *d_render_settings;
+}
+
+const GPlatesGui::RenderSettings &
+GPlatesPresentation::ViewState::get_render_settings() const
 {
 	return *d_render_settings;
 }
@@ -307,9 +391,21 @@ GPlatesPresentation::ViewState::get_rendered_geometry_parameters()
 	return *d_rendered_geometry_parameters;
 }
 
+const GPlatesViewOperations::RenderedGeometryParameters &
+GPlatesPresentation::ViewState::get_rendered_geometry_parameters() const
+{
+	return *d_rendered_geometry_parameters;
+}
+
 
 GPlatesGui::SceneLightingParameters &
 GPlatesPresentation::ViewState::get_scene_lighting_parameters()
+{
+	return *d_scene_lighting_parameters;
+}
+
+const GPlatesGui::SceneLightingParameters &
+GPlatesPresentation::ViewState::get_scene_lighting_parameters() const
 {
 	return *d_scene_lighting_parameters;
 }
@@ -321,6 +417,12 @@ GPlatesPresentation::ViewState::get_visual_layers()
 	return *d_visual_layers;
 }
 
+const GPlatesPresentation::VisualLayers &
+GPlatesPresentation::ViewState::get_visual_layers() const
+{
+	return *d_visual_layers;
+}
+
 
 GPlatesPresentation::VisualLayerRegistry &
 GPlatesPresentation::ViewState::get_visual_layer_registry()
@@ -328,9 +430,21 @@ GPlatesPresentation::ViewState::get_visual_layer_registry()
 	return *d_visual_layer_registry;
 }
 
+const GPlatesPresentation::VisualLayerRegistry &
+GPlatesPresentation::ViewState::get_visual_layer_registry() const
+{
+	return *d_visual_layer_registry;
+}
+
 
 GPlatesGui::MapTransform &
 GPlatesPresentation::ViewState::get_map_transform()
+{
+	return *d_map_transform;
+}
+
+const GPlatesGui::MapTransform &
+GPlatesPresentation::ViewState::get_map_transform() const
 {
 	return *d_map_transform;
 }
@@ -499,14 +613,20 @@ GPlatesPresentation::ViewState::get_text_overlay_settings()
 	return *d_text_overlay_settings;
 }
 
-
 const GPlatesGui::TextOverlaySettings &
 GPlatesPresentation::ViewState::get_text_overlay_settings() const
 {
 	return *d_text_overlay_settings;
 }
 
+
 GPlatesGui::ExportAnimationRegistry &
+GPlatesPresentation::ViewState::get_export_animation_registry()
+{
+	return *d_export_animation_registry;
+}
+
+const GPlatesGui::ExportAnimationRegistry &
 GPlatesPresentation::ViewState::get_export_animation_registry() const
 {
 	return *d_export_animation_registry;
@@ -519,6 +639,12 @@ GPlatesPresentation::ViewState::get_topology_boundary_sections_container()
 	return *d_topology_boundary_sections_container_ptr;	
 }
 
+const GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_boundary_sections_container() const
+{
+	return *d_topology_boundary_sections_container_ptr;	
+}
+
 
 GPlatesGui::TopologySectionsContainer &
 GPlatesPresentation::ViewState::get_topology_interior_sections_container()
@@ -526,8 +652,21 @@ GPlatesPresentation::ViewState::get_topology_interior_sections_container()
 	return *d_topology_interior_sections_container_ptr;
 }
 
+const GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_interior_sections_container() const
+{
+	return *d_topology_interior_sections_container_ptr;
+}
+
+
 GPlatesGui::FileIODirectoryConfigurations &
 GPlatesPresentation::ViewState::get_file_io_directory_configurations()
+{
+	return *d_file_io_directory_configurations;
+}
+
+const GPlatesGui::FileIODirectoryConfigurations &
+GPlatesPresentation::ViewState::get_file_io_directory_configurations() const
 {
 	return *d_file_io_directory_configurations;
 }

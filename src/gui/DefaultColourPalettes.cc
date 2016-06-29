@@ -153,9 +153,9 @@ GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
 	// Add the slice from range2_min to range2_max
 	const ColourSlice colour_slice_range2(
 			range2_min,
-			mid_colour,
+			min_colour,
 			range2_max,
-			min_colour);
+			mid_colour);
 	colour_palette->add_entry(colour_slice_range2);
 
 	// Add the middle to the spectrum
@@ -169,9 +169,9 @@ GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
 	// Add the slice from range1_min to range1_max
 	const ColourSlice colour_slice_range1(
 			range1_min,
-			max_colour,
+			mid_colour,
 			range1_max,
-			mid_colour);
+			max_colour);
 	colour_palette->add_entry(colour_slice_range1);
 
 	// Foreground colour, for values after max value.

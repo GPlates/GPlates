@@ -33,6 +33,8 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "maths/Real.h"
+
 
 const QLocale GPlatesScribe::XmlArchiveReader::C_LOCALE(QLocale::c());
 
@@ -218,7 +220,7 @@ GPlatesScribe::XmlArchiveReader::read_transcription()
 
 	while (read_start_element(ArchiveCommon::XML_OBJECT_TAG_ELEMENT_NAME))
 	{
-		transcription->add_object_tag(read_string());
+		transcription->add_object_tag_name(read_string());
 		read_end_element(ArchiveCommon::XML_OBJECT_TAG_ELEMENT_NAME, true/*require*/);
 	}
 
@@ -304,19 +306,19 @@ GPlatesScribe::XmlArchiveReader::read_composite(
 		// Read the current child key.
 
 		read_start_element(ArchiveCommon::XML_OBJECT_TAG_ID_ELEMENT_NAME, true/*required*/);
-		const Transcription::object_tag_id_type object_tag_id = read_unsigned();
+		const Transcription::object_tag_name_id_type object_tag_name_id = read_unsigned();
 		read_end_element(ArchiveCommon::XML_OBJECT_TAG_ID_ELEMENT_NAME, true/*required*/);
 
 		read_start_element(ArchiveCommon::XML_OBJECT_TAG_VERSION_ELEMENT_NAME, true/*required*/);
 		const Transcription::object_tag_version_type object_tag_version = read_unsigned();
 		read_end_element(ArchiveCommon::XML_OBJECT_TAG_VERSION_ELEMENT_NAME, true/*required*/);
 
-		const Transcription::object_key_type object_key(object_tag_id, object_tag_version);
+		const Transcription::object_key_type object_key(object_tag_name_id, object_tag_version);
 
-		while (read_start_element(ArchiveCommon::XML_OBJECT_ID))
+		for (unsigned int child_index = 0; read_start_element(ArchiveCommon::XML_OBJECT_ID); ++child_index)
 		{
 			const Transcription::object_id_type object_id = read_unsigned();
-			composite_object.add_child(object_key, object_id);
+			composite_object.set_child(object_key, object_id, child_index);
 			read_end_element(ArchiveCommon::XML_OBJECT_ID, true/*required*/);
 		}
 	}
@@ -389,16 +391,32 @@ GPlatesScribe::XmlArchiveReader::read_float()
 			"Archive stream error detected before reading float.");
 
 	// Read the current XML element.
-	bool read_object_success;
-	const float value = C_LOCALE.toFloat(
-			d_input_stream.text().toString(),
-			&read_object_success);
+	const QString float_string = d_input_stream.text().toString().trimmed();
 
-	// The read should have been successful.
-	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
-			read_object_success,
-			GPLATES_ASSERTION_SOURCE,
-			"Archive stream error detected while reading float.");
+	float value;
+	if (float_string == ArchiveCommon::XML_POSITIVE_INFINITY_VALUE)
+	{
+		value = GPlatesMaths::positive_infinity<float>();
+	}
+	else if (float_string == ArchiveCommon::XML_NEGATIVE_INFINITY_VALUE)
+	{
+		value = GPlatesMaths::negative_infinity<float>();
+	}
+	else if (float_string == ArchiveCommon::XML_NAN_VALUE)
+	{
+		value = GPlatesMaths::quiet_nan<float>();
+	}
+	else // finite ....
+	{
+		bool read_object_success;
+		value = C_LOCALE.toFloat(float_string, &read_object_success);
+
+		// The read should have been successful.
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				read_object_success,
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected while reading float.");
+	}
 
 	return value;
 }
@@ -416,16 +434,32 @@ GPlatesScribe::XmlArchiveReader::read_double()
 			"Archive stream error detected before reading double.");
 
 	// Read the current XML element.
-	bool read_object_success;
-	const double value = C_LOCALE.toDouble(
-			d_input_stream.text().toString(),
-			&read_object_success);
+	const QString double_string = d_input_stream.text().toString().trimmed();
 
-	// The read should have been successful.
-	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
-			read_object_success,
-			GPLATES_ASSERTION_SOURCE,
-			"Archive stream error detected while reading double.");
+	double value;
+	if (double_string == ArchiveCommon::XML_POSITIVE_INFINITY_VALUE)
+	{
+		value = GPlatesMaths::positive_infinity<double>();
+	}
+	else if (double_string == ArchiveCommon::XML_NEGATIVE_INFINITY_VALUE)
+	{
+		value = GPlatesMaths::negative_infinity<double>();
+	}
+	else if (double_string == ArchiveCommon::XML_NAN_VALUE)
+	{
+		value = GPlatesMaths::quiet_nan<double>();
+	}
+	else // finite ....
+	{
+		bool read_object_success;
+		value = C_LOCALE.toDouble(double_string, &read_object_success);
+
+		// The read should have been successful.
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				read_object_success,
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected while reading double.");
+	}
 
 	return value;
 }

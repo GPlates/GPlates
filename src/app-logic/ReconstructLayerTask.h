@@ -29,12 +29,12 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "ReconstructLayerProxy.h"
-#include "ReconstructParams.h"
+#include "ReconstructLayerParams.h"
 
 #include "maths/types.h"
 
@@ -49,41 +49,12 @@ namespace GPlatesAppLogic
 	 * A layer task that reconstructs geometries of features from feature collection(s).
 	 */
 	class ReconstructLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a reconstruct layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-
-			explicit
-			Params(
-					ReconstructLayerTask &layer_task);
-
-			/**
-			 * Returns the 'const' reconstruct parameters.
-			 */
-			const ReconstructParams &
-			get_reconstruct_params() const;
-
-			/**
-			 * Sets the reconstruct parameters.
-			 */
-			void
-			set_reconstruct_params(
-					const ReconstructParams &reconstruct_params);
-
-		private:
-
-			ReconstructLayerTask &d_layer_task;
-
-			ReconstructParams d_reconstruct_params;
-		};
-
 
 		static
 		bool
@@ -168,18 +139,24 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
+
+	private Q_SLOTS:
+
+		void
+		handle_reconstruct_params_modified(
+				GPlatesAppLogic::ReconstructLayerParams &layer_params);
 
 	private:
 
 		/**
 		 * Parameters used when reconstructing.
 		 */
-		Params d_layer_task_params;
+		ReconstructLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Keep track of the default reconstruction layer proxy.
@@ -192,22 +169,14 @@ namespace GPlatesAppLogic
 		/**
 		 * Does all the reconstructing.
 		 *
-		 * NOTE: Should be declared after @a d_layer_task_params.
+		 * NOTE: Should be declared after @a d_layer_params.
 		 */
 		ReconstructLayerProxy::non_null_ptr_type d_reconstruct_layer_proxy;
 
 
 		//! Constructor.
 		ReconstructLayerTask(
-				const ReconstructMethodRegistry &reconstruct_method_registry) :
-			d_layer_task_params(*this),
-			d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-			d_using_default_reconstruction_layer_proxy(true),
-			d_reconstruct_layer_proxy(
-					ReconstructLayerProxy::create(
-							reconstruct_method_registry,
-							d_layer_task_params.get_reconstruct_params()))
-		{  }
+				const ReconstructMethodRegistry &reconstruct_method_registry);
 	};
 }
 

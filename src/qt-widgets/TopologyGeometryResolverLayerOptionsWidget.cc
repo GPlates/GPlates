@@ -54,7 +54,7 @@ GPlatesQtWidgets::TopologyGeometryResolverLayerOptionsWidget::TopologyGeometryRe
 
 	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	LinkWidget *draw_style_link = new LinkWidget(
-			tr("Draw Style Setting..."), this);
+			tr("Set Draw style..."), this);
 
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
