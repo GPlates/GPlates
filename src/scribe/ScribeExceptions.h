@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 
 #include "global/GPlatesException.h"
 
