@@ -69,7 +69,8 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_resolved_scalar_field_3d(
 		const double &reconstruction_time)
 {
 	// If we have no input scalar field feature then there's nothing we can do.
-	if (!d_current_scalar_field_feature)
+	if (!d_current_scalar_field_feature ||
+		!d_current_scalar_field_feature->is_valid())
 	{
 		return boost::none;
 	}
@@ -587,7 +588,8 @@ bool
 GPlatesAppLogic::ScalarField3DLayerProxy::resolve_scalar_field_feature(
 		const double &reconstruction_time)
 {
-	if (!d_current_scalar_field_feature)
+	if (!d_current_scalar_field_feature ||
+		!d_current_scalar_field_feature->is_valid())
 	{
 		// We must have a scalar field feature.
 		return false;

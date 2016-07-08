@@ -96,7 +96,8 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 		const double &reconstruction_time)
 {
 	// If we have no input raster feature then there's nothing we can do.
-	if (!d_current_raster_feature)
+	if (!d_current_raster_feature ||
+		!d_current_raster_feature->is_valid())
 	{
 		return boost::none;
 	}
@@ -856,7 +857,8 @@ GPlatesAppLogic::RasterLayerProxy::resolve_raster_feature(
 		const double &reconstruction_time,
 		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
-	if (!d_current_raster_feature)
+	if (!d_current_raster_feature ||
+		!d_current_raster_feature->is_valid())
 	{
 		// We must have a raster feature.
 		return false;
