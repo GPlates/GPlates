@@ -346,6 +346,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicke
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
+		// Unmap the age grid colour palette otherwise the colours will be incorrect.
+		colour_palette_parameters.unmap_palette_range();
 		colour_palette_parameters.load_convenient_colour_palette(
 				GPlatesPresentation::RemappedColourPaletteParameters::AGE_PALETTE,
 				cpt_read_errors,
