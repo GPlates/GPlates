@@ -90,6 +90,10 @@ namespace GPlatesPropertyValues
 		bool
 		is_projected() const;
 
+		/**
+		 * Returns true if the spatial reference system is WGS84.
+		 */
+		bool is_wgs84() const;
 
 		/**
 		 * Return the internal OGR spatial reference system.

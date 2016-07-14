@@ -299,7 +299,9 @@ namespace{
 		boost::optional<OGRLayer*>& ogr_layer,
 		OGRwkbGeometryType wkb_type,
 		const QString &layer_name,
-		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary,
+		const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &original_srs,
+		const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour &ogr_srs_behaviour)
 	{
 		if (!ogr_data_source_ptr)
 		{
@@ -308,7 +310,20 @@ namespace{
 		if (!ogr_layer)
 		{
 			OGRSpatialReference spatial_reference; 
-			spatial_reference.SetWellKnownGeogCS("WGS84");
+
+			qDebug() << "SRS exists: " << original_srs;
+			qDebug() << "behaviour: " << ogr_srs_behaviour;
+			if ((ogr_srs_behaviour == GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_ORIGINAL_SRS_BEHAVIOUR)  &&
+				original_srs)
+			{
+				qDebug() << "setting original srs";
+				spatial_reference = original_srs.get()->get_ogr_srs();
+			}
+			else
+			{
+				qDebug() << "setting WGS84";
+				spatial_reference.SetWellKnownGeogCS("WGS84");
+			}
 
 			ogr_layer.reset(ogr_data_source_ptr->CreateLayer(
 				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
@@ -657,7 +672,8 @@ namespace{
 	void
 	add_polyline_to_ogr_line_string(
 			OGRLineString &ogr_line_string,
-			const LatLonPolyline &lat_lon_polyline)
+			const LatLonPolyline &lat_lon_polyline,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		lat_lon_points_seq_type::const_iterator 
 			line_iter = lat_lon_polyline.line.begin(),
@@ -668,8 +684,11 @@ namespace{
 			OGRPoint ogr_point;
 
 			const GPlatesMaths::LatLonPoint &llp = *line_iter;
-			ogr_point.setX(llp.longitude());
-			ogr_point.setY(llp.latitude());
+			double x = llp.longitude();
+			double y = llp.latitude();
+			coordinate_transformation->transform_in_place(&x,&y);
+			ogr_point.setX(x);
+			ogr_point.setY(y);
 
 			ogr_line_string.addPoint(&ogr_point);
 		}
@@ -678,7 +697,8 @@ namespace{
 	void
 	add_multi_polyline_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const std::vector<LatLonPolyline> &lat_lon_polylines)
+			const std::vector<LatLonPolyline> &lat_lon_polylines,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		OGRMultiLineString ogr_multi_line_string;
 
@@ -691,7 +711,7 @@ namespace{
 			const LatLonPolyline &lat_lon_polyline = *it;
 
 			OGRLineString ogr_line_string;
-			add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
+			add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline, coordinate_transformation);
 
 			ogr_multi_line_string.addGeometry(&ogr_line_string);
 		}
@@ -702,10 +722,11 @@ namespace{
 	void
 	add_polyline_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const LatLonPolyline &lat_lon_polyline)
+			const LatLonPolyline &lat_lon_polyline,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		OGRLineString ogr_line_string;
-		add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
+		add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline, coordinate_transformation);
 
 		ogr_feature.SetGeometry(&ogr_line_string);
 	}
@@ -713,7 +734,8 @@ namespace{
 	void
 	add_polygon_ring_to_ogr_polygon(
 			OGRPolygon &ogr_polygon,
-			const lat_lon_points_seq_type &lat_lon_polygon_ring)
+			const lat_lon_points_seq_type &lat_lon_polygon_ring,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		OGRLinearRing ogr_linear_ring;
 
@@ -726,8 +748,11 @@ namespace{
 			OGRPoint ogr_point;
 
 			const GPlatesMaths::LatLonPoint &llp = *line_iter;
-			ogr_point.setX(llp.longitude());
-			ogr_point.setY(llp.latitude());
+			double x = llp.longitude();
+			double y = llp.latitude();
+			coordinate_transformation->transform_in_place(&x,&y);
+			ogr_point.setX(x);
+			ogr_point.setY(y);
 
 			ogr_linear_ring.addPoint(&ogr_point);
 		}
@@ -747,13 +772,14 @@ namespace{
 	void
 	add_polygon_to_ogr_polygon(
 			OGRPolygon &ogr_polygon,
-			const LatLonPolygon &lat_lon_polygon)
+			const LatLonPolygon &lat_lon_polygon,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		// Add the exterior ring first since according to the OGR docs for OGRPolygon::addRing()...
 		//
 		// "If the polygon has no external ring (it is empty) this will be used as the external ring,
 		//  otherwise it is used as an internal ring."
-		add_polygon_ring_to_ogr_polygon(ogr_polygon, lat_lon_polygon.exterior_ring);
+		add_polygon_ring_to_ogr_polygon(ogr_polygon, lat_lon_polygon.exterior_ring,coordinate_transformation);
 
 		// Add the interior rings (if any).
 		const unsigned int num_interior_rings = lat_lon_polygon.interior_rings.size();
@@ -761,14 +787,16 @@ namespace{
 		{
 			add_polygon_ring_to_ogr_polygon(
 					ogr_polygon,
-					lat_lon_polygon.interior_rings[interior_ring_index]);
+					lat_lon_polygon.interior_rings[interior_ring_index],
+					coordinate_transformation);
 		}
 	}
 
 	void
 	add_multi_polygon_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const std::vector<LatLonPolygon> &lat_lon_polygons)
+			const std::vector<LatLonPolygon> &lat_lon_polygons,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		OGRMultiPolygon ogr_multi_polygon;
 
@@ -781,7 +809,7 @@ namespace{
 			const LatLonPolygon &lat_lon_polygon = *it;
 
 			OGRPolygon ogr_polygon;
-			add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
+			add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon,coordinate_transformation);
 
 			ogr_multi_polygon.addGeometry(&ogr_polygon);
 		}
@@ -792,10 +820,11 @@ namespace{
 	void
 	add_polygon_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const LatLonPolygon &lat_lon_polygon)
+			const LatLonPolygon &lat_lon_polygon,
+			const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation)
 	{
 		OGRPolygon ogr_polygon;
-		add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
+		add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon, coordinate_transformation);
 
 		ogr_feature.SetGeometry(&ogr_polygon);
 	}
@@ -804,7 +833,9 @@ namespace{
 GPlatesFileIO::OgrWriter::OgrWriter(
 	QString filename,
 	bool multiple_geometry_types,
-	bool wrap_to_dateline):
+	bool wrap_to_dateline,
+	boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs,
+	const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour &behaviour):
 	d_ogr_driver_ptr(0),
 	d_filename(filename),
 	d_layer_basename(QString()),
@@ -815,8 +846,12 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_point_data_source_ptr(0),
 	d_ogr_line_data_source_ptr(0),
 	d_ogr_polygon_data_source_ptr(0),
-	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create())
+	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create()),
+	d_original_srs(original_srs),
+	d_ogr_srs_write_behaviour(behaviour),
+	d_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
+	qDebug() << "Behaviour in constructor: " << d_ogr_srs_write_behaviour;
     OGRRegisterAll();
 
 	QFileInfo q_file_info_original(d_filename);
@@ -906,6 +941,28 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 		}
 	}
 
+	// Set up the coordinate transform as required. This may end up being the identity transform.
+
+	if (d_original_srs &&
+			d_ogr_srs_write_behaviour == FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_ORIGINAL_SRS_BEHAVIOUR)
+	{
+		boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type> transform =
+				GPlatesPropertyValues::CoordinateTransformation::create(
+					GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84(),
+					*d_original_srs);
+
+		if (transform)
+		{
+			d_coordinate_transformation = transform.get();
+		}
+		qDebug() << "Created transform from WGS84 to original";
+	}
+	else
+	{
+		qDebug() << "Identity transform";
+	}
+
+
 }
 
 GPlatesFileIO::OgrWriter::~OgrWriter()
@@ -922,7 +979,6 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 	const GPlatesMaths::PointOnSphere &point_on_sphere,
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
-
 	// Create point data source if it doesn't already exist.
 	if (d_ogr_point_data_source_ptr == NULL)
 	{
@@ -936,8 +992,14 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 		create_data_source(d_ogr_driver_ptr, d_ogr_point_data_source_ptr, data_source_name);
 	}
 
-	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_point_data_source_ptr,d_ogr_point_layer,wkbPoint,QString(d_layer_basename + "_point"),key_value_dictionary);
+	// Create the layer, if it doesn't already exist, and add any attribute names, and set the desired SRS.
+	setup_layer(d_ogr_point_data_source_ptr,
+				d_ogr_point_layer,
+				wkbPoint,
+				QString(d_layer_basename + "_point"),
+				key_value_dictionary,
+				d_original_srs,
+				d_ogr_srs_write_behaviour);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_point_layer)->GetLayerDefn());
 
@@ -954,9 +1016,12 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 	// Create the point feature from the point_on_sphere
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point_on_sphere);
 
+	double x = llp.longitude();
+	double y = llp.latitude();
+	d_coordinate_transformation->transform_in_place(&x,&y);
 	OGRPoint ogr_point;
-	ogr_point.setX(llp.longitude());
-	ogr_point.setY(llp.latitude());
+	ogr_point.setX(x);
+	ogr_point.setY(y);
 
 	ogr_feature->SetGeometry(&ogr_point);
 
@@ -996,8 +1061,13 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_point_data_source_ptr,d_ogr_multi_point_layer,wkbMultiPoint,
-		QString(d_layer_basename + "_multi_point"),key_value_dictionary);
+	setup_layer(d_ogr_point_data_source_ptr,
+				d_ogr_multi_point_layer,
+				wkbMultiPoint,
+				QString(d_layer_basename + "_multi_point"),
+				key_value_dictionary,
+				d_original_srs,
+				d_ogr_srs_write_behaviour);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_multi_point_layer)->GetLayerDefn());
 
@@ -1020,9 +1090,12 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 	for (; iter != end ; ++iter)
 	{
 		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+		double x = llp.longitude();
+		double y = llp.latitude();
+		d_coordinate_transformation->transform_in_place(&x,&y);
 		OGRPoint ogr_point;
-		ogr_point.setX(llp.longitude());
-		ogr_point.setY(llp.latitude());
+		ogr_point.setX(x);
+		ogr_point.setY(y);
 		ogr_multi_point.addGeometry(&ogr_point);
 	}
 
@@ -1117,7 +1190,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 					? wkbMultiLineString
 					: (is_multi_line_string ? wkbMultiLineString : wkbLineString),
 			QString(d_layer_basename + "_polyline"),
-			key_value_dictionary);
+			key_value_dictionary,
+			d_original_srs,
+			d_ogr_srs_write_behaviour);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polyline_layer)->GetLayerDefn());
 
@@ -1133,11 +1208,11 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 
 	if (is_multi_line_string)
 	{
-		add_multi_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines);
+		add_multi_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines, d_coordinate_transformation);
 	}
 	else
 	{
-		add_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines.front());
+		add_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines.front(), d_coordinate_transformation);
 	}
 
 
@@ -1221,7 +1296,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 					? wkbMultiPolygon
 					: (is_multi_polygon ? wkbMultiPolygon : wkbPolygon),
 			QString(d_layer_basename + "_polygon"),
-			key_value_dictionary);
+			key_value_dictionary,
+			d_original_srs,
+			d_ogr_srs_write_behaviour);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polygon_layer)->GetLayerDefn());
 
@@ -1237,11 +1314,11 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 
 	if (is_multi_polygon)
 	{
-		add_multi_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons);
+		add_multi_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons, d_coordinate_transformation);
 	}
 	else
 	{
-		add_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons.front());
+		add_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons.front(), d_coordinate_transformation);
 	}
 
 	// Add the new feature to the layer.

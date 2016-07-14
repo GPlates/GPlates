@@ -357,6 +357,9 @@ set(srcs
     MovePoleWidget.h
     MovePoleWidgetUi.ui
     NoActiveEditWidgetException.h
+    OgrSrsWriteOptionDialog.cc
+    OgrSrsWriteOptionDialog.h
+    OgrSrsWriteOptionDialogUi.ui
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h
     OpenFileDialog.cc

@@ -47,7 +47,6 @@ GPlatesQtWidgets::PreferencesPaneKinematicGraphs::PreferencesPaneKinematicGraphs
 	GPlatesAppLogic::UserPreferences &prefs = app_state.get_user_preferences();
 
 	// TODO: Add reset button - this will need to be in the Widget, and hence also usable from the KinematicGraphs dialog's settings.
-	// TODO: Settle on key names before 1.5
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->delta_time_spinbox(), prefs,
 														  "tools/kinematics/velocity_delta_time",0);
 

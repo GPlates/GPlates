@@ -46,6 +46,7 @@
 #include "file-io/FileInfo.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatClassify.h"
+#include "file-io/FeatureCollectionFileFormatConfigurations.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
@@ -71,12 +72,15 @@
 #include "presentation/TranscribeSession.h"
 #include "presentation/ViewState.h"
 
+#include "property-values/SpatialReferenceSystem.h"
+
 #include "scribe/ScribeExceptions.h"
 
 #include "qt-widgets/FileDialogFilter.h"
 #include "qt-widgets/GpgimVersionWarningDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/MissingSessionFilesDialog.h"
+#include "qt-widgets/OgrSrsWriteOptionDialog.h"
 #include "qt-widgets/OpenProjectRelativeOrAbsoluteDialog.h"
 #include "qt-widgets/PreferencesPaneFiles.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -319,6 +323,94 @@ namespace
 		}
 
 		return older_version_filenames.count() > 0 || newer_version_filenames.count() > 0;
+	}
+
+	void
+	set_ogr_configuration_write_behaviour(
+		boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration> &ogr_config,
+		const GPlatesQtWidgets::OgrSrsWriteOptionDialog::BehaviourRequested &behaviour)
+	{
+		switch(behaviour)
+		{
+		case GPlatesQtWidgets::OgrSrsWriteOptionDialog::WRITE_TO_WGS84_SRS:
+			qDebug() << "Setting config to WGS84";
+			ogr_config->set_ogr_srs_write_behaviour(
+						GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR);
+			break;
+		case GPlatesQtWidgets::OgrSrsWriteOptionDialog::WRITE_TO_ORIGINAL_SRS:
+			qDebug() << "Setting config to original SRS";
+			ogr_config->set_ogr_srs_write_behaviour(
+						GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_ORIGINAL_SRS_BEHAVIOUR);
+			break;
+		default:
+			qDebug() << "Default: setting config to WGS84";
+			ogr_config->set_ogr_srs_write_behaviour(
+						GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR);
+		}
+	}
+
+	bool
+	show_ogr_srs_dialog_if_necessary(
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			GPlatesQtWidgets::OgrSrsWriteOptionDialog *ogr_srs_write_option_dialog)
+	{
+		BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference ref, files)
+		{
+			const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> config =
+					ref.get_file().get_file_configuration();
+			if (config)
+			{
+				// Cast config to OGR type.
+				boost::shared_ptr<const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration> ogr_config =
+					boost::dynamic_pointer_cast<const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(*config);
+
+				if (ogr_config)
+				{
+					boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> srs = ogr_config->get_original_file_srs();
+					if (srs)
+					{
+						if (!srs.get()->is_wgs84())
+						{
+							// We had a non-WGS84 srs in the original file; check with the user what they want to do (i.e.
+							// write to WGS84, or
+							// write to original SRS, or
+							// cancel saving.
+							ogr_srs_write_option_dialog->initialise(
+										ref.get_file().get_file_info().get_display_name(false),
+										srs.get());
+
+							int result = ogr_srs_write_option_dialog->exec();
+							if (result == GPlatesQtWidgets::OgrSrsWriteOptionDialog::DO_NOT_WRITE)
+							{
+								return false;
+							}
+							else
+							{
+								boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> new_ogr_file_configuration =
+										GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+											new GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration(
+												*ogr_config));
+								if (new_ogr_file_configuration)
+								{
+									// Set the desired write behaviour in the file's configuration, so that we can access it later
+									// when we write out in the OgrWriter.
+									set_ogr_configuration_write_behaviour(new_ogr_file_configuration.get(),
+																		  static_cast<GPlatesQtWidgets::OgrSrsWriteOptionDialog::BehaviourRequested>(result));
+
+									GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
+											file_configuration = new_ogr_file_configuration.get();
+
+									ref.set_file_info(ref.get_file().get_file_info(), file_configuration);
+								}
+							}
+						}
+					}
+				}
+			}
+
+		}
+
+		return true;
 	}
 
 
@@ -714,7 +806,10 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 					// We no longer show the dialog when *loading* files since it's too annoying.
 					// It's still shown when *saving* files though...
 					false/*show_dialog_on_loading_files*/,
-					&viewport_window()))
+					&viewport_window())),
+	d_ogr_srs_write_option_dialog_ptr(
+			new GPlatesQtWidgets::OgrSrsWriteOptionDialog(
+				&viewport_window()))
 {
 	setObjectName("FileIOFeedback");
 }
@@ -969,6 +1064,14 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 			d_gpgim_version_warning_dialog_ptr))
 	{
 		// Return without saving.
+		return false;
+	}
+
+
+	if (!show_ogr_srs_dialog_if_necessary(
+				std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1,file),
+				d_ogr_srs_write_option_dialog_ptr))
+	{
 		return false;
 	}
 

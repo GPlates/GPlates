@@ -1518,7 +1518,10 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 					file_info.get_qfileinfo().filePath(),
 					finder.has_found_multiple_geometry_types(),
 					// Should polyline/polygon geometries be wrapped/clipped to the dateline...
-					ogr_file_configuration.get()->get_wrap_to_dateline()));
+					ogr_file_configuration.get()->get_wrap_to_dateline(),
+					// The original SRS, if one was provided.
+					ogr_file_configuration.get()->get_original_file_srs(),
+					ogr_file_configuration.get()->get_ogr_srs_write_behaviour()));
 
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
@@ -1599,10 +1602,24 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 			*file_ref.get_feature_collection()) =
 					d_model_to_shapefile_map;
 
+	// If we have instructed the OgrWriter to overwrite in WGS84, then update the OgrConfiguration too.
+	boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs =
+		ogr_file_configuration.get()->get_original_file_srs();
+	if (original_srs)
+	{
+		if (!original_srs.get()->is_wgs84() &&
+			(ogr_file_configuration.get()->get_ogr_srs_write_behaviour() == FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR))
+		{
+			ogr_file_configuration.get()->set_original_file_srs(
+						GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84());
+		}
+
+	}
 	// Store the file configuration in the file reference.
 	FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			file_configuration = ogr_file_configuration.get();
 	file_ref.set_file_info(file_info, file_configuration);
+
 }
 
 

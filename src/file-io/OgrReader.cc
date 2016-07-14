@@ -858,7 +858,8 @@ GPlatesFileIO::OgrReader::OgrReader():
 	d_feature_type_string("UnclassifiedFeature"),
 	d_total_geometries(0),
 	d_loaded_geometries(0),
-	d_total_features(0)
+	d_total_features(0),
+	d_current_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
 	OGRRegisterAll();
 }
@@ -1504,55 +1505,64 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 
 
 bool
-GPlatesFileIO::OgrReader::is_valid_shape_data(
-		double lat,
-		double lon,
+GPlatesFileIO::OgrReader::transform_and_check_coords(
+		double &x,
+		double &y,
 		ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
 
-	if (lat < SHAPE_NO_DATA){
-		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::NoLatitudeShapeData,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
-		return false;
-	}			
-	if (lon < SHAPE_NO_DATA){
-		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::NoLongitudeShapeData,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+	if (!d_current_coordinate_transformation->transform_in_place(&x,&y))
+	{
+		qWarning() << "Failed to transform coordinates";
 		return false;
 	}
 
-	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(lat)){
+	if (x < SHAPE_NO_DATA){
 		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::NoLongitudeShapeData,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		return false;
+	}
+	if (y < SHAPE_NO_DATA){
+		read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::NoLatitudeShapeData,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
 		return false;
 	}
 
-	if (!GPlatesMaths::LatLonPoint::is_valid_longitude(lon)){
+	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(y)){
 		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		qDebug() << "Invalid latitude: " << y;
+		return false;
+	}
+
+	if (!GPlatesMaths::LatLonPoint::is_valid_longitude(x)){
+		read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		qDebug() << "Invalid longitude: " << x;
 		return false;
 	}
 
 	return true;
 }
+
 
 void
 GPlatesFileIO::OgrReader::read_file(
@@ -1578,6 +1588,9 @@ GPlatesFileIO::OgrReader::read_file(
 	if (!reader.check_file_format(read_errors)){
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
+
+	reader.read_srs_and_set_transformation(file_ref,default_file_configuration);
+
 	reader.get_field_names(read_errors);
 
 	QString shapefile_xml_filename = OgrUtils::make_ogr_xml_filename(fileinfo.get_qfileinfo());
@@ -1667,14 +1680,11 @@ GPlatesFileIO::OgrReader::handle_point(
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
-			OGRPoint *ogr_point = static_cast<OGRPoint*>(d_geometry_ptr);
-			double lat,lon;
-			lat = ogr_point->getY();
-			lon = ogr_point->getX();
-
-			
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+	OGRPoint *ogr_point = static_cast<OGRPoint*>(d_geometry_ptr);
+	double x = ogr_point->getX();
+	double y = ogr_point->getY();
+	if (transform_and_check_coords(x,y,read_errors,source,location)){
+		GPlatesMaths::LatLonPoint llp(y,x);
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(llp);
 				try {
 					GPlatesModel::FeatureHandle::weak_ref feature =
@@ -1738,13 +1748,12 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 
 		for(int count = 0; count < num_geometries; count++)
 		{
-			OGRPoint* point = static_cast<OGRPoint*>(multi->getGeometryRef(count));
-			double lat,lon;
-			lat = point->getY();
-			lon = point->getX();
+			OGRPoint* ogr_point = static_cast<OGRPoint*>(multi->getGeometryRef(count));
+			double x = ogr_point->getX();
+			double y = ogr_point->getY();
 
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+			if (transform_and_check_coords(x,y,read_errors,source,location)){
+				GPlatesMaths::LatLonPoint llp(y,x);
 				GPlatesMaths::PointOnSphere p = GPlatesMaths::make_point_on_sphere(llp);
 				list_of_points.push_back(p);
 
@@ -1806,12 +1815,12 @@ GPlatesFileIO::OgrReader::handle_linestring(
 			return;
 	}
 	int count;
-	double lon,lat;
+	double x,y;
 	for (count = 0; count < num_points; count ++){
-		lon = linestring->getX(count);
-		lat = linestring->getY(count);
-		if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-			GPlatesMaths::LatLonPoint llp(lat,lon);
+		x = linestring->getX(count);
+		y = linestring->getY(count);
+		if (transform_and_check_coords(x,y,read_errors,source,location)){
+			GPlatesMaths::LatLonPoint llp(y,x);
 			feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 		else{
@@ -1900,13 +1909,13 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 			continue;
 		}
 		int count;
-		double lon,lat;
+		double x,y;
 
 		for (count = 0; count < num_points; count++){
-			lon = linestring->getX(count);
-			lat = linestring->getY(count);
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+			x = linestring->getX(count);
+			y = linestring->getY(count);
+			if (transform_and_check_coords(x,y,read_errors,source,location)){
+				GPlatesMaths::LatLonPoint llp(y,x);
 				feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 			}
 			else{
@@ -2129,6 +2138,52 @@ GPlatesFileIO::OgrReader::display_feature_counts()
 
 }
 
+void
+GPlatesFileIO::OgrReader::read_srs_and_set_transformation(
+		GPlatesFileIO::File::Reference &file_ref,
+		const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type
+		&default_ogr_file_configuration)
+{
+	// d_current_coordinate_transform is initialised to an identity transformation in the initialiser list, and
+	// is only overwritten here if we find an SRS which can be transformed to WGS84.
+
+	if (!d_layer_ptr)
+	{
+		return;
+	}
+
+	const OGRSpatialReference *ogr_srs = d_layer_ptr->GetSpatialRef();
+	if (ogr_srs)
+	{
+		d_source_srs = GPlatesPropertyValues::SpatialReferenceSystem::create(*ogr_srs);
+
+		// Transformation from provided srs (source) to WGS84 (target, default)
+		boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type> transform =
+				GPlatesPropertyValues::CoordinateTransformation::create(*d_source_srs);
+
+		if (transform)
+		{
+			d_current_coordinate_transformation = transform.get();
+		}
+
+		boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> ogr_file_configuration =
+				FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+					new FeatureCollectionFileFormat::OGRConfiguration(
+						*default_ogr_file_configuration));
+
+		if (ogr_file_configuration)
+		{
+			ogr_file_configuration.get()->set_original_file_srs(*d_source_srs);
+		}
+
+		FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
+				file_configuration = ogr_file_configuration.get();
+
+		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
+
+	}
+}
+
 
 void
 GPlatesFileIO::OgrReader::add_ring_to_points_list(
@@ -2146,7 +2201,7 @@ GPlatesFileIO::OgrReader::add_ring_to_points_list(
 
 	int num_points;
 	int count;
-	double lat,lon; 
+	double x,y;
 
 	ring_points.clear();
 
@@ -2170,10 +2225,10 @@ GPlatesFileIO::OgrReader::add_ring_to_points_list(
 	ring_points.reserve(num_points);
 
 	for (count = 0; count < num_points; count++){
-		lon = ring->getX(count);
-		lat = ring->getY(count);
-		if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-			GPlatesMaths::LatLonPoint llp(lat,lon);
+		x = ring->getX(count);
+		y = ring->getY(count);
+		if (transform_and_check_coords(x,y,read_errors,source,location)){
+			GPlatesMaths::LatLonPoint llp(y,x);
 			ring_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 		else{

@@ -345,7 +345,6 @@ namespace GPlatesQtWidgets
 		set_window_title(
 				boost::optional<QString> project_filename = boost::none);
 
-
 	private Q_SLOTS:
 
 		void

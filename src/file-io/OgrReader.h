@@ -50,6 +50,7 @@
 #include <ogrsf_frmts.h>
 #endif  // HAVE_CONFIG_H
 
+#include "FeatureCollectionFileFormatConfigurations.h"
 #include "File.h"
 #include "FileInfo.h"
 #include "PropertyMapper.h"
@@ -59,6 +60,8 @@
 #include "model/GpgimProperty.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "property-values/CoordinateTransformation.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 
 namespace GPlatesFileIO
@@ -269,19 +272,27 @@ namespace GPlatesFileIO
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		bool
-		is_valid_shape_data(
-				double lat,
-				double lon,
+		transform_and_check_coords(
+				double &x,
+				double &y,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
-				);
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		void
 		display_feature_counts();
 
 		OGRwkbGeometryType
 		get_OGR_type();
+
+		/**
+		 * @brief read_srs_and_set_transformation - set the Configuration's SRS, if one
+		 * was provided by the OGR source.
+		 */
+		void
+		read_srs_and_set_transformation(
+				File::Reference &file_ref,
+				const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration);
 
 		void
 		add_ring_to_points_list(
@@ -330,6 +341,17 @@ namespace GPlatesFileIO
 		unsigned d_total_features;
 
 		static boost::shared_ptr< PropertyMapper > s_property_mapper;
+
+		/**
+		 * @brief d_source_srs - the original SRS of the OGR source, if one was provided.
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+			d_source_srs;
+
+		/**
+		 * @brief d_current_coordinate_transformation - The coordinate transformation from the provided SRS to WGS84.
+		 */
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_current_coordinate_transformation;
 	};
 
 

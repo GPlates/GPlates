@@ -71,6 +71,7 @@ namespace GPlatesQtWidgets
 	class GpgimVersionWarningDialog;
 	class ManageFeatureCollectionsDialog;
 	class MissingSessionFilesDialog;
+	class OgrSrsWriteOptionDialog;
 	class OpenProjectRelativeOrAbsoluteDialog;
 	// Forward declaration of ViewportWindow and MFCD to avoid spaghetti.
 	// Yes, this is ViewportWindow, not the "View State"; we need
@@ -508,6 +509,13 @@ namespace GPlatesGui
 		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
 		 */
 		GPlatesQtWidgets::GpgimVersionWarningDialog *d_gpgim_version_warning_dialog_ptr;
+
+		/**
+		 * Pointer to the dialog we use to notify users of a non-WGS84 SRS associated
+		 * an original file on disk, and to obtain the users SRS behaviour preference.
+		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
+		 */
+		GPlatesQtWidgets::OgrSrsWriteOptionDialog *d_ogr_srs_write_option_dialog_ptr;
 	};
 
 
