@@ -52,6 +52,7 @@
 // #includes for all dialogs managed by us.
 ////////////////////////////////////////////////
 #include "qt-widgets/AboutDialog.h"
+#include "qt-widgets/AgeModelManagerDialog.h"
 #include "qt-widgets/AnimateDialog.h"
 #include "qt-widgets/AssignReconstructionPlateIdsDialog.h"
 #include "qt-widgets/CalculateReconstructionPoleDialog.h"
@@ -68,6 +69,7 @@
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
+#include "qt-widgets/HellingerDialog.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "qt-widgets/KinematicGraphsDialog.h"
 #include "qt-widgets/LicenseDialog.h"
@@ -129,6 +131,29 @@ void
 GPlatesGui::Dialogs::pop_up_about_dialog()
 {
 	about_dialog().exec();
+}
+
+GPlatesQtWidgets::AgeModelManagerDialog &
+GPlatesGui::Dialogs::age_model_manager_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_AGE_MODEL_MANAGER;
+	typedef GPlatesQtWidgets::AgeModelManagerDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(
+					view_state(),
+					&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_age_model_manager_dialog()
+{
+	age_model_manager_dialog().pop_up();
 }
 
 
@@ -462,6 +487,44 @@ GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
 {
 	finite_rotation_calculator_dialog().pop_up();
 }
+
+GPlatesQtWidgets::HellingerDialog &
+GPlatesGui::Dialogs::hellinger_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_HELLINGER;
+	typedef GPlatesQtWidgets::HellingerDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(
+			view_state(),
+			read_error_accumulation_dialog(),
+			&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_hellinger_dialog()
+{
+	hellinger_dialog().pop_up();
+}
+
+void GPlatesGui::Dialogs::pop_up_and_reposition_hellinger_dialog()
+{
+	if (hellinger_dialog().isVisible())
+	{
+		pop_up_hellinger_dialog();
+	}
+	else
+	{
+		pop_up_hellinger_dialog();
+		GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(&hellinger_dialog());
+	}
+}
+
 
 GPlatesQtWidgets::KinematicGraphsDialog &
 GPlatesGui::Dialogs::kinematics_tool_dialog()

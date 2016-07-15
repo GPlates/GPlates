@@ -157,6 +157,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflows()
 	set_up_topology_workflow();
 	set_up_pole_manipulation_workflow();
 	set_up_small_circle_workflow();
+	set_up_hellinger_workflow();
 }
 
 
@@ -357,6 +358,29 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_small_circle_workflow()
 			action_Create_Small_Circle);
 }
 
+void GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_hellinger_workflow()
+{
+	//
+	// Set up the 'hellinger' canvas tools workflow.
+	//
+
+	Workflow hellinger_workflow = create_workflow(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_HELLINGER,
+			tr("Hellinger"),
+			tab_hellinger,
+			hellinger_toolbar_placeholder);
+
+	add_tool_action_to_workflow(
+			hellinger_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES,
+				action_Select_Hellinger_Geometries);
+
+	add_tool_action_to_workflow(
+				hellinger_workflow,
+				GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE,
+				action_Adjust_Pole_Estimate);
+}
+
 
 GPlatesQtWidgets::CanvasToolBarDockWidget::Workflow
 GPlatesQtWidgets::CanvasToolBarDockWidget::create_workflow(
@@ -503,6 +527,8 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE, action_Move_Pole);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, action_Select_Hellinger_Geometries);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE, action_Adjust_Pole_Estimate);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, action_Build_Line_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, action_Build_Boundary_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY, action_Build_Network_Topology);

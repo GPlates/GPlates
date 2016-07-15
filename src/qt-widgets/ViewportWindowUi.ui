@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -209,7 +209,10 @@
     <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="action_Open_Kinematics_Tool"/>
     <addaction name="separator"/>
+    <addaction name="action_Manage_Age_Models"/>
+    <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Window">
     <property name="title">
@@ -1192,6 +1195,17 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Manage_Age_Models">
+   <property name="text">
+    <string>Manage &amp;Age Models</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage Age Models</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
    </property>
   </action>
  </widget>

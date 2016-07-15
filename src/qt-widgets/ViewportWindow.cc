@@ -812,7 +812,16 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	QObject::connect(action_Open_Kinematics_Tool, SIGNAL(triggered()),
 					 &dialogs(), SLOT(pop_up_kinematics_tool_dialog()));
-	
+
+	if (GPlatesUtils::ComponentManager::instance().is_enabled(
+				GPlatesUtils::ComponentManager::Component::hellinger_three_plate()))
+	{
+		action_Manage_Age_Models->setVisible(true);
+		QObject::connect(action_Manage_Age_Models, SIGNAL(triggered()),
+				&dialogs(), SLOT(pop_up_age_model_manager_dialog()));
+
+	}
+
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
@@ -1489,6 +1498,18 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
 		d_task_panel_ptr->choose_small_circle_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
+		// NOTE: We don't currently have any hellinger task panels
+		// (and we may never have any), so we just open the
+		// Hellinger dialog here, unlike most other tools which will
+		// activate their associated task panels.
+		dialogs().pop_up_and_reposition_hellinger_dialog();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
+		dialogs().pop_up_hellinger_dialog();
 		break;
 
 	default:

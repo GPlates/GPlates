@@ -311,17 +311,13 @@ namespace{
 		{
 			OGRSpatialReference spatial_reference; 
 
-			qDebug() << "SRS exists: " << original_srs;
-			qDebug() << "behaviour: " << ogr_srs_behaviour;
 			if ((ogr_srs_behaviour == GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_ORIGINAL_SRS_BEHAVIOUR)  &&
 				original_srs)
 			{
-				qDebug() << "setting original srs";
 				spatial_reference = original_srs.get()->get_ogr_srs();
 			}
 			else
 			{
-				qDebug() << "setting WGS84";
 				spatial_reference.SetWellKnownGeogCS("WGS84");
 			}
 
@@ -851,7 +847,6 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_srs_write_behaviour(behaviour),
 	d_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
-	qDebug() << "Behaviour in constructor: " << d_ogr_srs_write_behaviour;
     OGRRegisterAll();
 
 	QFileInfo q_file_info_original(d_filename);
@@ -955,13 +950,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 		{
 			d_coordinate_transformation = transform.get();
 		}
-		qDebug() << "Created transform from WGS84 to original";
 	}
-	else
-	{
-		qDebug() << "Identity transform";
-	}
-
 
 }
 

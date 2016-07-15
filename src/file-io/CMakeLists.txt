@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    AgeModelReader.cc
+    AgeModelReader.h
     ArbitraryNodeProcessor.h
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
@@ -121,6 +123,10 @@ set(srcs
     GsmlPropertyDef.h
     GsmlPropertyHandlers.cc
     GsmlPropertyHandlers.h
+    HellingerReader.cc
+    HellingerReader.h
+    HellingerWriter.cc
+    HellingerWriter.h
     LineReader.cc
     LineReader.h
     LogToFileHandler.cc

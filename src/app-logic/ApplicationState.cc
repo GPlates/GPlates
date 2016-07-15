@@ -28,6 +28,7 @@
 
 #include "ApplicationState.h"
 
+#include "AgeModelCollection.h"
 #include "AppLogicUtils.h"
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
@@ -98,7 +99,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_reconstruct_on_scope_exit(false),
 	d_currently_reconstructing(false),
 	d_suppress_auto_layer_creation(false),
-	d_callback_feature_store(d_model->root())
+	d_callback_feature_store(d_model->root()),
+	d_age_model_collection(new AgeModelCollection())
 {
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);

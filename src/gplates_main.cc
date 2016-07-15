@@ -100,7 +100,8 @@ namespace
 			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
-			enable_symbol_table(false)
+			enable_symbol_table(false),
+			enable_hellinger_three_plate(false) // Disable three-plate fitting by default
 		{
 #if defined(GPLATES_NO_PYTHON)
 			enable_python = false;
@@ -114,6 +115,7 @@ namespace
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
+		bool enable_hellinger_three_plate;
 	};
 	
 	//! Option name associated with positional arguments (project files or feature collection files).
@@ -143,6 +145,9 @@ namespace
 
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
+
+	//! Enable hellinger fitting tool
+	const char *ENABLE_HELLINGER_THREE_PLATE_OPTION_NAME = "enable-hellinger-3";
 
 
 	/**
@@ -314,6 +319,10 @@ namespace
 		// Add enable-external-syncing options
 		input_options.hidden_options.add_options()
 			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
+
+		// Add secret hellinger option
+		input_options.hidden_options.add_options()
+			(ENABLE_HELLINGER_THREE_PLATE_OPTION_NAME, "Enable three-plate hellinger fitting.");
 
 		boost::program_options::variables_map vm;
 
@@ -496,6 +505,11 @@ namespace
 		if (vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
 		{
 			command_line_options.enable_external_syncing = true;
+		}
+
+		if(vm.count(ENABLE_HELLINGER_THREE_PLATE_OPTION_NAME))
+		{
+			command_line_options.enable_hellinger_three_plate = true;
 		}
 
 		// Disable python if command line option specified.
@@ -818,6 +832,18 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().disable(
 			GPlatesUtils::ComponentManager::Component::python());
+	}
+
+	// Enable or disable hellinger tool.
+	if (gui_command_line_options->enable_hellinger_three_plate)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
+	}
+	else
+	{
+		GPlatesUtils::ComponentManager::instance().disable(
+			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
 	}
 
 	// This will only install handler if any of the following conditions are satisfied:

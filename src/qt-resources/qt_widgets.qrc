@@ -144,5 +144,6 @@
         <file>gnome_zoom_fit_best_22.png</file>
         <file>gnome_object_flip_horizontal_purple_16.png</file>
         <file>gnome_object_flip_horizontal_purple_22.png</file>
+        <file>hellinger_35.png</file>
     </qresource>
 </RCC>

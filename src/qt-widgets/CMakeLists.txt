@@ -29,6 +29,9 @@ set(srcs
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
+    AgeModelManagerDialog.cc
+    AgeModelManagerDialog.h
+    AgeModelManagerDialogUi.ui
     AnimateControlWidget.cc
     AnimateControlWidget.h
     AnimateControlWidgetUi.ui
@@ -284,6 +287,37 @@ set(srcs
     GpgimVersionWarningDialogUi.ui
     GPlatesDialog.cc
     GPlatesDialog.h
+    HellingerConfigurationDialog.cc
+    HellingerConfigurationDialog.h
+    HellingerConfigurationDialogUi.ui
+    HellingerConfigurationWidget.cc
+    HellingerConfigurationWidget.h
+    HellingerConfigurationWidgetUi.ui
+    HellingerDialog.cc
+    HellingerDialog.h
+    HellingerDialogUi.ui
+    HellingerPointDialog.cc
+    HellingerPointDialog.h
+    HellingerPointDialogUi.ui
+    HellingerFitWidget.cc
+    HellingerFitWidget.h
+    HellingerFitWidgetUi.ui
+    HellingerSegmentDialog.cc
+    HellingerSegmentDialog.h
+    HellingerSegmentDialogUi.ui
+    HellingerModel.cc
+    HellingerModel.h
+    HellingerNewSegmentWarning.cc
+    HellingerNewSegmentWarning.h
+    HellingerNewSegmentWarningUi.ui
+    HellingerPickWidget.cc
+    HellingerPickWidget.h
+    HellingerPickWidgetUi.ui
+    HellingerStatsDialog.cc
+    HellingerStatsDialog.h
+    HellingerStatsDialogUi.ui
+    HellingerThread.cc
+    HellingerThread.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
     ImportScalarField3DDialog.cc

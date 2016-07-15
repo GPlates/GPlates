@@ -1150,3 +1150,48 @@ GPlatesMaths::GreatCircleArc::operator==(
 	return d_start_point == other.d_start_point &&
 		d_end_point == other.d_end_point;
 }
+
+double
+GPlatesMaths::calculate_angle_between_adjacent_non_zero_length_arcs(
+		const GreatCircleArc &first_gca,
+		const GreatCircleArc &second_gca)
+{
+	// The client has assured us the great circle arcs don't have zero length and
+	// hence have a rotation axis.
+	const UnitVector3D &first_edge_normal = first_gca.rotation_axis();
+	const UnitVector3D &second_edge_normal = second_gca.rotation_axis();
+
+	//
+	// To obtain accurate results we combine the cosine and sine of the angle into
+	// an arc-tangent - this gives us more accurate results than taking just
+	// the arc-cosine because arguments (to arc-cosine) that are near zero can give
+	// inaccurate results.
+	//
+
+	// The cosine of the angle is related to the dot product.
+	const double dot_product_normals = dot(first_edge_normal, second_edge_normal).dval();
+
+	// The sine of the angle is related to the magnitude of the cross product.
+	const Vector3D cross_product_normals = cross(first_edge_normal, second_edge_normal);
+	const double cross_product_magnitude = cross_product_normals.magnitude().dval();
+
+	// We need to get the cosine and sine into the correct atan quadrant.
+	// To do this we need to:
+	// (1) Negate the dot product and,
+	// (2) Flip the sign of the cross product magnitude if the cross product vector
+	//     is pointing in the opposite direction to the vector
+	//         from the origin (sphere centre) to
+	//         the point-on-sphere joining the two edges.
+	double angle =
+			(dot(cross_product_normals, second_gca.start_point().position_vector()).dval() < 0)
+			? std::atan2(-cross_product_magnitude,  -dot_product_normals)
+			: std::atan2(cross_product_magnitude,  -dot_product_normals);
+
+	// Convert range [-PI, PI] returned by atan2 to the range [0, 2PI].
+	if (angle < 0)
+	{
+		angle += 2 * PI;
+	}
+
+	return angle;
+}
