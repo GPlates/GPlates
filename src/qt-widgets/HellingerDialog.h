@@ -79,8 +79,8 @@ namespace GPlatesQtWidgets
 	const HellingerConfigurationWidget::HellingerColour INITIAL_ELLIPSE_COLOUR =
 			HellingerConfigurationWidget::RED;
 	const int INITIAL_ELLIPSE_THICKNESS = 2;
-	const float INITIAL_POLE_ARROW_HEIGHT = 0.3;
-	const float INITIAL_POLE_ARROW_RADIUS = 0.12;
+	const float INITIAL_POLE_ARROW_HEIGHT = 0.3f;
+	const float INITIAL_POLE_ARROW_RADIUS = 0.12f;
 	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_ONE_PICK_SYMBOL = GPlatesGui::Symbol::CROSS;
 	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_TWO_PICK_SYMBOL = GPlatesGui::Symbol::SQUARE;
 	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_THREE_PICK_SYMBOL = GPlatesGui::Symbol::TRIANGLE;
