@@ -310,7 +310,9 @@ namespace GPlatesUtils
 #else
 	#ifdef __clang__
 			// clang
-			typedef iterator_type (map_type::*erase1)(const_iterator_type);
+			//typedef iterator_type (map_type::*erase1)(const_iterator_type);
+		       typedef void (map_type::*erase1)(iterator_type);
+
 	#else
 			// G++
 			typedef void (map_type::*erase1)(iterator_type);
