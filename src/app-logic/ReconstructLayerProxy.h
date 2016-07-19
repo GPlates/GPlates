@@ -139,6 +139,9 @@ namespace GPlatesAppLogic
 		}
 
 
+		~ReconstructLayerProxy();
+
+
 		//
 		// Getting a sequence of @a ReconstructedFeatureGeometry objects.
 		//

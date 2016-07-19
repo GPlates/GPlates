@@ -103,6 +103,13 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 }
 
 
+GPlatesAppLogic::ReconstructLayerProxy::~ReconstructLayerProxy()
+{
+	// Defined in ".cc" file because...
+	// non_null_ptr destructors require complete type of class they're referring to.
+}
+
+
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
