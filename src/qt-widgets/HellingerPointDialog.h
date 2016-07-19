@@ -41,10 +41,6 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
-		enum {
-
-		};
-
 		HellingerPointDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
