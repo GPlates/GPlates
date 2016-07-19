@@ -542,7 +542,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstruction
 	setupUi(this);
 
 	// For setting minimum sizes.
-	EditPoleActionWidget dummy(this,NULL);
+	EditPoleActionWidget dummy(this);
 	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::COMMENT,QHeaderView::Stretch);
 	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::ACTIONS,QHeaderView::Fixed);
 	table_sequences->horizontalHeader()->resizeSection(ColumnNames::ACTIONS,dummy.width());
