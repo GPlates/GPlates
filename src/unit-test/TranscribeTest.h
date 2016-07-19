@@ -190,6 +190,10 @@ namespace GPlatesUnitTest
 
 			struct QStringWrapper
 			{
+				QStringWrapper()
+				{}
+
+
 				QString str;
 
 				bool
