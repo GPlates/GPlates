@@ -65,7 +65,10 @@ const unsigned int MAX_VERTICAL_SCALE_POWER = 5;
 const unsigned int MIN_VERTICAL_SCALE_POWER = 0;
 const double INITIAL_BEGIN_TIME = 200.;
 const double INITIAL_END_TIME = 0.;
-const double INITIAL_TIME_STEP = 10.;
+//const double INITIAL_TIME_STEP = 10.;
+
+// Set start-up time step to 5 Ma for 2.0
+const double INITIAL_TIME_STEP = 5.;
 
 typedef GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type velocity_method_map_type;
 

@@ -70,7 +70,7 @@ namespace GPlatesPresentation
 
 // These values should be overridden by values read from preferences when the dialog is
 // created.
-const double INITIAL_DELTA_T = 1.;
+const double INITIAL_DELTA_T = 5.;
 const double INITIAL_THRESHOLD_YELLOW = 20. ; // Velocity threshold (cm/yr) for checking crazy values.
 const double INITIAL_THRESHOLD_RED = 30. ; // Velocity threshold (cm/yr) for checking crazy values.
 

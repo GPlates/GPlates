@@ -643,8 +643,6 @@ GPlatesQtWidgets::HellingerFitWidget::handle_amoeba_residual_changed()
 	}
 	d_amoeba_residual_ok = ok;
 	update_buttons();
-	qDebug() << "tolerance ok: " << ok;
-	qDebug() << "tolerance: " << tolerance;
 }
 
 

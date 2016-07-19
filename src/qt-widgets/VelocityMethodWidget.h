@@ -42,7 +42,7 @@ namespace GPlatesQtWidgets
 
 
 		class
-				MapValueEquals:
+		MapValueEquals:
 				public std::unary_function<QString,bool>
 		{
 		public:
