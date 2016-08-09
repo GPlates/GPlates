@@ -29,7 +29,12 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <boost/cstdint.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/not.hpp>
 #include <boost/optional.hpp>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "ScribeObjectTag.h"
 #include "Transcription.h"
@@ -213,6 +218,44 @@ namespace GPlatesScribe
 		transcribe(
 				unsigned long &object);
 
+
+		//
+		// Handle 64-bit integers when using a 64-bit compiler.
+		//
+		// NOTE: The transcribe will fail if the integers have values that do not fit into 32-bits.
+		//
+		// This is only really needed for Windows since a 'long' is 32-bit (in both 32-bit and 64-bit compilers)
+		// and hence we need something else to account for 64-bit integers.
+		// However on Mac/Linux a 'long' is already 64-bit and hence it is already accounted for above.
+		//
+		// So we disable our extra 64-bit integer overloads below if they've already been accounted for (eg, Mac/Linux).
+		// We do this using boost::enable_if (which requires a template function).
+		// On Windows, boost::int64_t (uint64_t) typedefs to '__int64' ('unsigned __int64').
+		//
+
+#ifndef BOOST_NO_INT64_T
+
+		template <typename ObjectType>
+		typename boost::enable_if<
+				boost::mpl::and_<
+						boost::is_same<ObjectType, boost::int64_t>,
+						boost::mpl::not_<boost::is_same<ObjectType, long> > >,
+				bool>::type
+		transcribe(
+				ObjectType &object);
+
+		template <typename ObjectType>
+		typename boost::enable_if<
+				boost::mpl::and_<
+						boost::is_same<ObjectType, boost::uint64_t>,
+						boost::mpl::not_<boost::is_same<ObjectType, unsigned long> > >,
+				bool>::type
+		transcribe(
+				ObjectType &object);
+
+#endif // BOOST_NO_INT64_T
+
+
 		bool
 		transcribe(
 				float &object);
@@ -312,6 +355,106 @@ namespace GPlatesScribe
 				Transcription::CompositeObject *&section_composite_object,
 				boost::optional<object_id_type &> object_id) const;
 	};
+}
+
+//
+// Implementation.
+//
+
+namespace GPlatesScribe
+{
+#ifndef BOOST_NO_INT64_T
+
+	template <typename ObjectType>
+	typename boost::enable_if<
+			boost::mpl::and_<
+					boost::is_same<ObjectType, boost::int64_t>,
+					boost::mpl::not_<boost::is_same<ObjectType, long> > >,
+			bool>::type
+	TranscriptionScribeContext::transcribe(
+			ObjectType &object)
+	{
+		long long_object;
+
+		if (is_saving())
+		{
+			// If we get any 64-bit signed integers that are greater than the range of 'long'
+			// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+			try
+			{
+				long_object = boost::numeric_cast<long>(object);
+			}
+			catch (boost::numeric::bad_numeric_cast &)
+			{
+				// Throw as one of our exceptions instead.
+				GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+						false,
+						GPLATES_ASSERTION_SOURCE,
+						"64-bit signed integer is out of range of 'long'.");
+			}
+		}
+
+		// Re-use 'transcribe()' for 'long'.
+		// Ie, we treat 64-bit signed integers as 'long'.
+		if (!transcribe(long_object))
+		{
+			return false;
+		}
+
+		if (is_loading())
+		{
+			object = long_object;
+		}
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	typename boost::enable_if<
+			boost::mpl::and_<
+					boost::is_same<ObjectType, boost::uint64_t>,
+					boost::mpl::not_<boost::is_same<ObjectType, unsigned long> > >,
+			bool>::type
+	TranscriptionScribeContext::transcribe(
+			ObjectType &object)
+	{
+		unsigned long long_object;
+
+		if (is_saving())
+		{
+			// If we get any 64-bit unsigned integers that are greater than the range of 'unsigned long'
+			// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+			try
+			{
+				long_object = boost::numeric_cast<unsigned long>(object);
+			}
+			catch (boost::numeric::bad_numeric_cast &)
+			{
+				// Throw as one of our exceptions instead.
+				GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+						false,
+						GPLATES_ASSERTION_SOURCE,
+						"64-bit unsigned integer is out of range of 'unsigned long'.");
+			}
+		}
+
+		// Re-use 'transcribe()' for 'unsigned long'.
+		// Ie, we treat 64-bit unsigned integers as 'unsigned long'.
+		if (!transcribe(long_object))
+		{
+			return false;
+		}
+
+		if (is_loading())
+		{
+			object = long_object;
+		}
+
+		return true;
+	}
+
+#endif // BOOST_NO_INT64_T
 }
 
 #endif // GPLATES_SCRIBE_TRANSCRIPTIONSCRIBECONTEXT_H
