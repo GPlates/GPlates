@@ -631,7 +631,7 @@ void
 GPlatesQtWidgets::HellingerFitWidget::handle_amoeba_residual_changed()
 {
 	bool ok;
-	double tolerance = line_edit_amoeba_tolerance->text().toFloat(&ok);
+	/*double tolerance = */line_edit_amoeba_tolerance->text().toFloat(&ok);
 
 	if (!ok)
 	{
