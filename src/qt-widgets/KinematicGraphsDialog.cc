@@ -339,11 +339,12 @@ GPlatesQtWidgets::KinematicGraphsDialog::KinematicGraphsDialog(
 	set_up_plot();
 	set_up_axes_ranges();
 	set_graph_axes_and_titles();
-
+#if 0
 	qDebug() << "Using Qwt version " << QWT_VERSION_STR;
 	qDebug() << QWT_MAJOR_VERSION;
 	qDebug() << QWT_MINOR_VERSION;
 	qDebug() << QWT_PATCH_VERSION;
+#endif
 }
 
 void
