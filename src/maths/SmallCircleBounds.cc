@@ -254,9 +254,9 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 	// (in a bottom-up fashion) in which case the 'acos' angle is only queried once per
 	// bounding small circle so there's currently no real need to cache it.
 	const double angle_bounding_small_circle_1 =
-			std::acos(bounding_small_circle_1.get_angular_extent().get_cosine().dval());
+			acos(bounding_small_circle_1.get_angular_extent().get_cosine()).dval();
 	const double angle_bounding_small_circle_2 =
-			std::acos(bounding_small_circle_2.get_angular_extent().get_cosine().dval());
+			acos(bounding_small_circle_2.get_angular_extent().get_cosine()).dval();
 
 	// If the second small circle is inside the first small circle then the optimal bounding
 	// small circle is just the first small circle.

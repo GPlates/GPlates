@@ -177,8 +177,8 @@ namespace GPlatesMaths
 			/**
 			 * Returns the index of the first great circle arc bounded by this node.
 			 *
-			 * This is the index into the PolylineOnSphere or PolygonOnSphere or sequence of
-			 * great circle arcs passed into PolyGreatCircleArcBoundingTree constructor.
+			 * This is the index into the PolylineOnSphere or ring of a PolygonOnSphere or sequence
+			 * of great circle arcs passed into PolyGreatCircleArcBoundingTree constructor.
 			 */
 			unsigned int
 			get_bounded_great_circle_arcs_begin_index() const

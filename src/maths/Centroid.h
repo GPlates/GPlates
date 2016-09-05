@@ -265,11 +265,9 @@ namespace GPlatesMaths
 				{
 					const GreatCircleArc &edge = *edges_iter;
 
-					const double &cosine_arc_length = edge.dot_of_endpoints().dval();
-					// This is a faster approximation of "acos" (inverse cosine).
-					// We don't really need too much accuracy here because we're not doing a proper line integral.
-					// So the faster version of 'acos' is fine.
-					const double approx_arc_length = std::acos(cosine_arc_length);
+					// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
+					// dot product is just outside the range [-1,1] which would result in NaN.
+					const double arc_length = acos(edge.dot_of_endpoints()).dval();
 
 					const Vector3D edge_centroid = 0.5 * (
 							Vector3D(edge.start_point().position_vector()) +
@@ -278,17 +276,16 @@ namespace GPlatesMaths
 					// average of the edge end points (saving us an inverse square root calculation).
 					// At 45 degrees the length of the average of the edge end points is
 					// approx 1 (it's 0.989) which is already almost normalised.
-					const double edge_weight = (approx_arc_length > 0.5 * HALF_PI)
-							? approx_arc_length / edge_centroid.magnitude().dval()
-							: approx_arc_length;
+					const double edge_weight = (arc_length > 0.5 * HALF_PI)
+							? arc_length / edge_centroid.magnitude().dval()
+							: arc_length;
 
 					// Our approximation to the (poly) line integral.
 					// It should be independent of the tessellation of the edges but it's not.
 					// In other words you should be able to keep the same edges but just divide them up
 					// more finely and still get the same centroid.
 					// It's still better than just summing the endpoints.
-					arc_length_weighted_centroid = arc_length_weighted_centroid +
-							edge_weight * edge_centroid;
+					arc_length_weighted_centroid = arc_length_weighted_centroid + edge_weight * edge_centroid;
 				}
 
 				return arc_length_weighted_centroid;
@@ -309,10 +306,7 @@ namespace GPlatesMaths
 			// Iterate through the points and calculate the sum of vertex positions.
 			Vector3D summed_points_position(0,0,0);
 
-			int num_vertices = 0;
-			for (PointForwardIter points_iter = points_begin;
-				points_iter != points_end;
-				++points_iter, ++num_vertices)
+			for (PointForwardIter points_iter = points_begin; points_iter != points_end; ++points_iter)
 			{
 				const PointOnSphere &point = *points_iter;
 
@@ -336,10 +330,7 @@ namespace GPlatesMaths
 			// Iterate through the points and calculate the sum of vertex positions.
 			Vector3D summed_points_position(0,0,0);
 
-			int num_vertices = 0;
-			for (UnitVector3DForwardIter points_iter = points_begin;
-				points_iter != points_end;
-				++points_iter, ++num_vertices)
+			for (UnitVector3DForwardIter points_iter = points_begin; points_iter != points_end; ++points_iter)
 			{
 				const UnitVector3D &point = *points_iter;
 
