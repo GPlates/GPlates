@@ -315,11 +315,21 @@ namespace GPlatesUtils
 			// Previously we had preprocessor ifdef's based on different compilers but it got too fiddly
 			// between MSVC, G++ and CLANG and different versions within each having different signatures.
 			//
-			// We need to inherit 'map_type' and bring its 'erase()' method into scope of derived class
+			// Update: Looks like we need at least one ifdef though :-)
+			// At least don't have to worry about compiler versions - not yet anyway :-)
+#ifdef _MSC_VER
+			// For MSVC we need to inherit 'map_type' and bring its 'erase()' method into scope of derived class
 			// so that, when we check the method type, it doesn't find 'erase' in the base class of 'map_type'
 			// and hence have a different method signature (eg, 'map_base_type::erase') and hence bypass
 			// our method detection code.
 			struct CheckMapEraseType : public map_type { using map_type::erase; };
+#else
+			// The above inherit 'map_type' trick doesn't work for G++ and CLANG.
+			// Instead just use the map type itself as the check type.
+			// This may only work is 'map_type' itself doesn't inherit from a base class (containing 'erase()').
+			// So far it seems this is the case.
+			typedef map_type CheckMapEraseType;
+#endif
 			typedef typename boost::mpl::if_<
 					// See if erase method has signature 'iterator_type (map_type::*)(iterator_type)'...
 					HasEraseMember<CheckMapEraseType, iterator_type (CheckMapEraseType::*)(iterator_type)>,
