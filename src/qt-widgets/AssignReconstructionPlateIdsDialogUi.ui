@@ -23,7 +23,7 @@
    <item>
     <widget class="QStackedWidget" name="stack_widget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="partitioning_layers">
       <layout class="QVBoxLayout">
@@ -513,6 +513,20 @@
           <string>Feature Partitioning</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
+          <item row="1" column="0">
+           <widget class="QRadioButton" name="radio_button_assign_features">
+            <property name="text">
+             <string>Copy feature properties from the polygon that most overlaps a feature</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QRadioButton" name="radio_button_partition_features">
+            <property name="text">
+             <string>Partition (cookie cut) feature geometry into polygons and copy feature properties</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_partition_options">
             <property name="text">
@@ -550,27 +564,6 @@
              </widget>
             </item>
            </layout>
-          </item>
-          <item row="1" column="0">
-           <widget class="QRadioButton" name="radio_button_assign_features">
-            <property name="text">
-             <string>Copy feature properties from the polygon that most overlaps a feature</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QRadioButton" name="radio_button_assign_feature_sub_geometries">
-            <property name="text">
-             <string>Copy feature properties from the polygon that most overlaps each geometry in a feature</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QRadioButton" name="radio_button_partition_features">
-            <property name="text">
-             <string>Partition (cookie cut) feature geometry into polygons and copy feature properties</string>
-            </property>
-           </widget>
           </item>
          </layout>
         </widget>

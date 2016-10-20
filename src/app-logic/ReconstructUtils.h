@@ -40,6 +40,7 @@
 #include "ReconstructParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
+#include "ReconstructMethodInterface.h"
 #include "ReconstructMethodRegistry.h"
 #include "RotationUtils.h"
 
@@ -265,19 +266,37 @@ namespace GPlatesAppLogic
 		 * reverse reconstructed to present day before it can be attached back onto the feature
 		 * because feature's typically store present day geometry in their geometry properties.
 		 *
-		 * Note that @a reconstruction_tree_creator can be used to get reconstruction trees at times
-		 * other than @a reconstruction_time.
+		 * Note that @a reconstruct_method_context contains a @a ReconstructionTreeCreator that can
+		 * be used to get reconstruction trees at times other than @a reconstruction_time.
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
+		 *
+		 * Note that @a reconstruct_method_context can also contain deformation information used
+		 * to deform the specified geometry.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const double &reconstruction_time,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				bool reverse_reconstruct = false);
+
+
+		/**
+		 * Same as other overload of @a reconstruct_geometry but creates a temporary
+		 * @a ReconstructMethodInterface::Context internally using @a reconstruction_tree_creator
+		 * and @a reconstruct_params.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time,
 				bool reverse_reconstruct = false);
 
 

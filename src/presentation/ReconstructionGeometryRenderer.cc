@@ -26,10 +26,9 @@
 
 #include <cmath>
 #include <cstddef> // For std::size_t
+#include <utility>
 #include <boost/foreach.hpp>
 #include <CGAL/centroid.h>
-
-#include "global/CompilerWarnings.h"
 
 #include "ReconstructionGeometryRenderer.h"
 
@@ -62,18 +61,19 @@
 #include "app-logic/ResolvedScalarField3D.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/ResolvedTriangulationUtils.h"
+#include "app-logic/ResolvedTriangulationDelaunay2.h"
 
 #include "data-mining/DataTable.h"
 
+#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
 
 #include "maths/CalculateVelocity.h"
-#include "maths/Centroid.h"
 #include "maths/MathsUtils.h"
 
 #include "utils/ComponentManager.h"
@@ -193,47 +193,46 @@ namespace
 				reconstruction_geometry,
 				rendered_geom);
 	}
-}
 
+
+	// Threshold used when subdividing a topological network delaunay face to visualise 'smoothed' strain rates.
+	// Natural neighbour tends to need more subdivision than barycentric.
+
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_COSINE =
+			std::cos(SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE);
+
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_COSINE =
+			std::cos(SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE);
+}
 
 
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters_,
 		bool fill_polygons_,
-		bool fill_polylines_,
-		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
-		bool show_deformed_feature_geometries_,
-		bool show_strain_accumulation_,
-		double strain_accumulation_scale_,
-		bool show_topological_network_delaunay_triangulation_,
-		bool show_topological_network_constrained_triangulation_,
-		bool show_topological_network_mesh_triangulation_,
-		bool show_topological_network_total_triangulation_,
-		bool show_topological_network_segment_velocity_,
-		int topological_network_color_index_) :
+		bool fill_polylines_) :
 	reconstruction_line_width_hint(rendered_geometry_parameters_.get_reconstruction_layer_line_width_hint()),
 	reconstruction_point_size_hint(rendered_geometry_parameters_.get_reconstruction_layer_point_size_hint()),
 	fill_polygons(fill_polygons_),
 	fill_polylines(fill_polylines_),
-	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
+	fill_modulate_colour(1, 1, 1, 1),
+	ratio_zoom_dependent_bin_dimension_to_globe_radius(0),
 	ratio_arrow_unit_vector_direction_to_globe_radius(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
 	ratio_arrowhead_size_to_globe_radius(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius()),
 	scalar_coverage_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
-	fill_modulate_colour(1, 1, 1, 1),
 	normal_map_height_field_scale_factor(1),
 	vgp_draw_circular_error(true),
-	show_deformed_feature_geometries(show_deformed_feature_geometries_),
-	show_strain_accumulation(show_strain_accumulation_),
-	strain_accumulation_scale(strain_accumulation_scale_),
-	show_topological_network_delaunay_triangulation( show_topological_network_delaunay_triangulation_),
-	show_topological_network_constrained_triangulation( show_topological_network_constrained_triangulation_),
-	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
-	show_topological_network_total_triangulation( show_topological_network_total_triangulation_),
-	show_topological_network_segment_velocity( show_topological_network_segment_velocity_),
-	topological_network_color_index( topological_network_color_index_)
+	show_deformed_feature_geometries(true),
+	show_strain_accumulation(false),
+	strain_accumulation_scale(1.0),
+	fill_topological_network_triangulation(false),
+	fill_topological_network_rigid_blocks(false),
+	show_topological_network_segment_velocity(false),
+	topological_network_triangulation_colour_mode(TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE)
 {
 }
 
@@ -291,14 +290,28 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_network_visual_layer_params(
 		const TopologyNetworkVisualLayerParams &params)
 {
-	d_render_params.show_topological_network_delaunay_triangulation = params.show_delaunay_triangulation();
-	d_render_params.show_topological_network_constrained_triangulation = params.show_constrained_triangulation();
-	d_render_params.show_topological_network_mesh_triangulation = params.show_mesh_triangulation(); 
-	d_render_params.show_topological_network_total_triangulation = params.show_total_triangulation(); 
 	d_render_params.show_topological_network_segment_velocity = params.show_segment_velocity();
-	d_render_params.fill_polygons = params.show_fill();
-	d_render_params.topological_network_color_index = params.color_index();
-	d_render_params.delaunay_colour_palette = params.get_colour_palette();
+	d_render_params.fill_topological_network_triangulation = params.get_fill_triangulation();
+	d_render_params.fill_topological_network_rigid_blocks = params.get_fill_rigid_blocks();
+	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
+	d_render_params.topological_network_triangulation_colour_mode = params.get_colour_mode();
+
+	switch (params.get_colour_mode())
+	{
+	case TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+		d_render_params.topological_network_triangulation_colour_palette = params.get_dilatation_colour_palette();
+		break;
+
+	case TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+		d_render_params.topological_network_triangulation_colour_palette = params.get_second_invariant_colour_palette();
+		break;
+
+	case TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+	default:
+		// When using the draw style we don't use a colour palette.
+		d_render_params.topological_network_triangulation_colour_palette = boost::none;
+		break;
+	}
 }
 
 
@@ -472,8 +485,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		// Convenience typedefs.
 		typedef std::vector<GPlatesMaths::PointOnSphere> deformed_geometry_points_seq_type;
-		typedef GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_info_seq_type
-				point_deformation_info_seq_type;
+		typedef GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_total_strain_seq_type
+				point_deformation_total_strain_seq_type;
 
 		// Get the deformed geometry points.
 		deformed_geometry_points_seq_type deformed_geometry_points;
@@ -481,83 +494,36 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				*dfg->reconstructed_geometry(),
 				deformed_geometry_points);
 
-		// Get the deformation information associated with each deformed geometry point.
-		const point_deformation_info_seq_type &point_deformation_information =
-				dfg->get_point_deformation_information();
+		// Get the deformation total strains associated with each deformed geometry point.
+		const point_deformation_total_strain_seq_type &point_deformation_total_strains =
+				dfg->get_point_deformation_total_strains();
 
 		// Iterate over the geometry points and generate a rendered geometry for each one.
-		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_iter =
-				deformed_geometry_points.begin();
-		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_end =
-				deformed_geometry_points.end();
-		point_deformation_info_seq_type::const_iterator point_deformation_infos_iter =
-				point_deformation_information.begin();
-		point_deformation_info_seq_type::const_iterator point_deformation_infos_end =
-				point_deformation_information.end();
+		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_iter = deformed_geometry_points.begin();
+		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_end = deformed_geometry_points.end();
+		point_deformation_total_strain_seq_type::const_iterator point_deformation_total_strains_iter = point_deformation_total_strains.begin();
+		point_deformation_total_strain_seq_type::const_iterator point_deformation_total_strains_end = point_deformation_total_strains.end();
 		for ( ;
 			deformed_geometry_points_iter != deformed_geometry_points_end &&
-				point_deformation_infos_iter != point_deformation_infos_end;
-			++deformed_geometry_points_iter, ++point_deformation_infos_iter)
+				point_deformation_total_strains_iter != point_deformation_total_strains_end;
+			++deformed_geometry_points_iter, ++point_deformation_total_strains_iter)
 		{
 			const GPlatesMaths::PointOnSphere &deformed_geometry_point = *deformed_geometry_points_iter;
-			const GPlatesAppLogic::GeometryDeformation::DeformationInfo &point_deformation_info =
-					*point_deformation_infos_iter;
+			const GPlatesAppLogic::DeformationStrain &point_deformation_total_strain = *point_deformation_total_strains_iter;
 
-			// Determine the strain colour.
-			boost::optional<GPlatesGui::Colour> strain_accumulation_colour = GPlatesGui::Colour::get_black();
-#if 0
-			// FIXME: find out how to allow gui selection of .cpt file 
-			// NOTE: using this type of cmd:
-			// $ makecpt -Cpolar -I -T-19/19/1 > /private/tmp/strain_test.cpt
-			boost::optional<GPlatesGui::CptPalette*> cpt_opt;
-			try
-			{
-				cpt_opt = new GPlatesGui::CptPalette("/private/tmp/strain_test.cpt");
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "Cannot read '/private/tmp/strain_test.cpt'; Using default built-in color palette" << exc.what();
-			}
-			catch(...)
-			{
-				qWarning() << "Cannot read '/private/tmp/strain_test.cpt'; Using default built-in color palette";
-			}
-			
-			if (cpt_opt)
-			{
-				if (cpt_opt.get()->get_colour( strain ) )
-				{
-					strain_accumulation_colour = cpt_opt.get()->get_colour( strain ).get();
-				}
-			}
-#endif
-
-			const GPlatesGui::ColourProxy strain_accumulation_colour_proxy = strain_accumulation_colour
-					? GPlatesGui::ColourProxy(strain_accumulation_colour.get())
-					: dfg_colour_proxy;
-
-			GPlatesGui::Symbol strain_accumulation_symbol(
-					GPlatesGui::Symbol::STRAIN_MARKER, // type
-					1, // size
-					true, // fill
-					// Scale the strain accumulation...
-					point_deformation_info.S1 * d_render_params.strain_accumulation_scale, // scale_x
-					point_deformation_info.S2 * d_render_params.strain_accumulation_scale, // scale_y
-					point_deformation_info.S_DIR); // orientation angle
+			const GPlatesMaths::PointOnSphere strain_marker_centre = d_reconstruction_adjustment
+					? d_reconstruction_adjustment.get() * deformed_geometry_point
+					: deformed_geometry_point;
 
 			// Create a RenderedGeometry.
 			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_geom =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-							d_reconstruction_adjustment
-									? d_reconstruction_adjustment.get() * deformed_geometry_point.clone_as_point()
-									: deformed_geometry_point.clone_as_point(),
-							strain_accumulation_colour_proxy,
-							d_render_params.reconstruction_point_size_hint,
-							d_render_params.reconstruction_line_width_hint,
-							d_render_params.fill_polygons,
-							d_render_params.fill_polylines,
-							d_render_params.fill_modulate_colour,
-							strain_accumulation_symbol);
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_strain_marker_symbol(
+							strain_marker_centre,
+							d_render_params.strain_accumulation_scale, // size
+							// Scale the strain accumulation...
+							point_deformation_total_strain.get_strain_principal1(), // scale_x
+							point_deformation_total_strain.get_strain_principal2(), // scale_y
+							point_deformation_total_strain.get_strain_principal_angle()); // orientation angle
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and
 			// a RenderedGeometry associated with it.
@@ -566,8 +532,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							dfg,
 							strain_accumulation_rendered_geom);
 
-			// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
-			render_reconstruction_geometry_on_sphere(strain_accumulation_rendered_reconstruction_geometry);
+			// Render the rendered geometry.
+			render(strain_accumulation_rendered_reconstruction_geometry);
 		}
 	}
 }
@@ -770,52 +736,63 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	//PROFILE_BLOCK("ReconstructionGeometryRenderer::visit(resolved_topological_network_type)");
 
-#if 0
-qDebug() << "GPlatesPresentation::ReconstructionGeometryRenderer::visit( rtn )";
-qDebug() << "GPlatesPresentation::ReconstructionGeometryRenderer::visit( rtn ): d_colour.get() =" << d_colour.get();
-#endif
-
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Check for drawing mesh of constrained delaunay triangulation.
-	if (d_render_params.show_topological_network_mesh_triangulation)
-	{
-		// Get the colour based on the feature properties of the resolved topological network.
-		const GPlatesGui::ColourProxy rtn_colour = get_colour(rtn, d_colour, d_style_adapter);
+	// This was previously in...
+	//    ResolvedTopologicalNetwork::get_resolved_topology_geometries_from_triangulation_2()
+	// ...but that method has been removed and simplified inline here so this is just to keep
+	// the debugging until it's not needed anymore (at which point this method should be removed).
+	rtn->report_deformation_to_file();
 
-		render_topological_network_constrained_delaunay_triangulation(
-				rtn,
-				true/*clip_to_mesh*/,
-				rtn_colour);
+	if (d_render_params.topological_network_triangulation_colour_mode == TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE)
+	{
+		render_topological_network_boundary(rtn);
+	}
+	else // Draw delaunay triangulation either as filled triangles or unfilled edges...
+	{
+		// If we're using smoothed strain rates then each vertex of a face/edge will have a different colour.
+		// In contrast, a non-smoothed strain rate is constant across each face/edge.
+		const GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing strain_rate_smoothing =
+				rtn->get_triangulation_network().get_strain_rate_smoothing();
+		if (strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING)
+		{
+			if (d_render_params.fill_topological_network_triangulation)
+			{
+				render_topological_network_delaunay_faces_unsmoothed_strain_rates(rtn);
+			}
+			else
+			{
+				render_topological_network_delaunay_edges_unsmoothed_strain_rates(rtn);
+			}
+		}
+		else // smoothed strain rates...
+		{
+			if (d_render_params.fill_topological_network_triangulation)
+			{
+				const double subdivide_face_threshold_cosine =
+						(strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING)
+								? SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_COSINE
+								: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_COSINE;
+
+				render_topological_network_delaunay_faces_smoothed_strain_rates(rtn, subdivide_face_threshold_cosine);
+			}
+			else
+			{
+				const double subdivide_edge_threshold_angle =
+						(strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING)
+								? SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE
+								: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE;
+
+				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_edge_threshold_angle);
+			}
+		}
 	}
 
-	// Check for drawing constrained delaunay triangulation.
-	if (d_render_params.show_topological_network_constrained_triangulation)
-	{
-		bool clip_to_mesh = ! d_render_params.show_topological_network_total_triangulation;
-
-		render_topological_network_constrained_delaunay_triangulation(
-				rtn,
-				clip_to_mesh,
-				GPlatesGui::Colour::get_grey());
-	}
-
-	// Check for drawing delaunay triangulation.
-	if (d_render_params.show_topological_network_delaunay_triangulation)
-	{
-		// This was previously in...
-		//    ResolvedTopologicalNetwork::get_resolved_topology_geometries_from_triangulation_2()
-		// ...but that method has been removed and simplified inline here so this is just to keep
-		// the debugging until it's not needed anymore (at which point this method should be removed).
-		rtn->report_deformation_to_file();
-
-		bool clip_to_mesh = ! d_render_params.show_topological_network_total_triangulation;
-
-		render_topological_network_delaunay_triangulation(rtn, clip_to_mesh);
-	}
+	// Render rigid interior blocks.
+	render_topological_network_rigid_blocks(rtn);
 
 	// Check for drawing velocity vectors at vertices of delaunay triangulation.
 	if (d_render_params.show_topological_network_segment_velocity)
@@ -931,12 +908,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			rsc->get_reconstructed_point_scalar_values();
 
 	// The number of domain points should match the number of scalars.
-	// If it doesn't then there's a problem - but we won't assert (since don't want to assert on data)
-	// and we won't log a warning (since it will spam the log due to many render calls).
-	if (domain_points.size() != scalar_values.size())
-	{
-		return;
-	}
+	// The ReconstructedScalarCoverage interface guarantees this.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			domain_points.size() == scalar_values.size(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// We should have a real-valued colour palette.
 	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> scalar_colour_palette =
@@ -1003,6 +978,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 // cause GCC to warn about shadowed declarations.
 DISABLE_GCC_WARNING("-Wshadow")
 
+
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
@@ -1053,159 +1029,105 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_constrained_delaunay_triangulation(
-		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-		bool clip_to_mesh,
-		const GPlatesGui::ColourProxy &colour)
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_face_smoothed_strain_rate(
+		const GPlatesMaths::PointOnSphere &point1,
+		const GPlatesMaths::PointOnSphere &point2,
+		const GPlatesMaths::PointOnSphere &point3,
+		smoothed_vertex_indices_type &vertex_indices,
+		GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type &rendered_triangle_mesh_triangles,
+		const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network,
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face,
+		const double &subdivide_face_threshold)
 {
-	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
-			rtn->get_triangulation_network();
+	const double dot12 = dot(point1.position_vector(), point2.position_vector()).dval();
+	const double dot13 = dot(point1.position_vector(), point3.position_vector()).dval();
+	const double dot23 = dot(point2.position_vector(), point3.position_vector()).dval();
 
-	const GPlatesMaths::AzimuthalEqualAreaProjection &resolved_triangulation_projection =
-			resolved_triangulation_network.get_projection();
-
-	const GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2 &
-			constrained_delaunay_triangulation_2 =
-					resolved_triangulation_network.get_constrained_delaunay_2();
-
-	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
-	typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
-			GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2>
-					constrained_delaunay_vertex_indices_type;
-	constrained_delaunay_vertex_indices_type constrained_delaunay_vertex_indices;
-
-	// The triangle/vertices of our rendered mesh (if fill is turned on).
-	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type rendered_triangle_mesh_triangles;
-	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::vertex_seq_type rendered_triangle_mesh_vertices;
-
-	// The edges/vertices of our rendered mesh (if fill is turned off).
-	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
-	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
-
-	// Iterate over the individual faces of the constrained triangulation.
-	GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2::Finite_faces_iterator
-			constrained_finite_faces_2_iter = constrained_delaunay_triangulation_2.finite_faces_begin();
-	GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2::Finite_faces_iterator
-			constrained_finite_faces_2_end =  constrained_delaunay_triangulation_2.finite_faces_end();
-	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
+	// If no need to further subdivide then add triangle and return.
+	if (dot12 > subdivide_face_threshold &&
+		dot13 > subdivide_face_threshold &&
+		dot23 > subdivide_face_threshold)
 	{
-		// If clipping to mesh then only draw those triangles in the interior of the meshed region.
-		// This excludes areas with seed points (also called micro blocks) and excludes regions
-		// outside the envelope of the bounded area.
-		if (clip_to_mesh && !constrained_finite_faces_2_iter->is_in_domain())
+		// Add the triangle.
+		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
+				vertex_indices.add_vertex(smoothed_vertex_type(point1, delaunay_face)),
+				vertex_indices.add_vertex(smoothed_vertex_type(point2, delaunay_face)),
+				vertex_indices.add_vertex(smoothed_vertex_type(point3, delaunay_face)));
+		rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
+
+		return;
+	}
+
+	// Subdivide into two triangles by splitting the longest edge of current triangle.
+	if (dot12 < dot13)
+	{
+		if (dot12 < dot23)
 		{
-			continue;
+			const GPlatesMaths::PointOnSphere point12((GPlatesMaths::Vector3D(point1.position_vector()) +
+					GPlatesMaths::Vector3D(point2.position_vector())).get_normalisation());
+
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point12, point3,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point12, point2, point3,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
 		}
-
-		if (d_render_params.fill_polygons)
+		else
 		{
-			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
-					colour);
-			rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
-		}
-		else // Render mesh as edges/lines...
-		{
-			// Render the three edges of the current triangle.
-			//
-			// NOTE: Two triangles that share an edge will both draw it - so it'll get drawn twice.
-			//
-			// TODO: Only emit one rendered mesh edge per triangulation edge (perhaps by iterating
-			// over edges instead of triangles).
+			const GPlatesMaths::PointOnSphere point23((GPlatesMaths::Vector3D(point2.position_vector()) +
+					GPlatesMaths::Vector3D(point3.position_vector())).get_normalisation());
 
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge1(
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
-					colour);
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge1);
-
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge2(
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
-					colour);
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge2);
-
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge3(
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
-					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
-					colour);
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge3);
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point2, point23,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point23, point3,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
 		}
 	}
-
-	// For each triangulation vertex, referenced by the rendered mesh, project the 2D vertex
-	// back onto the 3D globe.
-	const constrained_delaunay_vertex_indices_type::vertex_seq_type &mesh_vertices =
-			constrained_delaunay_vertex_indices.get_vertices();
-
-	if (d_render_params.fill_polygons)
+	else
 	{
-		rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
-	}
-	else // Render mesh as edges/lines...
-	{
-		rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
-	}
-
-	// Iterate over the (referenced) constrained triangulation vertices.
-	constrained_delaunay_vertex_indices_type::vertex_seq_type::const_iterator
-			mesh_vertices_iter = mesh_vertices.begin();
-	constrained_delaunay_vertex_indices_type::vertex_seq_type::const_iterator
-			mesh_vertices_end = mesh_vertices.end();
-	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
-	{
-		constrained_delaunay_vertex_indices_type::triangulation_type::Vertex_handle
-				mesh_vertex = *mesh_vertices_iter;
-
-		// Un-project the 2D triangulation vertex position back onto the 3D sphere.
-		const GPlatesMaths::PointOnSphere rendered_mesh_vertex =
-				resolved_triangulation_projection.unproject_to_point_on_sphere(
-						mesh_vertex->point());
-
-		if (d_render_params.fill_polygons)
+		if (dot13 < dot23)
 		{
-			rendered_triangle_mesh_vertices.push_back(rendered_mesh_vertex);
+			const GPlatesMaths::PointOnSphere point13((GPlatesMaths::Vector3D(point1.position_vector()) +
+					GPlatesMaths::Vector3D(point3.position_vector())).get_normalisation());
+
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point2, point13,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point13, point2, point3,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
 		}
-		else // Render mesh as edges/lines...
+		else
 		{
-			rendered_edge_mesh_vertices.push_back(rendered_mesh_vertex);
+			const GPlatesMaths::PointOnSphere point23((GPlatesMaths::Vector3D(point2.position_vector()) +
+					GPlatesMaths::Vector3D(point3.position_vector())).get_normalisation());
+
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point2, point23,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
+			render_topological_network_delaunay_face_smoothed_strain_rate(
+					point1, point23, point3,
+					vertex_indices, rendered_triangle_mesh_triangles,
+					resolved_triangulation_network, delaunay_face, subdivide_face_threshold);
 		}
 	}
-
-	// Create the rendered surface mesh.
-	GPlatesViewOperations::RenderedGeometry rendered_geometry;
-	if (d_render_params.fill_polygons)
-	{
-		rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
-				rendered_triangle_mesh_triangles,
-				rendered_triangle_mesh_vertices);
-	}
-	else // Render mesh as edges/lines...
-	{
-		rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
-				rendered_edge_mesh_edges,
-				rendered_edge_mesh_vertices,
-				d_render_params.reconstruction_line_width_hint);
-	}
-
-	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
-	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-			rtn,
-			rendered_geometry);
-
-	// The rendered geometry represents a geometry on the sphere so render to the spatial partition.
-	render_reconstruction_geometry_on_sphere(rendered_geometry);
 }
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_triangulation(
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_faces_smoothed_strain_rates(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-		bool clip_to_mesh)
+		const double &subdivide_face_threshold)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -1215,19 +1137,17 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
 			resolved_triangulation_network.get_delaunay_2();
 
-	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
-	typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
-			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2>
-					delaunay_vertex_indices_type;
-	delaunay_vertex_indices_type delaunay_vertex_indices;
+	//
+	// Render mesh as faces/triangles.
+	//
 
-	// The triangle/vertices of our rendered mesh (if fill is turned on).
+	// The triangle/vertices/colours of our rendered mesh (fill is turned on).
 	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type rendered_triangle_mesh_triangles;
 	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::vertex_seq_type rendered_triangle_mesh_vertices;
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::colour_seq_type rendered_triangle_mesh_colours;
 
-	// The edges/vertices of our rendered mesh (if fill is turned off).
-	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
-	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	smoothed_vertex_indices_type vertex_indices;
 
 	// Iterate over the individual faces of the delaunay triangulation.
 	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
@@ -1236,189 +1156,629 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			finite_faces_2_end = delaunay_triangulation_2.finite_faces_end();
 	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
 	{
-		// If clipping triangle to the mesh then only create a face polygon if its centroid is in mesh area.
-		if (clip_to_mesh)
+		if (!finite_faces_2_iter->is_in_deforming_region())
 		{
-			const GPlatesMaths::PointOnSphere face_points[3] =
-			{
+			// Face centroid is outside deforming region.
+			continue;
+		}
+
+		render_topological_network_delaunay_face_smoothed_strain_rate(
 				finite_faces_2_iter->vertex(0)->get_point_on_sphere(),
 				finite_faces_2_iter->vertex(1)->get_point_on_sphere(),
-				finite_faces_2_iter->vertex(2)->get_point_on_sphere()
-			};
-
-			// Compute centroid of face.
-			const GPlatesMaths::PointOnSphere centroid(
-					GPlatesMaths::Centroid::calculate_points_centroid(
-							face_points,
-							face_points + 3));
-
-			if (!resolved_triangulation_network.is_point_in_deforming_region(centroid))
-			{
-				continue;
-			}
-		}
-
-		// Set the render value for the triangle.
-		boost::optional<double> render_value;
-
-		if (d_render_params.topological_network_color_index != 0)
-		{
-			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &
-					deformation_info = finite_faces_2_iter->get_deformation_info();
-
-			double value = 0.0;
-
-			// Shade by Dilitation Strain Rate
-			if (d_render_params.topological_network_color_index == 1) {
-				value = deformation_info.dilitation;
-			}
-			else if (d_render_params.topological_network_color_index == 2) {
-				value = deformation_info.smooth_dilitation;
-			}
-			else if (d_render_params.topological_network_color_index == 3) {
-				value = deformation_info.sph_dilitation;
-			}
-			else if (d_render_params.topological_network_color_index == 4) {
-				value = deformation_info.sph_smooth_dilitation;
-			}
-			else if (d_render_params.topological_network_color_index == 5) {
-				value = deformation_info.second_invariant;
-			}
-			else if (d_render_params.topological_network_color_index == 6) {
-				value = deformation_info.smooth_second_invariant;
-			}
-			else if (d_render_params.topological_network_color_index == 7) {
-				value = deformation_info.sph_second_invariant;
-			}
-			else if (d_render_params.topological_network_color_index == 8) {
-				value = deformation_info.sph_smooth_second_invariant;
-			}
-
-			const double sign = (value < 0) ? -1 : 1;
-			render_value = sign * std::fabs( std::log10( std::fabs( value ) ) );
-		}
-
-		// The colour to use for this triangle panel.
-		boost::optional<GPlatesGui::Colour> colour;
-
-		// Check if a render_value was set for this panel.
-		if (render_value &&
-			d_render_params.delaunay_colour_palette)
-		{
-			// Get the colour for this value
-			colour = d_render_params.delaunay_colour_palette.get()->get_colour(render_value.get());
-		}
-		// Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
-		else if (d_colour)
-		{
-			colour = d_colour.get();
-		}
-		// final else ; use Grey
-		else
-		{
-			colour = GPlatesGui::Colour::get_grey();
-		}
-
-		if (d_render_params.fill_polygons)
-		{
-			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
-					colour.get());
-			rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
-		}
-		else // Render mesh as edges/lines...
-		{
-			// Render the three edges of the current triangle.
-			//
-			// NOTE: Two triangles that share an edge will both draw it using their own colour.
-			// The one that gets drawn on top will the one belonging to the last triangle iterated.
-			//
-			// TODO: Only emit one rendered mesh edge per triangulation edge (perhaps by iterating
-			// over edges instead of triangles) and maybe use the average colour of adjacent triangles.
-
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge1(
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
-					colour.get());
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge1);
-
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge2(
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
-					colour.get());
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge2);
-
-			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge3(
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
-					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
-					colour.get());
-			rendered_edge_mesh_edges.push_back(rendered_mesh_edge3);
-		}
+				finite_faces_2_iter->vertex(2)->get_point_on_sphere(),
+				vertex_indices,
+				rendered_triangle_mesh_triangles,
+				resolved_triangulation_network,
+				finite_faces_2_iter,
+				subdivide_face_threshold);
 	}
 
-	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
-	// 2D vertex back onto the 3D globe.
-	const delaunay_vertex_indices_type::vertex_seq_type &mesh_vertices =
-			delaunay_vertex_indices.get_vertices();
+	const smoothed_vertex_indices_type::vertex_seq_type &mesh_vertices = vertex_indices.get_vertices();
+	rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
+	rendered_triangle_mesh_colours.reserve(mesh_vertices.size());
 
-	if (d_render_params.fill_polygons)
-	{
-		rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
-	}
-	else // Render mesh as edges/lines...
-	{
-		rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
-	}
-
-	// Iterate over the (referenced) constrained triangulation vertices.
-	delaunay_vertex_indices_type::vertex_seq_type::const_iterator
-			mesh_vertices_iter = mesh_vertices.begin();
-	delaunay_vertex_indices_type::vertex_seq_type::const_iterator
-			mesh_vertices_end = mesh_vertices.end();
+	// Iterate over the smoothed vertices.
+	smoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_iter = mesh_vertices.begin();
+	smoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_end = mesh_vertices.end();
 	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
 	{
-		delaunay_vertex_indices_type::triangulation_type::Vertex_handle mesh_vertex = *mesh_vertices_iter;
+		const smoothed_vertex_type &vertex = *mesh_vertices_iter;
+		const GPlatesMaths::PointOnSphere &point = vertex.first;
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face = vertex.second;
 
-		// Get the un-projected 2D triangulation vertex position back onto the 3D sphere.
-		const GPlatesMaths::PointOnSphere &rendered_mesh_vertex = mesh_vertex->get_point_on_sphere();
+		boost::optional<GPlatesGui::ColourProxy> vertex_colour;
 
-		if (d_render_params.fill_polygons)
+		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
 		{
-			rendered_triangle_mesh_vertices.push_back(rendered_mesh_vertex);
+			vertex_colour = GPlatesGui::ColourProxy(d_colour.get());
 		}
-		else // Render mesh as edges/lines...
+		else if (d_render_params.topological_network_triangulation_colour_palette)
 		{
-			rendered_edge_mesh_vertices.push_back(rendered_mesh_vertex);
+			// We've only generated vertices from tessellated triangles that are in the deforming region
+			// so we can assume the tessellated vertices are in, or at least very close to, the deforming region.
+			const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo deformation_info =
+					// The returned deformation will be barycentric or natural neighbour interpolated...
+					resolved_triangulation_network.calculate_deformation_in_deforming_region(point, delaunay_face);
+
+			if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+			}
 		}
+
+		if (!vertex_colour)
+		{
+			// Should always get a valid vertex colour - if not then return without rendering mesh.
+			return;
+		}
+
+		// Add the vertex colour.
+		rendered_triangle_mesh_colours.push_back(vertex_colour.get());
+
+		// Add the vertex position.
+		rendered_triangle_mesh_vertices.push_back(point);
 	}
 
-	// Create the rendered surface mesh.
-	GPlatesViewOperations::RenderedGeometry rendered_geometry;
-	if (d_render_params.fill_polygons)
-	{
-		rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
-				rendered_triangle_mesh_triangles,
-				rendered_triangle_mesh_vertices);
-	}
-	else // Render mesh as edges/lines...
-	{
-		rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
-				rendered_edge_mesh_edges,
-				rendered_edge_mesh_vertices,
-				d_render_params.reconstruction_line_width_hint);
-	}
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
+			rendered_triangle_mesh_triangles,
+			rendered_triangle_mesh_vertices,
+			rendered_triangle_mesh_colours,
+			true/*use_vertex_colouring*/,
+			d_render_params.fill_modulate_colour);
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
 	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 			rtn,
 			rendered_geometry);
 
-	// The rendered geometry represents a geometry on the sphere so render to the spatial partition.
+	// The rendered geometry is the triangulation, which is on the sphere and within the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
 	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_faces_unsmoothed_strain_rates(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+{
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
+
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
+
+	//
+	// Render mesh as faces/triangles.
+	//
+
+	// The triangle/vertices/colours of our rendered mesh (fill is turned on).
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type rendered_triangle_mesh_triangles;
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::vertex_seq_type rendered_triangle_mesh_vertices;
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::colour_seq_type rendered_triangle_mesh_colours;
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	unsmoothed_vertex_indices_type vertex_indices;
+
+	// Iterate over the individual faces of the delaunay triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_iter = delaunay_triangulation_2.finite_faces_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_end = delaunay_triangulation_2.finite_faces_end();
+	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
+	{
+		if (!finite_faces_2_iter->is_in_deforming_region())
+		{
+			// Face centroid is outside deforming region.
+			continue;
+		}
+
+		boost::optional<GPlatesGui::ColourProxy> face_colour;
+
+		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
+		{
+			face_colour = GPlatesGui::ColourProxy(d_colour.get());
+		}
+		else if (d_render_params.topological_network_triangulation_colour_palette)
+		{
+			const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo &
+					deformation_info = finite_faces_2_iter->get_deformation_info();
+
+			if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+			{
+				face_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+			{
+				face_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+			}
+		}
+
+		if (!face_colour)
+		{
+			// Should always get a valid face colour - if not then return without rendering mesh.
+			return;
+		}
+
+		// Add the face colour.
+		rendered_triangle_mesh_colours.push_back(face_colour.get());
+
+		// Add the triangle.
+		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
+				vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
+				vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
+				vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)));
+		rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
+	}
+
+	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
+	// 2D vertex back onto the 3D globe.
+	const unsmoothed_vertex_indices_type::vertex_seq_type &mesh_vertices = vertex_indices.get_vertices();
+
+	rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
+
+	// Iterate over the (referenced) triangulation vertices.
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_iter = mesh_vertices.begin();
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		// Get the un-projected 2D triangulation vertex position back onto the 3D sphere.
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle mesh_vertex = *mesh_vertices_iter;
+
+		// Add the vertex.
+		rendered_triangle_mesh_vertices.push_back(mesh_vertex->get_point_on_sphere());
+	}
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
+			rendered_triangle_mesh_triangles,
+			rendered_triangle_mesh_vertices,
+			rendered_triangle_mesh_colours,
+			false/*use_vertex_colouring*/,
+			d_render_params.fill_modulate_colour);
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry is the triangulation, which is on the sphere and within the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_smoothed_strain_rates(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
+		const double &subdivide_edge_threshold_angle)
+{
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
+
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
+
+	//
+	// Render mesh as edges/lines.
+	//
+
+	// The edges/vertices of our rendered mesh (fill is turned off).
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::colour_seq_type rendered_edge_mesh_colours;
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	smoothed_vertex_indices_type vertex_indices;
+
+	// Iterate over the edges of the delaunay triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_iter = delaunay_triangulation_2.finite_edges_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_end = delaunay_triangulation_2.finite_edges_end();
+	for ( ; finite_edges_2_iter != finite_edges_2_end; ++finite_edges_2_iter)
+	{
+		// Get the two faces adjoining the current edge.
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle face_handle[2] =
+		{
+			finite_edges_2_iter->first,
+			finite_edges_2_iter->first->neighbor(finite_edges_2_iter->second)
+		};
+
+		// Iterate over both faces adjoining the current edge.
+		unsigned int num_valid_faces = 0;
+		for (unsigned int t = 0; t < 2; ++t)
+		{
+			// Skip infinite faces. These occur on boundary edges.
+			// Also skip faces with centroid outside deforming region.
+			if (delaunay_triangulation_2.is_infinite(face_handle[t]) ||
+				!face_handle[t]->is_in_deforming_region())
+			{
+				continue;
+			}
+
+			++num_valid_faces;
+		}
+
+		// If both triangles adjoining current edge are outside deforming region or are
+		// infinite faces for some reason then the skip the current edge.
+		if (num_valid_faces == 0)
+		{
+			continue;
+		}
+
+		// Get the edge vertices.
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle edge_vertex_handles[2] =
+		{
+			finite_edges_2_iter->first->vertex(delaunay_triangulation_2.cw(finite_edges_2_iter->second)),
+			finite_edges_2_iter->first->vertex(delaunay_triangulation_2.ccw(finite_edges_2_iter->second))
+		};
+
+		// Get the edge vertex positions.
+		const GPlatesMaths::PointOnSphere edge_vertex_points[2] =
+		{
+			edge_vertex_handles[0]->get_point_on_sphere(),
+			edge_vertex_handles[1]->get_point_on_sphere()
+		};
+
+		// Subdivide the edge (great circle arc).
+		std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
+		tessellate(
+				tessellation_points,
+				GPlatesMaths::GreatCircleArc::create(edge_vertex_points[0], edge_vertex_points[1]),
+				subdivide_edge_threshold_angle);
+
+		// Iterate over the subdivided edges.
+		const unsigned int num_subdivided_edges = tessellation_points.size() - 1;
+		for (unsigned int e = 0; e < num_subdivided_edges; ++e)
+		{
+			// Add the edge.
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge(
+					// Pick either adjacent triangle - we just need a nearby face as an optimisation...
+					vertex_indices.add_vertex(smoothed_vertex_type(tessellation_points[e], face_handle[0])),
+					vertex_indices.add_vertex(smoothed_vertex_type(tessellation_points[e + 1], face_handle[0])));
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge);
+		}
+	}
+
+	const smoothed_vertex_indices_type::vertex_seq_type &mesh_vertices = vertex_indices.get_vertices();
+	rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
+	rendered_edge_mesh_colours.reserve(mesh_vertices.size());
+
+	// Iterate over the (referenced) triangulation vertices.
+	smoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_iter = mesh_vertices.begin();
+	smoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		const smoothed_vertex_type &vertex = *mesh_vertices_iter;
+		const GPlatesMaths::PointOnSphere &point = vertex.first;
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face = vertex.second;
+
+		boost::optional<GPlatesGui::ColourProxy> vertex_colour;
+
+		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
+		{
+			vertex_colour = GPlatesGui::ColourProxy(d_colour.get());
+		}
+		else if (d_render_params.topological_network_triangulation_colour_palette)
+		{
+			// We've only generated vertices from tessellated edges that are in, or on the boundary of,
+			// the deforming region so we can assume the tessellated vertices are in, or at least
+			// very close to, the deforming region.
+			const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo deformation_info =
+					// The returned deformation will be barycentric or natural neighbour interpolated...
+					resolved_triangulation_network.calculate_deformation_in_deforming_region(point, delaunay_face);
+
+			if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+			}
+		}
+
+		if (!vertex_colour)
+		{
+			// Should always get a valid vertex colour - if not then return without rendering mesh.
+			return;
+		}
+
+		// Add the vertex colour.
+		rendered_edge_mesh_colours.push_back(vertex_colour.get());
+
+		// Add the vertex position.
+		rendered_edge_mesh_vertices.push_back(point);
+	}
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
+			rendered_edge_mesh_edges,
+			rendered_edge_mesh_vertices,
+			rendered_edge_mesh_colours,
+			true/*use_vertex_colours*/,
+			d_render_params.reconstruction_line_width_hint);
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry is the triangulation, which is on the sphere and within the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_unsmoothed_strain_rates(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+{
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
+
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
+
+	//
+	// Render mesh as edges/lines.
+	//
+
+	// The edges/vertices of our rendered mesh (fill is turned off).
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::colour_seq_type rendered_edge_mesh_colours;
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	unsmoothed_vertex_indices_type vertex_indices;
+
+	// Iterate over the edges of the delaunay triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_iter = delaunay_triangulation_2.finite_edges_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_end = delaunay_triangulation_2.finite_edges_end();
+	for ( ; finite_edges_2_iter != finite_edges_2_end; ++finite_edges_2_iter)
+	{
+		// Get the two faces adjoining the current edge.
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle face_handle[2] =
+		{
+			finite_edges_2_iter->first,
+			finite_edges_2_iter->first->neighbor(finite_edges_2_iter->second)
+		};
+
+		boost::optional<double> face_strain[2];
+		GPlatesMaths::Real face_area[2];
+		unsigned int num_valid_faces = 0;
+
+		// Iterate over both faces adjoining the current edge.
+		for (unsigned int t = 0; t < 2; ++t)
+		{
+			// Skip infinite faces. These occur on boundary edges.
+			// Also skip faces with centroid outside deforming region.
+			if (delaunay_triangulation_2.is_infinite(face_handle[t]) ||
+				!face_handle[t]->is_in_deforming_region())
+			{
+				continue;
+			}
+
+			// Get the area of the face triangle.
+			face_area[t] = std::fabs(delaunay_triangulation_2.triangle(face_handle[t]).area());
+
+			if (!d_colour && // no override colour
+				d_render_params.topological_network_triangulation_colour_palette)
+			{
+				const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo &
+						deformation_info = face_handle[t]->get_deformation_info();
+
+				if (d_render_params.topological_network_triangulation_colour_mode ==
+					TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+				{
+					face_strain[t] = deformation_info.get_strain_rate().get_dilatation();
+				}
+				else if (d_render_params.topological_network_triangulation_colour_mode ==
+					TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+				{
+					face_strain[t] = deformation_info.get_strain_rate().get_second_invariant();
+				}
+			}
+
+			++num_valid_faces;
+		}
+
+		// If both triangles adjoining current edge are outside deforming region or are
+		// infinite faces for some reason then the skip the current edge.
+		if (num_valid_faces == 0)
+		{
+			continue;
+		}
+
+		boost::optional<GPlatesGui::ColourProxy> edge_colour;
+
+		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
+		{
+			edge_colour = GPlatesGui::ColourProxy(d_colour.get());
+		}
+		else if (face_strain[0] || face_strain[1])
+		{
+			// If both triangles share the current edge then average their strains (weighted by their areas).
+			if (face_strain[0] && face_strain[1])
+			{
+				const double total_area = face_area[0].dval() + face_area[1].dval();
+				if (total_area > 0)
+				{
+					const double edge_strain = (face_area[0].dval() * face_strain[0].get() +
+							face_area[1].dval() * face_strain[1].get()) / total_area;
+
+					edge_colour = GPlatesGui::ColourProxy(
+							d_render_params.topological_network_triangulation_colour_palette.get()
+									->get_colour(edge_strain));
+				}
+			}
+			else // only one triangle adjacent to edge ...
+			{
+				edge_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(face_strain[0] ? face_strain[0].get() : face_strain[1].get()));
+			}
+		}
+
+		if (edge_colour)
+		{
+			// Get the edge vertices.
+			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle edge_vertex_handles[2] =
+			{
+				finite_edges_2_iter->first->vertex(delaunay_triangulation_2.cw(finite_edges_2_iter->second)),
+				finite_edges_2_iter->first->vertex(delaunay_triangulation_2.ccw(finite_edges_2_iter->second))
+			};
+
+			// Add the edge colour.
+			rendered_edge_mesh_colours.push_back(edge_colour.get());
+
+			// Add the edge.
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge(
+					vertex_indices.add_vertex(edge_vertex_handles[0]),
+					vertex_indices.add_vertex(edge_vertex_handles[1]));
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge);
+		}
+	}
+
+	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
+	// 2D vertex back onto the 3D globe.
+	const unsmoothed_vertex_indices_type::vertex_seq_type &mesh_vertices = vertex_indices.get_vertices();
+
+	rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
+
+	// Iterate over the (referenced) triangulation vertices.
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_iter = mesh_vertices.begin();
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		// Get the un-projected 2D triangulation vertex position back onto the 3D sphere.
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle mesh_vertex = *mesh_vertices_iter;
+		rendered_edge_mesh_vertices.push_back(mesh_vertex->get_point_on_sphere());
+	}
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
+			rendered_edge_mesh_edges,
+			rendered_edge_mesh_vertices,
+			rendered_edge_mesh_colours,
+			false/*use_vertex_colours*/,
+			d_render_params.reconstruction_line_width_hint);
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry is the triangulation, which is on the sphere and within the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_boundary(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+{
+	RenderParams render_params(d_render_params);
+	if (d_render_params.fill_topological_network_triangulation)
+	{
+		// Make a copy of the render params, but with fill polygons turned on since our network boundary is a polygon.
+		render_params.fill_polygons = true;
+	}
+
+	// Use the network boundary polygon with rigid block interior holes since, when the triangulation
+	// (ie, deforming region) is filled, we don't want to fill the interior holes (rigid blocks).
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type network_boundary_with_rigid_block_holes =
+			rtn->get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
+
+	// Create a RenderedGeometry for drawing the network boundary polygon.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		create_rendered_reconstruction_geometry(
+				network_boundary_with_rigid_block_holes,
+				rtn,
+				render_params,
+				get_colour(rtn, d_colour, d_style_adapter),
+				d_reconstruction_adjustment,
+				d_feature_type_symbol_map);
+
+	// The rendered geometry is the network boundary, which is on the sphere and is the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_rigid_blocks(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+{
+	RenderParams render_params(d_render_params);
+	if (d_render_params.fill_topological_network_rigid_blocks)
+	{
+		// Make a copy of the render params, but with fill polygons turned on since our rigid blocks will be polygons.
+		render_params.fill_polygons = true;
+	}
+
+	// Iterate over the interior rigid blocks, if any, of the current topological network.
+	const GPlatesAppLogic::ResolvedTriangulation::Network::rigid_block_seq_type &rigid_blocks =
+			rtn->get_triangulation_network().get_rigid_blocks();
+	GPlatesAppLogic::ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_iter = rigid_blocks.begin();
+	GPlatesAppLogic::ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_end = rigid_blocks.end();
+	for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
+	{
+		const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &rigid_block = *rigid_blocks_iter;
+
+		const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
+				rigid_block.get_reconstructed_feature_geometry();
+
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			create_rendered_reconstruction_geometry(
+					rigid_block_rfg->reconstructed_geometry(),
+					// Use the resolved topological network (instead of rigid block RFG) so when the user
+					// clicks on this rigid block rendered geometry then the resolved network shows up.
+					// Also means the RFG export won't output rigid blocks when a resolved network
+					// layer is visible (will only export if the actual RFG layer containing the
+					// rigid blocks is visible)...
+					rtn,
+					render_params,
+					get_colour(rigid_block_rfg, d_colour, d_style_adapter),
+					d_reconstruction_adjustment,
+					d_feature_type_symbol_map);
+
+		// The rendered geometry is a rigid interior block, which is on the sphere and within the bounds of the
+		// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+		render_reconstruction_geometry_on_sphere(rendered_geometry);
+	}
 }
 
 
@@ -1479,4 +1839,3 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 // This is here at the end of the file because the problem resides in a template
 // being instantiated at the end of the compilation unit.
 DISABLE_GCC_WARNING("-Wshadow")
-

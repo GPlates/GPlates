@@ -224,12 +224,6 @@ namespace GPlatesQtWidgets
 					SIGNAL(clicked(bool)),
 					this,
 					SLOT(handle_choose_button_clicked(bool)));
-
-			QObject::connect(
-					line_edit,
-					SIGNAL(textChanged(const QString&)),
-					this,
-					SLOT(handle_cpt_file_changed(const QString&)));
 		}
 		private Q_SLOTS:
 			void
@@ -243,17 +237,18 @@ namespace GPlatesQtWidgets
 
 				if (!file_names.isEmpty())
 				{
-					d_last_open_directory = QFileInfo(file_names.first()).path();
-					line_edit->setText(file_names.first());
+					const QString file_name = file_names.first();
+
+					d_last_open_directory = QFileInfo(file_name).path();
+					line_edit->setText(file_name);
+
+					// Set the filename even if it's the same because the user might
+					// be reloading a CPT file that's changed since it was last loaded.
+					d_cfg_item->set_value(file_name);
+					Q_EMIT configuration_changed();
 				}
 			}
 
-			void
-			handle_cpt_file_changed(const QString& cpt_file)
-			{
-				d_cfg_item->set_value(cpt_file);
-				Q_EMIT configuration_changed();
-			}
 	private:
 		QHBoxLayout* hboxLayout;
 		QLineEdit* line_edit;

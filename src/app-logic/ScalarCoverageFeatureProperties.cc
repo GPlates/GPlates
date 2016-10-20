@@ -186,6 +186,12 @@ namespace GPlatesAppLogic
 			finalise_post_feature_properties(
 					typename feature_visitor_type::feature_handle_type &feature_handle)
 			{
+				if (d_domains.empty() ||
+					d_ranges.empty())
+				{
+					return;
+				}
+
 				// Copy the ranges so we can erase from them as we find coverages.
 				std::vector<Range> ranges(d_ranges);
 
@@ -321,7 +327,7 @@ namespace GPlatesAppLogic
 							gpml_piecewise_aggregation.time_windows()[time_window_index].valid_time();
 
 					// If the time window period contains the current reconstruction time then visit.
-					// The time periods should be mutually exclusive - if we happen to be it
+					// The time periods should be mutually exclusive - if we happen to be in
 					// two time periods then we're probably right on the boundary between the two
 					// and then it doesn't really matter which one we choose.
 					if (time_period->contains(d_reconstruction_time))
@@ -469,7 +475,7 @@ GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
 	typedef ExtractScalarCoverageFeatureProperties<GPlatesModel::FeatureHandle>
 			extract_scalar_coverage_feature_properties_type;
 
-	extract_scalar_coverage_feature_properties_type visitor;
+	extract_scalar_coverage_feature_properties_type visitor(reconstruction_time);
 	visitor.visit_feature(feature);
 
 	const std::vector<extract_scalar_coverage_feature_properties_type::Coverage> &

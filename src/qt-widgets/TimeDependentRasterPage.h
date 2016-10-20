@@ -133,7 +133,7 @@ namespace GPlatesQtWidgets
 
 		void
 		add_files_to_sequence(
-				const QFileInfoList &file_infos);
+				QFileInfoList file_infos);
 
 		static
 		boost::optional<double>

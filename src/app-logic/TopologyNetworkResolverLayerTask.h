@@ -30,12 +30,14 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
 #include "LayerParams.h"
 #include "LayerTask.h"
 #include "ReconstructLayerProxy.h"
 #include "TopologyGeometryResolverLayerProxy.h"
+#include "TopologyNetworkLayerParams.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -48,8 +50,11 @@ namespace GPlatesAppLogic
 	 * containing topological networks.
 	 */
 	class TopologyNetworkResolverLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
 		static
 		bool
@@ -143,9 +148,15 @@ namespace GPlatesAppLogic
 			return d_layer_params;
 		}
 
+	private Q_SLOTS:
+
+		void
+		handle_topology_network_params_modified(
+				GPlatesAppLogic::TopologyNetworkLayerParams &layer_params);
+
 	private:
 
-		LayerParams::non_null_ptr_type d_layer_params;
+		TopologyNetworkLayerParams::non_null_ptr_type d_layer_params;
 
 		//! Any currently connected 'reconstructed geometry' topological section layers.
 		std::vector<ReconstructLayerProxy::non_null_ptr_type>
@@ -161,10 +172,7 @@ namespace GPlatesAppLogic
 
 
 		//! Constructor.
-		TopologyNetworkResolverLayerTask() :
-				d_layer_params(LayerParams::create()),
-				d_topology_network_resolver_layer_proxy(TopologyNetworkResolverLayerProxy::create())
-		{  }
+		TopologyNetworkResolverLayerTask();
 
 		/**
 		 * Returns true if any topological section layers are currently connected.

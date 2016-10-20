@@ -42,6 +42,7 @@
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 #include "ExportResolvedTopologyAnimationStrategy.h"
+#include "ExportScalarCoverageAnimationStrategy.h"
 #include "ExportStageRotationAnimationStrategy.h"
 #include "ExportSvgAnimationStrategy.h"
 #include "ExportTotalRotationAnimationStrategy.h"
@@ -63,6 +64,7 @@
 #include "qt-widgets/ExportRasterOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
 #include "qt-widgets/ExportResolvedTopologyOptionsWidget.h"
+#include "qt-widgets/ExportScalarCoverageOptionsWidget.h"
 #include "qt-widgets/ExportStageRotationOptionsWidget.h"
 #include "qt-widgets/ExportSvgOptionsWidget.h"
 #include "qt-widgets/ExportTotalRotationOptionsWidget.h"
@@ -220,7 +222,7 @@ namespace GPlatesGui
 				ExportAnimationRegistry &registry)
 		{
 			const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
-					/*export_to_a_single_file_*/true,
+					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
 			const bool default_reconstructed_geometry_wrap_to_dateline = true;
 
@@ -313,6 +315,64 @@ namespace GPlatesGui
 									&create_export_options_widget<
 											GPlatesQtWidgets::ExportSvgOptionsWidget,
 											ExportSvgAnimationStrategy>),
+							_1, _2, _3),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+		}
+
+
+		/**
+		 * Registers information about the default scalar coverage export animation types with the given @a registry.
+		 */
+		void
+		register_default_export_scalar_coverage_animation_types(
+				ExportAnimationRegistry &registry)
+		{
+			const ExportOptionsUtils::ExportFileOptions default_scalar_coverage_file_export_options(
+					/*export_to_a_single_file_*/false,
+					/*export_to_multiple_files_*/true);
+			const bool default_include_dilatation_rate = false;
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::SCALAR_COVERAGES,
+							ExportAnimationType::GPML),
+					ExportScalarCoverageAnimationStrategy::const_configuration_ptr(
+							new ExportScalarCoverageAnimationStrategy::GpmlConfiguration(
+									add_export_filename_extension("scalar_coverage_%0.2fMa", ExportAnimationType::GPML),
+									default_scalar_coverage_file_export_options,
+									default_include_dilatation_rate)),
+					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
+					boost::bind(
+							// 'static_cast' is because some compilers have trouble determining
+							// which overload of 'create_export_options_widget()' to use...
+							static_cast<create_export_options_widget_function_pointer_type>(
+									&create_export_options_widget<
+											GPlatesQtWidgets::ExportScalarCoverageOptionsWidget,
+											ExportScalarCoverageAnimationStrategy>),
+							_1, _2, _3),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::SCALAR_COVERAGES,
+							ExportAnimationType::GMT),
+					ExportScalarCoverageAnimationStrategy::const_configuration_ptr(
+							new ExportScalarCoverageAnimationStrategy::GMTConfiguration(
+									add_export_filename_extension("scalar_coverage_%0.2fMa", ExportAnimationType::GMT),
+									default_scalar_coverage_file_export_options,
+									// Lon/lat is the default GMT ordering...
+									ExportScalarCoverageAnimationStrategy::GMTConfiguration::LON_LAT,
+									true/*include_domain_point*/,
+									default_include_dilatation_rate,
+									true/*include_domain_meta_data*/)),
+					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
+					boost::bind(
+							// 'static_cast' is because some compilers have trouble determining
+							// which overload of 'create_export_options_widget()' to use...
+							static_cast<create_export_options_widget_function_pointer_type>(
+									&create_export_options_widget<
+											GPlatesQtWidgets::ExportScalarCoverageOptionsWidget,
+											ExportScalarCoverageAnimationStrategy>),
 							_1, _2, _3),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 		}
@@ -457,7 +517,7 @@ namespace GPlatesGui
 				ExportAnimationRegistry &registry)
 		{
 			const ExportOptionsUtils::ExportFileOptions default_resolved_topology_file_export_options(
-					/*export_to_a_single_file_*/true,
+					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
 			const bool default_resolved_topology_export_lines = true;
 			const bool default_resolved_topology_export_polygons = true;
@@ -1649,6 +1709,11 @@ GPlatesGui::register_default_export_animation_types(
 	// Export numerical rasters
 	//
 	register_default_export_numerical_raster_animation_types(registry);
+
+	//
+	// Export scalar coverages
+	//
+	register_default_export_scalar_coverage_animation_types(registry);
 
 	//
 	// Export flowlines

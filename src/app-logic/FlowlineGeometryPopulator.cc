@@ -271,7 +271,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 		{
 			create_flowline_geometry(
 					seed_multipoint_iter->get_non_null_pointer(),
-					reconstructed_seed_multipoint_iter->get_non_null_pointer());	
+					reconstructed_seed_multipoint_iter->get_non_null_pointer(),
+					reconstructed_seed_geometry);	
 		}
 	}
 	else
@@ -317,7 +318,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 
 		create_flowline_geometry(
 				gml_point.point(),
-				reconstructed_seed_point_geometry->get_non_null_pointer());	
+				reconstructed_seed_point_geometry->get_non_null_pointer(),
+				reconstructed_seed_geometry);	
 	}
 	else
 	{
@@ -391,7 +393,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 void
 GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry)
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry,
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
 {
 
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_point_geometry;
@@ -465,7 +468,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				*d_flowline_property_finder->get_left_plate(),
 				*d_flowline_property_finder->get_right_plate(),
 				*(current_top_level_propiter()->handle_weak_ref()),
-				*(current_top_level_propiter()));
+				*(current_top_level_propiter()),
+				reconstructed_seed_geometry);
 
 		    d_reconstructed_feature_geometries.push_back(rf_ptr);
 

@@ -37,16 +37,9 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
-		 * Convert from millions of years to seconds.
-		 *
-		 * Strain rates are in metres/sec (multiplying converts to metres).
+		 * Strain rates are in 1/sec (multiplying by this number converts to 1/My).
 		 */
-		const double million_years_to_seconds = 365.25 * 24 * 3600 * 1.0e6;
-
-		/**
-		 * Convert metres to kms.
-		 */
-		const double metres_to_kilometres = 1e-3;
+		const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
 
 
 		/**
@@ -71,44 +64,33 @@ namespace GPlatesAppLogic
 				double *const values,
 				const unsigned int num_values,
 				const DerivativeFunctionType &derivative_function,
+				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const GeometryDeformation::DeformationInfo *const initial_deformation_infos,
-				const GeometryDeformation::DeformationInfo *const final_deformation_infos)
+				const DeformationStrain *const initial_deformation_strain_rates,
+				const DeformationStrain *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
-				const double K0 = time_increment * derivative_function(
+				const double initial_dilatation = initial_deformation_strain_rates[n].get_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n].get_dilatation();
+
+				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
 						values[n],
-						million_years_to_seconds * initial_deformation_infos[n].dilitation);
-
- 						// FIXME: check on the units of this stuff ... ?
-
-						//metres_to_kilometres * million_years_to_seconds * initial_deformation_infos[n].dilitation);
+						seconds_in_a_million_years * initial_dilatation);
 
 				const double average_time = initial_time + 0.5 * time_increment;
 
-				const double average_dilatation = million_years_to_seconds * 0.5 * (
-						initial_deformation_infos[n].dilitation + final_deformation_infos[n].dilitation);
+				const double average_dilatation_per_my =
+						seconds_in_a_million_years * 0.5 * (initial_dilatation + final_dilatation);
 
-				// FIXME: check on the units of this stuff ... ?
-
-				//const double average_dilatation = metres_to_kilometres * million_years_to_seconds * 0.5 * (
-				//		initial_deformation_infos[n].dilitation + final_deformation_infos[n].dilitation);
-
-				const double K1 = time_increment * derivative_function(
+				const double K1 = time_increment * derivative_sign * derivative_function(
 						average_time,
 						values[n] + 0.5 * K0,
-						average_dilatation);
+						average_dilatation_per_my);
    
 				values[n] += K1;
-
-				qDebug() << "rko2: n = " << n 
-					<< "; i_dil = " << initial_deformation_infos[n].dilitation
-					<< "; f_dil = " << final_deformation_infos[n].dilitation 
-					<< "; a_dil = " << average_dilatation 
-					<< "; v[n] = " << values[n];
 			}
 		}
 
@@ -122,36 +104,40 @@ namespace GPlatesAppLogic
 				double *const values,
 				const unsigned int num_values,
 				const DerivativeFunctionType &derivative_function,
+				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const GeometryDeformation::DeformationInfo *const initial_deformation_infos,
-				const GeometryDeformation::DeformationInfo *const final_deformation_infos)
+				const DeformationStrain *const initial_deformation_strain_rates,
+				const DeformationStrain *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
-				const double K0 = time_increment * derivative_function(
+				const double initial_dilatation = initial_deformation_strain_rates[n].get_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n].get_dilatation();
+
+				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
 						values[n],
-						metres_to_kilometres * million_years_to_seconds * initial_deformation_infos[n].dilitation);
+						seconds_in_a_million_years * initial_dilatation);
 
 				const double average_time = initial_time + 0.5 * time_increment;
-				const double average_dilatation = metres_to_kilometres * million_years_to_seconds * 0.5 * (
-						initial_deformation_infos[n].dilitation + final_deformation_infos[n].dilitation);
+				const double average_dilatation_per_my =
+						seconds_in_a_million_years * 0.5 * (initial_dilatation + final_dilatation);
 
-				const double K1 = time_increment * derivative_function(
+				const double K1 = time_increment * derivative_sign * derivative_function(
 						average_time,
 						values[n] + 0.5 * K0,
-						average_dilatation);
+						average_dilatation_per_my);
 
-				const double K2 = time_increment * derivative_function(
+				const double K2 = time_increment * derivative_sign * derivative_function(
 						average_time,
 						values[n] + 0.5 * K1,
-						average_dilatation);
+						average_dilatation_per_my);
 
-				const double K3 = time_increment * derivative_function(
+				const double K3 = time_increment * derivative_sign * derivative_function(
 						initial_time + time_increment,
 						values[n] + K2,
-						metres_to_kilometres * million_years_to_seconds * final_deformation_infos[n].dilitation);
+						seconds_in_a_million_years * final_dilatation);
 
 				values[n] += (K0 + 2.0 * K1 + 2.0 * K2 + K3) / 6.0;
 			}
@@ -167,8 +153,14 @@ GPlatesAppLogic::get_scalar_evolution_function(
 {
 	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THICKNESS =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
-
 	if (scalar_type == CRUSTAL_THICKNESS)
+	{
+		return scalar_evolution_function_type(&ScalarCoverageEvolution::crustal_thinning);
+	}
+
+	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+	if (scalar_type == CRUSTAL_THINNING_FACTOR)
 	{
 		return scalar_evolution_function_type(&ScalarCoverageEvolution::crustal_thinning);
 	}
@@ -181,34 +173,40 @@ GPlatesAppLogic::get_scalar_evolution_function(
 void
 GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
 		std::vector<double> &input_output_crustal_thickness,
-		const std::vector<GeometryDeformation::DeformationInfo> &initial_deformation_info,
-		const std::vector<GeometryDeformation::DeformationInfo> &final_deformation_info,
+		const std::vector<DeformationStrain> &initial_deformation_strain_rates,
+		const std::vector<DeformationStrain> &final_deformation_strain_rates,
 		const double &initial_time,
 		const double &final_time)
 {
 	// Input array sizes should match.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_output_crustal_thickness.size() == initial_deformation_info.size() &&
-				initial_deformation_info.size() == final_deformation_info.size(),
+			input_output_crustal_thickness.size() == initial_deformation_strain_rates.size() &&
+				initial_deformation_strain_rates.size() == final_deformation_strain_rates.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-    int n = input_output_crustal_thickness.size();
-    qDebug() << "ct: number of points n=" << n;
+	double time_increment = final_time - initial_time;
+	double derivative_sign;
+	if (time_increment < 0)
+	{
+		// Time increment should always be positive.
+		time_increment = -time_increment;
 
-    //double min0 = *std::min_element( input_output_crustal_thickness.begin(), input_output_crustal_thickness.end() );
-    //double max0 = *std::max_element( input_output_crustal_thickness.begin(), input_output_crustal_thickness.end() );
-
+		// We're going forward in time (from old to young times) so use derivative unchanged.
+		derivative_sign = 1.0;
+	}
+	else
+	{
+		// We're going backward in time (from young to old times) so invert/negate the derivative.
+		derivative_sign = -1.0;
+	}
 
 	runge_kutta_order_2(
 			&input_output_crustal_thickness[0],
 			input_output_crustal_thickness.size(),
 			&crustal_thinning_derivative,
+			derivative_sign,
 			initial_time,
-			final_time - initial_time,
-			&initial_deformation_info[0],
-			&final_deformation_info[0]);
-
-    double min1 = *std::min_element( input_output_crustal_thickness.begin(), input_output_crustal_thickness.end() );
-    double max1 = *std::max_element( input_output_crustal_thickness.begin(), input_output_crustal_thickness.end() );
-    qDebug() << "ct: n=" << n << "; time =" << final_time << "; min=" << min1 << "; max1=" << max1;
+			time_increment,
+			&initial_deformation_strain_rates[0],
+			&final_deformation_strain_rates[0]);
 }

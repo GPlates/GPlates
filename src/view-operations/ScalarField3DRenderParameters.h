@@ -219,9 +219,9 @@ namespace GPlatesViewOperations
 		struct QualityPerformance
 		{
 			QualityPerformance(
-					unsigned int sampling_rate_ = 50,
+					unsigned int sampling_rate_ = 100,
 					unsigned int bisection_iterations_ = 5,
-					bool enable_reduce_rate_during_drag_globe_ = false,
+					bool enable_reduce_rate_during_drag_globe_ = true,
 					unsigned int reduce_rate_during_drag_globe_ = 2);
 
 			unsigned int sampling_rate;

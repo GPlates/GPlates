@@ -38,6 +38,7 @@
 
 #include "app-logic/Layer.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/RasterColourPalette.h"
 
 
@@ -103,6 +104,14 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_use_age_palette_button_clicked();
+
+		void
+		handle_builtin_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
+
+		void
+		handle_builtin_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters);
 
 		void
 		handle_palette_range_check_box_changed(

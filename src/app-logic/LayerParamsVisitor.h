@@ -37,6 +37,7 @@ namespace GPlatesAppLogic
 	class ReconstructLayerParams;
 	class ReconstructScalarCoverageLayerParams;
 	class ScalarField3DLayerParams;
+	class TopologyNetworkLayerParams;
 	class VelocityFieldCalculatorLayerParams;
 
 	/**
@@ -54,6 +55,7 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::SetConst<ReconstructLayerParams, Const>::type reconstruct_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructScalarCoverageLayerParams, Const>::type reconstruct_scalar_coverage_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ScalarField3DLayerParams, Const>::type scalar_field_3d_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<TopologyNetworkLayerParams, Const>::type topology_network_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<VelocityFieldCalculatorLayerParams, Const>::type velocity_field_calculator_layer_params_type;
 
 		virtual
@@ -88,6 +90,12 @@ namespace GPlatesAppLogic
 		void
 		visit_scalar_field_3d_layer_params(
 				scalar_field_3d_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_topology_network_layer_params(
+				topology_network_layer_params_type &params)
 		{  }
 
 		virtual

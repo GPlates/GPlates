@@ -52,18 +52,89 @@ GPlatesMaths::calculate_velocity_vector(
 		const FiniteRotation &fr_t2,
 		const double &delta_time)
 {
-	const std::pair<Vector3D, real_t/*omega (angular velocity)*/> velocity_xyz_and_omega =
-			calculate_velocity_vector_and_omega(
-					point,
-					fr_t1,
-					fr_t2,
-					delta_time,
-					// The axis hint does not affect our results because, in our velocity calculation,
-					// the signs of the axis and angle cancel each other out so it doesn't matter if
-					// axis/angle or -axis/-angle...
-					boost::none);
+	return calculate_velocity_vector(
+			point, 
+			calculate_stage_rotation(fr_t1, fr_t2),
+			delta_time);
+}
 
-	return velocity_xyz_and_omega.first;
+
+GPlatesMaths::FiniteRotation
+GPlatesMaths::calculate_stage_rotation(
+		const FiniteRotation &fr_t1,
+		const FiniteRotation &fr_t2)
+{
+	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
+	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
+
+	// This quaternion represents a rotation from t2 to t1.
+	//
+	// Note the t1 is a more recent time (closer to present day) than t2.
+	//
+	// R(t2->t1,A->P)
+	//    = R(0->t1,A->P) * R(t2->0,A->P)
+	//    = R(0->t1,A->P) * inverse[R(0->t2,A->P)]
+	//
+	// ...where 'A' is the anchor plate and 'P' is the plate the point is in.
+	//
+	//
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+	// So check if we're using the longer path and negate either quaternion in order to
+	// take the shorter path. It actually doesn't matter which one we negate.
+	// We don't normally make this correction because it limits the user's (who creates total poles
+	// in the rotation file) ability to select the short or the long path. However since the velocity
+	// calculation uses two adjacent times (separated by 1Ma usually) then the shortest path should
+	// be fine. And also the SLERP used in 'FiniteRotation::interpolate()' chooses the shortest path
+	// between two adjacent total poles (two different times for the same plate) so the calculated
+	// velocities should follow that interpolated motion anyway.
+	//
+	const UnitQuaternion3D q = dot(q1, q2).is_precisely_less_than(0)
+			? q1 * (-q2).get_inverse()
+			: q1 * q2.get_inverse();
+
+	return FiniteRotation::create(
+			q,
+			// The axis hint does not affect our results because, in our stage rotation calculation,
+			// the signs of the axis and angle cancel each other out so it doesn't matter if
+			// axis/angle or -axis/-angle...
+			boost::none);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesMaths::calculate_velocity_vector(
+		const PointOnSphere &point, 
+		const FiniteRotation &stage_rotation,
+		const double &delta_time)
+{
+	if (represents_identity_rotation(stage_rotation.unit_quat()))
+	{
+		// Return zero velocity.
+		return Vector3D(0, 0, 0);
+	}
+
+	// The axis hint does not affect our results because, in our stage rotation calculation,
+	// the signs of the axis and angle cancel each other out so it doesn't matter if
+	// axis/angle or -axis/-angle...
+	const UnitQuaternion3D::RotationParams params =
+			stage_rotation.unit_quat().get_rotation_params(boost::none/*axis_hint*/);
+
+	// Angular velocity of rotation.
+	// 'params.angle' is radians per 'delta_time' million years.
+	// 'omega' is radians per million years.
+	const real_t omega = params.angle / delta_time;
+
+	// Axis of rotation.
+	const UnitVector3D &rotation_axis = params.axis;
+
+	// Cartesian (x, y, z) velocity (cm/yr).
+	const Vector3D velocity_xyz =
+			omega *
+				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
+					cross(rotation_axis, point.position_vector());
+
+	return velocity_xyz;
 }
 
 
@@ -180,7 +251,7 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 	if ( represents_identity_rotation( q ) )
 	{
 		// The finite rotations must be identical.
-		return std::make_pair(Vector3D(0, 0, 0),0.);
+		return std::make_pair(Vector3D(0, 0, 0), real_t(0.0));
 	}
 
 	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(axis_hint);
@@ -188,10 +259,10 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 	// Angular velocity of rotation.
 	// 'params.angle' is radians per 'delta_time' million years.
 	// 'omega' is radians per million years.
-	real_t omega = params.angle / delta_time;
+	const real_t omega = params.angle / delta_time;
 
-	// Axis of roation
-	UnitVector3D rotation_axis = params.axis;
+	// Axis of rotation.
+	const UnitVector3D &rotation_axis = params.axis;
 
 	// Cartesian (x, y, z) velocity (cm/yr).
 	const Vector3D velocity_xyz =

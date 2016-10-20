@@ -733,7 +733,9 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 		const double &reconstruction_time,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
+		const TopologyNetworkParams &topology_network_params,
+		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced)
 {
 	// Get the next global reconstruct handle - it'll be stored in each RTN.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -743,7 +745,9 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 			resolved_topological_networks,
 			reconstruction_time,
 			reconstruct_handle,
-			topological_geometry_reconstruct_handles);
+			topological_geometry_reconstruct_handles,
+			topology_network_params,
+			topological_sections_referenced);
 
 	AppLogicUtils::visit_feature_collections(
 			topological_network_features_collection.begin(),

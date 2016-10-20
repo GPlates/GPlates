@@ -209,6 +209,8 @@ namespace GPlatesViewOperations
 		create_rendered_coloured_edge_surface_mesh(
 				const RenderedColouredEdgeSurfaceMesh::edge_seq_type &mesh_edges,
 				const RenderedColouredEdgeSurfaceMesh::vertex_seq_type &mesh_vertices,
+				const RenderedColouredEdgeSurfaceMesh::colour_seq_type &mesh_colours,
+				bool use_vertex_colours,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
 
 		/**
@@ -217,7 +219,10 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_coloured_triangle_surface_mesh(
 				const RenderedColouredTriangleSurfaceMesh::triangle_seq_type &mesh_triangles,
-				const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices);
+				const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices,
+				const RenderedColouredTriangleSurfaceMesh::colour_seq_type &mesh_colours,
+				bool use_vertex_colours,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.
@@ -465,9 +470,7 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_strain_marker_symbol(
 				const GPlatesMaths::PointOnSphere &centre,
-				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				const unsigned int size = DEFAULT_SYMBOL_SIZE,
-				const float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
 				const double scale_x = 0,
 				const double scale_y = 0,
 				const double angle = 0);

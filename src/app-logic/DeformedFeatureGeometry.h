@@ -28,7 +28,7 @@
 
 #include <vector>
 
-#include "GeometryDeformation.h"
+#include "DeformationStrain.h"
 #include "ReconstructedFeatureGeometry.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -58,8 +58,11 @@ namespace GPlatesAppLogic
 		typedef GPlatesUtils::non_null_intrusive_ptr<const DeformedFeatureGeometry> non_null_ptr_to_const_type;
 
 
-		//! Typedef for a sequence of per-geometry-point deformation information.
-		typedef std::vector<GeometryDeformation::DeformationInfo> point_deformation_info_seq_type;
+		//! Typedef for a sequence of per-geometry-point deformation instantaneous strain rates.
+		typedef std::vector<DeformationStrain> point_deformation_strain_rate_seq_type;
+
+		//! Typedef for a sequence of per-geometry-point deformation accumulated/total strains.
+		typedef std::vector<DeformationStrain> point_deformation_total_strain_seq_type;
 
 
 		/**
@@ -74,7 +77,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator,
 				const geometry_ptr_type &deformed_geometry,
-				const point_deformation_info_seq_type &point_deformation_information_,
+				const point_deformation_strain_rate_seq_type &point_deformation_strain_rates_,
+				const point_deformation_total_strain_seq_type &point_deformation_total_strains_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
@@ -86,7 +90,8 @@ namespace GPlatesAppLogic
 							feature_handle,
 							property_iterator,
 							deformed_geometry,
-							point_deformation_information_,
+							point_deformation_strain_rates_,
+							point_deformation_total_strains_,
 							reconstruction_plate_id_,
 							time_of_formation_,
 							reconstruct_handle_));
@@ -94,12 +99,21 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the per-geometry-point deformation information.
+		 * Returns the per-geometry-point deformation strain rates.
 		 */
-		const point_deformation_info_seq_type &
-		get_point_deformation_information() const
+		const point_deformation_strain_rate_seq_type &
+		get_point_deformation_strain_rates() const
 		{
-			return d_point_deformation_information;
+			return d_point_deformation_strain_rates;
+		}
+
+		/**
+		 * Returns the per-geometry-point deformation accumulated/total strains.
+		 */
+		const point_deformation_total_strain_seq_type &
+		get_point_deformation_total_strains() const
+		{
+			return d_point_deformation_total_strains;
 		}
 
 
@@ -130,9 +144,15 @@ namespace GPlatesAppLogic
 	private:
 
 		/**
-		 * Per-geometry-point deformation information.
+		 * Per-geometry-point deformation strain rates.
 		 */
-		point_deformation_info_seq_type d_point_deformation_information;
+		point_deformation_strain_rate_seq_type d_point_deformation_strain_rates;
+
+
+		/**
+		 * Per-geometry-point deformation total strains.
+		 */
+		point_deformation_total_strain_seq_type d_point_deformation_total_strains;
 
 
 		/**
@@ -147,7 +167,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator,
 				const geometry_ptr_type &deformed_geometry,
-				const point_deformation_info_seq_type &point_deformation_information_,
+				const point_deformation_strain_rate_seq_type &point_deformation_strain_rates_,
+				const point_deformation_total_strain_seq_type &point_deformation_total_strains_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_) :
@@ -161,7 +182,8 @@ namespace GPlatesAppLogic
 					reconstruction_plate_id_,
 					time_of_formation_,
 					reconstruct_handle_),
-			d_point_deformation_information(point_deformation_information_)
+			d_point_deformation_strain_rates(point_deformation_strain_rates_),
+			d_point_deformation_total_strains(point_deformation_total_strains_)
 		{  }
 
 	};

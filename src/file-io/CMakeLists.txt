@@ -83,6 +83,8 @@ set(srcs
     GMTFormatMultiPointVectorFieldExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
+    GMTFormatReconstructedScalarCoverageExport.cc
+    GMTFormatReconstructedScalarCoverageExport.h
     GMTFormatResolvedTopologicalGeometryExport.cc
     GMTFormatResolvedTopologicalGeometryExport.h
     GMTFormatWriter.cc
@@ -95,6 +97,8 @@ set(srcs
     GpmlFeatureReaderInterface.h
     GpmlFormatMultiPointVectorFieldExport.cc
     GpmlFormatMultiPointVectorFieldExport.h
+    GpmlFormatReconstructedScalarCoverageExport.cc
+    GpmlFormatReconstructedScalarCoverageExport.h
     GpmlOutputVisitor.cc
     GpmlOutputVisitor.h
     GpmlPropertyReader.cc
@@ -198,6 +202,8 @@ set(srcs
     ReconstructedFlowlineExport.h
     ReconstructedMotionPathExport.cc
     ReconstructedMotionPathExport.h
+    ReconstructedScalarCoverageExport.cc
+    ReconstructedScalarCoverageExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
     ResolvedTopologicalGeometryExport.cc

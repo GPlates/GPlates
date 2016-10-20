@@ -29,6 +29,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "DependentTopologicalSectionLayers.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
@@ -36,8 +37,6 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
-
-#include "global/PointerTraits.h"
 
 #include "utils/SubjectObserverToken.h"
 
@@ -165,12 +164,27 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const double &reconstruction_time);
 
+		/**
+		 * Returns all features set by @a add_topological_geometry_feature_collection, etc.
+		 *
+		 * Note that the features might be a mixture of topological and non-topological.
+		 *
+		 * If @a only_topological_features is true then only the sub-set of features
+		 * (set by @a add_topological_geometry_feature_collection, etc)
+		 * that are actually topological features are returned.
+		 * By default all features are returned.
+		 */
+		void
+		get_current_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+				bool only_topological_features = false) const;
+
 
 		/**
 		 * Returns the current reconstruction layer proxy used for reconstructions.
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type
-		get_reconstruction_layer_proxy();
+		get_current_reconstruction_layer_proxy();
 
 
 		/**
@@ -235,18 +249,12 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
-		 * Sets the current reconstruct layer proxies used to reconstruct the topological boundary sections.
+		 * Sets the current layer proxies used to reconstruct/resolve the topological geometry sections.
 		 */
 		void
-		set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				const std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &
-						reconstructed_geometry_topological_sections_layer_proxies);
-
-		/**
-		 * Sets the current resolved topological line layer proxies used to resolve the topological boundary line sections.
-		 */
-		void
-		set_current_resolved_line_topological_sections_layer_proxies(
+		set_current_topological_sections_layer_proxies(
+				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &
+						reconstructed_geometry_topological_sections_layer_proxies,
 				const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
 						resolved_line_topological_sections_layer_proxies);
 
@@ -371,6 +379,11 @@ namespace GPlatesAppLogic
 		ResolvedLines d_cached_resolved_lines;
 
 		/**
+		 * The cached resolved geometries depend on these topological sections.
+		 */
+		DependentTopologicalSectionLayers d_dependent_topological_sections;
+
+		/**
 		 * The current reconstruction time as set by the layer system.
 		 */
 		double d_current_reconstruction_time;
@@ -401,17 +414,6 @@ namespace GPlatesAppLogic
 		void
 		reset_cache(
 				bool invalidate_resolved_lines = true);
-
-
-		/**
-		 * Checks if the specified input layer proxy has changed.
-		 *
-		 * If so then reset caches and invalidates subject token.
-		 */
-		template <class InputLayerProxyWrapperType>
-		void
-		check_input_layer_proxy(
-				InputLayerProxyWrapperType &input_layer_proxy_wrapper);
 
 
 		/**

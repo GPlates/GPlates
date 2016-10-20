@@ -148,7 +148,14 @@ namespace GPlatesGui
 					const std::vector<ColourSlice> &colour_slices)
 			{
 				double inv_range = 0.0;
-				if (!GPlatesMaths::are_almost_exactly_equal(lower_bound, upper_bound))
+
+				// Make sure not exactly the same...
+				//
+				// NOTE: Not using 'GPlatesMaths::are_almost_exactly_equal()') since some values
+				// may be *very* small and it would compare then equal.
+				// If exactly the same then leave inverse range as zero.
+				if (lower_bound < upper_bound ||
+					lower_bound > upper_bound)
 				{
 					if (lower_bound > upper_bound)
 					{

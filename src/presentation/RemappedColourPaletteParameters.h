@@ -32,10 +32,8 @@
 
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/RasterColourPalette.h"
-
-// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
-#include "scribe/Transcribe.h"
 
 
 namespace GPlatesPresentation
@@ -51,16 +49,6 @@ namespace GPlatesPresentation
 	public:
 
 		static const double DEFAULT_DEVIATION_FROM_MEAN;
-
-		/**
-		 * Some pre-defined internal palette types are provided for convenience.
-		 */
-		enum ConvenientPaletteType
-		{
-			AGE_PALETTE
-
-			// NOTE: Any new values should also be added to @a transcribe.
-		};
 
 
 		/**
@@ -85,11 +73,10 @@ namespace GPlatesPresentation
 		get_palette_range() const;
 
 		/**
-		 * Returns the filename of the CPT file from which the current colour palette was loaded,
-		 * if it was loaded from a file (or an internal file resource if a @a ConvenientPaletteType,
-		 * eg, ":/age.cpt").
+		 * Returns the filename of the CPT file from which the current colour palette was loaded.
 		 *
-		 * If the current colour palette is the auto-generated default palette then returns the empty string.
+		 * If the current colour palette is the auto-generated default palette, or a built-in colour palette,
+		 * then returns the empty string.
 		 */
 		QString
 		get_colour_palette_filename() const
@@ -98,12 +85,54 @@ namespace GPlatesPresentation
 		}
 
 		/**
-		 * Returns the convenient palette type (if current palette was loaded via @a load_convenient_colour_palette).
+		 * Returns the name of the current colour palette.
+		 *
+		 * This is useful for displaying in the GUI.
+		 *
+		 * If the current colour palette was loaded from a file then this is the filename.
+		 * If a built-in colour palette then this is the name of that palette.
+		 * If the default colour palette then this is the empty string.
+		 */
+		QString
+		get_colour_palette_name() const
+		{
+			return d_colour_palette_name;
+		}
+
+		/**
+		 * Returns the built-in colour palette type (if current palette was loaded via @a load_builtin_colour_palette).
 		 *
 		 * Returns none if current palette is default colour palette or was loaded from a file.
 		 */
-		boost::optional<ConvenientPaletteType>
-		get_convenient_palette_type() const;
+		boost::optional<GPlatesGui::BuiltinColourPaletteType>
+		get_builtin_colour_palette_type() const
+		{
+			return d_builtin_colour_palette_type;
+		}
+
+		/**
+		 * Returns the built-in colour palette parameters.
+		 *
+		 * Note that there are still parameters even if the current palette was not loaded via @a load_builtin_colour_palette.
+		 * This is useful for keeping track of the built-in parameters for use in the built-in palette dialog.
+		 */
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &
+		get_builtin_colour_palette_parameters() const
+		{
+			return d_builtin_colour_palette_parameters;
+		}
+
+		/**
+		 * Sets the built-in colour palette parameters.
+		 *
+		 * This is useful for keeping track of the built-in parameters for use in the built-in palette dialog.
+		 */
+		void
+		set_builtin_colour_palette_parameters(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_colour_palette_parameters)
+		{
+			d_builtin_colour_palette_parameters = builtin_colour_palette_parameters;
+		}
 
 		/**
 		 * Causes the current colour palette to be the auto-generated default palette,
@@ -113,21 +142,6 @@ namespace GPlatesPresentation
 		 */
 		void
 		use_default_colour_palette();
-
-		/**
-		 * Sets the current colour palette to be one that has been loaded from a file.
-		 * @a filename must not be the empty string.
-		 *
-		 * If the previous palette is mapped then the new palette will be mapped to the same range.
-		 *
-		 * Returns false if a mapping is applied but failed, in which case palette range is unmapped.
-		 * See @a map_palette_range for more details.
-		 */
-		bool
-		set_colour_palette(
-				const QString &filename,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
-				const std::pair<double, double> &palette_range);
 
 		/**
 		 * Same as @a set_colour_palette but also loads the colour palette from the file @a filename.
@@ -147,13 +161,11 @@ namespace GPlatesPresentation
 				bool allow_integer_colour_palette = false);
 
 		/**
-		 * Same as @a load_colour_palette except loads an convenient internal palette type.
+		 * Similar to @a load_colour_palette except loads an built-in colour palette type.
 		 */
-		bool
-		load_convenient_colour_palette(
-				ConvenientPaletteType convenient_palette_type,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors,
-				bool allow_integer_colour_palette = false);
+		void
+		load_builtin_colour_palette(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
 
 		/**
 		 * Remaps the value range of the colour palette (the palette colours remain unchanged).
@@ -163,8 +175,8 @@ namespace GPlatesPresentation
 		 */
 		bool
 		map_palette_range(
-				const double &lower_bound,
-				const double &upper_bound);
+				double lower_bound,
+				double upper_bound);
 
 		/**
 		 * Unmaps the current colour palette.
@@ -248,10 +260,31 @@ namespace GPlatesPresentation
 		/**
 		 * The filename the colour palette was loaded from.
 		 *
-		 * Is an empty string if the default palette is being used.
-		 * Is a string beginning with ":/" (ie, internal filename) if a @a ConvenientPaletteType.
+		 * Is an empty string if the default palette, or a built-in palette, is being used.
 		 */
 		QString d_colour_palette_filename;
+
+		/**
+		 * The name of the colour palette.
+		 */
+		QString d_colour_palette_name;
+
+		/**
+		 * The built-in colour palette (if one is currently being used).
+		 *
+		 * If this is none then @a d_colour_palette_filename is used to determine if palette
+		 * should come from a file or should default palette (if filename empty).
+		 */
+		boost::optional<GPlatesGui::BuiltinColourPaletteType> d_builtin_colour_palette_type;
+
+		/**
+		 * The built-in colour palette parameters.
+		 *
+		 * Note that there are still parameters even if the current palette was not loaded and hence
+		 * @a d_builtin_colour_palette_type is none.
+		 * This is useful for keeping track of the built-in parameters for use in the built-in palette dialog.
+		 */
+		GPlatesGui::BuiltinColourPaletteType::Parameters d_builtin_colour_palette_parameters;
 
 		double d_deviation_from_mean;
 
@@ -269,17 +302,23 @@ namespace GPlatesPresentation
 
 		bool d_is_currently_mapped;
 
+
+		/**
+		 * Sets the current colour palette to be one that has been loaded from a file.
+		 *
+		 * If the previous palette is mapped then the new palette will be mapped to the same range.
+		 *
+		 * Returns false if a mapping is applied but failed, in which case palette range is unmapped.
+		 * See @a map_palette_range for more details.
+		 */
+		bool
+		set_colour_palette(
+				const QString &filename,
+				const QString &name,
+				boost::optional<GPlatesGui::BuiltinColourPaletteType> builtin_colour_palette_type,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
+				const std::pair<double, double> &palette_range);
 	};
-
-
-	/**
-	 * Transcribe for sessions/projects.
-	 */
-	GPlatesScribe::TranscribeResult
-	transcribe(
-			GPlatesScribe::Scribe &scribe,
-			RemappedColourPaletteParameters::ConvenientPaletteType &convenient_palette_type,
-			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_PRESENTATION_REMAPPEDCOLOURPALETTEPARAMETERS_H

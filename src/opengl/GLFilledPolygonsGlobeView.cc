@@ -1286,20 +1286,50 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_t
 		const GPlatesMaths::PointOnSphere &vertex1,
 		const GPlatesMaths::PointOnSphere &vertex2,
 		const GPlatesMaths::PointOnSphere &vertex3,
-		GPlatesGui::rgba8_t rgba8_color)
+		GPlatesGui::rgba8_t rgba8_triangle_color)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_current_drawable,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_colour = pre_multiply_alpha(rgba8_color);
+	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_triangle_colour = pre_multiply_alpha(rgba8_triangle_color);
 
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiplied_alpha_rgba8_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiplied_alpha_rgba8_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiplied_alpha_rgba8_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+
+	d_drawable_vertex_elements.push_back(base_vertex_index);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 2);
+
+	// Update the current filled drawable.
+	d_current_drawable->end += 3;
+	d_current_drawable->count += 3;
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_to_mesh(
+		const GPlatesMaths::PointOnSphere &vertex1,
+		const GPlatesMaths::PointOnSphere &vertex2,
+		const GPlatesMaths::PointOnSphere &vertex3,
+		GPlatesGui::rgba8_t rgba8_vertex_color1,
+		GPlatesGui::rgba8_t rgba8_vertex_color2,
+		GPlatesGui::rgba8_t rgba8_vertex_color3)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiply_alpha(rgba8_vertex_color1)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiply_alpha(rgba8_vertex_color2)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiply_alpha(rgba8_vertex_color3)));
 
 	d_drawable_vertex_elements.push_back(base_vertex_index);
 	d_drawable_vertex_elements.push_back(base_vertex_index + 1);

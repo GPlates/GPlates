@@ -29,6 +29,7 @@
 #define GPLATES_APP_LOGIC_TOPOLOGYUTILS_H
 
 #include <list>
+#include <set>
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
@@ -41,6 +42,7 @@
 #include "ResolvedTopologicalSection.h"
 #include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
+#include "TopologyNetworkParams.h"
 
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/LatLonPoint.h"
@@ -50,6 +52,7 @@
 #include "maths/PolygonIntersections.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureId.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -208,6 +211,10 @@ namespace GPlatesAppLogic
 		 *        observing the topological boundary section features,
 		 *        that should be searched when resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
+		 * @param topology_network_params parameters used when creating the resolved networks.
+		 * @param topological_sections_referenced returns the topological section features referenced
+		 *        when visiting network features (note the referenced feature IDs are returned even
+		 *        if no features were found with those feature IDs).
 		 *
 		 * The returned reconstruct handle can be used to identify the resolved topological networks.
 		 * This is not currently used though.
@@ -217,7 +224,9 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
+				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
 
 
 		/**

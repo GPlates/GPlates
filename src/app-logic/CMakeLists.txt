@@ -27,8 +27,11 @@ set(srcs
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
+    DeformationStrain.h
     DeformedFeatureGeometry.cc
     DeformedFeatureGeometry.h
+    DependentTopologicalSectionLayers.cc
+    DependentTopologicalSectionLayers.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
     ExtractScalarField3DFeatureProperties.cc
@@ -231,6 +234,9 @@ set(srcs
     TopologyInternalUtils.h
     TopologyIntersections.cc
     TopologyIntersections.h
+    TopologyNetworkLayerParams.h
+    TopologyNetworkParams.cc
+    TopologyNetworkParams.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
     TopologyNetworkResolverLayerProxy.cc

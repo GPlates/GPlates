@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>525</width>
+    <width>392</width>
     <height>306</height>
    </rect>
   </property>
@@ -177,7 +177,7 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Deformation will be limited to the time span from Youngest Age to Oldest Age.</string>
+         <string>Deformation limited to time span.</string>
         </property>
        </widget>
       </item>
@@ -189,7 +189,7 @@
      <item>
       <widget class="QCheckBox" name="show_deformed_feature_geometries_checkbox">
        <property name="text">
-        <string>Show deformed feature geometries (points/polylines/polygons)</string>
+        <string>Show deformed feature geometries</string>
        </property>
       </widget>
      </item>
@@ -212,7 +212,7 @@
         <item>
          <widget class="QCheckBox" name="show_strain_accumulation_checkbox">
           <property name="text">
-           <string>Show strain accumulation (at geometry points)</string>
+           <string>Show strain accumulation</string>
           </property>
          </widget>
         </item>

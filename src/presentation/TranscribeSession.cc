@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <memory> // std::auto_ptr
 #include <ostream>
@@ -54,6 +55,7 @@
 #include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructScalarCoverageLayerParams.h"
 #include "app-logic/ScalarField3DLayerParams.h"
+#include "app-logic/TopologyNetworkLayerParams.h"
 #include "app-logic/VelocityFieldCalculatorLayerParams.h"
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -69,6 +71,7 @@
 #include "global/GPlatesException.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/Colour.h"
 #include "gui/ColourPaletteUtils.h"
 #include "gui/Dialogs.h"
 #include "gui/DrawStyleAdapters.h"
@@ -683,6 +686,15 @@ namespace GPlatesPresentation
 
 			virtual
 			void
+			visit_topology_network_layer_params(
+					topology_network_layer_params_type &params)
+			{
+				// Save the topology network params.
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_topology_network_params(), d_layer_params_tag("topology_network_params"));
+			}
+
+			virtual
+			void
 			visit_velocity_field_calculator_layer_params(
 					velocity_field_calculator_layer_params_type &params)
 			{
@@ -795,6 +807,19 @@ namespace GPlatesPresentation
 
 			virtual
 			void
+			visit_topology_network_layer_params(
+					topology_network_layer_params_type &params)
+			{
+				// Load the topology network params.
+				GPlatesAppLogic::TopologyNetworkParams topology_network_params;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, topology_network_params, d_layer_params_tag("topology_network_params")))
+				{
+					params.set_topology_network_params(topology_network_params);
+				}
+			}
+
+			virtual
+			void
 			visit_velocity_field_calculator_layer_params(
 					velocity_field_calculator_layer_params_type &params)
 			{
@@ -819,12 +844,25 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				const RemappedColourPaletteParameters &colour_palette_params)
 		{
-			GPlatesScribe::TranscribeUtils::save_file_path(
-					scribe, TRANSCRIBE_SOURCE, colour_palette_params.get_colour_palette_filename(),
-					colour_palette_params_tag("colour_palette_filename"));
+			// Save the built-in colour palette parameters.
+			// Note that we save this even if a built-in colour palette is not loaded.
+			// This is useful for keeping track of the built-in parameters for use in the built-in palette dialog.
+			scribe.save(TRANSCRIBE_SOURCE, colour_palette_params.get_builtin_colour_palette_parameters(),
+					colour_palette_params_tag("builtin_colour_palette_parameters"));
 
-			scribe.save(TRANSCRIBE_SOURCE, colour_palette_params.get_convenient_palette_type(),
-					colour_palette_params_tag("convenient_palette_type"));
+			boost::optional<GPlatesGui::BuiltinColourPaletteType> builtin_colour_palette_type =
+					colour_palette_params.get_builtin_colour_palette_type();
+
+			scribe.save(TRANSCRIBE_SOURCE, builtin_colour_palette_type,
+					colour_palette_params_tag("builtin_colour_palette_type"));
+
+			if (!builtin_colour_palette_type)
+			{
+				// Not a built-in colour palette type - so write out the palette filename.
+				GPlatesScribe::TranscribeUtils::save_file_path(
+						scribe, TRANSCRIBE_SOURCE, colour_palette_params.get_colour_palette_filename(),
+						colour_palette_params_tag("colour_palette_filename"));
+			}
 
 			scribe.save(TRANSCRIBE_SOURCE, colour_palette_params.is_palette_range_mapped(),
 					colour_palette_params_tag("is_palette_range_mapped"));
@@ -844,21 +882,12 @@ namespace GPlatesPresentation
 				RemappedColourPaletteParameters &colour_palette_params,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors)
 		{
-			boost::optional<QString> colour_palette_filename =
-					GPlatesScribe::TranscribeUtils::load_file_path(
-							scribe, TRANSCRIBE_SOURCE, colour_palette_params_tag("colour_palette_filename"));
-			if (!colour_palette_filename)
-			{
-				// Return without loading the colour palette parameters (just leave it as default).
-				return;
-			}
-
-			boost::optional<RemappedColourPaletteParameters::ConvenientPaletteType> convenient_palette_type;
+			boost::optional<GPlatesGui::BuiltinColourPaletteType> builtin_colour_palette_type;
 			bool is_palette_range_mapped;
 			std::pair<double, double> mapped_palette_range;
 			double deviation_from_mean;
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, convenient_palette_type,
-					colour_palette_params_tag("convenient_palette_type")) ||
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, builtin_colour_palette_type,
+					colour_palette_params_tag("builtin_colour_palette_type")) ||
 				!scribe.transcribe(TRANSCRIBE_SOURCE, is_palette_range_mapped,
 					colour_palette_params_tag("is_palette_range_mapped")) ||
 				!scribe.transcribe(TRANSCRIBE_SOURCE, mapped_palette_range,
@@ -870,17 +899,43 @@ namespace GPlatesPresentation
 				return;
 			}
 
-			if (convenient_palette_type)
+			// Load the built-in colour palette parameters.
+			// Note that we load this even if a built-in colour palette is not loaded.
+			// This is useful for keeping track of the built-in parameters for use in the built-in palette dialog.
+			GPlatesGui::BuiltinColourPaletteType::Parameters builtin_colour_palette_parameters;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, builtin_colour_palette_parameters,
+					colour_palette_params_tag("builtin_colour_palette_parameters")))
 			{
-				colour_palette_params.load_convenient_colour_palette(convenient_palette_type.get(), read_errors);
+				builtin_colour_palette_parameters = GPlatesGui::BuiltinColourPaletteType::Parameters();
 			}
-			else if (colour_palette_filename->isEmpty())
+			colour_palette_params.set_builtin_colour_palette_parameters(builtin_colour_palette_parameters);
+
+			if (builtin_colour_palette_type)
 			{
-				colour_palette_params.use_default_colour_palette();
+				colour_palette_params.load_builtin_colour_palette(builtin_colour_palette_type.get());
 			}
 			else
 			{
-				colour_palette_params.load_colour_palette(colour_palette_filename.get(), read_errors);
+				// Only load the colour palette filename if we're *not* using a convenient (internal) palette.
+				// This is because the convenient palette filenames are not actually files and we don't
+				// want to query the user to find it (thinking that it's a missing file).
+				boost::optional<QString> colour_palette_filename =
+							GPlatesScribe::TranscribeUtils::load_file_path(
+									scribe, TRANSCRIBE_SOURCE, colour_palette_params_tag("colour_palette_filename"));
+				if (!colour_palette_filename)
+				{
+					// Return without loading the colour palette parameters (just leave it as default).
+					return;
+				}
+
+				if (colour_palette_filename->isEmpty())
+				{
+					colour_palette_params.use_default_colour_palette();
+				}
+				else
+				{
+					colour_palette_params.load_colour_palette(colour_palette_filename.get(), read_errors);
+				}
 			}
 
 			// Map the palette range (even if not currently mapped) just to set up the mapped range.
@@ -1581,58 +1636,56 @@ namespace GPlatesPresentation
 				// Save the draw style (colouring scheme).
 				save_draw_style(d_layer_params_tag("draw_style"), d_scribe, params);
 
-				// Save the colour palette filename (an empty filename means use default palette).
+				// Save the dilatation colour palette filename (an empty filename means use default palette).
 				GPlatesScribe::TranscribeUtils::save_file_path(
-						d_scribe, TRANSCRIBE_SOURCE, params.get_colour_palette_filename(),
-						d_layer_params_tag("colour_palette_filename"));
+						d_scribe, TRANSCRIBE_SOURCE, params.get_dilatation_colour_palette_filename(),
+						d_layer_params_tag("dilatation_colour_palette_filename"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.show_delaunay_triangulation(),
-						d_layer_params_tag("show_delaunay_triangulation"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.show_constrained_triangulation(),
-						d_layer_params_tag("show_constrained_triangulation"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.show_mesh_triangulation(),
-						d_layer_params_tag("show_mesh_triangulation"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.show_total_triangulation(),
-						d_layer_params_tag("show_total_triangulation"));
+				// Save the second invariant colour palette filename (an empty filename means use default palette).
+				GPlatesScribe::TranscribeUtils::save_file_path(
+						d_scribe, TRANSCRIBE_SOURCE, params.get_second_invariant_colour_palette_filename(),
+						d_layer_params_tag("second_invariant_colour_palette_filename"));
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.show_segment_velocity(),
 						d_layer_params_tag("show_segment_velocity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.show_fill(),
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
+						d_layer_params_tag("fill_triangulation"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_rigid_blocks(),
+						d_layer_params_tag("fill_rigid_blocks"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_opacity(),
+						d_layer_params_tag("fill_opacity"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(),
+						d_layer_params_tag("fill_intensity"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_colour_mode(),
+						d_layer_params_tag("colour_mode"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_abs_dilatation(),
+						d_layer_params_tag("min_abs_dilatation"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_dilatation(),
+						d_layer_params_tag("max_abs_dilatation"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_abs_second_invariant(),
+						d_layer_params_tag("min_abs_second_invariant"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_second_invariant(),
+						d_layer_params_tag("max_abs_second_invariant"));
+
+				// Only used by GPlates internal versions after 1.5 but before 2.0 ...
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
 						d_layer_params_tag("show_fill"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.color_index(),
-						d_layer_params_tag("color_index"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_range1_max(),
-						d_layer_params_tag("range1_max"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_range1_min(),
+				d_scribe.save(TRANSCRIBE_SOURCE, -std::log10(params.get_max_abs_dilatation()),
 						d_layer_params_tag("range1_min"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_range2_max(),
-						d_layer_params_tag("range2_max"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_range2_min(),
+				d_scribe.save(TRANSCRIBE_SOURCE, -std::log10(params.get_min_abs_dilatation()),
+						d_layer_params_tag("range1_max"));
+				d_scribe.save(TRANSCRIBE_SOURCE, std::log10(params.get_min_abs_dilatation()),
 						d_layer_params_tag("range2_min"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fg_colour(),
-						d_layer_params_tag("fg_colour"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_colour(),
-						d_layer_params_tag("max_colour"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_mid_colour(),
-						d_layer_params_tag("mid_colour"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_colour(),
-						d_layer_params_tag("min_colour"));
-
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_bg_colour(),
-						d_layer_params_tag("bg_colour"));
+				d_scribe.save(TRANSCRIBE_SOURCE, std::log10(params.get_max_abs_dilatation()),
+						d_layer_params_tag("range2_max", 0));
 			}
 
 			virtual
@@ -1973,34 +2026,6 @@ namespace GPlatesPresentation
 				// Load the draw style (colouring scheme).
 				load_draw_style(d_layer_params_tag("draw_style"), d_scribe, params, d_visual_layer, d_read_errors);
 
-				bool show_delaunay_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_delaunay_triangulation,
-						d_layer_params_tag("show_delaunay_triangulation")))
-				{
-					params.set_show_delaunay_triangulation(show_delaunay_triangulation);
-				}
-
-				bool show_constrained_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_constrained_triangulation,
-						d_layer_params_tag("show_constrained_triangulation")))
-				{
-					params.set_show_constrained_triangulation(show_constrained_triangulation);
-				}
-
-				bool show_mesh_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_mesh_triangulation,
-						d_layer_params_tag("show_mesh_triangulation")))
-				{
-					params.set_show_mesh_triangulation(show_mesh_triangulation);
-				}
-
-				bool show_total_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_total_triangulation,
-						d_layer_params_tag("show_total_triangulation")))
-				{
-					params.set_show_total_triangulation(show_total_triangulation);
-				}
-
 				bool show_segment_velocity;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_segment_velocity,
 						d_layer_params_tag("show_segment_velocity")))
@@ -2008,101 +2033,122 @@ namespace GPlatesPresentation
 					params.set_show_segment_velocity(show_segment_velocity);
 				}
 
-				bool show_fill;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_fill,
+				bool fill_triangulation;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
+						d_layer_params_tag("fill_triangulation")))
+				{
+					params.set_fill_triangulation(fill_triangulation);
+				}
+				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
 						d_layer_params_tag("show_fill")))
 				{
-					params.set_show_fill(show_fill);
+					params.set_fill_triangulation(fill_triangulation);
 				}
 
-				int color_index;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, color_index,
-						d_layer_params_tag("color_index")))
+				bool fill_rigid_blocks;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_rigid_blocks,
+						d_layer_params_tag("fill_rigid_blocks")))
 				{
-					params.set_color_index(color_index);
+					params.set_fill_rigid_blocks(fill_rigid_blocks);
 				}
 
-				double range1_max;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, range1_max,
-						d_layer_params_tag("range1_max")))
+				double fill_opacity;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_opacity,
+						d_layer_params_tag("fill_opacity")))
 				{
-					params.set_range1_max(range1_max);
+					params.set_fill_opacity(fill_opacity);
 				}
 
-				double range1_min;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, range1_min,
+				double fill_intensity;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_intensity,
+						d_layer_params_tag("fill_intensity")))
+				{
+					params.set_fill_intensity(fill_intensity);
+				}
+
+				double max_abs_dilatation;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_abs_dilatation,
+						d_layer_params_tag("max_abs_dilatation")))
+				{
+					params.set_max_abs_dilatation(max_abs_dilatation);
+				}
+				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_abs_dilatation,
 						d_layer_params_tag("range1_min")))
 				{
-					params.set_range1_min(range1_min);
+					max_abs_dilatation = std::pow(10.0, -max_abs_dilatation);
+					params.set_max_abs_dilatation(max_abs_dilatation);
 				}
 
-				double range2_max;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, range2_max,
-						d_layer_params_tag("range2_max")))
+				double min_abs_dilatation;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_abs_dilatation,
+						d_layer_params_tag("min_abs_dilatation")))
 				{
-					params.set_range2_max(range2_max);
+					params.set_min_abs_dilatation(min_abs_dilatation);
+				}
+				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_abs_dilatation,
+						d_layer_params_tag("range1_max")))
+				{
+					min_abs_dilatation = std::pow(10.0, -min_abs_dilatation);
+					params.set_min_abs_dilatation(min_abs_dilatation);
 				}
 
-				double range2_min;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, range2_min,
-						d_layer_params_tag("range2_min")))
+				double max_abs_second_invariant;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_abs_second_invariant,
+						d_layer_params_tag("max_abs_second_invariant")))
 				{
-					params.set_range2_min(range2_min);
+					params.set_max_abs_second_invariant(max_abs_second_invariant);
+				}
+				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_abs_second_invariant,
+						d_layer_params_tag("range1_min")))
+				{
+					max_abs_second_invariant = std::pow(10.0, -max_abs_second_invariant);
+					params.set_max_abs_second_invariant(max_abs_second_invariant);
 				}
 
-				GPlatesGui::Colour fg_colour;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fg_colour,
-						d_layer_params_tag("fg_colour")))
+				double min_abs_second_invariant;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_abs_second_invariant,
+						d_layer_params_tag("min_abs_second_invariant")))
 				{
-					params.set_fg_colour(fg_colour);
+					params.set_min_abs_second_invariant(min_abs_second_invariant);
+				}
+				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_abs_second_invariant,
+						d_layer_params_tag("range1_max")))
+				{
+					min_abs_second_invariant = std::pow(10.0, -min_abs_second_invariant);
+					params.set_min_abs_second_invariant(min_abs_second_invariant);
 				}
 
-				GPlatesGui::Colour max_colour;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_colour,
-						d_layer_params_tag("max_colour")))
+				TopologyNetworkVisualLayerParams::ColourMode colour_mode;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, colour_mode,
+						d_layer_params_tag("colour_mode")))
 				{
-					params.set_max_colour(max_colour);
-				}
-
-				GPlatesGui::Colour mid_colour;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, mid_colour,
-						d_layer_params_tag("mid_colour")))
-				{
-					params.set_mid_colour(mid_colour);
-				}
-
-				GPlatesGui::Colour min_colour;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_colour,
-						d_layer_params_tag("min_colour")))
-				{
-					params.set_min_colour(min_colour);
-				}
-
-				GPlatesGui::Colour bg_colour;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, bg_colour,
-						d_layer_params_tag("bg_colour")))
-				{
-					params.set_bg_colour(bg_colour);
+					params.set_colour_mode(colour_mode);
 				}
 
 				//
-				// Load the colour palette from a file (if a non-empty filename specified).
-				//
-				// NOTE: We do this after setting the default palette parameters above because
-				// they currently don't emit a modification signal and hence the palette is not
-				// visually updated in the layer widget. See the FIXME in class TopologyNetworkVisualLayerParams.
-				// By setting the colour palette last we know that it will emit a modification signal.
+				// Load the strain dilatation colour palette from a file (if a non-empty filename specified).
 				//
 
-				boost::optional<QString> colour_palette_filename =
+				boost::optional<QString> dilatation_colour_palette_filename =
 						GPlatesScribe::TranscribeUtils::load_file_path(
-								d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("colour_palette_filename"));
-				if (colour_palette_filename &&
-					!colour_palette_filename->isEmpty())
+								d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("dilatation_colour_palette_filename"));
+				if (!dilatation_colour_palette_filename)
+				{
+					// GPlates internal versions after 1.5 but before 2.0 used a different tag...
+					dilatation_colour_palette_filename = GPlatesScribe::TranscribeUtils::load_file_path(
+							d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("colour_palette_filename"));
+				}
+				if (dilatation_colour_palette_filename &&
+					!dilatation_colour_palette_filename->isEmpty())
 				{
 					GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
 							GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
-									colour_palette_filename.get(),
+									dilatation_colour_palette_filename.get(),
 									// We only allow real-valued colour palettes since our data is real-valued...
 									false/*allow_integer_colour_palette*/,
 									d_read_errors);
@@ -2112,18 +2158,54 @@ namespace GPlatesPresentation
 							GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
 					if (colour_palette)
 					{
-						params.set_colour_palette(colour_palette_filename.get(), colour_palette.get());
+						params.set_dilatation_colour_palette(dilatation_colour_palette_filename.get(), colour_palette.get());
 					}
 					else
 					{
-						// Load the default colour palette.
-						params.user_generated_colour_palette();
+						// Load the default strain dilatation colour palette.
+						params.use_default_dilatation_colour_palette();
 					}
 				}
 				else
 				{
-					// Load the default colour palette.
-					params.user_generated_colour_palette();
+					// Load the default strain dilatation colour palette.
+					params.use_default_dilatation_colour_palette();
+				}
+
+				//
+				// Load the strain second invariant colour palette from a file (if a non-empty filename specified).
+				//
+
+				boost::optional<QString> second_invariant_colour_palette_filename =
+						GPlatesScribe::TranscribeUtils::load_file_path(
+								d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("second_invariant_colour_palette_filename"));
+				if (second_invariant_colour_palette_filename &&
+					!second_invariant_colour_palette_filename->isEmpty())
+				{
+					GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+							GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+									second_invariant_colour_palette_filename.get(),
+									// We only allow real-valued colour palettes since our data is real-valued...
+									false/*allow_integer_colour_palette*/,
+									d_read_errors);
+
+					// If we successfully read a real-valued colour palette.
+					boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+							GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+					if (colour_palette)
+					{
+						params.set_second_invariant_colour_palette(second_invariant_colour_palette_filename.get(), colour_palette.get());
+					}
+					else
+					{
+						// Load the default strain second invariant colour palette.
+						params.use_default_second_invariant_colour_palette();
+					}
+				}
+				else
+				{
+					// Load the default strain second invariant colour palette.
+					params.use_default_second_invariant_colour_palette();
 				}
 			}
 

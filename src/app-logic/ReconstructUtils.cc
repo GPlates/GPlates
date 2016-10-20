@@ -516,9 +516,43 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const double &reconstruction_time,
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		bool reverse_reconstruct)
+{
+	// Create a context without deformation for creating a reconstruct method.
+	//
+	// TODO: A bit hacky - there's probably a better way to do this.
+	// Problem is a reconstruct method instance deforms its feature's geometry whereas we only
+	// want the feature for its properties (eg, plate ID) since we're deforming caller's geometry.
+	ReconstructMethodInterface::Context reconstruct_method_context_without_deformation(reconstruct_method_context);
+	reconstruct_method_context_without_deformation.geometry_deformation = boost::none;
+
+	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
+	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
+			reconstruct_method_registry.create_reconstruct_method_or_default(
+					reconstruction_properties,
+					// Use the context without deformation since we're not deforming the 'present-day'
+					// geometry inside the feature (instead deforming some other geometry)...
+					reconstruct_method_context_without_deformation);
+
+	return reconstruct_method->reconstruct_geometry(
+			geometry,
+			// Use the context with deformation (if present) when reverse reconstructing the geometry...
+			reconstruct_method_context,
+			reconstruction_time,
+			reverse_reconstruct);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const double &reconstruction_time,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const ReconstructParams &reconstruct_params,
-		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
 	// Create the context in which to reconstruct.
@@ -526,16 +560,12 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruct_params,
 			reconstruction_tree_creator);
 
-	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
-	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-			reconstruct_method_registry.create_reconstruct_method_or_default(
-					reconstruction_properties,
-					reconstruct_method_context);
-
-	return reconstruct_method->reconstruct_geometry(
+	return reconstruct_geometry(
 			geometry,
-			reconstruct_method_context,
+			reconstruct_method_registry,
+			reconstruction_properties,
 			reconstruction_time,
+			reconstruct_method_context,
 			reverse_reconstruct);
 }
 
@@ -565,9 +595,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			geometry,
 			reconstruct_method_registry,
 			reconstruction_properties,
+			reconstruction_time,
 			reconstruction_tree_creator,
 			reconstruct_params,
-			reconstruction_time,
 			reverse_reconstruct);
 }
 

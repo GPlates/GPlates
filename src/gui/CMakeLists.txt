@@ -17,6 +17,10 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
+    BuiltinColourPalettes.cc
+    BuiltinColourPalettes.h
+    BuiltinColourPaletteType.cc
+    BuiltinColourPaletteType.h
     CanvasToolWorkflow.cc
     CanvasToolWorkflow.h
     CanvasToolWorkflows.cc
@@ -37,6 +41,8 @@ set(srcs
     ColourProxy.cc
     ColourProxy.h
     ColourRawRaster.h
+    ColourScaleGenerator.cc
+    ColourScaleGenerator.h
     ColourScheme.h
     ColourSchemeContainer.cc
     ColourSchemeContainer.h
@@ -61,8 +67,6 @@ set(srcs
     CsvExport.h
     CustomCompleter.cc
     CustomCompleter.h
-    DefaultColourPalettes.cc
-    DefaultColourPalettes.h
     Dialogs.cc
     Dialogs.h
     DigitisationCanvasToolWorkflow.cc
@@ -104,6 +108,8 @@ set(srcs
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
+    ExportScalarCoverageAnimationStrategy.cc
+    ExportScalarCoverageAnimationStrategy.h
     ExportStageRotationAnimationStrategy.cc
     ExportStageRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc

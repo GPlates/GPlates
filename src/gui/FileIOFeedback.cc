@@ -1542,8 +1542,8 @@ GPlatesGui::FileIOFeedback::clear_session()
 		QMessageBox::critical(parent_widget, tr("Error Clearing Session"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 
-		qWarning() << message; // Also log the detailed error message.
-		return false;
+		// Rethrow the exception - we're not able to recover from general exceptions.
+		throw;
 	}
 
 	return true;
@@ -1648,8 +1648,8 @@ GPlatesGui::FileIOFeedback::save_project(
 		QMessageBox::critical(parent_widget, tr("Error Saving Project"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 
-		qWarning() << message; // Also log the detailed error message.
-		return false;
+		// Rethrow the exception - we're not able to recover from general exceptions.
+		throw;
 	}
 
 	return true;
@@ -1793,7 +1793,9 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 		message_stream << exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
-		qWarning() << message; // Also log the detailed error message.
+
+		// Rethrow the exception - we're not able to recover from general exceptions.
+		throw;
 	}
 
 	// Failed - we got here because we caught an exception.

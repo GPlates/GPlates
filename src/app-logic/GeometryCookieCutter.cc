@@ -560,13 +560,11 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 				PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
 	}
 
-	// Add boundary as a partitioning geometry.
-	//
-	// Note: We add this after the interior blocks since the boundary should contain the interiors.
+	// Add boundary (excluding rigid block holes) as a partitioning geometry.
 	d_partitioning_geometries.push_back(
 			PartitioningGeometry(
 					rtn,
-					rtn->get_triangulation_network().get_boundary_polygon(),
+					rtn->get_triangulation_network().get_boundary_polygon_with_rigid_block_holes(),
 					d_partition_point_speed_and_memory));
 }
 

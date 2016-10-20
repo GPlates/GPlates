@@ -41,6 +41,7 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/CptColourPalette.h"
 
 #include "presentation/ReconstructScalarCoverageVisualLayerParams.h"
@@ -103,6 +104,12 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::ReconstructScalar
 	QObject::connect(
 			d_colour_palette_widget, SIGNAL(use_default_palette_button_clicked()),
 			this, SLOT(handle_use_default_palette_button_clicked()));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)),
+			this, SLOT(handle_builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)),
+			this, SLOT(handle_builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)));
 
 	QObject::connect(
 			d_colour_palette_widget, SIGNAL(range_check_box_changed(int)),
@@ -271,6 +278,50 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_use_defaul
 
 
 void
+GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_builtin_colour_palette_selected(
+		const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the colour palette in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_current_colour_palette_parameters();
+			colour_palette_parameters.load_builtin_colour_palette(builtin_colour_palette_type);
+			params->set_current_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_builtin_parameters_changed(
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the built-in palette parameters in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+					params->get_current_colour_palette_parameters();
+			colour_palette_parameters.set_builtin_colour_palette_parameters(builtin_parameters);
+			params->set_current_colour_palette_parameters(colour_palette_parameters);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_palette_range_check_box_changed(
 		int state)
 {
@@ -313,22 +364,18 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_palette_mi
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> scalar_min_max = get_scalar_min_max(layer);
-			const double min_range_delta = 0.0001 * (scalar_min_max.second - scalar_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 					visual_layer_params->get_current_colour_palette_parameters();
 
+			const double max_value = colour_palette_parameters.get_palette_range().second/*max*/;
+
 			// Ensure min not greater than max.
-			if (min_value > colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta)
+			if (min_value > max_value)
 			{
-				min_value = colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta;
+				min_value = max_value;
 			}
 
-			colour_palette_parameters.map_palette_range(
-					min_value/*min*/,
-					colour_palette_parameters.get_palette_range().second/*max*/);
+			colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_current_colour_palette_parameters(colour_palette_parameters);
 		}
@@ -348,22 +395,18 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_palette_ma
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> scalar_min_max = get_scalar_min_max(layer);
-			const double min_range_delta = 0.0001 * (scalar_min_max.second - scalar_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 					visual_layer_params->get_current_colour_palette_parameters();
 
+			const double min_value = colour_palette_parameters.get_palette_range().first/*min*/;
+
 			// Ensure max not less than min.
-			if (max_value < colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta)
+			if (max_value < min_value)
 			{
-				max_value = colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta;
+				max_value = min_value;
 			}
 
-			colour_palette_parameters.map_palette_range(
-					colour_palette_parameters.get_palette_range().first/*min*/,
-					max_value/*max*/);
+			colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_current_colour_palette_parameters(colour_palette_parameters);
 		}

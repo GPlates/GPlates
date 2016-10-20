@@ -198,27 +198,32 @@ namespace GPlatesAppLogic
 				const double &delta_time);
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times @a young_time and @a old_time using
-		 * @a reconstruction_plate_id to lookup the two rotations.
+		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
 		 *
 		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
 		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
 		 *
-		 * Except if @a young_time is negative (and @a old_time non-negative) and the plate ID is *not*
-		 * found at @a young_time (but is found at @a old_time) then the velocity delta time interval is
+		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
+		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
 		 * moved to (old_time - young_time, 0) and retried.
 		 * This enables rare users to support negative (future) times in rotation files if they wish
 		 * but also supports most users having only non-negative rotations yet still supplying a valid
 		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
+		 *
+		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
+		 * in which case the velocity delta time interval is moved to
+		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
+		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
+		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
 		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &young_time,
-				const double &old_time,
-				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 
 		/**
@@ -239,27 +244,47 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times represented @a young_time and @a old_time using
-		 * @a reconstruction_plate_id to lookup the two rotations.
+		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
 		 *
-		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
-		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
+		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned
+		 * (aside from the exceptions mentioned below). This avoids extraneously large velocities when plate ID
+		 * is found at one time but not the other.
 		 *
-		 * Except if @a young_time is negative (and @a old_time non-negative) and the plate ID is *not*
-		 * found at @a young_time (but is found at @a old_time) then the velocity delta time interval is
+		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
+		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
 		 * moved to (old_time - young_time, 0) and retried.
 		 * This enables rare users to support negative (future) times in rotation files if they wish
 		 * but also supports most users having only non-negative rotations yet still supplying a valid
 		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
+		 *
+		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
+		 * in which case the velocity delta time interval is moved to
+		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
+		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
+		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
 		 */
 		GPlatesMaths::Vector3D
 		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &young_time,
-				const double &old_time,
-				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
+
+
+		/**
+		 * Similar to @a calculate_velocity_vector but returns the stage rotation.
+		 *
+		 * Note that the stage rotation is also going forward in time (most old to young).
+		 */
+		GPlatesMaths::FiniteRotation
+		calculate_stage_rotation(
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 
 		////////////////////////////////////////////////

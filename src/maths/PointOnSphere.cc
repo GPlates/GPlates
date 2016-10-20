@@ -29,11 +29,12 @@
 #include <sstream>
 #include <QString>
 
-#include "PointOnSphere.h"
+#include "ConstGeometryOnSphereVisitor.h"
 #include "PointLiesOnGreatCircleArc.h"
+#include "PointOnSphere.h"
 #include "PointProximityHitDetail.h"
 #include "ProximityCriteria.h"
-#include "ConstGeometryOnSphereVisitor.h"
+#include "MathsUtils.h"
 
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
@@ -133,6 +134,23 @@ GPlatesMaths::PointOnSphere::lies_on_gca(
 }
 
 
+const GPlatesMaths::real_t
+GPlatesMaths::calculate_distance_on_surface_of_sphere(
+		const PointOnSphere &p1,
+		const PointOnSphere &p2,
+		real_t radius_of_sphere)
+{
+	if (p1 == p2)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return acos(calculate_closeness(p1, p2)) * radius_of_sphere;
+	}
+}
+
+
 std::ostream &
 GPlatesMaths::operator<<(
 	std::ostream &os,
@@ -168,4 +186,46 @@ GPlatesMaths::operator <<(
 	stream << QString::fromStdString(output_string_stream.str());
 
 	return stream;
+}
+
+
+bool
+GPlatesMaths::PointOnSphereMapPredicate::operator()(
+		const PointOnSphere &lhs,
+		const PointOnSphere &rhs) const
+{
+	const UnitVector3D &left = lhs.position_vector();
+	const UnitVector3D &right = rhs.position_vector();
+
+	const double dx = right.x().dval() - left.x().dval();
+	if (dx > EPSILON) // left_x < right_x
+	{
+		return true;
+	}
+	if (-dx > EPSILON) // left_x > right_x
+	{
+		return false;
+	}
+
+	const double dy = right.y().dval() - left.y().dval();
+	if (dy > EPSILON) // left_y < right_y
+	{
+		return true;
+	}
+	if (-dy > EPSILON) // left_y > right_y
+	{
+		return false;
+	}
+
+	const double dz = right.z().dval() - left.z().dval();
+	if (dz > EPSILON) // left_z < right_z
+	{
+		return true;
+	}
+	if (-dz > EPSILON) // left_z > right_z
+	{
+		return false;
+	}
+
+	return false;
 }

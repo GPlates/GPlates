@@ -148,24 +148,45 @@ void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
-			gpml_piecewise_aggregation.time_windows().begin();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows = gpml_piecewise_aggregation.time_windows();
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
-			gpml_piecewise_aggregation.time_windows().end();
-
-	for ( ; iter != end; ++iter) 
+	// NOTE: If there's only one tine window then we do not check its time period against the
+	// current reconstruction time.
+	// This is because GPML files created with old versions of GPlates set the time period,
+	// of the sole time window, to match that of the 'feature's time period (in the topology
+	// build/edit tools) - newer versions set it to *all* time (distant past/future) - in fact
+	// newer versions just use a GpmlConstantValue instead of GpmlPiecewiseAggregation because
+	// the topology tools cannot yet create time-dependent topology (section) lists.
+	// With old versions if the user expanded the 'feature's time period *after* building/editing
+	// the topology then the *un-adjusted* time window time period will be incorrect and hence
+	// we need to ignore it here.
+	// Those old versions were around 4 years ago (prior to GPlates 1.3) - so we really shouldn't
+	// be seeing any old topologies.
+	// Actually I can see there are some currently in the sample data for GPlates 2.0.
+	// So as a compromise we'll ignore the reconstruction time if there's only one time window
+	// (a single time window shouldn't really have any time constraints on it anyway)
+	// and respect the reconstruction time if there's more than one time window
+	// (since multiple time windows need non-overlapping time constraints).
+	// This is especially true now that pyGPlates will soon be able to generate time-dependent
+	// topologies (where the reconstruction time will need to be respected otherwise multiple
+	// topologies from different time periods will get created instead of just one of them).
+	if (time_windows.size() == 1)
 	{
-		// NOTE: We really should be checking the time period of each time window against the
-		// current reconstruction time.
-		// However we won't fix this just yet because GPML files created with old versions of GPlates
-		// set the time period, of the sole time window, to match that of the 'feature's time period
-		// (in the topology build/edit tools) - newer versions set it to *all* time (distant past/future).
-		// If the user expands the 'feature's time period *after* building/editing the topology then
-		// the *un-adjusted* time window time period will be incorrect and hence we need to ignore it.
-		// By the way, the time window is a *sole* time window because the topology tools cannot yet
-		// create time-dependent topology (section) lists.
-		visit_gpml_time_window(*iter);
+		visit_gpml_time_window(time_windows.front());
+		return;
+	}
+
+	BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+	{
+		// If the time window period contains the current reconstruction time then visit.
+		// The time periods should be mutually exclusive - if we happen to be in
+		// two time periods then we're probably right on the boundary between the two
+		// in which case we'll only visit the first time window encountered.
+		if (time_window.valid_time()->contains(d_reconstruction_tree->get_reconstruction_time()))
+		{
+			visit_gpml_time_window(time_window);
+			return;
+		}
 	}
 }
 
@@ -175,7 +196,6 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_time_window(
 		GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 	gpml_time_window.time_dependent_value()->accept_visitor(*this);
-	gpml_time_window.valid_time()->accept_visitor(*this);
 }
 
 
@@ -709,11 +729,16 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 	// just return without creating a resolved topological geometry.
 	if (polygon_validity != GPlatesUtils::GeometryConstruction::VALID)
 	{
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 		qDebug() << "ERROR: Failed to create a ResolvedTopologicalBoundary - probably has "
 				"insufficient points for a polygon.";
 		qDebug() << "Skipping creation for topological polygon feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
 				d_currently_visited_feature->feature_id().get());
+#endif
+
 		return;
 	}
 
@@ -820,11 +845,16 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	// just return without creating a resolved topological geometry.
 	if (polyline_validity != GPlatesUtils::GeometryConstruction::VALID)
 	{
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 		qDebug() << "ERROR: Failed to create a ResolvedTopologicalLine - probably has "
 				"insufficient points for a polyline.";
 		qDebug() << "Skipping creation for topological line feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
 				d_currently_visited_feature->feature_id().get());
+#endif
+
 		return;
 	}
 

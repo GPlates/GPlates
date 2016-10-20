@@ -29,6 +29,21 @@
       </sizepolicy>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_28">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
       <item>
        <widget class="QLabel" name="palette_label">
         <property name="text">
@@ -37,7 +52,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="palette_filename_placeholder_widget" native="true"/>
+       <widget class="QWidget" name="palette_name_placeholder_widget" native="true"/>
       </item>
       <item>
        <widget class="QToolButton" name="select_palette_filename_button">
@@ -51,7 +66,7 @@
          <string>Choose CPT File</string>
         </property>
         <property name="text">
-         <string>...</string>
+         <string>Open...</string>
         </property>
        </widget>
       </item>
@@ -82,7 +97,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QWidget" name="choose_builtin_palette_placeholder_widget" native="true"/>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
+      <number>6</number>
+     </property>
      <item>
       <widget class="QWidget" name="colour_scale_placeholder_widget" native="true">
        <property name="sizePolicy">
@@ -127,8 +151,8 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QWidget" name="min_widget" native="true">
-               <layout class="QHBoxLayout" name="scalar_range_min_layout_2">
+              <widget class="QWidget" name="max_widget" native="true">
+               <layout class="QHBoxLayout" name="scalar_range_max_layout_2">
                 <property name="spacing">
                  <number>3</number>
                 </property>
@@ -136,14 +160,14 @@
                  <number>0</number>
                 </property>
                 <item>
-                 <widget class="QLabel" name="min_label">
+                 <widget class="QLabel" name="max_label">
                   <property name="text">
-                   <string>Lower:</string>
+                   <string>Upper:</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLineEdit" name="min_line_edit">
+                 <widget class="QLineEdit" name="max_line_edit">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -162,8 +186,8 @@
               </widget>
              </item>
              <item>
-              <widget class="QWidget" name="max_widget" native="true">
-               <layout class="QHBoxLayout" name="scalar_range_max_layout_2">
+              <widget class="QWidget" name="min_widget" native="true">
+               <layout class="QHBoxLayout" name="scalar_range_min_layout_2">
                 <property name="spacing">
                  <number>3</number>
                 </property>
@@ -171,14 +195,14 @@
                  <number>0</number>
                 </property>
                 <item>
-                 <widget class="QLabel" name="max_label">
+                 <widget class="QLabel" name="min_label">
                   <property name="text">
-                   <string>Upper:</string>
+                   <string>Lower:</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLineEdit" name="max_line_edit">
+                 <widget class="QLineEdit" name="min_line_edit">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                     <horstretch>0</horstretch>

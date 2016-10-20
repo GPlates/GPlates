@@ -29,34 +29,32 @@
 
 #include "app-logic/Layer.h"
 
-#include "gui/DefaultColourPalettes.h"
+#include "gui/BuiltinColourPalettes.h"
+#include "gui/DrawStyleManager.h"
 
 #include "maths/MathsUtils.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
 
-//
-// NOTE: these are the defaults for a RTN; and they control the GUI defaults
-//
+
 GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLayerParams(
 		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
-	VisualLayerParams(layer_params),
-	d_show_delaunay_triangulation(      true),
-	d_show_constrained_triangulation(   false),
-	d_show_mesh_triangulation(          false),
-	d_show_total_triangulation(         false),
-	d_show_fill(                        false),
-	d_show_segment_velocity(            false),
-	d_color_index(                      1), // default colouring; not a derrived value 
-	d_range1_max(						17.0),
-	d_range1_min(						13.0),
-	d_range2_max(						-13.0),
-	d_range2_min(						-17.0),
-	d_fg_colour( 						GPlatesGui::Colour(1, 1, 1) ),
-	d_max_colour( 						GPlatesGui::Colour(1, 0, 0) ),
-	d_mid_colour( 						GPlatesGui::Colour(1, 1, 1) ),
-	d_min_colour(						GPlatesGui::Colour(0, 0, 1) ),
-	d_bg_colour(						GPlatesGui::Colour(1, 1, 1) ),
-	d_colour_palette_filename(QString())
+	VisualLayerParams(
+			layer_params,
+			GPlatesGui::DrawStyleManager::instance()->default_style()),
+	d_colour_mode(COLOUR_DRAW_STYLE),
+	d_min_abs_dilatation(1e-17),
+	d_max_abs_dilatation(1e-13),
+	d_dilatation_colour_palette_filename(QString()),
+	d_min_abs_second_invariant(1e-17),
+	d_max_abs_second_invariant(1e-13),
+	d_second_invariant_colour_palette_filename(QString()),
+	d_show_segment_velocity(false),
+	d_fill_triangulation(false),
+	d_fill_rigid_blocks(false),
+	d_fill_opacity(1.0),
+	d_fill_intensity(1.0)
 {
 }
 
@@ -65,47 +63,163 @@ void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
-	if (d_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	if (d_dilatation_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
 	{
-		d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
-			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
-				d_range1_max, 
-				d_range1_min, 
-				d_range2_max, 
-				d_range2_min, 
-				d_fg_colour, 
-				d_max_colour, 
-				d_mid_colour, 
-				d_min_colour,
-				d_bg_colour
-			));
+		create_default_dilatation_colour_palette();
 	}
+
+	if (d_second_invariant_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_second_invariant_colour_palette();
+	}
+
 	emit_modified();
 }
 
 
 void
-GPlatesPresentation::TopologyNetworkVisualLayerParams::set_colour_palette(
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_min_abs_dilatation(
+		const double &min_abs_dilatation)
+{
+	d_min_abs_dilatation = min_abs_dilatation;
+
+	if (d_dilatation_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_dilatation_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_max_abs_dilatation(
+		const double &max_abs_dilatation)
+{
+	d_max_abs_dilatation = max_abs_dilatation;
+
+	if (d_dilatation_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_dilatation_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_dilatation_colour_palette(
 		const QString &filename,
 		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
 {
-	d_colour_palette_filename = filename;
-	d_colour_palette = colour_palette;
+	d_dilatation_colour_palette_filename = filename;
+	d_dilatation_colour_palette = colour_palette;
+
 	emit_modified();
 }
 
 
 void
-GPlatesPresentation::TopologyNetworkVisualLayerParams::user_generated_colour_palette()
+GPlatesPresentation::TopologyNetworkVisualLayerParams::use_default_dilatation_colour_palette()
 {
-	d_colour_palette_filename = QString();
-
-	// Create a default colour palette.
-	d_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
-			GPlatesGui::DefaultColourPalettes::create_deformation_strain_colour_palette(
-					d_range1_max, d_range1_min,
-					d_range2_max, d_range2_min,
-					d_fg_colour, d_max_colour, d_mid_colour, d_min_colour, d_bg_colour));
+	d_dilatation_colour_palette_filename = QString();
+	create_default_dilatation_colour_palette();
 
 	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_min_abs_second_invariant(
+		const double &min_abs_second_invariant)
+{
+	d_min_abs_second_invariant = min_abs_second_invariant;
+
+	if (d_second_invariant_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_second_invariant_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_max_abs_second_invariant(
+		const double &max_abs_second_invariant)
+{
+	d_max_abs_second_invariant = max_abs_second_invariant;
+
+	if (d_second_invariant_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_second_invariant_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_second_invariant_colour_palette(
+		const QString &filename,
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
+{
+	d_second_invariant_colour_palette_filename = filename;
+	d_second_invariant_colour_palette = colour_palette;
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::use_default_second_invariant_colour_palette()
+{
+	d_second_invariant_colour_palette_filename = QString();
+	create_default_second_invariant_colour_palette();
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_dilatation_colour_palette()
+{
+	d_dilatation_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
+					d_min_abs_dilatation,
+					d_max_abs_dilatation));
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_second_invariant_colour_palette()
+{
+	d_second_invariant_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
+					d_min_abs_second_invariant,
+					d_max_abs_second_invariant));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPresentation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		TopologyNetworkVisualLayerParams::ColourMode &colour_mode,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("COLOUR_DRAW_STYLE", TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE),
+		GPlatesScribe::EnumValue("COLOUR_DILATATION_STRAIN_RATE", TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE),
+		GPlatesScribe::EnumValue("COLOUR_SECOND_INVARIANT_STRAIN_RATE", TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			colour_mode,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

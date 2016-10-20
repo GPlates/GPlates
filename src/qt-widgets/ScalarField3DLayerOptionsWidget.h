@@ -37,6 +37,7 @@
 
 #include "app-logic/Layer.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/RasterColourPalette.h"
 
 #include "view-operations/ScalarField3DRenderParameters.h"
@@ -116,6 +117,14 @@ namespace GPlatesQtWidgets
 		handle_use_default_scalar_palette_button_clicked();
 
 		void
+		handle_builtin_scalar_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_scalar_colour_palette_type);
+
+		void
+		handle_builtin_scalar_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_scalar_parameters);
+
+		void
 		handle_scalar_palette_range_check_box_changed(
 				int state);
 
@@ -142,6 +151,14 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_use_default_gradient_palette_button_clicked();
+
+		void
+		handle_builtin_gradient_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_gradient_colour_palette_type);
+
+		void
+		handle_builtin_gradient_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_gradient_parameters);
 
 		void
 		handle_gradient_palette_range_check_box_changed(

@@ -31,11 +31,16 @@
 
 #include "RemappedColourPaletteWidget.h"
 
+#include "ChooseBuiltinPaletteDialog.h"
 #include "ColourScaleWidget.h"
 #include "FriendlyLineEdit.h"
+#include "LinkWidget.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
+#include "VisualLayersDialog.h"
 
+#include "gui/BuiltinColourPaletteType.h"
+#include "gui/Dialogs.h"
 #include "gui/RasterColourPalette.h"
 
 #include "presentation/ViewState.h"
@@ -47,11 +52,13 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::RemappedColourPaletteWidget(
 		QWidget *parent_,
 		QWidget *extra_widget) :
 	QWidget(parent_),
-	d_palette_filename_lineedit(
+	d_viewport_window(viewport_window),
+	d_palette_name_lineedit(
 			new FriendlyLineEdit(
 				QString(),
 				tr("Default Palette"),
 				this)),
+	d_choose_builtin_palette_dialog(NULL),
 	d_colour_scale_widget(
 			new ColourScaleWidget(
 				view_state,
@@ -60,6 +67,17 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::RemappedColourPaletteWidget(
 {
 	setupUi(this);
 
+
+	LinkWidget *choose_builtin_palette_link = new LinkWidget(
+			tr("Choose Built-in Palette..."), this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			choose_builtin_palette_link,
+			choose_builtin_palette_placeholder_widget);
+	QObject::connect(
+			choose_builtin_palette_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(open_choose_builtin_palette_dialog()));
 
 	if (extra_widget)
 	{
@@ -81,10 +99,10 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::RemappedColourPaletteWidget(
 			use_default_palette_button, SIGNAL(clicked()),
 			this, SLOT(handle_use_default_palette_button_clicked()));
 
-	d_palette_filename_lineedit->setReadOnly(true);
+	d_palette_name_lineedit->setReadOnly(true);
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_palette_filename_lineedit,
-			palette_filename_placeholder_widget);
+			d_palette_name_lineedit,
+			palette_name_placeholder_widget);
 
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_colour_scale_widget,
@@ -145,12 +163,15 @@ void
 GPlatesQtWidgets::RemappedColourPaletteWidget::set_parameters(
 		const GPlatesPresentation::RemappedColourPaletteParameters &parameters)
 {
+	// Record the built-in palette parameters for when the choose built-in palette dialog is opened.
+	d_builtin_colour_palette_parameters = parameters.get_builtin_colour_palette_parameters();
+
 	// Load the colour palette into the colour scale widget.
 	const bool show_scalar_colour_scale = d_colour_scale_widget->populate(parameters.get_colour_palette());
 	colour_scale_placeholder_widget->setVisible(show_scalar_colour_scale);
 
-	// Populate the palette filename.
-	d_palette_filename_lineedit->setText(parameters.get_colour_palette_filename());
+	// Populate the palette name.
+	d_palette_name_lineedit->setText(parameters.get_colour_palette_name());
 
 	// Set the palette range check box.
 	QObject::disconnect(
@@ -184,8 +205,8 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::set_parameters(
 			this, SLOT(handle_max_line_editing_finished()));
 	if (parameters.is_palette_range_mapped())
 	{
-		min_line_edit->setText(QString::number(parameters.get_palette_range().first, 'f'));
-		max_line_edit->setText(QString::number(parameters.get_palette_range().second, 'f'));
+		min_line_edit->setText(QString::number(parameters.get_palette_range().first, 'g'));
+		max_line_edit->setText(QString::number(parameters.get_palette_range().second, 'g'));
 	}
 	QObject::connect(
 			min_line_edit, SIGNAL(editingFinished()),
@@ -225,6 +246,64 @@ void
 GPlatesQtWidgets::RemappedColourPaletteWidget::handle_use_default_palette_button_clicked()
 {
 	Q_EMIT use_default_palette_button_clicked();
+}
+
+
+void
+GPlatesQtWidgets::RemappedColourPaletteWidget::open_choose_builtin_palette_dialog()
+{
+	// It seems for Mac (Qt 4.8) we need to create a new dialog each time because
+	// otherwise the second time we open the dialog (when only created first time)
+	// it doesn't get the focus and so our mouse movement events do not cause the
+	// individual ColourScaleButton buttons to render highlights.
+	// This is not needed for Windows or Ubuntu (Qt 4.8).
+	//
+	// Delete the previous dialog (if one) - does nothing if NULL.
+	// Note that the dialog is managed by its parent - when it's deleted the parent will be notified.
+	delete d_choose_builtin_palette_dialog;
+	d_choose_builtin_palette_dialog = new ChooseBuiltinPaletteDialog(
+			d_builtin_colour_palette_parameters,
+			&d_viewport_window->dialogs().visual_layers_dialog());
+
+	QObject::connect(
+			d_choose_builtin_palette_dialog,
+			SIGNAL(builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)),
+			this,
+			SLOT(handle_builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)));
+
+	QObject::connect(
+			d_choose_builtin_palette_dialog,
+			SIGNAL(builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)),
+			this,
+			SLOT(handle_builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)));
+
+	// This dialog is shown modally since the modal flag is set in the dialog.
+	// However, unlike calling 'exec()', calling 'show()' does not block.
+	// This is important since we are in a RenderedGeometryCollection update guard since we've
+	// been called indirectly via 'GPlatesQApplication::notify()' and hence any updates to the
+	// dialog will not get redrawn on the main window.
+	// This also means the dialog instance exists even when this method returns
+	// (we'll delete it and create a new dialog the next time the user opens this dialog).
+	QtWidgetUtils::pop_up_dialog(d_choose_builtin_palette_dialog);
+}
+
+
+void
+GPlatesQtWidgets::RemappedColourPaletteWidget::handle_builtin_colour_palette_selected(
+		const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type)
+{
+	Q_EMIT builtin_colour_palette_selected(builtin_colour_palette_type);
+}
+
+
+void
+GPlatesQtWidgets::RemappedColourPaletteWidget::handle_builtin_parameters_changed(
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters)
+{
+	// Record in case the ChooseBuiltinPaletteDialog is opened again later.
+	d_builtin_colour_palette_parameters = builtin_parameters;
+
+	Q_EMIT builtin_parameters_changed(builtin_parameters);
 }
 
 

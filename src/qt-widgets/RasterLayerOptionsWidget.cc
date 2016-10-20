@@ -38,6 +38,7 @@
 
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/CptColourPalette.h"
 
 #include "presentation/RasterVisualLayerParams.h"
@@ -108,6 +109,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	QObject::connect(
 			d_colour_palette_widget, SIGNAL(use_default_palette_button_clicked()),
 			this, SLOT(handle_use_default_palette_button_clicked()));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)),
+			this, SLOT(handle_builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)));
+	QObject::connect(
+			d_colour_palette_widget, SIGNAL(builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)),
+			this, SLOT(handle_builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)));
 
 	QObject::connect(
 			d_colour_palette_widget, SIGNAL(range_check_box_changed(int)),
@@ -191,11 +198,11 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			// Hide colour palette-related widgets if raster type is RGBA8.
 			if (visual_layer_params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8)
 			{
-				palette_placeholder_widget->setVisible(false);
+				colour_mapping_groupbox->setVisible(false);
 			}
 			else
 			{
-				palette_placeholder_widget->setVisible(true);
+				colour_mapping_groupbox->setVisible(true);
 
 				// Set the colour palette.
 				d_colour_palette_widget->set_parameters(
@@ -341,27 +348,62 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicke
 			return;
 		}
 
-		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
-
 		// Update the colour palette in the layer params.
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
 		// Unmap the age grid colour palette otherwise the colours will be incorrect.
 		colour_palette_parameters.unmap_palette_range();
-		colour_palette_parameters.load_convenient_colour_palette(
-				GPlatesPresentation::RemappedColourPaletteParameters::AGE_PALETTE,
-				cpt_read_errors,
-				// Only allow loading an integer colour palette if the raster is integer-valued and
-				// the user is not remapping the colour palette...
-				GPlatesPropertyValues::RasterType::is_integer(params->get_raster_type()) &&
-					!colour_palette_parameters.is_palette_range_mapped()); /*allow_integer_colour_palette*/
+		colour_palette_parameters.load_builtin_colour_palette(
+				GPlatesGui::BuiltinColourPaletteType(GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE));
 		params->set_colour_palette_parameters(colour_palette_parameters);
+	}
+}
 
-		// Show any CPT read errors.
-		if (cpt_read_errors.size() > 0)
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_builtin_colour_palette_selected(
+		const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
 		{
-			d_viewport_window->handle_read_errors(cpt_read_errors);
+			return;
 		}
+
+		// Update the colour palette in the layer params.
+		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+				params->get_colour_palette_parameters();
+		colour_palette_parameters.load_builtin_colour_palette(builtin_colour_palette_type);
+		params->set_colour_palette_parameters(colour_palette_parameters);
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_builtin_parameters_changed(
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		// Update the built-in palette parameters in the layer params.
+		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
+				params->get_colour_palette_parameters();
+		colour_palette_parameters.set_builtin_colour_palette_parameters(builtin_parameters);
+		params->set_colour_palette_parameters(colour_palette_parameters);
 	}
 }
 
@@ -409,22 +451,18 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_min_line_editing_fini
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> raster_scalar_min_max = get_raster_scalar_min_max(layer);
-			const double min_range_delta = 0.0001 * (raster_scalar_min_max.second - raster_scalar_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 					visual_layer_params->get_colour_palette_parameters();
 
+			const double max_value = colour_palette_parameters.get_palette_range().second/*max*/;
+
 			// Ensure min not greater than max.
-			if (min_value > colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta)
+			if (min_value > max_value)
 			{
-				min_value = colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta;
+				min_value = max_value;
 			}
 
-			colour_palette_parameters.map_palette_range(
-					min_value/*min*/,
-					colour_palette_parameters.get_palette_range().second/*max*/);
+			colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_colour_palette_parameters(colour_palette_parameters);
 		}
@@ -444,22 +482,18 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_palette_max_line_editing_fini
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> raster_scalar_min_max = get_raster_scalar_min_max(layer);
-			const double min_range_delta = 0.0001 * (raster_scalar_min_max.second - raster_scalar_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 					visual_layer_params->get_colour_palette_parameters();
 
+			const double min_value = colour_palette_parameters.get_palette_range().first/*min*/;
+
 			// Ensure max not less than min.
-			if (max_value < colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta)
+			if (max_value < min_value)
 			{
-				max_value = colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta;
+				max_value = min_value;
 			}
 
-			colour_palette_parameters.map_palette_range(
-					colour_palette_parameters.get_palette_range().first/*min*/,
-					max_value/*max*/);
+			colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_colour_palette_parameters(colour_palette_parameters);
 		}

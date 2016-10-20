@@ -43,6 +43,23 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::can_process_feature_collecti
 }
 
 
+GPlatesAppLogic::TopologyGeometryResolverLayerTask::~TopologyGeometryResolverLayerTask()
+{
+	// One of the topological section input layers is actually this layer (since topological
+	// boundaries, in this layer, can depend on topological lines, also in this layer).
+	// This can lead to a cyclic non_null_ptr dependency (can't destroy layer proxy because
+	// internally it has a non_null_ptr to itself).
+	// To avoid this we'll first remove all topological section input layers.
+	//
+	// Note that this is actually already taken care of by our 'activate()' function since
+	// 'activate(false)' gets called when a layer is removed.
+	// But we'll also remove the input layers here in case that changes.
+	d_topology_geometry_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+			std::vector<ReconstructLayerProxy::non_null_ptr_type>(),
+			std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>());
+}
+
+
 std::vector<GPlatesAppLogic::LayerInputChannelType>
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_input_channel_types() const
 {
@@ -99,11 +116,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::activate(
 	if (!active)
 	{
 		// Topological sections that are reconstructed static geometries.
-		d_topology_geometry_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				std::vector<ReconstructLayerProxy::non_null_ptr_type>());
-
-		// Topological sections that are resolved topological lines.
-		d_topology_geometry_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+		d_topology_geometry_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+				std::vector<ReconstructLayerProxy::non_null_ptr_type>(),
 				std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>());
 	}
 }
@@ -260,10 +274,6 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::update(
 			reconstructed_geometry_topological_sections_layer_proxies,
 			reconstruction);
 
-	// Notify our layer proxy of the reconstructed topological sections layer proxies.
-	d_topology_geometry_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
-			reconstructed_geometry_topological_sections_layer_proxies);
-
 	// Get the 'resolved line' topological section layers.
 	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>
 			resolved_line_topological_sections_layer_proxies;
@@ -271,11 +281,11 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::update(
 			resolved_line_topological_sections_layer_proxies,
 			reconstruction);
 
-	// Notify our layer proxy of the resolved topological line sections layer proxies.
-	//
-	// NOTE: This actually also includes the layer proxy associated with 'this' layer since
-	// topological boundaries can reference topological lines from the same layer.
-	d_topology_geometry_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+	// Notify our layer proxy of the topological sections layer proxies.
+	d_topology_geometry_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+			reconstructed_geometry_topological_sections_layer_proxies,
+			// NOTE: This actually also includes the layer proxy associated with 'this' layer since
+			// topological boundaries can reference topological lines from the same layer...
 			resolved_line_topological_sections_layer_proxies);
 
 	// If our layer proxy is currently using the default reconstruction layer proxy then

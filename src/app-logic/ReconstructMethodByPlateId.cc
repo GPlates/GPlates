@@ -390,21 +390,17 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 			return;
 		}
 
-		//DEF-CHECK - This function launches the deformation workflow 
-
 		// Output an RFG for each geometry property in the feature.
 		BOOST_FOREACH(
 				const DeformedGeometryPropertyTimeSpan &deformed_geometry_property_time_span,
 				d_deformed_geometry_property_time_spans.get())
 		{
 			// In addition to the geometry we get the per-point deformation information.
-			std::vector<GeometryDeformation::DeformationInfo> deformation_info_points;
+			std::vector<DeformationStrain> deformation_strain_rates;
+			std::vector<DeformationStrain> deformation_total_strains;
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type deformed_geometry =
 					deformed_geometry_property_time_span.geometry_time_span
-							->get_geometry_and_deformation_information(
-									reconstruction_time,
-									context.reconstruction_tree_creator,
-									deformation_info_points);
+							->get_geometry(reconstruction_time, deformation_strain_rates, deformation_total_strains);
 
 			const DeformedFeatureGeometry::non_null_ptr_type deformed_feature_geometry =
 					DeformedFeatureGeometry::create(
@@ -413,7 +409,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 							*get_feature_ref(),
 							deformed_geometry_property_time_span.property_iterator,
 							deformed_geometry,
-							deformation_info_points,
+							deformation_strain_rates,
+							deformation_total_strains,
 							reconstruction_feature_properties.get_recon_plate_id(),
 							reconstruction_feature_properties.get_time_of_appearance(),
 							reconstruct_handle);
@@ -534,9 +531,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 				surfaces,
 				reconstruction_time,
 				velocity_delta_time,
-				velocity_delta_time_type,
-				context.reconstruction_tree_creator,
-				context.geometry_deformation.get());
+				velocity_delta_time_type);
 
 		// Create a multi-point-on-sphere with the domain points.
 		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type domain_multi_point_geometry =

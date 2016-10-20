@@ -33,6 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 
 #include "GLAgeGridMaskSource.h"
 #include "GLContext.h"

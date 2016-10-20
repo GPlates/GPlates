@@ -37,6 +37,7 @@
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
+#include "ReconstructMethodInterface.h"
 #include "TimeSpanUtils.h"
 #include "VelocityDeltaTime.h"
 
@@ -584,6 +585,23 @@ namespace GPlatesAppLogic
 				const double &velocity_delta_time = 1.0);
 
 
+		/**
+		 * Returns the reconstruct method context, for the current reconstruct params, used to reconstruct features.
+		 */
+		ReconstructMethodInterface::Context
+		get_reconstruct_method_context() const
+		{
+			return get_reconstruct_method_context(d_current_reconstruct_params);
+		}
+
+		/**
+		 * Returns the reconstruct method context, for the specified reconstruct params, used to reconstruct features.
+		 */
+		ReconstructMethodInterface::Context
+		get_reconstruct_method_context(
+				const ReconstructParams &reconstruct_params) const;
+
+
 		//
 		// Getting present day objects.
 		//
@@ -676,11 +694,19 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Gets the current features used for reconstructing.
+		 * Returns all features set by @a add_reconstructable_feature_collection, etc.
+		 *
+		 * Note that the features might be a mixture of non-topological and topological.
+		 *
+		 * If @a only_non_topological_features is true then only the sub-set of features
+		 * (set by @a add_reconstructable_feature_collection, etc)
+		 * that are actually non-topological features are returned.
+		 * By default all features are returned.
 		 */
 		void
-		get_current_reconstructable_features(
-				std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features) const;
+		get_current_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+				bool only_non_topological_features = false) const;
 
 
 		/**
@@ -1183,11 +1209,6 @@ namespace GPlatesAppLogic
 		ReconstructionInfo
 		create_reconstruction_info(
 				const reconstruction_cache_key_type &reconstruction_cache_key);
-
-
-		ReconstructContext::context_state_reference_type
-		create_reconstruct_context_state(
-				const ReconstructParams &reconstruct_params);
 	};
 }
 

@@ -29,6 +29,8 @@
 
 #include "SetDeformationParametersDialog.h"
 
+#include "QtWidgetUtils.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
 #include "app-logic/ReconstructLayerParams.h"
@@ -51,6 +53,8 @@ GPlatesQtWidgets::SetDeformationParametersDialog::SetDeformationParametersDialog
 			show_strain_accumulation_checkbox->isChecked());
 
 	setup_connections();
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 

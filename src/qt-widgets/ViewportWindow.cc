@@ -1698,7 +1698,7 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
 		bool time_dependent_raster)
 {
-	// Note: the ImportRasterDialog needs to be reconstructed each time we want to
+	// Note: the ImportRasterDialog needs to be constructed each time we want to
 	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
 	ImportRasterDialog import_raster_dialog(
 			get_application_state(),
@@ -1738,7 +1738,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_scalar_field_3d_dialog()
 {
-	// Note: the ImportScalarField3DDialog needs to be reconstructed each time we want to
+	// Note: the ImportScalarField3DDialog needs to be constructed each time we want to
 	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
 	ImportScalarField3DDialog import_scalar_field_dialog(
 			get_application_state(),

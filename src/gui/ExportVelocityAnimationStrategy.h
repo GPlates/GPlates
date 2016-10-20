@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
 #define GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <QString>
@@ -337,11 +338,6 @@ namespace GPlatesGui
 		ExportVelocityAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
-
-		void
-		export_velocity_fields_to_file(
-				const vector_field_seq_type &velocity_fields,
-				QString filename);
 		
 	private:
 		/**

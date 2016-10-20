@@ -40,7 +40,7 @@
 namespace GPlatesViewOperations
 {
 	/**
-	 * A non-filled edge mesh on the surface of the globe where each edge has its own colour.
+	 * A non-filled edge mesh on the surface of the globe where each edge or each vertex has its own colour.
 	 */
 	class RenderedColouredEdgeSurfaceMesh :
 		public RenderedGeometryImpl
@@ -52,10 +52,7 @@ namespace GPlatesViewOperations
 		{
 			Edge(
 					unsigned int vertex_index1,
-					unsigned int vertex_index2,
-					// TODO: Change this to Colour once the deferred (until painting) colouring has been removed...
-					const GPlatesGui::ColourProxy &colour_) :
-				colour(colour_)
+					unsigned int vertex_index2)
 			{
 				vertex_indices[0] = vertex_index1;
 				vertex_indices[1] = vertex_index2;
@@ -65,28 +62,36 @@ namespace GPlatesViewOperations
 			 * Indices into the vertex array returned by the parent class @a get_mesh_vertices method.
 			 */
 			unsigned int vertex_indices[2];
-
-			// TODO: Change this to Colour once the deferred (until painting) colouring has been removed.
-			GPlatesGui::ColourProxy colour;
 		};
 
 		typedef std::vector<Edge> edge_seq_type;
 
 		typedef std::vector<GPlatesMaths::PointOnSphere> vertex_seq_type;
 
+		// TODO: Change this to Colour once the deferred (until painting) colouring has been removed.
+		typedef std::vector<GPlatesGui::ColourProxy> colour_seq_type;
+
 
 		/**
 		 * Construct from a sequence of edges and a sequence of vertices (@a PointOnSphere).
+		 *
+		 * If @a use_vertex_colours is true then [colours_begin, colours_end) are vertex colours,
+		 * otherwise they are edge colours.
 		 */
-		template <typename EdgeForwardIter, typename PointOnSphereForwardIter>
+		template <typename EdgeForwardIter, typename PointOnSphereForwardIter, typename ColourForwardIter>
 		RenderedColouredEdgeSurfaceMesh(
 				EdgeForwardIter edges_begin,
 				EdgeForwardIter edges_end,
 				PointOnSphereForwardIter vertices_begin,
 				PointOnSphereForwardIter vertices_end,
+				ColourForwardIter colours_begin,
+				ColourForwardIter colours_end,
+				bool use_vertex_colours,
 				float line_width_hint) :
 			d_mesh_edges(edges_begin, edges_end),
 			d_mesh_vertices(vertices_begin, vertices_end),
+			d_mesh_colours(colours_begin, colours_end),
+			d_use_vertex_colours(use_vertex_colours),
 			d_line_width_hint(line_width_hint)
 		{  }
 
@@ -109,6 +114,24 @@ namespace GPlatesViewOperations
 		get_mesh_vertices() const
 		{
 			return d_mesh_vertices;
+		}
+
+		/**
+		 * Whether the colours are per-vertex (true) or per-edge (false).
+		 */
+		bool
+		get_use_vertex_colours() const
+		{
+			return d_use_vertex_colours;
+		}
+
+		/**
+		 * Returns the mesh colours.
+		 */
+		const colour_seq_type &
+		get_mesh_colours() const
+		{
+			return d_mesh_colours;
 		}
 
 		float
@@ -193,6 +216,13 @@ namespace GPlatesViewOperations
 
 		edge_seq_type d_mesh_edges;
 		vertex_seq_type d_mesh_vertices;
+
+		/**
+		 * These colours are either per-vertex or per-edge depending on @a d_use_vertex_colours.
+		 */
+		colour_seq_type d_mesh_colours;
+		bool d_use_vertex_colours;
+
 		float d_line_width_hint;
 	};
 }

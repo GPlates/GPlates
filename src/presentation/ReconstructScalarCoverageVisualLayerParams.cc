@@ -33,7 +33,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "gui/DefaultColourPalettes.h"
+#include "gui/BuiltinColourPalettes.h"
 
 
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::ReconstructScalarCoverageVisualLayerParams(
@@ -203,7 +203,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::create_colour_p
 	// Create a new colour palette parameters.
 	RemappedColourPaletteParameters colour_palette_parameters(
 			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::DefaultColourPalettes::create_scalar_colour_palette()));
+					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette()));
 
 	// If we have scalar data then initialise the palette range to the scalar mean +/- deviation.
 	boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics> statistics =

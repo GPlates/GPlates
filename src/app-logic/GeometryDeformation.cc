@@ -35,7 +35,6 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
-// DEF TEST
 #include <iostream>
 #include <sstream>
 #include <iostream>
@@ -53,12 +52,16 @@
 #include "global/AbortException.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/Centroid.h"
 #include "maths/MathsUtils.h"
+#include "maths/Rotation.h"
 #include "maths/SmallCircleBounds.h"
 #include "maths/types.h"
+#include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
@@ -71,164 +74,692 @@
 #endif
 
 
-// Comment out this to avoid writing out intermediate file...
-// FIXME: Replace with proper scalar coverage export.
-#define OUTPUT_DEF_TEST_FILE
-
-
 namespace GPlatesAppLogic
 {
-	namespace
+	namespace GeometryDeformation
 	{
-		/**
-		 * Predicate to test if the geometry *points* bounding small circle intersects the
-		 * resolved network bounding small circle.
-		 */
-		class IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds :
-				public std::unary_function<ResolvedTopologicalNetwork::non_null_ptr_type, bool>
+		namespace
 		{
-		public:
+			/**
+			 * Predicate to test if the geometry *points* bounding small circle intersects the
+			 * resolved network bounding small circle.
+			 */
+			class IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds :
+					public std::unary_function<ResolvedTopologicalNetwork::non_null_ptr_type, bool>
+			{
+			public:
 
-			explicit
-			IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds(
-					const GPlatesMaths::BoundingSmallCircle *geometry_points_bounding_small_circle) :
-				d_geometry_points_bounding_small_circle(geometry_points_bounding_small_circle)
-			{  }
+				explicit
+				IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds(
+						const GPlatesMaths::BoundingSmallCircle *geometry_points_bounding_small_circle) :
+					d_geometry_points_bounding_small_circle(geometry_points_bounding_small_circle)
+				{  }
 
+				bool
+				operator()(
+						const ResolvedTopologicalNetwork::non_null_ptr_type &rtn) const
+				{
+					const GPlatesMaths::BoundingSmallCircle &network_bounding_small_circle =
+							rtn->get_triangulation_network().get_boundary_polygon()
+									->get_bounding_small_circle();
+
+					return intersect(network_bounding_small_circle, *d_geometry_points_bounding_small_circle);
+				}
+
+			private:
+
+				const GPlatesMaths::BoundingSmallCircle *d_geometry_points_bounding_small_circle;
+			};
+
+
+			/**
+			 * Convert a GeometryOnSphere to a sequence of points.
+			 */
+			std::vector<GPlatesMaths::PointOnSphere>
+			extract_geometry_points(
+					const GPlatesMaths::GeometryOnSphere &geometry)
+			{
+				// Get the points of the present day geometry.
+				std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+				GeometryUtils::get_geometry_exterior_points(geometry, geometry_points);
+
+				return geometry_points;
+			}
+
+
+			/**
+			 * Returns geometry points as a @a GeometryOnSphere of same type as the present day geometry.
+			 */
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+			create_geometry_on_sphere(
+					const std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+					GPlatesMaths::GeometryType::Value geometry_type)
+			{
+				// Create a GeometryOnSphere from the geometry points.
+				GPlatesUtils::GeometryConstruction::GeometryConstructionValidity geometry_validity;
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						geometry_on_sphere = GPlatesUtils::create_geometry_on_sphere(
+								geometry_type,
+								geometry_points,
+								geometry_validity);
+
+				// It's possible that the geometry no longer satisfies geometry on sphere construction validity
+				// (eg, has no arc segments with antipodal end points) although it's *very* unlikely this will
+				// happen since the number of points doesn't change (ie, should not fail due to having less
+				// than three points for a polygon).
+				// If it fails because of great circle arc antipodal end points then log a console warning message.
+				if (!geometry_on_sphere)
+				{
+					if (geometry_validity == GPlatesUtils::GeometryConstruction::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS)
+					{
+						qWarning() << "GeometryDeformation: Deformed polyline/polygon has antipodal end points "
+							"on one or more of its edges (arcs).";
+					}
+				}
+
+				// FIXME: Find a way to recover from this.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						geometry_on_sphere,
+						GPLATES_ASSERTION_SOURCE);
+
+				return geometry_on_sphere.get();
+			}
+
+
+			/**
+			 * Rigidly rotates the geometry points from present day to @a reconstruction_time.
+			 */
+			void
+			rigid_reconstruct(
+					std::vector<GPlatesMaths::PointOnSphere> &rotated_geometry_points,
+					const std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+					const double &reconstruction_time,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator,
+					bool reverse_reconstruct = false)
+			{
+				GPlatesMaths::FiniteRotation rotation =
+						reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+								->get_composed_absolute_rotation(reconstruction_plate_id).first;
+
+				if (reverse_reconstruct)
+				{
+					rotation = get_reverse(rotation);
+				}
+
+				std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_iter = geometry_points.begin();
+				std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_end = geometry_points.end();
+				rotated_geometry_points.reserve(geometry_points.size());
+				for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter)
+				{
+					rotated_geometry_points.push_back(
+							GPlatesMaths::PointOnSphere(
+									rotation * geometry_points_iter->position_vector()));
+				}
+			}
+
+
+			/**
+			 * Get the rigid rotation from @a initial_time to @a final_time.
+			 */
+			GPlatesMaths::FiniteRotation
+			get_rigid_stage_rotation(
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator,
+					const double &initial_time,
+					const double &final_time)
+			{
+				const ReconstructionTree::non_null_ptr_to_const_type initial_reconstruction_tree =
+						reconstruction_tree_creator.get_reconstruction_tree(initial_time);
+				const ReconstructionTree::non_null_ptr_to_const_type final_reconstruction_tree =
+						reconstruction_tree_creator.get_reconstruction_tree(final_time);
+
+				const GPlatesMaths::FiniteRotation &present_day_to_initial_rotation =
+						initial_reconstruction_tree->get_composed_absolute_rotation(
+								reconstruction_plate_id).first;
+				const GPlatesMaths::FiniteRotation &present_day_to_final_rotation =
+						final_reconstruction_tree->get_composed_absolute_rotation(
+								reconstruction_plate_id).first;
+
+				return GPlatesMaths::compose(
+						present_day_to_final_rotation,
+						GPlatesMaths::get_reverse(present_day_to_initial_rotation));
+			}
+
+
+			/**
+			 * Rigidly rotates the geometry points from @a initial_time to @a final_time.
+			 */
+			void
+			rigid_reconstruct(
+					std::vector<GPlatesMaths::PointOnSphere> &rotated_geometry_points,
+					const std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+					const double &initial_time,
+					const double &final_time,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator)
+			{
+				const GPlatesMaths::FiniteRotation initial_to_final_rotation = get_rigid_stage_rotation(
+						reconstruction_plate_id, reconstruction_tree_creator, initial_time, final_time);
+
+				std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_iter = geometry_points.begin();
+				std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_end = geometry_points.end();
+				rotated_geometry_points.reserve(geometry_points.size());
+				for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter)
+				{
+					rotated_geometry_points.push_back(
+							GPlatesMaths::PointOnSphere(
+									initial_to_final_rotation * geometry_points_iter->position_vector()));
+				}
+			}
+
+
+			/**
+			 * Interpolate between two sets of geometry points.
+			 *
+			 * This actually deforms, and rigidly rotates where necessary, points from the younger
+			 * set of geometry points by the interpolate time increment. Hence we don't need the
+			 * older set of geometry points.
+			 */
+			void
+			interpolate_geometry_points(
+					std::vector<GPlatesMaths::PointOnSphere> &interpolated_geometry_points,
+					const std::vector<GPlatesMaths::PointOnSphere> &young_geometry_points,
+					const network_point_location_opt_seq_type &young_network_point_locations,
+					const double &young_time,
+					const double &interpolate_time_increment,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						young_geometry_points.size() == young_network_point_locations.size(),
+						GPLATES_ASSERTION_SOURCE);
+
+				const unsigned int num_points = young_geometry_points.size();
+
+				interpolated_geometry_points.reserve(num_points);
+
+				// Only calculate rigid stage rotation if some points need to be rigidly rotated.
+				boost::optional<GPlatesMaths::FiniteRotation> interpolate_rigid_stage_rotation;
+
+				for (unsigned int n = 0; n < num_points; ++n)
+				{
+					const GPlatesMaths::PointOnSphere &young_geometry_point = young_geometry_points[n];
+
+					// Get the network point location that the current point lies within.
+					const network_point_location_opt_type &network_point_opt_location = young_network_point_locations[n];
+					if (network_point_opt_location)
+					{
+						const ResolvedTriangulation::Network::point_location_type &network_point_location = network_point_opt_location->first;
+						const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_opt_location->second;
+
+						// Deform the current point by the interpolate time increment.
+						boost::optional<
+								std::pair<
+										GPlatesMaths::PointOnSphere,
+										ResolvedTriangulation::Network::point_location_type> > interpolated_point_result =
+								resolved_network->get_triangulation_network().calculate_deformed_point(
+										young_geometry_point,
+										interpolate_time_increment,
+										// We're deforming backward in time from
+										// 'young_time' to 'young_time + interpolate_time_increment'...
+										false/*reverse_deform*/,
+										network_point_location);
+						if (interpolated_point_result)
+						{
+							const GPlatesMaths::PointOnSphere &interpolated_point = interpolated_point_result->first;
+							interpolated_geometry_points.push_back(interpolated_point);
+
+							continue;
+						}
+					}
+
+					//
+					// The current geometry point is outside the network so rigidly rotate it instead.
+					//
+
+					if (!interpolate_rigid_stage_rotation)
+					{
+						interpolate_rigid_stage_rotation = get_rigid_stage_rotation(
+								reconstruction_plate_id,
+								reconstruction_tree_creator,
+								young_time,                               // initial_time
+								young_time + interpolate_time_increment); // final_time
+					}
+
+					const GPlatesMaths::PointOnSphere interpolated_point =
+							interpolate_rigid_stage_rotation.get() * young_geometry_point;
+
+					interpolated_geometry_points.push_back(interpolated_point);
+				}
+			}
+
+
+			/**
+			 * Deforms @a current_geometry_points by a single time step to @a next_geometry_points.
+			 *
+			 * By default deformation is backward in time (from 'time' to 'time + time_increment').
+			 *
+			 * However if @a reverse_deform is true then deformation is forward in time
+			 * (from 'time + time_increment' to 'time'), and so @a current_geometry_points should be
+			 * associated with 'time + time_increment' (not 'time', as is the case when deforming backwards in time).
+			 * This is because the resolved networks are deformed backwards from 'time' to 'time + time_increment'
+			 * so that they can grab @a current_geometry_points and deform them forward in time to 'time'.
+			 * This is what makes forward deformation mirror backward deformation so that it's exactly reversible).
+			 *
+			 * Note that @a time_increment should be positive, regardless of @a reverse_deform.
+			 *
+			 * Return false if none of the geometry points intersected deforming networks.
+			 * In other words if the time step is a rigid rotation for all geometry points.
+			 */
 			bool
-			operator()(
-					const ResolvedTopologicalNetwork::non_null_ptr_type &rtn) const
+			deformation_time_step(
+					const double &time,
+					const double &time_increment,
+					const std::vector<GPlatesMaths::PointOnSphere> &current_geometry_points,
+					std::vector<GPlatesMaths::PointOnSphere> &next_geometry_points,
+					// Make a copy of the list of networks so we can cull/remove networks just for this loop iteration...
+					rtn_seq_type resolved_networks,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator,
+					bool reverse_deform = false,
+					boost::optional<network_point_location_opt_seq_type &> current_network_point_locations = boost::none)
 			{
-				const GPlatesMaths::BoundingSmallCircle &network_bounding_small_circle =
-						rtn->get_triangulation_network().get_boundary_polygon()
-								->get_bounding_small_circle();
+				//
+				// As an optimisation, remove those networks that the current geometry points do not intersect.
+				//
+				// However we don't do this when reverse deforming because, unlike regular forward deformation,
+				// the current geometry points are associated with a different time than the resolved networks
+				// (because the resolved networks are deformed backwards in time by the time increment so that
+				// they can grab the current geometry points and deform them forward to the time of the resolved
+				// networks - this is what makes forward deformation mirror backward deformation so that it's
+				// exactly reversible). The most common path is backward deformation (ie, not reverse deformation)
+				// since features are reconstructed/deformed backward from present day, so at least this
+				// optimisation applies to the most common path.
+				//
+				if (!reverse_deform)
+				{
+					GPlatesMaths::BoundingSmallCircleBuilder current_geometry_points_small_circle_bounds_builder(
+							GPlatesMaths::Centroid::calculate_points_centroid(
+									current_geometry_points.begin(),
+									current_geometry_points.end()));
+					// Note that we don't need to worry about adding great circle arcs (if the geometry type is a
+					// polyline or polygon) because we only test if the points intersect the resolved networks.
+					// If interior arc sub-segment of a great circle arc (polyline/polygon edge) intersects
+					// resolved network it doesn't matter (only the arc end points matter).
+					std::vector<GPlatesMaths::PointOnSphere>::const_iterator curr_geometry_points_iter = current_geometry_points.begin();
+					std::vector<GPlatesMaths::PointOnSphere>::const_iterator curr_geometry_points_end = current_geometry_points.end();
+					for ( ; curr_geometry_points_iter != curr_geometry_points_end; ++curr_geometry_points_iter)
+					{
+						current_geometry_points_small_circle_bounds_builder.add(*curr_geometry_points_iter);
+					}
+					const GPlatesMaths::BoundingSmallCircle current_geometry_points_small_circle_bounds =
+							current_geometry_points_small_circle_bounds_builder.get_bounding_small_circle();
+					resolved_networks.erase(
+							std::remove_if(
+									resolved_networks.begin(),
+									resolved_networks.end(),
+									std::not1(IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds(
+											&current_geometry_points_small_circle_bounds))),
+							resolved_networks.end());
 
-				return intersect(network_bounding_small_circle, *d_geometry_points_bounding_small_circle);
+					// If none of the resolved networks intersect the geometry points at the current time then return early.
+					if (resolved_networks.empty())
+					{
+						return false;
+					}
+				}
+
+				const unsigned int num_geometry_points = current_geometry_points.size();
+
+				// We've excluded those resolved networks that can't possibly intersect the current geometry points.
+				// This doesn't mean the remaining networks will definitely intersect though - they might not.
+
+				// An array to store deformed geometry points for the next time slot.
+				// Starts out with all points being boost::none - and only deformed points will get filled.
+				std::vector< boost::optional<GPlatesMaths::PointOnSphere> > deformed_geometry_points(num_geometry_points);
+
+				if (current_network_point_locations)
+				{
+					// An array to store the network point locations that the current geometry points are in.
+					// Starts out with all points being boost::none - and only points inside networks will get filled.
+					current_network_point_locations->resize(num_geometry_points);
+				}
+
+				// Keep track of number of deformed geometry points for the current time.
+				unsigned int num_deformed_geometry_points = 0;
+
+				// Iterate over the current geometry points and attempt to deform them.
+				for (unsigned int current_geometry_point_index = 0;
+					current_geometry_point_index < num_geometry_points;
+					++current_geometry_point_index)
+				{
+					const GPlatesMaths::PointOnSphere &current_geometry_point = current_geometry_points[current_geometry_point_index];
+
+					// Iterate over the resolved networks for the current time.
+					rtn_seq_type::const_iterator resolved_networks_iter = resolved_networks.begin();
+					rtn_seq_type::const_iterator resolved_networks_end = resolved_networks.end();
+					for ( ; resolved_networks_iter != resolved_networks_end; ++resolved_networks_iter)
+					{
+						const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = *resolved_networks_iter;
+
+						boost::optional<
+								std::pair<
+										GPlatesMaths::PointOnSphere,
+										ResolvedTriangulation::Network::point_location_type> > deformed_point_result =
+								resolved_network->get_triangulation_network().calculate_deformed_point(
+										current_geometry_point,
+										time_increment,
+										reverse_deform);
+						if (!deformed_point_result)
+						{
+							// The current geometry point is outside the network so continue searching
+							// the next resolved network.
+							continue;
+						}
+
+						if (current_network_point_locations)
+						{
+							// As an optimisation, store the network location of the point so
+							// we don't have to locate it a second time if we look up the strain.
+							current_network_point_locations.get()[current_geometry_point_index] =
+									std::make_pair(deformed_point_result->second, resolved_network);
+						}
+
+						// The current deformed geometry point.
+						const GPlatesMaths::PointOnSphere &deformed_geometry_point = deformed_point_result->first;
+
+						// Record the deformed point.
+						deformed_geometry_points[current_geometry_point_index] = deformed_geometry_point;
+						++num_deformed_geometry_points;
+
+						// Finished searching resolved networks for the current geometry point.
+						break;
+					}
+				}
+
+				// If none of the resolved networks intersect the current geometry points then return early.
+				if (num_deformed_geometry_points == 0)
+				{
+					return false;
+				}
+
+				// If we get here then at least one geometry point was deformed.
+
+				// The geometry points for the next geometry sample.
+				next_geometry_points.reserve(num_geometry_points);
+
+				// If not all geometry points were deformed then rigidly rotate those that were not.
+				if (num_deformed_geometry_points < num_geometry_points)
+				{
+					// Get the rigid finite rotation used for those geometry points that did not
+					// intersect any resolved networks and hence must be rigidly rotated.
+					const GPlatesMaths::FiniteRotation rigid_stage_rotation = reverse_deform
+							? get_rigid_stage_rotation(
+									reconstruction_plate_id,
+									reconstruction_tree_creator,
+									time + time_increment/*initial_time*/,
+									time/*final_time*/)
+							: get_rigid_stage_rotation(
+									reconstruction_plate_id,
+									reconstruction_tree_creator,
+									time/*initial_time*/,
+									time + time_increment/*final_time*/);
+
+					for (unsigned int geometry_point_index = 0; geometry_point_index < num_geometry_points; ++geometry_point_index)
+					{
+						if (deformed_geometry_points[geometry_point_index])
+						{
+							// Add deformed geometry point.
+							next_geometry_points.push_back(
+									deformed_geometry_points[geometry_point_index].get());
+						}
+						else
+						{
+							// Add rigidly rotated geometry point.
+							next_geometry_points.push_back(
+									rigid_stage_rotation * current_geometry_points[geometry_point_index]);
+						}
+					}
+				}
+				else // all geometry points were deformed...
+				{
+					// Just copy the deformed points into the next geometry sample.
+					for (unsigned int geometry_point_index = 0; geometry_point_index < num_geometry_points; ++geometry_point_index)
+					{
+						GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+								deformed_geometry_points[geometry_point_index],
+								GPLATES_ASSERTION_SOURCE);
+
+						next_geometry_points.push_back(
+								deformed_geometry_points[geometry_point_index].get());
+					}
+				}
+
+				return true;
 			}
-
-		private:
-
-			const GPlatesMaths::BoundingSmallCircle *d_geometry_points_bounding_small_circle;
-		};
-
-
-		/**
-		 * Convert a GeometryOnSphere to a sequence of points.
-		 */
-		std::vector<GPlatesMaths::PointOnSphere>
-		get_geometry_points(
-				const GPlatesMaths::GeometryOnSphere &geometry)
-		{
-			// Get the points of the present day geometry.
-			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-			GeometryUtils::get_geometry_exterior_points(geometry, geometry_points);
-
-			return geometry_points;
-		}
-
-
-		/**
-		 * Interpolates the stage rotations at the vertices of a delaunay face according to
-		 * the barycentric coordinates of a point inside the face.
-		 */
-		GPlatesMaths::FiniteRotation
-		get_interpolated_stage_rotation(
-				const ResolvedTriangulation::Delaunay_2::Face_handle &delaunay_face,
-				const ResolvedTriangulation::delaunay_coord_2_type &barycentric_coord_vertex_1,
-				const ResolvedTriangulation::delaunay_coord_2_type &barycentric_coord_vertex_2,
-				const ResolvedTriangulation::delaunay_coord_2_type &barycentric_coord_vertex_3,
-				const double &initial_time,
-				const double &final_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			const ReconstructionTree::non_null_ptr_to_const_type initial_reconstruction_tree =
-					reconstruction_tree_creator.get_reconstruction_tree(initial_time);
-			const ReconstructionTree::non_null_ptr_to_const_type final_reconstruction_tree =
-					reconstruction_tree_creator.get_reconstruction_tree(final_time);
-
-			// Get the rigid finite rotation of vertex 1 of the delaunay face from
-			// 'current_time' to 'next_time'.
-			const GPlatesModel::integer_plate_id_type plate_id_1 =
-					delaunay_face->vertex(0)->get_plate_id();
-			const GPlatesMaths::FiniteRotation &finite_rotation_initial_time_1 =
-					initial_reconstruction_tree->get_composed_absolute_rotation(plate_id_1).first;
-			const GPlatesMaths::FiniteRotation &finite_rotation_final_time_1 =
-					final_reconstruction_tree->get_composed_absolute_rotation(plate_id_1).first;
-			const GPlatesMaths::FiniteRotation finite_rotation_initial_time_to_final_time_1 =
-					GPlatesMaths::compose(
-							finite_rotation_final_time_1,
-							GPlatesMaths::get_reverse(finite_rotation_initial_time_1));
-
-			// Get the rigid finite rotation of vertex 2 of the delaunay face from
-			// 'current_time' to 'next_time'.
-			const GPlatesModel::integer_plate_id_type plate_id_2 =
-					delaunay_face->vertex(1)->get_plate_id();
-			const GPlatesMaths::FiniteRotation &finite_rotation_initial_time_2 =
-					initial_reconstruction_tree->get_composed_absolute_rotation(plate_id_2).first;
-			const GPlatesMaths::FiniteRotation &finite_rotation_final_time_2 =
-					final_reconstruction_tree->get_composed_absolute_rotation(plate_id_2).first;
-			const GPlatesMaths::FiniteRotation finite_rotation_initial_time_to_final_time_2 =
-					GPlatesMaths::compose(
-							finite_rotation_final_time_2,
-							GPlatesMaths::get_reverse(finite_rotation_initial_time_2));
-
-			// Get the rigid finite rotation of vertex 1 of the delaunay face from
-			// 'current_time' to 'next_time'.
-			const GPlatesModel::integer_plate_id_type plate_id_3 =
-					delaunay_face->vertex(2)->get_plate_id();
-			const GPlatesMaths::FiniteRotation &finite_rotation_initial_time_3 =
-					initial_reconstruction_tree->get_composed_absolute_rotation(plate_id_3).first;
-			const GPlatesMaths::FiniteRotation &finite_rotation_final_time_3 =
-					final_reconstruction_tree->get_composed_absolute_rotation(plate_id_3).first;
-			const GPlatesMaths::FiniteRotation finite_rotation_initial_time_to_final_time_3 =
-					GPlatesMaths::compose(
-							finite_rotation_final_time_3,
-							GPlatesMaths::get_reverse(finite_rotation_initial_time_3));
-
-			// Interpolate the vertex stage rotations.
-			return GPlatesMaths::interpolate(
-					finite_rotation_initial_time_to_final_time_1,
-					finite_rotation_initial_time_to_final_time_2,
-					finite_rotation_initial_time_to_final_time_3,
-					barycentric_coord_vertex_1,
-					barycentric_coord_vertex_2,
-					barycentric_coord_vertex_3);
-		}
-
-
-		/**
-		 * Returns the stage rotation for the specified rigid block.
-		 */
-		GPlatesMaths::FiniteRotation
-		get_rigid_block_stage_rotation(
-				const ResolvedTriangulation::Network::RigidBlock &rigid_block,
-				const double &initial_time,
-				const double &final_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			const ReconstructionTree::non_null_ptr_to_const_type initial_reconstruction_tree =
-					reconstruction_tree_creator.get_reconstruction_tree(initial_time);
-			const ReconstructionTree::non_null_ptr_to_const_type final_reconstruction_tree =
-					reconstruction_tree_creator.get_reconstruction_tree(final_time);
-
-			// Get the reconstruction plate id of rigid block.
-			GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-			if (rigid_block.get_reconstructed_feature_geometry()->reconstruction_plate_id())
-			{
-				reconstruction_plate_id =
-						rigid_block.get_reconstructed_feature_geometry()->reconstruction_plate_id().get();
-			}
-
-			const GPlatesMaths::FiniteRotation &finite_rotation_initial_time =
-					initial_reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
-			const GPlatesMaths::FiniteRotation &finite_rotation_final_time =
-					final_reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
-
-			return GPlatesMaths::compose(
-					finite_rotation_final_time,
-					GPlatesMaths::get_reverse(finite_rotation_initial_time));
 		}
 	}
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryDeformation::deform_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+		const double &reconstruction_time,
+		const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		bool reverse_deform)
+{
+	// If already at present day then just return the original geometry.
+	if (GPlatesMaths::Real(reconstruction_time) == 0.0)
+	{
+		return geometry;
+	}
+
+	// The time range of both the resolved network topologies and the deformed geometry samples.
+	const TimeSpanUtils::TimeRange time_range = resolved_network_time_span->get_time_range();
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	const GPlatesMaths::GeometryType::Value geometry_type = GeometryUtils::get_geometry_type(*geometry);
+	std::vector<GPlatesMaths::PointOnSphere> current_geometry_points = extract_geometry_points(*geometry);
+
+	// If deformation happens prior to the reconstruction time then just rigidly reconstruct to/from present day.
+	if (reconstruction_time <= time_range.get_end_time())
+	{
+		std::vector<GPlatesMaths::PointOnSphere> final_geometry_points;
+		rigid_reconstruct(
+				final_geometry_points,
+				current_geometry_points,
+				reconstruction_time,
+				reconstruction_plate_id,
+				reconstruction_tree_creator,
+				reverse_deform);
+
+		// Return as a GeometryOnSphere.
+		return create_geometry_on_sphere(final_geometry_points, geometry_type);
+	}
+
+
+
+	if (reverse_deform)
+	{
+		// Rigidly reconstruct from reconstruction time to the beginning of the deformation time range if necessary.
+		// This happens if the reconstruction time is prior to the beginning of deformation.
+		if (GPlatesMaths::Real(reconstruction_time) > time_range.get_begin_time())
+		{
+			std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
+			rigid_reconstruct(
+					next_geometry_points,
+					current_geometry_points,
+					reconstruction_time/*initial_time*/,
+					time_range.get_begin_time()/*final_time*/,
+					reconstruction_plate_id,
+					reconstruction_tree_creator);
+			current_geometry_points.swap(next_geometry_points);
+		}
+	}
+	else
+	{
+		// Rigidly reconstruct from present day to the end of the deformation time range if necessary.
+		// This happens if deformation ends prior to present day.
+		if (time_range.get_end_time() > GPlatesMaths::Real(0.0))
+		{
+			std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
+			rigid_reconstruct(
+					next_geometry_points,
+					current_geometry_points,
+					time_range.get_end_time(),
+					reconstruction_plate_id,
+					reconstruction_tree_creator);
+			current_geometry_points.swap(next_geometry_points);
+		}
+	}
+
+	// Determine the two nearest resolved network time slots bounding the reconstruction time.
+	double interpolate_time_slots;
+	const boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+			resolved_network_time_slots = time_range.get_bounding_time_slots(
+					reconstruction_time, interpolate_time_slots);
+
+	// First time slot is the begin time of deformation if reconstruction time prior to deformation.
+	const int first_time_slot = resolved_network_time_slots ? resolved_network_time_slots->first : 0;
+
+	// If reconstruction time is between time slots (versus exactly on a time slot) then
+	// we'll need to interpolate in the initial (forward deformation) or final (backward deformation) time step.
+	boost::optional<unsigned int> interpolation_time_slot;
+	if (resolved_network_time_slots &&
+		resolved_network_time_slots->first != resolved_network_time_slots->second) // not exactly on a time slot
+	{
+		interpolation_time_slot = resolved_network_time_slots->second;
+	}
+
+	// Iteration range over deformation time range.
+	unsigned int start_time_slot;
+	unsigned int end_time_slot;
+	int time_slot_direction;
+	if (reverse_deform)
+	{
+		// Iterate over the time range going *forwards* in time from the beginning of the
+		// time range (least recent) towards the end (most recent).
+		start_time_slot = first_time_slot + 1;
+		end_time_slot = num_time_slots;
+		time_slot_direction = 1;
+	}
+	else
+	{
+		// Iterate over the time range going *backwards* in time from the end of the
+		// time range (most recent) towards the beginning (least recent).
+		start_time_slot = num_time_slots - 1;
+		end_time_slot = first_time_slot;
+		time_slot_direction = -1;
+	}
+
+	// Iterate over the time slots either bacward or forward in time (depending on 'reverse_deform').
+	for (unsigned int time_slot = start_time_slot; time_slot != end_time_slot; time_slot += time_slot_direction)
+	{
+		// Deformation/reconstruction is backward in time from 'time' to 'time + time_increment',
+		// unless 'reverse_deform' is true (in which case deformation is forward in time from
+		// 'time + time_increment' to 'time').
+		const double time = time_range.get_time(time_slot);
+
+		double time_increment = time_range.get_time_increment();
+		// If interpolating current time slot then adjust time increment.
+		if (time_slot == interpolation_time_slot)
+		{
+			// Regardless of whether we're deforming backward or forward in time,
+			// the deformation time step is always relative to 'time'
+			// (which is the second time slot being interpolated), so invert the interpolation factor
+			// to be relative to the second time slot (instead of first time slot)...
+			time_increment *= 1.0 - interpolate_time_slots;
+		}
+
+		// Get the resolved networks for the current time slot.
+		// These are actually in the next time slot because they will deform forwards in time
+		// from the current time to the next time.
+		boost::optional<const rtn_seq_type &> resolved_networks =
+				resolved_network_time_span->get_sample_in_time_slot(time_slot);
+
+		std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
+
+		// If there are no networks for the current time slot, or
+		// none of the current geometry points intersect any networks,
+		// then rigidly rotate to the next time slot.
+		if (!resolved_networks ||
+			resolved_networks->empty() ||
+			!deformation_time_step(
+					time,
+					time_increment,
+					current_geometry_points,
+					next_geometry_points,
+					resolved_networks.get(),
+					reconstruction_plate_id,
+					reconstruction_tree_creator,
+					reverse_deform))
+		{
+			if (reverse_deform)
+			{
+				rigid_reconstruct(
+						next_geometry_points,
+						current_geometry_points,
+						time + time_increment/*initial_time*/,
+						time/*final_time*/,
+						reconstruction_plate_id,
+						reconstruction_tree_creator);
+			}
+			else
+			{
+				rigid_reconstruct(
+						next_geometry_points,
+						current_geometry_points,
+						time/*initial_time*/,
+						time + time_increment/*final_time*/,
+						reconstruction_plate_id,
+						reconstruction_tree_creator);
+			}
+		}
+
+		// Set the current geometry points for the next time step.
+		current_geometry_points.swap(next_geometry_points);
+	}
+
+	if (reverse_deform)
+	{
+		// Rigidly reconstruct from the end of the deformation time range to present day if necessary.
+		// This happens if deformation ends prior to present day.
+		if (time_range.get_end_time() > GPlatesMaths::Real(0.0))
+		{
+			std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
+			rigid_reconstruct(
+					next_geometry_points,
+					current_geometry_points,
+					time_range.get_end_time(),
+					reconstruction_plate_id,
+					reconstruction_tree_creator,
+					true/*reverse_reconstruct*/);
+			current_geometry_points.swap(next_geometry_points);
+		}
+	}
+	else
+	{
+		// Rigidly reconstruct from the beginning of the deformation time range to reconstruction time if necessary.
+		// This happens if the reconstruction time is prior to the beginning of deformation.
+		if (GPlatesMaths::Real(reconstruction_time) > time_range.get_begin_time())
+		{
+			std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
+			rigid_reconstruct(
+					next_geometry_points,
+					current_geometry_points,
+					time_range.get_begin_time()/*initial_time*/,
+					reconstruction_time/*final_time*/,
+					reconstruction_plate_id,
+					reconstruction_tree_creator);
+			current_geometry_points.swap(next_geometry_points);
+		}
+	}
+
+	return create_geometry_on_sphere(current_geometry_points, geometry_type);
 }
 
 
@@ -248,23 +779,28 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometryTimeSpan(
 							this,
 							_1,
 							_2,
+							_3),
+					// The function to interpolate geometry samples...
+					boost::bind(
+							&GeometryTimeSpan::interpolate_geometry_sample,
+							this,
+							_1,
+							_2,
 							_3,
-							// Boost bind stores a copy...
-							reconstruction_tree_creator),
+							_4,
+							_5),
 					// The present day geometry points...
-					GeometrySample(get_geometry_points(*feature_present_day_geometry)))),
-	d_have_initialised_forward_time_accumulated_deformation_information(false)
+					GeometrySample(extract_geometry_points(*feature_present_day_geometry)))),
+	d_reconstruction_tree_creator(reconstruction_tree_creator),
+	d_resolved_network_time_span(resolved_network_time_span),
+	d_have_initialised_deformation_total_strains(false)
 {
-	initialise_time_windows(
-			resolved_network_time_span,
-			reconstruction_tree_creator);
+	initialise_time_windows();
 }
 
 
 void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_time_windows(
-		const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span,
-		const ReconstructionTreeCreator &reconstruction_tree_creator)
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_time_windows()
 {
 	//PROFILE_FUNC();
 
@@ -272,12 +808,34 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_time_windows(
 	const TimeSpanUtils::TimeRange time_range = d_time_window_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
+	// Set geometry sample in the end time slot (closest to present day).
+	// We don't actually need to do this because if the end time slot is empty then the time span will
+	// generate a geometry sample by rigidly rotating the present day geometry sample.
+	// Note that the end time slot is normally empty because we deform from the end time slot to the
+	// time slot just prior to it and store a geometry sample there (and so on backwards in time).
+	// However we will fill in the end time slot anyway so that interpolations between the end time slot
+	// and the deformed slot just prior to it will actually be interpolations and not rigid rotations.
+	d_time_window_span->set_sample_in_time_slot(
+			d_time_window_span->get_or_create_sample(time_range.get_end_time()),
+			num_time_slots - 1);
+
 	// Iterate over the time range going *backwards* in time from the end of the
 	// time range (most recent) to the beginning (least recent).
 	for (/*signed*/ int time_slot = num_time_slots - 1; time_slot > 0; --time_slot)
 	{
+		// Get the resolved networks for the current time slot.
+		boost::optional<const rtn_seq_type &> resolved_networks =
+				d_resolved_network_time_span->get_sample_in_time_slot(time_slot);
+
+		// If there are no networks for the current time slot then continue to the next time slot.
+		if (!resolved_networks ||
+			resolved_networks->empty())
+		{
+			// Geometry will not be stored for the current time.
+			continue;
+		}
+
 		const double current_time = time_range.get_time(time_slot);
-		const double next_time = current_time + time_range.get_time_increment();
 
 		// NOTE: If the feature does not exist at the current time slot we still deform it.
 		// This is an issue to do with storing feature geometry in present day coordinates.
@@ -292,258 +850,57 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_time_windows(
 		}
 #endif
 
-		// Get the resolved networks for the current time slot.
-		boost::optional<const rtn_seq_type &> resolved_networks_opt =
-				resolved_network_time_span->get_sample_in_time_slot(time_slot);
-
-		// If there are no networks for the current time slot then continue to the next time slot.
-		// Geometry will not be stored for the current time.
-		if (!resolved_networks_opt ||
-			resolved_networks_opt->empty())
-		{
-			// Finished with the current time sample.
-			continue;
-		}
-
-		// Make a copy of the list of networks so we can cull/remove networks just for this loop iteration.
-		rtn_seq_type resolved_networks = resolved_networks_opt.get();
-
 		// Get the geometry points for the current time.
 		// This performs rigid rotation from the closest younger (deformed) geometry sample if needed.
-		const GeometrySample current_geometry_sample =
-				d_time_window_span->get_or_create_sample(current_time);
-		const std::vector<GPlatesMaths::PointOnSphere> &current_geometry_points =
-				current_geometry_sample.get_points();
+		GeometrySample current_geometry_sample = d_time_window_span->get_or_create_sample(current_time);
+		const std::vector<GPlatesMaths::PointOnSphere> &current_geometry_points = current_geometry_sample.get_points();
 
-		//
-		// As an optimisation, remove those networks that the current geometry points do not intersect.
-		//
-		GPlatesMaths::BoundingSmallCircleBuilder current_geometry_points_small_circle_bounds_builder(
-				GPlatesMaths::Centroid::calculate_points_centroid(
-						current_geometry_points.begin(),
-						current_geometry_points.end()));
-		// Note that we don't need to worry about adding great circle arcs (if the geometry type is a
-		// polyline or polygon) because we only test if the points intersect the resolved networks.
-		// If interior arc sub-segment of a great circle arc (polyline/polygon edge) intersects
-		// resolved network it doesn't matter (only the arc end points matter).
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator curr_geometry_points_iter =
-				current_geometry_points.begin();
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator curr_geometry_points_end =
-				current_geometry_points.end();
-		for ( ; curr_geometry_points_iter != curr_geometry_points_end; ++curr_geometry_points_iter)
-		{
-			current_geometry_points_small_circle_bounds_builder.add(*curr_geometry_points_iter);
-		}
-		const GPlatesMaths::BoundingSmallCircle current_geometry_points_small_circle_bounds =
-				current_geometry_points_small_circle_bounds_builder.get_bounding_small_circle();
-		resolved_networks.erase(
-				std::remove_if(
-						resolved_networks.begin(),
-						resolved_networks.end(),
-						std::not1(IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds(
-								&current_geometry_points_small_circle_bounds))),
-				resolved_networks.end());
-
-		// If none of the resolved networks intersect the geometry points at the current time then
-		// continue to the next time slot.
-		// Geometry will not be stored for the current time.
-		if (resolved_networks.empty())
-		{
-			// Finished with the current time sample.
-			continue;
-		}
-
-		// We've excluded those resolved networks that can't possibly intersect the current geometry points.
-		// This doesn't mean the remaining networks will definitely intersect though - they might not.
-
-		// An array to store deformed geometry points for the next time slot.
-		// Starts out with all points being boost::none - and only deformed points will get filled.
-		std::vector< boost::optional<GPlatesMaths::PointOnSphere> >
-				deformed_geometry_points(current_geometry_points.size());
-
-		// An array to store the delaunay triangulation faces that the current geometry points are in.
-		// Starts out with all points being boost::none - and only points in deforming regions will
-		// get filled - and not all deformed points will get filled either (due to interior rigid blocks).
-		std::vector< boost::optional<ResolvedTriangulation::Delaunay_2::Face_handle> >
-				current_delaunay_faces(current_geometry_points.size());
-
-		// Keep track of number of deformed geometry points for the current time.
-		unsigned int num_deformed_geometry_points = 0;
-
-		// Iterate over the current geometry points and attempt to deform them.
-		for (unsigned int current_geometry_point_index = 0;
-			current_geometry_point_index < current_geometry_points.size();
-			++current_geometry_point_index)
-		{
-			const GPlatesMaths::PointOnSphere &current_geometry_point =
-					current_geometry_points[current_geometry_point_index];
-
-			// Iterate over the resolved networks for the current time.
-			rtn_seq_type::const_iterator resolved_networks_iter = resolved_networks.begin();
-			rtn_seq_type::const_iterator resolved_networks_end = resolved_networks.end();
-			for ( ; resolved_networks_iter != resolved_networks_end; ++resolved_networks_iter)
-			{
-				const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = *resolved_networks_iter;
-
-				// Find the delaunay triangulation face containing the current geometry point (if any)
-				// and calculate the barycentric coordinates of its vertices.
-				ResolvedTriangulation::delaunay_coord_2_type barycentric_coord_vertex_1;
-				ResolvedTriangulation::delaunay_coord_2_type barycentric_coord_vertex_2;
-				ResolvedTriangulation::delaunay_coord_2_type barycentric_coord_vertex_3;
-				boost::optional<ResolvedTriangulation::Delaunay_2::Face_handle> delaunay_face =
-						resolved_network->get_triangulation_network().calc_delaunay_barycentric_coordinates(
-								barycentric_coord_vertex_1,
-								barycentric_coord_vertex_2,
-								barycentric_coord_vertex_3,
-								current_geometry_point);
-				if (delaunay_face)
-				{
-					// Record the delaunay face.
-					// It might get used later if deformation information is requested by our clients.
-					// But we don't want to calculate deformation info if it's never needed.
-					current_delaunay_faces[current_geometry_point_index] = delaunay_face.get();
-
-					// Interpolate the stage rotations at the face vertices according to the barycentric weights.
-					const GPlatesMaths::FiniteRotation interpolated_stage_rotation =
-							get_interpolated_stage_rotation(
-									delaunay_face.get(),
-									barycentric_coord_vertex_1,
-									barycentric_coord_vertex_2,
-									barycentric_coord_vertex_3,
-									current_time/*initial_time*/,
-									next_time/*final_time*/,
-									reconstruction_tree_creator);
-
-					// Deform the current geometry point.
-					const GPlatesMaths::PointOnSphere deformed_geometry_point =
-							interpolated_stage_rotation * current_geometry_point;
-
-					// Record the deformed point.
-					deformed_geometry_points[current_geometry_point_index] = deformed_geometry_point;
-					++num_deformed_geometry_points;
-
-					// Finished searching resolved networks for the current geometry point.
-					break;
-				}
-
-				// The current geometry point is not in the *deforming region* of the network
-				// but it could still be inside a rigid block in the interior of the network.
-				boost::optional<const ResolvedTriangulation::Network::RigidBlock &> rigid_block =
-						resolved_network->get_triangulation_network().is_point_in_a_rigid_block(
-								current_geometry_point);
-				if (rigid_block)
-				{
-					const GPlatesMaths::FiniteRotation rigid_block_stage_rotation =
-							get_rigid_block_stage_rotation(
-									rigid_block.get(),
-									current_time/*initial_time*/,
-									next_time/*final_time*/,
-									reconstruction_tree_creator);
-
-					// Deform the current geometry point.
-					const GPlatesMaths::PointOnSphere deformed_geometry_point =
-							rigid_block_stage_rotation * current_geometry_point;
-
-					// Record the deformed point.
-					deformed_geometry_points[current_geometry_point_index] = deformed_geometry_point;
-					++num_deformed_geometry_points;
-
-					// Finished searching resolved networks for the current geometry point.
-					break;
-				}
-
-				// The current geometry point is outside the network so continue searching
-				// the next resolved network.
-			}
-		}
-
-		// If none of the resolved networks intersect the current geometry points then
-		// continue to the next time slot.
-		// Geometry will not be stored for the current time.
-		if (num_deformed_geometry_points == 0)
-		{
-			// Finished with the current time sample.
-			continue;
-		}
-
-		// If we get here then at least one geometry point was deformed.
-
-		// The geometry points for the next geometry sample.
 		std::vector<GPlatesMaths::PointOnSphere> next_geometry_points;
-		next_geometry_points.reserve(current_geometry_points.size());
 
-		// If not all geometry points were deformed then rigidly rotate those that were not.
-		if (num_deformed_geometry_points < current_geometry_points.size())
+		// An array to store the network point locations that the current geometry points are in.
+		// Starts out with all points being boost::none - and only points inside networks will get filled.
+		network_point_location_opt_seq_type current_network_point_locations;
+
+		// If none of the current geometry points intersect any networks then continue to the next time slot.
+		// Deformation is backward in time from 'current_time' to 'current_time + time_increment'.
+		if (!deformation_time_step(
+					current_time,
+					time_range.get_time_increment(),
+					current_geometry_points,
+					next_geometry_points,
+					resolved_networks.get(),
+					d_reconstruction_plate_id,
+					d_reconstruction_tree_creator,
+					false/*reverse_deform*/, // Going *backwards* in time away from present day.
+					current_network_point_locations))
 		{
-			// Get the rigid finite rotation from 'current_time' to 'next_time' - used for those geometry
-			// points that did not intersect any resolved networks and hence must be rigidly rotated.
-			const GPlatesMaths::FiniteRotation &finite_rotation_current_time =
-					reconstruction_tree_creator.get_reconstruction_tree(current_time)
-							->get_composed_absolute_rotation(d_reconstruction_plate_id).first;
-			const GPlatesMaths::FiniteRotation &finite_rotation_next_time =
-					reconstruction_tree_creator.get_reconstruction_tree(next_time)
-							->get_composed_absolute_rotation(d_reconstruction_plate_id).first;
-			const GPlatesMaths::FiniteRotation finite_rotation_current_time_to_next_time =
-					GPlatesMaths::compose(
-							finite_rotation_next_time,
-							GPlatesMaths::get_reverse(finite_rotation_current_time));
-
-			for (unsigned int geometry_point_index = 0;
-				geometry_point_index < current_geometry_points.size();
-				++geometry_point_index)
-			{
-				if (deformed_geometry_points[geometry_point_index])
-				{
-					// Add deformed geometry point.
-					next_geometry_points.push_back(
-							deformed_geometry_points[geometry_point_index].get());
-				}
-				else
-				{
-					// Add rigidly rotated geometry point.
-					next_geometry_points.push_back(
-							finite_rotation_current_time_to_next_time *
-									current_geometry_points[geometry_point_index]);
-				}
-			}
-		}
-		else // all geometry points were deformed...
-		{
-			// Just copy the deformed points into the next geometry sample.
-			for (unsigned int geometry_point_index = 0;
-				geometry_point_index < current_geometry_points.size();
-				++geometry_point_index)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						deformed_geometry_points[geometry_point_index],
-						GPLATES_ASSERTION_SOURCE);
-
-				next_geometry_points.push_back(
-						deformed_geometry_points[geometry_point_index].get());
-			}
+			// Geometry will not be stored for the current time.
+			continue;
 		}
 
-		GeometrySample next_geometry_sample(next_geometry_points);
-
-		// Set the recorded delaunay faces on the current geometry sample.
-		next_geometry_sample.set_delaunay_faces(current_delaunay_faces);
+		// Set the recorded network point locations on the current geometry sample.
+		current_geometry_sample.set_network_point_locations(current_network_point_locations);
+		d_time_window_span->set_sample_in_time_slot(current_geometry_sample, time_slot);
 
 		// Set the geometry sample for the next time slot.
-		d_time_window_span->set_sample_in_time_slot(
-				next_geometry_sample,
-				time_slot - 1);
+		GeometrySample next_geometry_sample(next_geometry_points);
+		d_time_window_span->set_sample_in_time_slot(next_geometry_sample, time_slot - 1);
 	}
 }
 
 
 void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_accumulated_deformation_information()
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_deformation_total_strains()
 {
-	d_have_initialised_forward_time_accumulated_deformation_information = true;
+	d_have_initialised_deformation_total_strains = true;
 
 	// The time range of the deformed geometry samples.
 	const TimeSpanUtils::TimeRange &time_range = d_time_window_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	// We need to convert time increment from My to seconds.
+	static const double SECONDS_IN_A_MILLION_YEARS = 365.25 * 24 * 3600 * 1.0e6;
+	const double time_increment_in_seconds = SECONDS_IN_A_MILLION_YEARS * time_range.get_time_increment();
 
 	boost::optional<GeometrySample &> prev_geometry_sample = d_time_window_span->get_sample_in_time_slot(0);
 
@@ -552,8 +909,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 	for (unsigned int time_slot = 1; time_slot < num_time_slots; ++time_slot)
 	{
 		// Get the geometry sample for the current time slot.
-		boost::optional<GeometrySample &> curr_geometry_sample =
-				d_time_window_span->get_sample_in_time_slot(time_slot);
+		boost::optional<GeometrySample &> curr_geometry_sample = d_time_window_span->get_sample_in_time_slot(time_slot);
 
 		// If the current geometry sample is not in a deformation region at the current time slot
 		// then skip it - we're only accumulating strain in deformation regions because
@@ -565,119 +921,24 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 			continue;
 		}
 
-		// DEF_TEST
-
-#ifdef OUTPUT_DEF_TEST_FILE
-		// string to hold filename
-		std::string def_test_file_name = "DEF_TEST_t";
-        // Compute a recon time value from begin and geom sample index 
-        double t = time_range.get_time(time_slot);
-		std::ostringstream t_oss;
-		t_oss << t;
-		def_test_file_name += t_oss.str();
-
-        // Complete the file name
- 		def_test_file_name += "Ma.xy";
-
-		// Open the file 
-		std::ofstream def_test_file;
-		def_test_file.open( def_test_file_name.c_str() );
-
-        // Write header data 
-		def_test_file << ">HEADER LINES:\n";
-		def_test_file << ">point index number \n";
-		def_test_file << ">lon lat dilitation sph_dilitation\n";
-		def_test_file << ">\n";
-		// DEF_TEST
-#endif
-
-		const std::vector<DeformationInfo> &prev_deformation_infos = prev_geometry_sample->get_deformation_infos();
-		std::vector<DeformationInfo> &curr_deformation_infos = curr_geometry_sample->get_deformation_infos();
+		const std::vector<DeformationStrain> &prev_deformation_total_strains = prev_geometry_sample->get_deformation_total_strains();
+		std::vector<DeformationStrain> &curr_deformation_total_strains = curr_geometry_sample->get_deformation_total_strains();
+		const std::vector<DeformationStrain> &curr_deformation_strain_rates = curr_geometry_sample->get_deformation_strain_rates();
 
 		// The number of points in each geometry sample should be the same.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					prev_deformation_infos.size() == curr_deformation_infos.size(),
+					prev_deformation_total_strains.size() == curr_deformation_total_strains.size(),
 					GPLATES_ASSERTION_SOURCE);
 
 		// Iterate over the previous and current geometry sample points.
-		const unsigned int num_points = prev_deformation_infos.size();
+		const unsigned int num_points = prev_deformation_total_strains.size();
 		for (unsigned int point_index = 0; point_index < num_points; ++point_index)
 		{
-			const DeformationInfo &prev_deformation_info = prev_deformation_infos[point_index];
-			DeformationInfo &curr_deformation_info = curr_deformation_infos[point_index];
-
 			// Compute new strain for the current geometry sample using the strains at the
 			// previous sample and the strain rates at the current sample.
-			// NOTE: 3.15569e13 seconds in 1 My
-			// The assumption being that the velocities 
-			const double S22 = prev_deformation_info.S22 + curr_deformation_info.SR22 * 3.15569e13;
-			const double S33 = prev_deformation_info.S33 + curr_deformation_info.SR33 * 3.15569e13;
-			const double S23 = prev_deformation_info.S23 + curr_deformation_info.SR23 * 3.15569e13;
-
-#ifdef OUTPUT_DEF_TEST_FILE
-			// DEF_TEST
-			const double dilitation = curr_deformation_info.dilitation; 
-			const double sph_dilitation = curr_deformation_info.sph_dilitation; 
-#endif
-
-			// Set the new strain at the current geometry sample.
-			curr_deformation_info.S22 = S22;
-			curr_deformation_info.S33 = S33;
-			curr_deformation_info.S23 = S23;
-
-  			// Compute the Dilitational and Second invariant strain for the current geometry sample.
-			const double dilitation_strain = S22 + S33;
-
-			// incompressable
-			//const double second_invariant_strain = std::sqrt(S22 * S22 + S33 * S33 + 2.0 * S23 * S23);
-
-			// compressable
-			// const double second_invariant = std::sqrt( (SR22 * SR33) - (SR23 * SR23) );
-			const double tmp1=( S22 * S33) - (S23 * S23);
-			const double second_invariant_strain = copysign( std::sqrt( std::abs(tmp1) ),tmp1) ;
-
-			// Principle strains.
-			const double S_DIR = 0.5 * std::atan2(2.0 * S23, S33 - S22);
-			const double S_variation = std::sqrt(S23*S23 + 0.25*(S33-S22)*(S33-S22));
-			const double S1 = 0.5*(S22+S33) + S_variation;
-			const double S2 = 0.5*(S22+S33) - S_variation;
-
-			// Set the new values.
-			curr_deformation_info.dilitation_strain = dilitation_strain;
-			curr_deformation_info.second_invariant_strain = second_invariant_strain;
-			curr_deformation_info.S1 = S1;
-			curr_deformation_info.S2 = S2;
-			curr_deformation_info.S_DIR = S_DIR;
-
-		
-#ifdef OUTPUT_DEF_TEST_FILE
-			// DEF_TEST
-			// Get all the points into a vector ; will use the point index to get coordinates
-			GPlatesMaths::PointOnSphere p = curr_geometry_sample->get_points()[point_index];
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point( p );
-			double lat = llp.latitude();
-			double lon = llp.longitude();
-
-			def_test_file << ">point index: ";
-			def_test_file << point_index;
-			def_test_file << "\n";
-			def_test_file << lon;
-			def_test_file << " ";
-			def_test_file << lat;
-			def_test_file << " ";
-			def_test_file << dilitation;
-			def_test_file << " ";
-			def_test_file << sph_dilitation;
-			def_test_file << " ";
-			def_test_file << "\n";
-#endif
+			curr_deformation_total_strains[point_index] = prev_deformation_total_strains[point_index] +
+					time_increment_in_seconds * curr_deformation_strain_rates[point_index];
 		}
-
-#ifdef OUTPUT_DEF_TEST_FILE
-		// DEF_TEST
-		// close file for this recon time 
-		def_test_file.close();
-#endif
 
 		prev_geometry_sample = curr_geometry_sample.get();
 	}
@@ -692,15 +953,15 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 		// There is no deformation during rigid time spans so the *instantaneous* deformation is zero.
 		// But the *accumulated* deformation is propagated across gaps between time windows.
 
-		const std::vector<DeformationInfo> &src_deformation_infos = prev_geometry_sample->get_deformation_infos();
-		std::vector<DeformationInfo> &dst_deformation_infos =
-				d_time_window_span->get_present_day_sample().get_deformation_infos();
+		const std::vector<DeformationStrain> &src_deformation_total_strains = prev_geometry_sample->get_deformation_total_strains();
+		std::vector<DeformationStrain> &dst_deformation_total_strains =
+				d_time_window_span->get_present_day_sample().get_deformation_total_strains();
 
-		const unsigned int num_points = src_deformation_infos.size();
+		const unsigned int num_points = src_deformation_total_strains.size();
 		for (unsigned int n = 0; n < num_points; ++n)
 		{
 			// Propagate *accumulated* deformations from closest younger geometry sample.
-			dst_deformation_infos[n].set_accumulated_values(src_deformation_infos[n]);
+			dst_deformation_total_strains[n] = src_deformation_total_strains[n];
 		}
 	}
 }
@@ -709,49 +970,34 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_geometry(
 		const double &reconstruction_time,
-		const ReconstructionTreeCreator &reconstruction_tree_creator)
-{
-	// Get the deformed (or rigidly rotated) geometry points.
-	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-	get_geometry_sample_data(reconstruction_time, reconstruction_tree_creator, geometry_points);
-
-	// Return as a GeometryOnSphere.
-	return create_geometry_on_sphere(geometry_points);
-}
-
-
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_geometry_and_deformation_information(
-		const double &reconstruction_time,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		std::vector<DeformationInfo> &deformation_info_points)
+		boost::optional<std::vector<DeformationStrain> &> deformation_strain_rates,
+		boost::optional<std::vector<DeformationStrain> &> deformation_total_strains)
 {
 	// Get the deformed (or rigidly rotated) geometry points.
 	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
 	get_geometry_sample_data(
-			reconstruction_time,
-			reconstruction_tree_creator,
 			geometry_points,
-			deformation_info_points);
+			reconstruction_time,
+			deformation_strain_rates,
+			deformation_total_strains);
 
 	// Return as a GeometryOnSphere.
-	return create_geometry_on_sphere(geometry_points);
+	return create_geometry_on_sphere(geometry_points, d_geometry_type);
 }
 
 
 void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_deformation_information(
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_geometry_points(
 		std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
-		std::vector<DeformationInfo> &deformation_info_points,
 		const double &reconstruction_time,
-		const ReconstructionTreeCreator &reconstruction_tree_creator)
+		boost::optional<std::vector<DeformationStrain> &> deformation_strain_rates,
+		boost::optional<std::vector<DeformationStrain> &> deformation_total_strains)
 {
-	// Get the deformed (or rigidly rotated) geometry points and per-point deformation information.
 	get_geometry_sample_data(
-			reconstruction_time,
-			reconstruction_tree_creator,
 			geometry_points,
-			deformation_info_points);
+			reconstruction_time,
+			deformation_strain_rates,
+			deformation_total_strains);
 }
 
 
@@ -762,31 +1008,160 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span)
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
-	// Get the geometry (domain) points.
-	get_geometry_sample_data(reconstruction_time, reconstruction_tree_creator, domain_points);
+	// Determine the two nearest resolved network time slots bounding the reconstruction time.
+	double interpolate_time_slots;
+	const boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+			resolved_network_time_slots = d_resolved_network_time_span->get_time_range()
+					.get_bounding_time_slots(reconstruction_time, interpolate_time_slots);
+	// If outside the time range then no interpolation between two time slot velocities is necessary.
+	if (!resolved_network_time_slots)
+	{
+		// Get the geometry (domain) points.
+		get_geometry_sample_data(domain_points, reconstruction_time);
 
+		calc_velocities(
+				domain_points,
+				velocities,
+				surfaces,
+				boost::none/*resolved_networks_query*/,
+				reconstruction_time,
+				velocity_delta_time,
+				velocity_delta_time_type);
+
+		return;
+	}
+
+	// See if the reconstruction time coincides with a resolved networks time slot.
+	// This is another case where no interpolation between two time slot velocities is necessary.
+	if (resolved_network_time_slots->first == resolved_network_time_slots->second/*both time slots equal*/)
+	{
+		// Get the geometry (domain) points in the time slot.
+		get_geometry_sample_data(domain_points, reconstruction_time);
+
+		// Get the resolved topological networks (if any) in the time slot.
+		boost::optional<PlateVelocityUtils::TopologicalNetworksVelocities> resolved_networks_query;
+		boost::optional<const rtn_seq_type &> resolved_networks =
+				d_resolved_network_time_span->get_sample_in_time_slot(resolved_network_time_slots->first);
+		if (resolved_networks)
+		{
+			resolved_networks_query = boost::in_place(resolved_networks.get());
+		}
+
+		calc_velocities(
+				domain_points,
+				velocities,
+				surfaces,
+				resolved_networks_query,
+				reconstruction_time,
+				velocity_delta_time,
+				velocity_delta_time_type);
+
+		return;
+	}
+
+	//
+	// Interpolate velocities between the two time slots.
+	//
+
+	const double first_time = d_resolved_network_time_span->get_time_range().get_time(resolved_network_time_slots->first);
+	const double second_time = d_resolved_network_time_span->get_time_range().get_time(resolved_network_time_slots->second);
+
+	// Get the geometry (domain) points at each time slot.
+	std::vector<GPlatesMaths::PointOnSphere> first_domain_points;
+	get_geometry_sample_data(first_domain_points, first_time);
+	std::vector<GPlatesMaths::PointOnSphere> second_domain_points;
+	network_point_location_opt_seq_type second_network_point_locations;
+	get_geometry_sample_data(second_domain_points, second_time, boost::none, boost::none, second_network_point_locations);
+
+	// Interpolate the points.
+	interpolate_geometry_points(
+			domain_points,
+			second_domain_points/*young_geometry_points*/,
+			second_network_point_locations/*young_network_point_locations*/,
+			second_time/*young_time*/,
+			// Deforming backwards in time so invert interpolation factor...
+			(1.0 - interpolate_time_slots) * d_resolved_network_time_span->get_time_range().get_time_increment()/*interpolate_time_increment*/,
+			d_reconstruction_plate_id,
+			d_reconstruction_tree_creator);
+
+	// Get the resolved topological networks (if any) in the each time slot.
+	boost::optional<PlateVelocityUtils::TopologicalNetworksVelocities> first_resolved_networks_query;
+	boost::optional<const rtn_seq_type &> first_resolved_networks =
+			d_resolved_network_time_span->get_sample_in_time_slot(resolved_network_time_slots->first);
+	if (first_resolved_networks)
+	{
+		first_resolved_networks_query = boost::in_place(first_resolved_networks.get());
+	}
+	boost::optional<PlateVelocityUtils::TopologicalNetworksVelocities> second_resolved_networks_query;
+	boost::optional<const rtn_seq_type &> second_resolved_networks =
+			d_resolved_network_time_span->get_sample_in_time_slot(resolved_network_time_slots->second);
+	if (second_resolved_networks)
+	{
+		second_resolved_networks_query = boost::in_place(second_resolved_networks.get());
+	}
+
+	// Calculate velocities at each time slot.
+	std::vector<GPlatesMaths::Vector3D> first_velocities;
+	std::vector< boost::optional<const ReconstructionGeometry *> > first_surfaces;
+	calc_velocities(
+			first_domain_points,
+			first_velocities,
+			first_surfaces,
+			first_resolved_networks_query,
+			first_time,
+			velocity_delta_time,
+			velocity_delta_time_type);
+	std::vector<GPlatesMaths::Vector3D> second_velocities;
+	std::vector< boost::optional<const ReconstructionGeometry *> > second_surfaces;
+	calc_velocities(
+			second_domain_points,
+			second_velocities,
+			second_surfaces,
+			second_resolved_networks_query,
+			second_time,
+			velocity_delta_time,
+			velocity_delta_time_type);
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			first_velocities.size() == second_velocities.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_points = domain_points.size();
+	velocities.reserve(num_points);
+	surfaces.reserve(num_points);
+
+	// Interpolate the velocities.
+	for (unsigned int n = 0; n < num_points; ++n)
+	{
+		velocities.push_back(
+				(1 - interpolate_time_slots) * first_velocities[n] +
+					interpolate_time_slots * second_velocities[n]);
+
+		// If either first or second surface is a deforming network or rigid interior block then
+		// use that. If both are then arbitrarily choose the first one. If neither then will be none.
+		surfaces.push_back(first_surfaces[n] ? first_surfaces[n] : second_surfaces[n]);
+	}
+}
+
+
+void
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::calc_velocities(
+		const std::vector<GPlatesMaths::PointOnSphere> &domain_points,
+		std::vector<GPlatesMaths::Vector3D> &velocities,
+		std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
+		const boost::optional<PlateVelocityUtils::TopologicalNetworksVelocities> &resolved_networks_query,
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
+{
 	//
 	// Calculate the velocities at the geometry (domain) points.
 	//
 
 	velocities.reserve(domain_points.size());
 	surfaces.reserve(domain_points.size());
-
-	// Get the resolved topological networks if the reconstruction time is within the time span.
-	boost::optional<PlateVelocityUtils::TopologicalNetworksVelocities> resolved_networks_query;
-	boost::optional<const rtn_seq_type &> resolved_networks =
-			resolved_network_time_span->get_nearest_sample_at_time(reconstruction_time);
-	if (resolved_networks)
-	{
-		resolved_networks_query = boost::in_place(resolved_networks.get());
-	}
-
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
 	// Iterate over the domain points and calculate their velocities (and surfaces).
 	std::vector<GPlatesMaths::PointOnSphere>::const_iterator domain_points_iter = domain_points.begin();
@@ -824,10 +1199,11 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 		const GPlatesMaths::Vector3D velocity_vector =
 				PlateVelocityUtils::calculate_velocity_vector(
 						domain_point,
-						reconstruction_tree_creator,
-						time_range.second/*young*/,
-						time_range.first/*old*/,
-						d_reconstruction_plate_id);
+						d_reconstruction_plate_id,
+						d_reconstruction_tree_creator,
+						reconstruction_time,
+						velocity_delta_time,
+						velocity_delta_time_type);
 
 		// Add the velocity - there was no surface (ie, resolved network) intersection though.
 		velocities.push_back(velocity_vector);
@@ -838,18 +1214,19 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_velocities(
 
 void
 GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_geometry_sample_data(
-		const double &reconstruction_time,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
-		boost::optional<std::vector<DeformationInfo> &> deformation_info_points)
+		const double &reconstruction_time,
+		boost::optional<std::vector<DeformationStrain> &> deformation_strain_rates,
+		boost::optional<std::vector<DeformationStrain> &> deformation_total_strains,
+		boost::optional<network_point_location_opt_seq_type &> network_point_locations)
 {
-	// If deformation information has been requested then first generate the information if
-	// it hasn't already been generated.
-	if (deformation_info_points)
+	// If deformation accumulated/total strains has been requested then first generate the information
+	// if it hasn't already been generated.
+	if (deformation_total_strains)
 	{
-		if (!d_have_initialised_forward_time_accumulated_deformation_information)
+		if (!d_have_initialised_deformation_total_strains)
 		{
-			initialise_forward_time_accumulated_deformation_information();
+			initialise_deformation_total_strains();
 		}
 	}
 
@@ -860,10 +1237,19 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::get_geometry_sample_data
 	// Copy the geometry sample points to the caller's array.
 	geometry_points = geometry_sample.get_points();
 
-	// Also copy the per-point deformation information if it was requested.
-	if (deformation_info_points)
+	// Also copy the per-point deformation information if requested.
+	if (deformation_strain_rates)
 	{
-		deformation_info_points.get() = geometry_sample.get_deformation_infos();
+		deformation_strain_rates.get() = geometry_sample.get_deformation_strain_rates();
+	}
+	if (deformation_total_strains)
+	{
+		deformation_total_strains.get() = geometry_sample.get_deformation_total_strains();
+	}
+
+	if (network_point_locations)
+	{
+		network_point_locations.get() = geometry_sample.get_network_point_locations();
 	}
 }
 
@@ -872,17 +1258,17 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample
 GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::create_rigid_geometry_sample(
 		const double &reconstruction_time,
 		const double &closest_younger_sample_time,
-		const GeometrySample &closest_younger_sample,
-		const ReconstructionTreeCreator &reconstruction_tree_creator)
+		const GeometrySample &closest_younger_sample)
 {
 	// Rigidly reconstruct the sample points.
 	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
 	rigid_reconstruct(
 			geometry_points,
 			closest_younger_sample.get_points(),
-			reconstruction_tree_creator,
 			closest_younger_sample_time/*initial_time*/,
-			reconstruction_time/*final_time*/);
+			reconstruction_time/*final_time*/,
+			d_reconstruction_plate_id,
+			d_reconstruction_tree_creator);
 
 	GeometrySample geometry_sample(geometry_points);
 
@@ -890,153 +1276,113 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::create_rigid_geometry_sa
 	// There is no deformation during rigid time spans so the *instantaneous* deformation is zero.
 	// But the *accumulated* deformation is propagated across gaps between time windows.
 
-	const std::vector<DeformationInfo> &src_deformation_infos = closest_younger_sample.get_deformation_infos();
-	std::vector<DeformationInfo> &dst_deformation_infos = geometry_sample.get_deformation_infos();
+	const std::vector<DeformationStrain> &src_deformation_total_strains = closest_younger_sample.get_deformation_total_strains();
+	std::vector<DeformationStrain> &dst_deformation_total_strains = geometry_sample.get_deformation_total_strains();
 
-	const unsigned int num_points = src_deformation_infos.size();
+	const unsigned int num_points = src_deformation_total_strains.size();
 	for (unsigned int n = 0; n < num_points; ++n)
 	{
 		// Propagate *accumulated* deformations from closest younger geometry sample.
-		dst_deformation_infos[n].set_accumulated_values(src_deformation_infos[n]);
+		dst_deformation_total_strains[n] = src_deformation_total_strains[n];
 	}
 
 	return geometry_sample;
 }
 
 
-void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::rigid_reconstruct(
-		std::vector<GPlatesMaths::PointOnSphere> &rotated_geometry_points,
-		const std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &reconstruction_time) const
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::interpolate_geometry_sample(
+		const double &interpolate_position,
+		const double &first_geometry_time,
+		const double &second_geometry_time,
+		const GeometrySample &first_geometry_sample,
+		const GeometrySample &second_geometry_sample)
 {
-	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+	const std::vector<GPlatesMaths::PointOnSphere> &second_geometry_points = second_geometry_sample.get_points();
+	const network_point_location_opt_seq_type &second_network_point_locations = second_geometry_sample.get_network_point_locations();
 
-	const GPlatesMaths::FiniteRotation &rotation =
-			reconstruction_tree->get_composed_absolute_rotation(
-					d_reconstruction_plate_id).first;
+	// Interpolate the points.
+	std::vector<GPlatesMaths::PointOnSphere> interpolated_points;
+	interpolate_geometry_points(
+			interpolated_points,
+			second_geometry_points/*young_geometry_points*/,
+			second_network_point_locations/*young_network_point_locations*/,
+			second_geometry_time/*young_time*/,
+			// Deforming backwards in time so invert interpolation factor...
+			(1.0 - interpolate_position) * (first_geometry_time - second_geometry_time)/*interpolate_time_increment*/,
+			d_reconstruction_plate_id,
+			d_reconstruction_tree_creator);
 
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_iter = geometry_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_end = geometry_points.end();
-	rotated_geometry_points.reserve(geometry_points.size());
-	for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter)
-	{
-		rotated_geometry_points.push_back(
-				GPlatesMaths::PointOnSphere(
-						rotation * geometry_points_iter->position_vector()));
-	}
-}
-
-
-void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::rigid_reconstruct(
-		std::vector<GPlatesMaths::PointOnSphere> &rotated_geometry_points,
-		const std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &initial_time,
-		const double &final_time) const
-{
-	const ReconstructionTree::non_null_ptr_to_const_type initial_reconstruction_tree =
-			reconstruction_tree_creator.get_reconstruction_tree(initial_time);
-	const ReconstructionTree::non_null_ptr_to_const_type final_reconstruction_tree =
-			reconstruction_tree_creator.get_reconstruction_tree(final_time);
-
-	const GPlatesMaths::FiniteRotation &present_day_to_initial_rotation =
-			initial_reconstruction_tree->get_composed_absolute_rotation(
-					d_reconstruction_plate_id).first;
-	const GPlatesMaths::FiniteRotation &present_day_to_final_rotation =
-			final_reconstruction_tree->get_composed_absolute_rotation(
-					d_reconstruction_plate_id).first;
-
-	const GPlatesMaths::FiniteRotation initial_to_final_rotation =
-			GPlatesMaths::compose(
-					present_day_to_final_rotation,
-					GPlatesMaths::get_reverse(present_day_to_initial_rotation));
-
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_iter = geometry_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator geometry_points_end = geometry_points.end();
-	rotated_geometry_points.reserve(geometry_points.size());
-	for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter)
-	{
-		rotated_geometry_points.push_back(
-				GPlatesMaths::PointOnSphere(
-						initial_to_final_rotation * geometry_points_iter->position_vector()));
-	}
-}
-
-
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::create_geometry_on_sphere(
-		const std::vector<GPlatesMaths::PointOnSphere> &geometry_points) const
-{
-	// Create a GeometryOnSphere from the geometry points.
-	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity geometry_validity;
-	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-			geometry_on_sphere = GPlatesUtils::create_geometry_on_sphere(
-					d_geometry_type,
-					geometry_points,
-					geometry_validity);
-
-	// It's possible that the geometry no longer satisfies geometry on sphere construction validity
-	// (eg, has no arc segments with antipodal end points) although it's *very* unlikely this will
-	// happen since the number of points doesn't change (ie, should not fail due to having less
-	// than three points for a polygon).
-	// If it fails because of great circle arc antipodal end points then log a console warning message.
-	if (!geometry_on_sphere)
-	{
-		if (geometry_validity == GPlatesUtils::GeometryConstruction::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS)
-		{
-			qWarning() << "GeometryDeformation: Deformed polyline/polygon has antipodal end points "
-				"on one or more of its edges (arcs).";
-		}
-	}
-
-	// FIXME: Find a way to recover from this.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geometry_on_sphere,
+	const std::vector<DeformationStrain> &first_deformation_strain_rates = first_geometry_sample.get_deformation_strain_rates();
+	const std::vector<DeformationStrain> &second_deformation_strain_rates = second_geometry_sample.get_deformation_strain_rates();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			first_deformation_strain_rates.size() == second_deformation_strain_rates.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	return geometry_on_sphere.get();
+	const std::vector<DeformationStrain> &first_deformation_total_strains = first_geometry_sample.get_deformation_total_strains();
+	const std::vector<DeformationStrain> &second_deformation_total_strains = second_geometry_sample.get_deformation_total_strains();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			first_deformation_total_strains.size() == second_deformation_total_strains.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_points = first_deformation_strain_rates.size();
+
+	// Interpolate the strain rates.
+	std::vector<DeformationStrain> interpolated_deformation_strain_rates;
+	std::vector<DeformationStrain> interpolated_deformation_total_strains;
+	interpolated_deformation_strain_rates.reserve(num_points);
+	interpolated_deformation_total_strains.reserve(num_points);
+	for (unsigned int n = 0; n < num_points; ++n)
+	{
+		// Interpolate the deformation strain rates and total strains.
+		interpolated_deformation_strain_rates.push_back(
+				(1 - interpolate_position) * first_deformation_strain_rates[n] +
+					interpolate_position * second_deformation_strain_rates[n]);
+		interpolated_deformation_total_strains.push_back(
+				(1 - interpolate_position) * first_deformation_total_strains[n] +
+					interpolate_position * second_deformation_total_strains[n]);
+	}
+
+	return GeometrySample(
+			interpolated_points,
+			interpolated_deformation_strain_rates,
+			interpolated_deformation_total_strains,
+			// Use the network point locations of younger sample
+			// (it's what is used to deform from younger to older time)...
+			second_network_point_locations);
 }
 
 
 void
-GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample::calc_instantaneous_deformation_information() const
+GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample::calc_deformation_strain_rates() const
 {
-	d_have_initialised_instantaneous_deformation_information = true;
+	d_have_initialised_deformation_strain_rates = true;
 
-	// Return early if none of the geometry points are inside deforming regions.
-	if (!d_delaunay_faces)
-	{
-		return;
-	}
+	const unsigned int num_points = d_deformation_strain_rates.size();
 
-	// Iterate over the delaunay faces and calculate instantaneous deformation information.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_deformation_infos.size() == d_delaunay_faces->size(),
-			GPLATES_ASSERTION_SOURCE);
-
-	const unsigned int num_points = d_deformation_infos.size();
-	const delaunay_face_opt_seq_type &delaunay_faces = d_delaunay_faces.get();
-
+	// Iterate over the network point locations and calculate instantaneous deformation information.
 	for (unsigned int point_index = 0; point_index < num_points; ++point_index)
 	{
-		DeformationInfo &point_deformation_info = d_deformation_infos[point_index];
+		const network_point_location_opt_type &network_point_location_opt = d_network_point_locations[point_index];
 
-		// If the current geometry point is inside a deforming region then copy the deformation info
-		// from the delaunay face it lies within.
-		if (delaunay_faces[point_index])
+		// If the current geometry point is inside a deforming region then copy the deformation strain rates
+		// from the delaunay face it lies within (if we're not smoothing strain rates), otherwise
+		// calculate the smoothed deformation at the current geometry point (this is all handled
+		// internally by 'ResolvedTriangulation::Network::calculate_deformation()'.
+		if (network_point_location_opt)
 		{
-			const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &face_deformation_info =
-					delaunay_faces[point_index].get()->get_deformation_info();
-					
-			point_deformation_info.dilitation = face_deformation_info.dilitation;
-			point_deformation_info.sph_dilitation = face_deformation_info.sph_dilitation;
-			point_deformation_info.SR22 = face_deformation_info.SR22;
-			point_deformation_info.SR33 = face_deformation_info.SR33;
-			point_deformation_info.SR23 = face_deformation_info.SR23;
+			const GPlatesMaths::PointOnSphere &point = d_points[point_index];
+			const ResolvedTriangulation::Network::point_location_type &network_point_location = network_point_location_opt->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location_opt->second;
+
+			boost::optional<ResolvedTriangulation::DeformationInfo> face_deformation_info =
+					resolved_network->get_triangulation_network().calculate_deformation(point, network_point_location);
+			if (face_deformation_info)
+			{
+				// Set the instantaneous strain rate.
+				// The accumulated strain will subsequently depend on the instantaneous strain rate.
+				d_deformation_strain_rates[point_index] = face_deformation_info->get_strain_rate();
+			}
 		}
 	}
 }

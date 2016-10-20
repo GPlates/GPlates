@@ -71,9 +71,6 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 	const GPlatesMaths::FiniteRotation &finite_rotation =
 			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
 
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
-
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
 	get_present_day_feature_geometries(present_day_geometries);
@@ -126,10 +123,11 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 			const GPlatesMaths::Vector3D vector_xyz =
 					PlateVelocityUtils::calculate_velocity_vector(
 							*domain_iter,
+							reconstruction_plate_id,
 							context.reconstruction_tree_creator,
-							time_range.second/*young*/,
-							time_range.first/*old*/,
-							reconstruction_plate_id);
+							reconstruction_time,
+							velocity_delta_time,
+							velocity_delta_time_type);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

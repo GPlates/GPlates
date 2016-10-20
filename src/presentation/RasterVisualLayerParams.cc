@@ -33,7 +33,7 @@
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerParams.h"
 
-#include "gui/DefaultColourPalettes.h"
+#include "gui/BuiltinColourPalettes.h"
 
 #include "maths/MathsUtils.h"
 
@@ -44,7 +44,7 @@ GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
 	d_colour_palette_parameters_initialised_from_raster(false),
 	d_colour_palette_parameters(
 			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::DefaultColourPalettes::create_scalar_colour_palette())),
+					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette())),
 	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN),
 	d_opacity(1.0),
 	d_intensity(1.0),

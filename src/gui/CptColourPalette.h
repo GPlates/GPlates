@@ -813,7 +813,7 @@ namespace GPlatesGui
 					// ColourSlice::can_handle() either - this should still create airtight lookups
 					// where values don't slip through the cracks (but is more efficient than epsilon
 					// comparison - particularly when looking up millions of raster pixels)...
-					value <= d_entries.front().lower_value().dval();
+					value.dval() <= d_entries.front().lower_value().dval();
 		}
 
 		virtual
@@ -827,7 +827,7 @@ namespace GPlatesGui
 					// ColourSlice::can_handle() either - this should still create airtight lookups
 					// where values don't slip through the cracks (but is more efficient than epsilon
 					// comparison - particularly when looking up millions of raster pixels)...
-					value >= d_entries.back().upper_value().dval();
+					value.dval() >= d_entries.back().upper_value().dval();
 		}
 
 	private:

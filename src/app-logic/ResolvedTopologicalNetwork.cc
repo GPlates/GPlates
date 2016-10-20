@@ -133,7 +133,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 			<< finite_faces_2_iter->vertex(2)->v().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
-		const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &deformation_info =
+		const ResolvedTriangulation::DeformationInfo &deformation_info =
 				finite_faces_2_iter->get_deformation_info();  // DEBUG_FILE
 
 		debug_qts << "# SR22 = " << deformation_info.SR22 << "(1/s)\n";

@@ -149,7 +149,7 @@ namespace GPlatesPresentation
 
 		//! The opacity of filled primitives in the range [0,1].
 		double d_fill_opacity;
-		//! The intensity of the raster in the range [0,1].
+		//! The intensity of filled primitives in the range [0,1].
 		double d_fill_intensity;
 	};
 }

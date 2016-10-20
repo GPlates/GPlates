@@ -29,6 +29,7 @@
 #include <cmath>
 #include <deque>
 #include <list>
+#include <utility>
 #include <vector>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
@@ -149,6 +150,14 @@ namespace GPlatesAppLogic
 			}
 
 
+			//! Returns the time period of this time range (from begin time to end time).
+			double
+			get_time_period() const
+			{
+				return d_begin_time - d_end_time;
+			}
+
+
 			/**
 			 * Returns the time associated with the specified time slot.
 			 *
@@ -156,7 +165,10 @@ namespace GPlatesAppLogic
 			 */
 			double
 			get_time(
-					unsigned int time_slot) const;
+					unsigned int time_slot) const
+			{
+				return d_begin_time - time_slot * d_time_increment;
+			}
 
 
 			/**
@@ -175,6 +187,27 @@ namespace GPlatesAppLogic
 			boost::optional<unsigned int>
 			get_nearest_time_slot(
 					const double &time) const;
+
+
+			/**
+			 * Returns the two time slots that bound the specified time (if any).
+			 *
+			 * Also stores the interpolate position in range [0,1) in @a interpolate_position such
+			 * that 0.0 represents the first time slot (the one closest to the begin time) and
+			 * 1.0 represents the second time slot (the one closest to the end time).
+			 *
+			 * Note that if @a time falls on a time slot (with an epsilon threshold) then the first and second
+			 * time slots will be equal and @a interpolate_position will be zero (ie, no interpolation needed).
+			 * The test 'second_time_slot == first_time_slot' can be used to detect this case.
+			 * For times between time slots, the condition 'second_time_slot == first_time_slot + 1' is always true.
+			 *
+			 * Returns none if @a time is outside the time range [@a get_begin_time, @a get_end_time],
+			 * in which case @a interpolate_position is not set to any value.
+			 */
+			boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+			get_bounding_time_slots(
+					const double &time,
+					double &interpolate_position) const;
 
 		private:
 
@@ -450,6 +483,26 @@ namespace GPlatesAppLogic
 
 
 			/**
+			 * Convenience typedef for a function that interpolates two adjacent samples.
+			 *
+			 * The function takes the following arguments:
+			 * - The interpolation position between the two samples (time slots),
+			 * - The time of the first sample (in first time slot),
+			 * - The time of the second sample (in second time slot).
+			 * - The first sample (in first time slot),
+			 * - The second sample (in second time slot).
+			 */
+			typedef boost::function<
+					T (
+							const double &,
+							const double &,
+							const double &,
+							const T &,
+							const T &)>
+									interpolator_function_type;
+
+
+			/**
 			 * Create a @a TimeWindowSpan.
 			 *
 			 * The sample creator function @a sample_creator_function is only used by the
@@ -463,16 +516,23 @@ namespace GPlatesAppLogic
 			 *
 			 * Providing a present-day sample enables the sample creator function to generate
 			 * samples at times between the end of the time range and present day.
+			 *
+			 * The sample interpolator function @a interpolator_function is only used by the
+			 * @a get_or_create_sample method - it is used when @a get_or_create_sample is called
+			 * for a time that is between two adjacent, initialised time slots (ie, a time slots where
+			 * @a get_sample_in_time_slot does not return none).
+			 * This is useful for interpolating samples when the time does not align to a single time slot.
 			 */
 			static
 			non_null_ptr_type
 			create(
 					const TimeRange &time_range,
 					const sample_creator_function_type &sample_creator_function,
+					const interpolator_function_type &interpolator_function,
 					const T &present_day_sample)
 			{
 				return non_null_ptr_type(
-						new TimeWindowSpan(time_range, sample_creator_function, present_day_sample));
+						new TimeWindowSpan(time_range, sample_creator_function, interpolator_function, present_day_sample));
 			}
 
 
@@ -543,9 +603,12 @@ namespace GPlatesAppLogic
 			 * creates a sample if the specified time does not correspond to an initialised
 			 * time slot (ie, a time slot where @a get_sample_in_time_slot returns none).
 			 *
+			 * If @the specified time is between two adjacent, initialised time slots then they will be interpolated.
+			 *
 			 * The specified time can be any non-negative time (including present day 0Ma).
 			 *
-			 * This is the only method that uses the sample creator function @a sample_creator_function_type.
+			 * This is the only method that uses the sample creator function @a sample_creator_function_type
+			 * and the interpolator function @a interpolator_function_type.
 			 */
 			T
 			get_or_create_sample(
@@ -621,6 +684,7 @@ namespace GPlatesAppLogic
 
 			TimeRange d_time_range;
 			sample_creator_function_type d_sample_creator_function;
+			interpolator_function_type d_interpolator_function;
 			T d_present_day_sample;
 			time_window_seq_type d_time_windows;
 
@@ -629,9 +693,11 @@ namespace GPlatesAppLogic
 			TimeWindowSpan(
 					const TimeRange &time_range,
 					const sample_creator_function_type &sample_creator_function,
+					const interpolator_function_type &interpolator_function,
 					const T &present_day_sample) :
 				d_time_range(time_range),
 				d_sample_creator_function(sample_creator_function),
+				d_interpolator_function(interpolator_function),
 				d_present_day_sample(present_day_sample)
 			{  }
 		};
@@ -874,8 +940,11 @@ namespace GPlatesAppLogic
 		TimeWindowSpan<T>::get_or_create_sample(
 				const double &time) const
 		{
-			boost::optional<unsigned int> time_slot = d_time_range.get_nearest_time_slot(time);
-			if (!time_slot)
+			// Determine the two nearest time slots bounding the time (if any).
+			double interpolate_time_slots;
+			const boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+					time_slots_opt = d_time_range.get_bounding_time_slots(time, interpolate_time_slots);
+			if (!time_slots_opt)
 			{
 				// Since the time does not satisfy:
 				//
@@ -913,6 +982,8 @@ namespace GPlatesAppLogic
 				}
 			}
 
+			const std::pair<unsigned int, unsigned int> &time_slots = time_slots_opt.get();
+
 			// Iterate through the time windows.
 			// Note that the time windows are ordered moving forward in time.
 			// In other words pretty much everything is going forward in time from earliest (or least recent)
@@ -924,13 +995,31 @@ namespace GPlatesAppLogic
 				const TimeWindow &time_window = *time_windows_iter;
 
 				// If we've found the right time window....
-				if (time_slot.get() <= time_window.end_time_slot)
+				if (time_slots.second/*end*/ <= time_window.end_time_slot)
 				{
-					if (time_slot.get() >= time_window.begin_time_slot)
+					if (time_slots.first/*begin*/ >= time_window.begin_time_slot)
 					{
-						return time_window.sample_time_span[time_slot.get() - time_window.begin_time_slot];
+						// The interval between the two time slots bounding the 'time' overlap with
+						// the current time window, so we know that 'time' (and its two time slots) are
+						// within the current time window.
+
+						// If the two time slots are equal then 'time' coincides with a time slot.
+						if (time_slots.first == time_slots.second)
+						{
+							return time_window.sample_time_span[time_slots.first - time_window.begin_time_slot];
+						}
+
+						// Otherwise we need to interpolate the two time slots.
+						return d_interpolator_function(
+								interpolate_time_slots,
+								d_time_range.get_time(time_slots.first),
+								d_time_range.get_time(time_slots.second),
+								time_window.sample_time_span[time_slots.first - time_window.begin_time_slot],
+								time_window.sample_time_span[time_slots.second - time_window.begin_time_slot]);
 					}
 
+					// The 'time' is outside all time windows.
+					// The first initialised time slot after the requested time is the beginning of the current time window.
 					// Create a sample using the begin sample of the current time window.
 					return d_sample_creator_function(
 							time,
@@ -939,7 +1028,8 @@ namespace GPlatesAppLogic
 				}
 			}
 
-			// There are no initialised time slots after the requested time slot.
+			// The 'time' is outside all time windows.
+			// There are no initialised time slots after the requested time.
 			// So create a sample using the present-day sample.
 			return d_sample_creator_function(time, 0, d_present_day_sample);
 		}

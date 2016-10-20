@@ -82,34 +82,57 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_triangulation_clicked();
+		handle_strain_rate_smoothing_button(
+				bool checked);
 
 		void
-		handle_constrained_clicked();
+		handle_fill_triangulation_clicked();
 
 		void
-		handle_mesh_clicked();
-
-		void
-		handle_total_triangulation_clicked();
-
-		void
-		handle_color_index_combobox_activated();
-
-		void
-		handle_fill_clicked();
+		handle_fill_rigid_blocks_clicked();
 
 		void
 		handle_segment_velocity_clicked();
 
 		void
-		handle_update_button_clicked();
+		handle_colour_mode_button(
+				bool checked);
 
 		void
-		handle_select_palette_filename_button_clicked();
+		handle_min_abs_dilatation_spinbox_changed(
+				double min_abs_dilatation);
 
 		void
-		handle_use_default_palette_button_clicked();
+		handle_max_abs_dilatation_spinbox_changed(
+				double max_abs_dilatation);
+
+		void
+		handle_select_dilatation_palette_filename_button_clicked();
+
+		void
+		handle_use_default_dilatation_palette_button_clicked();
+
+		void
+		handle_min_abs_second_invariant_spinbox_changed(
+				double min_abs_second_invariant);
+
+		void
+		handle_max_abs_second_invariant_spinbox_changed(
+				double max_abs_second_invariant);
+
+		void
+		handle_select_second_invariant_palette_filename_button_clicked();
+
+		void
+		handle_use_default_second_invariant_palette_button_clicked();
+
+		void
+		handle_fill_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_fill_intensity_spinbox_changed(
+				double value);
 
 		void
 		open_draw_style_setting_dlg();
@@ -125,17 +148,26 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
-		DrawStyleDialog		   *d_draw_style_dialog_ptr;
+		DrawStyleDialog *d_draw_style_dialog_ptr;
 
-		FriendlyLineEdit *d_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
 
-		ColourScaleWidget *d_colour_scale_widget;
+		FriendlyLineEdit *d_dilatation_palette_filename_lineedit;
+		ColourScaleWidget *d_dilatation_colour_scale_widget;
+
+		FriendlyLineEdit *d_second_invariant_palette_filename_lineedit;
+		ColourScaleWidget *d_second_invariant_colour_scale_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+
+		//! Used to scale min/max dilatation values into their spinboxes.
+		static const double DILATATION_SCALE;
+		//! Used to scale min/max second invariant values into their spinboxes.
+		static const double SECOND_INVARIANT_SCALE;
 	};
 }
 

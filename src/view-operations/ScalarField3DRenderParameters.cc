@@ -29,7 +29,7 @@
 
 #include "gui/ColourPaletteRangeRemapper.h"
 #include "gui/ColourPaletteUtils.h"
-#include "gui/DefaultColourPalettes.h"
+#include "gui/BuiltinColourPalettes.h"
 
 #include "scribe/Scribe.h"
 #include "scribe/TranscribeEnumProtocol.h"
@@ -42,10 +42,10 @@ GPlatesViewOperations::ScalarField3DRenderParameters::ScalarField3DRenderParamet
 	d_cross_section_colour_mode(CROSS_SECTION_COLOUR_MODE_SCALAR),
 	d_scalar_colour_palette_parameters(
 			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::DefaultColourPalettes::create_scalar_colour_palette())),
+					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette())),
 	d_gradient_colour_palette_parameters(
 			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::DefaultColourPalettes::create_gradient_colour_palette()))
+					GPlatesGui::BuiltinColourPalettes::create_gradient_colour_palette()))
 {
 }
 

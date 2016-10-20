@@ -65,6 +65,9 @@ namespace GPlatesAppLogic
 		}
 
 
+		~TopologyGeometryResolverLayerTask();
+
+
 		virtual
 		LayerTaskType::Type
 		get_layer_type() const

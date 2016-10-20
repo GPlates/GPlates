@@ -56,6 +56,9 @@ set(srcs
     ChangePropertyWidget.cc
     ChangePropertyWidget.h
     ChangePropertyWidgetUi.ui
+    ChooseBuiltinPaletteDialog.cc
+    ChooseBuiltinPaletteDialog.h
+    ChooseBuiltinPaletteDialogUi.ui
     ChooseColourButton.cc
     ChooseColourButton.h
     ChooseFeatureCollectionDialog.cc
@@ -73,6 +76,8 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
+    ColourScaleButton.cc
+    ColourScaleButton.h
     ColourScaleWidget.cc
     ColourScaleWidget.h
     ConfigureCanvasToolGeometryRenderParametersDialog.cc
@@ -237,6 +242,9 @@ set(srcs
     ExportResolvedTopologyOptionsWidgetUi.ui
     ExportRotationOptionsWidget.h
     ExportRotationOptionsWidgetUi.ui
+    ExportScalarCoverageOptionsWidget.cc
+    ExportScalarCoverageOptionsWidget.h
+    ExportScalarCoverageOptionsWidgetUi.ui
     ExportStageRotationOnlyOptionsWidget.h
     ExportStageRotationOnlyOptionsWidgetUi.ui
     ExportStageRotationOptionsWidget.h
@@ -296,15 +304,9 @@ set(srcs
     HellingerDialog.cc
     HellingerDialog.h
     HellingerDialogUi.ui
-    HellingerPointDialog.cc
-    HellingerPointDialog.h
-    HellingerPointDialogUi.ui
     HellingerFitWidget.cc
     HellingerFitWidget.h
     HellingerFitWidgetUi.ui
-    HellingerSegmentDialog.cc
-    HellingerSegmentDialog.h
-    HellingerSegmentDialogUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewSegmentWarning.cc
@@ -313,6 +315,12 @@ set(srcs
     HellingerPickWidget.cc
     HellingerPickWidget.h
     HellingerPickWidgetUi.ui
+    HellingerPointDialog.cc
+    HellingerPointDialog.h
+    HellingerPointDialogUi.ui
+    HellingerSegmentDialog.cc
+    HellingerSegmentDialog.h
+    HellingerSegmentDialogUi.ui
     HellingerStatsDialog.cc
     HellingerStatsDialog.h
     HellingerStatsDialogUi.ui

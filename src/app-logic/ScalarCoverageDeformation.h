@@ -29,6 +29,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "DeformationStrain.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ScalarCoverageEvolution.h"
 #include "TimeSpanUtils.h"
 
@@ -125,8 +127,15 @@ namespace GPlatesAppLogic
 					const scalar_value_seq_type &closest_younger_sample);
 
 			static
-			boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &>
-			get_deformation_infos(
+			scalar_value_seq_type
+			interpolate_scalar_values_sample(
+					const double &interpolate_position,
+					const scalar_value_seq_type &first_sample,
+					const scalar_value_seq_type &second_sample);
+
+			static
+			boost::optional<const std::vector<DeformationStrain> &>
+			get_deformation_strain_rates(
 					const domain_reconstruction_time_span_type &domain_reconstruction_time_span,
 					unsigned int time_slot);
 

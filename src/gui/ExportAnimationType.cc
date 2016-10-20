@@ -51,6 +51,7 @@ namespace GPlatesGui
 				export_type_name_map[IMAGE]                       =QObject::tr("Image (screenshot)");
 				export_type_name_map[COLOUR_RASTER]               =QObject::tr("Colour Raster");
 				export_type_name_map[NUMERICAL_RASTER]            =QObject::tr("Numerical Raster");
+				export_type_name_map[SCALAR_COVERAGES]            =QObject::tr("Scalar Coverages");
 				export_type_name_map[VELOCITIES]                  =QObject::tr("Velocities");
 				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
@@ -109,6 +110,11 @@ namespace GPlatesGui
 							"<li>NaN no-data value stored in pixels not covered by raster data.</li>"
 							"<li>Geo-referenced region stored in raster.</li>"
 							"</ul>"
+							"</body></html>");
+				export_type_description_map[SCALAR_COVERAGES] =
+						QObject::tr(
+							"<html><body>"
+							"<p>Export for reconstructed scalar coverages (geometries with per-point scalar values).</p>"
 							"</body></html>");
 				export_type_description_map[VELOCITIES] =
 						QObject::tr(

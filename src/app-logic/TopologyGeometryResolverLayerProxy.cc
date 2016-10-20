@@ -93,8 +93,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 	// If we have no topological features or there are no topological section layers then we
 	// can't get any topological sections and we can't resolve any topological close plate polygons.
 	if (d_current_topological_geometry_feature_collections.empty() ||
-		(d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies().empty() &&
-			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies().empty()))
+		(d_current_reconstructed_geometry_topological_sections_layer_proxies.empty() &&
+			d_current_resolved_line_topological_sections_layer_proxies.empty()))
 	{
 		// There will be no reconstructed/resolved geometries for this handle.
 		return ReconstructHandle::get_next_reconstruct_handle();
@@ -129,7 +129,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_geometry_topological_sections;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometry_topological_sections_layer_proxy,
-				d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+				d_current_reconstructed_geometry_topological_sections_layer_proxies)
 		{
 			// Get the potential topological section RFGs.
 			const ReconstructHandle::type reconstruct_handle =
@@ -148,7 +148,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 		std::vector<ResolvedTopologicalLine::non_null_ptr_type> resolved_line_topological_sections;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
-				d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
+				d_current_resolved_line_topological_sections_layer_proxies)
 		{
 			// Get the potential topological section RTGs.
 			const ReconstructHandle::type reconstruct_handle =
@@ -191,7 +191,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 	// Note that we don't check the *resolved line* topological section layers because resolved lines
 	// cannot be used as topological sections for other resolved lines.
 	if (d_current_topological_geometry_feature_collections.empty() ||
-		d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies().empty())
+		d_current_reconstructed_geometry_topological_sections_layer_proxies.empty())
 	{
 		// There will be no reconstructed/resolved geometries for this handle.
 		return ReconstructHandle::get_next_reconstruct_handle();
@@ -230,7 +230,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_geometry_topological_sections;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometry_topological_sections_layer_proxy,
-				d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+				d_current_reconstructed_geometry_topological_sections_layer_proxies)
 		{
 			// Get the potential topological section RFGs.
 			const ReconstructHandle::type reconstruct_handle =
@@ -268,8 +268,47 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 }
 
 
+void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+		bool only_topological_features) const
+{
+	// Iterate over the current feature collections.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+			d_current_topological_geometry_feature_collections.begin();
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+			d_current_topological_geometry_feature_collections.end();
+	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+	{
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+		if (feature_collection.is_valid())
+		{
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+				if (!feature.is_valid())
+				{
+					continue;
+				}
+
+				if (only_topological_features &&
+					!TopologyUtils::is_topological_geometry_feature(feature))
+				{
+					continue;
+				}
+
+				features.push_back(feature);
+			}
+		}
+	}
+}
+
+
 GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
-GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_reconstruction_layer_proxy()
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_reconstruction_layer_proxy()
 {
 	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
 }
@@ -332,53 +371,55 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::set_current_reconstruction_
 
 
 void
-GPlatesAppLogic::TopologyGeometryResolverLayerProxy::set_current_reconstructed_geometry_topological_sections_layer_proxies(
-		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &reconstructed_geometry_topological_sections_layer_proxies)
-{
-	// If the topological sections layer proxies are the same ones as last time then no invalidation necessary.
-	if (!d_current_reconstructed_geometry_topological_sections_layer_proxies.set_input_layer_proxies(
-		reconstructed_geometry_topological_sections_layer_proxies))
-	{
-		return;
-	}
-
-	// All resolved topological geometries (boundaries and lines) are now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate(); // Lines or boundaries are invalid.
-	d_resolved_lines_subject_token.invalidate(); // Lines are invalid.
-}
-
-
-void
-GPlatesAppLogic::TopologyGeometryResolverLayerProxy::set_current_resolved_line_topological_sections_layer_proxies(
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::set_current_topological_sections_layer_proxies(
+		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &reconstructed_geometry_topological_sections_layer_proxies,
 		const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &resolved_line_topological_sections_layer_proxies)
 {
-	// If the topological sections layer proxies are the same ones as last time then no invalidation necessary.
-	//
+	if (d_current_reconstructed_geometry_topological_sections_layer_proxies.set_input_layer_proxies(
+			reconstructed_geometry_topological_sections_layer_proxies))
+	{
+		// The topological section layers are different than last time.
+		// If the *dependent* layers are different then cache invalidation is necessary.
+		// Dependent means the currently cached resolved geometries use topological sections from the specified layers.
+		if (d_dependent_topological_sections.set_topological_section_layers(
+				reconstructed_geometry_topological_sections_layer_proxies))
+		{
+			// All resolved topological geometries (boundaries and lines) are now invalid.
+			reset_cache();
+
+			// Polling observers need to update themselves with respect to us.
+			d_subject_token.invalidate(); // Lines or boundaries are invalid.
+			d_resolved_lines_subject_token.invalidate(); // Lines are invalid.
+		}
+	}
+
 	// Note that we check using 'get_resolved_lines_subject_token()' instead of 'get_subject_token()'
 	// because the latter checks for updates to both resolved *lines and boundaries* and we only need
 	// to check resolved *lines*. This is because resolved lines cannot reference other resolved lines
 	// (like resolved boundaries can).
 	// This also avoids an infinite recursion during the checking of input proxies.
-	if (!d_current_resolved_line_topological_sections_layer_proxies.set_input_layer_proxies(
-		resolved_line_topological_sections_layer_proxies,
-		&TopologyGeometryResolverLayerProxy::get_resolved_lines_subject_token))
+	if (d_current_resolved_line_topological_sections_layer_proxies.set_input_layer_proxies(
+			resolved_line_topological_sections_layer_proxies,
+			&TopologyGeometryResolverLayerProxy::get_resolved_lines_subject_token))
 	{
-		return;
+		// The topological section layers are different than last time.
+		// If the *dependent* layers are different then cache invalidation is necessary.
+		// Dependent means the currently cached resolved networks (and time spans) use topological sections from the specified layers.
+		if (d_dependent_topological_sections.set_topological_section_layers(
+				resolved_line_topological_sections_layer_proxies))
+		{
+			// All resolved topological boundaries are now invalid.
+			//
+			// The resolved lines are not invalid because they can't depend on other resolved lines
+			// like the boundaries can.
+			reset_cache(false/*invalidate_resolved_lines*/);
+
+			// Polling observers need to update themselves with respect to us.
+			d_subject_token.invalidate(); // Boundaries are invalid.
+			// Note that we don't invalidate 'd_resolved_lines_subject_token' since the resolved lines
+			// can't depend on other resolved lines like the boundaries can.
+		}
 	}
-
-	// All resolved topological geometries (boundaries and lines) are now invalid.
-	//
-	// The resolved lines are not invalid because they can't depend on other resolved lines
-	// like the boundaries can.
-	reset_cache(false/*invalidate_resolved_lines*/);
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate(); // Boundaries are invalid.
-	// Note that we don't invalidate 'd_resolved_lines_subject_token' since the resolved lines
-	// can't depend on other resolved lines like the boundaries can.
 }
 
 
@@ -387,6 +428,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::add_topological_geometry_fe
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	d_current_topological_geometry_feature_collections.push_back(feature_collection);
+
+	// Set the feature IDs of topological sections referenced by our resolved geometries for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_geometry_feature_collections);
 
 	// The resolved topological geometries are now invalid.
 	reset_cache();
@@ -408,6 +453,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::remove_topological_geometry
 					d_current_topological_geometry_feature_collections.end(),
 					feature_collection));
 
+	// Set the feature IDs of topological sections referenced by our resolved geometries for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_geometry_feature_collections);
+
 	// The resolved topological geometries are now invalid.
 	reset_cache();
 
@@ -421,6 +470,10 @@ void
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::modified_topological_geometry_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
+	// Set the feature IDs of topological sections referenced by our resolved geometries for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_geometry_feature_collections);
+
 	// The resolved topological geometries are now invalid.
 	reset_cache();
 
@@ -445,39 +498,55 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::reset_cache(
 }
 
 
-template <class InputLayerProxyWrapperType>
-void
-GPlatesAppLogic::TopologyGeometryResolverLayerProxy::check_input_layer_proxy(
-		InputLayerProxyWrapperType &input_layer_proxy_wrapper)
-{
-	// See if the input layer proxy has changed.
-	if (!input_layer_proxy_wrapper.is_up_to_date())
-	{
-		// The resolved geometries are now invalid.
-		reset_cache();
-
-		// We're now up-to-date with respect to the input layer proxy.
-		input_layer_proxy_wrapper.set_up_to_date();
-
-		// Polling observers need to update themselves with respect to us.
-		d_subject_token.invalidate();
-	}
-}
-
-
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::check_input_layer_proxies(
 		bool check_resolved_line_topological_sections)
 {
 	// See if the reconstruction layer proxy has changed.
-	check_input_layer_proxy(d_current_reconstruction_layer_proxy);
+	if (!d_current_reconstruction_layer_proxy.is_up_to_date())
+	{
+		// The resolved geometries are now invalid.
+		reset_cache();
+
+		// We're now up-to-date with respect to the input layer proxy.
+		d_current_reconstruction_layer_proxy.set_up_to_date();
+
+		// Polling observers need to update themselves with respect to us.
+		d_subject_token.invalidate();
+		d_resolved_lines_subject_token.invalidate(); // Lines are invalid.
+	}
 
 	// See if any reconstructed geometry topological section layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &rfg_topological_sections_layer_proxy,
-			d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+			d_current_reconstructed_geometry_topological_sections_layer_proxies)
 	{
-		check_input_layer_proxy(rfg_topological_sections_layer_proxy);
+		if (rfg_topological_sections_layer_proxy.is_up_to_date())
+		{
+			continue;
+		}
+
+		// If any cached resolved geometries depend on these topological sections then we need to invalidate our cache.
+		//
+		// Typically our dependency layers include all reconstruct/resolved-geometry layers
+		// due to the usual global search for topological section features. However this means
+		// layers that don't contribute topological sections will trigger unnecessary cache flushes
+		// which is especially noticeable in the case of rebuilding network time spans that in turn
+		// depend on our resolved topologies.
+		// To avoid this we check if any topological sections from a layer can actually contribute.
+		if (d_dependent_topological_sections.update_topological_section_layer(
+				rfg_topological_sections_layer_proxy.get_input_layer_proxy()))
+		{
+			// The resolved geometries are now invalid.
+			reset_cache();
+
+			// Polling observers need to update themselves with respect to us.
+			d_subject_token.invalidate();
+			d_resolved_lines_subject_token.invalidate(); // Lines are invalid.
+		}
+
+		// We're now up-to-date with respect to the input layer proxy.
+		rfg_topological_sections_layer_proxy.set_up_to_date();
 	}
 
 	// See if any resolved line topological section layer proxies have changed.
@@ -488,7 +557,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::check_input_layer_proxies(
 	{
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &rtl_topological_sections_layer_proxy,
-				d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
+				d_current_resolved_line_topological_sections_layer_proxies)
 		{
 			// NOTE: One of these layer proxies is actually 'this' layer proxy since
 			// topological boundaries can reference topological lines from the same layer.
@@ -498,7 +567,33 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::check_input_layer_proxies(
 				continue;
 			}
 
-			check_input_layer_proxy(rtl_topological_sections_layer_proxy);
+			if (rtl_topological_sections_layer_proxy.is_up_to_date())
+			{
+				continue;
+			}
+
+			// If any cached resolved boundaries depend on these topological sections then we need to invalidate our cache.
+			//
+			// Typically our dependency layers include all reconstruct/resolved-geometry layers
+			// due to the usual global search for topological section features. However this means
+			// layers that don't contribute topological sections will trigger unnecessary cache flushes
+			// which is especially noticeable in the case of rebuilding network time spans that in turn
+			// depend on our resolved topologies.
+			// To avoid this we check if any topological sections from a layer can actually contribute.
+			if (d_dependent_topological_sections.update_topological_section_layer(
+					rtl_topological_sections_layer_proxy.get_input_layer_proxy()))
+			{
+				// The resolved geometries are now invalid.
+				reset_cache();
+
+				// Polling observers need to update themselves with respect to us.
+				d_subject_token.invalidate();
+				// Note that we don't invalidate 'd_resolved_lines_subject_token' since the resolved lines
+				// can't depend on other resolved lines like the boundaries can.
+			}
+
+			// We're now up-to-date with respect to the input layer proxy.
+			rtl_topological_sections_layer_proxy.set_up_to_date();
 		}
 	}
 }

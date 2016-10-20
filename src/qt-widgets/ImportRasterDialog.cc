@@ -845,7 +845,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split("-");
+		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
 
 		if (tokens.count() >= 2)
 		{

@@ -401,7 +401,11 @@ GPlatesGui::Dialogs::draw_style_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(
+				view_state(),
+				// Parent on the visual layers dialog instead of the main window to help
+				// minimise blocking of the main window...
+				&visual_layers_dialog());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);

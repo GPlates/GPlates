@@ -2589,9 +2589,9 @@
 		</FeatureClass>
 		
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
-			<!-- FIXME: This should really be part of the 'gpml:TopologicalNetwork' property type (not a feature type). -->
+			<!-- NOTE: This is no longer needed, but retained for old data that might be loaded. Now any interior of a 'gpml:TopologicalNetwork' that's a polygon is a rigid block. -->
 			<Name>gpml:PolygonCentroidPoint</Name>
-			<Description>The centroid of a polygon used when meshing a deforming region that contains non-deforming interior blocks.</Description>
+			<Description>To be deprecated. Previously used to mark interior rigid blocks of topological networks. Now all polygon interiors automatically become rigid blocks.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 			<Property>gpml:position</Property>

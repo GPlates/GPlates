@@ -123,7 +123,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-				d_current_cross_section_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_reconstructed_geometry_layer_proxies)
 		{
 			reconstructed_geometries_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
 					reconstructed_static_geometries,
@@ -143,7 +143,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-				d_current_cross_section_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_topological_boundary_resolver_layer_proxies)
 		{
 			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometries(
 					resolved_topological_geometries,
@@ -163,7 +163,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-				d_current_cross_section_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_topological_network_resolver_layer_proxies)
 		{
 			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
 					resolved_topological_networks,
@@ -225,7 +225,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-				d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+				d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies)
 		{
 			reconstructed_geometries_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
 					reconstructed_static_geometries,
@@ -245,7 +245,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-				d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies)
 		{
 			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometries(
 					resolved_topological_geometries,
@@ -265,7 +265,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-				d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_surface_polygons_mask_topological_network_resolver_layer_proxies)
 		{
 			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
 					resolved_topological_networks,
@@ -673,7 +673,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_cross_section_input_layer_proxie
 	// See if any reconstructed geometry layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-			d_current_cross_section_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_reconstructed_geometry_layer_proxies)
 	{
 		check_cross_section_input_layer_proxy(reconstructed_geometries_layer_proxy);
 	}
@@ -681,7 +681,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_cross_section_input_layer_proxie
 	// See if any resolved boundaries layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-			d_current_cross_section_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_topological_boundary_resolver_layer_proxies)
 	{
 		check_cross_section_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 	}
@@ -689,7 +689,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_cross_section_input_layer_proxie
 	// See if the resolved networks layer proxy has changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-			d_current_cross_section_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_topological_network_resolver_layer_proxies)
 	{
 		check_cross_section_input_layer_proxy(topological_network_resolver_layer_proxy);
 	}
@@ -702,7 +702,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_surface_polygons_mask_input_laye
 	// See if any reconstructed geometry layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-			d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+			d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies)
 	{
 		check_surface_polygons_mask_input_layer_proxy(reconstructed_geometries_layer_proxy);
 	}
@@ -710,7 +710,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_surface_polygons_mask_input_laye
 	// See if any resolved boundaries layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-			d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies)
 	{
 		check_surface_polygons_mask_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 	}
@@ -718,7 +718,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_surface_polygons_mask_input_laye
 	// See if the resolved networks layer proxy has changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-			d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_surface_polygons_mask_topological_network_resolver_layer_proxies)
 	{
 		check_surface_polygons_mask_input_layer_proxy(topological_network_resolver_layer_proxy);
 	}

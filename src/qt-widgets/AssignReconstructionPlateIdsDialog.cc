@@ -27,6 +27,7 @@
 #include <vector>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QRadioButton>
@@ -39,10 +40,12 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AssignPlateIds.h"
 #include "app-logic/Layer.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionLayerProxy.h"
-#include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -101,39 +104,27 @@ namespace
 	const QString HELP_PARTITION_OPTIONS_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Specify how to partition features using the polygons</h3>"
-			"These three options determine how features are partitioned."
+			"These two options determine how features are partitioned."
 			"<h4>Copy feature properties from the polygon that most overlaps a feature:</h4>\n"
 			"<ul>\n"
 			"<li>Assign, to each feature, a single plate id corresponding to the "
 			"polygon that the feature's geometry overlaps the most.</li>\n"
-			"<li>If a feature contains multiple sub-geometries then they are treated as "
-			"one composite geometry for the purpose of this test.</li>\n"
-			"</ul>\n"
-			"<h4>Copy feature properties from the polygon that most overlaps each geometry in a feature:</h4>\n"
-			"<ul>\n"
-			"<li>Assign, to each sub-geometry of each feature, a single plate id "
-			"corresponding to the polygon that the sub-geometry overlaps the most.</li>\n"
-			"<li>This can create extra features, for example if a feature has two "
-			"sub-geometries and one overlaps plate A the most and the other "
-			"overlaps plate B the most then the original feature (with the two "
-			"geometries) will then get split into two features - one feature will contain "
-			"the first geometry (and have plate id A) and the other feature will "
-			"contain the second geometry (and have plate id B).</li>\n"
 			"</ul>\n"
 			"<h4>Partition (cookie cut) feature geometry into polygons and copy feature properties:</h4>\n"
 			"<ul>\n"
-			"<li>Partition all geometries of each feature into the polygons "
+			"<li>Partition each feature's geometry into the polygons "
 			"containing them (intersecting them as needed).</li>\n"
-			"<li>This can create extra features, for example if a feature has only one "
-			"sub-geometry but it overlaps plate A and plate B then it is partitioned "
-			"into geometry that is fully contained by plate A and likewise for plate B.  "
-			"These two partitioned geometries will now be two features since they "
-			"have different plate ids.</li>\n"
+			"<li>This can create extra features, for example if a feature's geometry overlaps "
+			"both plate A and plate B then it is partitioned into a geometry that is fully contained "
+			"by plate A and likewise for plate B.  These two partitioned geometries will now be "
+			"two features since they have different plate ids.</li>\n"
 			"</ul>\n"
+			"<p>If a feature contains multiple sub-geometries then they are treated as "
+			"one composite geometry for the purpose of this test.</p>\n"
 			"<p>If the polygons do not cover the entire surface of the globe then it is "
 			"possible for some features (or partitioned geometries) to fall outside "
 			"all polygons. In this situation the feature is not modified and will retain "
-			"its original feature properties (such as reconstruction plate id).</p>"
+			"its original non-geometry feature properties (such as reconstruction plate id).</p>"
 			"<p><em><b>VirtualGeomagneticPole</b> features are treated differently - these "
 			"features are assigned to the polygon whose boundary contains the feature's "
 			"sample site point location. For these features the above options are ignored.</em></p>"
@@ -382,12 +373,11 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 		break;
 	}
 
-	// The default reconstruction tree will be used to reverse reconstruct any partitioned
-	// geometries (if necessary).
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+	// The default reconstruction tree creator will be used to reverse reconstruct any partitioned
+	// geometries (if necessary) that .
+	GPlatesAppLogic::ReconstructionTreeCreator default_reconstruction_tree_creator =
 			d_application_state.get_current_reconstruction()
-					.get_default_reconstruction_layer_output()
-							->get_reconstruction_tree(reconstruction_time);
+					.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 
 	// Determine which feature property types to copy from partitioning polygon.
 	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type feature_property_types_to_assign;
@@ -411,7 +401,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	return GPlatesAppLogic::AssignPlateIds::create(
 			d_assign_plate_id_method,
 			partitioning_layer_proxies,
-			default_reconstruction_tree,
+			default_reconstruction_tree_creator,
+			reconstruction_time,
 			feature_property_types_to_assign,
 			d_verify_information_model,
 			d_respect_feature_time_period);
@@ -438,7 +429,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 
 	// Setup a progress dialog.
 	ProgressDialog *partition_progress_dialog = new ProgressDialog(this);
-	const QString progress_dialog_text("Partitioning features...");
+	const QString progress_dialog_text = tr("Partitioning features...");
 	GPlatesModel::container_size_type num_features_partitioned = 0;
 	// Make progress dialog modal so cannot interact with assign plate ids dialog
 	// until processing finished or cancel button pressed.
@@ -459,14 +450,31 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 			*d_application_state.get_model_interface().access_model());
 
 	// Iterate through the partitioned feature collections accepted by the user.
-	feature_collection_seq_type::const_iterator feature_collection_iter =
-			selected_partitioned_feature_collections.begin();
-	feature_collection_seq_type::const_iterator feature_collection_end =
-			selected_partitioned_feature_collections.end();
+	feature_collection_seq_type::const_iterator feature_collection_iter = selected_partitioned_feature_collections.begin();
+	feature_collection_seq_type::const_iterator feature_collection_end = selected_partitioned_feature_collections.end();
 	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
 	{
-		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-				*feature_collection_iter;
+		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = *feature_collection_iter;
+
+		// Get the reconstruct layer (if one) that reconstructs the current feature collection and use its
+		// reconstruct method context to reverse reconstruct partitioned geometries (since it might use deformation).
+		boost::optional<const GPlatesAppLogic::ReconstructMethodInterface::Context &> reconstruct_method_context_ref;
+		boost::optional<GPlatesAppLogic::ReconstructMethodInterface::Context> reconstruct_method_context_storage;
+		{
+			// If there is one (or more) layers reconstructing the feature collection then pick the first.
+			//
+			// TODO: Allow user to select which layer to use if more than one layer.
+			std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_outputs;
+			GPlatesAppLogic::LayerProxyUtils::find_reconstruct_layer_outputs_of_feature_collection(
+					reconstruct_layer_outputs,
+					feature_collection_ref,
+					d_application_state.get_reconstruct_graph());
+			if (!reconstruct_layer_outputs.empty())
+			{
+				reconstruct_method_context_storage = reconstruct_layer_outputs.front()->get_reconstruct_method_context();
+				reconstruct_method_context_ref = reconstruct_method_context_storage.get();
+			}
+		}
 
 		// Iterate over the features in the current feature collection.
 		GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection_ref->begin();
@@ -482,7 +490,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 			// Partition the feature.
 			plate_id_assigner.assign_reconstruction_plate_id(
 					feature_ref,
-					feature_collection_ref);
+					feature_collection_ref,
+					reconstruct_method_context_ref);
 
 			++num_features_partitioned;
 
@@ -635,10 +644,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_selected_feature_colle
 	feature_collection_seq_type selected_feature_collections;
 
 	// Iterate through the files accepted by the user.
-	file_state_seq_type::const_iterator file_state_iter =
-			file_state_collection.file_state_seq.begin();
-	file_state_seq_type::const_iterator file_state_end =
-			file_state_collection.file_state_seq.end();
+	file_state_seq_type::const_iterator file_state_iter = file_state_collection.file_state_seq.begin();
+	file_state_seq_type::const_iterator file_state_end = file_state_collection.file_state_seq.end();
 	for ( ; file_state_iter != file_state_end; ++file_state_iter)
 	{
 		const FileState &file_state = *file_state_iter;
@@ -771,8 +778,6 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 
 	// Listen for partition options radio button selections.
 	QObject::connect(radio_button_assign_features, SIGNAL(toggled(bool)),
-			this, SLOT(react_partition_options_radio_button(bool)));
-	QObject::connect(radio_button_assign_feature_sub_geometries, SIGNAL(toggled(bool)),
 			this, SLOT(react_partition_options_radio_button(bool)));
 	QObject::connect(radio_button_partition_features, SIGNAL(toggled(bool)),
 			this, SLOT(react_partition_options_radio_button(bool)));
@@ -1182,12 +1187,6 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_partition_options_ra
 	{
 		d_assign_plate_id_method =
 				GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE;
-	}
-
-	if (radio_button_assign_feature_sub_geometries->isChecked())
-	{
-		d_assign_plate_id_method =
-				GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE;
 	}
 
 	if (radio_button_partition_features->isChecked())

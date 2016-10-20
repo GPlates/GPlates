@@ -32,6 +32,9 @@
 #include "GeometryDeformation.h"
 #include "ReconstructionGeometryUtils.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 
 GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 		const std::vector<double> &present_day_scalar_values) :
@@ -46,6 +49,13 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 							_1,
 							_2,
 							_3),
+					// The function to interpolate scalar values...
+					boost::bind(
+							&ScalarCoverageTimeSpan::interpolate_scalar_values_sample,
+							_1,
+							// Ignore the first and second sample times (don't need them)...
+							_4,
+							_5),
 					present_day_scalar_values))
 {
 }
@@ -64,6 +74,13 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 							_1,
 							_2,
 							_3),
+					// The function to interpolate scalar values...
+					boost::bind(
+							&ScalarCoverageTimeSpan::interpolate_scalar_values_sample,
+							_1,
+							// Ignore the first and second sample times (don't need them)...
+							_4,
+							_5),
 					present_day_scalar_values))
 {
 	initialise_time_span(scalar_evolution_function, domain_reconstruction_time_span);
@@ -75,12 +92,13 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 		const scalar_evolution_function_type &scalar_evolution_function,
 		const domain_reconstruction_time_span_type &domain_reconstruction_time_span)
 {
-	// An array of zero strain deformation infos of size equal to the number of scalars being evolved
+	const unsigned int num_scalars = d_scalar_values_time_span->get_present_day_sample().size();
+
+	// An array of zero deformation strain rates of size equal to the number of scalars being evolved
 	// (which is also the same as the number of points in the deformed geometry).
 	// This is in case either of two adjacent time slots have no deformation samples (which means the
 	// missing time slot has zero strain).
-	const std::vector<GeometryDeformation::DeformationInfo> zero_strain_deformation_infos(
-			d_scalar_values_time_span->get_present_day_sample().size());
+	const std::vector<DeformationStrain> zero_deformation_strain_rates(num_scalars);
 
 	// The time range of both the reconstructed domain features and the scalar values.
 	const TimeSpanUtils::TimeRange time_range = d_scalar_values_time_span->get_time_range();
@@ -88,9 +106,9 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 
 	/*signed*/ int time_slot = num_time_slots - 1;
 
-	// Get the deformation strains (if any) for the first time slot in the loop.
-	boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &> current_deformation_infos =
-			get_deformation_infos(domain_reconstruction_time_span, time_slot);
+	// Get the deformation strain rates (if any) for the first time slot in the loop.
+	boost::optional<const std::vector<DeformationStrain> &> current_deformation_strain_rates =
+			get_deformation_strain_rates(domain_reconstruction_time_span, time_slot);
 
 	// Iterate over the time range going *backwards* in time from the end of the
 	// time range (most recent) to the beginning (least recent).
@@ -99,17 +117,17 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 		const double current_time = time_range.get_time(time_slot);
 		const double next_time = current_time + time_range.get_time_increment();
 
-		// Get the deformation strains (if any) for the next time slot.
-		boost::optional<const std::vector<GeometryDeformation::DeformationInfo> &> next_deformation_infos =
-				get_deformation_infos(domain_reconstruction_time_span, time_slot - 1);
+		// Get the deformation strain rates (if any) for the next time slot.
+		boost::optional<const std::vector<DeformationStrain> &> next_deformation_strain_rates =
+				get_deformation_strain_rates(domain_reconstruction_time_span, time_slot - 1);
 
-		// If there is no deformation info for the current and next time slots then the deformation strains
-		// will have no effect on evolving the scalar values.
+		// If there are no deformation strain rates for the current and next time slots then
+		// deformation will have no effect on evolving the scalar values.
 		// In which case we won't store scalar values for the current time.
 		// Leaving the time slot empty means the closest younger time slot is used when the empty
 		// time slot is accessed (the scalar values have not evolved/changed since the younger time slot).
-		if (!current_deformation_infos &&
-			!next_deformation_infos)
+		if (!current_deformation_strain_rates &&
+			!next_deformation_strain_rates)
 		{
 			continue;
 		}
@@ -123,15 +141,15 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_t
 		// Evolve the current scalar values to the next time slot.
 		scalar_evolution_function(
 				current_scalar_values,
-				current_deformation_infos ? current_deformation_infos.get() : zero_strain_deformation_infos,
-				next_deformation_infos ? next_deformation_infos.get() : zero_strain_deformation_infos,
+				current_deformation_strain_rates ? current_deformation_strain_rates.get() : zero_deformation_strain_rates,
+				next_deformation_strain_rates ? next_deformation_strain_rates.get() : zero_deformation_strain_rates,
 				current_time,
 				next_time);
 
 		// Set the (evolved) scalar values for the next time slot.
 		d_scalar_values_time_span->set_sample_in_time_slot(current_scalar_values, time_slot - 1);
 
-		current_deformation_infos = next_deformation_infos;
+		current_deformation_strain_rates = next_deformation_strain_rates;
 	}
 }
 
@@ -156,8 +174,32 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create_rigid
 }
 
 
-boost::optional<const std::vector<GPlatesAppLogic::GeometryDeformation::DeformationInfo> &>
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_deformation_infos(
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::scalar_value_seq_type
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::interpolate_scalar_values_sample(
+		const double &interpolate_position,
+		const scalar_value_seq_type &first_sample,
+		const scalar_value_seq_type &second_sample)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			first_sample.size() == second_sample.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_scalars = first_sample.size();
+	scalar_value_seq_type interpolated_sample(num_scalars);
+
+	for (unsigned int n = 0; n < num_scalars; ++n)
+	{
+		interpolated_sample[n] =
+				(1 - interpolate_position) * first_sample[n] +
+					interpolate_position * second_sample[n];
+	}
+
+	return interpolated_sample;
+}
+
+
+boost::optional<const std::vector<GPlatesAppLogic::DeformationStrain> &>
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_deformation_strain_rates(
 		const domain_reconstruction_time_span_type &domain_reconstruction_time_span,
 		unsigned int time_slot)
 {
@@ -171,15 +213,12 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_deformat
 	boost::optional<const DeformedFeatureGeometry *> dfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<const DeformedFeatureGeometry *>(
 					domain_rfg.get());
-	// If the RFG is not a DeformedFeatureGeometry then we have no deformation strain information and
-	// hence the scalar values won't evolve for the current time.
+	// If the RFG is not a DeformedFeatureGeometry then we have no deformation strain information.
 	if (!dfg)
 	{
 		return boost::none;
 	}
 
-	// Return the current (per-point) deformation strain info.
-	return dfg.get()->get_point_deformation_information();
-
-	// TODO: Skip current time sample if all (per-point) instantaneous strains are zero.
+	// Return the current (per-point) deformation strain rates.
+	return dfg.get()->get_point_deformation_strain_rates();
 }

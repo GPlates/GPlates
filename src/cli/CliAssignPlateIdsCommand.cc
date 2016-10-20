@@ -38,6 +38,7 @@
 
 #include "app-logic/AssignPlateIds.h"
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionTreeCreator.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -99,8 +100,7 @@ namespace
 	// Values specified by user on command-line for method used to assign plate ids.
 	//
 	const unsigned int ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE = 1;
-	const unsigned int ASSIGN_METHOD_ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE = 2;
-	const unsigned int ASSIGN_METHOD_PARTITION_FEATURE = 3;
+	const unsigned int ASSIGN_METHOD_PARTITION_FEATURE = 2;
 
 
 	/**
@@ -117,9 +117,6 @@ namespace
 		{
 		case ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE:
 			return GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE;
-
-		case ASSIGN_METHOD_ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE:
-			return GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE;
 
 		case ASSIGN_METHOD_PARTITION_FEATURE:
 			return GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE;
@@ -210,9 +207,6 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 					+ boost::lexical_cast<std::string>(
 							ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE)
 					+ " - assign features to most overlapping plate\n"
-					+ boost::lexical_cast<std::string>(
-							ASSIGN_METHOD_ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE)
-					+ " - assign feature sub geometries to most overlapping plate\n"
 					+ boost::lexical_cast<std::string>(
 							ASSIGN_METHOD_PARTITION_FEATURE)
 					+ " - partition features into plates\n").c_str()
@@ -354,14 +348,21 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	// The save filename information used to save the feature collections.
 	const std::string save_file_type = get_save_file_type(vm);
 
+	const GPlatesAppLogic::ReconstructionTreeCreator default_reconstruction_tree_creator =
+			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+					reconstruction_feature_collections,
+					d_anchor_plate_id,
+					10/*max_num_reconstruction_trees_in_cache*/,
+					// We're not going to modify the reconstruction features so no need to clone...
+					false/*clone_reconstruction_features*/);
+
 	// Create the object used to assign plate ids.
 	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
 			GPlatesAppLogic::AssignPlateIds::create(
 					assign_plate_ids_method,
 					partitioning_feature_collections,
-					reconstruction_feature_collections,
+					default_reconstruction_tree_creator,
 					d_recon_time,
-					d_anchor_plate_id,
 					assign_feature_property_flags,
 					true/*verify_information_model*/,
 					d_respect_time_period);
@@ -375,7 +376,8 @@ GPlatesCli::AssignPlateIdsCommand::run(
 			boost::bind(
 					&GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_ids,
 					boost::ref(plate_id_assigner),
-					_1));
+					_1,
+					boost::optional<const GPlatesAppLogic::ReconstructMethodInterface::Context &>()/*boost::none*/));
 
 	// Iterate through the feature collection files that had their plate ids (re)assigned and
 	// save them to file.

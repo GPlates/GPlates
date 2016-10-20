@@ -31,6 +31,11 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+#include "maths/PointOnSphere.h"
+
 #include "model/FeatureHandle.h"
 #include "model/WeakObserver.h"
 
@@ -65,6 +70,9 @@ namespace GPlatesAppLogic
 		//! Typedef for the WeakObserver base class of this class.
 		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
 
+
+		//! Typedef for a sequence of points.
+		typedef std::vector<GPlatesMaths::PointOnSphere> point_seq_type;
 
 		//! Typedef for a sequence of per-geometry-point scalar values.
 		typedef std::vector<double> point_scalar_value_seq_type;
@@ -127,6 +135,17 @@ namespace GPlatesAppLogic
 			return d_reconstructed_domain_geometry->reconstructed_geometry();
 		}
 
+		/**
+		 * Returns the reconstructed geometry points.
+		 *
+		 * Note: Each scalar, returned by @a get_reconstructed_point_scalar_values, maps to a point.
+		 *
+		 * Note: The number of points is guaranteed to match scalars in @a get_reconstructed_point_scalar_values.
+		 */
+		void
+		get_reconstructed_points(
+				point_seq_type &points) const;
+
 
 		/**
 		 * Access the feature property from which the scalar values were reconstructed.
@@ -152,7 +171,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the per-geometry-point scalar values.
 		 *
-		 * Note: Each scalar maps to a point in @a get_reconstructed_geometry.
+		 * Note: Each scalar maps to a point in @a get_reconstructed_points.
+		 *
+		 * Note: The number of scalars is guaranteed to match points in @a get_reconstructed_points.
 		 */
 		const point_scalar_value_seq_type &
 		get_reconstructed_point_scalar_values() const
@@ -278,16 +299,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const point_scalar_value_seq_type &reconstructed_point_scalar_values,
-				boost::optional<ReconstructHandle::type> reconstruct_handle_) :
-			ReconstructionGeometry(
-					reconstructed_domain_geometry->get_reconstruction_time(),
-					reconstruct_handle_),
-			WeakObserverType(*reconstructed_domain_geometry->feature_handle_ptr()),
-			d_reconstructed_domain_geometry(reconstructed_domain_geometry),
-			d_range_property_iterator(range_property_iterator),
-			d_scalar_type(scalar_type),
-			d_reconstructed_point_scalar_values(reconstructed_point_scalar_values)
-		{  }
+				boost::optional<ReconstructHandle::type> reconstruct_handle_);
 
 	};
 }

@@ -29,6 +29,7 @@
 #define GPLATES_APP_LOGIC_TOPOLOGY_NETWORK_RESOLVER_H
 
 #include <cstddef> // For std::size_t
+#include <set>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -43,6 +44,7 @@
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "TopologyIntersections.h"
+#include "TopologyNetworkParams.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -87,12 +89,18 @@ namespace GPlatesAppLogic
 		 *        observing the topological boundary section features, that should be searched when
 		 *        resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
+		 * @param topology_network_params parameters used when creating the resolved networks.
+		 * @param topological_sections_referenced returns the topological section features referenced
+		 *        when visiting network features (note the referenced feature IDs are returned even
+		 *        if no features were found with those feature IDs).
 		 */
 		TopologyNetworkResolver(
 				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				ReconstructHandle::type reconstruct_handle,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
+				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -145,7 +153,6 @@ namespace GPlatesAppLogic
 			{
 				d_boundary_sections.clear();
 				d_interior_geometries.clear();
-				d_seed_geometries.clear();
 			}
 
 			//! Keeps track of topological boundary section information when visiting topological sections.
@@ -211,23 +218,6 @@ namespace GPlatesAppLogic
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
 			};
 
-			//! Keeps track of the seed points (used to avoid CGAL meshing inside interior polygons).
-			class SeedGeometry
-			{
-			public:
-				explicit
-				SeedGeometry(
-						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
-
-				/**
-				 * The seed geometry-on-sphere.
-				 *
-				 * Should be a point but allow any geometry type just in case.
-				 * All points in this geometry will be given to CGAL as seed points.
-				 */
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
-			};
-
 
 			//! Typedef for a sequence of boundary sections.
 			typedef std::vector<BoundarySection> boundary_section_seq_type;
@@ -235,18 +225,12 @@ namespace GPlatesAppLogic
 			//! Typedef for a sequence of interior geometries.
 			typedef std::vector<InteriorGeometry> interior_geometry_seq_type;
 
-			//! Typedef for a sequence of seed geometries.
-			typedef std::vector<SeedGeometry> seed_geometry_seq_type;
-
 
 			//! Sequence of boundary sections.
 			boundary_section_seq_type d_boundary_sections;
 
 			//! Sequence of interior geometries.
 			interior_geometry_seq_type d_interior_geometries;
-
-			//! Sequence of seed geometries.
-			seed_geometry_seq_type d_seed_geometries;
 		};
 
 
@@ -275,6 +259,16 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<std::vector<ReconstructHandle::type> > d_topological_geometry_reconstruct_handles;
 
+		/**
+		 * Parameters, including whether to smooth the deformation strain rate calculation results across the triangulation.
+		 */
+		TopologyNetworkParams d_topology_network_params;
+
+		/**
+		 * Used to return the topological section features referenced when visiting network features.
+		 */
+		boost::optional<std::set<GPlatesModel::FeatureId> &> d_topological_sections_referenced;
+
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
 
@@ -284,18 +278,20 @@ namespace GPlatesAppLogic
 		//! Used to help build the resolved network of the current topological polygon.
 		ResolvedNetwork d_resolved_network;
 
+#if 0 // Not currently using being used...
 		//! controls on the triangulation
 		double d_shape_factor;
 		//! controls on the triangulation
 		double d_max_edge;
+#endif // ...not currently using being used.
 
 
 		boost::optional<ReconstructionGeometry::non_null_ptr_type>
 		find_topological_reconstruction_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
 
-		boost::optional<ResolvedNetwork::SeedGeometry>
-		find_seed_geometry(
+		bool
+		is_deprecated_seed_geometry(
 				const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry);
 
 		void
@@ -353,7 +349,7 @@ namespace GPlatesAppLogic
 		add_boundary_delaunay_points_from_reconstructed_feature_geometry(
 				const ReconstructedFeatureGeometry::non_null_ptr_type &boundary_section_rfg,
 				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
-				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points);
 
 		/**
 		 * Add boundary points for delaunay triangulation from a resolved topological *line*.
@@ -362,7 +358,7 @@ namespace GPlatesAppLogic
 		add_boundary_delaunay_points_from_resolved_topological_line(
 				const ResolvedTopologicalLine::non_null_ptr_type &boundary_section_rtl,
 				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
-				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points);
 
 		/**
 		 * Add a boundary section's points to the final list of boundary points.
@@ -379,8 +375,8 @@ namespace GPlatesAppLogic
 		add_interior_delaunay_points_from_reconstructed_feature_geometry(
 				const ReconstructedFeatureGeometry::non_null_ptr_type &interior_rfg,
 				const GPlatesMaths::GeometryOnSphere &interior_geometry,
-				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points,
-				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &all_interior_polygons);
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points,
+				std::vector<ResolvedTriangulation::Network::RigidBlock> &rigid_blocks);
 
 		/**
 		 * Add interior points for delaunay triangulation from a resolved topological *line*.
@@ -388,21 +384,23 @@ namespace GPlatesAppLogic
 		void
 		add_interior_delaunay_points_from_resolved_topological_line(
 				const ResolvedTopologicalLine::non_null_ptr_type &interior_rtl,
-				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points);
 
+#if 0 // Not currently using being used...
 		/**
 		 * Add interior points for constrained delaunay triangulation.
 		 */
 		void
 		add_interior_constrained_delaunay_points(
 				const ResolvedNetwork::InteriorGeometry &interior_geometry,
-				std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> &all_constrained_delaunay_geometries,
-				std::vector<GPlatesMaths::PointOnSphere> &all_scattered_points);
+				std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> &constrained_delaunay_geometries,
+				std::vector<GPlatesMaths::PointOnSphere> &scattered_points);
 
 
 		void
 		debug_output_topological_source_feature(
 				const GPlatesModel::FeatureId &source_feature_id);
+#endif // ...not currently using being used.
 	};
 }
 

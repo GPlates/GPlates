@@ -223,7 +223,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Gets a string that can be used as the filter string in a eQFileDialog.
+		 * Gets a string that can be used as the filter string in a QFileDialog.
 		 *
 		 * The first filter is an all-inclusive filter that matches all supported
 		 * raster formats. The other filters are for the other formats, sorted in
@@ -234,7 +234,7 @@ namespace GPlatesFileIO
 		get_file_dialog_filters();
 
 		/**
-		 * Gets a string that can be used as the filter string in a eQFileDialog.
+		 * Gets a string that can be used as the filter string in a QFileDialog.
 		 *
 		 * The first filter is an all-inclusive filter that matches all supported
 		 * raster formats handled by @a format_handler. The other filters are for

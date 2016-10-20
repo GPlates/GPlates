@@ -24,14 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// #define DEBUG
-
-#ifdef _MSC_VER
-#define copysign _copysign
-#endif
-
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
 
 #include "TopologySectionsFinder.h"
 
@@ -43,6 +36,12 @@
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureRevision.h"
 #include "model/TopLevelPropertyInline.h"
+
+#include "maths/LatLonPoint.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolylineIntersections.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/ProximityCriteria.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -80,12 +79,6 @@
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
-
-#include "maths/PolylineOnSphere.h"
-#include "maths/MultiPointOnSphere.h"
-#include "maths/LatLonPoint.h"
-#include "maths/ProximityCriteria.h"
-#include "maths/PolylineIntersections.h"
 
 #include "utils/UnicodeStringUtils.h"
 

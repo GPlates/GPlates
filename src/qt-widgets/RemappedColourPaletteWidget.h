@@ -30,6 +30,8 @@
 
 #include "RemappedColourPaletteWidgetUi.h"
 
+#include "gui/BuiltinColourPaletteType.h"
+
 #include "presentation/RemappedColourPaletteParameters.h"
 
 
@@ -41,6 +43,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
+	class ChooseBuiltinPaletteDialog;
 	class ColourScaleWidget;
 	class FriendlyLineEdit;
 	class ViewportWindow;
@@ -94,6 +97,14 @@ namespace GPlatesQtWidgets
 		use_default_palette_button_clicked();
 
 		void
+		builtin_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
+
+		void
+		builtin_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters);
+
+		void
 		range_check_box_changed(
 				int);
 
@@ -124,6 +135,17 @@ namespace GPlatesQtWidgets
 		handle_use_default_palette_button_clicked();
 
 		void
+		open_choose_builtin_palette_dialog();
+
+		void
+		handle_builtin_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
+
+		void
+		handle_builtin_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters);
+
+		void
 		handle_range_check_box_changed(
 				int);
 
@@ -145,8 +167,13 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		FriendlyLineEdit *d_palette_filename_lineedit;
+		ViewportWindow *d_viewport_window;
+		FriendlyLineEdit *d_palette_name_lineedit;
+		ChooseBuiltinPaletteDialog *d_choose_builtin_palette_dialog;
 		ColourScaleWidget *d_colour_scale_widget;
+
+		//! The built-in colour palette parameters for use in the built-in palette dialog.
+		GPlatesGui::BuiltinColourPaletteType::Parameters d_builtin_colour_palette_parameters;
 	};
 }
 

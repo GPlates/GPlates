@@ -1461,24 +1461,28 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon_ring(
 		ring_points->push_back(
 				GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon)));
 	}
-	
-	// GML Polygons require the first and last points of a polygon to be identical,
-	// because the format wasn't verbose enough. GPlates expects that the first
-	// and last points of a PolygonOnSphere are implicitly joined.
-	if (ring_points->size() >= 4) {
-		GPlatesMaths::PointOnSphere &p1 = *(ring_points->begin());
-		GPlatesMaths::PointOnSphere &p2 = *(--ring_points->end());
-		if (p1 == p2) {
-			ring_points->pop_back();
-		} else {
-			throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-					elem, GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
-					EXCEPTION_SOURCE);
-		}
-	} else {
+
+	// There should be at least 3 points in a polygon.
+	if (ring_points->size() < 3)
+	{
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 				elem, GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
 				EXCEPTION_SOURCE);
+	}
+
+	// GML Polygons require the first and last points of a polygon to be identical,
+	// because the format wasn't verbose enough. GPlates expects that the first
+	// and last points of a PolygonOnSphere are implicitly joined.
+	// If the first and last points are the same then we'll remove the last point
+	// (provided that leaves us with at least 3 points for the polygon).
+	if (ring_points->size() >= 4)
+	{
+		const GPlatesMaths::PointOnSphere &p1 = *(ring_points->begin());
+		const GPlatesMaths::PointOnSphere &p2 = *(--ring_points->end());
+		if (p1 == p2)
+		{
+			ring_points->pop_back();
+		}
 	}
 
 	// We want to return a different ReadError Description for each possible return

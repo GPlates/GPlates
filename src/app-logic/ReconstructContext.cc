@@ -92,6 +92,11 @@ GPlatesAppLogic::ReconstructContext::set_features(
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 			reconstructable_feature_collections)
 	{
+		if (!feature_collection_ref.is_valid())
+		{
+			continue;
+		}
+
 		// Iterate over the features in the current feature collection.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_ref->begin();
 		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_ref->end();
@@ -99,7 +104,10 @@ GPlatesAppLogic::ReconstructContext::set_features(
 		{
 			const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
 
-			reconstructable_features.push_back(feature_ref);
+			if (feature_ref.is_valid())
+			{
+				reconstructable_features.push_back(feature_ref);
+			}
 		}
 	}
 
@@ -118,6 +126,11 @@ GPlatesAppLogic::ReconstructContext::set_features(
 	// Iterate over the features and assign default reconstruct methods to them.
 	BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &feature_ref, reconstructable_features)
 	{
+		if (!feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		// See if any reconstruct methods can reconstruct the current feature.
 		// If no reconstruct method can reconstruct the current feature then skip the feature.
 		// We could default to the 'BY_PLATE_ID' reconstruct method but ignoring the feature
@@ -226,12 +239,15 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_geometries(
 			const ReconstructMethodInterface::non_null_ptr_type &context_state_reconstruct_method,
 			context_state_ref->d_reconstruct_methods)
 	{
-		// Reconstruct the current feature (reconstruct method).
-		context_state_reconstruct_method->reconstruct_feature_geometries(
-				reconstructed_feature_geometries,
-				reconstruct_handle,
-				context_state_ref->d_reconstruct_method_context,
-				reconstruction_time);
+		if (context_state_reconstruct_method->get_feature_ref().is_valid())
+		{
+			// Reconstruct the current feature (reconstruct method).
+			context_state_reconstruct_method->reconstruct_feature_geometries(
+					reconstructed_feature_geometries,
+					reconstruct_handle,
+					context_state_ref->d_reconstruct_method_context,
+					reconstruction_time);
+		}
 	}
 
 	return reconstruct_handle;
@@ -265,8 +281,12 @@ GPlatesAppLogic::ReconstructContext::get_reconstructions(
 	// Iterate over the reconstruct methods of the current context state and reconstruct.
 	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
 	{
-		const ReconstructMethodFeature &reconstruct_method_feature =
-				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
 				context_state_ref->d_reconstruct_methods[feature_index];
 
@@ -322,8 +342,12 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_features(
 	// Iterate over the reconstruct methods of the current context state and reconstruct.
 	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
 	{
-		const ReconstructMethodFeature &reconstruct_method_feature =
-				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
 				context_state_ref->d_reconstruct_methods[feature_index];
 
@@ -382,8 +406,12 @@ GPlatesAppLogic::ReconstructContext::get_reconstruction_time_spans(
 	// Iterate over the reconstruct methods of the current context state and reconstruct.
 	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
 	{
-		const ReconstructMethodFeature &reconstruct_method_feature =
-				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
 				context_state_ref->d_reconstruct_methods[feature_index];
 
@@ -455,8 +483,12 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_time_spans(
 	// Iterate over the reconstruct methods of the current context state and reconstruct.
 	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
 	{
-		const ReconstructMethodFeature &reconstruct_method_feature =
-				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
 				context_state_ref->d_reconstruct_methods[feature_index];
 
@@ -512,14 +544,17 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 			const ReconstructMethodInterface::non_null_ptr_type &context_state_reconstruct_method,
 			context_state_ref->d_reconstruct_methods)
 	{
-		// Reconstruct the current feature (reconstruct method).
-		context_state_reconstruct_method->reconstruct_feature_velocities(
-				reconstructed_feature_velocities,
-				reconstruct_handle,
-				context_state_ref->d_reconstruct_method_context,
-				reconstruction_time,
-				velocity_delta_time,
-				velocity_delta_time_type);
+		if (context_state_reconstruct_method->get_feature_ref().is_valid())
+		{
+			// Reconstruct the current feature (reconstruct method).
+			context_state_reconstruct_method->reconstruct_feature_velocities(
+					reconstructed_feature_velocities,
+					reconstruct_handle,
+					context_state_ref->d_reconstruct_method_context,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
+		}
 	}
 
 	return reconstruct_handle;
@@ -693,8 +728,12 @@ GPlatesAppLogic::ReconstructContext::assign_geometry_property_handles()
 			GPLATES_ASSERTION_SOURCE);
 	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
 	{
-		ReconstructMethodFeature &reconstruct_method_feature =
-				d_reconstruct_method_feature_seq[feature_index];
+		ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
 		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
 				context_state->d_reconstruct_methods[feature_index];
 
@@ -710,8 +749,7 @@ GPlatesAppLogic::ReconstructContext::assign_geometry_property_handles()
 				present_day_geometries.end();
 		for ( ; present_day_geometry_iter != present_day_geometry_end; ++present_day_geometry_iter)
 		{
-			const geometry_property_handle_type geometry_property_handle =
-					d_cached_present_day_geometries->size();
+			const geometry_property_handle_type geometry_property_handle = d_cached_present_day_geometries->size();
 
 			const ReconstructMethodFeature::GeometryPropertyToHandle geometry_property_to_handle =
 			{

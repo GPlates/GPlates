@@ -2177,7 +2177,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		program_object->gl_uniform1i(
 				renderer,
 				"surface_occlusion_texture_sampler",
 				current_texture_unit);

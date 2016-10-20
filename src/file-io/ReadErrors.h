@@ -156,7 +156,6 @@ namespace GPlatesFileIO
 			InsufficientDistinctPointsInPolyline,
 			AntipodalAdjacentPointsInPolyline,
 			InvalidPointsInPolygon,
-			InvalidPolygonEndPoint,
 			InsufficientPointsInPolygon,
 			InsufficientDistinctPointsInPolygon,
 			AntipodalAdjacentPointsInPolygon,

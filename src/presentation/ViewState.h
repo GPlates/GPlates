@@ -110,6 +110,7 @@ namespace GPlatesPresentation
 		
 	public:
 
+		explicit
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
 

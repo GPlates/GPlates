@@ -501,15 +501,21 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 			rendered_coloured_edge_surface_mesh.get_mesh_edges();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_edge_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_edge_surface_mesh.get_mesh_colours();
 
 	// Iterate over the mesh edges.
-	mesh_type::edge_seq_type::const_iterator mesh_edges_iter = mesh_edges.begin();
-	mesh_type::edge_seq_type::const_iterator mesh_edges_end = mesh_edges.end();
-	for ( ; mesh_edges_iter != mesh_edges_end; ++mesh_edges_iter)
+	const unsigned int num_mesh_edges = mesh_edges.size();
+	for (unsigned int e = 0; e < num_mesh_edges; ++e)
 	{
-		const mesh_type::Edge &mesh_edge = *mesh_edges_iter;
+		const mesh_type::Edge &mesh_edge = mesh_edges[e];
 
-		boost::optional<Colour> colour = mesh_edge.colour.get_colour(d_colour_scheme);
+		if (rendered_coloured_edge_surface_mesh.get_use_vertex_colours())
+		{
+			continue;
+		}
+
+		boost::optional<Colour> colour = mesh_colours[e].get_colour(d_colour_scheme);
 		if (!colour)
 		{
 			continue;
@@ -550,22 +556,33 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 			rendered_coloured_triangle_surface_mesh.get_mesh_triangles();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_triangle_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_triangle_surface_mesh.get_mesh_colours();
 
 	// Iterate over the mesh triangles.
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_iter = mesh_triangles.begin();
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_end = mesh_triangles.end();
-	for ( ; mesh_triangles_iter != mesh_triangles_end; ++mesh_triangles_iter)
+	const unsigned int num_mesh_triangles = mesh_triangles.size();
+	for (unsigned int t = 0; t < num_mesh_triangles; ++t)
 	{
-		const mesh_type::Triangle &mesh_triangle = *mesh_triangles_iter;
+		const mesh_type::Triangle &mesh_triangle = mesh_triangles[t];
 
-		boost::optional<Colour> colour = mesh_triangle.colour.get_colour(d_colour_scheme);
+		if (rendered_coloured_triangle_surface_mesh.get_use_vertex_colours())
+		{
+			continue;
+		}
+
+		boost::optional<Colour> colour = mesh_colours[t].get_colour(d_colour_scheme);
 		if (!colour)
 		{
 			continue;
 		}
 
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour());
+
 		// Convert colour from floats to bytes to use less vertex memory.
-		const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
 
 		// Create a PolygonOnSphere for the current triangle so we can pass it through the
 		// dateline wrapping and projection code.
@@ -627,7 +644,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 							filled_triangle_geometry[0],
 							filled_triangle_geometry[1],
 							filled_triangle_geometry[2],
-							rgba8_color);
+							rgba8_fill_colour);
 				}
 				else
 				{
@@ -635,7 +652,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 					filled_polygons.end_filled_triangle_mesh();
 
 					// Add the filled polygon geometry.
-					filled_polygons.add_filled_polygon(filled_triangle_geometry, rgba8_color);
+					filled_polygons.add_filled_polygon(filled_triangle_geometry, rgba8_fill_colour);
 
 					// Start a new mesh drawable.
 					filled_polygons.begin_filled_triangle_mesh();

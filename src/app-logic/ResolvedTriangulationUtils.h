@@ -27,6 +27,7 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONUTILS_H
 #define GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONUTILS_H
 
+#include <functional>
 #include <map>
 #include <utility>
 #include <vector>
@@ -55,16 +56,16 @@ namespace GPlatesAppLogic
 		 *
 		 * This is useful for rendering triangle meshes (in OpenGL) using vertex-indexed triangle meshes.
 		 */
-		template <class TriangulationType>
+		template < class VertexType, class VertexMapPredicateType = std::less<VertexType> >
 		class VertexIndices
 		{
 		public:
 
-			//! Typedef for the triangulation.
-			typedef TriangulationType triangulation_type;
+			//! Typedef for the triangulation vertex type.
+			typedef VertexType vertex_type;
 
-			//! Typedef for a sequence of vertices (vertex handles).
-			typedef std::vector<typename triangulation_type::Vertex_handle> vertex_seq_type;
+			//! Typedef for a sequence of vertices.
+			typedef std::vector<vertex_type> vertex_seq_type;
 
 
 			/**
@@ -75,7 +76,7 @@ namespace GPlatesAppLogic
 			 */
 			unsigned int
 			add_vertex(
-					typename triangulation_type::Vertex_handle vertex)
+					const vertex_type &vertex)
 			{
 				// Attempt to insert the vertex into the map.
 				std::pair<typename vertex_index_map_type::iterator, bool> vertex_insert_result =
@@ -103,7 +104,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Keeps track of indices assigned to vertices.
 			 */
-			typedef std::map<typename triangulation_type::Vertex_handle, unsigned int> vertex_index_map_type;
+			typedef std::map<vertex_type, unsigned int, VertexMapPredicateType> vertex_index_map_type;
 
 			vertex_index_map_type d_vertex_index_map;
 			vertex_seq_type d_vertices;

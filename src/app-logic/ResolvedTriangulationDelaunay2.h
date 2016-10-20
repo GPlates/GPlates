@@ -71,6 +71,7 @@ POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
 
+#include "DeformationStrain.h"
 #include "PlateVelocityUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
@@ -78,25 +79,80 @@ POP_MSVC_WARNINGS
 
 #include "model/types.h"
 
+#include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/CalculateVelocity.h"
+#include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
-#include "maths/Centroid.h"
 
+#include "utils/Earth.h"
 #include "utils/Profile.h"
-
-
-#ifdef _MSC_VER
-#ifndef copysign
-#define copysign _copysign
-#endif
-#endif
 
 
 namespace GPlatesAppLogic
 {
 	namespace ResolvedTriangulation
 	{
+		/**
+		 * Deformation information containing the strain rate of a triangle in triangulation
+		 * or smoothed strain rate at a point over nearby triangles.
+		 */
+		class DeformationInfo
+		{
+		public:
+
+			//! Zero strain rates (non-deforming).
+			DeformationInfo()
+			{  }
+
+			explicit
+			DeformationInfo(
+					const DeformationStrain &strain_rate) :
+				d_strain_rate(strain_rate)
+			{  }
+
+			/**
+			 * Returns the instantaneous strain rate.
+			 */
+			const DeformationStrain &
+			get_strain_rate() const
+			{
+				return d_strain_rate;
+			}
+
+			friend
+			DeformationInfo
+			operator+(
+					const DeformationInfo &lhs,
+					const DeformationInfo &rhs)
+			{
+				return DeformationInfo(lhs.d_strain_rate + rhs.d_strain_rate);
+			}
+
+			friend
+			DeformationInfo
+			operator*(
+					double scale,
+					const DeformationInfo &di)
+			{
+				return DeformationInfo(scale * di.d_strain_rate);
+			}
+
+			friend
+			DeformationInfo
+			operator*(
+					const DeformationInfo &di,
+					double scale)
+			{
+				return scale * di;
+			}
+
+		private:
+			DeformationStrain d_strain_rate;
+		};
+
+
 		//
 		// Basic CGAL typedefs for 2D delaunay triangulation.
 		//
@@ -121,6 +177,9 @@ namespace GPlatesAppLogic
 				delaunay_natural_neighbor_coordinates_2_type;
 
 
+		// Forward declaration.
+		class Delaunay_2;
+
 		/**
 		 * This class holds the extra info for each delaunay triangulation vertex.
 		 *
@@ -138,6 +197,7 @@ namespace GPlatesAppLogic
 		{
 		public:
 			typedef typename Vb::Face_handle                   Face_handle;
+			typedef typename Vb::Vertex_handle                 Vertex_handle;
 			typedef typename Vb::Point                         Point;
 
 			template < typename TDS2 >
@@ -193,22 +253,36 @@ namespace GPlatesAppLogic
 			 */
 			void
 			initialise(
+					const Delaunay_2 &delaunay_2,
+					unsigned int vertex_index,
 					const GPlatesMaths::PointOnSphere &point_on_sphere,
+					const GPlatesMaths::LatLonPoint &lat_lon_point,
 					GPlatesModel::integer_plate_id_type plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator,
-					const double &reconstruction_time)
+					const ReconstructionTreeCreator &reconstruction_tree_creator)
 			{
 				// NOTE: Can get initialised twice if an inserted vertex happens to be at the
 				// same position as an existing vertex - so we don't enforce only one initialisation.
 
 				d_vertex_info = boost::in_place(
+						delaunay_2,
+						vertex_index,
 						point_on_sphere,
+						lat_lon_point,
 						plate_id,
-						reconstruction_tree_creator,
-						reconstruction_time);
+						reconstruction_tree_creator);
 			}
 
-			//! Returns the vertex position un-projected from 2D coords back onto the 3D sphere.
+			//! Returns index of this vertex within all vertices in the delaunay triangulation.
+			unsigned int
+			get_vertex_index() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->vertex_index;
+			}
+
+			//! Returns the x/y/z vertex position un-projected from 2D coords back onto the 3D sphere.
 			const GPlatesMaths::PointOnSphere &
 			get_point_on_sphere() const
 			{
@@ -216,6 +290,16 @@ namespace GPlatesAppLogic
 						d_vertex_info,
 						GPLATES_ASSERTION_SOURCE);
 				return d_vertex_info->point_on_sphere;
+			}
+
+			//! Returns the lat/lon vertex position un-projected from 2D coords back onto the 3D sphere.
+			const GPlatesMaths::LatLonPoint &
+			get_lat_lon_point() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->lat_lon_point;
 			}
 
 			//! Returns plate id associated with this vertex.
@@ -234,10 +318,7 @@ namespace GPlatesAppLogic
 			const double &
 			get_reconstruction_time() const
 			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->reconstruction_time;
+				return get_delaunay_2().get_reconstruction_time();
 			}
 
 			/**
@@ -251,6 +332,12 @@ namespace GPlatesAppLogic
 						GPLATES_ASSERTION_SOURCE);
 				return d_vertex_info->reconstruction_tree_creator;
 			}
+
+			//! Calculates the stage rotation of this vertex.
+			GPlatesMaths::FiniteRotation
+			calc_stage_rotation(
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
 
 			//! Calculates the velocity vector of this vertex.
 			GPlatesMaths::Vector3D
@@ -270,83 +357,20 @@ namespace GPlatesAppLogic
 			}
 
 
-			const double &
-			get_dilitation() const
+			/**
+			 * Returns the deformation information of this vertex (calculates if first time called).
+			 *
+			 * This is the area-averaged deformation strains of the faces incident to this vertex.
+			 */
+			const DeformationInfo &
+			get_deformation_info() const
 			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->dilitation;
-			}
+				if (!d_deformation_info)
+				{
+					d_deformation_info = calculate_deformation_info();
+				}
 
-			void
-			set_dilitation(
-					const double &dilitation)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				d_vertex_info->dilitation = dilitation;
-			}
-
-
-			const double &
-			get_second_invariant() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->second_invariant;
-			}
-
-			void
-			set_second_invariant(
-					const double &second_invariant)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				d_vertex_info->second_invariant = second_invariant;
-			}
-
-
-			const double &
-			get_sph_dilitation() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->sph_dilitation;
-			}
-
-			void
-			set_sph_dilitation(
-					const double &sph_dilitation)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				d_vertex_info->sph_dilitation = sph_dilitation;
-			}
-
-
-			const double &
-			get_sph_second_invariant() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->sph_second_invariant;
-			}
-
-			void
-			set_sph_second_invariant(
-					const double &sph_second_invariant)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				d_vertex_info->sph_second_invariant = sph_second_invariant;
+				return d_deformation_info.get();
 			}
 
 		private:
@@ -357,37 +381,65 @@ namespace GPlatesAppLogic
 			struct VertexInfo
 			{
 				VertexInfo(
+						const Delaunay_2 &delaunay_2_,
+						unsigned int vertex_index_,
 						const GPlatesMaths::PointOnSphere &point_on_sphere_,
+						const GPlatesMaths::LatLonPoint &lat_lon_point_,
 						GPlatesModel::integer_plate_id_type plate_id_,
-						const ReconstructionTreeCreator &reconstruction_tree_creator_,
-						const double &reconstruction_time_,
-						const double &dilitation_ = 0.0,
-						const double &second_invariant_ = 0.0,
-						const double &sph_dilitation_ = 0.0,
-						const double &sph_second_invariant_ = 0.0) :
+						const ReconstructionTreeCreator &reconstruction_tree_creator_) :
+					delaunay_2(delaunay_2_),
+					vertex_index(vertex_index_),
 					point_on_sphere(point_on_sphere_),
+					lat_lon_point(lat_lon_point_),
 					plate_id(plate_id_),
-					reconstruction_tree_creator(reconstruction_tree_creator_),
-					reconstruction_time(reconstruction_time_),
-					dilitation(dilitation_),
-					second_invariant(second_invariant_),
-					sph_dilitation(sph_dilitation_),
-					sph_second_invariant(sph_second_invariant_)
+					reconstruction_tree_creator(reconstruction_tree_creator_)
 				{  }
 
+				const Delaunay_2 &delaunay_2;
+				unsigned int vertex_index;
 				GPlatesMaths::PointOnSphere point_on_sphere;
+				GPlatesMaths::LatLonPoint lat_lon_point;
 				GPlatesModel::integer_plate_id_type plate_id;
 				ReconstructionTreeCreator reconstruction_tree_creator;
-
-				double reconstruction_time;
-
-				double dilitation;
-				double second_invariant;
-				double sph_dilitation;
-				double sph_second_invariant;
 			};
 
 			boost::optional<VertexInfo> d_vertex_info;
+
+			// Derived values - these are mutable since they are calculated on first call.
+			mutable boost::optional<DeformationInfo> d_deformation_info;
+
+			// Compute the deformation info for this vertex.
+			DeformationInfo
+			calculate_deformation_info() const;
+
+			const Delaunay_2 &
+			get_delaunay_2() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->delaunay_2;
+			}
+
+			Vertex_handle
+			get_handle() const
+			{
+				// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+				// until instantiation - otherwise we get a compile error.
+				const Face_handle fh = this->face();
+				for (int i = 0 ; i < 3 ; ++i)
+				{
+					Vertex_handle vh = fh->vertex(i);
+					if (&*vh == this)
+					{
+						return vh;
+					}
+				}
+
+				// Shouldn't be able to get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				return Vertex_handle();
+			}
 		};
 
 
@@ -445,18 +497,20 @@ namespace GPlatesAppLogic
 			 */
 			void
 			initialise(
-					int face_index)
+					const Delaunay_2 &delaunay_2,
+					unsigned int face_index,
+					bool is_in_deforming_region_)
 			{
 				// Make sure only gets initialised once.
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						!d_face_info,
 						GPLATES_ASSERTION_SOURCE);
 
-				d_face_info = boost::in_place(face_index);
+				d_face_info = boost::in_place(delaunay_2, face_index, is_in_deforming_region_);
 			}
 
-			//! Returns face index of this face.
-			int
+			//! Returns index of this face within all faces in the delaunay triangulation.
+			unsigned int
 			get_face_index() const
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -465,104 +519,43 @@ namespace GPlatesAppLogic
 				return d_face_info->face_index;
 			}
 
-			//! Returns the centroid as a POS of this face (calculates if first time called).
-			const GPlatesMaths::PointOnSphere &
-			get_centroid() const
+			/**
+			 * Returns true if face is inside the deforming region.
+			 *
+			 * The delaunay triangulation is the convex hull around the network boundary,
+			 * so it includes faces outside the network boundary (and also faces inside any
+			 * non-deforming interior blocks).
+			 *
+			 * If the centroid of this face is inside the deforming region then true is returned.
+			 *
+			 * TODO: Note that the delaunay triangulation is *not* constrained which means some
+			 * delaunay faces can cross over network boundary edges or interior block edges.
+			 * This is something that perhaps needs to be dealt with, but currently doesn't appear
+			 * to be too much of a problem with current topological network datasets.
+			 */
+			bool
+			is_in_deforming_region() const
 			{
-				if (!d_centroid)
-				{
-					calculate_centroid();
-				}
-				return d_centroid.get();
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_face_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_face_info->is_in_deforming_region;
 			}
 
-
 			/**
-			 * Deformation information for this face of the triangulation.
+			 * Returns the deformation information of this face (calculates if first time called).
+			 *
+			 * This is the constant deformation strain across this face.
 			 */
-			struct DeformationInfo
-			{
-				DeformationInfo(
-						const double &SR22_,
-						const double &SR33_,
-						const double &SR23_,
-						const double &SR_DIR_,
-						const double &SR1_,
-						const double &SR2_,
-						const double &dilitation_,
-						const double &second_invariant_,
-						const double &smooth_dilitation_,
-						const double &smooth_second_invariant_,
-						const double &sph_dilitation_,
-						const double &sph_second_invariant_,
-						const double &sph_smooth_dilitation_,
-						const double &sph_smooth_second_invariant_
-				) :
-					SR22(SR22_),
-					SR33(SR33_),
-					SR23(SR23_),
-					SR_DIR(SR_DIR_),
-					SR1(SR1_),
-					SR2(SR2_),
-					dilitation(dilitation_),
-					second_invariant(second_invariant_),
-					smooth_dilitation(smooth_dilitation_),
-					smooth_second_invariant(smooth_second_invariant_),
-					sph_dilitation(sph_dilitation_),
-					sph_second_invariant(sph_second_invariant_),
-					sph_smooth_dilitation(sph_smooth_dilitation_),
-					sph_smooth_second_invariant(sph_smooth_second_invariant_)
-				{  }
-
-				// instantaneous strain rates
-                //double SR_sph; // spherical strain rate
-				double SR22; // 2 = x
-				double SR33; // 3 = y
-				double SR23;
-
-				// instantaneous rotations
-				// Not yet needed 
-				//double ROT23;
-				//double ROT32;
-
-				// other strain rates
-				double SR_DIR; // Strain Rate direction
-				double SR1; 	// principle strain 1 = compression ? 
-				double SR2; 	// principle strain 2 = tension ? FIXME: verify this ?
-				double dilitation;
-				double second_invariant;
-				double smooth_dilitation;
-				double smooth_second_invariant;
-				double sph_dilitation;
-				double sph_second_invariant;
-				double sph_smooth_dilitation;
-				double sph_smooth_second_invariant;
-			};
-
-			//! Returns the deformation information of this face (calculates if first time called).
 			const DeformationInfo &
 			get_deformation_info() const
 			{
 				if (!d_deformation_info)
 				{
-					calculate_deformation_info();
+					d_deformation_info = calculate_deformation_info();
 				}
 
 				return d_deformation_info.get();
-			}
-
-			//! Returns the non const deformation information of this face 
-			DeformationInfo &
-			get_deformation_info_non_const()
-			{
-				return d_deformation_info.get();
-			}
-
-			//! Set the deformation information of this face 
-			void
-			set_deformation_info( DeformationInfo &d )
-			{
-				d_deformation_info = d;
 			}
 
 		private:
@@ -572,17 +565,23 @@ namespace GPlatesAppLogic
 			 */
 			struct FaceInfo
 			{
-				explicit
 				FaceInfo(
-						int face_index_) :
-					face_index(face_index_)
+						const Delaunay_2 &delaunay_2_,
+						unsigned int face_index_,
+						bool is_in_deforming_region_) :
+					delaunay_2(delaunay_2_),
+					face_index(face_index_),
+					is_in_deforming_region(is_in_deforming_region_)
 				{  }
 
-				int face_index;
+				const Delaunay_2 &delaunay_2;
+				unsigned int face_index;
+				bool is_in_deforming_region;
 			};
 
-			// The centroid of the face
-			mutable boost::optional<GPlatesMaths::PointOnSphere> d_centroid;
+
+			static const double INVERSE_EARTH_RADIUS_METRES;
+
 
 			// The extra info for the face
 			boost::optional<FaceInfo> d_face_info;
@@ -590,14 +589,22 @@ namespace GPlatesAppLogic
 			// Derived values - these are mutable since they are calculated on first call.
 			mutable boost::optional<DeformationInfo> d_deformation_info;
 
-			// Compute the deformation info for this face
-			void
+			// Compute the deformation info for this face.
+			DeformationInfo
 			calculate_deformation_info() const;
 
-			// Compute the centroid for this face
-			void 
-			calculate_centroid() const;
+			const Delaunay_2 &
+			get_delaunay_2() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_face_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_face_info->delaunay_2;
+			}
 		};
+
+		template <typename GT, typename Fb>
+		const double DelaunayFace_2<GT, Fb>::INVERSE_EARTH_RADIUS_METRES = 1.0 / (1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS);
 
 
 		/**
@@ -637,16 +644,31 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			Delaunay_2(
+					const GPlatesMaths::AzimuthalEqualAreaProjection &projection,
+					const double &reconstruction_time) :
+				d_projection(projection),
+				d_reconstruction_time(reconstruction_time)
+			{  }
+
 			/**
 			 * Returns the natural neighbor coordinates of @a point in the triangulation
 			 * (which can then be used with different interpolation methods like linear interpolation).
 			 *
 			 * Returns false if @a point is outside the triangulation.
+			 *
+			 * NOTE: It appears that CGAL can trigger assertions under certain situations (at certain query points).
+			 * This is most likely due to us not using exact arithmetic in our delaunay triangulation
+			 * (currently we use 'CGAL::Exact_predicates_inexact_constructions_kernel').
+			 * The assertion seems to manifest as a normalisation factor of zero.
+			 * We currently handle this by instead querying the barycentric coordinates and
+			 * converting them to natural neighbour coordinates.
 			 */
 			bool
 			calc_natural_neighbor_coordinates(
 					delaunay_natural_neighbor_coordinates_2_type &natural_neighbor_coordinates,
-					const delaunay_point_2_type &point) const;
+					const delaunay_point_2_type &point,
+					Face_handle start_face_hint = Face_handle()) const;
 
 			/**
 			 * Returns the barycentric coordinates of @a point in the triangulation along with
@@ -661,7 +683,20 @@ namespace GPlatesAppLogic
 					delaunay_coord_2_type &barycentric_coord_vertex_1,
 					delaunay_coord_2_type &barycentric_coord_vertex_2,
 					delaunay_coord_2_type &barycentric_coord_vertex_3,
-					const delaunay_point_2_type &point) const;
+					const delaunay_point_2_type &point,
+					Face_handle start_face_hint = Face_handle()) const;
+
+			/**
+			 * Returns the face containing @a point.
+			 *
+			 * The coordinates sum to 1.0.
+			 *
+			 * Returns boost::none if @a point is outside the triangulation.
+			 */
+			boost::optional<Face_handle>
+			get_face_containing_point(
+					const delaunay_point_2_type &point,
+					Face_handle start_face_hint = Face_handle()) const;
 
 			//! Returns the gradient vector at the specified point.
 			delaunay_vector_2_type
@@ -669,6 +704,30 @@ namespace GPlatesAppLogic
 					const delaunay_point_2_type &point,
 					const delaunay_map_point_to_value_2_type &function_values) const;
 
+
+			/**
+			 * Returns the projection used by this triangulation to convert from 3D points to
+			 * 2D points and vice versa.
+			 */
+			const GPlatesMaths::AzimuthalEqualAreaProjection &
+			get_projection() const
+			{
+				return d_projection;
+			}
+
+			/**
+			 * Returns the reconstruction time of this vertex's triangulation.
+			 */
+			const double &
+			get_reconstruction_time() const
+			{
+				return d_reconstruction_time;
+			}
+
+		private:
+
+			GPlatesMaths::AzimuthalEqualAreaProjection d_projection;
+			double d_reconstruction_time;
 		};
 	}
 
@@ -681,8 +740,31 @@ namespace GPlatesAppLogic
 	namespace ResolvedTriangulation
 	{
 		//
-		// Vertx Implementation
+		// Vertex Implementation
 		//
+
+		template < typename GT, typename Vb >
+		GPlatesMaths::FiniteRotation
+		DelaunayVertex_2<GT, Vb>::calc_stage_rotation(
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type) const
+		{
+			//
+			// Currently we assume the geometry was reconstructed by plate id which precludes,
+			// for example, half-stage rotations (eg, MOR). This is currently OK since we only use
+			// this for calculating velocities at topological *network* boundaries/interiors where
+			// we don't expect a MOR (mid-ocean ridge) to form part of the boundary of a network.
+			//
+
+			// Calculate the stage rotation for this plate id.
+			return PlateVelocityUtils::calculate_stage_rotation(
+					get_plate_id(),
+					get_reconstruction_tree_creator(),
+					get_reconstruction_time(),
+					velocity_delta_time,
+					velocity_delta_time_type);
+		}
+
 
 		template < typename GT, typename Vb >
 		GPlatesMaths::Vector3D
@@ -697,18 +779,67 @@ namespace GPlatesAppLogic
 			// we don't expect a MOR (mid-ocean ridge) to form part of the boundary of a network.
 			//
 
-			const GPlatesModel::integer_plate_id_type vertex_plate_id = get_plate_id();
-			const double &vertex_reconstruction_time = get_reconstruction_time();
-			const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-					velocity_delta_time_type, vertex_reconstruction_time, velocity_delta_time);
-
 			// Calculate the velocity for this plate id.
 			return PlateVelocityUtils::calculate_velocity_vector(
 					get_point_on_sphere(),
+					get_plate_id(),
 					get_reconstruction_tree_creator(),
-					time_range.second/*young*/,
-					time_range.first/*old*/,
-					vertex_plate_id);
+					get_reconstruction_time(),
+					velocity_delta_time,
+					velocity_delta_time_type);
+		}
+
+
+		template < typename GT, typename Vb >
+		DeformationInfo
+		DelaunayVertex_2<GT, Vb>::calculate_deformation_info() const
+		{
+			const Delaunay_2 &delaunay_2 = get_delaunay_2();
+
+			DeformationInfo vertex_deformation_info;
+			double area_sum = 0.0;
+
+			// Circulate over the faces incident to this vertex.
+			const Delaunay_2::Face_circulator incident_face_circulator_start =
+					delaunay_2.incident_faces(get_handle());
+			Delaunay_2::Face_circulator incident_face_circulator = incident_face_circulator_start;
+			do
+			{
+				// Ignore the infinite face - we're at the edge of the convex hull so one (or two?)
+				// adjacent face(s) will be the infinite face.
+				//
+				// Also note that we do *not* ignore faces that are outside the deforming region
+				// (outside network boundary or inside non-deforming interior rigid blocks).
+				// This is because it's possible for there to be extremely tiny faces in the
+				// delaunay triangulation (eg, if a topological section has adjacent vertices very close
+				// together) and the strain rate on these faces tends to be much larger than normal
+				// (presumably due to the accuracy of calculations) and including the larger faces
+				// outside the deforming region (which have zero strain rates)
+				// causes the face-area-average of strain rate to significantly reduce the
+				// contribution of the tiny face (with the much larger strain rate).
+				if (delaunay_2.is_infinite(incident_face_circulator))
+				{
+					continue;
+				}
+
+				// Get the area of the face triangle.
+				const double area = std::fabs(delaunay_2.triangle(incident_face_circulator).area());
+
+				// Get the deformation data for the current face.
+				const DeformationInfo &face_deformation_info = incident_face_circulator->get_deformation_info();
+
+				vertex_deformation_info = vertex_deformation_info + area * face_deformation_info;
+				area_sum += area;
+			}
+			while (++incident_face_circulator != incident_face_circulator_start);
+
+			if (GPlatesMaths::are_almost_exactly_equal(area_sum, 0.0))
+			{
+				// The incident faces all had zero area for some reason.
+				return DeformationInfo();
+			}
+
+			return (1.0 / area_sum) * vertex_deformation_info;
 		}
 
 
@@ -717,31 +848,16 @@ namespace GPlatesAppLogic
 		//
 
 		template < typename GT, typename Fb >
-		void
-		DelaunayFace_2<GT, Fb>::calculate_centroid() const
-		{
-			// Calculate the centroid of this face 
-	
-			// Get the vertices as PointOnSphere 's and add them to a vector
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			points.push_back( this->vertex(0)->get_point_on_sphere() );
-			points.push_back( this->vertex(1)->get_point_on_sphere() );
-			points.push_back( this->vertex(2)->get_point_on_sphere() );
-
-			// compute the centroid 
-			GPlatesMaths::UnitVector3D centroid_uv3d =
-					GPlatesMaths::Centroid::calculate_points_centroid(points.begin(), points.end() );
-
-			const GPlatesMaths::PointOnSphere centroid = GPlatesMaths::PointOnSphere(centroid_uv3d);
-			d_centroid = centroid;
-		}
-
-
-		template < typename GT, typename Fb >
-		void
+		DeformationInfo
 		DelaunayFace_2<GT, Fb>::calculate_deformation_info() const
 		{
-			// NOTE: array indices 0,1,2 in CGAL code coorespond to triangle vertex numbers 1,2,3 
+			if (!d_face_info->is_in_deforming_region)
+			{
+				// Not in the deforming region so return zero strain rates.
+				return DeformationInfo();
+			}
+
+			// NOTE: array indices 0,1,2 in CGAL code correspond to triangle vertex numbers 1,2,3 
 
 			// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
 			// until instantiation - otherwise we get a compile error.
@@ -749,156 +865,135 @@ namespace GPlatesAppLogic
 			Vertex_handle v2 = this->vertex(1);
 			Vertex_handle v3 = this->vertex(2);
 
-			// Get vertex coordinates data as projected x,y coords and
-			// get velocity data, u, for each vertex.
-   
-            // NOTE: y velocities are colat, down from the pole, 
-            //       and have to have sign change for North South uses 
+			// Position and velocity at vertex 1.
+            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			const GPlatesMaths::LatLonPoint &v1_llp = v1->get_lat_lon_point();
+			double phi1 = v1_llp.longitude();
+			double theta1 = 90.0 - v1_llp.latitude();
+			const GPlatesMaths::VectorColatitudeLongitude u1 = v1->calc_velocity_colat_lon();
+			double uphi1 = u1.get_vector_longitude().dval();
+			double utheta1 = u1.get_vector_colatitude().dval();
 
-			// vertex 1
-			const double x1 = v1->point().x();
-			const double y1 = v1->point().y();
-			double ux1 = v1->calc_velocity_colat_lon().get_vector_longitude().dval();
-			double uy1 = -( v1->calc_velocity_colat_lon().get_vector_colatitude().dval() );
+			// Position and velocity at vertex 2.
+            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			const GPlatesMaths::LatLonPoint &v2_llp = v2->get_lat_lon_point();
+			double phi2 = v2_llp.longitude();
+			double theta2 = 90.0 - v2_llp.latitude();
+			const GPlatesMaths::VectorColatitudeLongitude u2 = v2->calc_velocity_colat_lon();
+			double uphi2 = u2.get_vector_longitude().dval();
+			double utheta2 = u2.get_vector_colatitude().dval();
 
-			// vertex 2
-			const double x2 = v2->point().x();
-			const double y2 = v2->point().y();
-			double ux2 = v2->calc_velocity_colat_lon().get_vector_longitude().dval();
-			double uy2 = -( v2->calc_velocity_colat_lon().get_vector_colatitude().dval() );
+			// Position and velocity at vertex 3.
+            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			const GPlatesMaths::LatLonPoint &v3_llp = v3->get_lat_lon_point();
+			double phi3 = v3_llp.longitude();
+			double theta3 = 90.0 - v3_llp.latitude();
+			const GPlatesMaths::VectorColatitudeLongitude u3 = v3->calc_velocity_colat_lon();
+			double uphi3 = u3.get_vector_longitude().dval();
+			double utheta3 = u3.get_vector_colatitude().dval();
 
-			// vertex 3
-			const double x3 = v3->point().x();
-			const double y3 = v3->point().y();
-			double ux3 = v3->calc_velocity_colat_lon().get_vector_longitude().dval();
-			double uy3 = -( v3->calc_velocity_colat_lon().get_vector_colatitude().dval() );
+			// Face centroid.
+			const double inv_3 = 1.0 / 3.0;
+			const double x_centroid = inv_3 * (v1->point().x() + v2->point().x() + v3->point().x());
+			const double y_centroid = inv_3 * (v1->point().y() + v2->point().y() + v3->point().y());
 
-			// Establish coeficients for linear interpolation over the element
-			// x,y data is in meters from projection;
-			//
-			//a1 = x2*y3 - x3*y2;
-			//a2 = x3*y1 - x1*y3;
-			//a3 = x1*y2 - x2*y1;
-			const double b1 = y2-y3;
-			const double b2 = y3-y1;
-			const double b3 = y1-y2;
-			const double c1 = x3-x2;
-			const double c2 = x1-x3;
-			const double c3 = x2-x1;
+			const GPlatesMaths::AzimuthalEqualAreaProjection &projection = get_delaunay_2().get_projection();
 
-			// det is 2*(area of triangular element)
-			const double det = x2*y3 + x1*y2 + y1*x3 - y1*x2 - x1*y3 - y2*x3;
-			const double inv_det = 1.0 / det;
+			const GPlatesMaths::LatLonPoint centroid_llp =
+					projection.unproject_to_lat_lon(QPointF(x_centroid, y_centroid));
+
+			// The colatitude/longitude coordinates of the face centroid.
+			double phi_centroid = centroid_llp.longitude();
+			double theta_centroid = 90.0 - centroid_llp.latitude();
+
+			// Velocity at face centroid.
+			double uphi_centroid = inv_3 * (uphi1 + uphi2 + uphi3);
+			double utheta_centroid = inv_3 * (utheta1 + utheta2 + utheta3);
+
+			// Convert spherical coordinates from degrees to radians.
+			phi_centroid = GPlatesMaths::convert_deg_to_rad( phi_centroid );
+			phi1 = GPlatesMaths::convert_deg_to_rad( phi1 );
+			phi2 = GPlatesMaths::convert_deg_to_rad( phi2 );
+			phi3 = GPlatesMaths::convert_deg_to_rad( phi3 );
+
+			theta_centroid = GPlatesMaths::convert_deg_to_rad( theta_centroid  );
+			theta1 = GPlatesMaths::convert_deg_to_rad( theta1 );
+			theta2 = GPlatesMaths::convert_deg_to_rad( theta2 );
+			theta3 = GPlatesMaths::convert_deg_to_rad( theta3 );
 
 			// Scale velocity values from cm/yr to m/s.
 			const double inv_velocity_scale = 1.0 / 3.1536e09;
-			ux1 = ux1 * inv_velocity_scale;
-			uy1 = uy1 * inv_velocity_scale;
-			ux2 = ux2 * inv_velocity_scale;
-			uy2 = uy2 * inv_velocity_scale;
-			ux3 = ux3 * inv_velocity_scale;
-			uy3 = uy3 * inv_velocity_scale;
 
-#if 0
-			// report 
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: face_index =" << get_face_index();
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v1: x1 = " << x1 << "; y1 =" << y1;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux1    = " << ux1 << " in longitude in m/s ";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy1    = " << uy1 << " in colatitude in m/s ";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v2: x2 = " << x2 << "; y2 =" << y2;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux2    = " << ux2 << " in longitude in m/s ";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy2    = " << uy2 << " in colatitude in m/s ";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v3: x3 = " << x3 << "; y3 =" << y3;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux3    = " << ux3 << " in longitude in m/s ";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy3    = " << uy3 << " in colatitude in m/s ";
-#endif
+			uphi_centroid = uphi_centroid * inv_velocity_scale;
+			uphi1 = uphi1 * inv_velocity_scale;
+			uphi2 = uphi2 * inv_velocity_scale;
+			uphi3 = uphi3 * inv_velocity_scale;
 
-			// compute derivatives ; NOTE: duydy = duy/dy ; units = 1/s
-			const double duxdx = (b1*ux1 + b2*ux2 + b3*ux3) * inv_det;
-			const double duydy = (c1*uy1 + c2*uy2 + c3*uy3) * inv_det;
+			utheta_centroid = utheta_centroid * inv_velocity_scale;
+			utheta1 = utheta1 * inv_velocity_scale;
+			utheta2 = utheta2 * inv_velocity_scale;
+			utheta3 = utheta3 * inv_velocity_scale;
 
-			const double duxdy = (c1*ux1 + c2*ux2 + c3*ux3) * inv_det;
-			const double duydx = (b1*uy1 + b2*uy2 + b3*uy3) * inv_det;
+			// Establish coefficients for spherical linear interpolation over the element
+			// determinatnt: det_A is 2*(area of triangle element)
+			// [ A ] = [ phi2-phi1 , phi3 - phi1, theta2 - theta1 , theta3 - theta1 ] 
+			const double det_A = (phi2 - phi1) * (theta3 - theta1) - (phi3 - phi1) * (theta2 - theta1);
+			if (std::fabs(det_A) > 0)
+			{
+				const double inv_A = 1.0 / det_A;
 
-#if 0
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: duxdx = " << duxdx;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: duydy = " << duydy;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: duxdy = " << duxdy;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: duydx = " << duydx;
-#endif
+				// Spherical coords.
+				const double duphi_dphi = (
+					(uphi2 - uphi1) * (theta3 - theta1)  +
+					(uphi3 - uphi1) * (theta1 - theta2)
+				) * inv_A;
 
-			// Compute Strain Rates
-			const double SR22 = duxdx;
-			const double SR33 = duydy;
-			const double SR23 = 0.5 * (duxdy + duydx);
+				const double dutheta_dtheta = (
+					(utheta2 - utheta1) * (phi1 - phi3)  +
+					(utheta3 - utheta1) * (phi2 - phi1)
+				) * inv_A;
 
-#if 0
-// keep for now, but not yet needed
-			// Compute Rotations
-			const double ROT23 = 0.5 * (duydx - duxdy);
-			const double ROT32 = 0.5 * (duxdy - duydx);
-#endif
+				const double duphi_dtheta = (
+					(uphi2 - uphi1) * (phi1 - phi3)  +
+					(uphi3 - uphi1) * (phi2 - phi1)
+				) * inv_A;
 
-			// Principle strain rates.
-			const double SR_DIR = 0.5 * std::atan( 2.0 * SR23/(SR33-SR22) );
-			const double SR_variation = std::sqrt( SR23*SR23 + 0.25 * ((SR33-SR22)*(SR33-SR22)) );
-			const double SR1 = 0.5*(SR22+SR33) + SR_variation;
-			const double SR2 = 0.5*(SR22+SR33) - SR_variation;
+				const double dutheta_dphi = (
+					(utheta2 - utheta1) * (theta3-theta1) +
+					(utheta3 - utheta1) * (theta1-theta2)
+				) * inv_A;
 
-			// Dilitational strain rate
-			const double dilitation = SR22 + SR33;
+				//
+				// Compute Strain Rates.
+				//
 
-			// These will be updated by function calls from ResolvedTriangulationNetwork.cc
-			const double smooth_dilitation = 0.0;
-			const double smooth_second_invariant = 0.0;
-			const double sph_dilitation = 0.0;
-			const double sph_second_invariant = 0.0;
-			const double sph_smooth_dilitation = 0.0;
-			const double sph_smooth_second_invariant = 0.0;
+				// Range of 'theta_centroid' is [0, PI] from North to South pole.
+				const double sin_theta_centroid = std::sin(theta_centroid);
+				if (sin_theta_centroid > 0)
+				{
+					const double inv_sin_theta_centroid = 1.0 / sin_theta_centroid;
+					const double inv_r_sin_theta_centroid = inv_sin_theta_centroid * INVERSE_EARTH_RADIUS_METRES;
 
-			// Second invariant of the strain rate
+					const double cos_theta_centroid = std::cos(theta_centroid);
+					const double cot_theta_centroid = cos_theta_centroid * inv_sin_theta_centroid;
 
-            // incompressable
-			// const double second_invariant = std::sqrt(SR22 * SR22 + SR33 * SR33 + 2.0 * SR23 * SR23); 
+					const double SR_theta_theta = dutheta_dtheta * INVERSE_EARTH_RADIUS_METRES;
+					const double SR_phi_phi = inv_r_sin_theta_centroid * (duphi_dphi + utheta_centroid * cos_theta_centroid);
+					const double SR_theta_phi = 0.5 * INVERSE_EARTH_RADIUS_METRES *
+						(
+							inv_sin_theta_centroid * dutheta_dphi +
+							duphi_dtheta -
+							uphi_centroid * cot_theta_centroid
+						);
 
-            // compressable
-			// const double second_invariant = std::sqrt( (SR22 * SR33) - (SR23 * SR23) );
-            const double tmp1=( SR22 * SR33) - (SR23 * SR23);
-			const double second_invariant = copysign( std::sqrt( std::abs(tmp1) ),tmp1) ;
+					return DeformationInfo(DeformationStrain(SR_theta_theta, SR_phi_phi, SR_theta_phi));
+				}
+				// else fall through...
+			}
+			// else fall through...
 
-#if 0
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR22 = " << SR22;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR33 = " << SR33;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR23 = " << SR23;
-#if 0
-// keep for now, but not yet needed
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT23 = " << ROT23;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT32 = " << ROT32;
-#endif
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR_DIR = " << SR_DIR;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR1 = " << SR1;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR2 = " << SR2;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: dilitation = " << dilitation;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: second_invariant = " << second_invariant;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: smooth_dilitation = " << smooth_dilitation;
-#endif
-
-			d_deformation_info = DeformationInfo(
-					SR22,
-					SR33,
-					SR23,
-					SR_DIR,
-					SR1,
-					SR2,
-					dilitation,
-					second_invariant,
-					smooth_dilitation,
-					smooth_second_invariant,
-					sph_dilitation,
-					sph_second_invariant,
-					sph_smooth_dilitation,
-					sph_smooth_second_invariant
-			);
+			// Unable to calculate strain - use default values of zero.
+			return DeformationInfo();
 		}
 	}
 }

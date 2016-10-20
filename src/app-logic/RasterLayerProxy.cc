@@ -118,7 +118,7 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 	std::vector<ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_proxies;
 	BOOST_FOREACH(
 			const LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstruct_layer_proxy,
-			d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
+			d_current_reconstructed_polygons_layer_proxies)
 	{
 		reconstruct_layer_proxies.push_back(reconstruct_layer_proxy.get_input_layer_proxy());
 	}
@@ -268,7 +268,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	// If we are not currently connected to any reconstructed polygons *and* we are not using an age grid
 	// then just return the *unreconstructed* raster.
 	// Note that we don't require reconstructed polygons to continue past this point.
-	if (d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies().empty() &&
+	if (d_current_reconstructed_polygons_layer_proxies.empty() &&
 		!d_current_age_grid_raster_layer_proxy)
 	{
 		return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
@@ -310,11 +310,11 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 
 	// Get the reconstructed polygon meshes from the layers containing the reconstructed polygons.
 	std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;
-	if (!d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies().empty())
+	if (!d_current_reconstructed_polygons_layer_proxies.empty())
 	{
 		BOOST_FOREACH(
 				const LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
-				d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
+				d_current_reconstructed_polygons_layer_proxies)
 		{
 			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_ptr =
 					reconstructed_polygons_layer_proxy.get_input_layer_proxy()
@@ -616,7 +616,7 @@ GPlatesAppLogic::RasterLayerProxy::get_subject_token()
 	// See if the reconstructed polygons layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
-			d_current_reconstructed_polygons_layer_proxies.get_input_layer_proxies())
+			d_current_reconstructed_polygons_layer_proxies)
 	{
 		if (!reconstructed_polygons_layer_proxy.is_up_to_date())
 		{

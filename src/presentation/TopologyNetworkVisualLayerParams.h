@@ -35,6 +35,9 @@
 #include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesPresentation
 {
@@ -46,6 +49,15 @@ namespace GPlatesPresentation
 		typedef GPlatesUtils::non_null_intrusive_ptr<TopologyNetworkVisualLayerParams> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyNetworkVisualLayerParams> non_null_ptr_to_const_type;
 
+
+		enum ColourMode
+		{
+			COLOUR_DRAW_STYLE,
+			COLOUR_DILATATION_STRAIN_RATE,
+			COLOUR_SECOND_INVARIANT_STRAIN_RATE
+		};
+
+
 		static
 		non_null_ptr_type
 		create(
@@ -54,61 +66,135 @@ namespace GPlatesPresentation
 			return new TopologyNetworkVisualLayerParams( layer_params );
 		}
 
-		bool
-		show_delaunay_triangulation() const
+
+		ColourMode
+		get_colour_mode() const
 		{
-			return d_show_delaunay_triangulation;
+			return d_colour_mode;
 		}
 
 		void
-		set_show_delaunay_triangulation(
-				bool b)
+		set_colour_mode(
+				ColourMode colour_mode)
 		{
-			d_show_delaunay_triangulation = b;
+			d_colour_mode = colour_mode;
 			emit_modified();
 		}
 
-		bool
-		show_constrained_triangulation() const
-		{
-			return d_show_constrained_triangulation;
-		}
 
+		// Set min/max absolute dilatation strain rate (for colour blending).
 		void
-		set_show_constrained_triangulation(
-				bool b)
-		{
-			d_show_constrained_triangulation = b;
-			emit_modified();
-		}
-
-		bool
-		show_mesh_triangulation() const
-		{
-			return d_show_mesh_triangulation;
-		}
-
+		set_min_abs_dilatation(
+				const double &min_abs_dilatation);
 		void
-		set_show_mesh_triangulation(
-				bool b)
+		set_max_abs_dilatation(
+				const double &max_abs_dilatation);
+
+		// Get min/max absolute dilatation strain rate (for colour blending).
+		const double &
+		get_min_abs_dilatation() const
 		{
-			d_show_mesh_triangulation = b;
-			emit_modified();
+			return d_min_abs_dilatation;
+		}
+		const double &
+		get_max_abs_dilatation() const
+		{
+			return d_max_abs_dilatation;
 		}
 
-		bool
-		show_total_triangulation() const
+		/**
+		 * Returns the dilatation colour palette filename, if loaded from a file.
+		 *
+		 * Returns the empty string if auto-generated.
+		 */
+		const QString &
+		get_dilatation_colour_palette_filename() const
 		{
-			return d_show_total_triangulation;
+			return d_dilatation_colour_palette_filename;
 		}
 
+		/**
+		 * Return the dilatation colour palette.
+		 *
+		 * Returns none if no colour palette has been set.
+		 */
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
+		get_dilatation_colour_palette() const
+		{
+			return d_dilatation_colour_palette;
+		}
+
+		/** 
+		 * Set the dilatation palette.
+		 */
 		void
-		set_show_total_triangulation(
-				bool b)
+		set_dilatation_colour_palette(
+				const QString &filename,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
+
+		/**
+		 * Use the default dilatation colour palette.
+		*/
+		void
+		use_default_dilatation_colour_palette();
+
+
+		// Set min/max absolute second invariant strain rate (for colour blending).
+		void
+		set_min_abs_second_invariant(
+				const double &min_abs_second_invariant);
+		void
+		set_max_abs_second_invariant(
+				const double &max_abs_second_invariant);
+
+		// Get min/max absolute second invariant strain rate (for colour blending).
+		const double &
+		get_min_abs_second_invariant() const
 		{
-			d_show_total_triangulation = b;
-			emit_modified();
+			return d_min_abs_second_invariant;
 		}
+		const double &
+		get_max_abs_second_invariant() const
+		{
+			return d_max_abs_second_invariant;
+		}
+
+		/**
+		 * Returns the second invariant colour palette filename, if loaded from a file.
+		 *
+		 * Returns the empty string if auto-generated.
+		 */
+		const QString &
+		get_second_invariant_colour_palette_filename() const
+		{
+			return d_second_invariant_colour_palette_filename;
+		}
+
+		/**
+		 * Return the second invariant colour palette.
+		 *
+		 * Returns none if no colour palette has been set.
+		 */
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
+		get_second_invariant_colour_palette() const
+		{
+			return d_second_invariant_colour_palette;
+		}
+
+		/** 
+		 * Set the second invariant palette.
+		 */
+		void
+		set_second_invariant_colour_palette(
+				const QString &filename,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
+
+		/**
+		 * Use the default second invariant colour palette.
+		*/
+		void
+		use_default_second_invariant_colour_palette();
+
 
 		bool
 		show_segment_velocity() const
@@ -124,90 +210,91 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
+
 		bool
-		show_fill() const
+		get_fill_triangulation() const
 		{
-			return d_show_fill;
+			return d_fill_triangulation;
 		}
 
 		void
-		set_show_fill(
+		set_fill_triangulation(
 				bool b)
 		{
-			d_show_fill = b;
+			d_fill_triangulation = b;
 			emit_modified();
 		}
 
-		int
-		color_index() const
+
+		bool
+		get_fill_rigid_blocks() const
 		{
-			return d_color_index;
+			return d_fill_rigid_blocks;
 		}
 
 		void
-		set_color_index(
-				int i)
+		set_fill_rigid_blocks(
+				bool b)
 		{
-			d_color_index = i;
+			d_fill_rigid_blocks = b;
 			emit_modified();
 		}
 
-		//
-		// FIXME: Should be calling 'emit_modified()' in the 'set' calls below, but cannot currently
-		// because 'TopologyNetworkResolverLayerOptionsWidget::handle_update_button_clicked()' updates
-		// multiple GUI controls (which results in multiple 'set' calls here which in turn modify
-		// the GUI before all its controls have been updated).
-		//
-		// The fix is for 'TopologyNetworkResolverLayerOptionsWidget' to do an update immediately
-		// after each GUI control is changed (rather than having an 'update' button that updates after
-		// multiple GUI controls have been changed).
-		//
 
-		// set/get data for range1
-		void set_range1_max(double max) { d_range1_max = max; }
-		void set_range1_min(double min) { d_range1_min = min; }
-
-		double get_range1_max() const { return d_range1_max; }
-		double get_range1_min() const { return d_range1_min; }
-
-		// set/get data for range2
-		void set_range2_max(double max) { d_range2_max = max; }
-		void set_range2_min(double min) { d_range2_min = min; }
-
-		double get_range2_max() const { return d_range2_max; }
-		double get_range2_min() const { return d_range2_min; }
-
-		// Set Colours 
-		void set_fg_colour(GPlatesGui::Colour c) { d_fg_colour = c; }
-		void set_max_colour(GPlatesGui::Colour c) { d_max_colour = c; }
-		void set_mid_colour(GPlatesGui::Colour c) { d_mid_colour = c; }
-		void set_min_colour(GPlatesGui::Colour c) { d_min_colour = c; }
-		void set_bg_colour(GPlatesGui::Colour c) { d_bg_colour = c; }
-
-		// Get Colours 
-		GPlatesGui::Colour get_fg_colour() const { return d_fg_colour; }
-		GPlatesGui::Colour get_max_colour() const { return d_max_colour; }
-		GPlatesGui::Colour get_mid_colour() const { return d_mid_colour; }
-		GPlatesGui::Colour get_min_colour() const { return d_min_colour; }
-		GPlatesGui::Colour get_bg_colour() const { return d_bg_colour; }
-
-		// Override of virtual metions in  VisualLayerParams base.
-		virtual
+		/**
+		 * Sets the opacity of filled triangulation and rigid blocks.
+		 */
 		void
-		accept_visitor(
-				ConstVisualLayerParamsVisitor &visitor) const
+		set_fill_opacity(
+				const double &opacity)
 		{
-			visitor.visit_topology_network_visual_layer_params(*this);
+			d_fill_opacity = opacity;
+			emit_modified();
 		}
 
-		// Override of virtual metions in  VisualLayerParams base.
-		virtual
-		void
-		accept_visitor(
-				VisualLayerParamsVisitor &visitor)
+		/**
+		 * Gets the opacity of filled triangulation and rigid blocks.
+		 */
+		double
+		get_fill_opacity() const
 		{
-			visitor.visit_topology_network_visual_layer_params(*this);
+			return d_fill_opacity;
 		}
+
+
+		/**
+		 * Sets the intensity of filled triangulation and rigid blocks.
+		 */
+		void
+		set_fill_intensity(
+				const double &intensity)
+		{
+			d_fill_intensity = intensity;
+			emit_modified();
+		}
+
+		/**
+		 * Gets the intensity of filled triangulation and rigid blocks.
+		 */
+		double
+		get_fill_intensity() const
+		{
+			return d_fill_intensity;
+		}
+
+
+		/**
+		 * Returns the filled primitives modulate colour.
+		 *
+		 * This is a combination of the opacity and intensity as (I, I, I, O) where
+		 * 'I' is intensity and 'O' is opacity.
+		 */
+		GPlatesGui::Colour
+		get_fill_modulate_colour() const
+		{
+			return GPlatesGui::Colour(d_fill_intensity, d_fill_intensity, d_fill_intensity, d_fill_opacity);
+		}
+
 
 		/**
 		 * Override of virtual method in VisualLayerParams base.
@@ -217,40 +304,20 @@ namespace GPlatesPresentation
 		handle_layer_modified(
 				const GPlatesAppLogic::Layer &layer);
 
-		/**
-		 * Returns the filename of the file from which the current colour
-		 * palette was loaded, if it was loaded from a file.
-		 * If the current colour palette is auto-generated, returns the empty string.
-		 */
-		const QString &
-		get_colour_palette_filename() const
+		virtual
+		void
+		accept_visitor(
+				ConstVisualLayerParamsVisitor &visitor) const
 		{
-			return d_colour_palette_filename;
+			visitor.visit_topology_network_visual_layer_params(*this);
 		}
 
-		/** 
-		 * Set the palette 
-		 */
+		virtual
 		void
-		set_colour_palette(
-				const QString &filename,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
-
-		/**
-		 * Causes the current colour palette to be generated from the gui controls
-		*/
-		void
-		user_generated_colour_palette();
-		
-		/**
-		 * Return the current colour palette.
-		 *
-		 * Returns none if no colour palette has been set.
-		 */
-		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
-		get_colour_palette() const
+		accept_visitor(
+				VisualLayerParamsVisitor &visitor)
 		{
-			return d_colour_palette;
+			visitor.visit_topology_network_visual_layer_params(*this);
 		}
 
 	protected:
@@ -261,37 +328,51 @@ namespace GPlatesPresentation
 
 	private:
 
-		// The various options to show or hide the triangulations 
-		bool d_show_delaunay_triangulation;
-		bool d_show_constrained_triangulation;
-		bool d_show_mesh_triangulation;
-		bool d_show_total_triangulation;
-		bool d_show_fill;
+		ColourMode d_colour_mode;
+
+		//! Dilatation strain rate parameters.
+		double d_min_abs_dilatation;
+		double d_max_abs_dilatation;
+		//! The dilatation colour palette filename (or empty if using default palette).
+		QString d_dilatation_colour_palette_filename;
+		//! The dilatation colour palette, whether set explicitly as loaded from a file, or auto-generated.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_dilatation_colour_palette;
+
+		//! Second invariant strain rate parameters.
+		double d_min_abs_second_invariant;
+		double d_max_abs_second_invariant;
+		//! The second invariant colour palette filename (or empty if using default palette).
+		QString d_second_invariant_colour_palette_filename;
+		//! The second invariant colour palette, whether set explicitly as loaded from a file, or auto-generated.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_second_invariant_colour_palette;
+
+		// The various options to show or hide.
 		bool d_show_segment_velocity;
-		int d_color_index;
+		bool d_fill_triangulation;
+		bool d_fill_rigid_blocks;
 
-		//! parms for creating colour palettes
-		double d_range1_max;
-		double d_range1_min;
-		double d_range2_max;
-		double d_range2_min;
-		GPlatesGui::Colour d_fg_colour;
-		GPlatesGui::Colour d_max_colour;
-		GPlatesGui::Colour d_mid_colour;
-		GPlatesGui::Colour d_min_colour;
-		GPlatesGui::Colour d_bg_colour;
+		//! The opacity of the filled triangulation and rigid blocks in the range [0,1].
+		double d_fill_opacity;
+		//! The intensity of the filled triangulation and rigid blocks in the range [0,1].
+		double d_fill_intensity;
 
-		/**
-		 * The current colour palette for this layer
-		 */
-		QString d_colour_palette_filename;
 
-		/**
-		 * The current colour palette for this layer, whether set explicitly as
-		 * loaded from a file, or auto-generated.
-		 */
-		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_colour_palette;
+		void
+		create_default_dilatation_colour_palette();
+
+		void
+		create_default_second_invariant_colour_palette();
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			TopologyNetworkVisualLayerParams::ColourMode &colour_mode,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_PRESENTATION_TOPOLOGYNETWORKVISUALLAYERPARAMS_H

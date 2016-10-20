@@ -96,6 +96,24 @@ namespace GPlatesMaths
 			const double &delta_time);
 
 	/**
+	 * Similar to @a calculate_velocity_vector but returns the stage rotation.
+	 */
+	FiniteRotation
+	calculate_stage_rotation(
+			const FiniteRotation &fr_t1,
+			const FiniteRotation &fr_t2);
+
+	/**
+	 * Similar to @a calculate_velocity_vector but uses a stage rotation instead
+	 * of two equivalent rotations.
+	 */
+	Vector3D
+	calculate_velocity_vector(
+			const PointOnSphere &point, 
+			const FiniteRotation &stage_rotation,
+			const double &delta_time);
+
+	/**
 	 * @brief calculate_velocity_vector_and_omega - as calculate_velocity_vector but
 	 * returns the angular velocity (radians per Ma) in addition to the velocity vector.
 	 */

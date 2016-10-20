@@ -255,6 +255,10 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_feature_reader_impl(
 	//
 	// This order ensures less recent (older) GPML files are upgraded correctly.
 	//
+	// Note that each upgrade reader converts, the specified feature type, to the latest (current) GPGIM version.
+	// Hence we don't need to chain them together, so if an upgrade reader is found it is returned
+	// immediately, otherwise we look for the next upgrade reader.
+	//
 
 	static const GPlatesModel::GpgimVersion GPGIM_VERSION_1_6_318(1, 6, 318);
 	if (d_gpml_version < GPGIM_VERSION_1_6_318)

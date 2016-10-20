@@ -30,7 +30,7 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "GeometryDeformation.h"
+#include "DeformationStrain.h"
 #include "ReconstructScalarCoverageParams.h"
 
 #include "property-values/ValueObjectType.h"
@@ -44,11 +44,11 @@ namespace GPlatesAppLogic
 	 */
 	typedef boost::function<
 			void (
-					std::vector<double> &,                                    // per-point input/output scalars
-					const std::vector<GeometryDeformation::DeformationInfo> &,// initial per-point input deform info
-					const std::vector<GeometryDeformation::DeformationInfo> &,// final per-point input deform info
-					const double &,                                           // initial time
-					const double &)>                                          // final time
+					std::vector<double> &,                  // per-point input/output scalars
+					const std::vector<DeformationStrain> &, // initial per-point input deformation strain rates
+					const std::vector<DeformationStrain> &, // final per-point input deformation strain rates
+					const double &,                         // initial time
+					const double &)>                        // final time
 							scalar_evolution_function_type;
 
 
@@ -81,8 +81,8 @@ namespace GPlatesAppLogic
 		void
 		crustal_thinning(
 				std::vector<double> &input_output_crustal_thickness,
-				const std::vector<GeometryDeformation::DeformationInfo> &initial_deformation_info,
-				const std::vector<GeometryDeformation::DeformationInfo> &final_deformation_info,
+				const std::vector<DeformationStrain> &initial_deformation_strain_rates,
+				const std::vector<DeformationStrain> &final_deformation_strain_rates,
 				const double &initial_time,
 				const double &final_time);
 	}

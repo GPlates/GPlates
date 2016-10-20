@@ -44,6 +44,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "gui/BuiltinColourPaletteType.h"
 #include "gui/RasterColourPalette.h"
 
 #include "maths/MathsUtils.h"
@@ -151,6 +152,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::ScalarField3DLayerOptionsWidg
 	QObject::connect(
 			d_scalar_colour_palette_widget, SIGNAL(use_default_palette_button_clicked()),
 			this, SLOT(handle_use_default_scalar_palette_button_clicked()));
+	QObject::connect(
+			d_scalar_colour_palette_widget, SIGNAL(builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)),
+			this, SLOT(handle_builtin_scalar_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)));
+	QObject::connect(
+			d_scalar_colour_palette_widget, SIGNAL(builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)),
+			this, SLOT(handle_builtin_scalar_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)));
 
 	QObject::connect(
 			d_scalar_colour_palette_widget, SIGNAL(range_check_box_changed(int)),
@@ -188,6 +195,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::ScalarField3DLayerOptionsWidg
 	QObject::connect(
 			d_gradient_colour_palette_widget, SIGNAL(use_default_palette_button_clicked()),
 			this, SLOT(handle_use_default_gradient_palette_button_clicked()));
+	QObject::connect(
+			d_gradient_colour_palette_widget, SIGNAL(builtin_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)),
+			this, SLOT(handle_builtin_gradient_colour_palette_selected(const GPlatesGui::BuiltinColourPaletteType &)));
+	QObject::connect(
+			d_gradient_colour_palette_widget, SIGNAL(builtin_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)),
+			this, SLOT(handle_builtin_gradient_parameters_changed(const GPlatesGui::BuiltinColourPaletteType::Parameters &)));
 
 	QObject::connect(
 			d_gradient_colour_palette_widget, SIGNAL(range_check_box_changed(int)),
@@ -1673,6 +1686,50 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_use_default_scalar_pal
 
 
 void
+GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_scalar_colour_palette_selected(
+		const GPlatesGui::BuiltinColourPaletteType &builtin_scalar_colour_palette_type)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ScalarField3DVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ScalarField3DVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the colour palette in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
+					params->get_scalar_colour_palette_parameters();
+			scalar_colour_palette_parameters.load_builtin_colour_palette(builtin_scalar_colour_palette_type);
+			params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_scalar_parameters_changed(
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_scalar_parameters)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ScalarField3DVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ScalarField3DVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the built-in palette parameters in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
+					params->get_scalar_colour_palette_parameters();
+			scalar_colour_palette_parameters.set_builtin_colour_palette_parameters(builtin_scalar_parameters);
+			params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_scalar_palette_range_check_box_changed(
 		int state)
 {
@@ -1715,22 +1772,18 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_scalar_palette_min_lin
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> scalar_field_min_max = get_scalar_value_min_max(layer);
-			const double min_range_delta = 0.0001 * (scalar_field_min_max.second - scalar_field_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
 					visual_layer_params->get_scalar_colour_palette_parameters();
 
+			const double max_value = scalar_colour_palette_parameters.get_palette_range().second/*max*/;
+
 			// Ensure min not greater than max.
-			if (min_value > scalar_colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta)
+			if (min_value > max_value)
 			{
-				min_value = scalar_colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta;
+				min_value = max_value;
 			}
 
-			scalar_colour_palette_parameters.map_palette_range(
-					min_value/*min*/,
-					scalar_colour_palette_parameters.get_palette_range().second/*max*/);
+			scalar_colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 		}
@@ -1750,22 +1803,18 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_scalar_palette_max_lin
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> scalar_field_min_max = get_scalar_value_min_max(layer);
-			const double min_range_delta = 0.0001 * (scalar_field_min_max.second - scalar_field_min_max.first);
-
 			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
 					visual_layer_params->get_scalar_colour_palette_parameters();
 
+			const double min_value = scalar_colour_palette_parameters.get_palette_range().first/*min*/;
+
 			// Ensure max not less than min.
-			if (max_value < scalar_colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta)
+			if (max_value < min_value)
 			{
-				max_value = scalar_colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta;
+				max_value = min_value;
 			}
 
-			scalar_colour_palette_parameters.map_palette_range(
-					scalar_colour_palette_parameters.get_palette_range().first/*min*/,
-					max_value/*max*/);
+			scalar_colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 		}
@@ -1916,6 +1965,50 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_use_default_gradient_p
 
 
 void
+GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_gradient_colour_palette_selected(
+		const GPlatesGui::BuiltinColourPaletteType &builtin_gradient_colour_palette_type)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ScalarField3DVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ScalarField3DVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the colour palette in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
+					params->get_gradient_colour_palette_parameters();
+			gradient_colour_palette_parameters.load_builtin_colour_palette(builtin_gradient_colour_palette_type);
+			params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_gradient_parameters_changed(
+		const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_gradient_parameters)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ScalarField3DVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::ScalarField3DVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Update the built-in palette parameters in the layer params.
+			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
+					params->get_gradient_colour_palette_parameters();
+			gradient_colour_palette_parameters.set_builtin_colour_palette_parameters(builtin_gradient_parameters);
+			params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_gradient_palette_range_check_box_changed(
 		int state)
 {
@@ -1958,22 +2051,18 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_gradient_palette_min_l
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> gradient_magnitude_min_max = get_gradient_magnitude_min_max(layer);
-			const double min_range_delta = 0.0001 * (gradient_magnitude_min_max.second - -gradient_magnitude_min_max.second);
-
 			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
 					visual_layer_params->get_gradient_colour_palette_parameters();
 
+			const double max_value = gradient_colour_palette_parameters.get_palette_range().second/*max*/;
+
 			// Ensure min not greater than max.
-			if (min_value > gradient_colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta)
+			if (min_value > max_value)
 			{
-				min_value = gradient_colour_palette_parameters.get_palette_range().second/*max*/ - min_range_delta;
+				min_value = max_value;
 			}
 
-			gradient_colour_palette_parameters.map_palette_range(
-					min_value/*min*/,
-					gradient_colour_palette_parameters.get_palette_range().second/*max*/);
+			gradient_colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 		}
@@ -1993,22 +2082,18 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_gradient_palette_max_l
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-			const std::pair<double, double> gradient_magnitude_min_max = get_gradient_magnitude_min_max(layer);
-			const double min_range_delta = 0.0001 * (gradient_magnitude_min_max.second - -gradient_magnitude_min_max.second);
-
 			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
 					visual_layer_params->get_gradient_colour_palette_parameters();
 
+			const double min_value = gradient_colour_palette_parameters.get_palette_range().first/*min*/;
+
 			// Ensure max not less than min.
-			if (max_value < gradient_colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta)
+			if (max_value < min_value)
 			{
-				max_value = gradient_colour_palette_parameters.get_palette_range().first/*min*/ + min_range_delta;
+				max_value = min_value;
 			}
 
-			gradient_colour_palette_parameters.map_palette_range(
-					gradient_colour_palette_parameters.get_palette_range().first/*min*/,
-					max_value/*max*/);
+			gradient_colour_palette_parameters.map_palette_range(min_value, max_value);
 
 			visual_layer_params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 		}

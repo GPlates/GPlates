@@ -6,546 +6,544 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
-    <height>651</height>
+    <width>392</width>
+    <height>480</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Layers</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <property name="spacing">
+    <number>6</number>
+   </property>
+   <property name="margin">
+    <number>9</number>
+   </property>
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="spacing">
-      <number>0</number>
+    <widget class="QGroupBox" name="strain_rate_smoothing_group_box">
+     <property name="title">
+      <string>Strain Rate Smoothing</string>
      </property>
-     <item>
-      <widget class="QCheckBox" name="triangulation_checkbox">
-       <property name="text">
-        <string>Show Delaunay Triangulation (in color)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="color_index_combobox">
-       <item>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <property name="margin">
+       <number>6</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QRadioButton" name="natural_neighbour_radio_button">
         <property name="text">
-         <string>Shade Delaunay Triangles by draw default style</string>
+         <string>Natural neighbour</string>
         </property>
-       </item>
-       <item>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QRadioButton" name="no_smoothing_radio_button">
         <property name="text">
-         <string>Dilitation Strain Rate - Cartesian</string>
+         <string>No smoothing</string>
         </property>
-       </item>
-       <item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QRadioButton" name="barycentric_radio_button">
         <property name="text">
-         <string>Dilitation Strain Rate - Cartesian - Smoothed</string>
+         <string>Barycentric</string>
         </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Dilitation Strain Rate - Spherical</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Dilitation Strain Rate - Spherical - Smoothed</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Second Invariant Strain Rate - Cartesian</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Second Invariant Strain Rate - Cartesian - Smoothed</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Second Invariant Strain Rate - Spherical</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Second Invariant Strain Rate - Spherical - Smoothed</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="total_triangulation_checkbox">
-       <property name="text">
-        <string>Show Total Delaunay Triangulation (no clipping)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="constrained_checkbox">
-       <property name="text">
-        <string>Show Constrained Triangulation (in grey)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="mesh_checkbox">
-       <property name="text">
-        <string>Show Mesh Triangulation (in color)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="fill_checkbox">
-       <property name="text">
-        <string>Fill Network Triangles</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="segment_velocity_checkbox">
-       <property name="text">
-        <string>Show Source Segment Velocities (white arrows)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="6" column="1">
-        <widget class="QDoubleSpinBox" name="range2_max">
-         <property name="keyboardTracking">
-          <bool>false</bool>
-         </property>
-         <property name="minimum">
-          <double>-1000000000.000000000000000</double>
-         </property>
-         <property name="maximum">
-          <double>1000000000.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>0.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="11" column="0">
-        <widget class="QWidget" name="colour_scale_placeholder_widget" native="true"/>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>MultiRange</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="update_button">
-         <property name="text">
-          <string>Update</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Palette .cpt file:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="4">
-        <widget class="QToolButton" name="use_default_palette_button">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>Use Default Palette</string>
-         </property>
-         <property name="text">
-          <string>Use Default Palette</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../qt-resources/qt_widgets.qrc">
-           <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="3">
-        <widget class="QToolButton" name="select_palette_filename_button">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>Choose CPT File</string>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="1">
-        <widget class="QWidget" name="palette_filename_placeholder_widget" native="true"/>
-       </item>
-       <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="range1_max">
-         <property name="keyboardTracking">
-          <bool>false</bool>
-         </property>
-         <property name="minimum">
-          <double>-1000000000.000000000000000</double>
-         </property>
-         <property name="maximum">
-          <double>1000000000.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>1.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="4">
-        <widget class="QComboBox" name="mid_colour_combobox">
-         <property name="currentIndex">
-          <number>4</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>red</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>yellow</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>green</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>blue</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>white</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>grey</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>black</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLabel" name="label_12">
-         <property name="text">
-          <string>Palette</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QDoubleSpinBox" name="range1_min">
-         <property name="keyboardTracking">
-          <bool>false</bool>
-         </property>
-         <property name="minimum">
-          <double>-1000000000.000000000000000</double>
-         </property>
-         <property name="maximum">
-          <double>1000000000.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="1">
-        <widget class="QDoubleSpinBox" name="range2_min">
-         <property name="keyboardTracking">
-          <bool>false</bool>
-         </property>
-         <property name="minimum">
-          <double>-1000000000.000000000000000</double>
-         </property>
-         <property name="maximum">
-          <double>1000000000.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>-1.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="3">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Max</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="3">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Min</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="4">
-        <widget class="QComboBox" name="max_colour_combobox">
-         <item>
-          <property name="text">
-           <string>red</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>yellow</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>green</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>blue</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>white</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>grey</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>black</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Range 1</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="3">
-        <widget class="QLabel" name="label_9">
-         <property name="text">
-          <string>Min</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="3">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Max</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="4">
-        <widget class="QComboBox" name="min_colour_combobox">
-         <property name="currentIndex">
-          <number>3</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>red</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>yellow</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>green</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>blue</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>white</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>grey</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>black</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="7" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Range 2</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>Middle</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="4">
-        <widget class="QComboBox" name="fg_colour_combobox">
-         <property name="currentIndex">
-          <number>4</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>red</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>yellow</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>green</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>blue</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>white</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>grey</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>black</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="8" column="4">
-        <widget class="QComboBox" name="bg_colour_combobox">
-         <property name="currentIndex">
-          <number>4</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>red</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>yellow</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>green</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>blue</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>white</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>grey</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>black</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_10">
-         <property name="text">
-          <string>Foreground</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0">
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string>Background</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="1">
-        <widget class="QLabel" name="label_14">
-         <property name="text">
-          <string>Color</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="label_13">
-         <property name="text">
-          <string>Color</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
-     </item>
-    </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+    <widget class="QCheckBox" name="segment_velocity_checkbox">
+     <property name="text">
+      <string>Show triangulation velocities</string>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>83</width>
-       <height>20</height>
-      </size>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="colour_mode_group_box">
+     <property name="title">
+      <string>Triangulation Colour Mode</string>
      </property>
-    </spacer>
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="margin">
+       <number>6</number>
+      </property>
+      <item row="1" column="1">
+       <widget class="QRadioButton" name="second_invariant_radio_button">
+        <property name="text">
+         <string>Second invariant strain rate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QRadioButton" name="dilatation_radio_button">
+        <property name="text">
+         <string>Dilatation strain rate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QRadioButton" name="default_draw_style_radio_button">
+        <property name="text">
+         <string>Use draw style</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="dilatation_group_box">
+     <property name="title">
+      <string>Dilatation Colour Mapping</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="margin">
+       <number>3</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" name="dilatation_colour_scale_placeholder_widget" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="dilatation_default_palette_controls" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Max:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="max_abs_dilatation_spinbox">
+               <property name="keyboardTracking">
+                <bool>false</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
+               <property name="minimum">
+                <double>0.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1000000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 10&lt;span style=&quot; vertical-align:super;&quot;&gt;-17&lt;/span&gt; s&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Min:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="min_abs_dilatation_spinbox">
+               <property name="keyboardTracking">
+                <bool>false</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
+               <property name="minimum">
+                <double>0.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1000000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>1.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 10&lt;span style=&quot; vertical-align:super;&quot;&gt;-17&lt;/span&gt; s&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Palette:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="dilatation_palette_filename_placeholder_widget" native="true"/>
+        </item>
+        <item>
+         <widget class="QToolButton" name="select_dilatation_palette_filename_button">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Choose CPT File</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="use_default_dilatation_palette_button">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Use Default Palette</string>
+          </property>
+          <property name="text">
+           <string>Use Default Palette</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="second_invariant_group_box">
+     <property name="title">
+      <string>Second Invariant Colour Mapping</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="margin">
+       <number>3</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" name="second_invariant_colour_scale_placeholder_widget" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="second_invariant_default_palette_controls" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Max:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="max_abs_second_invariant_spinbox">
+               <property name="keyboardTracking">
+                <bool>false</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
+               <property name="minimum">
+                <double>0.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1000000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 10&lt;span style=&quot; vertical-align:super;&quot;&gt;-17&lt;/span&gt; s&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Min:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="min_abs_second_invariant_spinbox">
+               <property name="keyboardTracking">
+                <bool>false</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
+               <property name="minimum">
+                <double>0.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1000000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>1.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 10&lt;span style=&quot; vertical-align:super;&quot;&gt;-17&lt;/span&gt; s&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Palette:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="second_invariant_palette_filename_placeholder_widget" native="true"/>
+        </item>
+        <item>
+         <widget class="QToolButton" name="select_second_invariant_palette_filename_button">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Choose CPT File</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="use_default_second_invariant_palette_button">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Use Default Palette</string>
+          </property>
+          <property name="text">
+           <string>Use Default Palette</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="fill_triangulation_checkbox">
+     <property name="text">
+      <string>Fill triangulation</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="fill_rigid_blocks_checkbox">
+     <property name="text">
+      <string>Fill rigid interior blocks (uses draw style)</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="fill_opacity_intensity_layout">
+     <item>
+      <widget class="QLabel" name="fill_opacity_label">
+       <property name="text">
+        <string>Fill opacity:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="fill_opacity_spinbox">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="maximum">
+        <double>1.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.040000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="fill_intensity_label">
+       <property name="text">
+        <string>Fill intensity:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="fill_intensity_spinbox">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="maximum">
+        <double>1.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.040000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

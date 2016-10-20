@@ -895,8 +895,9 @@ render_volume_fill_walls(
 	}
 	
 	vec4 colour_wall = vec4(1,1,1,1);
+	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-			screen_space_wall_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 	vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
 	int cube_face_index_wall;
@@ -1085,16 +1086,18 @@ reduce_depth_range_to_volume_fill_walls(
 		// If ray does not enter an active zone then we can skip the first part of the ray.
 		if (!active_surface_fill_mask_at_ray_entry_point)
 		{
+			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_min_depth = convert_screen_space_depth_to_ray_lambda(
-					min_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+					min_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 			lambda_min_max.x = max(lambda_min_max.x, lambda_min_depth);
 		}
 		
 		// If ray does not exit an active zone then we can skip the last part of the ray.
 		if (!active_surface_fill_mask_at_ray_exit_point)
 		{
+			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_max_depth = convert_screen_space_depth_to_ray_lambda(
-					max_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+					max_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 			lambda_min_max.y = min(lambda_min_max.y, lambda_max_depth);
 		}
 	}
@@ -1466,15 +1469,19 @@ raycasting(
 		// This is such that the ray will always be parallel to the view direction.
 		// Use an arbitrary post-projection screen-space depth of -2.
 		// Any value will do as long as it's outside the view frustum [-1,1] and not *on* the near plane (z = -1).
-		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewProjectionMatrixInverse);
+		//
+		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
 	}
 	else
 	{
 		eye_position = perspective_projection_eye_position;
 	}
 
-	// create the ray starting at eye position and moving into direction through near plane
-	Ray ray = get_ray(screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+	// Create the ray starting at eye position and moving into direction through near plane
+	//
+	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1560,8 +1567,9 @@ raycasting(
 		// Convert [-1,1] range to [0,1] for texture coordinates.
 		// Depth texture is a single-channel floating-point texture (GL_R32F).
 		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
+		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-				depth_texture_screen_space_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 		lambda_min_max.y = min(lambda_min_max.y, depth_texture_lambda);
 	}
 

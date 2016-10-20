@@ -30,6 +30,7 @@
 #include <list>
 #include <map>
 #include <utility>
+#include <vector>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -37,7 +38,8 @@
 #include "AssignPlateIds.h"
 #include "GeometryCookieCutter.h"
 #include "Reconstruction.h"
-#include "ReconstructionTree.h"
+#include "ReconstructionGeometry.h"
+#include "ReconstructMethodInterface.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -47,6 +49,7 @@
 #include "model/types.h"
 #include "model/TopLevelProperty.h"
 
+#include "property-values/GmlDataBlockCoordinateList.h"
 #include "property-values/GmlTimePeriod.h"
 
 
@@ -54,46 +57,110 @@ namespace GPlatesAppLogic
 {
 	namespace PartitionFeatureUtils
 	{
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_domain_type;
+		typedef std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type> geometry_range_type;
+
 		/**
 		 * The results of partitioning the geometry properties of a feature.
 		 */
 		class PartitionedFeature
 		{
 		public:
+
 			/**
-			 * The results of partitioning a feature geometry property.
+			 * A partitioned geometry and optional associated partitioned scalar coverage.
+			 */
+			class PartitionedGeometry
+			{
+			public:
+				explicit
+				PartitionedGeometry(
+						const geometry_domain_type &geometry_domain_,
+						const boost::optional<geometry_range_type> &geometry_range_ = boost::none) :
+					geometry_domain(geometry_domain_),
+					geometry_range(geometry_range_)
+				{  }
+
+				geometry_domain_type geometry_domain;
+				boost::optional<geometry_range_type> geometry_range; // Not all geometries (domains) have a range.
+			};
+
+			typedef std::vector<PartitionedGeometry> partitioned_geometry_seq_type;
+
+			/**
+			 * A partitioning polygon and the geometries (and optional scalar coverages) partitioned inside it.
+			 */
+			class Partition
+			{
+			public:
+				explicit
+				Partition(
+						const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry_) :
+					reconstruction_geometry(reconstruction_geometry_)
+				{ }
+
+				ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry;
+				partitioned_geometry_seq_type partitioned_geometries;
+			};
+
+			typedef std::list<Partition> partition_seq_type;
+
+			/**
+			 * Clone of a top-level geometry domain (and optional range) property.
+			 */
+			class GeometryPropertyClone
+			{
+			public:
+				explicit
+				GeometryPropertyClone(
+						const GPlatesModel::TopLevelProperty::non_null_ptr_type &domain_,
+						const boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> &range_ = boost::none) :
+					domain(domain_),
+					range(range_)
+				{  }
+
+				GPlatesModel::TopLevelProperty::non_null_ptr_type domain;
+				boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> range;
+			};
+
+			typedef std::vector<GeometryPropertyClone> geometry_property_clone_seq_type;
+
+			/**
+			 * The results of partitioning a feature's geometry properties with a specific
+			 * geometry *domain* property name.
+			 *
+			 * Note that the geometry *range* property name depends on the *domain* property name
+			 * (there is a one-to-one mapping between them).
 			 */
 			class GeometryProperty
 			{
 			public:
-				//! Sequence of partitioned geometries.
-				typedef GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type
-						partitioned_geometry_seq_type;
-
-				//! Sequence of inside partitions.
-				typedef GPlatesAppLogic::GeometryCookieCutter::partition_seq_type
-						partition_seq_type;
-
+				explicit
 				GeometryProperty(
-						const GPlatesModel::PropertyName &geometry_property_name_,
-						const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property_clone_) :
-					geometry_property_name(geometry_property_name_),
-					geometry_property_clone(geometry_property_clone_)
+						const GPlatesModel::PropertyName &domain_property_name_,
+						const boost::optional<GPlatesModel::PropertyName> &range_property_name_ = boost::none) :
+					domain_property_name(domain_property_name_),
+					range_property_name(range_property_name_)
 				{  }
 
-				GPlatesModel::PropertyName geometry_property_name;
-				GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone;
+				GPlatesModel::PropertyName domain_property_name;
+				boost::optional<GPlatesModel::PropertyName> range_property_name;
+
+				geometry_property_clone_seq_type property_clones;
+
 				partition_seq_type partitioned_inside_geometries;
 				partitioned_geometry_seq_type partitioned_outside_geometries;
 			};
 
-			//! Sequence of partitioning results for geometry properties in the feature.
-			typedef std::list<GeometryProperty> partitioned_geometry_property_seq_type;
+			/**
+			 * Mapping of geometry domain property names to partitioning results for geometry properties in the feature.
+			 */
+			typedef std::map<GPlatesModel::PropertyName, GeometryProperty> partitioned_geometry_property_map_type;
 
 			/**
 			 * Partitioning results for each geometry property in the feature.
 			 */
-			partitioned_geometry_property_seq_type partitioned_geometry_properties;
+			partitioned_geometry_property_map_type partitioned_geometry_properties;
 		};
 
 
@@ -109,12 +176,18 @@ namespace GPlatesAppLogic
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in @a geometry_cookie_cutter) is within
 		 * the time period over which the feature is defined.
+		 *
+		 * If @a partitioned_properties is specified then the partitioned geometry domain
+		 * (and optional associated range) properties are returned. This enables the caller to
+		 * subsequently remove those properties from the feature if it is to be re-used as
+		 * one of the partitioned features.
 		 */
 		boost::shared_ptr<const PartitionedFeature>
 		partition_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-				const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
-				bool respect_feature_time_period = true);
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const GeometryCookieCutter &geometry_cookie_cutter,
+				bool respect_feature_time_period = true,
+				boost::optional< std::vector<GPlatesModel::FeatureHandle::iterator> &> partitioned_properties = boost::none);
 
 
 		/**
@@ -158,15 +231,13 @@ namespace GPlatesAppLogic
 		{
 		public:
 			/**
-			 * Defaults property values to use when there is no partitioning feature.
-			 * These are obtained from the feature before it is partitioned or modified
-			 * in any way.
+			 * Default property values, to use when there is no partitioning feature, are obtained from @a original_feature.
 			 *
 			 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 			 */
 			GenericFeaturePropertyAssigner(
 					const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
-					const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+					const AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 					bool verify_information_model);
 
 			virtual
@@ -182,7 +253,7 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesModel::integer_plate_id_type> d_default_conjugate_plate_id;
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> d_default_valid_time;
 
-			GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
+			AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
 		};
 
 
@@ -213,32 +284,64 @@ namespace GPlatesAppLogic
 			 */
 			GPlatesModel::FeatureHandle::weak_ref
 			get_feature_for_partition(
+					const GPlatesModel::PropertyName &geometry_domain_property_name,
+					bool geometry_domain_has_associated_range,
 					boost::optional<const ReconstructionGeometry *> partition = boost::none);
 
 		private:
+
+			//! Typedef for a mapping of domain property name to boolean indicating an associated range.
+			typedef std::map<
+					GPlatesModel::PropertyName/*geometry_domain_property_name*/,
+					bool/*geometry_domain_has_associated_range*/> feature_contents_type;
+
+			struct FeatureInfo
+			{
+				explicit
+				FeatureInfo(
+						const GPlatesModel::FeatureHandle::weak_ref &feature_) :
+					feature(feature_)
+				{  }
+
+				GPlatesModel::FeatureHandle::weak_ref feature;
+				feature_contents_type contents;
+			};
+
+			typedef std::list<FeatureInfo> feature_info_seq_type;
+
 			/**
 			 * Typedef for mapping partitions to features.
 			 */
 			typedef std::map<
 					boost::optional<const ReconstructionGeometry *>,
-					GPlatesModel::FeatureHandle::weak_ref> partition_to_feature_map_type;
+					feature_info_seq_type>
+							partition_to_feature_map_type;
 
 			/**
-			 * The original feature can be used to contain partitioned geometry.
+			 * The original feature.
 			 *
-			 * This is done instead of cloning the original feature and then destroying
-			 * the original feature (which relies on feature delete which currently isn't
-			 * fully supported yet).
+			 * This is the first feature to be returned by @a get_feature_for_partition.
+			 * This is done so we can avoid destroying the original feature (which relies on
+			 * feature delete which currently isn't fully supported yet).
 			 */
 			GPlatesModel::FeatureHandle::weak_ref d_original_feature;
+
+			//! Whether the original feature is being used by an inside or outside feature.
+			bool d_has_original_feature_been_claimed;
+
+			/**
+			 * A cloned version of the original feature.
+			 *
+			 * Since the original feature can be returned to the user (and subsequently modified)
+			 * we need to clone it before this happens. Then we can make clones of this feature to
+			 * return to the user without worrying about those modifications to the original feature.
+			 */
+			GPlatesModel::FeatureHandle::non_null_ptr_to_const_type d_feature_to_clone_from;
 
 			/**
 			 * The feature collection containing the original feature and any cloned features.
 			 */
 			GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
-
-			//! Whether the original feature is being used by an inside or outside feature.
-			bool d_has_original_feature_been_claimed;
 
 			/**
 			 * Used to copy requested property values from partitioning polygon feature to
@@ -271,66 +374,38 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds partitioned geometries to the partitioned feature associated with
-		 * @a partition.
+		 * Adds partitioned inside geometries to the partitioned features associated with the partitioned polygons.
 		 *
-		 * If @a partition is false then adds to the special feature associated with no partition.
+		 * Partitioned outside geometries are added to the special feature associated with no partition.
 		 *
-		 * All partitioned geometries are reverse reconstructed using the plate id of their
-		 * partitioning polygon (if has a plate id).
+		 * All partitioned geometries are reverse reconstructed using the plate id of their partitioning polygon
+		 * (if has a plate id) and/or deformed if @a reconstruct_method_context contains deformation.
 		 */
 		void
 		add_partitioned_geometry_to_feature(
-				const GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type &
-						partitioned_geometries,
-				const GPlatesModel::PropertyName &geometry_property_name,
+				const PartitionedFeature::GeometryProperty &geometry_property,
 				PartitionedFeatureManager &partitioned_feature_manager,
-				const ReconstructionTree &reconstruction_tree,
-				boost::optional<const ReconstructionGeometry *> partition = boost::none);
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time);
 
 
 		/**
-		 * Adds partitioned geometries to the partitioned features associated with
-		 * the partitioned polygons.
-		 *
-		 * All partitioned geometries are reverse reconstructed using the plate id of their
-		 * partitioning polygon (if has a plate id).
-		 */
-		void
-		add_partitioned_geometry_to_feature(
-				const GPlatesAppLogic::GeometryCookieCutter::partition_seq_type &partitions,
-				const GPlatesModel::PropertyName &geometry_property_name,
-				PartitionedFeatureManager &partitioned_feature_manager,
-				const ReconstructionTree &reconstruction_tree);
-
-
-		/**
-		 * Adds the reconstructed geometry @a geometry_property to the partitioned feature
+		 * Adds the reconstructed geometry @a geometry_domain_property to the partitioned feature
 		 * associated with @a partition and reverse reconstructs the geometry to present day
-		 * (if @a partition has a plate id and the reconstruction time is not present day).
+		 * (if @a partition has a plate id and the reconstruction time is not present day -
+		 * also deformation may be involved if @a reconstruct_method_context contains deformation).
 		 *
-		 * If @a partition is false then adds to the special feature associated with no partition.
+		 * Also adds the optional geometry range property (scalar coverage).
+		 *
+		 * If @a partition is none then adds to the special feature associated with no partition.
 		 */
 		void
-		add_partitioned_geometry_to_feature(
-				const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property,
-				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
-				const ReconstructionTree &reconstruction_tree,
+		add_unpartitioned_geometry_to_feature(
+				const PartitionedFeature::GeometryProperty &geometry_property,
+				PartitionedFeatureManager &partitioned_feature_manager,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time,
 				boost::optional<const ReconstructionGeometry *> partition = boost::none);
-
-
-		/**
-		 * Finds the partitioning polygon that contains the most partitioned geometries
-		 * of @a geometry_property.
-		 *
-		 * This is based on arc distance of the partitioned geometries if they are
-		 * line geometries (polyline, polygon) or number of points if point geometries.
-		 *
-		 * Returns the false if @a geometry_property has no partitioned inside geometries.
-		 */
-		boost::optional<const ReconstructionGeometry *>
-		find_partition_containing_most_geometry(
-				const PartitionedFeature::GeometryProperty &geometry_property);
 
 
 		/**
@@ -340,7 +415,7 @@ namespace GPlatesAppLogic
 		 * This is based on arc distance of the partitioned geometries if they are
 		 * line geometries (polyline, polygon) or number of points if point geometries.
 		 *
-		 * Returns the false if @a partitioned_feature has no partitioned inside geometries.
+		 * Returns the none if @a partitioned_feature has no partitioned inside geometries.
 		 */
 		boost::optional<const ReconstructionGeometry *>
 		find_partition_containing_most_geometry(
@@ -357,13 +432,15 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the reverse rotation (to present day) using the plate id of the
-		 * partitioning polygon @a partition (if it's not false).
+		 * Returns the reverse reconstructed geometry from @a reconstructed_geometry to present day using
+		 * the intrinsic state (properties) of @a feature and extrinsic state of @a reconstruct_method_context.
 		 */
-		boost::optional<GPlatesMaths::FiniteRotation>
-		get_reverse_reconstruction(
-				boost::optional<const ReconstructionGeometry *> partition,
-				const ReconstructionTree &reconstruction_tree);
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reverse_reconstruct(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_geometry,
+				const GPlatesModel::FeatureHandle::weak_ref &feature,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time);
 
 
 		/**
@@ -434,15 +511,28 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Creates a property value suitable for @a geometry and appends it
-		 * to @a feature_ref with the property name @a geometry_property_name.
+		 * Creates a property value suitable for @a geometry_domain and appends it
+		 * to @a feature_ref with the property name @a geometry_domain_property_name.
 		 *
-		 * It doesn't attempt to remove any existing properties named @a geometry_property_name.
+		 * It doesn't attempt to remove any existing properties named @a geometry_domain_property_name.
 		 */
 		void
-		append_geometry_to_feature(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::PropertyName &geometry_property_name,
+		append_geometry_domain_to_feature(
+				const geometry_domain_type &geometry_domain,
+				const GPlatesModel::PropertyName &geometry_domain_property_name,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+
+
+		/**
+		 * Creates a property value suitable for @a geometry_range and appends it
+		 * to @a feature_ref with the property name @a geometry_range_property_name.
+		 *
+		 * It doesn't attempt to remove any existing properties named @a geometry_range_property_name.
+		 */
+		void
+		append_geometry_range_to_feature(
+				const geometry_range_type &geometry_range,
+				const GPlatesModel::PropertyName &geometry_range_property_name,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
 
