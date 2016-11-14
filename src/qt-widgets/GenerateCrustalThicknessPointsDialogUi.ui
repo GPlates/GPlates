@@ -104,6 +104,17 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QPushButton" name="push_button_help_point_distribution">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>
@@ -186,6 +197,17 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="push_button_help_scalar_type">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -370,6 +392,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
  <connections/>
 </ui>

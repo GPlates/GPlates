@@ -28,9 +28,11 @@
 
 #include "TopologyNetworkResolverLayerOptionsWidgetUi.h"
 
-#include "LayerOptionsWidget.h"
 #include "DrawStyleDialog.h"
+#include "InformationDialog.h"
+#include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -162,6 +164,9 @@ namespace GPlatesQtWidgets
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		GPlatesQtWidgets::InformationDialog *d_help_strain_rate_smoothing_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_triangulation_colour_mode_dialog;
 
 
 		//! Used to scale min/max dilatation values into their spinboxes.

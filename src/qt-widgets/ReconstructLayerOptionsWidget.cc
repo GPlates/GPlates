@@ -44,6 +44,33 @@
 #include "utils/ComponentManager.h"
 
 
+namespace
+{
+	const QString HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TITLE =
+			QObject::tr("Using topologies to reconstruct features");
+	const QString HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Feature geometries can optionally be reconstructed using topological rigid plates and deforming networks "
+			"if <i>Yes</i> is chosen. In this case the topological layers connected via the <i>topology surfaces</i> "
+			"input channel are used to reconstruct and deform the feature geometries in this layer. However if no "
+			"topological layers are connected then <b>all</b> loaded topological layers are used. So you only need to "
+			"connect topological layers if you wish to limit reconstruction/deformation to specific topological layers.</p>"
+			"<p>Among the parameters available for this is the time span (or range) over which the topological layers are used. "
+			"During this time range each feature geometry is incrementally reconstructed/deformed from one time to the next over "
+			"a time increment (1My by default) using the velocity of the rigid plate or deforming network that each geometry point "
+			"is inside at each time step. The history of positions is stored internally over the entire time range. As such it can "
+			"take a noticeable amount of time to build up this history. And note that any changes to this layer or the topological "
+			"layers or any of their dependency layers (including rotation layers) will cause this history to be re-calculated along "
+			"with the delay involved.</p>"
+			"<p>Outside this time range each feature transitions over to regular reconstruction by plate ID and will not use "
+			"any topological rigid plates or deforming networks.</p>"
+			"<p>Parameters used for topological reconstruction can be set via the <i>Set parameters</i> link. "
+			"If <i>No</i> is currently selected then this is a check box (instead of a link). If the box is checked "
+			"then you will be prompted to modify the parameters if you select <i>Yes</i>.</p>"
+			"</body></html>\n");
+}
+
+
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -54,7 +81,12 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	d_viewport_window(viewport_window),
 	d_set_vgp_visibility_dialog(NULL),
 	d_set_topology_reconstruction_parameters_dialog(NULL),
-	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog()),
+	d_help_reconstruct_using_topologies_dialog(
+			new InformationDialog(
+					HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TEXT,
+					HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TITLE,
+					viewport_window))
 {
 	setupUi(this);
 
@@ -105,6 +137,11 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			prompt_set_topology_reconstruction_parameters_check_box, SIGNAL(clicked()),
 			this, SLOT(handle_prompt_set_topology_reconstruction_parameters_clicked()));
 
+	push_button_help_reconstruct_using_topologies->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_reconstruct_using_topologies, SIGNAL(clicked()),
+			d_help_reconstruct_using_topologies_dialog, SLOT(show()));
+
 	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			fill_polygons,
@@ -137,7 +174,6 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	{
 		draw_style_link->setVisible(false);
 	}
-
 }
 
 

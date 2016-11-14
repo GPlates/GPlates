@@ -40,11 +40,112 @@
 #include "presentation/VisualLayer.h"
 
 
+namespace
+{
+	const QString HELP_START_RECONSTRUCTION_AT_TIME_OF_DISAPPEARANCE_DIALOG_TITLE =
+			QObject::tr("Time to start topology reconstruction from");
+	const QString HELP_START_RECONSTRUCTION_AT_TIME_OF_DISAPPEARANCE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Reconstruction using topologies starts at an initial geological time which could be present day "
+			"or a past geological time.</p>"
+			"<ul>"
+			"<li>If this check box is ticked then a feature's time of appearance is used as the "
+			"initial time for that feature.</li>"
+			"<li>Otherwise the feature's geometry import time is used (if the feature has one). "
+			"Features digitised using GPlates 2.0 or above record the geometry import time property "
+			"(<i>gpml:geometryImportTime</i>) as the geological time the feature was digitised at. "
+			"This includes generated crustal thickness points.</li>"
+			"<li>Otherwise present day (0Ma) is used.</li>"
+			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_DETECT_LIFETIMES_DIALOG_TITLE =
+			QObject::tr("Detecting individual point lifetimes");
+	const QString HELP_DETECT_LIFETIMES_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>If you choose to have the lifetimes of individual points detected then they can disappear when they are:</p>"
+			"<ul>"
+			"<li>subducted (going forward in time), or</li>"
+			"<li>consumed by a mid-ocean ridge (going backward in time).</li>"
+			"</ul>"
+			"<p>Otherwise the points never disappear and are just propagated from one plate/network to another over time.</p>"
+			"<p>When detecting lifetimes, two parameters can be tweaked to affect the detection algorithm:</p>"
+			"<ul>"
+			"<li><i>threshold velocity delta</i>: A point that transitions from one plate/network to another can "
+			"disappear if the change in velocity exceeds this threshold.</li>"
+			"<li><i>threshold distance to boundary</i>: Only those transitioning points exceeding a delta velocity threshold "
+			"that are close enough to a plate/network boundary can disappear. This distance depends on the relative velocity. "
+			"However a small threshold distance can be added to this velocity-dependent distance to account for plate boundaries "
+			"that change shape significantly from one time step to the next (note that some boundaries are meant to do this and "
+			"others are a result of digitisation).</li>"
+			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_TESSELLATE_LINES_DIALOG_TITLE =
+			QObject::tr("Tessellating lines");
+	const QString HELP_TESSELLATE_LINES_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Polyline and polygon geometries are uniformly sampled into points "
+			"(rather than retaining the line segments) with a sample spacing that can be controlled.</p>"
+			"<p>The individual points of the polyline or polygon can deform (to change the shape of the geometry) "
+			"and subduct (if inside an oceanic plate) just as with multipoint geometries.</p>"
+			"<p>In the future the line segments will returned.</p>"
+			"</body></html>\n");
+
+	const QString HELP_DEFORMED_NETWORK_INTERPOLATION_DIALOG_TITLE =
+			QObject::tr("Interpolation in deformed networks");
+	const QString HELP_DEFORMED_NETWORK_INTERPOLATION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Points falling inside topological networks deform according to the their location within "
+			"the network's triangulation.</p>"
+			"<ul>"
+			"<li>For <i>barycentric</i> interpolation, only the triangle containing the point will deform it.<li>"
+			"<li>For <i>natural neighbour</i> interpolation, nearby triangles also contribute to a point's deformation. "
+			"This tends to reduce the faceted effect of the triangulation on deformed point positions.<li>"
+			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_STRAIN_ACCUMULATION_DIALOG_TITLE =
+			QObject::tr("Strain accumulation");
+	const QString HELP_STRAIN_ACCUMULATION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Total strain is accumulated for each point from oldest age of the time span/range of topology reconstruction to the "
+			"current reconstruction time. If strain is displayed then each point will render the principal components of its strain "
+			"oriented in the principle directions, with outwards-facing red arrows for extension and inward-facing blue arrows for compression.</p>"
+			"</body></html>\n");
+}
+
+
 GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::SetTopologyReconstructionParametersDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
 		QWidget *parent_) :
 	QDialog(parent_),
-	d_application_state(application_state)
+	d_application_state(application_state),
+	d_help_start_reconstruction_at_time_of_appearance_dialog(
+			new InformationDialog(
+					HELP_START_RECONSTRUCTION_AT_TIME_OF_DISAPPEARANCE_DIALOG_TEXT,
+					HELP_START_RECONSTRUCTION_AT_TIME_OF_DISAPPEARANCE_DIALOG_TITLE,
+					this)),
+	d_help_detect_lifetimes_dialog(
+			new InformationDialog(
+					HELP_DETECT_LIFETIMES_DIALOG_TEXT,
+					HELP_DETECT_LIFETIMES_DIALOG_TITLE,
+					this)),
+	d_help_tessellate_lines_dialog(
+			new InformationDialog(
+					HELP_TESSELLATE_LINES_DIALOG_TEXT,
+					HELP_TESSELLATE_LINES_DIALOG_TITLE,
+					this)),
+	d_help_deformed_network_interpolation_dialog(
+			new InformationDialog(
+					HELP_DEFORMED_NETWORK_INTERPOLATION_DIALOG_TEXT,
+					HELP_DEFORMED_NETWORK_INTERPOLATION_DIALOG_TITLE,
+					this)),
+	d_help_strain_accumulation_dialog(
+			new InformationDialog(
+					HELP_STRAIN_ACCUMULATION_DIALOG_TEXT,
+					HELP_STRAIN_ACCUMULATION_DIALOG_TITLE,
+					this))
 {
 	setupUi(this);
 
@@ -179,22 +280,36 @@ GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::setup_connections()
 			this, SLOT(handle_time_increment_spinbox_changed(double)));
 
 	QObject::connect(
-			enable_detect_lifetime_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_enable_detect_lifetime_changed(int)));
+			enable_detect_lifetime_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_enable_detect_lifetime_changed(int)));
 
 	QObject::connect(
-			enable_line_tessellation_degrees_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_enable_line_tessellation_changed(int)));
+			enable_line_tessellation_degrees_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_enable_line_tessellation_changed(int)));
 
 	QObject::connect(
-			show_strain_accumulation_checkbox,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_show_strain_accumulation_changed(int)));
+			show_strain_accumulation_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(react_show_strain_accumulation_changed(int)));
+
+	QObject::connect(
+			show_strain_accumulation_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(react_show_strain_accumulation_changed(int)));
+
+	QObject::connect(
+			push_button_help_start_reconstruction_at_time_of_appearance, SIGNAL(clicked()),
+			d_help_start_reconstruction_at_time_of_appearance_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_detect_lifetimes, SIGNAL(clicked()),
+			d_help_detect_lifetimes_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_tessellate_lines, SIGNAL(clicked()),
+			d_help_tessellate_lines_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_deformed_network_interpolation, SIGNAL(clicked()),
+			d_help_deformed_network_interpolation_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_strain_accumulation, SIGNAL(clicked()),
+			d_help_strain_accumulation_dialog, SLOT(show()));
 }
 
 

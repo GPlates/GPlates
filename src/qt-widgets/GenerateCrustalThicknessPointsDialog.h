@@ -33,6 +33,7 @@
 #include "GenerateCrustalThicknessPointsDialogUi.h"
 
 #include "GPlatesDialog.h"
+#include "InformationDialog.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -180,6 +181,9 @@ namespace GPlatesQtWidgets
 		 * The polygon geometry of the focused feature (topological plate/network or static polygon).
 		 */
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_focused_boundary_polygon;
+
+		GPlatesQtWidgets::InformationDialog *d_help_scalar_type_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_point_distribution_dialog;
 	};
 }
 

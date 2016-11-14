@@ -72,6 +72,34 @@
 #include "qt-widgets/QtWidgetUtils.h"
 
 
+namespace
+{
+	const QString HELP_SCALAR_TYPE_DIALOG_TITLE =
+			QObject::tr("Crustal scalar types");
+	const QString HELP_SCALAR_TYPE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Two types of crustal scalar values are possible:</p>"
+			"<ul>"
+			"<li><i>crustal thinning factor</i>: Represents the amount of stretching/thinning. "
+			"Typically starts with an initial value of 1.0 and has no units.</li>"
+			"<li><i>crustal thickness</i>: Represents the thickness in kms.</li>"
+			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_POINT_DISTRIBUTION_DIALOG_TITLE =
+			QObject::tr("Distribution of points");
+	const QString HELP_POINT_DISTRIBUTION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The initial crustal point positions are uniformly distributed within the polygon boundary "
+			"of the currently focused feature. Also a random offset can be applied to each position.</p>"
+			"<p><i>Density level</i>: Points at level zero are spaced roughly 20 degrees apart. "
+			"Each increment of the density level halves the spacing between points.</p>"
+			"<p><i>Random offset</i>: The amount of random offset can vary between 0 and 100%. "
+			"At 100% each point is randomly offset within a circle of radius half the spacing between points.</p>"
+			"</body></html>\n");
+}
+
+
 const GPlatesPropertyValues::ValueObjectType
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THINNING_FACTOR =
 		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
@@ -101,7 +129,17 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 					d_application_state.get_feature_collection_file_state(),
 					d_application_state.get_feature_collection_file_io(),
 					this)),
-	d_crustal_scalar_type(GPML_CRUSTAL_THINNING_FACTOR)
+	d_crustal_scalar_type(GPML_CRUSTAL_THINNING_FACTOR),
+	d_help_scalar_type_dialog(
+			new InformationDialog(
+					HELP_SCALAR_TYPE_DIALOG_TEXT,
+					HELP_SCALAR_TYPE_DIALOG_TITLE,
+					this)),
+	d_help_point_distribution_dialog(
+			new InformationDialog(
+					HELP_POINT_DISTRIBUTION_DIALOG_TEXT,
+					HELP_POINT_DISTRIBUTION_DIALOG_TITLE,
+					this))
 {
 	setupUi(this);
 
@@ -456,6 +494,13 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 	QObject::connect(
 			d_choose_feature_collection_widget, SIGNAL(item_activated()),
 			button_create, SLOT(setFocus()));
+
+	QObject::connect(
+			push_button_help_scalar_type, SIGNAL(clicked()),
+			d_help_scalar_type_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_point_distribution, SIGNAL(clicked()),
+			d_help_point_distribution_dialog, SLOT(show()));
 }
 
 

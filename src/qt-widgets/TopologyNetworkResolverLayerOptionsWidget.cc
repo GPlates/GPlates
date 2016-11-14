@@ -59,6 +59,45 @@
 #include "property-values/XsString.h"
 
 
+namespace
+{
+	const QString HELP_STRAIN_RATE_SMOOTHING_DIALOG_TITLE =
+			QObject::tr("Smoothing strain rates");
+	const QString HELP_STRAIN_RATE_SMOOTHING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The strain rate at an arbitrary point location within a deforming network can be smoothed with the following choices:</p>"
+			"<ul>"
+			"<li><i>No smoothing</i>: The strain rate is constant within each triangle of the network triangulation and is the "
+			"gradient of the triangle's three vertex velocities. This gives a faceted appearance to the triangulation when coloured "
+			"by dilatation strain rate.</li>"
+			"<li><i>Barycentric smoothing</i>: First each vertex is initialised with a strain rate that is an area-weighting of the "
+			"strain rates of incident triangles. Then the smoothed strain rate, at an arbitrary point, is a barycentric interpolation "
+			"of the smoothed vertex strain rates.</li>"
+			"<li><i>Natural neighbour smoothing</i>: First each vertex is initialised with a strain rate that is an area-weighting of the "
+			"strain rates of incident triangles. Then the smoothed strain rate, at an arbitrary point, is a natural neighbour interpolation "
+			"of the smoothed vertex strain rates. Natural neighbour interpolation uses a larger number of nearby vertices compared to "
+			"barycentric (which only interpolates the three vertices of the triangle containing the point).</li>"
+			"</ul>"
+			"<p>Note the the choice of smoothing affects the strain rates and hence also affects crustal thinning.</p>"
+			"</body></html>\n");
+
+	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE =
+			QObject::tr("Network triangulation colouring");
+	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The network triangulation is coloured with <i>use draw style</i> by default. "
+			"This colours the network boundary and any interior rigid blocks using the colour scheme selected "
+			"for the layer. It also does not actually display the triangulation structure itself.</p>"
+			"<p>Alternatively the network triangulation can be displayed with <i>dilatation strain rate</i> or "
+			"<i>second invariant strain rate</i> which colours the triangulation edges by looking up the strain rate "
+			"using a colour palette.</p>"
+			"<p>In all cases the deforming region of the network can be filled by selecting <i>fill triangulation</i> and "
+			"the rigid blocks filled by selecting <i>fill rigid interior blocks</i> (note that the rigid blocks are "
+			"always displayed using the <i>draw style</i>).</p>"
+			"</body></html>\n");
+}
+
+
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::DILATATION_SCALE = 1e+17;
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SECOND_INVARIANT_SCALE = 1e+17;
 
@@ -97,7 +136,17 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			new ColourScaleWidget(
 				view_state, 
 				viewport_window, 
-				this))
+				this)),
+	d_help_strain_rate_smoothing_dialog(
+			new InformationDialog(
+					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TEXT,
+					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TITLE,
+					viewport_window)),
+	d_help_triangulation_colour_mode_dialog(
+			new InformationDialog(
+					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT,
+					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE,
+					viewport_window))
 {
 	setupUi(this);
 
@@ -118,6 +167,10 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	QObject::connect(
 			natural_neighbour_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_strain_rate_smoothing_button(bool)));
+	push_button_help_strain_rate_smoothing->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_strain_rate_smoothing, SIGNAL(clicked()),
+			d_help_strain_rate_smoothing_dialog, SLOT(show()));
 
 	// Colour mode.
 	dilatation_radio_button->setCursor(QCursor(Qt::ArrowCursor));
@@ -132,6 +185,10 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	QObject::connect(
 			default_draw_style_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_colour_mode_button(bool)));
+	push_button_help_triangulation_colour_mode->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_triangulation_colour_mode, SIGNAL(clicked()),
+			d_help_triangulation_colour_mode_dialog, SLOT(show()));
 
 	// Set up the dilatation controls.
 	min_abs_dilatation_spinbox->setCursor(QCursor(Qt::ArrowCursor));

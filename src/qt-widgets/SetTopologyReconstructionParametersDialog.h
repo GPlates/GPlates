@@ -32,6 +32,8 @@
 
 #include "SetTopologyReconstructionParametersDialogUi.h"
 
+#include "InformationDialog.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -128,6 +130,12 @@ namespace GPlatesQtWidgets
 		 * The visual layer for which we are currently displaying settings.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		GPlatesQtWidgets::InformationDialog *d_help_start_reconstruction_at_time_of_appearance_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_detect_lifetimes_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_tessellate_lines_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_deformed_network_interpolation_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_strain_accumulation_dialog;
 	};
 }
 

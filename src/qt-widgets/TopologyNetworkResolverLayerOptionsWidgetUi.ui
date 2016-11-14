@@ -50,6 +50,30 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="3">
+       <widget class="QPushButton" name="push_button_help_strain_rate_smoothing">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../qt-resources/qt_widgets.qrc">
+          <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
      </layout>
     </widget>
    </item>
@@ -69,17 +93,17 @@
       <property name="margin">
        <number>6</number>
       </property>
-      <item row="1" column="1">
-       <widget class="QRadioButton" name="second_invariant_radio_button">
-        <property name="text">
-         <string>Second invariant strain rate</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QRadioButton" name="dilatation_radio_button">
         <property name="text">
          <string>Dilatation strain rate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QRadioButton" name="second_invariant_radio_button">
+        <property name="text">
+         <string>Second invariant strain rate</string>
         </property>
        </widget>
       </item>
@@ -89,6 +113,30 @@
          <string>Use draw style</string>
         </property>
        </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QPushButton" name="push_button_help_triangulation_colour_mode">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../qt-resources/qt_widgets.qrc">
+          <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>

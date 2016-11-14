@@ -85,6 +85,17 @@
         <item>
          <widget class="QWidget" name="set_deformation_placeholder_widget" native="true"/>
         </item>
+        <item>
+         <widget class="QPushButton" name="push_button_help_reconstruct_using_topologies">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
      </layout>
