@@ -52,6 +52,7 @@ namespace GPlatesGui
 				export_type_name_map[COLOUR_RASTER]               =QObject::tr("Colour Raster");
 				export_type_name_map[NUMERICAL_RASTER]            =QObject::tr("Numerical Raster");
 				export_type_name_map[SCALAR_COVERAGES]            =QObject::tr("Scalar Coverages");
+				export_type_name_map[DEFORMATION]                 =QObject::tr("Deformation");
 				export_type_name_map[VELOCITIES]                  =QObject::tr("Velocities");
 				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
@@ -114,7 +115,21 @@ namespace GPlatesGui
 				export_type_description_map[SCALAR_COVERAGES] =
 						QObject::tr(
 							"<html><body>"
-							"<p>Export for reconstructed scalar coverages (geometries with per-point scalar values).</p>"
+							"<p>Export reconstructed scalar coverages (geometries with per-point scalar values).</p>"
+							"<ul>"
+							"<li>Exports visible reconstructed scalar coverage layers.</li>"
+							"<li>Each geometry point exports a position and a scalar value.</li>"
+							"<li>Scalar values for the currently selected scalar type are exported.</li>"
+							"<li>Per-point deformation strain rates can also be exported.</li>"
+							"</ul>"
+							"</body></html>");
+				export_type_description_map[DEFORMATION] =
+						QObject::tr(
+							"<html><body>"
+							"<p>Export deformation (dilatation strain rates).</p>"
+							"<ul>"
+							"<li>Exports visible reconstructed geometry layers connected to topology layers.</li>"
+							"<li>Each geometry point exports a position, dilatation strain rate and strain.</li>"
 							"</body></html>");
 				export_type_description_map[VELOCITIES] =
 						QObject::tr(

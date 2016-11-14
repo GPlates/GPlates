@@ -59,6 +59,16 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::ExportScalarCoverageOptions
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
+	include_dilatation_rate_check_box->setChecked(d_export_configuration->include_dilatation_rate);
+	include_dilatation_check_box->setChecked(d_export_configuration->include_dilatation);
+
+#if 1
+	// Hide the total strain check box until the accuracy of total strain is sorted out.
+	// For now we don't want to export it.
+	include_dilatation_check_box->hide();
+	d_export_configuration->include_dilatation = false;
+#endif
+
 	if (d_export_configuration->file_format == GPlatesGui::ExportScalarCoverageAnimationStrategy::Configuration::GMT)
 	{
 		// Throws bad_cast if fails.
@@ -75,31 +85,10 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::ExportScalarCoverageOptions
 		{
 			gmt_lat_lon_radio_button->setChecked(true);
 		}
-
-		gmt_include_domain_point_check_box->setChecked(configuration.include_domain_point);
-		gmt_include_dilatation_rate_check_box->setChecked(configuration.include_dilatation_rate);
-		gmt_include_domain_meta_data_check_box->setChecked(configuration.include_domain_meta_data);
-
-		// Disable the domain point format options if we're not exporting domain points.
-		gmt_domain_point_format_options->setEnabled(configuration.include_domain_point);
 	}
 	else
 	{
 		gmt_format_options->hide();
-	}
-
-	if (d_export_configuration->file_format == GPlatesGui::ExportScalarCoverageAnimationStrategy::Configuration::GPML)
-	{
-		// Throws bad_cast if fails.
-		const GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &configuration =
-				dynamic_cast<const GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &>(
-						*d_export_configuration);
-
-		gpml_include_dilatation_rate_check_box->setChecked(configuration.include_dilatation_rate);
-	}
-	else
-	{
-		gpml_format_options->hide();
 	}
 
 	// Write a description depending on the file format and scalar coverage options.
@@ -123,6 +112,17 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::create_export_animation_str
 void
 GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::make_signal_slot_connections()
 {
+	QObject::connect(
+			include_dilatation_rate_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_dilatation_rate_check_box_clicked()));
+	QObject::connect(
+			include_dilatation_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_dilatation_check_box_clicked()));
+
 	//
 	// GMT format connections.
 	//
@@ -137,31 +137,11 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::make_signal_slot_connection
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
-	QObject::connect(
-			gmt_include_domain_point_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_gmt_include_domain_point_check_box_clicked()));
-	QObject::connect(
-			gmt_include_dilatation_rate_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_gmt_include_dilatation_rate_check_box_clicked()));
-	QObject::connect(
-			gmt_include_domain_meta_data_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_gmt_include_domain_meta_data_check_box_clicked()));
 
 	//
 	// GPML format connections.
 	//
 
-	QObject::connect(
-			gpml_include_dilatation_rate_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_gpml_include_dilatation_rate_check_box_clicked()));
 }
 
 
@@ -189,57 +169,18 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_domain_point_form
 
 
 void
-GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_include_dilatation_rate_check_box_clicked()
+GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_rate_check_box_clicked()
 {
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &>(
-					*d_export_configuration);
-
-	configuration.include_dilatation_rate = gmt_include_dilatation_rate_check_box->isChecked();
+	d_export_configuration->include_dilatation_rate = include_dilatation_rate_check_box->isChecked();
 
 	update_output_description_label();
 }
 
 
 void
-GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_include_domain_point_check_box_clicked()
+GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_check_box_clicked()
 {
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &>(
-					*d_export_configuration);
-
-	configuration.include_domain_point = gmt_include_domain_point_check_box->isChecked();
-
-	// Disable the domain point format options if we're not exporting domain points.
-	gmt_domain_point_format_options->setEnabled(configuration.include_domain_point);
-
-	update_output_description_label();
-}
-
-
-void
-GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_include_domain_meta_data_check_box_clicked()
-{
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration &>(
-					*d_export_configuration);
-
-	configuration.include_domain_meta_data = gmt_include_domain_meta_data_check_box->isChecked();
-}
-
-
-void
-GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gpml_include_dilatation_rate_check_box_clicked()
-{
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &>(
-					*d_export_configuration);
-
-	configuration.include_dilatation_rate = gpml_include_dilatation_rate_check_box->isChecked();
+	d_export_configuration->include_dilatation  = include_dilatation_check_box->isChecked();
 
 	update_output_description_label();
 }
@@ -260,9 +201,21 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 					dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &>(
 							*d_export_configuration);
 
-			output_description = tr("Scalar values will be exported ") +
-					(configuration.include_dilatation_rate ? tr("with") : tr("without")) +
-					tr(" dilatation rate\n");
+			if (configuration.include_dilatation_rate ||
+				configuration.include_dilatation)
+			{
+				output_description = tr("Deformation will be exported as scalar coverages containing:\n");
+
+				if (configuration.include_dilatation_rate)
+				{
+					output_description += tr("  DilatationRate\n");
+				}
+
+				if (configuration.include_dilatation)
+				{
+					output_description += tr("  Dilatation\n");
+				}
+			}
 		}
 		break;
 
@@ -275,22 +228,24 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 
 			output_description = tr("Scalar values will be exported as:\n");
 
-			if (configuration.include_domain_point)
+			if (configuration.domain_point_format ==
+				GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration::LON_LAT)
 			{
-				if (configuration.domain_point_format ==
-					GPlatesGui::ExportScalarCoverageAnimationStrategy::GMTConfiguration::LON_LAT)
-				{
-					output_description += tr("  domain_point_lon  domain_point_lat");
-				}
-				else
-				{
-					output_description += tr("  domain_point_lat  domain_point_lon");
-				}
+				output_description += tr("  longitude  latitude");
+			}
+			else
+			{
+				output_description += tr("  latitude  longitude");
 			}
 
 			if (configuration.include_dilatation_rate)
 			{
 				output_description += tr("  dilatation_rate");
+			}
+
+			if (configuration.include_dilatation)
+			{
+				output_description += tr("  dilatation");
 			}
 
 			output_description += tr("  scalar");

@@ -333,22 +333,6 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_reconstructed_geometry_t
 		reconstruction->get_active_layer_outputs<ReconstructLayerProxy>(
 				reconstructed_geometry_topological_sections_layer_proxies);
 	}
-
-	// Filter out reconstructed geometry layers that are connected (and hence deformed) by
-	// topological network layers. These reconstructed geometry layers cannot supply
-	// topological sections (to topological network layers) because these reconstructed geometries
-	// are deformed by the topological networks which in turn would use the reconstructed geometries
-	// to build the topological networks - thus creating a cyclic dependency.
-	// Note that these reconstructed geometries also cannot supply topological sections to
-	// topological 'geometry' layers, eg containing topological lines, because those resolved
-	// topological lines can, in turn, be used as topological sections by topological networks -
-	// so there's still a cyclic dependency (it's just a more round-about or indirect dependency).
-	reconstructed_geometry_topological_sections_layer_proxies.erase(
-			std::remove_if(
-					reconstructed_geometry_topological_sections_layer_proxies.begin(),
-					reconstructed_geometry_topological_sections_layer_proxies.end(),
-					boost::bind(&ReconstructLayerProxy::connected_to_topological_layer_proxies, _1)),
-			reconstructed_geometry_topological_sections_layer_proxies.end());
 }
 
 

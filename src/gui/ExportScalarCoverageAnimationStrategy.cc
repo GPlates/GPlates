@@ -44,7 +44,6 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedScalarCoverage.h"
-#include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructScalarCoverageLayerProxy.h"
@@ -139,7 +138,7 @@ namespace
 
 
 	void
-	populate_reconstructed_scalar_coverage_seq(
+	populate_visible_reconstructed_scalar_coverage_seq(
 			reconstructed_scalar_coverage_seq_type &reconstructed_scalar_coverage_seq,
 			const GPlatesPresentation::ViewState &view_state)
 	{
@@ -150,10 +149,10 @@ namespace
 		// Iterate over the layers that have reconstruct scalar coverage outputs.
 		std::vector<GPlatesAppLogic::ReconstructedScalarCoverage::non_null_ptr_type> reconstructed_scalar_coverages;
 		BOOST_FOREACH(
-				const GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::non_null_ptr_type &reconstructed_scalar_coverage,
+				const GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::non_null_ptr_type &reconstruct_scalar_coverage_output,
 				reconstruct_scalar_coverage_outputs)
 		{
-			reconstructed_scalar_coverage->get_reconstructed_scalar_coverages(reconstructed_scalar_coverages);
+			reconstruct_scalar_coverage_output->get_reconstructed_scalar_coverages(reconstructed_scalar_coverages);
 		}
 
 		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
@@ -209,7 +208,7 @@ GPlatesGui::ExportScalarCoverageAnimationStrategy::do_export_iteration(
 
 	// Write status message.
 	d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Writing velocity vector fields at frame %2 to file \"%1\"...")
+			QObject::tr("Writing scalar coverages at frame %2 to file \"%1\"...")
 			.arg(basename)
 			.arg(frame_index) );
 
@@ -223,9 +222,9 @@ GPlatesGui::ExportScalarCoverageAnimationStrategy::do_export_iteration(
 				// Throws bad_cast if fails.
 				const GpmlConfiguration &configuration = dynamic_cast<const GpmlConfiguration &>(*d_configuration);
 
-				// Get all the ReconstructedScalarCoverages from the current reconstruction.
+				// Get all visible ReconstructedScalarCoverages from the current reconstruction.
 				reconstructed_scalar_coverage_seq_type reconstructed_scalar_coverage_seq;
-				populate_reconstructed_scalar_coverage_seq(
+				populate_visible_reconstructed_scalar_coverage_seq(
 						reconstructed_scalar_coverage_seq,
 						d_export_animation_context_ptr->view_state());
 
@@ -235,6 +234,7 @@ GPlatesGui::ExportScalarCoverageAnimationStrategy::do_export_iteration(
 					d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
 					d_loaded_files,
 					configuration.include_dilatation_rate,
+					configuration.include_dilatation,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
 					configuration.file_options.separate_output_directory_per_file);
@@ -246,9 +246,9 @@ GPlatesGui::ExportScalarCoverageAnimationStrategy::do_export_iteration(
 				// Throws bad_cast if fails.
 				const GMTConfiguration &configuration = dynamic_cast<const GMTConfiguration &>(*d_configuration);
 
-				// Get all the ReconstructedScalarCoverages from the current reconstruction.
+				// Get all visible ReconstructedScalarCoverages from the current reconstruction.
 				reconstructed_scalar_coverage_seq_type reconstructed_scalar_coverage_seq;
-				populate_reconstructed_scalar_coverage_seq(
+				populate_visible_reconstructed_scalar_coverage_seq(
 						reconstructed_scalar_coverage_seq,
 						d_export_animation_context_ptr->view_state());
 
@@ -259,9 +259,8 @@ GPlatesGui::ExportScalarCoverageAnimationStrategy::do_export_iteration(
 					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 					d_export_animation_context_ptr->view_time(),
 					(configuration.domain_point_format == GMTConfiguration::LON_LAT),
-					configuration.include_domain_point,
 					configuration.include_dilatation_rate,
-					configuration.include_domain_meta_data,
+					configuration.include_dilatation,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
 					configuration.file_options.separate_output_directory_per_file);

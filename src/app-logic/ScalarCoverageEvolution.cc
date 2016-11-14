@@ -61,23 +61,40 @@ namespace GPlatesAppLogic
 		template <typename DerivativeFunctionType>
 		void
 		runge_kutta_order_2(
-				double *const values,
+				boost::optional<double> *const values,
 				const unsigned int num_values,
 				const DerivativeFunctionType &derivative_function,
 				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const DeformationStrain *const initial_deformation_strain_rates,
-				const DeformationStrain *const final_deformation_strain_rates)
+				const boost::optional<DeformationStrain> *const initial_deformation_strain_rates,
+				const boost::optional<DeformationStrain> *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
-				const double initial_dilatation = initial_deformation_strain_rates[n].get_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n].get_dilatation();
+				// If initial scalar value is inactive then it remains inactive.
+				if (!values[n])
+				{
+					continue;
+				}
+
+				// If the initial strain rate is inactive then so should the final strain rate.
+				// Actually the active state of initial strain rate should match the initial scalar value.
+				// And if the final strain rate is inactive then the scalar value becomes inactive.
+				// However we test active state of both (initial and final) strain rates just in case.
+				if (!final_deformation_strain_rates[n] ||
+					!initial_deformation_strain_rates[n])
+				{
+					values[n] = boost::none;
+					continue;
+				}
+
+				const double initial_dilatation = initial_deformation_strain_rates[n]->get_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n]->get_dilatation();
 
 				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
-						values[n],
+						values[n].get(),
 						seconds_in_a_million_years * initial_dilatation);
 
 				const double average_time = initial_time + 0.5 * time_increment;
@@ -87,10 +104,10 @@ namespace GPlatesAppLogic
 
 				const double K1 = time_increment * derivative_sign * derivative_function(
 						average_time,
-						values[n] + 0.5 * K0,
+						values[n].get() + 0.5 * K0,
 						average_dilatation_per_my);
    
-				values[n] += K1;
+				values[n].get() += K1;
 			}
 		}
 
@@ -101,23 +118,40 @@ namespace GPlatesAppLogic
 		template <typename DerivativeFunctionType>
 		void
 		runge_kutta_order_4(
-				double *const values,
+				boost::optional<double> *const values,
 				const unsigned int num_values,
 				const DerivativeFunctionType &derivative_function,
 				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const DeformationStrain *const initial_deformation_strain_rates,
-				const DeformationStrain *const final_deformation_strain_rates)
+				const boost::optional<DeformationStrain> *const initial_deformation_strain_rates,
+				const boost::optional<DeformationStrain> *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
-				const double initial_dilatation = initial_deformation_strain_rates[n].get_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n].get_dilatation();
+				// If initial scalar value is inactive then it remains inactive.
+				if (!values[n])
+				{
+					continue;
+				}
+
+				// If the initial strain rate is inactive then so should the final strain rate.
+				// Actually the active state of initial strain rate should match the initial scalar value.
+				// And if the final strain rate is inactive then the scalar value becomes inactive.
+				// However we test active state of both (initial and final) strain rates just in case.
+				if (!final_deformation_strain_rates[n] ||
+					!initial_deformation_strain_rates[n])
+				{
+					values[n] = boost::none;
+					continue;
+				}
+
+				const double initial_dilatation = initial_deformation_strain_rates[n]->get_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n]->get_dilatation();
 
 				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
-						values[n],
+						values[n].get(),
 						seconds_in_a_million_years * initial_dilatation);
 
 				const double average_time = initial_time + 0.5 * time_increment;
@@ -126,20 +160,20 @@ namespace GPlatesAppLogic
 
 				const double K1 = time_increment * derivative_sign * derivative_function(
 						average_time,
-						values[n] + 0.5 * K0,
+						values[n].get() + 0.5 * K0,
 						average_dilatation_per_my);
 
 				const double K2 = time_increment * derivative_sign * derivative_function(
 						average_time,
-						values[n] + 0.5 * K1,
+						values[n].get() + 0.5 * K1,
 						average_dilatation_per_my);
 
 				const double K3 = time_increment * derivative_sign * derivative_function(
 						initial_time + time_increment,
-						values[n] + K2,
+						values[n].get() + K2,
 						seconds_in_a_million_years * final_dilatation);
 
-				values[n] += (K0 + 2.0 * K1 + 2.0 * K2 + K3) / 6.0;
+				values[n].get() += (K0 + 2.0 * K1 + 2.0 * K2 + K3) / 6.0;
 			}
 		}
 	}
@@ -172,9 +206,9 @@ GPlatesAppLogic::get_scalar_evolution_function(
 
 void
 GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
-		std::vector<double> &input_output_crustal_thickness,
-		const std::vector<DeformationStrain> &initial_deformation_strain_rates,
-		const std::vector<DeformationStrain> &final_deformation_strain_rates,
+		std::vector< boost::optional<double> > &input_output_crustal_thickness,
+		const std::vector< boost::optional<DeformationStrain> > &initial_deformation_strain_rates,
+		const std::vector< boost::optional<DeformationStrain> > &final_deformation_strain_rates,
 		const double &initial_time,
 		const double &final_time)
 {

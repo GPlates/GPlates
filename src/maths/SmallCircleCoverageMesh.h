@@ -28,7 +28,7 @@
 #define GPLATES_MATHS_SMALLCIRCLECOVERAGEMESH_H
 
 #include "SmallCircleBounds.h"
-#include "HierarchicalTriangularMesh.h"
+#include "SphericalSubdivision.h"
 #include "UnitVector3D.h"
 
 
@@ -116,7 +116,7 @@ namespace GPlatesMaths
 		 */
 		void
 		visit(
-				const HierarchicalTriangularMeshTraversal::Triangle &triangle,
+				const SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 				const RecursionContext &recursion_context);
 	};
 }

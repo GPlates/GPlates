@@ -58,10 +58,9 @@ namespace GPlatesAppLogic
 		{
 			coverage_domain_to_range_name_map_type coverage_domain_to_range_name_map;
 
+			// Insert default domain/range names ('gpml:domainSet' and 'gpml:rangeSet').
 			coverage_domain_to_range_name_map.insert(
-					std::make_pair(
-							GPlatesModel::PropertyName::create_gpml("domainSet"),
-							GPlatesModel::PropertyName::create_gpml("rangeSet")));
+					ScalarCoverageFeatureProperties::get_default_domain_range_property_names());
 
 			coverage_domain_to_range_name_map.insert(
 					std::make_pair(
@@ -71,6 +70,10 @@ namespace GPlatesAppLogic
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("centerLineOf"),
 							GPlatesModel::PropertyName::create_gpml("centerLineOfCoverage")));
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("meshPoints"),
+							GPlatesModel::PropertyName::create_gpml("meshPointsCoverage")));
 			coverage_domain_to_range_name_map.insert(
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("multiPosition"),
@@ -463,6 +466,15 @@ GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_d
 	}
 
 	return range_property_name_iter->second;
+}
+
+
+std::pair<GPlatesModel::PropertyName/*domain*/, GPlatesModel::PropertyName/*range*/>
+GPlatesAppLogic::ScalarCoverageFeatureProperties::get_default_domain_range_property_names()
+{
+	return std::make_pair(
+			GPlatesModel::PropertyName::create_gpml("domainSet"),
+			GPlatesModel::PropertyName::create_gpml("rangeSet"));
 }
 
 

@@ -24,13 +24,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_SETDEFORMATIONPARAMETERSDIALOG_H
-#define GPLATES_QTWIDGETS_SETDEFORMATIONPARAMETERSDIALOG_H
+#ifndef GPLATES_QTWIDGETS_SETTOPOLOGYRECONSTRUCTIONPARAMETERSDIALOG_H
+#define GPLATES_QTWIDGETS_SETTOPOLOGYRECONSTRUCTIONPARAMETERSDIALOG_H
 
 #include <boost/weak_ptr.hpp>
 #include <QWidget>
 
-#include "SetDeformationParametersDialogUi.h"
+#include "SetTopologyReconstructionParametersDialogUi.h"
 
 
 namespace GPlatesAppLogic
@@ -46,18 +46,18 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	/**
-	 * Dialog to view and modify parameters for deforming feature geometries.
+	 * Dialog to view and modify parameters for reconstructing feature geometries using topologies.
 	 */
-	class SetDeformationParametersDialog :
+	class SetTopologyReconstructionParametersDialog :
 			public QDialog,
-			protected Ui_SetDeformationParametersDialog
+			protected Ui_SetTopologyReconstructionParametersDialog
 	{
 		Q_OBJECT
 
 	public:
 
 		explicit
-		SetDeformationParametersDialog(
+		SetTopologyReconstructionParametersDialog(
 				GPlatesAppLogic::ApplicationState &application_state,
 				QWidget *parent_ = NULL);
 
@@ -89,7 +89,7 @@ namespace GPlatesQtWidgets
 		handle_distant_future(
 				bool state);
 #endif
-		
+
 		void
 		handle_begin_time_spinbox_changed(
 				double value);
@@ -101,6 +101,14 @@ namespace GPlatesQtWidgets
 		void
 		handle_time_increment_spinbox_changed(
 				double value);
+
+		void
+		react_enable_detect_lifetime_changed(
+				int state);
+
+		void
+		react_enable_line_tessellation_changed(
+				int state);
 
 		void
 		react_show_strain_accumulation_changed(
@@ -123,4 +131,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_SETDEFORMATIONPARAMETERSDIALOG_H
+#endif  // GPLATES_QTWIDGETS_SETTOPOLOGYRECONSTRUCTIONPARAMETERSDIALOG_H

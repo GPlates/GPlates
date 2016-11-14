@@ -58,16 +58,25 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
-		 * reconstruction time of the specified reconstruction tree.
+		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the reconstruction time.
 		 *
 		 * @a spreading_asymmetry is in the range [-1,1] where the value 0 represents half-stage
 		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
 		 * represents zero stage rotation (left plate).
 		 *
-		 * If present day to reconstruction time is greater than @a half_stage_rotation_interval
+		 * Spreading starts at @a spreading_start_time and finishes at @a reconstruction_time.
+		 * However rotation by the left plate still happens from present day to @a reconstruction_time
+		 * (spreading is relative to the left plate).
+		 *
+		 * The value of @a spreading_asymmetry does not affect the returned finite rotation if
+		 * @a reconstruction_time equals @a spreading_start_time. For this reason it is useful to
+		 * set @a spreading_start_time to the time of appearance of a mid-ocean ridge (for example),
+		 * whereas setting it to present day means subsequent changes to the spreading asymmetry
+		 * can drastically change the reconstructed positions of a mid-ocean ridge (for example).
+		 *
+		 * If @a spreading_start_time to @a reconstruction_time is greater than @a half_stage_rotation_interval
 		 * then it will be divided into multiple half-stage intervals of this size (except for
-		 * the last interval that ends at the reconstruction time).
+		 * the last interval that passes over the reconstruction time).
 		 *
 		 * @throws PreconditionViolationError if @a reconstruction_time is negative or
 		 * if @a half_stage_rotation_interval is not greater than zero.
@@ -79,6 +88,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type left_plate_id,
 				GPlatesModel::integer_plate_id_type right_plate_id,
 				const double &spreading_asymmetry = 0.0,
+				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION);
 
 

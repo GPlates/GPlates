@@ -45,6 +45,7 @@
 #include "ReconstructionTree.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
+#include "TopologyReconstructedFeatureGeometry.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -519,11 +520,33 @@ namespace
 		explicit
 		FindTopologicalSectionsReferenced(
 				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type = boost::none,
 				boost::optional<double> reconstruction_time = boost::none) :
 			d_topological_sections_referenced(topological_sections_referenced),
+			d_topology_geometry_type(topology_geometry_type),
 			d_reconstruction_time(reconstruction_time)
 		{  }
 
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+			// If we have a reconstruction time then make sure this feature is defined at that time.
+			if (d_reconstruction_time)
+			{
+				GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_params;
+				reconstruction_params.visit_feature(feature_handle.reference());
+				if (!reconstruction_params.is_feature_defined_at_recon_time(d_reconstruction_time.get()))
+				{
+					return false;
+				}
+			}
+
+			// Now visit each of the properties in turn.
+			return true;
+		}
 
 		virtual
 		void
@@ -578,6 +601,13 @@ namespace
 		visit_gpml_topological_network(
 				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::NETWORK)
+			{
+				return;
+			}
+
 			// Loop over all the boundary sections.
 			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_iter =
 					gpml_topological_network.boundary_sections_begin();
@@ -609,6 +639,13 @@ namespace
 		visit_gpml_topological_line(
 				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
 		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::LINE)
+			{
+				return;
+			}
+
 			// Loop over all the sections.
 			GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
 					gpml_topological_line.sections_begin();
@@ -626,6 +663,13 @@ namespace
 		visit_gpml_topological_polygon(
 				const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::BOUNDARY)
+			{
+				return;
+			}
+
 			// Loop over all the exterior sections.
 			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
 					gpml_topological_polygon.exterior_sections_begin();
@@ -660,6 +704,7 @@ namespace
 
 	private:
 		std::set<GPlatesModel::FeatureId> &d_topological_sections_referenced;
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> d_topology_geometry_type;
 		boost::optional<double> d_reconstruction_time;
 	};
 
@@ -1110,9 +1155,10 @@ void
 GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 		std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 		const GPlatesModel::FeatureHandle::weak_ref &topology_feature_ref,
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
 		boost::optional<double> reconstruction_time)
 {
-	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, reconstruction_time);
+	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
 	visitor.visit_feature(topology_feature_ref);
 }
 
@@ -1121,9 +1167,10 @@ void
 GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 		std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
 		boost::optional<double> reconstruction_time)
 {
-	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, reconstruction_time);
+	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
 	AppLogicUtils::visit_feature_collection(topology_feature_collection_ref, visitor);
 }
 
@@ -2012,28 +2059,25 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 		return false;
 	}
 
-	// TODO: Filter out reconstructed geometries that have been deformed by topological network layers.
-	// These reconstructed geometries cannot supply topological sections (to topological network layers)
-	// because these reconstructed geometries are deformed by the topological networks which in turn
-	// would use the reconstructed geometries to build the topological networks - thus creating a
-	// cyclic dependency (so the layer system excludes those reconstruct layers that are deformed).
-	// Note that these reconstructed geometries also cannot supply topological sections to
-	// topological 'geometry' layers, eg containing topological lines, because those resolved
-	// topological lines can, in turn, be used as topological sections by topological networks -
-	// so there's still a cyclic dependency (it's just a more round-about or indirect dependency).
+	// Filter out reconstructed geometries that have been reconstructed using topological boundaries/networks.
 	//
-	// This is a bit tricky because it's not easy to find the layer than reconstructed the RFG
-	// (so that we can query whether it's connected to topological layers) because RFGs should
-	// not know which layer they were generated from because they might not have been generated from
-	// a layer (eg, if generated by GPlates command-line tool) or simply just not created from a layer.
+	// These reconstructed geometries cannot supply topological sections because they were
+	// reconstructed using topological boundaries/networks thus creating a cyclic dependency
+	// (so the layer system excludes those reconstruct layers that reconstruct using topologies).
 	//
-	// It's not so bad though because even if we could detect this it would not prevent the
-	// user from building a topology using an RFG and then subsequently connecting that RFG's layer
-	// to a topology layer (to deform it). In this situation the RFG would disappear from the
-	// topology's boundary (or interior) as soon as its layer was connected a topology layer.
-	//
-	// In any case it'll be up to the topology builder user to not use deformed geometries as
-	// topological sections.
+	// Note that this still does not prevent the user from building a topology using an RFG and then
+	// subsequently connecting that RFG's layer to a topology layer (thus turning it into a DFG).
+	// In this situation the RFG would disappear from the topology's boundary (or interior) as soon as
+	// its layer was connected a topology layer.
+	// In this case it'll be up to the topology builder user to not use reconstructed geometries,
+	// that have been reconstructed using topological boundaries/networks, as topological sections.
+	boost::optional<const TopologyReconstructedFeatureGeometry *> trfg =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const TopologyReconstructedFeatureGeometry *>(rfg.get());
+	if (trfg)
+	{
+		return false;
+	}
 
 	return true;
 }

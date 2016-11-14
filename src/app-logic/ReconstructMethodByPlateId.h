@@ -30,7 +30,9 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionFeatureProperties.h"
 #include "ReconstructMethodInterface.h"
+#include "TopologyReconstruct.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -133,34 +135,50 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				bool reverse_reconstruct);
 
+
+		/**
+		 * Returns any topology-reconstructed geometry time spans.
+		 *
+		 * These are only used when features are reconstructed using *topologies*.
+		 * They store the results of incrementally reconstructing using resolved topological plates/networks.
+		 */
+		virtual
+		void
+		get_topology_reconstructed_geometry_time_spans(
+				topology_reconstructed_geometry_time_span_sequence_type &topology_reconstructed_geometry_time_spans,
+				const Context &context);
+
 	private:
 
 		/**
-		 * Associate a deformed geometry's time span with its feature property.
+		 * Feature property information used for reconstructing.
 		 */
-		struct DeformedGeometryPropertyTimeSpan
+		struct ReconstructionInfo
 		{
-			DeformedGeometryPropertyTimeSpan(
-					const GPlatesModel::FeatureHandle::iterator &property_iterator_,
-					const GeometryDeformation::GeometryTimeSpan::non_null_ptr_type &geometry_time_span_) :
-				property_iterator(property_iterator_),
-				geometry_time_span(geometry_time_span_)
+			ReconstructionInfo() :
+				// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)...
+				reconstruction_plate_id(0),
+				// Default to present day if there's no geometry import time property...
+				geometry_import_time(0.0)
 			{  }
 
-			GPlatesModel::FeatureHandle::iterator property_iterator;
-			GeometryDeformation::GeometryTimeSpan::non_null_ptr_type geometry_time_span;
+			GPlatesModel::integer_plate_id_type reconstruction_plate_id;
+			ReconstructionFeatureProperties::TimePeriod valid_time;
+			double geometry_import_time;
 		};
 
-		//! Typedef for a sequence of deformed geometries.
-		typedef std::vector<DeformedGeometryPropertyTimeSpan> deformed_geometry_time_span_sequence_type;
+		//! Cache the present day geometries so we don't need to gather them each time they're reconstructed.
+		mutable boost::optional< std::vector<Geometry> > d_present_day_geometries;
 
+		//! Cache the reconstruction information so can re-use it for each reconstruction.
+		mutable boost::optional<ReconstructionInfo> d_reconstruction_info;
 
 		/**
-		 * The deformed geometry look up tables, or boost::none if not using deformation.
+		 * The topology reconstructed geometry look up tables, or boost::none if not reconstructing using topologies.
 		 *
 		 * There's one entry for each feature geometry property.
 		 */
-		boost::optional<deformed_geometry_time_span_sequence_type> d_deformed_geometry_property_time_spans;
+		mutable boost::optional<topology_reconstructed_geometry_time_span_sequence_type> d_topology_reconstructed_geometry_time_spans;
 
 
 		explicit
@@ -168,9 +186,13 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const Context &context);
 
-		void
-		initialise_deformation(
-				const Context &context);
+		const ReconstructionInfo &
+		get_reconstruction_info(
+				const Context &context) const;
+
+		boost::optional<const topology_reconstructed_geometry_time_span_sequence_type &>
+		get_topology_reconstruction_info(
+				const Context &context) const;
 	};
 }
 

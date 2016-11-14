@@ -370,6 +370,10 @@ namespace GPlatesAppLogic
 		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
 		 * represents zero stage rotation (left plate).
 		 *
+		 * Spreading starts at @a spreading_start_time and finishes at @a reconstruction_time.
+		 * However rotation by the left plate still happens from present day to @a reconstruction_time
+		 * (spreading is relative to the left plate).
+		 *
 		 * If present day to reconstruction time is greater than @a half_stage_rotation_interval
 		 * then it will be divided into multiple half-stage intervals of this size (except for
 		 * the last interval that ends at the reconstruction time).
@@ -387,6 +391,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry = 0.0,
+				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
 
@@ -404,6 +409,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry = 0.0,
+				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
 	}
@@ -447,6 +453,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry,
+				const double &spreading_start_time,
 				const double &half_stage_rotation_interval,
 				bool reverse_reconstruct)
 		{
@@ -459,6 +466,7 @@ namespace GPlatesAppLogic
 							left_plate_id,
 							right_plate_id,
 							spreading_asymmetry,
+							spreading_start_time,
 							half_stage_rotation_interval);
 
 			// Are we reversing reconstruction back to present day ?

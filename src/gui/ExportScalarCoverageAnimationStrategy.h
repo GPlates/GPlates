@@ -43,11 +43,6 @@
 #include "view-operations/VisibleReconstructionGeometryExport.h"
 
 
-namespace GPlatesAppLogic
-{
-	class ReconstructedScalarCoverage;
-}
-
 namespace GPlatesGui
 {
 	// Forward declaration.
@@ -88,10 +83,14 @@ namespace GPlatesGui
 			Configuration(
 					const QString &filename_template_,
 					FileFormat file_format_,
-					const ExportOptionsUtils::ExportFileOptions &file_options_) :
+					const ExportOptionsUtils::ExportFileOptions &file_options_,
+					bool include_dilatation_rate_,
+					bool include_dilatation_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
-				file_options(file_options_)
+				file_options(file_options_),
+				include_dilatation_rate(include_dilatation_rate_),
+				include_dilatation(include_dilatation_)
 			{  }
 
 			virtual
@@ -103,6 +102,8 @@ namespace GPlatesGui
 
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
+			bool include_dilatation_rate;
+			bool include_dilatation;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
@@ -123,9 +124,9 @@ namespace GPlatesGui
 			GpmlConfiguration(
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool include_dilatation_rate_) :
-				Configuration(filename_template_, GPML, file_options_),
-				include_dilatation_rate(include_dilatation_rate_)
+					bool include_dilatation_rate_,
+					bool include_dilatation_) :
+				Configuration(filename_template_, GPML, file_options_, include_dilatation_rate_, include_dilatation_)
 			{  }
 
 			virtual
@@ -134,8 +135,6 @@ namespace GPlatesGui
 			{
 				return configuration_base_ptr(new GpmlConfiguration(*this));
 			}
-
-			bool include_dilatation_rate;
 		};
 
 
@@ -158,14 +157,10 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					DomainPointFormatType domain_point_format_,
-					bool include_domain_point_,
 					bool include_dilatation_rate_,
-					bool include_domain_meta_data_) :
-				Configuration(filename_template_, GMT, file_options_),
-				domain_point_format(domain_point_format_),
-				include_domain_point(include_domain_point_),
-				include_dilatation_rate(include_dilatation_rate_),
-				include_domain_meta_data(include_domain_meta_data_)
+					bool include_dilatation_) :
+				Configuration(filename_template_, GMT, file_options_, include_dilatation_rate_, include_dilatation_),
+				domain_point_format(domain_point_format_)
 			{  }
 
 			virtual
@@ -176,9 +171,6 @@ namespace GPlatesGui
 			}
 
 			DomainPointFormatType domain_point_format;
-			bool include_domain_point;
-			bool include_dilatation_rate;
-			bool include_domain_meta_data;
 		};
 
 
@@ -230,7 +222,6 @@ namespace GPlatesGui
 				const QString &);
 
 	protected:
-		typedef std::vector<const GPlatesAppLogic::ReconstructedScalarCoverage *> reconstructed_scalar_coverage_seq_type;
 
 		/**
 		 * Protected constructor to prevent instantiation on the stack.

@@ -7,15 +7,91 @@
     <x>0</x>
     <y>0</y>
     <width>320</width>
-    <height>278</height>
+    <height>314</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
-    <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
+    <widget class="QGroupBox" name="use_topologies_group_box">
+     <property name="title">
+      <string>Reconstruct using topologies:</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="margin">
+       <number>6</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="dont_use_topologies_radio_button">
+          <property name="text">
+           <string>No</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="use_topologies_radio_button">
+          <property name="text">
+           <string>Yes</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="prompt_set_topology_reconstruction_parameters_check_box">
+          <property name="text">
+           <string>Set parameters</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="set_deformation_placeholder_widget" native="true"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <widget class="QWidget" name="set_deformation_placeholder_widget" native="true"/>
+    <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
    </item>
    <item>
     <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
@@ -28,6 +104,19 @@
         <string>Fill polygons</string>
        </property>
       </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
      <item>
       <widget class="QCheckBox" name="fill_polylines">

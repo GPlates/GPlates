@@ -144,12 +144,14 @@ namespace
 				const double &reconstruction_time,
 				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry,
+				const double &spreading_start_time,
 				const double &half_stage_rotation_interval,
 				bool reverse_reconstruct) :
 			d_left_plate_id(left_plate_id),
 			d_right_plate_id(right_plate_id),
 			d_reconstruction_time(reconstruction_time),
 			d_recon_tree_creator(reconstruction_tree_creator),
+			d_spreading_start_time(spreading_start_time),
 			d_spreading_asymmetry(spreading_asymmetry),
 			d_half_stage_rotation_interval(half_stage_rotation_interval),
 			d_reverse_reconstruct(reverse_reconstruct)
@@ -179,6 +181,7 @@ namespace
 							d_reconstruction_time,
 							d_recon_tree_creator,
 							d_spreading_asymmetry,
+							d_spreading_start_time,
 							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
@@ -196,6 +199,7 @@ namespace
 							d_reconstruction_time,
 							d_recon_tree_creator,
 							d_spreading_asymmetry,
+							d_spreading_start_time,
 							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
@@ -213,6 +217,7 @@ namespace
 							d_reconstruction_time,
 							d_recon_tree_creator,
 							d_spreading_asymmetry,
+							d_spreading_start_time,
 							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
@@ -230,6 +235,7 @@ namespace
 							d_reconstruction_time,
 							d_recon_tree_creator,
 							d_spreading_asymmetry,
+							d_spreading_start_time,
 							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
@@ -239,6 +245,7 @@ namespace
 		const GPlatesModel::integer_plate_id_type d_right_plate_id;
 		double d_reconstruction_time;
 		const GPlatesAppLogic::ReconstructionTreeCreator &d_recon_tree_creator;
+		double d_spreading_start_time;
 		double d_spreading_asymmetry;
 		double d_half_stage_rotation_interval;
 		bool d_reverse_reconstruct;
@@ -520,26 +527,23 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const ReconstructMethodInterface::Context &reconstruct_method_context,
 		bool reverse_reconstruct)
 {
-	// Create a context without deformation for creating a reconstruct method.
+	// Create a context without topology reconstruction for creating a reconstruct method.
 	//
 	// TODO: A bit hacky - there's probably a better way to do this.
-	// Problem is a reconstruct method instance deforms its feature's geometry whereas we only
-	// want the feature for its properties (eg, plate ID) since we're deforming caller's geometry.
-	ReconstructMethodInterface::Context reconstruct_method_context_without_deformation(reconstruct_method_context);
-	reconstruct_method_context_without_deformation.geometry_deformation = boost::none;
+	// Problem is a reconstruct method instance might topology-reconstruct its feature's geometry
+	// whereas we only want to reconstruct based on the feature's properties (eg, plate ID).
+	ReconstructMethodInterface::Context reconstruct_method_context_without_topology_reconstruction(reconstruct_method_context);
+	reconstruct_method_context_without_topology_reconstruction.topology_reconstruct = boost::none;
 
 	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
 	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
 			reconstruct_method_registry.create_reconstruct_method_or_default(
 					reconstruction_properties,
-					// Use the context without deformation since we're not deforming the 'present-day'
-					// geometry inside the feature (instead deforming some other geometry)...
-					reconstruct_method_context_without_deformation);
+					reconstruct_method_context_without_topology_reconstruction);
 
 	return reconstruct_method->reconstruct_geometry(
 			geometry,
-			// Use the context with deformation (if present) when reverse reconstructing the geometry...
-			reconstruct_method_context,
+			reconstruct_method_context_without_topology_reconstruction,
 			reconstruction_time,
 			reverse_reconstruct);
 }
@@ -642,6 +646,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
 		const double &reconstruction_time,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &spreading_asymmetry,
+		const double &spreading_start_time,
 		const double &half_stage_rotation_interval,
 		bool reverse_reconstruct)
 {
@@ -651,6 +656,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
 		reconstruction_time,
 		reconstruction_tree_creator,
 		spreading_asymmetry,
+		spreading_start_time,
 		half_stage_rotation_interval,
 		reverse_reconstruct);
 

@@ -30,6 +30,8 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/TopologyReconstructedFeatureGeometry.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
@@ -445,6 +447,35 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 		return;
 	}
 	// ...if we get here then the focused feature is valid and non-topological.
+
+	// If the focused feature is being reconstructed by topologies then disable the edit canvas tools
+	// until we implement the ability to edit them, for the following reasons...
+	//
+	// FIXME: Currently topology-reconstructed feature geometries use the 'gpml:geometryImportTime'
+	// feature property as the start time for forward and backward reconstruction by topologies.
+	// And in both directions the geometries can have deactivated points (due to subduction going
+	// forward in time) and consumption by mid-ocean ridges (going backward in time). So if the user
+	// is editing a geometry at a time when some points are de-activated then when the edited geometry
+	// gets set back in feature it will essentially lose some points. Also the edited geometries get
+	// reverse-reconstructed to present day when stored back in the feature, and if this is done at
+	// a time other than the geometry import time then it will not be correct.
+	//
+	// So for now we just disable all edit tools in this situation by detecting RFGs of type
+	// TopologyReconstructedFeatureGeometry.
+	//
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
+			d_feature_focus.associated_reconstruction_geometry();
+	if (focused_geometry &&
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+				const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *>(focused_geometry.get()))
+	{
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SPLIT_FEATURE, false);
+
+		return;
+	}
 
 	const std::pair<unsigned int, GPlatesMaths::GeometryType::Value> geometry_builder_parameters =
 			get_geometry_builder_parameters();

@@ -659,6 +659,9 @@ namespace GPlatesPresentation
 			{
 				// Save the reconstruct params.
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_reconstruct_params(), d_layer_params_tag("reconstruct_params"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_prompt_to_change_topology_reconstruction_parameters(),
+						d_layer_params_tag("prompt_to_change_topology_reconstruction_parameters"));
 			}
 
 			virtual
@@ -770,6 +773,14 @@ namespace GPlatesPresentation
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, reconstruct_params, d_layer_params_tag("reconstruct_params")))
 				{
 					params.set_reconstruct_params(reconstruct_params);
+				}
+
+				bool prompt_to_change_topology_reconstruction_parameters;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, prompt_to_change_topology_reconstruction_parameters,
+						d_layer_params_tag("prompt_to_change_topology_reconstruction_parameters")))
+				{
+					params.set_prompt_to_change_topology_reconstruction_parameters(
+							prompt_to_change_topology_reconstruction_parameters);
 				}
 			}
 
@@ -1554,7 +1565,8 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(),
 						d_layer_params_tag("fill_intensity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_deformed_feature_geometries(),
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_topology_reconstructed_feature_geometries(),
+						// Keeping original tag name for compatibility...
 						d_layer_params_tag("show_deformed_feature_geometries"));
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_strain_accumulation(),
@@ -1868,11 +1880,12 @@ namespace GPlatesPresentation
 					params.set_fill_intensity(fill_intensity);
 				}
 
-				bool show_deformed_feature_geometries;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_deformed_feature_geometries,
+				bool show_topology_reconstructed_feature_geometries;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, show_topology_reconstructed_feature_geometries,
+						// Keeping original tag name for compatibility...
 						d_layer_params_tag("show_deformed_feature_geometries")))
 				{
-					params.set_show_deformed_feature_geometries(show_deformed_feature_geometries);
+					params.set_show_topology_reconstructed_feature_geometries(show_topology_reconstructed_feature_geometries);
 				}
 
 				bool show_strain_accumulation;
@@ -3138,7 +3151,7 @@ namespace GPlatesPresentation
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::RASTER_FEATURE &&
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::SCALAR_FIELD_FEATURE &&
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::RECONSTRUCTION_TREE &&
-						input_channel_name != GPlatesAppLogic::LayerInputChannelName::DEFORMATION_SURFACES &&
+						input_channel_name != GPlatesAppLogic::LayerInputChannelName::TOPOLOGY_SURFACES &&
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS &&
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::VELOCITY_DOMAIN_LAYERS &&
 						input_channel_name != GPlatesAppLogic::LayerInputChannelName::VELOCITY_SURFACE_LAYERS &&

@@ -84,7 +84,7 @@ namespace
 
 	/**
 	 * @brief recon_method_is_valid returns true if @a recon_method is "ByPlateID",
-	 * "HalfStageRotation" or "HalfStageRotationVersion2".
+	 * "HalfStageRotation", "HalfStageRotationVersion2" or "HalfStageRotationVersion3".
 	 *
 	 * Note that currently (Feb 2014) only HalfStageRotationVersion2 gets exported by any part of GPlates. ByPlateID
 	 * is considered as the default and is not explicitly exported in any of GPlates' export functionality, and
@@ -99,7 +99,8 @@ namespace
 	{
 		if (recon_method == "ByPlateID" ||
 			recon_method == "HalfStageRotation" ||
-			recon_method == "HalfStageRotationVersion2")
+			recon_method == "HalfStageRotationVersion2" ||
+			recon_method == "HalfStageRotationVersion3")
 		{
 			return true;
 		}

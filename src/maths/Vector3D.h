@@ -36,8 +36,8 @@
 #include "utils/QtStreamable.h"
 
 
-namespace GPlatesMaths {
-
+namespace GPlatesMaths
+{
 	class UnitVector3D;
 
 	/** 
@@ -145,6 +145,21 @@ namespace GPlatesMaths {
 	protected:
 		real_t d_x, d_y, d_z;
 	};
+}
+
+
+#include "UnitVector3D.h"
+
+
+namespace GPlatesMaths
+{
+	inline
+	Vector3D::Vector3D(
+			const UnitVector3D &u) :
+		d_x(u.x()),
+		d_y(u.y()),
+		d_z(u.z())
+	{  }
 
 
 	inline

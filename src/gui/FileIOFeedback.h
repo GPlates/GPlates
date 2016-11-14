@@ -68,7 +68,6 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class GpgimVersionWarningDialog;
 	class ManageFeatureCollectionsDialog;
 	class MissingSessionFilesDialog;
 	class OgrSrsWriteOptionDialog;
@@ -503,12 +502,6 @@ namespace GPlatesGui
 		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
 		 */
 		GPlatesQtWidgets::MissingSessionFilesDialog *d_missing_session_files_dialog_ptr;
-
-		/**
-		 * Pointer to the dialog we use to notify users of files with different GPGIM versions.
-		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
-		 */
-		GPlatesQtWidgets::GpgimVersionWarningDialog *d_gpgim_version_warning_dialog_ptr;
 
 		/**
 		 * Pointer to the dialog we use to notify users of a non-WGS84 SRS associated

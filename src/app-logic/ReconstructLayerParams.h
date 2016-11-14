@@ -75,6 +75,35 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Whether to bring up the Set Topology Reconstruction Parameters dialog when selecting
+		 * to reconstruct with topologies.
+		 *
+		 * Since it can take a long time to initialise topology reconstruction, this gives the user
+		 * an opportunity to change the parameters before initialisation so they don't get hit with
+		 * a long initialisation twice (once when selecting topology reconstruction and again when
+		 * changing parameters).
+		 */
+		bool
+		get_prompt_to_change_topology_reconstruction_parameters() const
+		{
+			return d_prompt_to_change_topology_reconstruction_parameters;
+		}
+
+		void
+		set_prompt_to_change_topology_reconstruction_parameters(
+				bool prompt_to_change_parameters)
+		{
+			if (d_prompt_to_change_topology_reconstruction_parameters == prompt_to_change_parameters)
+			{
+				return;
+			}
+
+			d_prompt_to_change_topology_reconstruction_parameters = prompt_to_change_parameters;
+			emit_modified();
+		}
+
+
+		/**
 		 * Override of virtual method in LayerParams base.
 		 */
 		virtual
@@ -109,8 +138,15 @@ namespace GPlatesAppLogic
 
 		ReconstructParams d_reconstruct_params;
 
+		/**
+		 * Whether to bring up the Set Topology Reconstruction Parameters dialog when selecting
+		 * to reconstruct with topologies.
+		 */
+		bool d_prompt_to_change_topology_reconstruction_parameters;
 
-		ReconstructLayerParams()
+
+		ReconstructLayerParams() :
+			d_prompt_to_change_topology_reconstruction_parameters(true)
 		{  }
 	};
 }

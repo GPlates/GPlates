@@ -117,14 +117,14 @@ namespace GPlatesPresentation
 
 
 		/**
-		 * Whether to show deformed feature geometries.
+		 * Whether to show topology-reconstructed feature geometries.
 		 */
 		void
-		set_show_deformed_feature_geometries(
-				bool show_deformed_feature_geometries);
+		set_show_topology_reconstructed_feature_geometries(
+				bool show_topology_reconstructed_feature_geometries);
 
 		bool 
-		get_show_deformed_feature_geometries() const;
+		get_show_topology_reconstructed_feature_geometries() const;
 
 
 		/**
@@ -185,7 +185,7 @@ namespace GPlatesPresentation
 		//! The intensity of filled primitives in the range [0,1].
 		double d_fill_intensity;
 
-		bool d_show_deformed_feature_geometries;
+		bool d_show_topology_reconstructed_feature_geometries;
 		bool d_show_show_strain_accumulation;
 		double d_strain_accumulation_scale;
 	};

@@ -526,6 +526,106 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_time_spans(
 }
 
 
+void
+GPlatesAppLogic::ReconstructContext::get_topology_reconstructed_feature_time_spans(
+		std::vector<TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
+		const context_state_reference_type &context_state_ref)
+{
+	// We will only get topology-reconstructed geometry time spans if we're reconstructing using topologies.
+	if (!context_state_ref->d_reconstruct_method_context.topology_reconstruct)
+	{
+		return;
+	}
+
+	// Optimisation: Count the number of features so we can size the caller's array to avoid
+	// unnecessary copying/re-allocation as we add features to it.
+	const unsigned int num_features = d_reconstruct_method_feature_seq.size();
+	topology_reconstructed_feature_time_spans.reserve(
+			topology_reconstructed_feature_time_spans.size() + num_features);
+
+	// The context state should have the same number of features (reconstruct methods).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			context_state_ref->d_reconstruct_methods.size() == num_features,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the reconstruct methods of the current context state and reconstruct.
+	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
+	{
+		const ReconstructMethodFeature &reconstruct_method_feature = d_reconstruct_method_feature_seq[feature_index];
+		if (!reconstruct_method_feature.feature_ref.is_valid())
+		{
+			continue;
+		}
+
+		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
+				context_state_ref->d_reconstruct_methods[feature_index];
+
+		// Get any geometry time spans for the current feature.
+		ReconstructMethodInterface::topology_reconstructed_geometry_time_span_sequence_type geometry_time_spans;
+		context_state_reconstruct_method->get_topology_reconstructed_geometry_time_spans(
+				geometry_time_spans,
+				context_state_ref->d_reconstruct_method_context);
+		if (geometry_time_spans.empty())
+		{
+			// The current feature cannot be reconstructed using topologies (eg, a flowline).
+			continue;
+		}
+
+		// Add to the caller's sequence.
+		topology_reconstructed_feature_time_spans.push_back(
+				TopologyReconstructedFeatureTimeSpan(context_state_reconstruct_method->get_feature_ref()));
+		TopologyReconstructedFeatureTimeSpan &topology_reconstructed_feature_time_span = topology_reconstructed_feature_time_spans.back();
+
+		// Iterate over the geometry time spans and add them to the feature time span.
+		BOOST_FOREACH(
+				const ReconstructMethodInterface::TopologyReconstructedGeometryTimeSpan &geometry_time_span,
+				geometry_time_spans)
+		{
+			topology_reconstructed_feature_time_span.d_geometry_time_spans.push_back(
+					TopologyReconstructedFeatureTimeSpan::GeometryTimeSpan(
+							geometry_time_span.property_iterator,
+							geometry_time_span.geometry_time_span));
+		}
+	}
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructContext::get_reconstructed_topological_sections(
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+		const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+		const context_state_reference_type &context_state_ref,
+		const double &reconstruction_time)
+{
+	//PROFILE_FUNC();
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Iterate over the reconstruct methods in the context state.
+	BOOST_FOREACH(
+			const ReconstructMethodInterface::non_null_ptr_type &context_state_reconstruct_method,
+			context_state_ref->d_reconstruct_methods)
+	{
+		if (context_state_reconstruct_method->get_feature_ref().is_valid())
+		{
+			const GPlatesModel::FeatureId &feature_id = context_state_reconstruct_method->get_feature_ref()->feature_id();
+			if (topological_sections_referenced.find(feature_id) != topological_sections_referenced.end())
+			{
+				// Reconstruct the current feature (reconstruct method).
+				context_state_reconstruct_method->reconstruct_feature_geometries(
+						reconstructed_topological_sections,
+						reconstruct_handle,
+						context_state_ref->d_reconstruct_method_context,
+						reconstruction_time);
+			}
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,

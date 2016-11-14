@@ -169,6 +169,7 @@ namespace GPlatesAppLogic
 		 * a new enumeration in the 'gpml:ReconstructionMethod' property.
 		 */
 		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2 = 10.0;
+		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3 = 10.0;
 
 		/**
 		 * The version 2 method of calculating half-stage rotations using multiple fixed-size
@@ -188,8 +189,33 @@ namespace GPlatesAppLogic
 					left_plate_id,
 					right_plate_id,
 					spreading_asymmetry,
+					0.0/*geometry_import_time*/,
 					// Note: To ensure backward compatibility, must use a value that doesn't change...
 					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2);
+		}
+
+		/**
+		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
+		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_half_stage_rotation_version_3(
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &spreading_asymmetry,
+				const double &spreading_start_time,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator)
+		{
+			return RotationUtils::get_half_stage_rotation(
+					reconstruction_tree_creator,
+					reconstruction_time,
+					left_plate_id,
+					right_plate_id,
+					spreading_asymmetry,
+					spreading_start_time,
+					// Note: To ensure backward compatibility, must use a value that doesn't change...
+					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3);
 		}
 
 
@@ -214,8 +240,37 @@ namespace GPlatesAppLogic
 					reconstruction_time,
 					reconstruction_tree_creator,
 					spreading_asymmetry,
+					0.0/*spreading_start_time*/,
 					// Note: To ensure backward compatibility, must use a value that doesn't change...
 					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2,
+					reverse_reconstruct);
+		}
+
+		/**
+		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
+		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_as_half_stage_version_3(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry,
+				const double &spreading_start_time,
+				bool reverse_reconstruct)
+		{
+			return ReconstructUtils::reconstruct_as_half_stage(
+					geometry,
+					left_plate_id,
+					right_plate_id,
+					reconstruction_time,
+					reconstruction_tree_creator,
+					spreading_asymmetry,
+					spreading_start_time,
+					// Note: To ensure backward compatibility, must use a value that doesn't change...
+					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3,
 					reverse_reconstruct);
 		}
 
@@ -247,14 +302,41 @@ namespace GPlatesAppLogic
 
 			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
+
+			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+					reconstruction_params.get_reconstruction_method();
 
 			// Get the half-stage rotation.
-			if (reconstruction_params.get_reconstruction_method() == enumeration_half_stage_rotation_version_2)
+			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
+				reconstruction_method == enumeration_half_stage_rotation_version_2)
 			{
 				double spreading_asymmetry = 0.0;
 				if (reconstruction_params.get_spreading_asymmetry())
 				{
 					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
+				}
+
+				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
+				{
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
+							reconstruction_params.get_geometry_import_time();
+
+					double spreading_start_time = 0.0;
+					if (geometry_import_time &&
+						geometry_import_time->is_real())
+					{
+						spreading_start_time = geometry_import_time->value();
+					}
+
+					return get_half_stage_rotation_version_3(
+							left_plate_id,
+							right_plate_id,
+							spreading_asymmetry,
+							spreading_start_time,
+							reconstruction_time,
+							reconstruction_tree_creator);
 				}
 
 				return get_half_stage_rotation_version_2(
@@ -304,14 +386,43 @@ namespace GPlatesAppLogic
 
 			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
+
+			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+					reconstruction_params.get_reconstruction_method();
 
 			// Get the half-stage rotation.
-			if (reconstruction_params.get_reconstruction_method() == enumeration_half_stage_rotation_version_2)
+			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
+				reconstruction_method == enumeration_half_stage_rotation_version_2)
 			{
 				double spreading_asymmetry = 0.0;
 				if (reconstruction_params.get_spreading_asymmetry())
 				{
 					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
+				}
+
+				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
+				{
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
+							reconstruction_params.get_geometry_import_time();
+
+					double spreading_start_time = 0.0;
+					if (geometry_import_time &&
+						geometry_import_time->is_real())
+					{
+						spreading_start_time = geometry_import_time->value();
+					}
+
+					return reconstruct_as_half_stage_version_3(
+							geometry,
+							left_plate_id,
+							right_plate_id,
+							reconstruction_time,
+							reconstruction_tree_creator,
+							spreading_asymmetry,
+							spreading_start_time,
+							reverse_reconstruct);
 				}
 
 				return reconstruct_as_half_stage_version_2(
@@ -449,10 +560,13 @@ namespace GPlatesAppLogic
 						GPlatesPropertyValues::EnumerationContent("HalfStageRotation");
 				static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 						GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+				static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+						GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
 
 				// Must have the correct reconstruct method property.
 				if (reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation &&
-					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_2)
+					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_2 &&
+					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_3)
 				{
 					return false;
 				}

@@ -31,11 +31,11 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
 #include <boost/variant.hpp>
+#include <QPointF>
 
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
@@ -304,6 +304,25 @@ namespace GPlatesAppLogic
 
 
 			/**
+			 * Returns the location of the specified 3D point within network (either inside a delaunay face or a rigid block).
+			 *
+			 * Return none if point is outside the network.
+			 */
+			boost::optional<point_location_type>
+			get_point_location(
+					const GPlatesMaths::PointOnSphere &point) const;
+
+			//! Convenient overload for 2D projected point.
+			template <class Point2Type>
+			boost::optional<point_location_type>
+			get_point_location(
+					const Point2Type &point_2) const
+			{
+				return get_point_location(d_projection.unproject_to_point_on_sphere(point_2));
+			}
+
+
+			/**
 			 * Returns the natural neighbor coordinates of @a point in the *delaunay* triangulation
 			 * (which can then be used with different interpolation methods like linear interpolation).
 			 *
@@ -465,25 +484,23 @@ namespace GPlatesAppLogic
 			/**
 			 * Calculates the position that @a point deforms to using barycentric coordinates in the network.
 			 *
-			 * If @a point is inside the deforming region it will be deformed (using barycentric coordinates)
-			 * by the deformation of the triangle containing it (and that delaunay face will be returned along with it).
+			 * If @a point is inside the deforming region it will be deformed by the deformation of the
+			 * triangle containing it (and nearby triangles if using natural neighbour interpolation) and
+			 * that delaunay face will be returned along with the point.
 			 * And if the point is inside an interior rigid block then it will be rigidly rotated with that block
 			 * (and the rigid block will be returned along with it).
 			 *
 			 * By default the @a point is deformed backwards in time from
 			 * 'reconstruction_time' to 'reconstruction_time + time_increment', where
 			 * 'reconstruction_time' is the time of this network (passed into @a create).
+			 * However if @a reverse_deform is true then the @a point is deformed forward in time from
+			 * 'reconstruction_time' to 'reconstruction_time - time_increment.
 			 *
-			 * However if @a reverse_deform is true then the @a point is deformed from
-			 * 'reconstruction_time + time_increment' to 'reconstruction_time', and so the @a point
-			 * should be associated with a time of 'reconstruction_time + time_increment'
-			 * (not 'reconstruction_time', as is the case when deforming backwards in time).
-			 * This is because this resolved network is deformed backwards in time to
-			 * 'reconstruction_time + time_increment' so that it can grab the @a point and deform it
-			 * forward in time to 'reconstruction_time'. This is what makes forward deformation mirror
-			 * backward deformation so that it's exactly reversible).
+			 * Note that @a time_increment should always be positive, regardless of @a reverse_deform.
 			 *
-			 * Note that @a time_increment should be positive, regardless of @a reverse_deform.
+			 * If @a use_natural_neighbour_interpolation is true and @a point lies within the deforming
+			 * region, then interpolation of the natural neighbour deformed vertex positions is used,
+			 * otherwise barycentric interpolation is used.
 			 *
 			 * @a point_location is an optional optimisation if you already know the location of @a point
 			 * (delaunay face or rigid block containing the point).
@@ -495,6 +512,7 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const double &time_increment = 1.0,
 					bool reverse_deform = false,
+					bool use_natural_neighbour_interpolation = true,
 					boost::optional<point_location_type> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
@@ -504,12 +522,14 @@ namespace GPlatesAppLogic
 					const Point2Type &point_2,
 					const double &time_increment = 1.0,
 					bool reverse_deform = false,
+					bool use_natural_neighbour_interpolation = true,
 					boost::optional<point_location_type> point_location = boost::none) const
 			{
 				return calculate_deformed_point(
 						d_projection.unproject_to_point_on_sphere(point_2),
 						time_increment,
 						reverse_deform,
+						use_natural_neighbour_interpolation,
 						point_location);
 			}
 
@@ -772,201 +792,6 @@ namespace GPlatesAppLogic
 			};
 
 
-			/**
-			 * The current network (delaunay triangulation and interior rigid blocks) deformed by
-			 * a time increment (backward in time).
-			 *
-			 * This is used when reverse deforming points (forward in time) from
-			 * 'reconstruction_time + time_increment' to 'reconstruction_time' such that the network
-			 * at 'reconstruction_time' can be used with points at 'reconstruction_time + time_increment'.
-			 */
-			class DeformedNetwork :
-					public GPlatesUtils::ReferenceCount<DeformedNetwork>
-			{
-			public:
-				typedef GPlatesUtils::non_null_intrusive_ptr<DeformedNetwork> non_null_ptr_type;
-				typedef GPlatesUtils::non_null_intrusive_ptr<const DeformedNetwork> non_null_ptr_to_const_type;
-
-				static
-				non_null_ptr_type
-				create(
-						const Network &network,
-						const GPlatesMaths::Real &time_increment)
-				{
-					return non_null_ptr_type(new DeformedNetwork(network, time_increment));
-				}
-
-				/**
-				 * Deform @a point forward in time from 'reconstruction_time + time_increment' to 'reconstruction_time'.
-				 */
-				boost::optional< std::pair<GPlatesMaths::PointOnSphere, point_location_type> >
-				reverse_deform_point(
-						const GPlatesMaths::PointOnSphere &point,
-						boost::optional<point_location_type> point_location = boost::none) const;
-
-			private:
-
-				typedef std::vector<Delaunay_2::Point> vertex_seq_type;
-
-				/**
-				 * Original delaunay face and its deformed centroid (used when building AABB tree).
-				 */
-				struct Face
-				{
-					static const double ONE_THIRD;
-
-					Face(
-							Delaunay_2::Face_handle face_,
-							const vertex_seq_type &deformed_vertices);
-
-					Delaunay_2::Face_handle face;
-					Delaunay_2::Point deformed_centroid;
-				};
-
-				typedef std::vector<Face> face_seq_type;
-
-				//! Compares the x-component of the centroids of two faces.
-				struct FaceCentroidCompareX :
-						public std::binary_function<Face, Face, bool>
-				{
-					bool
-					operator()(
-							const Face &face_1,
-							const Face &face_2) const
-					{
-						return face_1.deformed_centroid.x() < face_2.deformed_centroid.x();
-					}
-				};
-
-				//! Compares the y-component of the centroids of two faces.
-				struct FaceCentroidCompareY :
-						public std::binary_function<Face, Face, bool>
-				{
-					bool
-					operator()(
-							const Face &face_1,
-							const Face &face_2) const
-					{
-						return face_1.deformed_centroid.y() < face_2.deformed_centroid.y();
-					}
-				};
-
-				/**
-				 * A 2D axis-aligned bounding box (of the projected 2D coordinates) of deformed delaunay faces.
-				 */
-				struct AABB
-				{
-					AABB(
-							face_seq_type::const_iterator faces_begin,
-							face_seq_type::const_iterator faces_end,
-							const vertex_seq_type &deformed_vertices);
-
-					AABB(
-							const AABB &child_aabb_1,
-							const AABB &child_aabb_2);
-
-					bool
-					contains_point(
-							const Delaunay_2::Point &point) const;
-
-					double min_x;
-					double min_y;
-					double max_x;
-					double max_y;
-				};
-
-				/**
-				 * Node in the AABB tree.
-				 */
-				struct Node
-				{
-					//! Maximum number of delaunay faces in each leaf node.
-					static const unsigned int MAX_NUM_FACES_PER_LEAF_NODE = 8;
-
-					//! Internal node.
-					Node(
-							const AABB &aabb_,
-							unsigned int child_node_index_0,
-							unsigned int child_node_index_1) :
-						aabb(aabb_),
-						is_leaf_node(false)
-					{
-						child_node_indices[0] = child_node_index_0;
-						child_node_indices[1] = child_node_index_1;
-					}
-
-					//! Leaf node.
-					Node(
-							face_seq_type::const_iterator faces_begin,
-							face_seq_type::const_iterator faces_end,
-							const vertex_seq_type &deformed_vertices) :
-						aabb(faces_begin, faces_end, deformed_vertices),
-						is_leaf_node(true),
-						faces_range(faces_begin, faces_end)
-					{  }
-
-					AABB aabb;
-					bool is_leaf_node;
-
-					// Only used if @a is_leaf_node is true...
-					std::pair<face_seq_type::const_iterator, face_seq_type::const_iterator> faces_range;
-					// Only used if @a is_leaf_node is false...
-					unsigned int child_node_indices[2];
-				};
-
-				typedef std::vector<Node> node_seq_type;
-
-
-				const Network &d_network;
-				GPlatesMaths::Real d_time_increment;
-
-				face_seq_type d_faces;
-				vertex_seq_type d_deformed_vertices;
-				node_seq_type d_nodes;
-				unsigned int d_root_node_index;
-
-
-				DeformedNetwork(
-						const Network &network,
-						const GPlatesMaths::Real &time_increment);
-
-				unsigned int
-				build_aabb_tree(
-						face_seq_type::iterator faces_begin,
-						face_seq_type::iterator faces_end,
-						unsigned int num_faces);
-
-				unsigned int
-				add_node(
-						const Node &node)
-				{
-					const unsigned int node_index = d_nodes.size();
-					d_nodes.push_back(node);
-					return node_index;
-				}
-
-				boost::optional<const RigidBlock &>
-				is_point_in_a_rigid_block(
-						const GPlatesMaths::PointOnSphere &point) const;
-
-				boost::optional<Delaunay_2::Face_handle>
-				calc_delaunay_barycentric_coordinates_in_deforming_region(
-						delaunay_coord_2_type &barycentric_coord_vertex_1,
-						delaunay_coord_2_type &barycentric_coord_vertex_2,
-						delaunay_coord_2_type &barycentric_coord_vertex_3,
-						const delaunay_point_2_type &point_2,
-						const Node &node) const;
-
-				boost::optional<Delaunay_2::Face_handle>
-				calc_delaunay_barycentric_coordinates_in_deforming_region(
-						delaunay_coord_2_type &barycentric_coord_vertex_1,
-						delaunay_coord_2_type &barycentric_coord_vertex_2,
-						delaunay_coord_2_type &barycentric_coord_vertex_3,
-						const delaunay_point_2_type &point_2,
-						Delaunay_2::Face_handle face) const;
-			};
-
-
 			//! Typedef for velocity delta-time parameters.
 			typedef std::pair<GPlatesMaths::Real, VelocityDeltaTime::Type> velocity_delta_time_params_type;
 
@@ -1014,16 +839,17 @@ namespace GPlatesAppLogic
 			 * identifier - which we do by inheritance instead of using a typedef.
 			 */
 			struct DelaunayVertexHandleToDeformedPointMapType :
-					public std::map<Delaunay_2::Vertex_handle, Delaunay_2::Point>
+					// Using 'QPointF' instead of 'Delaunay_2::Point' so that we can use natural neighbour
+					// interpolation (which expects addition of points and multiplication by scalars)...
+					public std::map<Delaunay_2::Vertex_handle, QPointF>
 			{  };
 
-			//! Typedef for a mapping of time increments to 2D delaunay triangulation vertices-to-deformed-positions maps.
-			typedef GPlatesUtils::KeyValueCache<GPlatesMaths::Real/*time increment*/, DelaunayVertexHandleToDeformedPointMapType>
-					time_increment_to_deformed_point_map_type;
+			//! Typedef for deformed position parameters.
+			typedef std::pair<bool/*reverse_deform*/, velocity_delta_time_params_type> deformed_point_params_type;
 
-			//! Typedef for a mapping of time increments to deformed networks.
-			typedef GPlatesUtils::KeyValueCache<GPlatesMaths::Real/*time increment*/, DeformedNetwork::non_null_ptr_type>
-					time_increment_to_deformed_network_map_type;
+			//! Typedef for a mapping of deformed position parameters to 2D delaunay triangulation vertices-to-deformed-positions maps.
+			typedef GPlatesUtils::KeyValueCache<deformed_point_params_type, DelaunayVertexHandleToDeformedPointMapType>
+					velocity_delta_time_to_deformed_point_map_type;
 
 
 			/**
@@ -1083,20 +909,12 @@ namespace GPlatesAppLogic
 			mutable velocity_delta_time_to_stage_rotation_map_type d_velocity_delta_time_to_stage_rotation_map;
 
 			/**
-			 * Maps time increments to deformed position maps.
+			 * Maps velocity delta-time parameters to deformed position maps.
 			 *
 			 * Each deformed position map in turn stores the deformed positions at the delaunay triangulation vertices so they
 			 * can be looked up during deformed position interpolation between vertices of the delaunay triangulation.
 			 */
-			mutable time_increment_to_deformed_point_map_type d_time_increment_to_deformed_point_map;
-
-			/**
-			 * Maps time increments to deformed networks.
-			 *
-			 * Each deformed network is used to reverse deform (forward in time)
-			 * from 'reconstruction_time + time_increment' to 'reconstruction_time.
-			 */
-			mutable time_increment_to_deformed_network_map_type d_time_increment_to_deformed_network_map;
+			mutable velocity_delta_time_to_deformed_point_map_type d_velocity_delta_time_to_deformed_point_map;
 
 
 #if 0 // Not currently using being used...
@@ -1137,14 +955,7 @@ namespace GPlatesAppLogic
 				// animation might override it and use another...
 				d_velocity_delta_time_to_velocity_map(2/*maximum_num_values_in_cache*/),
 				d_velocity_delta_time_to_stage_rotation_map(2/*maximum_num_values_in_cache*/),
-				d_time_increment_to_deformed_point_map(2/*maximum_num_values_in_cache*/),
-				d_time_increment_to_deformed_network_map(
-						// The function to create a deformed network from a time increment...
-						boost::bind(
-								&DeformedNetwork::create,
-								boost::cref(*this),
-								_1), // time increment
-						2/*maximum_num_values_in_cache*/)
+				d_velocity_delta_time_to_deformed_point_map(2/*maximum_num_values_in_cache*/)
 			{  }
 
 			void

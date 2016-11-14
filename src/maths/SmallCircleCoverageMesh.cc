@@ -43,7 +43,7 @@ GPlatesMaths::SmallCircleCoverageMeshBuilder::SmallCircleCoverageMeshBuilder(
 void
 GPlatesMaths::SmallCircleCoverageMeshBuilder::add_coverage_triangles()
 {
-	HierarchicalTriangularMeshTraversal htm;
+	SphericalSubdivision::HierarchicalTriangularMeshTraversal htm;
 
 	const RecursionContext recursion_context;
 
@@ -53,7 +53,7 @@ GPlatesMaths::SmallCircleCoverageMeshBuilder::add_coverage_triangles()
 
 void
 GPlatesMaths::SmallCircleCoverageMeshBuilder::visit(
-		const HierarchicalTriangularMeshTraversal::Triangle &triangle,
+		const SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 		const RecursionContext &recursion_context)
 {
 	RecursionContext children_recursion_context(recursion_context);

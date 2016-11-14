@@ -50,8 +50,7 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
 	// The feature must be defined at the reconstruction time, *unless* we've been requested to
-	// reconstruct for all times (even times when the feature is not defined - but we only do
-	// this for rigid rotations since it affects geometry positioning when deformation is present).
+	// reconstruct for all times (even times when the feature is not defined).
 	if (!context.reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period() &&
 		!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
 	{

@@ -240,7 +240,7 @@ namespace
 		}
 		else if (layer_input_channel_name == "Deformation surfaces (topological networks)")
 		{
-			return GPlatesAppLogic::LayerInputChannelName::DEFORMATION_SURFACES;
+			return GPlatesAppLogic::LayerInputChannelName::TOPOLOGY_SURFACES;
 		}
 		else if (layer_input_channel_name == "Topological geometry features")
 		{

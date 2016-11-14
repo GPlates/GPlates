@@ -49,11 +49,6 @@ namespace GPlatesAppLogic
 	{
 	public:
 
-		static const double INITIAL_VGP_DELTA_T;
-		static const double INITIAL_INTERPOLATE_START_T;
-		static const double INITIAL_INTERPOLATE_FINAL_T;
-		static const double INITIAL_INTERPOLATE_DELTA_T;
-
 		enum VGPVisibilitySetting
 		{
 			ALWAYS_VISIBLE, /**< all vgps are displayed at all times */
@@ -156,44 +151,162 @@ namespace GPlatesAppLogic
 				const boost::optional<double> &age) const;
 
 
-		//! Methods for deformation params
-		double 
-		get_deformation_end_time() const
+		bool
+		get_reconstruct_using_topologies() const
 		{
-			return d_deformation_end_time.dval();
+			return d_reconstruct_using_topologies;
 		}
 
 		void
-		set_deformation_end_time(
+		set_reconstruct_using_topologies(
+				bool reconstruct_using_topologies)
+		{
+			d_reconstruct_using_topologies = reconstruct_using_topologies;
+		}
+
+
+		//
+		// Methods for topology-reconstructed parameters.
+		//
+
+		double 
+		get_topology_reconstruction_end_time() const
+		{
+			return d_topology_reconstruction_end_time.dval();
+		}
+
+		void
+		set_topology_reconstruction_end_time(
 				double deformation_end_time)
 		{
-			d_deformation_end_time = deformation_end_time;
+			d_topology_reconstruction_end_time = deformation_end_time;
 		}
 
+
 		double 
-		get_deformation_begin_time() const
+		get_topology_reconstruction_begin_time() const
 		{
-			return d_deformation_begin_time.dval();
+			return d_topology_reconstruction_begin_time.dval();
 		}
 
 		void
-		set_deformation_begin_time(
+		set_topology_reconstruction_begin_time(
 				double deformation_begin_time)
 		{
-			d_deformation_begin_time = deformation_begin_time;
+			d_topology_reconstruction_begin_time = deformation_begin_time;
 		}
 
+
 		double 
-		get_deformation_time_increment() const
+		get_topology_reconstruction_time_increment() const
 		{
-			return d_deformation_time_increment.dval();
+			return d_topology_reconstruction_time_increment.dval();
 		}
 
 		void
-		set_deformation_time_increment(
+		set_topology_reconstruction_time_increment(
 				double time_inc)
 		{
-			d_deformation_time_increment = time_inc;
+			d_topology_reconstruction_time_increment = time_inc;
+		}
+
+
+		bool
+		get_topology_deformation_use_natural_neighbour_interpolation() const
+		{
+			return d_topology_deformation_use_natural_neighbour_interpolation;
+		}
+
+		void
+		set_topology_deformation_use_natural_neighbour_interpolation(
+				bool use_natural_neighbour_interpolation)
+		{
+			d_topology_deformation_use_natural_neighbour_interpolation = use_natural_neighbour_interpolation;
+		}
+
+
+		/**
+		 * Use a feature's time of appearance instead of its 'gpml:geometryImportTime' as the starting
+		 * time for topology reconstruction.
+		 */
+		bool
+		get_topology_reconstruction_use_time_of_appearance() const
+		{
+			return d_topology_reconstruction_use_time_of_appearance;
+		}
+
+		void
+		set_topology_reconstruction_use_time_of_appearance(
+				bool use_time_of_appearance)
+		{
+			d_topology_reconstruction_use_time_of_appearance = use_time_of_appearance;
+		}
+
+
+		bool
+		get_topology_reconstruction_enable_line_tessellation() const
+		{
+			return d_topology_reconstruction_enable_line_tessellation;
+		}
+
+		void
+		set_topology_reconstruction_enable_line_tessellation(
+				bool enable_line_tessellation)
+		{
+			d_topology_reconstruction_enable_line_tessellation = enable_line_tessellation;
+		}
+
+		const double &
+		get_topology_reconstruction_line_tessellation_degrees() const
+		{
+			return d_topology_reconstruction_line_tessellation_degrees.dval();
+		}
+
+		void
+		set_topology_reconstruction_line_tessellation_degrees(
+				const double &line_tessellation_degrees)
+		{
+			d_topology_reconstruction_line_tessellation_degrees = line_tessellation_degrees;
+		}
+
+
+		bool
+		get_topology_reconstruction_enable_lifetime_detection() const
+		{
+			return d_topology_reconstruction_enable_lifetime_detection;
+		}
+
+		void
+		set_topology_reconstruction_enable_lifetime_detection(
+				bool enable_lifetime_detection)
+		{
+			d_topology_reconstruction_enable_lifetime_detection = enable_lifetime_detection;
+		}
+
+		const double &
+		get_topology_reconstruction_lifetime_detection_threshold_velocity_delta() const
+		{
+			return d_topology_reconstruction_lifetime_detection_threshold_velocity_delta.dval();
+		}
+
+		void
+		set_topology_reconstruction_lifetime_detection_threshold_velocity_delta(
+				const double &lifetime_detection_threshold_velocity_delta)
+		{
+			d_topology_reconstruction_lifetime_detection_threshold_velocity_delta = lifetime_detection_threshold_velocity_delta;
+		}
+
+		const double &
+		get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary() const
+		{
+			return d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary.dval();
+		}
+
+		void
+		set_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
+				const double &lifetime_detection_threshold_distance_to_boundary)
+		{
+			d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary = lifetime_detection_threshold_distance_to_boundary;
 		}
 
 
@@ -208,6 +321,14 @@ namespace GPlatesAppLogic
 				const ReconstructParams &rhs) const;
 
 	private:
+
+		static const double INITIAL_VGP_DELTA_T;
+		static const double INITIAL_TIME_RANGE_END;
+		static const double INITIAL_TIME_RANGE_BEGIN;
+		static const double INITIAL_TIME_RANGE_INCREMENT;
+		static const double INITIAL_LINE_TESSELLATION_DEGREES;
+
+
 		/**
 		 * Do we reconstruct by-plate-id outside the feature's active time period.
 		 */
@@ -233,10 +354,28 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesMaths::real_t d_vgp_delta_t;
 
-		// Deformation time span parameters.
-		GPlatesMaths::real_t d_deformation_end_time;
-		GPlatesMaths::real_t d_deformation_begin_time;
-		GPlatesMaths::real_t d_deformation_time_increment;
+		/**
+		 * Whether to reconstruct using topologies.
+		 */
+		bool d_reconstruct_using_topologies;
+
+		//
+		// Topology reconstruction parameters.
+		//
+
+		GPlatesMaths::real_t d_topology_reconstruction_end_time;
+		GPlatesMaths::real_t d_topology_reconstruction_begin_time;
+		GPlatesMaths::real_t d_topology_reconstruction_time_increment;
+
+		bool d_topology_deformation_use_natural_neighbour_interpolation;
+		bool d_topology_reconstruction_use_time_of_appearance;
+
+		bool d_topology_reconstruction_enable_line_tessellation;
+		GPlatesMaths::real_t d_topology_reconstruction_line_tessellation_degrees;
+
+		bool d_topology_reconstruction_enable_lifetime_detection;
+		GPlatesMaths::real_t d_topology_reconstruction_lifetime_detection_threshold_velocity_delta;
+		GPlatesMaths::real_t d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary;
 
 	private: // Transcribe for sessions/projects...
 

@@ -39,6 +39,8 @@ set(srcs
     FiniteRotation.h
     FiniteRotationSnapshotTable.h
     FunctionDomainException.h
+    GeneratePoints.cc
+    GeneratePoints.h
     GenericVectorOps3D.h
     GeometryDistance.cc
     GeometryDistance.h
@@ -53,7 +55,6 @@ set(srcs
     GreatCircle.h
     GreatCircleArc.cc
     GreatCircleArc.h
-    HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h
     IndeterminateResultException.h
@@ -120,6 +121,8 @@ set(srcs
     SmallCircleProximityHitDetail.h
     SphericalArea.cc
     SphericalArea.h
+    SphericalSubdivision.cc
+    SphericalSubdivision.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

@@ -41,7 +41,9 @@ GPlatesAppLogic::LayerInputChannelName::transcribe(
 		GPlatesScribe::EnumValue("RECONSTRUCTION_FEATURES", RECONSTRUCTION_FEATURES),
 		GPlatesScribe::EnumValue("RECONSTRUCTION_TREE", RECONSTRUCTION_TREE),
 		GPlatesScribe::EnumValue("RECONSTRUCTABLE_FEATURES", RECONSTRUCTABLE_FEATURES),
-		GPlatesScribe::EnumValue("DEFORMATION_SURFACES", DEFORMATION_SURFACES),
+		// Note: We didn't change the string to "TOPOLOGY_SURFACES" since that would have broken
+		// backward backward/forward compatibility...
+		GPlatesScribe::EnumValue("DEFORMATION_SURFACES", TOPOLOGY_SURFACES),
 		GPlatesScribe::EnumValue("TOPOLOGICAL_GEOMETRY_FEATURES", TOPOLOGICAL_GEOMETRY_FEATURES),
 		GPlatesScribe::EnumValue("TOPOLOGICAL_SECTION_LAYERS", TOPOLOGICAL_SECTION_LAYERS),
 		GPlatesScribe::EnumValue("TOPOLOGICAL_NETWORK_FEATURES", TOPOLOGICAL_NETWORK_FEATURES),

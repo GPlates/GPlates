@@ -351,7 +351,7 @@ namespace GPlatesMaths
 					points_begin != points_end,
 					GPLATES_ASSERTION_SOURCE);
 
-			const Vector3D summed_points_position = calculate_sum_points(points_begin, points_end);
+			const Vector3D summed_points_position = calculate_sum_vertices(points_begin, points_end);
 
 			// If the magnitude of the summed vertex position is zero then all the points averaged
 			// to zero and hence we cannot get a centroid point.

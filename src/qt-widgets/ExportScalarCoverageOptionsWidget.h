@@ -77,17 +77,10 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
-		react_gmt_include_domain_point_check_box_clicked();
+		react_include_dilatation_rate_check_box_clicked();
 
 		void
-		react_gmt_include_dilatation_rate_check_box_clicked();
-
-		void
-		react_gmt_include_domain_meta_data_check_box_clicked();
-
-
-		void
-		react_gpml_include_dilatation_rate_check_box_clicked();
+		react_include_dilatation_check_box_clicked();
 
 	private:
 

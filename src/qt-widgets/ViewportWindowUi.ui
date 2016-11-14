@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -199,6 +199,7 @@
     <addaction name="separator"/>
     <addaction name="action_Create_VGP"/>
     <addaction name="action_Assign_Plate_IDs"/>
+    <addaction name="action_Generate_Crustal_Thickness_Points"/>
     <addaction name="menuGenerate_Velocity_Point_Locations"/>
    </widget>
    <widget class="QMenu" name="menu_Utilities">
@@ -1206,6 +1207,11 @@
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="action_Generate_Crustal_Thickness_Points">
+   <property name="text">
+    <string>Generate &amp;Crustal Thickness Points</string>
    </property>
   </action>
  </widget>

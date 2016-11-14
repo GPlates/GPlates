@@ -59,7 +59,7 @@
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/GeometryOnSphere.h"
-#include "maths/HierarchicalTriangularMesh.h"
+#include "maths/SphericalSubdivision.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/SubjectObserverToken.h"
@@ -733,7 +733,7 @@ namespace GPlatesOpenGL
 
 			void
 			visit(
-					const GPlatesMaths::HierarchicalTriangularMeshTraversal::Triangle &triangle,
+					const GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 					const unsigned int &recursion_depth);
 
 		private:

@@ -28,8 +28,6 @@ set(srcs
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
     DeformationStrain.h
-    DeformedFeatureGeometry.cc
-    DeformedFeatureGeometry.h
     DependentTopologicalSectionLayers.cc
     DependentTopologicalSectionLayers.h
     ExtractRasterFeatureProperties.cc
@@ -52,8 +50,6 @@ set(srcs
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
-    GeometryDeformation.cc
-    GeometryDeformation.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -243,6 +239,11 @@ set(srcs
     TopologyNetworkResolverLayerProxy.h
     TopologyNetworkResolverLayerTask.cc
     TopologyNetworkResolverLayerTask.h
+    TopologyPointLocation.h
+    TopologyReconstruct.cc
+    TopologyReconstruct.h
+    TopologyReconstructedFeatureGeometry.cc
+    TopologyReconstructedFeatureGeometry.h
     TopologyUtils.cc
     TopologyUtils.h
     TRSUtils.cc

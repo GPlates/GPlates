@@ -28,8 +28,10 @@
 
 #include <set>
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "ReconstructLayerProxy.h"
+#include "TopologyGeometryType.h"
 
 #include "global/PointerTraits.h"
 
@@ -58,11 +60,14 @@ namespace GPlatesAppLogic
 		/**
 		 * Sets the topological section feature IDs referenced by the topological features for *all* times.
 		 *
+		 * If @a topology_geometry_type is specified then only features with matching topology geometries are considered.
+		 *
 		 * Also sets the *dependency* topological section layers that the topological features depend on.
 		 */
 		void
 		set_topological_section_feature_ids(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections);
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none);
 
 
 		/**
@@ -102,6 +107,21 @@ namespace GPlatesAppLogic
 		update_topological_section_layer(
 				const GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type &layer);
 
+
+		/**
+		 * Get the *reconstructed geometry* topological layers that the topological features depend on.
+		 */
+		void
+		get_dependent_topological_section_layers(
+				std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers);
+
+		/**
+		 * Get the *reconstructed geometry* topological layers that the topological features depend on.
+		 */
+		void
+		get_dependent_topological_section_layers(
+				std::vector<GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type> &dependent_layers);
+
 	private:
 
 		// All topological section layers (even ones that don't contribute to resolved topologies).
@@ -126,6 +146,12 @@ namespace GPlatesAppLogic
 		bool
 		update_topological_section_layer(
 				const typename LayerProxyType::non_null_ptr_type &layer,
+				std::set<LayerProxyType *> &layers);
+
+		template <class LayerProxyType>
+		void
+		get_dependent_topological_section_layers(
+				std::vector<typename LayerProxyType::non_null_ptr_type> &dependent_layers,
 				std::set<LayerProxyType *> &layers);
 
 		/**

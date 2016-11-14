@@ -1985,7 +1985,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 			vertex_elements,
 			GPlatesGui::Colour::to_rgba8(GPlatesGui::Colour::get_white()),
 			recursion_depth_to_generate_mesh);
-	GPlatesMaths::HierarchicalTriangularMeshTraversal htm;
+	GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal htm;
 	const unsigned int current_recursion_depth = 0;
 	htm.visit(sphere_mesh_builder, current_recursion_depth);
 
@@ -4360,7 +4360,7 @@ GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::SphereMeshBuilder(
 
 void
 GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::visit(
-		const GPlatesMaths::HierarchicalTriangularMeshTraversal::Triangle &triangle,
+		const GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 		const unsigned int &recursion_depth)
 {
 	// If we're at the correct depth then add the triangle to our mesh.

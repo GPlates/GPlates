@@ -30,6 +30,7 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
+#include "ScalarCoverageDeformation.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -88,7 +89,7 @@ namespace GPlatesAppLogic
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
-				const point_scalar_value_seq_type &reconstructed_point_scalar_values,
+				const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
@@ -96,35 +97,26 @@ namespace GPlatesAppLogic
 							reconstructed_domain_geometry,
 							range_property_iterator,
 							scalar_type,
-							reconstructed_point_scalar_values,
+							scalar_coverage_time_span,
 							reconstruct_handle_));
 		}
 
 
 		/**
-		 * Returns the reconstructed domain geometry.
+		 * Returns the domain reconstructed feature geometry.
 		 *
-		 * Note: This could be a DeformedFeatureGeometry (derived from ReconstructedFeatureGeometry)
+		 * Note: This could be a TopologyReconstructedFeatureGeometry (derived from ReconstructedFeatureGeometry)
 		 * which also contains deformation strain information.
 		 *
 		 * Note: The reconstructed/deformed geometry is also in the base ReconstructedFeatureGeometry
 		 * of this class (along with feature, plate id, etc).
 		 */
 		ReconstructedFeatureGeometry::non_null_ptr_type
-		get_reconstructed_domain_geometry() const
+		get_reconstructed_feature_geometry() const
 		{
-			return d_reconstructed_domain_geometry;
+			return d_domain_reconstructed_feature_geometry;
 		}
 
-
-		/**
-		 * Access the feature property which contained the reconstructed domain geometry.
-		 */
-		const GPlatesModel::FeatureHandle::iterator
-		get_domain_property() const
-		{
-			return d_reconstructed_domain_geometry->property();
-		}
 
 		/**
 		 * Returns the reconstructed domain geometry.
@@ -132,7 +124,7 @@ namespace GPlatesAppLogic
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		get_reconstructed_geometry() const
 		{
-			return d_reconstructed_domain_geometry->reconstructed_geometry();
+			return d_domain_reconstructed_feature_geometry->reconstructed_geometry();
 		}
 
 		/**
@@ -146,6 +138,26 @@ namespace GPlatesAppLogic
 		get_reconstructed_points(
 				point_seq_type &points) const;
 
+		/**
+		 * Returns the per-geometry-point scalar values.
+		 *
+		 * Note: Each scalar maps to a point in @a get_reconstructed_points.
+		 *
+		 * Note: The number of scalars is guaranteed to match points in @a get_reconstructed_points.
+		 */
+		void
+		get_reconstructed_point_scalar_values(
+				point_scalar_value_seq_type &scalar_values) const;
+
+
+		/**
+		 * Access the feature property which contained the reconstructed domain geometry.
+		 */
+		const GPlatesModel::FeatureHandle::iterator
+		get_domain_property() const
+		{
+			return d_domain_reconstructed_feature_geometry->property();
+		}
 
 		/**
 		 * Access the feature property from which the scalar values were reconstructed.
@@ -166,19 +178,6 @@ namespace GPlatesAppLogic
 		get_scalar_type() const
 		{
 			return d_scalar_type;
-		}
-
-		/**
-		 * Returns the per-geometry-point scalar values.
-		 *
-		 * Note: Each scalar maps to a point in @a get_reconstructed_points.
-		 *
-		 * Note: The number of scalars is guaranteed to match points in @a get_reconstructed_points.
-		 */
-		const point_scalar_value_seq_type &
-		get_reconstructed_point_scalar_values() const
-		{
-			return d_reconstructed_point_scalar_values;
 		}
 
 
@@ -207,7 +206,7 @@ namespace GPlatesAppLogic
 		references(
 				const GPlatesModel::FeatureHandle &that_feature_handle) const
 		{
-			return d_reconstructed_domain_geometry->references(that_feature_handle);
+			return d_domain_reconstructed_feature_geometry->references(that_feature_handle);
 		}
 
 		/**
@@ -219,7 +218,7 @@ namespace GPlatesAppLogic
 		GPlatesModel::FeatureHandle *
 		feature_handle_ptr() const
 		{
-			return d_reconstructed_domain_geometry->feature_handle_ptr();
+			return d_domain_reconstructed_feature_geometry->feature_handle_ptr();
 		}
 
 		/**
@@ -228,7 +227,7 @@ namespace GPlatesAppLogic
 		bool
 		is_valid() const
 		{
-			return d_reconstructed_domain_geometry->is_valid();
+			return d_domain_reconstructed_feature_geometry->is_valid();
 		}
 
 		/**
@@ -237,7 +236,7 @@ namespace GPlatesAppLogic
 		const GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() const
 		{
-			return d_reconstructed_domain_geometry->get_feature_ref();
+			return d_domain_reconstructed_feature_geometry->get_feature_ref();
 		}
 
 
@@ -268,9 +267,9 @@ namespace GPlatesAppLogic
 	private:
 
 		/**
-		 * The reconstructed domain.
+		 * The domain reconstructed feature geometry.
 		 */
-		ReconstructedFeatureGeometry::non_null_ptr_type d_reconstructed_domain_geometry;
+		ReconstructedFeatureGeometry::non_null_ptr_type d_domain_reconstructed_feature_geometry;
 
 		/**
 		 * The range property that the scalar values came from.
@@ -283,9 +282,9 @@ namespace GPlatesAppLogic
 		GPlatesPropertyValues::ValueObjectType d_scalar_type;
 
 		/**
-		 * Per-geometry-point scalar values.
+		 * Used to obtain the per-geometry-point scalar values when requested.
 		 */
-		point_scalar_value_seq_type d_reconstructed_point_scalar_values;
+		ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
 
 
 		/**
@@ -298,7 +297,7 @@ namespace GPlatesAppLogic
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
-				const point_scalar_value_seq_type &reconstructed_point_scalar_values,
+				const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_);
 
 	};

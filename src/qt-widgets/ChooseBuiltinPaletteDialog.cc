@@ -148,11 +148,11 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::add_colour_scale_button(
 			get_builtin_colour_palette_type(colour_scale_button);
 
 	// Replace each placeholder with a colour scale button above a text label.
-	QVBoxLayout *layout = new QVBoxLayout(colour_scale_button_placeholder);
-	layout->addWidget(colour_scale_button, 0/*stretch*/, Qt::AlignHCenter);
-	layout->addWidget(new QLabel(builtin_colour_palette_type.get_palette_name()), 0/*stretch*/, Qt::AlignHCenter);
-	layout->setSpacing(1);
-	layout->setContentsMargins(0, 0, 0, 0);
+	QVBoxLayout *colour_scale_button_layout = new QVBoxLayout(colour_scale_button_placeholder);
+	colour_scale_button_layout->addWidget(colour_scale_button, 0/*stretch*/, Qt::AlignHCenter);
+	colour_scale_button_layout->addWidget(new QLabel(builtin_colour_palette_type.get_palette_name()), 0/*stretch*/, Qt::AlignHCenter);
+	colour_scale_button_layout->setSpacing(1);
+	colour_scale_button_layout->setContentsMargins(0, 0, 0, 0);
 
 	colour_scale_button->populate(builtin_colour_palette_type.create_palette());
 

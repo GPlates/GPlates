@@ -149,9 +149,9 @@ namespace GPlatesPresentation
 			bool vgp_draw_circular_error;
 
 			//
-			// Deformed feature geoemetry settings.
+			// Topology_reconstructed feature geometry settings.
 			//
-			bool show_deformed_feature_geometries;
+			bool show_topology_reconstructed_feature_geometries;
 			bool show_strain_accumulation;
 			double strain_accumulation_scale;
 
@@ -328,11 +328,6 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
-
-		virtual
-		void
-		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 		virtual
@@ -384,6 +379,11 @@ namespace GPlatesPresentation
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<topology_reconstructed_feature_geometry_type> &trfg);
 
 	private:
 

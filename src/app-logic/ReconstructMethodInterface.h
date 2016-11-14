@@ -30,7 +30,6 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "GeometryDeformation.h"
 #include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
@@ -38,6 +37,7 @@
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodType.h"
 #include "ReconstructParams.h"
+#include "TopologyReconstruct.h"
 #include "VelocityDeltaTime.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -83,6 +83,28 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Associate a topology reconstructed geometry's time span with its feature's geometry property.
+		 *
+		 * This is only used when features are reconstructed using *topologies*.
+		 */
+		struct TopologyReconstructedGeometryTimeSpan
+		{
+			TopologyReconstructedGeometryTimeSpan(
+					const GPlatesModel::FeatureHandle::iterator &property_iterator_,
+					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span_) :
+				property_iterator(property_iterator_),
+				geometry_time_span(geometry_time_span_)
+			{  }
+
+			GPlatesModel::FeatureHandle::iterator property_iterator;
+			TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span;
+		};
+
+		//! Typedef for a sequence of topology reconstructed geometries.
+		typedef std::vector<TopologyReconstructedGeometryTimeSpan> topology_reconstructed_geometry_time_span_sequence_type;
+
+
+		/**
 		 * Extrinsic reconstruction state that features are reconstructed with - this is information
 		 * that is "passed into" a reconstruct method during reconstruction (and initialisation).
 		 *
@@ -93,7 +115,7 @@ namespace GPlatesAppLogic
 		 * For initialisation this is currently passed into the constructors of derived classes
 		 * by the reconstruct method registry.
 		 *
-		 * @a geometry_deformation is optional - if set to boost::none then no deformation will occur.
+		 * @a topology_reconstruct is optional - if present then topologies will be used to reconstruct/deform.
 		 *
 		 * NOTE: If these parameters change then a new reconstruct method instance should be created.
 		 */
@@ -102,21 +124,19 @@ namespace GPlatesAppLogic
 			Context(
 					const ReconstructParams &reconstruct_params_,
 					const ReconstructionTreeCreator &reconstruction_tree_creator_,
-					boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>
-							geometry_deformation_ = boost::none) :
+					boost::optional<TopologyReconstruct::non_null_ptr_to_const_type> topology_reconstruct_ = boost::none) :
 				reconstruct_params(reconstruct_params_),
 				reconstruction_tree_creator(reconstruction_tree_creator_)
 			{
-				if (geometry_deformation_)
+				if (topology_reconstruct_)
 				{
-					geometry_deformation = geometry_deformation_.get();
+					topology_reconstruct = topology_reconstruct_.get();
 				}
 			}
 
 			ReconstructParams reconstruct_params;
 			ReconstructionTreeCreator reconstruction_tree_creator;
-			boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>
-					geometry_deformation;
+			boost::optional<TopologyReconstruct::non_null_ptr_to_const_type> topology_reconstruct;
 		};
 
 
@@ -266,6 +286,22 @@ namespace GPlatesAppLogic
 				const Context &context,
 				const double &reconstruction_time,
 				bool reverse_reconstruct) = 0;
+
+
+		/**
+		 * Returns any topology-reconstructed geometry time spans.
+		 *
+		 * These are only used when features are reconstructed using *topologies*.
+		 * They store the results of incrementally reconstructing using resolved topological plates/networks.
+		 */
+		virtual
+		void
+		get_topology_reconstructed_geometry_time_spans(
+				topology_reconstructed_geometry_time_span_sequence_type &topology_reconstructed_geometry_time_spans,
+				const Context &context)
+		{
+			// By default, does nothing. Currently overridden by @a ReconstructMethodByPlateId.
+		}
 
 	protected:
 

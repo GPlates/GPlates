@@ -173,10 +173,10 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Returns optional time of dissappearance if a "gml:validTime" property is found.
+			 * Returns optional time of disappearance if a "gml:validTime" property is found.
 			 */
 			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-			get_time_of_dissappearance() const
+			get_time_of_disappearance() const
 			{
 				return d_time_of_appearance;
 			}

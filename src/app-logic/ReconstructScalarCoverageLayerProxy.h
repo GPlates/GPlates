@@ -33,11 +33,13 @@
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "ReconstructContext.h"
 #include "ReconstructedScalarCoverage.h"
 #include "ReconstructHandle.h"
 #include "ReconstructLayerProxy.h"
 #include "ReconstructScalarCoverageParams.h"
 #include "ScalarCoverageDeformation.h"
+#include "ScalarCoverageEvolution.h"
 #include "ScalarCoverageFeatureProperties.h"
 
 #include "model/FeatureHandle.h"
@@ -518,6 +520,23 @@ namespace GPlatesAppLogic
 		cache_scalar_coverage_time_spans(
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params);
+
+		/**
+		 * Cache time spans for topology-reconstructed scalar coverages.
+		 */
+		void
+		cache_topology_reconstructed_scalar_coverage_time_spans(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
+				const std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
+				boost::optional<scalar_evolution_function_type> scalar_evolution_function);
+
+		/**
+		 * Cache time spans for non-topology-reconstructed scalar coverages.
+		 */
+		void
+		cache_non_topology_reconstructed_scalar_coverage_time_spans(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &domain_features);
 
 
 		/**

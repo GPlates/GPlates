@@ -467,7 +467,6 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reverse_reconstruct(
 			reconstruct_method_registry,
 			feature_ref,
 			reconstruction.get_reconstruction_time(),
-			// Might include deformation...
 			reconstruct_layer_outputs.front()->get_reconstruct_method_context(),
 			true/*reverse_reconstruct*/);
 }

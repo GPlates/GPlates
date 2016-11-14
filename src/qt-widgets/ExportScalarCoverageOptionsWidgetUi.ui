@@ -64,51 +64,15 @@
         </layout>
        </widget>
       </item>
-      <item>
-       <widget class="QGroupBox" name="gmt_inclusion_options">
-        <property name="title">
-         <string>Include Options</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_9">
-         <property name="spacing">
-          <number>1</number>
-         </property>
-         <property name="topMargin">
-          <number>1</number>
-         </property>
-         <property name="bottomMargin">
-          <number>1</number>
-         </property>
-         <item>
-          <widget class="QCheckBox" name="gmt_include_domain_point_check_box">
-           <property name="text">
-            <string>Include domain point</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="gmt_include_dilatation_rate_check_box">
-           <property name="text">
-            <string>Include dilatation strain rate</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="gmt_include_domain_meta_data_check_box">
-           <property name="text">
-            <string>Include domain metadata</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="gpml_format_options" native="true">
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+    <widget class="QGroupBox" name="inclusion_options">
+     <property name="title">
+      <string>Include Options</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_9">
       <property name="spacing">
        <number>1</number>
       </property>
@@ -119,9 +83,16 @@
        <number>1</number>
       </property>
       <item>
-       <widget class="QCheckBox" name="gpml_include_dilatation_rate_check_box">
+       <widget class="QCheckBox" name="include_dilatation_rate_check_box">
         <property name="text">
-         <string>Include dilatation strain rate</string>
+         <string>Include dilatation rate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="include_dilatation_check_box">
+        <property name="text">
+         <string>Include (accumulated) dilatation</string>
         </property>
        </widget>
       </item>

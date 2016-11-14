@@ -770,6 +770,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 	QObject::connect(action_Generate_LatitudeLongitude_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_lat_lon_dialog()));
+	QObject::connect(action_Generate_Crustal_Thickness_Points, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_generate_crustal_thickness_points_dialog()));
 }
 
 
@@ -1838,7 +1840,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_1.5_data_sources.html"));
+			QUrl("http://www.earthbyte.org/gplates-2-0-software-and-data-sets"));
 }
 
 

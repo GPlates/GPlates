@@ -27,7 +27,7 @@
 #include <boost/optional.hpp> 
 #include <boost/shared_ptr.hpp>
 
-#include "SetDeformationParametersDialog.h"
+#include "SetTopologyReconstructionParametersDialog.h"
 
 #include "QtWidgetUtils.h"
 
@@ -40,7 +40,7 @@
 #include "presentation/VisualLayer.h"
 
 
-GPlatesQtWidgets::SetDeformationParametersDialog::SetDeformationParametersDialog(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::SetTopologyReconstructionParametersDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
 		QWidget *parent_) :
 	QDialog(parent_),
@@ -48,8 +48,16 @@ GPlatesQtWidgets::SetDeformationParametersDialog::SetDeformationParametersDialog
 {
 	setupUi(this);
 
-	// Enable/disable strain accumulation controls if showing/hiding strain accumulation.
-	strain_accumulation_widget->setEnabled(
+	// Show/hide line tessellation controls if enabling/disabling tessellation.
+	detect_lifetime_widget->setVisible(
+			enable_detect_lifetime_check_box->isChecked());
+
+	// Show/hide line tessellation controls if enabling/disabling tessellation.
+	line_tessellation_widget->setVisible(
+			enable_line_tessellation_degrees_check_box->isChecked());
+
+	// Show/hide strain accumulation controls if showing/hiding strain accumulation.
+	strain_accumulation_widget->setVisible(
 			show_strain_accumulation_checkbox->isChecked());
 
 	setup_connections();
@@ -59,7 +67,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::SetDeformationParametersDialog
 
 
 bool
-GPlatesQtWidgets::SetDeformationParametersDialog::populate(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::populate(
 		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
 	// Store pointer so we can write the settings back later.
@@ -89,17 +97,48 @@ GPlatesQtWidgets::SetDeformationParametersDialog::populate(
 			return false;
 		}
 
-		// Handle delta t.
-		spinbox_end_time->setValue(
-			layer_params->get_reconstruct_params().get_deformation_end_time());
-		spinbox_begin_time->setValue(
-			layer_params->get_reconstruct_params().get_deformation_begin_time());
-		spinbox_time_increment->setValue(
-			layer_params->get_reconstruct_params().get_deformation_time_increment());
+		const GPlatesAppLogic::ReconstructParams &reconstruct_params = layer_params->get_reconstruct_params();
 
-		// Show deformed feature geometries.
-		show_deformed_feature_geometries_checkbox->setChecked(
-				visual_layer_params->get_show_deformed_feature_geometries());
+		// Handle delta t.
+		spinbox_end_time->setValue(reconstruct_params.get_topology_reconstruction_end_time());
+		spinbox_begin_time->setValue(reconstruct_params.get_topology_reconstruction_begin_time());
+		spinbox_time_increment->setValue(reconstruct_params.get_topology_reconstruction_time_increment());
+
+		// Deformed position interpolation.
+		if (reconstruct_params.get_topology_deformation_use_natural_neighbour_interpolation())
+		{
+			natural_neighbour_radio_button->setChecked(true);
+		}
+		else
+		{
+			barycentric_radio_button->setChecked(true);
+		}
+
+		// Whether to start reconstruction at each feature's time of appearance, or use geometry import time.
+		start_reconstruction_at_time_of_appearance_checkbox->setChecked(
+				reconstruct_params.get_topology_reconstruction_use_time_of_appearance());
+
+		// Line tessellation.
+		enable_line_tessellation_degrees_check_box->setChecked(
+				reconstruct_params.get_topology_reconstruction_enable_line_tessellation());
+		line_tessellation_degrees_spinbox->setValue(
+				reconstruct_params.get_topology_reconstruction_line_tessellation_degrees());
+		line_tessellation_widget->setVisible(
+				reconstruct_params.get_topology_reconstruction_enable_line_tessellation());
+
+		// Lifetime detection.
+		enable_detect_lifetime_check_box->setChecked(
+				reconstruct_params.get_topology_reconstruction_enable_lifetime_detection());
+		detect_lifetime_threshold_velocity_delta_spin_box->setValue(
+				reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta());
+		detect_lifetime_threshold_distance_to_boundary_spin_box->setValue(
+				reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary());
+		detect_lifetime_widget->setVisible(
+				reconstruct_params.get_topology_reconstruction_enable_lifetime_detection());
+
+		// Show topology-reconstructed feature geometries.
+		show_reconstructed_feature_geometries_checkbox->setChecked(
+				visual_layer_params->get_show_topology_reconstructed_feature_geometries());
 
 		// Show strain accumulation.
 		show_strain_accumulation_checkbox->setChecked(
@@ -116,7 +155,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::populate(
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::setup_connections()
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::setup_connections()
 {
 	QObject::connect(
 			main_buttonbox,
@@ -140,6 +179,18 @@ GPlatesQtWidgets::SetDeformationParametersDialog::setup_connections()
 			this, SLOT(handle_time_increment_spinbox_changed(double)));
 
 	QObject::connect(
+			enable_detect_lifetime_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_enable_detect_lifetime_changed(int)));
+
+	QObject::connect(
+			enable_line_tessellation_degrees_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_enable_line_tessellation_changed(int)));
+
+	QObject::connect(
 			show_strain_accumulation_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
@@ -148,7 +199,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::setup_connections()
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::handle_begin_time_spinbox_changed(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::handle_begin_time_spinbox_changed(
 		double value)
 {
 	// Keep begin time from getting too close to end time (at the very least they should not be equal).
@@ -157,7 +208,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_begin_time_spinbox_chan
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::handle_end_time_spinbox_changed(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::handle_end_time_spinbox_changed(
 		double value)
 {
 	// Keep begin time from getting too close to end time (at the very least they should not be equal).
@@ -166,7 +217,7 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_end_time_spinbox_change
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::handle_time_increment_spinbox_changed(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::handle_time_increment_spinbox_changed(
 		double value)
 {
 	// Keep begin time from getting too close to end time (at the very least they should not be equal).
@@ -176,17 +227,37 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_time_increment_spinbox_
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::react_show_strain_accumulation_changed(
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::react_enable_detect_lifetime_changed(
 		int state)
 {
-	// Enable/disable strain accumulation controls if showing/hiding strain accumulation.
-	strain_accumulation_widget->setEnabled(
+	// Show/hide line tessellation controls if enabling/disabling tessellation.
+	detect_lifetime_widget->setVisible(
+			enable_detect_lifetime_check_box->isChecked());
+}
+
+
+void
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::react_enable_line_tessellation_changed(
+		int state)
+{
+	// Show/hide line tessellation controls if enabling/disabling tessellation.
+	line_tessellation_widget->setVisible(
+			enable_line_tessellation_degrees_check_box->isChecked());
+}
+
+
+void
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::react_show_strain_accumulation_changed(
+		int state)
+{
+	// Show/hide strain accumulation controls if showing/hiding strain accumulation.
+	strain_accumulation_widget->setVisible(
 			show_strain_accumulation_checkbox->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
+GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::handle_apply()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -215,18 +286,42 @@ GPlatesQtWidgets::SetDeformationParametersDialog::handle_apply()
 
 			// Handle settings
 			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
-			reconstruct_params.set_deformation_end_time(spinbox_end_time->value());
-			reconstruct_params.set_deformation_begin_time(spinbox_begin_time->value());
-			reconstruct_params.set_deformation_time_increment(spinbox_time_increment->value());
+
+			reconstruct_params.set_topology_reconstruction_end_time(spinbox_end_time->value());
+			reconstruct_params.set_topology_reconstruction_begin_time(spinbox_begin_time->value());
+			reconstruct_params.set_topology_reconstruction_time_increment(spinbox_time_increment->value());
+
+			// Whether to start reconstruction at each feature's time of appearance, or use geometry import time.
+			reconstruct_params.set_topology_reconstruction_use_time_of_appearance(
+					start_reconstruction_at_time_of_appearance_checkbox->isChecked());
+
+			// Deformed position interpolation.
+			reconstruct_params.set_topology_deformation_use_natural_neighbour_interpolation(
+					natural_neighbour_radio_button->isChecked());
+
+			// Line tessellation.
+			reconstruct_params.set_topology_reconstruction_enable_line_tessellation(
+					enable_line_tessellation_degrees_check_box->isChecked());
+			reconstruct_params.set_topology_reconstruction_line_tessellation_degrees(
+					line_tessellation_degrees_spinbox->value());
+
+			// Lifetime detection.
+			reconstruct_params.set_topology_reconstruction_enable_lifetime_detection(
+					enable_detect_lifetime_check_box->isChecked());
+			reconstruct_params.set_topology_reconstruction_lifetime_detection_threshold_velocity_delta(
+					detect_lifetime_threshold_velocity_delta_spin_box->value());
+			reconstruct_params.set_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
+					detect_lifetime_threshold_distance_to_boundary_spin_box->value());
+
 			layer_params->set_reconstruct_params(reconstruct_params);
 
 			// If any reconstruct parameters were modified then 'ApplicationState::reconstruct()'
 			// will get called here (at scope exit).
 		}
 
-		// Show deformed feature geometries.
-		visual_layer_params->set_show_deformed_feature_geometries(
-				show_deformed_feature_geometries_checkbox->isChecked());
+		// Show topology-reconstructed feature geometries.
+		visual_layer_params->set_show_topology_reconstructed_feature_geometries(
+				show_reconstructed_feature_geometries_checkbox->isChecked());
 
 		// Show strain accumulation.
 		visual_layer_params->set_show_strain_accumulation(

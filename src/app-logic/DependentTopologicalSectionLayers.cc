@@ -38,7 +38,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::~DependentTopologicalSection
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::set_topological_section_feature_ids(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections)
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+		boost::optional<TopologyGeometry::Type> topology_geometry_type)
 {
 	d_feature_ids.clear();
 
@@ -50,7 +51,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::set_topological_section_feat
 		// Find referenced feature IDs for *all* reconstruction times.
 		TopologyInternalUtils::find_topological_sections_referenced(
 				d_feature_ids,
-				topological_feature_collection);
+				topological_feature_collection,
+				topology_geometry_type);
 	}
 
 	// Using our existing topological section layers, find those that have any of the above feature IDs.
@@ -90,6 +92,22 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &layer)
 {
 	return update_topological_section_layer(layer, d_dependency_resolved_line_layers);
+}
+
+
+void
+GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
+		std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers)
+{
+	get_dependent_topological_section_layers(dependent_layers, d_dependency_reconstructed_geometry_layers);
+}
+
+
+void
+GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
+		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &dependent_layers)
+{
+	get_dependent_topological_section_layers(dependent_layers, d_dependency_resolved_line_layers);
 }
 
 
@@ -164,6 +182,19 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 			return false;
 		}
 	}
+}
+
+
+template <class LayerProxyType>
+void
+GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
+		std::vector<typename LayerProxyType::non_null_ptr_type> &dependent_layers,
+		std::set<LayerProxyType *> &layers)
+{
+	dependent_layers.insert(
+			dependent_layers.end(),
+			layers.begin(),
+			layers.end());
 }
 
 

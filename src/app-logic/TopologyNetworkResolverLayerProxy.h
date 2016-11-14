@@ -31,7 +31,6 @@
 #include <boost/optional.hpp>
 
 #include "DependentTopologicalSectionLayers.h"
-#include "GeometryDeformation.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
@@ -40,6 +39,7 @@
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkParams.h"
+#include "TopologyReconstruct.h"
 
 #include "model/FeatureHandle.h"
 
@@ -155,7 +155,7 @@ namespace GPlatesAppLogic
 		 * a separate resolved network would unnecessarily be created for each client - whereas,
 		 * with this method, a single time range of resolved networks would be shared by all clients.
 		 */
-		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+		TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_to_const_type
 		get_resolved_network_time_span(
 				const TimeSpanUtils::TimeRange &time_range)
 		{
@@ -165,7 +165,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns a time span of resolved topological networks, for the specified topology network params.
 		 */
-		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+		TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_to_const_type
 		get_resolved_network_time_span(
 				const TimeSpanUtils::TimeRange &time_range,
 				const TopologyNetworkParams &topology_network_params);
@@ -329,7 +329,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topologies over a range of reconstruction times.
 			 */
-			boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_type>
+			boost::optional<TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_type>
 					cached_resolved_network_time_span;
 
 			/**
@@ -374,7 +374,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The cached resolved topologies over a range of reconstruction times.
 		 *
-		 * This is cached as a performance optimisation for clients that deform geometries.
+		 * This is cached as a performance optimisation for clients that reconstruct geometries using topologies.
 		 */
 		ResolvedNetworkTimeSpan d_cached_time_span;
 
@@ -423,7 +423,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Generates a resolved network time span for the specified time range if one is not already cached.
 		 */
-		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+		TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_to_const_type
 		cache_resolved_network_time_span(
 				const TimeSpanUtils::TimeRange &time_range,
 				const TopologyNetworkParams &topology_network_params);

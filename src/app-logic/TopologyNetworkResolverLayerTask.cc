@@ -170,12 +170,12 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connect
 					reconstruct_layer_proxy.get());
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_line_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (topological_line_resolver_layer_proxy)
 		{
 			d_current_resolved_line_topological_sections_layer_proxies.push_back(
-					topological_boundary_resolver_layer_proxy.get());
+					topological_line_resolver_layer_proxy.get());
 		}
 	}
 }
@@ -204,15 +204,15 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_conn
 					d_current_reconstructed_geometry_topological_sections_layer_proxies.end());
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_line_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (topological_line_resolver_layer_proxy)
 		{
 			d_current_resolved_line_topological_sections_layer_proxies.erase(
 					std::remove(
 							d_current_resolved_line_topological_sections_layer_proxies.begin(),
 							d_current_resolved_line_topological_sections_layer_proxies.end(),
-							topological_boundary_resolver_layer_proxy.get()),
+							topological_line_resolver_layer_proxy.get()),
 					d_current_resolved_line_topological_sections_layer_proxies.end());
 		}
 	}
@@ -275,18 +275,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_reconstructed_geometry_to
 		reconstruction->get_active_layer_outputs<ReconstructLayerProxy>(
 				reconstructed_geometry_topological_sections_layer_proxies);
 	}
-
-	// Filter out reconstructed geometry layers that are connected (and hence deformed) by
-	// topological network layers. These reconstructed geometry layers cannot supply
-	// topological sections (to topological network layers) because these reconstructed geometries
-	// are deformed by the topological networks which in turn would use the reconstructed geometries
-	// to build the topological networks - thus creating a cyclic dependency.
-	reconstructed_geometry_topological_sections_layer_proxies.erase(
-			std::remove_if(
-					reconstructed_geometry_topological_sections_layer_proxies.begin(),
-					reconstructed_geometry_topological_sections_layer_proxies.end(),
-					boost::bind(&ReconstructLayerProxy::connected_to_topological_layer_proxies, _1)),
-			reconstructed_geometry_topological_sections_layer_proxies.end());
 }
 
 

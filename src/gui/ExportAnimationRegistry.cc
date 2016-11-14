@@ -34,6 +34,7 @@
 #include "ExportAnimationType.h"
 #include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportCoRegistrationAnimationStrategy.h"
+#include "ExportDeformationAnimationStrategy.h"
 #include "ExportFileNameTemplateValidationUtils.h"
 #include "ExportFlowlineAnimationStrategy.h"
 #include "ExportImageAnimationStrategy.h"
@@ -57,6 +58,7 @@
 #include "property-values/RasterType.h"
 
 #include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
+#include "qt-widgets/ExportDeformationOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportImageOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
@@ -321,6 +323,65 @@ namespace GPlatesGui
 
 
 		/**
+		 * Registers information about the default deformation export animation types with the given @a registry.
+		 */
+		void
+		register_default_export_deformation_animation_types(
+				ExportAnimationRegistry &registry)
+		{
+			const ExportOptionsUtils::ExportFileOptions default_deformation_file_export_options(
+					/*export_to_a_single_file_*/false,
+					/*export_to_multiple_files_*/true);
+			const bool default_include_dilatation_rate = true;
+			const bool default_include_dilatation = false;
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::DEFORMATION,
+							ExportAnimationType::GPML),
+					ExportDeformationAnimationStrategy::const_configuration_ptr(
+							new ExportDeformationAnimationStrategy::GpmlConfiguration(
+									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GPML),
+									default_deformation_file_export_options,
+									default_include_dilatation_rate,
+									default_include_dilatation)),
+					&create_animation_strategy<ExportDeformationAnimationStrategy>,
+					boost::bind(
+							// 'static_cast' is because some compilers have trouble determining
+							// which overload of 'create_export_options_widget()' to use...
+							static_cast<create_export_options_widget_function_pointer_type>(
+									&create_export_options_widget<
+											GPlatesQtWidgets::ExportDeformationOptionsWidget,
+											ExportDeformationAnimationStrategy>),
+							_1, _2, _3),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::DEFORMATION,
+							ExportAnimationType::GMT),
+					ExportDeformationAnimationStrategy::const_configuration_ptr(
+							new ExportDeformationAnimationStrategy::GMTConfiguration(
+									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GMT),
+									default_deformation_file_export_options,
+									// Lon/lat is the default GMT ordering...
+									ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT,
+									default_include_dilatation_rate,
+									default_include_dilatation)),
+					&create_animation_strategy<ExportDeformationAnimationStrategy>,
+					boost::bind(
+							// 'static_cast' is because some compilers have trouble determining
+							// which overload of 'create_export_options_widget()' to use...
+							static_cast<create_export_options_widget_function_pointer_type>(
+									&create_export_options_widget<
+											GPlatesQtWidgets::ExportDeformationOptionsWidget,
+											ExportDeformationAnimationStrategy>),
+							_1, _2, _3),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+		}
+
+
+		/**
 		 * Registers information about the default scalar coverage export animation types with the given @a registry.
 		 */
 		void
@@ -331,6 +392,7 @@ namespace GPlatesGui
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
 			const bool default_include_dilatation_rate = false;
+			const bool default_include_dilatation = false;
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
@@ -340,7 +402,8 @@ namespace GPlatesGui
 							new ExportScalarCoverageAnimationStrategy::GpmlConfiguration(
 									add_export_filename_extension("scalar_coverage_%0.2fMa", ExportAnimationType::GPML),
 									default_scalar_coverage_file_export_options,
-									default_include_dilatation_rate)),
+									default_include_dilatation_rate,
+									default_include_dilatation)),
 					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
@@ -362,9 +425,8 @@ namespace GPlatesGui
 									default_scalar_coverage_file_export_options,
 									// Lon/lat is the default GMT ordering...
 									ExportScalarCoverageAnimationStrategy::GMTConfiguration::LON_LAT,
-									true/*include_domain_point*/,
 									default_include_dilatation_rate,
-									true/*include_domain_meta_data*/)),
+									default_include_dilatation)),
 					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
@@ -1714,6 +1776,11 @@ GPlatesGui::register_default_export_animation_types(
 	// Export scalar coverages
 	//
 	register_default_export_scalar_coverage_animation_types(registry);
+
+	//
+	// Export deformation
+	//
+	register_default_export_deformation_animation_types(registry);
 
 	//
 	// Export flowlines

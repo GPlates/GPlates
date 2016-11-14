@@ -175,6 +175,26 @@ namespace GPlatesAppLogic
 	}
 
 
+	/**
+	 * Calculate the deformed position of a delaunay vertex.
+	 */
+	QPointF
+	calc_delaunay_vertex_deformed_point(
+			const ResolvedTriangulation::Delaunay_2::Vertex_handle &vertex_handle,
+			const double &time_increment,
+			bool reverse_deform,
+			VelocityDeltaTime::Type velocity_delta_time_type,
+			const GPlatesMaths::AzimuthalEqualAreaProjection &projection)
+	{
+		const GPlatesMaths::FiniteRotation vertex_stage_rotation =
+				vertex_handle->calc_stage_rotation(time_increment, velocity_delta_time_type);
+
+		return projection.project_from_point_on_sphere<QPointF>(
+				(reverse_deform ? vertex_stage_rotation : get_reverse(vertex_stage_rotation)) *
+						vertex_handle->get_point_on_sphere());
+	}
+
+
 #if 0 // Not currently using being used...
 	namespace
 	{
@@ -298,6 +318,34 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_a_rigid_block(
 	}
 
 	return boost::none;
+}
+
+
+boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type>
+GPlatesAppLogic::ResolvedTriangulation::Network::get_point_location(
+		const GPlatesMaths::PointOnSphere &point) const
+{
+	if (!is_point_in_network(point))
+	{
+		return boost::none;
+	}
+
+	// See if the point is inside any interior rigid blocks.
+	boost::optional<const RigidBlock &> rigid_block = is_point_in_a_rigid_block(point);
+	if (rigid_block)
+	{
+		return point_location_type(boost::cref(rigid_block.get()));
+	}
+
+	// If we get here then the point must be in the deforming region.
+
+	// Project into the 2D triangulation space.
+	const Delaunay_2::Point point_2 = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
+
+	// Find the delaunay face containing the point.
+	const Delaunay_2::Face_handle delaunay_face = get_delaunay_face_in_deforming_region(point_2);
+
+	return point_location_type(delaunay_face);
 }
 
 
@@ -489,30 +537,29 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &time_increment,
 		bool reverse_deform,
+		bool use_natural_neighbour_interpolation,
 		boost::optional<point_location_type> point_location) const
 {
-	// Deforming forward in time (reverse deformation) is handled quite differently than backward deformation.
-	if (reverse_deform)
-	{
-		// Look for an existing deformed network associated with the time increment.
-		DeformedNetwork::non_null_ptr_type deformed_network =
-				d_time_increment_to_deformed_network_map.get_value(GPlatesMaths::Real(time_increment));
-
-		return deformed_network->reverse_deform_point(point, point_location);
-	}
-
-	//
-	// We are now deforming *backward* in time.
-	//
-
 	if (!point_location &&
 		!is_point_in_network(point))
 	{
 		return boost::none;
 	}
 
-	// Our stage rotations are from 'reconstruction_time + time_increment' to 'reconstruction_time'.
-	const VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
+	// Stage rotations are always forward in time as either:
+	//
+	//   reconstruction_time + time_increment -> reconstruction_time                  , or
+	//   reconstruction_time                  -> reconstruction_time - time_increment .
+	//
+	// ...depending on 'reverse_deform'.
+	//
+	// However, when 'reverse_deform' is false (ie, going backward in time) we'll need to reverse our rotations to get:
+	//
+	//  backward in time:   reconstruction_time -> reconstruction_time + time_increment
+	//  forward  in time:   reconstruction_time -> reconstruction_time - time_increment
+	//
+	const VelocityDeltaTime::Type velocity_delta_time_type =
+			reverse_deform ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
 
 	// See if the point is inside any interior rigid blocks.
 	boost::optional<const RigidBlock &> rigid_block;
@@ -539,8 +586,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 						velocity_delta_time_type);
 
 		// The stage rotation goes forward in time but if we are reconstructing backward
-		// in time so we need to reverse the stage rotation.
-		rigid_block_stage_rotation = get_reverse(rigid_block_stage_rotation);
+		// in time then we need to reverse the stage rotation.
+		if (!reverse_deform)
+		{
+			rigid_block_stage_rotation = get_reverse(rigid_block_stage_rotation);
+		}
 
 		return std::make_pair(
 				// Point is rigidly rotated by the interior rigid block...
@@ -550,15 +600,63 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 
 	// If we get here then the point must be in the deforming region.
 
+	// Project into the 2D triangulation space.
+	const Delaunay_2::Point point_2 =
+			d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
+
+	if (use_natural_neighbour_interpolation)
+	{
+		Delaunay_2::Face_handle delaunay_face;
+		if (point_location)
+		{
+			delaunay_face = boost::get<Delaunay_2::Face_handle>(point_location.get());
+		}
+		else
+		{
+			// Find the delaunay face containing the point.
+			// We need to return a network position (delaunay face) and the natural neighbour interpolation
+			// doesn't provide that. However it can use our delaunay face to find the coordinates faster.
+			delaunay_face = get_delaunay_face_in_deforming_region(point_2);
+		}
+
+		// Get the interpolation coordinates for the point.
+		delaunay_natural_neighbor_coordinates_2_type natural_neighbor_coordinates;
+		calc_delaunay_natural_neighbor_coordinates_in_deforming_region(
+				natural_neighbor_coordinates,
+				point_2,
+				delaunay_face);
+
+		// Look for an existing map associated with the deformed point parameters.
+		DelaunayVertexHandleToDeformedPointMapType &delaunay_vertex_handle_to_deformed_point_map =
+				d_velocity_delta_time_to_deformed_point_map.get_value(
+						std::make_pair(
+								reverse_deform,
+								std::make_pair(GPlatesMaths::Real(time_increment), velocity_delta_time_type)));
+
+		// Interpolate the vertex deformed positions in the triangulation using the interpolation coordinates.
+		const QPointF deformed_point_2 = linear_interpolation_2(
+				natural_neighbor_coordinates,
+				CachedDataAccess<DelaunayVertexHandleToDeformedPointMapType>(
+						delaunay_vertex_handle_to_deformed_point_map,
+						get_delaunay_point_2_to_vertex_handle_map(),
+						boost::bind(&calc_delaunay_vertex_deformed_point,
+								_1,
+								time_increment,
+								reverse_deform,
+								velocity_delta_time_type,
+								boost::cref(d_projection))));
+
+		return std::make_pair(
+				d_projection.unproject_to_point_on_sphere(deformed_point_2),
+				point_location_type(delaunay_face));
+	}
+	// ...else use barycentric interpolation...
+
 	Delaunay_2::Face_handle start_face_hint;
 	if (point_location)
 	{
 		start_face_hint = boost::get<Delaunay_2::Face_handle>(point_location.get());
 	}
-
-	// Project into the 2D triangulation space.
-	const Delaunay_2::Point point_2 =
-			d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
 
 	// Get the barycentric coordinates for the projected point.
 	delaunay_coord_2_type barycentric_coord_vertex_1;
@@ -574,16 +672,19 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 
 	// Look for an existing map associated with the velocity delta time parameters.
 	DelaunayVertexHandleToDeformedPointMapType &delaunay_vertex_handle_to_deformed_point_map =
-			d_time_increment_to_deformed_point_map.get_value(GPlatesMaths::Real(time_increment));
+			d_velocity_delta_time_to_deformed_point_map.get_value(
+					std::make_pair(
+							reverse_deform,
+							std::make_pair(GPlatesMaths::Real(time_increment), velocity_delta_time_type)));
 
-	static const Delaunay_2::Point ZERO_POINT(0, 0);
+	static const QPointF ZERO_POINT(0, 0);
 
 	//
 	// We deform the vertex positions (using their stage rotations), then project into 2D,
 	// then interpolate 2D positions (using barycentric coordinates) and finally unproject to 3D.
 	//
-	// Note: The stage rotations go forward in time but we are deforming backwards in time
-	// so we need to reverse the stage rotation of each vertex.
+	// Note: The stage rotations go forward in time but if we are deforming backwards in time
+	// then we need to reverse the stage rotation of each vertex.
 	//
 
 	// See if vertex value has been cached. If not then generate the value now.
@@ -592,13 +693,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 					std::make_pair(delaunay_face->vertex(0), ZERO_POINT));
 	if (vertex_1_result.second)
 	{
-		const Delaunay_2::Vertex_handle &vertex_1_handle = vertex_1_result.first->first;
-		const GPlatesMaths::FiniteRotation vertex_1_stage_rotation = vertex_1_handle->calc_stage_rotation(
-				time_increment, velocity_delta_time_type);
-		vertex_1_result.first->second = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(
-				get_reverse(vertex_1_stage_rotation) * vertex_1_handle->get_point_on_sphere());
+		vertex_1_result.first->second = calc_delaunay_vertex_deformed_point(
+				vertex_1_result.first->first/*vertex_handle*/,
+				time_increment,
+				reverse_deform,
+				velocity_delta_time_type,
+				d_projection);
 	}
-	const Delaunay_2::Point &deformed_point_1 = vertex_1_result.first->second;
+	const QPointF &deformed_point_1 = vertex_1_result.first->second;
 
 	// See if vertex value has been cached. If not then generate the value now.
 	std::pair<DelaunayVertexHandleToDeformedPointMapType::iterator, bool> vertex_2_result =
@@ -606,13 +708,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 					std::make_pair(delaunay_face->vertex(1), ZERO_POINT));
 	if (vertex_2_result.second)
 	{
-		const Delaunay_2::Vertex_handle &vertex_2_handle = vertex_2_result.first->first;
-		const GPlatesMaths::FiniteRotation vertex_2_stage_rotation = vertex_2_handle->calc_stage_rotation(
-				time_increment, velocity_delta_time_type);
-		vertex_2_result.first->second = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(
-				get_reverse(vertex_2_stage_rotation) * vertex_2_handle->get_point_on_sphere());
+		vertex_2_result.first->second = calc_delaunay_vertex_deformed_point(
+				vertex_2_result.first->first/*vertex_handle*/,
+				time_increment,
+				reverse_deform,
+				velocity_delta_time_type,
+				d_projection);
 	}
-	const Delaunay_2::Point &deformed_point_2 = vertex_2_result.first->second;
+	const QPointF &deformed_point_2 = vertex_2_result.first->second;
 
 	// See if vertex value has been cached. If not then generate the value now.
 	std::pair<DelaunayVertexHandleToDeformedPointMapType::iterator, bool> vertex_3_result =
@@ -620,16 +723,17 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 					std::make_pair(delaunay_face->vertex(2), ZERO_POINT));
 	if (vertex_3_result.second)
 	{
-		const Delaunay_2::Vertex_handle &vertex_3_handle = vertex_3_result.first->first;
-		const GPlatesMaths::FiniteRotation vertex_3_stage_rotation = vertex_3_handle->calc_stage_rotation(
-				time_increment, velocity_delta_time_type);
-		vertex_3_result.first->second = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(
-				get_reverse(vertex_3_stage_rotation) * vertex_3_handle->get_point_on_sphere());
+		vertex_3_result.first->second = calc_delaunay_vertex_deformed_point(
+				vertex_3_result.first->first/*vertex_handle*/,
+				time_increment,
+				reverse_deform,
+				velocity_delta_time_type,
+				d_projection);
 	}
-	const Delaunay_2::Point &deformed_point_3 = vertex_3_result.first->second;
+	const QPointF &deformed_point_3 = vertex_3_result.first->second;
 
 	// Interpolate the vertex deformed positions.
-	const Delaunay_2::Point interpolated_deformed_point(
+	const QPointF interpolated_deformed_point(
 			barycentric_coord_vertex_1 * deformed_point_1.x() +
 			barycentric_coord_vertex_2 * deformed_point_2.x() +
 			barycentric_coord_vertex_3 * deformed_point_3.x(),
@@ -1910,429 +2014,4 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 			rigid_block_rfg->get_reconstruction_time(),
 			velocity_delta_time,
 			velocity_delta_time_type);
-}
-
-
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::DeformedNetwork(
-		const Network &network,
-		const GPlatesMaths::Real &time_increment) :
-	d_network(network),
-	d_time_increment(time_increment)
-{
-	const Delaunay_2 &delaunay_2 = d_network.get_delaunay_2();
-
-	// Insert delaunay vertex positions deformed backward in time by 'time_increment'.
-	Delaunay_2::Finite_vertices_iterator finite_vertices_iter = delaunay_2.finite_vertices_begin();
-	Delaunay_2::Finite_vertices_iterator finite_vertices_end = delaunay_2.finite_vertices_end();
-	for ( ; finite_vertices_iter != finite_vertices_end; ++finite_vertices_iter)
-	{
-		const GPlatesMaths::FiniteRotation vertex_stage_rotation = finite_vertices_iter->calc_stage_rotation(
-				d_time_increment.dval(),
-				// Our stage rotations are from 'reconstruction_time + time_increment' to 'reconstruction_time'.
-				VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
-
-		const Delaunay_2::Point deformed_vertex_2 =
-				d_network.get_projection().project_from_point_on_sphere<Delaunay_2::Point>(
-						// Reverse stage rotation so that it deforms *backward* in time...
-						get_reverse(vertex_stage_rotation) * finite_vertices_iter->get_point_on_sphere());
-
-		d_deformed_vertices.push_back(deformed_vertex_2);
-	}
-
-	// Insert the delaunay faces.
-	// This is done *after* inserting deformed delaunay vertices since the faces reference them.
-	unsigned int num_faces = 0;
-	Delaunay_2::Finite_faces_iterator finite_faces_iter = delaunay_2.finite_faces_begin();
-	Delaunay_2::Finite_faces_iterator finite_faces_end = delaunay_2.finite_faces_end();
-	for ( ; finite_faces_iter != finite_faces_end; ++finite_faces_iter, ++num_faces)
-	{
-		Delaunay_2::Face_handle face = finite_faces_iter;
-		d_faces.push_back(Face(face, d_deformed_vertices));
-	}
-
-	// Build the AABB tree of deformed delaunay faces.
-	d_root_node_index = build_aabb_tree(d_faces.begin(), d_faces.end(), num_faces);
-}
-
-
-unsigned int
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::build_aabb_tree(
-		face_seq_type::iterator faces_begin,
-		face_seq_type::iterator faces_end,
-		unsigned int num_faces)
-{
-	if (num_faces <= Node::MAX_NUM_FACES_PER_LEAF_NODE)
-	{
-		// Add a leaf node.
-		return add_node(Node(faces_begin, faces_end, d_deformed_vertices));
-	}
-
-	// Number of faces evenly divided between two children.
-	const unsigned int num_faces_child_0 = num_faces / 2;
-	const unsigned int num_faces_child_1 = num_faces - num_faces_child_0;
-
-	face_seq_type::iterator faces_mid = faces_begin + num_faces_child_0;
-
-	// See if the faces cover a larger range in the x or y directions (use the AABB for this).
-	// This determines whether to split faces along the x or y direction.
-	const AABB node_aabb(faces_begin, faces_end, d_deformed_vertices);
-	if (node_aabb.max_x - node_aabb.min_x >
-		node_aabb.max_y - node_aabb.min_y)
-	{
-		// All faces in first child node should have x-centroids less than all faces in second child node.
-		std::nth_element(faces_begin, faces_mid, faces_end, FaceCentroidCompareX());
-	}
-	else
-	{
-		// All faces in first child node should have y-centroids less than all faces in second child node.
-		std::nth_element(faces_begin, faces_mid, faces_end, FaceCentroidCompareY());
-	}
-
-	// Build the two child nodes.
-	const unsigned int child_node_index_0 = build_aabb_tree(faces_begin, faces_mid, num_faces_child_0);
-	const unsigned int child_node_index_1 = build_aabb_tree(faces_mid, faces_end, num_faces_child_1);
-
-	// Add an internal node.
-	return add_node(Node(node_aabb, child_node_index_0, child_node_index_1));
-}
-
-
-boost::optional<const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &>
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::is_point_in_a_rigid_block(
-		const GPlatesMaths::PointOnSphere &point) const
-{
-	// Iterate over the interior rigid blocks.
-	rigid_block_seq_type::const_iterator rigid_blocks_iter = d_network.d_rigid_blocks.begin();
-	rigid_block_seq_type::const_iterator rigid_blocks_end = d_network.d_rigid_blocks.end();
-	for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
-	{
-		const RigidBlock &rigid_block = *rigid_blocks_iter;
-
-		// Rotate the point forward in time using the plate ID of the current rigid block.
-		// This moves the point from 'reconstruction_time + time_increment' to 'reconstruction_time'
-		// so we can test it against the rigid block at 'reconstruction_time'.
-		const GPlatesMaths::FiniteRotation reverse_rigid_block_stage_rotation =
-				d_network.calculate_rigid_block_stage_rotation(
-						rigid_block,
-						d_time_increment.dval(),
-						// Stage rotation from 'reconstruction_time + time_increment' to 'reconstruction_time'...
-						VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
-		const GPlatesMaths::PointOnSphere reverse_rotated_point = reverse_rigid_block_stage_rotation * point;
-
-		if (d_network.is_point_in_rigid_block(reverse_rotated_point, rigid_block))
-		{
-			return rigid_block;
-		}
-	}
-
-	return boost::none;
-}
-
-
-boost::optional< std::pair<GPlatesMaths::PointOnSphere, GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> >
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::reverse_deform_point(
-		const GPlatesMaths::PointOnSphere &point,
-		boost::optional<point_location_type> point_location) const
-{
-	// See if the point is inside any interior rigid blocks.
-	boost::optional<const RigidBlock &> rigid_block;
-	if (point_location)
-	{
-		const boost::reference_wrapper<const RigidBlock> *rigid_block_ptr =
-				boost::get< boost::reference_wrapper<const RigidBlock> >(&point_location.get());
-		if (rigid_block_ptr)
-		{
-			// We already know point is in a rigid block so use it.
-			rigid_block = *rigid_block_ptr;
-		}
-	}
-	else
-	{
-		rigid_block = is_point_in_a_rigid_block(point);
-	}
-	if (rigid_block)
-	{
-		const GPlatesMaths::FiniteRotation rigid_block_stage_rotation =
-				d_network.calculate_rigid_block_stage_rotation(
-						rigid_block.get(),
-						d_time_increment.dval(),
-						// Stage rotation from 'reconstruction_time + time_increment' to 'reconstruction_time'...
-						VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
-
-		// Point is rigidly rotated forward in time by stage rotation of interior rigid block...
-		const GPlatesMaths::PointOnSphere reverse_rotated_point_on_sphere = rigid_block_stage_rotation * point;
-
-		// The reverse rotated point might lie outside the network boundary.
-		// We need to do this *after* reverse rotating in order to mirror the non-reverse path.
-		// It will only happen when the interior rigid block is actually outside the network boundary.
-		// This shouldn't really happen but it can if the topology networks are not built properly.
-		if (!point_location &&
-			!d_network.is_point_in_network(reverse_rotated_point_on_sphere))
-		{
-			return boost::none;
-		}
-
-		return std::make_pair(
-				reverse_rotated_point_on_sphere,
-				point_location_type(boost::cref(rigid_block.get())));
-	}
-
-	// If we get here then the point is either outside the deformed network or inside its deforming region.
-
-	// Project into the 2D triangulation space.
-	const Delaunay_2::Point point_2 =
-			d_network.get_projection().project_from_point_on_sphere<Delaunay_2::Point>(point);
-
-	// Get the barycentric coordinates for the projected point.
-	delaunay_coord_2_type barycentric_coord_vertex_1;
-	delaunay_coord_2_type barycentric_coord_vertex_2;
-	delaunay_coord_2_type barycentric_coord_vertex_3;
-	boost::optional<Delaunay_2::Face_handle> delaunay_face;
-	if (point_location)
-	{
-		// We know the face containing the point so go straight to it.
-		Delaunay_2::Face_handle face_location = boost::get<Delaunay_2::Face_handle>(point_location.get());
-		delaunay_face = calc_delaunay_barycentric_coordinates_in_deforming_region(
-				barycentric_coord_vertex_1,
-				barycentric_coord_vertex_2,
-				barycentric_coord_vertex_3,
-				point_2,
-				face_location);
-	}
-	else
-	{
-		// Search our AABB tree to find the face containing the point.
-		const Node &root_node = d_nodes[d_root_node_index];
-		delaunay_face = calc_delaunay_barycentric_coordinates_in_deforming_region(
-				barycentric_coord_vertex_1,
-				barycentric_coord_vertex_2,
-				barycentric_coord_vertex_3,
-				point_2,
-				root_node);
-	}
-
-	if (!delaunay_face)
-	{
-		// Point is outside the deformed network.
-		return boost::none;
-	}
-
-	const Delaunay_2::Point &face_point_1 = delaunay_face.get()->vertex(0)->point();
-	const Delaunay_2::Point &face_point_2 = delaunay_face.get()->vertex(1)->point();
-	const Delaunay_2::Point &face_point_3 = delaunay_face.get()->vertex(2)->point();
-
-	// Interpolate the vertex positions.
-	const Delaunay_2::Point interpolated_point(
-			barycentric_coord_vertex_1 * face_point_1.x() +
-			barycentric_coord_vertex_2 * face_point_2.x() +
-			barycentric_coord_vertex_3 * face_point_3.x(),
-			barycentric_coord_vertex_1 * face_point_1.y() +
-			barycentric_coord_vertex_2 * face_point_2.y() +
-			barycentric_coord_vertex_3 * face_point_3.y());
-
-	// Un-project back onto the sphere.
-	const GPlatesMaths::PointOnSphere reverse_deformed_point_on_sphere =
-			d_network.get_projection().unproject_to_point_on_sphere(interpolated_point);
-
-	// The full delaunay triangulation (convex hull) was used to reverse deform.
-	// However the reverse deformed point might lie outside the network boundary.
-	// We need to do this *after* reverse deforming since that's the only time we have
-	// a network boundary (and also it mirrors the non-reverse deforming path).
-	if (!point_location &&
-		!d_network.is_point_in_network(reverse_deformed_point_on_sphere))
-	{
-		return boost::none;
-	}
-
-	return std::make_pair(
-			reverse_deformed_point_on_sphere,
-			point_location_type(delaunay_face.get()));
-}
-
-
-boost::optional<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle>
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::calc_delaunay_barycentric_coordinates_in_deforming_region(
-		delaunay_coord_2_type &barycentric_coord_vertex_1,
-		delaunay_coord_2_type &barycentric_coord_vertex_2,
-		delaunay_coord_2_type &barycentric_coord_vertex_3,
-		const delaunay_point_2_type &point_2,
-		const Node &node) const
-{
-	// If node's AABB does not contain the point then return early.
-	if (!node.aabb.contains_point(point_2))
-	{
-		return boost::none;
-	}
-
-	if (node.is_leaf_node)
-	{
-		// Search the faces in the leaf node.
-		face_seq_type::const_iterator leaf_faces_iter = node.faces_range.first;
-		face_seq_type::const_iterator leaf_faces_end = node.faces_range.second;
-		for ( ; leaf_faces_iter != leaf_faces_end; ++leaf_faces_iter)
-		{
-			const Face &leaf_face = *leaf_faces_iter;
-
-			boost::optional<Delaunay_2::Face_handle> face =
-					calc_delaunay_barycentric_coordinates_in_deforming_region(
-							barycentric_coord_vertex_1,
-							barycentric_coord_vertex_2,
-							barycentric_coord_vertex_3,
-							point_2,
-							leaf_face.face);
-			if (face)
-			{
-				return face.get();
-			}
-		}
-
-		return boost::none;
-	}
-
-	// Node is an internal node - search its child nodes.
-	for (unsigned int child_index = 0; child_index < 2; ++child_index)
-	{
-		const Node &child_node = d_nodes[node.child_node_indices[child_index]];
-
-		boost::optional<Delaunay_2::Face_handle> face =
-				calc_delaunay_barycentric_coordinates_in_deforming_region(
-						barycentric_coord_vertex_1,
-						barycentric_coord_vertex_2,
-						barycentric_coord_vertex_3,
-						point_2,
-						child_node);
-		if (face)
-		{
-			return face.get();
-		}
-	}
-
-	return boost::none;
-}
-
-
-boost::optional<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle>
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::calc_delaunay_barycentric_coordinates_in_deforming_region(
-		delaunay_coord_2_type &barycentric_coord_vertex_1,
-		delaunay_coord_2_type &barycentric_coord_vertex_2,
-		delaunay_coord_2_type &barycentric_coord_vertex_3,
-		const delaunay_point_2_type &point_2,
-		Delaunay_2::Face_handle face) const
-{
-	delaunay_coord_2_type barycentric_norm;
-	ResolvedTriangulation::get_barycentric_coords_2(
-			point_2,
-			// Barycentric coords wrt the deformed vertices (not the original vertices)...
-			d_deformed_vertices[face->vertex(0)->get_vertex_index()],
-			d_deformed_vertices[face->vertex(1)->get_vertex_index()],
-			d_deformed_vertices[face->vertex(2)->get_vertex_index()],
-			barycentric_norm,
-			barycentric_coord_vertex_1,
-			barycentric_coord_vertex_2,
-			barycentric_coord_vertex_3);
-
-	// If all three barycentric coordinates are '>= 0' then the point is inside the face.
-	// We use an epsilon threshold to avoid the point falling between two adjacent faces due
-	// to finite numerical precision (eg, if point right on the edge then it might produce a
-	// very small negative barycentric coordinate for both faces adjoining the edge.
-	if (barycentric_coord_vertex_1 < -GPlatesMaths::EPSILON ||
-		barycentric_coord_vertex_2 < -GPlatesMaths::EPSILON ||
-		barycentric_coord_vertex_3 < -GPlatesMaths::EPSILON)
-	{
-		return boost::none;
-	}
-
-	return face;
-}
-
-
-const double GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::Face::ONE_THIRD = 1.0 / 3.0;
-
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::Face::Face(
-		Delaunay_2::Face_handle face_,
-		const vertex_seq_type &deformed_vertices) :
-	face(face_)
-{
-	// Calculate deformed centroid.
-	const Delaunay_2::Point &deformed_vertex_0 = deformed_vertices[face->vertex(0)->get_vertex_index()];
-	const Delaunay_2::Point &deformed_vertex_1 = deformed_vertices[face->vertex(1)->get_vertex_index()];
-	const Delaunay_2::Point &deformed_vertex_2 = deformed_vertices[face->vertex(2)->get_vertex_index()];
-	deformed_centroid = Delaunay_2::Point(
-			ONE_THIRD * (deformed_vertex_0.x() + deformed_vertex_1.x() + deformed_vertex_2.x()),
-			ONE_THIRD * (deformed_vertex_0.y() + deformed_vertex_1.y() + deformed_vertex_2.y()));
-}
-
-
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::AABB::AABB(
-		face_seq_type::const_iterator faces_begin,
-		face_seq_type::const_iterator faces_end,
-		const vertex_seq_type &deformed_vertices) :
-	min_x((std::numeric_limits<double>::max)()),
-	min_y((std::numeric_limits<double>::max)()),
-	max_x(-(std::numeric_limits<double>::max)()),
-	max_y(-(std::numeric_limits<double>::max)())
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			faces_begin != faces_end,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Iterate over the faces.
-	for (face_seq_type::const_iterator faces_iter = faces_begin; faces_iter != faces_end; ++faces_iter)
-	{
-		const Delaunay_2::Face_handle &face = faces_iter->face;
-
-		// Iterate over the vertices of the current face.
-		for (unsigned int v = 0; v < 3; ++v)
-		{
-			const Delaunay_2::Point &deformed_vertex = deformed_vertices[face->vertex(v)->get_vertex_index()];
-
-			const double x = deformed_vertex.x();
-			const double y = deformed_vertex.y();
-
-			if (min_x > x)
-			{
-				min_x = x;
-			}
-			if (min_y > y)
-			{
-				min_y = y;
-			}
-
-			if (max_x < x)
-			{
-				max_x = x;
-			}
-			if (max_y < y)
-			{
-				max_y = y;
-			}
-		}
-	}
-}
-
-
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::AABB::AABB(
-		const AABB &child_aabb_1,
-		const AABB &child_aabb_2) :
-	min_x(child_aabb_1.min_x < child_aabb_2.min_x ? child_aabb_1.min_x : child_aabb_2.min_x),
-	min_y(child_aabb_1.min_y < child_aabb_2.min_y ? child_aabb_1.min_y : child_aabb_2.min_y),
-	max_x(child_aabb_1.max_x > child_aabb_2.max_x ? child_aabb_1.max_x : child_aabb_2.max_x),
-	max_y(child_aabb_1.max_y > child_aabb_2.max_y ? child_aabb_1.max_y : child_aabb_2.max_y)
-{
-}
-
-
-bool
-GPlatesAppLogic::ResolvedTriangulation::Network::DeformedNetwork::AABB::contains_point(
-		const Delaunay_2::Point &point) const
-{
-	const double point_x = point.x();
-	const double point_y = point.y();
-
-	// Use epsilon threshold to include points slightly outside this AABB in case two adjacent
-	// AABBs abut each other (we don't want point to fall in between due to finite precision).
-	return point_x > min_x - GPlatesMaths::EPSILON &&
-			point_x < max_x + GPlatesMaths::EPSILON &&
-			point_y > min_y - GPlatesMaths::EPSILON &&
-			point_y < max_y + GPlatesMaths::EPSILON;
 }

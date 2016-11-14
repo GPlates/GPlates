@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2013 The University of Sydney, Australia
+ * Copyright (C) 2016 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,30 +23,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "DeformedFeatureGeometry.h"
+#ifndef GPLATES_MATHS_GENERATEPOINTS_H
+#define GPLATES_MATHS_GENERATEPOINTS_H
 
-#include "ReconstructionGeometryVisitor.h"
+#include <vector>
+
+#include "PointOnSphere.h"
+#include "PolygonOnSphere.h"
 
 
-void
-GPlatesAppLogic::DeformedFeatureGeometry::accept_visitor(
-		ConstReconstructionGeometryVisitor &visitor) const
+namespace GPlatesMaths
 {
-	visitor.visit(GPlatesUtils::get_non_null_pointer(this));
+	namespace GeneratePoints
+	{
+		/**
+		 * Generate a uniform distribution of points inside the specified polygon.
+		 *
+		 * The uniform distribution is based on the Hierarchical Triangular Mesh.
+		 */
+		void
+		create_uniform_points_in_polygon(
+				std::vector<PointOnSphere> &points,
+				const PolygonOnSphere &polygon,
+				unsigned int point_density_level,
+				const double &point_random_offset);
+	}
 }
 
-
-void
-GPlatesAppLogic::DeformedFeatureGeometry::accept_visitor(
-		ReconstructionGeometryVisitor &visitor)
-{
-	visitor.visit(GPlatesUtils::get_non_null_pointer(this));
-}
-
-
-void
-GPlatesAppLogic::DeformedFeatureGeometry::accept_weak_observer_visitor(
-		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
-{
-	visitor.visit_deformed_feature_geometry(*this);
-}
+#endif // GPLATES_MATHS_GENERATEPOINTS_H

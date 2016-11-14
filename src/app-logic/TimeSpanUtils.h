@@ -271,14 +271,14 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Set the sample for the specified time slot.
+			 * Set the sample for the specified time slot (and return it).
 			 *
 			 * The number of time slots is available in the TimeRange returned by @a get_time_range.
 			 *
 			 * Throws exception if time_slot >= get_time_range().get_num_time_slots()
 			 */
 			virtual
-			void
+			T &
 			set_sample_in_time_slot(
 					const T &sample,
 					unsigned int time_slot) = 0;
@@ -384,14 +384,14 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Set the sample for the specified time slot.
+			 * Set the sample for the specified time slot (and return it).
 			 *
 			 * The number of time slots is available in the TimeRange returned by @a get_time_range.
 			 *
 			 * Throws exception if time_slot >= get_time_range().get_num_time_slots()
 			 */
 			virtual
-			void
+			T &
 			set_sample_in_time_slot(
 					const T &sample,
 					unsigned int time_slot);
@@ -559,14 +559,14 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Set the sample for the specified time slot.
+			 * Set the sample for the specified time slot (and return it).
 			 *
 			 * The number of time slots is available in the TimeRange returned by @a get_time_range.
 			 *
 			 * Throws exception if time_slot >= get_time_range().get_num_time_slots()
 			 */
 			virtual
-			void
+			T &
 			set_sample_in_time_slot(
 					const T &sample,
 					unsigned int time_slot);
@@ -743,7 +743,7 @@ namespace GPlatesAppLogic
 
 
 		template <typename T>
-		void
+		T &
 		TimeSampleSpan<T>::set_sample_in_time_slot(
 				const T &sample,
 				unsigned int time_slot)
@@ -755,6 +755,8 @@ namespace GPlatesAppLogic
 			d_sample_time_sequence[time_slot] = sample;
 
 			d_is_empty = false;
+
+			return d_sample_time_sequence[time_slot].get();
 		}
 
 
@@ -795,7 +797,7 @@ namespace GPlatesAppLogic
 
 
 		template <typename T>
-		void
+		T &
 		TimeWindowSpan<T>::set_sample_in_time_slot(
 				const T &sample,
 				unsigned int time_slot)
@@ -826,13 +828,18 @@ namespace GPlatesAppLogic
 				{
 					// We've found a time window containing the time slot.
 					// So overwrite the existing sample.
-					time_window.sample_time_span[time_slot - time_window.begin_time_slot] = sample;
+					T &existing_sample = time_window.sample_time_span[time_slot - time_window.begin_time_slot];
+					existing_sample = sample;
+
+					return existing_sample;
 				}
 				else if (time_slot == time_window.begin_time_slot - 1)
 				{
 					// Expand the current window by one sample.
 					time_window.sample_time_span.push_front(sample);
 					--time_window.begin_time_slot;
+
+					T &inserted_sample = time_window.sample_time_span.front();
 
 					// See if need to merge with the previous time window.
 					if (prev_time_window_iter &&
@@ -847,6 +854,10 @@ namespace GPlatesAppLogic
 						time_window.begin_time_slot = prev_time_window.begin_time_slot;
 						d_time_windows.erase(prev_time_window_iter.get());
 					}
+
+					// Note that the sample reference was not invalided by the above 'std::deque::insert()'
+					// because the insert position was at the beginning of the sequence.
+					return inserted_sample;
 				}
 				else if (prev_time_window_iter &&
 						time_slot == prev_time_window_iter.get()->end_time_slot + 1)
@@ -855,6 +866,8 @@ namespace GPlatesAppLogic
 					TimeWindow &prev_time_window = *prev_time_window_iter.get();
 					prev_time_window.sample_time_span.push_back(sample);
 					++prev_time_window.end_time_slot;
+
+					return prev_time_window.sample_time_span.back();
 				}
 				else
 				{
@@ -862,9 +875,12 @@ namespace GPlatesAppLogic
 					d_time_windows.insert(
 							time_windows_iter,
 							TimeWindow(sample, time_slot));
-				}
 
-				return;
+					// 'std::list::insert()' does not invalidate iterators.
+					// Decrement to the time window just inserted.
+					--time_windows_iter;
+					return time_windows_iter->sample_time_span.front();
+				}
 			}
 
 			if (prev_time_window_iter &&
@@ -874,11 +890,15 @@ namespace GPlatesAppLogic
 				TimeWindow &prev_time_window = *prev_time_window_iter.get();
 				prev_time_window.sample_time_span.push_back(sample);
 				++prev_time_window.end_time_slot;
+
+				return prev_time_window.sample_time_span.back();
 			}
 			else
 			{
 				// Append a new time window.
 				d_time_windows.push_back(TimeWindow(sample, time_slot));
+
+				return d_time_windows.back().sample_time_span.front();
 			}
 		}
 

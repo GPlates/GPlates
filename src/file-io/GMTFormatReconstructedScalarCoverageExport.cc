@@ -36,9 +36,9 @@
 #include "ErrorOpeningFileForWritingException.h"
 #include "GMTFormatHeader.h"
 
-#include "app-logic/DeformedFeatureGeometry.h"
 #include "app-logic/ReconstructedScalarCoverage.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
 #include "file-io/FileInfo.h"
 
@@ -62,38 +62,16 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Prints GMT format header at top of the exported file containing information
-			 * about the reconstruction that is not per-feature information.
-			 */
-			void
-			get_global_header_lines(
-					std::vector<QString>& header_lines,
-					const referenced_files_collection_type &referenced_files,
-					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
-			{
-				// Print the anchor plate id.
-				header_lines.push_back(
-						QString("anchorPlateId ") + QString::number(reconstruction_anchor_plate_id));
-
-				// Print the reconstruction time.
-				header_lines.push_back(
-						QString("reconstructionTime ") + QString::number(reconstruction_time));
-
-				GMTFormatHeader::add_filenames_to_header(header_lines, referenced_files);
-			}
-
-
-			/**
-			 * Outputs a scalar coverage line to the GMT output consisting of scalar and optionally position.
+			 * Outputs a scalar coverage line to the GMT output.
 			 */
 			void
 			print_gmt_scalar_coverage_line(
 					QTextStream &output_stream,
-					boost::optional<const GPlatesMaths::PointOnSphere &> domain_point,
+					const GPlatesMaths::PointOnSphere &domain_point,
+					bool domain_point_lon_lat_format,
 					boost::optional<const double &> dilatation_rate,
-					const double &scalar_value,
-					bool domain_point_lon_lat_format)
+					boost::optional<const double &> dilatation,
+					const double &scalar_value)
 			{
 				/*
 				 * Write the complete line to a string stream first, so that in case an exception
@@ -105,33 +83,30 @@ namespace GPlatesFileIO
 				// Output domain point.
 				//
 
-				if (domain_point)
+				const GPlatesMaths::LatLonPoint domain_point_lat_lon =
+						GPlatesMaths::make_lat_lon_point(domain_point);
+
+				/*
+				 * A coordinate in the GMT xy format is written as decimal number that
+				 * takes up 8 characters excluding sign.
+				 */
+				static const unsigned GMT_COORDINATE_FIELDWIDTH = 9;
+
+				const std::string domain_point_lat_str = GPlatesUtils::formatted_double_to_string(
+						domain_point_lat_lon.latitude(),
+						GMT_COORDINATE_FIELDWIDTH);
+				const std::string domain_point_lon_str = GPlatesUtils::formatted_double_to_string(
+						domain_point_lat_lon.longitude(),
+						GMT_COORDINATE_FIELDWIDTH);
+
+				// GMT format is by default (lon,lat) which is opposite of PLATES4 line format.
+				if (domain_point_lon_lat_format)
 				{
-					const GPlatesMaths::LatLonPoint domain_point_lat_lon =
-							GPlatesMaths::make_lat_lon_point(domain_point.get());
-
-					/*
-					 * A coordinate in the GMT xy format is written as decimal number that
-					 * takes up 8 characters excluding sign.
-					 */
-					static const unsigned GMT_COORDINATE_FIELDWIDTH = 9;
-
-					const std::string domain_point_lat_str = GPlatesUtils::formatted_double_to_string(
-							domain_point_lat_lon.latitude(),
-							GMT_COORDINATE_FIELDWIDTH);
-					const std::string domain_point_lon_str = GPlatesUtils::formatted_double_to_string(
-							domain_point_lat_lon.longitude(),
-							GMT_COORDINATE_FIELDWIDTH);
-
-					// GMT format is by default (lon,lat) which is opposite of PLATES4 line format.
-					if (domain_point_lon_lat_format)
-					{
-						gmt_line << " " << domain_point_lon_str << " " << domain_point_lat_str;
-					}
-					else
-					{
-						gmt_line << " " << domain_point_lat_str << " " << domain_point_lon_str;
-					}
+					gmt_line << " " << domain_point_lon_str << " " << domain_point_lat_str;
+				}
+				else
+				{
+					gmt_line << " " << domain_point_lat_str << " " << domain_point_lon_str;
 				}
 
 				// Output scalars as double precision.
@@ -148,6 +123,18 @@ namespace GPlatesFileIO
 					gmt_line << " "
 							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
 							<< dilatation_rate.get();
+				}
+
+				//
+				// Output dilatation.
+				//
+
+				if (dilatation)
+				{
+					// Don't format as fixed notation.
+					gmt_line << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< dilatation.get();
 				}
 
 				//
@@ -169,21 +156,68 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Write the scalar coverage and optionally its domain positions.
+			 * Write the scalar coverage and optionally dilatation rate and dilatation.
 			 */
 			void
 			print_gmt_scalar_coverage(
 					QTextStream &output_stream,
 					const GPlatesAppLogic::ReconstructedScalarCoverage &reconstructed_scalar_coverage,
 					bool domain_point_lon_lat_format,
-					bool include_domain_point,
-					bool include_dilatation_rate)
+					bool include_dilatation_rate,
+					bool include_dilatation)
 			{
+				// See if RFG was reconstructed using topologies.
+				boost::optional<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> dfg =
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+								const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *>(
+										reconstructed_scalar_coverage.get_reconstructed_feature_geometry().get());
+
+				//
+				// Print the feature header.
+				//
+
+				if (dfg)
+				{
+					// Print the time range over which the reconstructed feature was reconstructed using topologies.
+					const GPlatesAppLogic::TimeSpanUtils::TimeRange time_range = dfg.get()->get_time_range();
+					output_stream << "> Topology reconstruction time range:"
+							<< " BeginTime=" << time_range.get_begin_time()
+							<< " EndTime=" << time_range.get_end_time()
+							<< " TimeIncrement=" << time_range.get_time_increment();
+					output_stream << "\n";
+				}
+
+				// Print the data column headers.
+				output_stream << "> Columns:";
+				if (domain_point_lon_lat_format)
+				{
+					output_stream << " Longitude Latitude";
+				}
+				else
+				{
+					output_stream << " Latitude Longitude";
+				}
+				if (include_dilatation_rate)
+				{
+					output_stream << " DilatationRate";
+				}
+				if (include_dilatation)
+				{
+					output_stream << " Dilatation";
+				}
+				// The scalar type.
+				output_stream << " " << reconstructed_scalar_coverage.get_scalar_type().get_name().qstring();
+				output_stream << "\n";
+
+				//
+				// Print the feature data.
+				//
+
 				GPlatesAppLogic::ReconstructedScalarCoverage::point_seq_type reconstructed_domain_points;
 				reconstructed_scalar_coverage.get_reconstructed_points(reconstructed_domain_points);
 
-				const GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type &scalar_values =
-						reconstructed_scalar_coverage.get_reconstructed_point_scalar_values();
+				GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type scalar_values;
+				reconstructed_scalar_coverage.get_reconstructed_point_scalar_values(scalar_values);
 
 				// The number of domain points should match the number of scalars.
 				// The ReconstructedScalarCoverage interface guarantees this.
@@ -192,35 +226,81 @@ namespace GPlatesFileIO
 						GPLATES_ASSERTION_SOURCE);
 
 				boost::optional< std::vector<double> > dilatation_rates;
-				if (include_dilatation_rate)
+				boost::optional< std::vector<double> > dilatations;
+				if (include_dilatation_rate ||
+					include_dilatation)
 				{
-					dilatation_rates = std::vector<double>();
-
-					boost::optional<const GPlatesAppLogic::DeformedFeatureGeometry *> dfg =
-							GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-									const GPlatesAppLogic::DeformedFeatureGeometry *>(
-											reconstructed_scalar_coverage.get_reconstructed_domain_geometry().get());
 					if (dfg)
 					{
-						// Get the current (per-point) deformation strain rates.
-						const GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_strain_rate_seq_type &
-								deformation_strain_rates = dfg.get()->get_point_deformation_strain_rates();
+						typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
+								point_deformation_strain_rate_seq_type;
+						typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_total_strain_seq_type
+								point_deformation_total_strain_seq_type;
 
-						// The number of strain rates should match the number of scalars.
-						GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-								deformation_strain_rates.size() == scalar_values.size(),
-								GPLATES_ASSERTION_SOURCE);
-						dilatation_rates->reserve(deformation_strain_rates.size());
-						for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
+						point_deformation_strain_rate_seq_type deformation_strain_rates;
+						point_deformation_total_strain_seq_type deformation_strains;
+
+						// Only retrieve strain rates and total strains if needed.
+						boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
+						boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
+						if (include_dilatation_rate)
 						{
-							dilatation_rates->push_back(deformation_strain_rates[n].get_dilatation());
+							deformation_strain_rates_option = deformation_strain_rates;
+						}
+						if (include_dilatation)
+						{
+							deformation_strains_option = deformation_strains;
+						}
+
+						// Get the current (per-point) geometry data.
+						dfg.get()->get_geometry_data(
+								boost::none/*points*/,
+								deformation_strain_rates_option,
+								deformation_strains_option);
+
+						if (include_dilatation_rate)
+						{
+							dilatation_rates = std::vector<double>();
+
+							// The number of strain rates should match the number of scalars.
+							GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+									deformation_strain_rates.size() == scalar_values.size(),
+									GPLATES_ASSERTION_SOURCE);
+							dilatation_rates->reserve(deformation_strain_rates.size());
+							for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
+							{
+								dilatation_rates->push_back(deformation_strain_rates[n].get_dilatation());
+							}
+						}
+						if (include_dilatation)
+						{
+							dilatations = std::vector<double>();
+
+							// The number of strains should match the number of scalars.
+							GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+									deformation_strains.size() == scalar_values.size(),
+									GPLATES_ASSERTION_SOURCE);
+							dilatations->reserve(deformation_strains.size());
+							for (unsigned int n = 0; n < deformation_strains.size(); ++n)
+							{
+								dilatations->push_back(deformation_strains[n].get_dilatation());
+							}
 						}
 					}
 					else
 					{
-						// The RFG is not a DeformedFeatureGeometry so we have no deformation strain information.
+						// The RFG is not a TopologyReconstructedFeatureGeometry so we have no deformation strain information.
 						// Default to zero strain.
-						dilatation_rates->resize(scalar_values.size(), 0.0);
+						if (include_dilatation_rate)
+						{
+							dilatation_rates = std::vector<double>();
+							dilatation_rates->resize(scalar_values.size(), 0.0);
+						}
+						if (include_dilatation)
+						{
+							dilatations = std::vector<double>();
+							dilatations->resize(scalar_values.size(), 0.0);
+						}
 					}
 				}
 
@@ -232,11 +312,7 @@ namespace GPlatesFileIO
 						range_iter = scalar_values.begin();
 				for (unsigned int index = 0; domain_iter != domain_end; ++domain_iter, ++range_iter, ++index)
 				{
-					boost::optional<const GPlatesMaths::PointOnSphere &> domain_point;
-					if (include_domain_point)
-					{
-						domain_point = *domain_iter;
-					}
+					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
 					boost::optional<const double &> dilatation_rate;
 					if (include_dilatation_rate)
@@ -244,14 +320,21 @@ namespace GPlatesFileIO
 						dilatation_rate = dilatation_rates.get()[index];
 					}
 
+					boost::optional<const double &> dilatation;
+					if (include_dilatation)
+					{
+						dilatation = dilatations.get()[index];
+					}
+
 					const double &scalar_value = *range_iter;
 
 					print_gmt_scalar_coverage_line(
 							output_stream,
 							domain_point,
+							domain_point_lon_lat_format,
 							dilatation_rate,
-							scalar_value,
-							domain_point_lon_lat_format);
+							dilatation,
+							scalar_value);
 				}
 			}
 		}
@@ -267,9 +350,8 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_domain_point,
 		bool include_dilatation_rate,
-		bool include_domain_meta_data)
+		bool include_dilatation)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -281,23 +363,15 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 
 	QTextStream output_stream(&output_file);
 
-	// Does the actual printing of GMT header to the output stream.
-	GMTHeaderPrinter gmt_header_printer;
+	//
+	// Print global header.
+	//
+	// Print the reconstruction time and anchored plate ID.
+	output_stream << "> ReconstructionTime=" << reconstruction_time << "\n";
+	output_stream << "> AnchoredPlateID=" << reconstruction_anchor_plate_id << "\n";
+	output_stream << ">\n";
 
-	if (include_domain_meta_data)
-	{
-		// Write out the global header (at the top of the exported file).
-		std::vector<QString> global_header_lines;
-		get_global_header_lines(global_header_lines,
-				referenced_files, reconstruction_anchor_plate_id, reconstruction_time);
-		gmt_header_printer.print_global_header_lines(output_stream, global_header_lines);
-	}
-
-	// Even though we're printing out reconstructed scalar coverages rather than present day geometry
-	// we still write out the verbose properties of the feature.
-	GMTFormatVerboseHeader gmt_header;
-
-	// Iterate through the vector fields and write to output.
+	// Iterate through the reconstructed scalar coverages and write to output.
 	std::list<reconstructed_scalar_coverage_group_type>::const_iterator feature_iter;
 	for (feature_iter = reconstructed_scalar_coverage_group_seq.begin();
 		feature_iter != reconstructed_scalar_coverage_group_seq.end();
@@ -311,10 +385,6 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 			continue;
 		}
 
-		// Get the header lines.
-		std::vector<QString> header_lines;
-		gmt_header.get_feature_header_lines(feature_ref, header_lines);
-
 		// Iterate through the reconstructed scalar coverages of the current feature and write to output.
 		reconstructed_scalar_coverage_seq_type::const_iterator rsc_iter;
 		for (rsc_iter = feature_scalar_coverage_group.recon_geoms.begin();
@@ -323,28 +393,13 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 		{
 			const GPlatesAppLogic::ReconstructedScalarCoverage *rsc = *rsc_iter;
 
-			if (include_domain_meta_data)
-			{
-				// Print the header lines.
-				gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
-			}
-
 			// Write the scalar coverage and its domain positions.
 			print_gmt_scalar_coverage(
 					output_stream,
 					*rsc,
 					domain_point_lon_lat_format,
-					include_domain_point,
-					include_dilatation_rate);
-
-			if (include_domain_meta_data)
-			{
-				// Write the final terminating symbol for the current feature.
-				//
-				// No newline is output since a GMT header may follow (due to the next feature) in which
-				// case it will use the same line.
-				output_stream << ">";
-			}
+					include_dilatation_rate,
+					include_dilatation);
 		}
 	}
 }

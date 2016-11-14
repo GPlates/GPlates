@@ -1139,7 +1139,6 @@ GPlatesAppLogic::PartitionFeatureUtils::reverse_reconstruct(
 					reconstruct_method_registry,
 					feature,
 					reconstruction_time,
-					// Might include deformation...
 					reconstruct_method_context,
 					true/*reverse_reconstruct*/);
 }

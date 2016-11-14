@@ -232,7 +232,6 @@ namespace GPlatesAppLogic
 				CoordType &b2,
 				CoordType &b3)
 		{
-			PROFILE_FUNC();
 		#if 0 
 			from: 
 			http://steve.hollasch.net/cgindex/math/barycentric.html

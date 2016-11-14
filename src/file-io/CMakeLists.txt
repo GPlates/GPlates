@@ -28,6 +28,8 @@ set(srcs
     CitcomsResolvedTopologicalBoundaryExportImpl.h
     CptReader.cc
     CptReader.h
+    DeformationExport.cc
+    DeformationExport.h
     ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
@@ -71,6 +73,8 @@ set(srcs
     GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
+    GMTFormatDeformationExport.cc
+    GMTFormatDeformationExport.h
     GMTFormatFlowlineExport.cc
     GMTFormatFlowlineExport.h
     GMTFormatGeometryExporter.cc
@@ -95,6 +99,8 @@ set(srcs
     GpmlFeatureReaderImpl.h
     GpmlFeatureReaderInterface.cc
     GpmlFeatureReaderInterface.h
+    GpmlFormatDeformationExport.cc
+    GpmlFormatDeformationExport.h
     GpmlFormatMultiPointVectorFieldExport.cc
     GpmlFormatMultiPointVectorFieldExport.h
     GpmlFormatReconstructedScalarCoverageExport.cc

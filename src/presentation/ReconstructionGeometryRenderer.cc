@@ -45,7 +45,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
-#include "app-logic/DeformedFeatureGeometry.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/PlateVelocityUtils.h"
@@ -62,6 +61,7 @@
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ResolvedTriangulationDelaunay2.h"
+#include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
 #include "data-mining/DataTable.h"
 
@@ -226,7 +226,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	normal_map_height_field_scale_factor(1),
 	vgp_draw_circular_error(true),
-	show_deformed_feature_geometries(true),
+	show_topology_reconstructed_feature_geometries(true),
 	show_strain_accumulation(false),
 	strain_accumulation_scale(1.0),
 	fill_topological_network_triangulation(false),
@@ -263,7 +263,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 	d_render_params.fill_polygons = params.get_fill_polygons();
 	d_render_params.fill_polylines = params.get_fill_polylines();
 	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
-	d_render_params.show_deformed_feature_geometries = params.get_show_deformed_feature_geometries();
+	d_render_params.show_topology_reconstructed_feature_geometries = params.get_show_topology_reconstructed_feature_geometries();
 	d_render_params.show_strain_accumulation = params.get_show_strain_accumulation();
 	d_render_params.strain_accumulation_scale = params.get_strain_accumulation_scale();
 }
@@ -457,21 +457,21 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg)
+		const GPlatesUtils::non_null_intrusive_ptr<topology_reconstructed_feature_geometry_type> &trfg)
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	const GPlatesGui::ColourProxy dfg_colour_proxy =  get_colour(dfg, d_colour, d_style_adapter);
+	const GPlatesGui::ColourProxy dfg_colour_proxy =  get_colour(trfg, d_colour, d_style_adapter);
 
-	if (d_render_params.show_deformed_feature_geometries)
+	if (d_render_params.show_topology_reconstructed_feature_geometries)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					dfg->reconstructed_geometry(),
-					dfg,
+					trfg->reconstructed_geometry(),
+					trfg,
 					d_render_params,
 					dfg_colour_proxy,
 					d_reconstruction_adjustment,
@@ -484,36 +484,37 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	if (d_render_params.show_strain_accumulation)
 	{
 		// Convenience typedefs.
-		typedef std::vector<GPlatesMaths::PointOnSphere> deformed_geometry_points_seq_type;
-		typedef GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_total_strain_seq_type
+		typedef std::vector<GPlatesMaths::PointOnSphere> topology_reconstructed_geometry_points_seq_type;
+		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_total_strain_seq_type
 				point_deformation_total_strain_seq_type;
 
-		// Get the deformed geometry points.
-		deformed_geometry_points_seq_type deformed_geometry_points;
-		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
-				*dfg->reconstructed_geometry(),
-				deformed_geometry_points);
-
-		// Get the deformation total strains associated with each deformed geometry point.
-		const point_deformation_total_strain_seq_type &point_deformation_total_strains =
-				dfg->get_point_deformation_total_strains();
+		// Get the geometry point and deformation (total) strains.
+		topology_reconstructed_geometry_points_seq_type geometry_points;
+		point_deformation_total_strain_seq_type point_deformation_total_strains;
+		trfg->get_geometry_data(
+				geometry_points,
+				boost::none/*strain_rates*/,
+				point_deformation_total_strains/*strains*/);
 
 		// Iterate over the geometry points and generate a rendered geometry for each one.
-		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_iter = deformed_geometry_points.begin();
-		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_end = deformed_geometry_points.end();
+		topology_reconstructed_geometry_points_seq_type::const_iterator geometry_points_iter = geometry_points.begin();
+		topology_reconstructed_geometry_points_seq_type::const_iterator geometry_points_end = geometry_points.end();
 		point_deformation_total_strain_seq_type::const_iterator point_deformation_total_strains_iter = point_deformation_total_strains.begin();
 		point_deformation_total_strain_seq_type::const_iterator point_deformation_total_strains_end = point_deformation_total_strains.end();
 		for ( ;
-			deformed_geometry_points_iter != deformed_geometry_points_end &&
+			geometry_points_iter != geometry_points_end &&
 				point_deformation_total_strains_iter != point_deformation_total_strains_end;
-			++deformed_geometry_points_iter, ++point_deformation_total_strains_iter)
+			++geometry_points_iter, ++point_deformation_total_strains_iter)
 		{
-			const GPlatesMaths::PointOnSphere &deformed_geometry_point = *deformed_geometry_points_iter;
+			const GPlatesMaths::PointOnSphere &geometry_point = *geometry_points_iter;
 			const GPlatesAppLogic::DeformationStrain &point_deformation_total_strain = *point_deformation_total_strains_iter;
 
 			const GPlatesMaths::PointOnSphere strain_marker_centre = d_reconstruction_adjustment
-					? d_reconstruction_adjustment.get() * deformed_geometry_point
-					: deformed_geometry_point;
+					? d_reconstruction_adjustment.get() * geometry_point
+					: geometry_point;
+
+			const GPlatesAppLogic::DeformationStrain::StrainPrincipal point_deformation_total_strain_principle =
+					point_deformation_total_strain.get_strain_principal();
 
 			// Create a RenderedGeometry.
 			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_geom =
@@ -521,15 +522,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							strain_marker_centre,
 							d_render_params.strain_accumulation_scale, // size
 							// Scale the strain accumulation...
-							point_deformation_total_strain.get_strain_principal1(), // scale_x
-							point_deformation_total_strain.get_strain_principal2(), // scale_y
+							point_deformation_total_strain_principle.principal1, // scale_x
+							point_deformation_total_strain_principle.principal2, // scale_y
 							point_deformation_total_strain.get_strain_principal_angle()); // orientation angle
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and
 			// a RenderedGeometry associated with it.
 			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_reconstruction_geometry =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-							dfg,
+							trfg,
 							strain_accumulation_rendered_geom);
 
 			// Render the rendered geometry.
@@ -899,13 +900,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	// Get the domain geometry points.
 	std::vector<GPlatesMaths::PointOnSphere> domain_points;
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_geometry =
-			rsc->get_reconstructed_geometry();
-	GPlatesAppLogic::GeometryUtils::get_geometry_points(*domain_geometry, domain_points);
+	rsc->get_reconstructed_points(domain_points);
 
 	// Get the scalar values.
-	const GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type &scalar_values =
-			rsc->get_reconstructed_point_scalar_values();
+	GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type scalar_values;
+	rsc->get_reconstructed_point_scalar_values(scalar_values);
 
 	// The number of domain points should match the number of scalars.
 	// The ReconstructedScalarCoverage interface guarantees this.

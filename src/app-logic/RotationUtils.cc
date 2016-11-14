@@ -39,6 +39,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 		GPlatesModel::integer_plate_id_type left_plate_id,
 		GPlatesModel::integer_plate_id_type right_plate_id,
 		const double &spreading_asymmetry,
+		const double &spreading_start_time,
 		const double &half_stage_rotation_interval)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -57,35 +58,75 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 	// reconstruction plate ID associated with the mid-ocean ridge (which is why we are here).
 	// So we need to approximate it by dividing it into 'N' stages (the more stages the better accuracy).
 	//
-	// R(0->t,L->MOR)
-	// R(t[N-1]->t[N],L->MOR) * R(t[N-2]->t[N-1],L->MOR) * ... * R(t2->t3,L->MOR) * R(t1->t2,L->MOR) * R(0->t1,L->MOR)
+	// The stages are from 'spreading_start_time' to 'reconstruction_time'. When 'reconstruction_time'
+	// coincides with 'spreading_start_time' the half-stage rotation includes only the left-plate
+	// rotation (with no spreading added).
+	// So the finite rotation is (where 'ts' is 'spreading_start_time'):
+	//
+	// R(0->t,A->MOR)
+	// R(0->t,A->L) * R(0->t,L->MOR)
+	// R(0->t,A->L) * R(ts->t,L->MOR) * R(0->ts,L->MOR)
+	// R(0->t,A->L) * R(ts->t,L->MOR) // since R(0->ts,L->MOR) is zero, due to no spreading from 0 -> ts
+	//
+	// Another way of looking at this is to look at the entire finite rotation again:
+	//
+	// R(0->t,A->MOR)
+	// R(ts->t,A->MOR) * R(0->ts,A->MOR)
+	// R(ts->t,A->MOR) * R(0->ts,A->L) * R(0->ts,L->MOR)
+	// R(ts->t,A->MOR) * R(0->ts,A->L)  // where R(0->ts,L->MOR) is zero, due to no spreading from 0 -> ts
+	// R(0->t,A->MOR) * R(ts->0,A->MOR) * R(0->ts,A->L)
+	// R(0->t,A->MOR) * inverse[R(0->ts,A->MOR)] * R(0->ts,A->L)
+	// R(0->t,A->L) * R(0->t,L->MOR) * inverse[R(0->ts,A->L) * R(0->ts,L->MOR)] * R(0->ts,A->L)
+	// R(0->t,A->L) * R(0->t,L->MOR) * inverse[R(0->ts,L->MOR)] * inverse[R(0->ts,A->L)] * R(0->v,A->L)
+	// R(0->t,A->L) * R(0->t,L->MOR) * R(ts->0,L->MOR) * R(ts->0,A->L) * R(0->ts,A->L)
+	// R(0->t,A->L) * R(ts->t,L->MOR)
+	//
+	// Dividing the spreading component 'R(ts->t,L->MOR)' into 'N' stages gives:
+	//
+	// R(0->t,A->L) * R(ts->t,L->MOR)
+	// R(0->t,A->L) * R(t[N-1]->t[N],L->MOR) * R(t[N-2]->t[N-1],L->MOR) * ... * R(t2->t3,L->MOR) * R(t1->t2,L->MOR) * R(ts->t1,L->MOR)
 	//
 	// Each stage R(t[i-1]->t[i],L->MOR) can then be calculated as a half-stage rotation of R(t[i-1]->t[i],L->R).
-	//
-	// Note that this assumes ridge spreading occurs from present day all the way to the
-	// reconstruction time which may not be the case.
-	// But it doesn't really matter if there is (non-spreading) motion of the right plate relative to
-	// the left plate *outside* time intervals when ridge spreading is actually occurring because the
-	// position of the mid-ocean ridge will be correct for the reconstruction time at which it was
-	// digitised/created by the user and nearby reconstruction times within the age range of
-	// the mid-ocean ridge (which is where ridge spreading is really happening) will have spreading
-	// calculated relative to that position.
 
 	using namespace GPlatesMaths;
 
 	// Start with the identity rotation and accumulate half-stage rotations over intervals.
 	FiniteRotation spreading_rotation = FiniteRotation::create_identity_rotation();
-	double prev_time = 0.0;
+	double prev_time = spreading_start_time;
 	bool last_iteration = false;
+
+	bool backward_in_time;
+	double time_interval;
+	if (reconstruction_time > spreading_start_time)
+	{
+		backward_in_time = true;
+		time_interval = half_stage_rotation_interval;
+	}
+	else // forward in time...
+	{
+		backward_in_time = false;
+		time_interval = -half_stage_rotation_interval;
+	}
 
 	// Iterate over the half-stage rotation intervals.
 	do
 	{
-		double curr_time = prev_time + half_stage_rotation_interval;
-		if (curr_time >= reconstruction_time)
+		double curr_time = prev_time + time_interval;
+		if (backward_in_time)
 		{
-			curr_time = reconstruction_time;
-			last_iteration = true;
+			if (curr_time >= reconstruction_time)
+			{
+				curr_time = reconstruction_time;
+				last_iteration = true;
+			}
+		}
+		else // forward in time...
+		{
+			if (curr_time <= reconstruction_time)
+			{
+				curr_time = reconstruction_time;
+				last_iteration = true;
+			}
 		}
 
 		const FiniteRotation left_to_right_stage =

@@ -226,6 +226,29 @@ namespace
 
 
 	/**
+	 * Query the GPGIM to determine whether we can add the 'gpml:geometryImportTime' property.
+	 * This is based on FeatureType.
+	 */
+	bool
+	should_add_import_geometry_time_prop(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type)
+	{
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+		// See if the feature type supports a geometry import time property.
+		return GPlatesModel::Gpgim::instance().get_feature_property(
+				feature_type.get(),
+				GEOMETRY_IMPORT_TIME_PROPERTY_NAME);
+	}
+
+
+	/**
 	 * Query the GPGIM to determine whether we should present the user
 	 * with a conjugatePlateId property value edit widget.
 	 * This is based on FeatureType.
@@ -1221,6 +1244,26 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 				GPlatesModel::PropertyName::create_gml("validTime"),
 				d_time_period_widget->create_property_value_from_widget());
 
+		// Add a gpml:geometryImportTime property if the feature type supports it.
+		//
+		// This gets added to all reconstructable features.
+		// It is used by MidOceanRidge features, along with left plate ID, to reconstruct ridge position to the
+		// import time and then perform ridge-spreading from there. This enables the user to subsequently change
+		// the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time)
+		//
+		// Also used when a feature's geometry is reconstructed using topologies
+		// (instead of using the feature's properties, eg, reconstruction plate ID).
+		// This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies
+		// through time (mid-ocean ridges going backward in time and subduction zones going forward in time).
+		if (should_add_import_geometry_time_prop(d_feature_type))
+		{
+			copy_common_property_into_all_properties(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					GPlatesModel::ModelUtils::create_gml_time_instant(
+							GPlatesPropertyValues::GeoTimeInstant(
+									d_application_state_ptr->get_current_reconstruction_time())));
+		}
+
 		// If we are using half stage rotation.
 		// Note that the 'if' and 'else' parts do the reverse of each other.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
@@ -1230,7 +1273,7 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 					GPlatesPropertyValues::Enumeration::create(
 							GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
-							"HalfStageRotationVersion2"));
+							"HalfStageRotationVersion3"));
 
 			// Add gpml:leftPlate and gpml:rightPlate properties.
 			copy_common_property_into_all_properties(
@@ -2383,7 +2426,6 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 					reconstruct_method_registry,
 					feature,
 					reconstruction.get_reconstruction_time(),
-					// Might include deformation...
 					reconstruct_layer_outputs.front()->get_reconstruct_method_context(),
 					true/*reverse_reconstruct*/)
 			: GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(

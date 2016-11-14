@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <map>
 #include <utility>
 #include <vector>
@@ -758,7 +759,7 @@ GPlatesGui::BuiltinColourPalettes::create_colorbrewer_sequential_palette(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			colours.size() == sequential_classes,
+			colours.size() == std::size_t(sequential_classes),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Background colour, for values before min value.
@@ -851,7 +852,7 @@ GPlatesGui::BuiltinColourPalettes::create_colorbrewer_diverging_palette(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			colours.size() == diverging_classes,
+			colours.size() == std::size_t(diverging_classes),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Background colour, for values before min value.

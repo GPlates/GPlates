@@ -689,8 +689,6 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the face containing @a point.
 			 *
-			 * The coordinates sum to 1.0.
-			 *
 			 * Returns boost::none if @a point is outside the triangulation.
 			 */
 			boost::optional<Face_handle>

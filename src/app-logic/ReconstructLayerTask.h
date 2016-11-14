@@ -28,6 +28,7 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTLAYERTASK_H
 
 #include <utility>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QString>
@@ -35,6 +36,8 @@
 #include "LayerTask.h"
 #include "ReconstructLayerProxy.h"
 #include "ReconstructLayerParams.h"
+#include "TopologyGeometryResolverLayerProxy.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 #include "maths/types.h"
 
@@ -166,6 +169,14 @@ namespace GPlatesAppLogic
 		//! Are we using the default reconstruction layer proxy.
 		bool d_using_default_reconstruction_layer_proxy;
 
+		//! Any currently connected 'resolved boundary' topology surface layers.
+		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>
+				d_current_resolved_boundary_topology_surface_layer_proxies;
+		//! Any currently connected 'resolved network' topology surface layers.
+		std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type>
+				d_current_resolved_network_topology_surface_layer_proxies;
+
+
 		/**
 		 * Does all the reconstructing.
 		 *
@@ -177,6 +188,30 @@ namespace GPlatesAppLogic
 		//! Constructor.
 		ReconstructLayerTask(
 				const ReconstructMethodRegistry &reconstruct_method_registry);
+
+		/**
+		 * Returns true if any topology surface layers are currently connected.
+		 */
+		bool
+		connected_to_topology_surface_layers() const;
+
+		/**
+		 * Returns the 'resolved boundary' topology surface layers.
+		 */
+		void
+		get_resolved_boundary_topology_surface_layer_proxies(
+				std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
+						resolved_boundary_topology_surface_layer_proxies,
+				const Reconstruction::non_null_ptr_type &reconstruction) const;
+
+		/**
+		 * Returns the 'resolved network' topology surface layers.
+		 */
+		void
+		get_resolved_network_topology_surface_layer_proxies(
+				std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type> &
+						resolved_network_topology_surface_layer_proxies,
+				const Reconstruction::non_null_ptr_type &reconstruction) const;
 	};
 }
 

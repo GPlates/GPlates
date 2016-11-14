@@ -219,6 +219,9 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportDeformationOptionsWidget.cc
+    ExportDeformationOptionsWidget.h
+    ExportDeformationOptionsWidgetUi.ui
     ExportFileNameTemplateWidget.cc
     ExportFileNameTemplateWidget.h
     ExportFileNameTemplateWidgetUi.ui
@@ -271,6 +274,9 @@ set(srcs
     FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GenerateCrustalThicknessPointsDialog.cc
+    GenerateCrustalThicknessPointsDialog.h
+    GenerateCrustalThicknessPointsDialogUi.ui
     GenerateVelocityDomainCitcomsDialog.cc
     GenerateVelocityDomainCitcomsDialog.h
     GenerateVelocityDomainCitcomsDialogUi.ui
@@ -517,12 +523,12 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
-    SetDeformationParametersDialog.cc
-    SetDeformationParametersDialog.h
-    SetDeformationParametersDialogUi.ui
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui
+    SetTopologyReconstructionParametersDialog.cc
+    SetTopologyReconstructionParametersDialog.h
+    SetTopologyReconstructionParametersDialogUi.ui
     SetVGPVisibilityDialog.cc
     SetVGPVisibilityDialog.h
     SetVGPVisibilityDialogUi.ui

@@ -45,7 +45,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class SetVGPVisibilityDialog;
-	class SetDeformationParametersDialog;
+	class SetTopologyReconstructionParametersDialog;
 	class DrawStyleDialog;
 	class ViewportWindow;
 
@@ -86,10 +86,17 @@ namespace GPlatesQtWidgets
 		open_vgp_visibility_dialog();
 
 		void
-		open_deformation_parameters_dialog();
+		open_topology_reconstruction_parameters_dialog();
 
 		void
 		open_draw_style_setting_dlg();
+
+		void
+		handle_use_topologies_button(
+				bool checked);
+
+		void
+		handle_prompt_set_topology_reconstruction_parameters_clicked();
 
 		void
 		handle_fill_polygons_clicked();
@@ -116,7 +123,7 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		ViewportWindow *d_viewport_window;
 		SetVGPVisibilityDialog *d_set_vgp_visibility_dialog;
-		SetDeformationParametersDialog *d_set_deformation_parameters_dialog;
+		SetTopologyReconstructionParametersDialog *d_set_topology_reconstruction_parameters_dialog;
 		DrawStyleDialog *d_draw_style_dialog_ptr;
 
 		/**

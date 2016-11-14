@@ -77,7 +77,6 @@
 #include "scribe/ScribeExceptions.h"
 
 #include "qt-widgets/FileDialogFilter.h"
-#include "qt-widgets/GpgimVersionWarningDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/MissingSessionFilesDialog.h"
 #include "qt-widgets/OgrSrsWriteOptionDialog.h"
@@ -256,75 +255,6 @@ namespace
 	}
 
 
-	/**
-	 * Returns the list of filenames for files with a different GPGIM version than the current
-	 * GPGIM version (built into this GPlates).
-	 *
-	 * If @a only_unsaved_changes is true then only files with unsaved changes will be checked.
-	 *
-	 * Returns true if there are any files in the list(s).
-	 */
-	bool
-	get_files_with_different_gpgim_version(
-			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-			bool only_unsaved_changes,
-			QStringList &older_version_filenames,
-			QStringList &newer_version_filenames)
-	{
-		const GPlatesModel::GpgimVersion &current_gpgim_version = GPlatesModel::Gpgim::instance().get_version();
-
-		// Iterate over the files.
-		BOOST_FOREACH(const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file, files)
-		{
-			const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-					file.get_file().get_feature_collection();
-
-			// If we are only getting files with unsaved changes then skip those that have no changes.
-			if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
-			{
-				continue;
-			}
-
-			// Look for the GPGIM version tag in the feature collection.
-			GPlatesModel::FeatureCollectionHandle::tags_type::const_iterator tag_iter =
-					feature_collection_ref->tags().find(GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG);
-
-			// If the feature collection does not contain this tag then it is assumed to be current
-			// GPGIM version since new (empty) feature collections created by this instance of GPlates
-			// will have features added according to the GPGIM version built into this instance of GPlates.
-			if (tag_iter == feature_collection_ref->tags().end())
-			{
-				continue;
-			}
-
-			// Get the GPGIM version of the current file.
-			const boost::any &tag = tag_iter->second;
-			const GPlatesModel::GpgimVersion &file_gpgim_version =
-					boost::any_cast<const GPlatesModel::GpgimVersion &>(tag);
-
-			// If the file GPGIM version does not match the current GPGIM version then we
-			// need to warn the user.
-			if (file_gpgim_version == current_gpgim_version)
-			{
-				continue;
-			}
-
-			const QString filename = file.get_file().get_file_info().get_display_name(false) +
-					" (" + file_gpgim_version.version_string() + ")";
-
-			if (file_gpgim_version < current_gpgim_version)
-			{
-				older_version_filenames.append(filename);
-			}
-			else
-			{
-				newer_version_filenames.append(filename);
-			}
-		}
-
-		return older_version_filenames.count() > 0 || newer_version_filenames.count() > 0;
-	}
-
 	void
 	set_ogr_configuration_write_behaviour(
 		boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration> &ogr_config,
@@ -411,85 +341,6 @@ namespace
 		}
 
 		return true;
-	}
-
-
-	/**
-	 * Shows the GPGIM version warning dialog, if necessary, to inform the user that there exist
-	 * files with a different GPGIM version than the current GPGIM version (built into this GPlates).
-	 *
-	 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
-	 *
-	 * Returns true if the files should be saved.
-	 */
-	bool
-	show_save_files_gpgim_version_dialog_if_necessary(
-			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-			bool only_unsaved_changes,
-			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog)
-	{
-		QStringList older_version_filenames;
-		QStringList newer_version_filenames;
-
-		// If there are no older or newer versions then we can save the files without querying the user.
-		if (!get_files_with_different_gpgim_version(
-			files,
-			only_unsaved_changes,
-			older_version_filenames,
-			newer_version_filenames))
-		{
-			return true;
-		}
-
-		// Set up the GPGIM version warning dialog.
-		gpgim_version_warning_dialog->set_action_requested(
-				GPlatesQtWidgets::GpgimVersionWarningDialog::SAVE_FILES,
-				older_version_filenames,
-				newer_version_filenames);
-
-		// Exec the dialog and return true if the files should be saved.
-		return gpgim_version_warning_dialog->exec() == QDialogButtonBox::Save;
-	}
-
-
-	/**
-	 * Shows the GPGIM version warning dialog, if necessary, to inform the user that there exist
-	 * files with a different GPGIM version than the current GPGIM version (built into this GPlates).
-	 */
-	void
-	show_open_files_gpgim_version_dialog_if_necessary(
-			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog)
-	{
-		// Do not warn the user if requested us to stop bothering them.
-		// Not that we only have this option for loading files.
-		// When saving files the user is always warned.
-		if (gpgim_version_warning_dialog->do_not_show_dialog_on_loading_files())
-		{
-			return;
-		}
-
-		QStringList older_version_filenames;
-		QStringList newer_version_filenames;
-
-		// If there are no older or newer versions then we don't need to warn the user.
-		if (!get_files_with_different_gpgim_version(
-			files,
-			false/*only_unsaved_changes*/, // Include all files (saved or unsaved).
-			older_version_filenames,
-			newer_version_filenames))
-		{
-			return;
-		}
-
-		// Set up the GPGIM version warning dialog.
-		gpgim_version_warning_dialog->set_action_requested(
-				GPlatesQtWidgets::GpgimVersionWarningDialog::LOAD_FILES,
-				older_version_filenames,
-				newer_version_filenames);
-
-		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
-		gpgim_version_warning_dialog->exec();
 	}
 
 
@@ -801,12 +652,6 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			new GPlatesQtWidgets::MissingSessionFilesDialog(
 					*d_view_state_ptr,
 					&viewport_window())),
-	d_gpgim_version_warning_dialog_ptr(
-			new GPlatesQtWidgets::GpgimVersionWarningDialog(
-					// We no longer show the dialog when *loading* files since it's too annoying.
-					// It's still shown when *saving* files though...
-					false/*show_dialog_on_loading_files*/,
-					&viewport_window())),
 	d_ogr_srs_write_option_dialog_ptr(
 			new GPlatesQtWidgets::OgrSrsWriteOptionDialog(
 				&viewport_window()))
@@ -844,14 +689,6 @@ GPlatesGui::FileIOFeedback::open_files(
 	{
 		return;
 	}
-
-	// Warn the user if they have loaded files with different GPGIM versions than the files
-	// were originally created with. The user might then decide not to modify files since they
-	// could then only be saved using the current GPGIM version potentially causing problems for
-	// other (older) versions of GPlates.
-	show_open_files_gpgim_version_dialog_if_necessary(
-			collect_loaded_files_scope.get_loaded_files(),
-			d_gpgim_version_warning_dialog_ptr);
 }
 
 
@@ -888,14 +725,6 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 	{
 		return;
 	}
-
-	// Warn the user if they have loaded files with different GPGIM versions than the files
-	// were originally created with. The user might then decide not to modify files since they
-	// could then only be saved using the current GPGIM version potentially causing problems for
-	// other (older) versions of GPlates.
-	show_open_files_gpgim_version_dialog_if_necessary(
-			collect_loaded_files_scope.get_loaded_files(),
-			d_gpgim_version_warning_dialog_ptr);
 }
 
 
@@ -1055,19 +884,6 @@ bool
 GPlatesGui::FileIOFeedback::save_file_in_place(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	// Warn the user if they are about to save the file using a different GPGIM version than the file
-	// was originally created with.
-	if (!show_save_files_gpgim_version_dialog_if_necessary(
-			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1, file),
-			// We're saving whether the file has unsaved changes or not...
-			false/*only_unsaved_changes*/,
-			d_gpgim_version_warning_dialog_ptr))
-	{
-		// Return without saving.
-		return false;
-	}
-
-
 	if (!show_ogr_srs_dialog_if_necessary(
 				std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1,file),
 				d_ogr_srs_write_option_dialog_ptr))
@@ -1333,22 +1149,6 @@ GPlatesGui::FileIOFeedback::save_files(
 		bool include_unnamed_files,
 		bool only_unsaved_changes)
 {
-	// Warn the user if they are about to save files using a different GPGIM version than the files
-	// were originally created with.
-	if (!show_save_files_gpgim_version_dialog_if_necessary(
-			files,
-			only_unsaved_changes,
-			d_gpgim_version_warning_dialog_ptr))
-	{
-		// Return without saving.
-		//
-		// Even if some of the files have the current GPGIM version (and hence would normally have
-		// been saved without warning) those files should not be saved because we shouldn't save
-		// some files but not others because it may not make logical sense to partially save
-		// a group of files (they may become inconsistent with each other).
-		return false;
-	}
-
 	viewport_window().status_message("GPlates is saving files...");
 
 	// Return true only if all files saved without issue.

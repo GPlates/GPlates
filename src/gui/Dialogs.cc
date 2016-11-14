@@ -66,6 +66,7 @@
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
 #include "qt-widgets/ExportAnimationDialog.h"
+#include "qt-widgets/GenerateCrustalThicknessPointsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
@@ -475,7 +476,7 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 GPlatesGui::Dialogs::finite_rotation_calculator_dialog()
 {
 	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG;
+	const DialogType dialog_type = DIALOG_FINITE_ROTATION_CALCULATOR;
 	typedef GPlatesQtWidgets::FiniteRotationCalculatorDialog dialog_typename;
 
 	if (d_dialogs[dialog_type].isNull())
@@ -491,6 +492,34 @@ GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
 {
 	finite_rotation_calculator_dialog().pop_up();
 }
+
+
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &
+GPlatesGui::Dialogs::generate_crustal_thickness_points_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_GENERATE_CRUSTAL_THICKNESS_POINTS;
+	typedef GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_generate_crustal_thickness_points_dialog()
+{
+	GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &dialog = generate_crustal_thickness_points_dialog();
+
+	if (dialog.initialise())
+	{
+		dialog.exec();
+	}
+}
+
 
 GPlatesQtWidgets::HellingerDialog &
 GPlatesGui::Dialogs::hellinger_dialog()

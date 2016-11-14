@@ -28,7 +28,6 @@
 
 #include <cfloat>
 #include <cmath>
-#include <boost/optional.hpp>
 
 #ifdef _MSC_VER
 #ifndef copysign
@@ -47,6 +46,33 @@ namespace GPlatesAppLogic
 	class DeformationStrain
 	{
 	public:
+
+		struct StrainPrincipal
+		{
+			StrainPrincipal(
+					double principal1_,
+					double principal2_) :
+				principal1(principal1_),
+				principal2(principal2_)
+			{  }
+
+			/**
+			 * The larger principle strain.
+			 *
+			 * If @a get_strain_principal_angle returns zero then this is aligned with co-latitude
+			 * (ie, the direction from North to South).
+			 */
+			double principal1;
+
+			/**
+			 * The smaller principle strain.
+			 *
+			 * If @a get_strain_principal_angle returns zero then this is aligned with longitude
+			 * (ie, the direction from West to East).
+			 */
+			double principal2;
+		};
+
 
 		//! Zero strain (non-deforming).
 		DeformationStrain() :
@@ -91,41 +117,30 @@ namespace GPlatesAppLogic
 		double
 		get_second_invariant() const
 		{
-			// Calculate if not yet calculated.
-			if (!d_second_invariant)
-			{
-				const double second_invariant_squared = d_strain_theta_theta * d_strain_phi_phi -
-						d_strain_theta_phi * d_strain_theta_phi;
-				d_second_invariant = copysign(
-						std::sqrt(std::abs(second_invariant_squared)),
-						second_invariant_squared);
-			}
-
-			return d_second_invariant.get();
+			const double second_invariant_squared = d_strain_theta_theta * d_strain_phi_phi -
+					d_strain_theta_phi * d_strain_theta_phi;
+			return copysign(
+					std::sqrt(std::abs(second_invariant_squared)),
+					second_invariant_squared);
 		}
 
 		/**
-		 * Return the larger principle strain.
+		 * Return the principle strain.
 		 *
 		 * If @a get_strain_principal_angle returns zero then this is aligned with co-latitude
 		 * (ie, the direction from North to South).
 		 */
-		double
-		get_strain_principal1() const
+		const StrainPrincipal
+		get_strain_principal() const
 		{
-			return get_strain_principal().principal1;
-		}
+			const double SR_variation = std::sqrt(
+					d_strain_theta_phi * d_strain_theta_phi +
+					0.25 * (d_strain_theta_theta - d_strain_phi_phi) *
+						(d_strain_theta_theta - d_strain_phi_phi));
+			const double SR1 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) + SR_variation;
+			const double SR2 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) - SR_variation;
 
-		/**
-		 * Return the smaller principle strain.
-		 *
-		 * If @a get_strain_principal_angle returns zero then this is aligned with longitude
-		 * (ie, the direction from West to East).
-		 */
-		double
-		get_strain_principal2() const
-		{
-			return get_strain_principal().principal2;
+			return StrainPrincipal(SR1, SR2);
 		}
 
 		/**
@@ -136,16 +151,11 @@ namespace GPlatesAppLogic
 		double
 		get_strain_principal_angle() const
 		{
-			// Calculate if not yet calculated.
-			if (!d_strain_principal_angle)
-			{
-				d_strain_principal_angle = 0.5 * std::atan2(
-						2.0 * d_strain_theta_phi,
-						d_strain_theta_theta - d_strain_phi_phi);
-			}
-
-			return d_strain_principal_angle.get();
+			return 0.5 * std::atan2(
+					2.0 * d_strain_theta_phi,
+					d_strain_theta_theta - d_strain_phi_phi);
 		}
+
 
 		friend
 		DeformationStrain
@@ -182,46 +192,9 @@ namespace GPlatesAppLogic
 
 	private:
 
-		struct StrainPrincipal
-		{
-			StrainPrincipal(
-					double principal1_,
-					double principal2_) :
-				principal1(principal1_),
-				principal2(principal2_)
-			{  }
-
-			double principal1; 	// principle strain 1 = compression ? 
-			double principal2; 	// principle strain 2 = tension ?
-		};
-
-		const StrainPrincipal &
-		get_strain_principal() const
-		{
-			// Calculate if not yet calculated.
-			if (!d_strain_principal)
-			{
-				const double SR_variation = std::sqrt(
-						d_strain_theta_phi * d_strain_theta_phi +
-						0.25 * (d_strain_theta_theta - d_strain_phi_phi) *
-							(d_strain_theta_theta - d_strain_phi_phi));
-				const double SR1 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) + SR_variation;
-				const double SR2 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) - SR_variation;
-
-				d_strain_principal = StrainPrincipal(SR1, SR2);
-			}
-
-			return d_strain_principal.get();
-		}
-
-
 		double d_strain_theta_theta;
 		double d_strain_phi_phi;
 		double d_strain_theta_phi;
-
-		mutable boost::optional<double> d_second_invariant;
-		mutable boost::optional<StrainPrincipal> d_strain_principal;
-		mutable boost::optional<double> d_strain_principal_angle;
 	};
 }
 

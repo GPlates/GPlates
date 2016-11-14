@@ -57,6 +57,12 @@ namespace GPlatesFileIO
 		/**
 		 * Exports @a ReconstructedScalarCoverage objects containing *scalar coverages* to the GPML file format.
 		 *
+		 * If @a include_dilatation_rate is true then an extra set of per-point scalars,
+		 * under 'gpml:DilatationRate', is exported as per-point dilatation rates (in units of 1/second).
+		 *
+		 * If @a include_dilatation  is true then an extra set of per-point scalars,
+		 * under 'gpml:Dilatation', is exported as per-point accumulated dilatation (unit-less).
+		 *
 		 * @param export_single_output_file specifies whether to write all reconstructed scalar coverages to a single file.
 		 * @param export_per_input_file specifies whether to group reconstructed scalar coverages according
 		 *        to the input files their features came from and write to corresponding output files.
@@ -78,6 +84,7 @@ namespace GPlatesFileIO
 				GPlatesModel::ModelInterface &model,
 				const std::vector<const File::Reference *> &active_files,
 				bool include_dilatation_rate,
+				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);
@@ -90,11 +97,11 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    [domain_point] [dilatation_rate] scalar
+		 *    domain_point [dilatation_rate] [dilatation] scalar
 		 * 
-		 * ...where 'domain_point' is position associated with the scalar value.
-		 * The domain point is only included if @a include_domain_point is true.
-		 * And the dilatation rate (in units of 1/second) is only included if @a include_dilatation_rate is true.
+		 * ...where 'domain_point' is position associated with the dilatation rate.
+		 * If @a include_dilatation_rate is true then dilatation rate is output (in units of 1/second).
+		 * If @a include_dilatation is true then accumulated dilatation is output (unit-less).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
@@ -119,9 +126,8 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
-				bool include_domain_point,
 				bool include_dilatation_rate,
-				bool include_domain_meta_data,
+				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);

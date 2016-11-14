@@ -150,14 +150,19 @@ namespace GPlatesAppLogic
 		 * Finds all topological section features referenced by the topological feature
 		 * @a topology_feature_ref (which can be a topological line, boundary or network).
 		 *
-		 * If @a reconstruction_time is specified then only those time-dependent topologies
-		 * at the reconstruction time are considered, otherwise all topologies in a time-dependent
-		 * sequence are considered.
+		 * If @a topology_geometry_type is specified then only matching topology geometries in
+		 * @a topology_feature_ref are searched.
+		 *
+		 * If @a reconstruction_time is specified then @a topology_feature_ref is only searched
+		 * if it exists at the reconstruction time, in which case only those time-dependent topologies
+		 * at the reconstruction time are considered (otherwise all topologies in a time-dependent
+		 * sequence are considered).
 		 */
 		void
 		find_topological_sections_referenced(
 				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 				const GPlatesModel::FeatureHandle::weak_ref &topology_feature_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
 				boost::optional<double> reconstruction_time = boost::none);
 
 		/**
@@ -168,6 +173,7 @@ namespace GPlatesAppLogic
 		find_topological_sections_referenced(
 				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
 				boost::optional<double> reconstruction_time = boost::none);
 
 
@@ -478,7 +484,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry.
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry).
 		 */
 		bool
 		can_use_as_resolved_line_topological_section(
@@ -488,8 +495,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalLine).
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry) or a resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_boundary_topological_section(
@@ -499,8 +506,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalLine).
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry) or a resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_network_topological_section(

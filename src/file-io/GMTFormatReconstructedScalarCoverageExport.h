@@ -60,26 +60,25 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    [domain_point] [dilatation_rate] scalar
+		 *    domain_point [dilatation_rate] [dilatation] scalar
 		 * 
-		 * ...where 'domain_point' is position associated with the scalar value.
-		 * The domain point is only included if @a include_domain_point is true.
-		 * And the dilatation rate (in units of 1/second) is only included if @a include_dilatation_rate is true.
+		 * ...where 'domain_point' is position associated with the dilatation rate.
+		 * If @a include_dilatation_rate is true then dilatation rate is output (in units of 1/second).
+		 * If @a include_dilatation is true then accumulated dilatation is output (unit-less).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
 		 */
 		void
 		export_reconstructed_scalar_coverages(
-				const std::list<reconstructed_scalar_coverage_group_type> &velocity_vector_field_group_seq,
+				const std::list<reconstructed_scalar_coverage_group_type> &reconstructed_scalar_coverage_group,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
-				bool include_domain_point,
 				bool include_dilatation_rate,
-				bool include_domain_meta_data);
+				bool include_dilatation);
 	}
 }
 

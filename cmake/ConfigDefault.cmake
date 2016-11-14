@@ -19,8 +19,8 @@ set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate-tectonics.")
 
 # The GPlates package version.
-set(GPLATES_PACKAGE_VERSION_MAJOR "1")
-set(GPLATES_PACKAGE_VERSION_MINOR "5")
+set(GPLATES_PACKAGE_VERSION_MAJOR "2")
+set(GPLATES_PACKAGE_VERSION_MINOR "0")
 set(GPLATES_PACKAGE_VERSION_PATCH "0")
 
 # The GPlates package version.

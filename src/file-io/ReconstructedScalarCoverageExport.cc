@@ -69,6 +69,7 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		GPlatesModel::ModelInterface &model,
 		const std::vector<const File::Reference *> &active_files,
 		bool include_dilatation_rate,
+		bool include_dilatation,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -96,7 +97,8 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 				grouped_reconstructed_scalar_coverage_seq,
 				filename,
 				model,
-				include_dilatation_rate);
+				include_dilatation_rate,
+				include_dilatation);
 	}
 
 	if (export_per_input_file)
@@ -125,7 +127,8 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
 					model,
-					include_dilatation_rate);
+					include_dilatation_rate,
+					include_dilatation);
 		}
 	}
 }
@@ -139,9 +142,8 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_domain_point,
 		bool include_dilatation_rate,
-		bool include_domain_meta_data,
+		bool include_dilatation,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -172,9 +174,8 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
 				domain_point_lon_lat_format,
-				include_domain_point,
 				include_dilatation_rate,
-				include_domain_meta_data);
+				include_dilatation);
 	}
 
 	if (export_per_input_file)
@@ -206,9 +207,8 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
 					domain_point_lon_lat_format,
-					include_domain_point,
 					include_dilatation_rate,
-					include_domain_meta_data);
+					include_dilatation);
 		}
 	}
 }

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/optional.hpp>
 #include <QFile>
 #include <QStringList>
 #include <QString>
@@ -35,15 +36,16 @@
 #include "GpmlOutputVisitor.h"
 
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/DeformedFeatureGeometry.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedScalarCoverage.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
+#include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 
@@ -62,35 +64,19 @@ namespace
 	typedef std::vector<const GPlatesAppLogic::ReconstructedScalarCoverage *> reconstructed_scalar_coverage_seq_type;
 
 
-	void
-	insert_reconstructed_scalar_coverage_into_feature_collection(
-			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+	boost::optional<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
+	get_range_associated_with_reconstructed_scalar_coverage(
 			const GPlatesAppLogic::ReconstructedScalarCoverage *reconstructed_scalar_coverage,
-			bool include_dilatation_rate)
+			const GPlatesModel::PropertyName &domain_property_name)
 	{
-		// The reconstructed feature starts out as a clone of the feature associated with the scalar coverage.
-		const GPlatesModel::FeatureHandle::non_null_ptr_type reconstructed_scalar_coverage_feature =
-				reconstructed_scalar_coverage->get_feature_ref()->clone();
-		const GPlatesModel::FeatureHandle::weak_ref reconstructed_scalar_coverage_feature_ref =
-				reconstructed_scalar_coverage_feature->reference();
-
-		// The domain/range property names.
-		const GPlatesModel::PropertyName domain_property_name =
-				(*reconstructed_scalar_coverage->get_domain_property())->property_name();
-		const GPlatesModel::PropertyName range_property_name =
-				(*reconstructed_scalar_coverage->get_range_property())->property_name();
-
-		// Get all scalar coverages of the cloned feature.
+		// Get all scalar coverages of the domain feature.
 		std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
 		GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
 				scalar_coverages,
-				reconstructed_scalar_coverage_feature_ref);
+				reconstructed_scalar_coverage->get_feature_ref());
 
 		// Iterate over all domain/range coverages until we find the one associated with our
-		// reconstructed scalar coverage, then use it to get the range XML attributes to set
-		// on the new range to be added. We also remove all original coverages so that only the
-		// reconstructed scalar coverage exists in the final feature.
-		bool have_set_domain_range = false;
+		// reconstructed scalar coverage, then use it to get the range XML attributes.
 		const unsigned int num_scalar_coverages = scalar_coverages.size();
 		for (unsigned int c = 0; c < num_scalar_coverages; ++c)
 		{
@@ -98,8 +84,7 @@ namespace
 
 			// See if property names match - only need to check domain name since range name is a
 			// one-to-one mapping from domain name.
-			if (!have_set_domain_range &&
-				(*scalar_coverage.domain_property)->property_name() == domain_property_name)
+			if ((*scalar_coverage.domain_property)->property_name() == domain_property_name)
 			{
 				// Get the range property value from the range property iterator.
 				boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> range_property_value_base =
@@ -120,101 +105,196 @@ namespace
 							GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type range = *range_iter;
 							if (range->value_object_type() == reconstructed_scalar_coverage->get_scalar_type())
 							{
-								// The reconstructed range (scalars) property.
-								GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
-										GPlatesPropertyValues::GmlDataBlock::create();
-
-								// Include dilatation (strain) rate is requested.
-								if (include_dilatation_rate)
-								{
-									std::vector<double> dilatation_rates;
-
-									boost::optional<const GPlatesAppLogic::DeformedFeatureGeometry *> dfg =
-											GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-													const GPlatesAppLogic::DeformedFeatureGeometry *>(
-															reconstructed_scalar_coverage->get_reconstructed_domain_geometry().get());
-									if (dfg)
-									{
-										// Get the current (per-point) deformation strain rates.
-										const GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_strain_rate_seq_type &
-												deformation_strain_rates = dfg.get()->get_point_deformation_strain_rates();
-										dilatation_rates.reserve(deformation_strain_rates.size());
-										for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
-										{
-											dilatation_rates.push_back(deformation_strain_rates[d].get_dilatation());
-										}
-									}
-									else
-									{
-										// The RFG is not a DeformedFeatureGeometry so we have no deformation strain information.
-										// Default to zero strain.
-										dilatation_rates.resize(
-												reconstructed_scalar_coverage->get_reconstructed_point_scalar_values().size(),
-												0.0);
-									}
-
-									GPlatesPropertyValues::ValueObjectType dilatation_rate_type =
-											GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationRate");
-									GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_rate_xml_attrs;
-									GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
-									GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
-									dilatation_rate_xml_attrs.insert(std::make_pair(uom, per_second));
-
-									// Add the dilatation rate scalar values we're exporting.
-									GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_rate_range =
-											GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-													dilatation_rate_type,
-													dilatation_rate_xml_attrs,
-													dilatation_rates.begin(),
-													dilatation_rates.end());
-									reconstructed_range_property->tuple_list_push_back(dilatation_rate_range);
-								}
-
-								// Add the reconstructed scalar values we're exporting.
-								GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type reconstructed_range =
-										GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-												range->value_object_type(),
-												range->value_object_xml_attributes(),
-												reconstructed_scalar_coverage->get_reconstructed_point_scalar_values().begin(),
-												reconstructed_scalar_coverage->get_reconstructed_point_scalar_values().end());
-								reconstructed_range_property->tuple_list_push_back(reconstructed_range);
-
-								// The reconstructed domain (geometry) property.
-								const GPlatesModel::PropertyValue::non_null_ptr_type reconstructed_domain_property =
-										GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
-												reconstructed_scalar_coverage->get_reconstructed_geometry());
-
-								// Add the reconstructed domain/range properties.
-								//
-								// Use 'ModelUtils::add_property()' instead of 'FeatureHandle::add()' to ensure any
-								// necessary time-dependent wrapper is added.
-								GPlatesModel::ModelUtils::add_property(
-										reconstructed_scalar_coverage_feature_ref,
-										domain_property_name,
-										reconstructed_domain_property);
-								GPlatesModel::ModelUtils::add_property(
-										reconstructed_scalar_coverage_feature_ref,
-										range_property_name,
-										reconstructed_range_property);
-
-								have_set_domain_range = true;
-								break;
+								return range;
 							}
 						}
 					}
 				}
 			}
-
-			// Remove all original domain/range properties.
-			reconstructed_scalar_coverage_feature->remove(scalar_coverage.domain_property);
-			reconstructed_scalar_coverage_feature->remove(scalar_coverage.range_property);
 		}
+
+		return boost::none;
+	}
+
+
+	void
+	insert_reconstructed_scalar_coverage_into_feature_collection(
+			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+			const GPlatesAppLogic::ReconstructedScalarCoverage *reconstructed_scalar_coverage,
+			bool include_dilatation_rate,
+			bool include_dilatation)
+	{
+		// Create a new feature.
+		const GPlatesModel::FeatureHandle::non_null_ptr_type reconstructed_scalar_coverage_feature =
+				GPlatesModel::FeatureHandle::create(
+						reconstructed_scalar_coverage->get_feature_ref()->feature_type());
+		const GPlatesModel::FeatureHandle::weak_ref reconstructed_scalar_coverage_feature_ref =
+				reconstructed_scalar_coverage_feature->reference();
+
+		// The domain/range property names.
+		const GPlatesModel::PropertyName domain_property_name =
+				(*reconstructed_scalar_coverage->get_domain_property())->property_name();
+		const GPlatesModel::PropertyName range_property_name =
+				(*reconstructed_scalar_coverage->get_range_property())->property_name();
+
+		// Get the range in the domain feature associated with the reconstructed scalar coverage.
+		boost::optional<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
+				original_range = get_range_associated_with_reconstructed_scalar_coverage(
+						reconstructed_scalar_coverage,
+						domain_property_name);
+		if (!original_range)
+		{
+			// Should have been able to find the domain/range.
+			// Just return without adding feature to collection.
+			return;
+		}
+
+		std::vector<double> scalar_values;
+		reconstructed_scalar_coverage->get_reconstructed_point_scalar_values(scalar_values);
+
+		// The reconstructed range (scalars) property.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
+				GPlatesPropertyValues::GmlDataBlock::create();
+
+		if (include_dilatation_rate ||
+			include_dilatation)
+		{
+			boost::optional<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> dfg =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *>(
+									reconstructed_scalar_coverage->get_reconstructed_feature_geometry().get());
+
+			typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
+					point_deformation_strain_rate_seq_type;
+			typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_total_strain_seq_type
+					point_deformation_total_strain_seq_type;
+
+			point_deformation_strain_rate_seq_type deformation_strain_rates;
+			point_deformation_total_strain_seq_type deformation_strains;
+
+			if (dfg)
+			{
+				// Only retrieve strain rates and total strains if needed.
+				boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
+				boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
+				if (include_dilatation_rate)
+				{
+					deformation_strain_rates_option = deformation_strain_rates;
+				}
+				if (include_dilatation)
+				{
+					deformation_strains_option = deformation_strains;
+				}
+
+				// Get the current (per-point) geometry data.
+				dfg.get()->get_geometry_data(
+						boost::none/*points*/,
+						deformation_strain_rates_option,
+						deformation_strains_option);
+			}
+
+			if (include_dilatation_rate)
+			{
+				std::vector<double> dilatation_rates;
+
+				if (dfg)
+				{
+					dilatation_rates.reserve(deformation_strain_rates.size());
+					for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
+					{
+						dilatation_rates.push_back(deformation_strain_rates[d].get_dilatation());
+					}
+				}
+				else
+				{
+					// The RFG is not a TopologyReconstructedFeatureGeometry so we have no deformation strain information.
+					// Default to zero strain.
+					dilatation_rates.resize(scalar_values.size(), 0.0);
+				}
+
+				GPlatesPropertyValues::ValueObjectType dilatation_rate_type =
+						GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationRate");
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_rate_xml_attrs;
+				GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
+				GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
+				dilatation_rate_xml_attrs.insert(std::make_pair(uom, per_second));
+
+				// Add the dilatation rate scalar values we're exporting.
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_rate_range =
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+								dilatation_rate_type,
+								dilatation_rate_xml_attrs,
+								dilatation_rates.begin(),
+								dilatation_rates.end());
+				reconstructed_range_property->tuple_list_push_back(dilatation_rate_range);
+			}
+
+			if (include_dilatation)
+			{
+				std::vector<double> dilatations;
+
+				if (dfg)
+				{
+					dilatations.reserve(deformation_strains.size());
+					for (unsigned int d = 0; d < deformation_strains.size(); ++d)
+					{
+						dilatations.push_back(deformation_strains[d].get_dilatation());
+					}
+				}
+				else
+				{
+					// The RFG is not a TopologyReconstructedFeatureGeometry so we have no deformation strain information.
+					// Default to zero strain.
+					dilatations.resize(scalar_values.size(), 0.0);
+				}
+
+				GPlatesPropertyValues::ValueObjectType dilatation_type =
+						GPlatesPropertyValues::ValueObjectType::create_gpml("Dilatation");
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_xml_attrs;
+				// Total dilatation has no units so don't add any "uom" XML attribute.
+
+				// Add the dilatation scalar values we're exporting.
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_range =
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+								dilatation_type,
+								dilatation_xml_attrs,
+								dilatations.begin(),
+								dilatations.end());
+				reconstructed_range_property->tuple_list_push_back(dilatation_range);
+			}
+		}
+
+		// Add the reconstructed scalar values we're exporting.
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type reconstructed_range =
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+						original_range.get()->value_object_type(),
+						original_range.get()->value_object_xml_attributes(),
+						scalar_values.begin(),
+						scalar_values.end());
+		reconstructed_range_property->tuple_list_push_back(reconstructed_range);
+
+
+		// The reconstructed domain (geometry) property.
+		const GPlatesModel::PropertyValue::non_null_ptr_type reconstructed_domain_property =
+				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+						reconstructed_scalar_coverage->get_reconstructed_geometry());
+
+
+		// Add the reconstructed domain/range properties.
+		//
+		// Use 'ModelUtils::add_property()' instead of 'FeatureHandle::add()' to ensure any
+		// necessary time-dependent wrapper is added.
+		GPlatesModel::ModelUtils::add_property(
+				reconstructed_scalar_coverage_feature_ref,
+				domain_property_name,
+				reconstructed_domain_property);
+		GPlatesModel::ModelUtils::add_property(
+				reconstructed_scalar_coverage_feature_ref,
+				range_property_name,
+				reconstructed_range_property);
 
 		// Finally add the feature to the feature collection.
-		if (have_set_domain_range)
-		{
-			feature_collection->add(reconstructed_scalar_coverage_feature);
-		}
+		feature_collection->add(reconstructed_scalar_coverage_feature);
 	}
 }
 
@@ -224,7 +304,8 @@ GPlatesFileIO::GpmlFormatReconstructedScalarCoverageExport::export_reconstructed
 		const std::list<reconstructed_scalar_coverage_group_type> &reconstructed_scalar_coverage_group_seq,
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,
-		bool include_dilatation_rate)
+		bool include_dilatation_rate,
+		bool include_dilatation)
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
@@ -258,7 +339,11 @@ GPlatesFileIO::GpmlFormatReconstructedScalarCoverageExport::export_reconstructed
 		{
 			const GPlatesAppLogic::ReconstructedScalarCoverage *rsc = *rsc_iter;
 
-			insert_reconstructed_scalar_coverage_into_feature_collection(feature_collection_ref, rsc, include_dilatation_rate);
+			insert_reconstructed_scalar_coverage_into_feature_collection(
+					feature_collection_ref,
+					rsc,
+					include_dilatation_rate,
+					include_dilatation);
 		}
 	}
 
