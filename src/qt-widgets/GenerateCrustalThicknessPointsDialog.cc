@@ -551,9 +551,9 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::display_point_density_sp
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geometry(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom,
 		const double &reconstruction_time,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 {
 	const GPlatesModel::integer_plate_id_type reconstruction_plate_id =
 			d_plate_id_widget->create_integer_plate_id_from_widget();
@@ -566,7 +566,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geom
 	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_outputs;
 	GPlatesAppLogic::LayerProxyUtils::find_reconstruct_layer_outputs_of_feature_collection(
 			reconstruct_layer_outputs,
-			feature_collection,
+			feature_collection_ref,
 			d_application_state.get_reconstruct_graph());
 
 	// If there's no reconstruct layers then use the default reconstruction tree creator.
@@ -584,7 +584,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geom
 
 	// Reverse reconstruct by plate ID.
 	return GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-				geometry,
+				geom,
 				reconstruction_plate_id,
 				*reconstruction_tree,
 				true/*reverse_reconstruct*/);

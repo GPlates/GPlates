@@ -138,7 +138,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reverse_reconstruct_geometry(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom,
 				const double &reconstruction_time,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
