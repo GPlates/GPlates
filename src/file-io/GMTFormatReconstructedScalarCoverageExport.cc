@@ -40,12 +40,18 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "file-io/FileInfo.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "maths/MathsUtils.h"
+
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/XsString.h"
 
 #include "utils/StringFormattingUtils.h"
 
@@ -175,6 +181,82 @@ namespace GPlatesFileIO
 				//
 				// Print the feature header.
 				//
+
+				// Print the feature's name.
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> gml_name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								reconstructed_scalar_coverage.get_feature_ref(),
+								GPlatesModel::PropertyName::create_gml("name"));
+				if (gml_name)
+				{
+					output_stream << "> Name=" << gml_name.get()->value().get().qstring() << "\n";
+				}
+				else
+				{
+					output_stream << "> Name=\n";
+				}
+
+				// Print the feature's time period.
+				boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+								reconstructed_scalar_coverage.get_feature_ref(),
+								GPlatesModel::PropertyName::create_gml("validTime"));
+				if (gml_valid_time)
+				{
+					const GPlatesPropertyValues::GeoTimeInstant &begin_time = gml_valid_time.get()->begin()->time_position();
+					const GPlatesPropertyValues::GeoTimeInstant &end_time = gml_valid_time.get()->end()->time_position();
+
+					output_stream << "> ValidTime=(";
+					if (begin_time.is_real())
+					{
+						output_stream << begin_time.value();
+					}
+					else if (begin_time.is_distant_past())
+					{
+						output_stream << "distant past";
+					}
+					else if (begin_time.is_distant_future())
+					{
+						output_stream << "distant future";
+					}
+					output_stream << ", ";
+					if (end_time.is_real())
+					{
+						output_stream << end_time.value();
+					}
+					else if (end_time.is_distant_past())
+					{
+						output_stream << "distant past";
+					}
+					else if (end_time.is_distant_future())
+					{
+						output_stream << "distant future";
+					}
+					output_stream << ")\n";
+				}
+				else
+				{
+					output_stream << "> ValidTime=(distant past, distant future)\n";
+				}
+
+				// Print the feature's reconstruction plate ID.
+				boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_reconstruction_plate_id =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+								reconstructed_scalar_coverage.get_feature_ref(),
+								GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+				if (gpml_reconstruction_plate_id)
+				{
+					output_stream << "> ReconstructionPlateId=" << gpml_reconstruction_plate_id.get()->value() << "\n";
+				}
+				else
+				{
+					output_stream << "> ReconstructionPlateId=0\n";
+				}
+
+				// Print feature ID.
+				output_stream
+						<< "> FeatureID="
+						<< reconstructed_scalar_coverage.get_feature_ref()->feature_id().get().qstring() << "\n";
 
 				if (dfg)
 				{
