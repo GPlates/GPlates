@@ -39,7 +39,13 @@ namespace GPlatesMaths
 		/**
 		 * Generate a uniform distribution of points inside the specified polygon.
 		 *
-		 * The uniform distribution is based on the Hierarchical Triangular Mesh.
+		 * The uniform distribution is based on a subdivided Rhombic Triacontahedron.
+		 * Points at a @a point_density_level of zero are spaced roughly 40 degrees apart.
+		 * Each increment of @a point_density_level halves the spacing.
+		 *
+		 * If @a point_random_offset is specified then it must be in the range [0, 1] with 0
+		 * meaning no random offset, and 1 meaning full random offset whereby each point is randomly
+		 * offset within a circle of radius half the spacing between points.
 		 */
 		void
 		create_uniform_points_in_polygon(

@@ -35,8 +35,12 @@
 #include "AngularExtent.h"
 #include "GeometryDistance.h"
 #include "MathsUtils.h"
+#include "Real.h"
 #include "Rotation.h"
 #include "SphericalSubdivision.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
@@ -107,6 +111,7 @@ namespace GPlatesMaths
 					const PolygonOnSphere::non_null_ptr_to_const_type quad_poly =
 							PolygonOnSphere::create_on_heap(quad_vertices, quad_vertices + 4);
 
+					// The distance threshold accounts for the maximum random offset possible.
 					const AngularDistance distance = minimum_distance(
 							d_polygon,
 							*quad_poly,
@@ -114,16 +119,24 @@ namespace GPlatesMaths
 							false/*polygon2_interior_is_solid*/,
 							d_distance_threshold);
 
+					// See if the quad face and polygon are further apart than the distance threshold.
 					if (distance == AngularDistance::PI)
 					{
+						// Polygons did not intersect.
+						// One might be completely inside the other.
 						if (d_polygon.is_point_in_polygon(
 								quad_poly->first_exterior_ring_vertex()/*arbitrary*/,
 								PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 						{
+							// Quad face (plus maximum random offset distance) is completely inside the polygon.
+							// Hence all child quad faces will be too, so no need to test them.
 							children_recursion_context.test_against_polygon = false;
 						}
 						else if (!quad_poly->is_point_in_polygon(d_polygon.first_exterior_ring_vertex()/*arbitrary*/))
 						{
+							// Quad face and polygon do not overlap, and are further apart than the distance threshold,
+							// so we know that none of the points in the quad face (even with a random offset - which is
+							// smaller than the distance threshold) will be inside the polygon.
 							return;
 						}
 					}
@@ -152,6 +165,7 @@ namespace GPlatesMaths
 						// Randomly offset the vertex if requested.
 						if (d_random_offset_point_generator)
 						{
+							// The maximum radius offset is half the edge length of the quad.
 							const double offset_radius_in_radians = 0.5 * std::acos(
 									dot(quad.vertex0, quad.vertex1).dval());
 
@@ -159,8 +173,10 @@ namespace GPlatesMaths
 									d_random_offset_point_generator->get_random_offset_point(
 											quad_vertices[v],
 											offset_radius_in_radians,
+											// The random angle *around* the point is aligned with the quad direction...
 											Vector3D(quad.vertex0) - Vector3D(quad.vertex1));
 
+							// Make sure *offset* point (ie, after random offset) is inside polygon.
 							if (recursion_context.test_against_polygon &&
 								!d_polygon.is_point_in_polygon(
 									random_offset_point,
@@ -174,6 +190,7 @@ namespace GPlatesMaths
 						}
 						else
 						{
+							// Make sure *original* point is inside polygon.
 							if (recursion_context.test_against_polygon &&
 								!d_polygon.is_point_in_polygon(
 									quad_vertices[v],
@@ -282,7 +299,12 @@ GPlatesMaths::GeneratePoints::create_uniform_points_in_polygon(
 		unsigned int point_density_level,
 		const double &point_random_offset)
 {
-	// The side of a level 0 quad face is about 40 degrees (let's assume 80 degrees to be safe).
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			Real(point_random_offset) >= 0.0 && Real(point_random_offset) <= 1.0,
+			GPLATES_ASSERTION_SOURCE);
+
+	// The side of a level 0 quad face of a Rhombic Triacontahedron is about 40 degrees
+	// (let's assume 80 degrees to be safe).
 	// The maximum radius of a random offset circle is half that length.
 	// And each subdivision level reduces that by about a half.
 	const AngularExtent distance_threshold = AngularExtent::create_from_angle(
