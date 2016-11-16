@@ -2979,8 +2979,7 @@ namespace GPlatesScribe
 		bool
 		transcribe_class_name(
 				const std::type_info *save_class_type_info,
-				boost::optional<
-						boost::optional<const ExportClassType &> &> return_export_class_type = boost::none);
+				boost::optional<const ExportClassType &> &export_class_type);
 
 		/**
 		 * Obtain and transcribe the class name for the object pointed to by @a object_ptr if
