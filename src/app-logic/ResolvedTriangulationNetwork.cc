@@ -570,7 +570,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 		if (rigid_block_ptr)
 		{
 			// We already know point is in a rigid block so use it.
-			rigid_block = *rigid_block_ptr;
+			rigid_block = rigid_block_ptr->get();
 		}
 	}
 	else
@@ -772,7 +772,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 		if (rigid_block_ptr)
 		{
 			// We already know point is in a rigid block so use it.
-			rigid_block = *rigid_block_ptr;
+			rigid_block = rigid_block_ptr->get();
 		}
 	}
 	else
@@ -897,7 +897,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 		if (rigid_block_ptr)
 		{
 			// We already know point is in a rigid block so use it.
-			rigid_block = *rigid_block_ptr;
+			rigid_block = rigid_block_ptr->get();
 		}
 	}
 	else

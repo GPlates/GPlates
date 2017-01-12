@@ -396,10 +396,8 @@ GPlatesScribe::Scribe::transcribe_object_id(
 bool
 GPlatesScribe::Scribe::transcribe_class_name(
 		const std::type_info *save_class_type_info,
-		boost::optional<
-				boost::optional<const ExportClassType &> &> return_export_class_type)
+		boost::optional<const ExportClassType &> &export_class_type)
 {
-	boost::optional<const ExportClassType &> export_class_type;
 	std::string class_name;
 
 	if (is_saving())
@@ -456,12 +454,6 @@ GPlatesScribe::Scribe::transcribe_class_name(
 
 			return false;
 		}
-	}
-
-	// Return to caller if requested.
-	if (return_export_class_type)
-	{
-		return_export_class_type.get() = export_class_type;
 	}
 
 	set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_SUCCESS);

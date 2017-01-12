@@ -520,10 +520,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_geom =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_strain_marker_symbol(
 							strain_marker_centre,
-							d_render_params.strain_accumulation_scale, // size
+							1, // size
 							// Scale the strain accumulation...
-							point_deformation_total_strain_principle.principal1, // scale_x
-							point_deformation_total_strain_principle.principal2, // scale_y
+							d_render_params.strain_accumulation_scale * point_deformation_total_strain_principle.principal1, // scale_x
+							d_render_params.strain_accumulation_scale * point_deformation_total_strain_principle.principal2, // scale_y
 							point_deformation_total_strain.get_strain_principal_angle()); // orientation angle
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and

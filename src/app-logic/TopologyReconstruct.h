@@ -213,13 +213,13 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time) const;
 
 			/**
-			 * Returns the geometry as a multi-point at the specified time.
+			 * Returns the geometry as a multi-point (or a single point) at the specified time.
 			 *
 			 * Note: The returned geometry consists of active points only.
 			 *
 			 * Returns none if @a is_valid returns false.
 			 */
-			boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 			get_geometry(
 					const double &reconstruction_time) const;
 

@@ -2033,19 +2033,58 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_valid(
 }
 
 
-boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry(
 		const double &reconstruction_time) const
 {
-	std::vector<GPlatesMaths::PointOnSphere> points;
-	if (!get_geometry_data(reconstruction_time, points))
+	boost::optional<GeometrySample::non_null_ptr_type> geometry_sample = get_geometry_sample(reconstruction_time);
+	if (!geometry_sample)
 	{
 		// The geometry is not valid/active at the reconstruction time.
 		return boost::none;
 	}
 
+	const std::vector<GeometryPoint *> &geometry_points = geometry_sample.get()->get_geometry_points(d_accessing_strain_rates);
+	const unsigned int num_geometry_points = geometry_points.size();
+
+	// See if original geometry was a point.
+	if (num_geometry_points == 1)
+	{
+		if (geometry_points.front() == NULL)
+		{
+			// The point geometry is not valid/active at the reconstruction time.
+			// Note that the sole point should not be inactive because otherwise the 'get_geometry_sample()'
+			// call above would have failed.
+			return boost::none;
+		}
+
+		// Return as a PointOnSphere.
+		return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
+				GPlatesMaths::PointOnSphere::create_on_heap(geometry_points.front()->position));
+	}
+	// ...else return geometry as a multipoint...
+
+	std::vector<GPlatesMaths::PointOnSphere> points;
+	points.reserve(num_geometry_points);
+
+	// Get the active geometry points.
+	// Note that they should not all be inactive because otherwise the 'get_geometry_sample()' call above would have failed.
+	for (unsigned int geometry_point_index = 0; geometry_point_index < num_geometry_points; ++geometry_point_index)
+	{
+		GeometryPoint *geometry_point = geometry_points[geometry_point_index];
+
+		// Ignore geometry point if it's not active.
+		if (geometry_point == NULL)
+		{
+			continue;
+		}
+
+		points.push_back(GPlatesMaths::PointOnSphere(geometry_point->position));
+	}
+
 	// Return as a MultiPointOnSphere.
-	return GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
+	return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
+			GPlatesMaths::MultiPointOnSphere::create_on_heap(points));
 }
 
 
