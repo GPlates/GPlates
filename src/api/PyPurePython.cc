@@ -77,7 +77,11 @@ namespace
 		bp::object eval_object = bp::object(bp::handle<>(
 				// Returns a new reference so no need for 'bp::borrowed'...
 				PyEval_EvalCode(
+#if !defined(GPLATES_PYTHON_3)
 						reinterpret_cast<PyCodeObject *>(compiled_object.ptr()),
+#else
+                        reinterpret_cast<PyObject *>(compiled_object.ptr()),
+#endif 
 						pygplates_globals.ptr(),
 						pygplates_globals.ptr())));
 #endif
