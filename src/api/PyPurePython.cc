@@ -58,15 +58,19 @@ namespace
 		// Read the entire file.
 		const QByteArray python_code = python_code_file.readAll();
 
+#ifdef GPLATES_PYTHON_3
+        bp::object main = bp::import("__main__");
+        bp::object global(main.attr("__dict__"));
+#endif
 		// Essentially means the python code will get imported into the current module/scope (which is 'pygplates').
 		bp::object pygplates_globals = bp::scope().attr("__dict__");
-
 		// These two code segments essentially do the same thing.
 		// The difference is the latter includes the filename in the exception traceback output
 		// which is helpful when locating errors in the pure python API or errors in API usage
 		// by python users (that only manifests inside the pure python API implementation).
 #if 0
-		bp::exec(python_code.constData(), pygplates_globals);
+        bp::exec(python_code.constData(), pygplates_globals); 
+		//bp::exec(python_code.constData(), global,pygplates_globals);//python3
 #else
 		bp::object compiled_object = bp::object(bp::handle<>(
 				// Returns a new reference so no need for 'bp::borrowed'...
@@ -77,12 +81,13 @@ namespace
 		bp::object eval_object = bp::object(bp::handle<>(
 				// Returns a new reference so no need for 'bp::borrowed'...
 				PyEval_EvalCode(
-#if !defined(GPLATES_PYTHON_3)
+#ifndef GPLATES_PYTHON_3 
 						reinterpret_cast<PyCodeObject *>(compiled_object.ptr()),
-#else
+                        pygplates_globals.ptr(),
+#else //GPLATES_PYTHON_3
                         reinterpret_cast<PyObject *>(compiled_object.ptr()),
-#endif 
-						pygplates_globals.ptr(),
+                        global.ptr(),
+#endif //GPLATES_PYTHON_3
 						pygplates_globals.ptr())));
 #endif
 	}

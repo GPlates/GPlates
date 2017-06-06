@@ -335,9 +335,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
-#ifndef GPLATES_PYTHON_3
     export_pure_python_api(); //cause exception in python 3
-#endif
 }
 
 #else
