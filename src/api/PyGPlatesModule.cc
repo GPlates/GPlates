@@ -29,7 +29,6 @@
 
 #include "PyGPlatesModule.h"
 
-
 #if !defined(GPLATES_NO_PYTHON)
 
 // Exceptions
@@ -142,12 +141,15 @@ export_cpp_python_api()
 #endif	
 	// utils namespace
 	export_earth();
-	export_strings();
+    export_strings();
 
 	// api directory
-	export_version(); // Must be called after 'export_strings()'.
+#ifndef GPLATES_PYTHON_3
+    export_version(); // Must be called after 'export_strings()'.
+    //cause exception in python3
+#endif
 
-	// maths namespace
+    // maths namespace
 	export_float(); // Must be called before 'export_geometries_on_sphere()'.
 	export_real(); // Must be called before 'export_geometries_on_sphere()'.
 	export_finite_rotation();
@@ -161,8 +163,8 @@ export_cpp_python_api()
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();
-
-	// model namespace
+	
+    // model namespace
 	export_geo_time_instant(); // Must be called before 'export_feature()'.
 	export_ids(); // Must be called before 'export_feature()'.
 	export_information_model(); // Must be called before 'export_feature()'.
@@ -206,10 +208,16 @@ namespace
 
 	void
 	cache_builtin_attributes()
-	{
-		builtin_hash = pygplates_module.attr("__builtins__").attr("hash");
-		builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
-		builtin_next = pygplates_module.attr("__builtins__").attr("next");
+    {
+#ifndef GPLATES_PYTHON_3
+        builtin_hash = pygplates_module.attr("__builtins__").attr("hash");
+        builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
+        builtin_next = pygplates_module.attr("__builtins__").attr("next");
+#else
+		builtin_hash = boost::python::scope().attr("builtins").attr("hash");
+		builtin_iter = boost::python::scope().attr("builtins").attr("iter");
+		builtin_next = boost::python::scope().attr("builtins").attr("next");
+#endif
 	}
 }
 
@@ -257,8 +265,9 @@ BOOST_PYTHON_MODULE(pygplates)
 	}
 
 	// The 'pygplates' module is the current scope.
-	pygplates_module = bp::scope();
-
+#ifndef GPLATES_PYTHON_3
+    pygplates_module = bp::scope();
+#endif
 
 	//
 	// Specify the 'pygplate' module's docstring options.
@@ -287,7 +296,11 @@ BOOST_PYTHON_MODULE(pygplates)
 			false/*show_cpp_signatures*/);
 
 	// Set the 'pygplates' module docstring.
-	pygplates_module.attr("__doc__") =
+#ifndef GPLATES_PYTHON_3
+    pygplates_module.attr("__doc__") =
+#else
+    bp::scope().attr("__doc__") =
+#endif
 			"**GPlates Python Application Programming Interface (API)**\n"
 			"\n"
 			"  A Python module consisting of classes and functions providing access to "
@@ -309,9 +322,12 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
-	pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
-
-	// Cache some commonly used built-in attributes.
+#ifndef GPLATES_PYTHON_3    
+    pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
+#else
+    bp::scope().attr("__dict__")["builtins"] = bp::import("builtins");
+#endif
+    // Cache some commonly used built-in attributes.
 	// Note: This must be done *after* initialising 'pygplates_module' and injecting the __builtin__ module.
 	cache_builtin_attributes();
 
@@ -322,7 +338,9 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
-	export_pure_python_api();
+#ifndef GPLATES_PYTHON_3
+    export_pure_python_api(); //cause exception in python 3
+#endif
 }
 
 #else
