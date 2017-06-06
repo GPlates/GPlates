@@ -144,10 +144,7 @@ export_cpp_python_api()
     export_strings();
 
 	// api directory
-#ifndef GPLATES_PYTHON_3
     export_version(); // Must be called after 'export_strings()'.
-    //cause exception in python3
-#endif
 
     // maths namespace
 	export_float(); // Must be called before 'export_geometries_on_sphere()'.
