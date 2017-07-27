@@ -24,7 +24,11 @@
  */
 
 #include <ostream>
+
 #include "UnicodeString.h"
+
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
 
 
 boost::int32_t
@@ -100,6 +104,19 @@ GPlatesUtils::UnicodeString::indexOf(
 	// in terms of
 	// http://doc.qt.nokia.com/4.4/qstring.html#indexOf
 	return qstring().indexOf(text.qstring(), start);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUtils::UnicodeString::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	//
+	// Using transcribe delegate protocol so that UnicodeString and QString
+	// can be used interchangeably (ie, are transcription compatible).
+	//
+	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_qstring);
 }
 
 

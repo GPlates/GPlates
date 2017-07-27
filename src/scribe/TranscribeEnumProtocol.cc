@@ -56,7 +56,7 @@ GPlatesScribe::EnumImplementation::transcribe_enum_name(
 		const std::string &enum_name)
 {
 	// Transcribe the enumeration value's string name.
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, enum_name, "value", DONT_TRACK))
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, enum_name, "value"))
 	{
 		return scribe.get_transcribe_result();
 	}

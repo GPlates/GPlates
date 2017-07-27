@@ -24,9 +24,11 @@
  */
 
 #include <algorithm>
+#include <map>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 #include <QString>
 
@@ -37,13 +39,17 @@
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
+#include "ReconstructMethodRegistry.h"
+#include "ScalarCoverageFeatureProperties.h"
 
-#include "feature-visitors/GeometryRotator.h"
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
+#include "maths/GeometryDistance.h"
+#include "maths/MathsUtils.h"
 
 #include "model/Gpgim.h"
 #include "model/ModelUtils.h"
@@ -53,6 +59,7 @@
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GmlDataBlock.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -60,353 +67,752 @@
 #include "property-values/GmlPolygon.h"
 
 
-namespace
+namespace GPlatesAppLogic
 {
-	/**
-	 * Visit a feature property and, if it contains geometry, partitions it
-	 * using partitioning polygons and stores results for later retrieval.
-	 */
-	class PartitionFeatureGeometryProperties :
-			public GPlatesModel::ConstFeatureVisitor
+	namespace PartitionFeatureUtils
 	{
-	public:
-		PartitionFeatureGeometryProperties(
-				const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter) :
-			d_cookie_cut_geometry(geometry_cookie_cutter)
+		namespace
 		{
-			// The partitioning results will go here.
-			d_partition_results.reset(
-					new GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature());
-		}
-
-
-		boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature>
-		get_partitioned_feature_geometries() const
-		{
-			return d_partition_results;
-		}
-
-	protected:
-		virtual
-		void
-		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string)
-		{
-			partition_geometry(gml_line_string.get_polyline());
-		}
-
-
-		virtual
-		void
-		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
-		{
-			partition_geometry(gml_multi_point.get_multipoint());
-		}
-
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
-		{
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
-		}
-
-
-		virtual
-		void
-		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point)
-		{
-			partition_geometry(gml_point.get_point());
-		}
-
-
-		virtual
-		void
-		visit_gml_polygon(
-				const GPlatesPropertyValues::GmlPolygon &gml_polygon)
-		{
-			// We'll partition exterior and the interior polygons into this.
-			GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &
-					partition_geometry_property = add_geometry_property();
-
-			// Partition the exterior polygon.
-			partition_geometry(gml_polygon.get_exterior(), partition_geometry_property);
-
-			// Iterate over the interior polygons.
-			//
-			// FIXME: We are losing the distinction between exterior polygon and interior
-			// polygons because when it comes time to build the GmlPolygon (which only
-			// happens if we're partitioning geometry as opposed to assigning the entire
-			// geometry property to a plate) then if there are interior polygons that
-			// are fully inside a plate boundary they will be added to a feature as
-			// an exterior polygon.
-			// For now this is adequate since at least the user don't lose there
-			// interior polygons (they just can reappear as exterior polygons).
-			const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
-			GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_iter = interiors.begin();
-			GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_end = interiors.end();
-			for ( ; interior_iter != interior_end; ++interior_iter)
+			/**
+			 * Visit a feature property and, if it contains geometry, partitions it
+			 * using partitioning polygons and stores results for later retrieval.
+			 */
+			class PartitionFeatureGeometryProperties :
+					// TODO: Change this to ConstFeatureVisitor once the new bubble-up model
+					// (that doesn't clone non-const visitors) is finished...
+					public GPlatesModel::FeatureVisitor
 			{
-				const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
+			public:
 
-				// Partition interior polygon.
-				partition_geometry(interior_polygon, partition_geometry_property);
+				PartitionFeatureGeometryProperties(
+						const GeometryCookieCutter &geometry_cookie_cutter,
+						const std::vector<ScalarCoverageFeatureProperties::Coverage> &geometry_coverages,
+						boost::optional< std::vector<GPlatesModel::FeatureHandle::iterator> &> partitioned_properties) :
+					d_cookie_cut_geometry(geometry_cookie_cutter),
+					d_geometry_coverages(geometry_coverages),
+					d_partitioned_properties(partitioned_properties)
+				{
+					// The partitioning results will go here.
+					d_partition_results.reset(new PartitionedFeature());
+				}
+
+
+				boost::shared_ptr<const PartitionedFeature>
+				get_partitioned_feature_geometries() const
+				{
+					return d_partition_results;
+				}
+
+			protected:
+				virtual
+				void
+				visit_gml_line_string(
+						gml_line_string_type &gml_line_string)
+				{
+					add_geometry(gml_line_string.get_polyline());
+				}
+
+
+				virtual
+				void
+				visit_gml_multi_point(
+						gml_multi_point_type &gml_multi_point)
+				{
+					add_geometry(gml_multi_point.get_multipoint());
+				}
+
+
+				virtual
+				void
+				visit_gml_orientable_curve(
+						gml_orientable_curve_type &gml_orientable_curve)
+				{
+					gml_orientable_curve.base_curve()->accept_visitor(*this);
+				}
+
+
+				virtual
+				void
+				visit_gml_point(
+						gml_point_type &gml_point)
+				{
+					add_geometry(gml_point.get_point());
+				}
+
+
+				virtual
+				void
+				visit_gml_polygon(
+						gml_polygon_type &gml_polygon)
+				{
+					add_geometry(gml_polygon.get_polygon());
+				}
+
+
+				virtual
+				void
+				visit_gpml_constant_value(
+						gpml_constant_value_type &gpml_constant_value)
+				{
+					gpml_constant_value.value()->accept_visitor(*this);
+				}
+
+			private:
+				//! Does the cookie-cutting.
+				const GeometryCookieCutter &d_cookie_cut_geometry;
+
+				//! Scalar coverages associated with geometry properties.
+				std::vector<ScalarCoverageFeatureProperties::Coverage> d_geometry_coverages;
+
+				//! Optional sequence of partitioned properties (geometry domains and associated ranges) to return to caller.
+				boost::optional< std::vector<GPlatesModel::FeatureHandle::iterator> &> d_partitioned_properties;
+
+				//! The results of the cookie-cutting.
+				boost::shared_ptr<PartitionedFeature> d_partition_results;
+
+
+				/**
+				 * Distance threshold used when determining interpolated scalar values for points in
+				 * partitioned geometries that don't correspond to any point in original geometry.
+				 */
+				static const GPlatesMaths::AngularExtent POLY_GEOMETRY_DISTANCE_THRESHOLD;
+
+
+				/**
+				 * Typedef for mapping points in the geometry domain to indices into geometry domain/range.
+				 *
+				 * NOTE: Since 'GPlatesMaths::PointOnSphereMapPredicate' uses an epsilon test it's
+				 * possible that two points close enough together will map to the same map entry.
+				 * This means we lose a mapping to one of the point's associated range.
+				 * TODO: We should build in a mapping into the geometry partitioning process itself
+				 * (eg, something similar to DateLineWrapper which provides information mapping the
+				 * points in the wrapped/clipped geometries back to the original unwrapped geometries).
+				 */
+				typedef std::map<
+						GPlatesMaths::PointOnSphere,
+						unsigned int/*point index*/,
+						GPlatesMaths::PointOnSphereMapPredicate>
+								domain_to_range_map_type;
+
+				//! Contains the geometry range and information to map the associated domain to this range.
+				struct Range
+				{
+					// Number of scalars in range should match number of points in domain.
+					// This should be the case but we'll double-check in case it's not.
+					static
+					bool
+					range_matches_domain(
+							const geometry_domain_type &domain_,
+							const geometry_range_type &range_)
+					{
+						// Should have at least something in the range to compare with.
+						if (range_.empty())
+						{
+							return false;
+						}
+
+						const unsigned int num_domain_points = GeometryUtils::get_num_geometry_exterior_points(*domain_);
+						for (unsigned int s = 0; s < range_.size(); ++s)
+						{
+							if (num_domain_points != range_[s]->get_coordinates().size())
+							{
+								return false;
+							}
+						}
+
+						return true;
+					}
+
+					Range(
+							const geometry_domain_type &domain_,
+							const geometry_range_type &range_) :
+						domain_type(GPlatesMaths::GeometryType::NONE),
+						range(range_)
+					{
+						// Get the geometry domain points.
+						// We're getting the *exterior* points because that's what the scalar coverage
+						// extraction code currently does.
+						//
+						// TODO: Support polygons with interior holes (ie, allow scalar values on
+						// the points in the polygon's interior rings).
+						domain_type = GeometryUtils::get_geometry_exterior_points(*domain_, domain_points);
+
+						// Map the geometry domain points to their indices into geometry domain/range.
+						const unsigned int num_domain_points = domain_points.size();
+						for (unsigned int n = 0; n < num_domain_points; ++n)
+						{
+							domain_to_range_map.insert(std::make_pair(domain_points[n], n));
+						}
+					}
+
+					GPlatesMaths::GeometryType::Value domain_type;
+					std::vector<GPlatesMaths::PointOnSphere> domain_points;
+					domain_to_range_map_type domain_to_range_map;
+					geometry_range_type range;
+				};
+
+
+				/**
+				 * Partition the geometry @a geometry of the current geometry property.
+				 */
+				void
+				add_geometry(
+						const geometry_domain_type &geometry_domain)
+				{
+					// The geometry domain may also have a range (scalar coverage).
+					boost::optional<Range> geometry_range;
+
+					// Create a new partition entry for the current geometry property.
+					PartitionedFeature::GeometryProperty &partitioned_geometry_property =
+							get_geometry_property(geometry_domain, geometry_range);
+
+					// Partition the current geometry property and store results.
+					partition_geometry(geometry_domain, geometry_range, partitioned_geometry_property);
+				}
+
+				PartitionedFeature::GeometryProperty &
+				get_geometry_property(
+						const geometry_domain_type &geometry_domain,
+						boost::optional<Range> &geometry_range)
+				{
+					// Property name and iterator of current geometry property.
+					const GPlatesModel::PropertyName &geometry_domain_property_name = *current_top_level_propname();
+					const feature_iterator_type &geometry_domain_property_iterator = *current_top_level_propiter();
+
+					// If caller requests partitioned properties.
+					if (d_partitioned_properties)
+					{
+						d_partitioned_properties->push_back(geometry_domain_property_iterator);
+					}
+
+					// Create a shallow clone of the current geometry property.
+					// This is quite quick to create compared to the deep clone since it's a bunch
+					// of intrusive pointer copies.
+					// This might be used by the caller to move a geometry property between features.
+					// For example, if this geometry property requires a different plate id.
+					const GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_domain_property_clone =
+							(*geometry_domain_property_iterator)->clone();
+
+					boost::optional<GPlatesModel::PropertyName> geometry_range_property_name;
+					boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> geometry_range_property_clone;
+
+					// See if there's a scalar coverage range associated with the geometry domain.
+					const unsigned int num_geometry_coverages = d_geometry_coverages.size();
+					for (unsigned int n = 0; n < num_geometry_coverages; ++n)
+					{
+						const ScalarCoverageFeatureProperties::Coverage &coverage = d_geometry_coverages[n];
+
+						if (coverage.domain_property == geometry_domain_property_iterator)
+						{
+							// Number of scalars in range should match number of points in domain.
+							// This should be the case but we'll double-check in case it's not.
+							if (Range::range_matches_domain(geometry_domain, coverage.range))
+							{
+								geometry_range = boost::in_place(geometry_domain, coverage.range);
+							}
+
+							geometry_range_property_name = (*coverage.range_property)->get_property_name();
+							// Create a shallow clone of the range property.
+							geometry_range_property_clone = (*coverage.range_property)->clone();
+
+							// If caller requests partitioned properties.
+							if (d_partitioned_properties)
+							{
+								d_partitioned_properties->push_back(coverage.range_property);
+							}
+
+							break;
+						}
+					}
+
+					// Create a new entry for the current geometry property
+					// (or return existing entry based on domain property name).
+					std::pair<PartitionedFeature::partitioned_geometry_property_map_type::iterator, bool> inserted =
+							d_partition_results->partitioned_geometry_properties.insert(
+									PartitionedFeature::partitioned_geometry_property_map_type::value_type(
+											geometry_domain_property_name,
+											PartitionedFeature::GeometryProperty(geometry_domain_property_name)));
+
+					// Get a reference to the entry just inserted (or existing entry).
+					PartitionedFeature::GeometryProperty &geometry_property = inserted.first->second;
+					if (inserted.second)
+					{
+						geometry_property.property_clones.push_back(
+								PartitionedFeature::GeometryPropertyClone(
+										geometry_domain_property_clone,
+										geometry_range_property_clone));
+					}
+
+					// If there's a range for the current domain then add the range property name.
+					//
+					// Note that it's possible some domains will have no associated range while
+					// other domains (with the same domain property name) will have associated ranges.
+					// As long as one of the domains has an associated range then we'll set the range name.
+					if (geometry_range_property_name)
+					{
+						geometry_property.range_property_name = geometry_range_property_name;
+					}
+
+					return geometry_property;
+				}
+
+				void
+				partition_geometry(
+						const geometry_domain_type &geometry_domain,
+						const boost::optional<Range> &geometry_range,
+						PartitionedFeature::GeometryProperty &partitioned_geometry_property)
+				{
+					// Partition the current geometry property and store results.
+					GeometryCookieCutter::partition_seq_type partitioned_inside_domains;
+					GeometryCookieCutter::partitioned_geometry_seq_type partitioned_outside_domains;
+					d_cookie_cut_geometry.partition_geometry(
+							geometry_domain,
+							partitioned_inside_domains,
+							partitioned_outside_domains);
+
+					// Iterate over the partitioned polygons and add the partitioned *inside* geometries.
+					GeometryCookieCutter::partition_seq_type::const_iterator partitioned_inside_domains_iter =
+							partitioned_inside_domains.begin();
+					GeometryCookieCutter::partition_seq_type::const_iterator partitioned_inside_domains_end =
+							partitioned_inside_domains.end();
+					for ( ; partitioned_inside_domains_iter != partitioned_inside_domains_end; ++partitioned_inside_domains_iter)
+					{
+						const GeometryCookieCutter::Partition &partitioned_inside_domain = *partitioned_inside_domains_iter;
+
+						partitioned_geometry_property.partitioned_inside_geometries.push_back(
+								PartitionedFeature::Partition(partitioned_inside_domain.reconstruction_geometry));
+						PartitionedFeature::Partition &partition =
+								partitioned_geometry_property.partitioned_inside_geometries.back();
+
+						partition_geometries(
+								geometry_domain,
+								geometry_range,
+								partitioned_inside_domain.partitioned_geometries,
+								partition.partitioned_geometries);
+					}
+
+					// Add the partitioned *outside* geometries.
+					partition_geometries(
+							geometry_domain,
+							geometry_range,
+							partitioned_outside_domains,
+							partitioned_geometry_property.partitioned_outside_geometries);
+				}
+
+				void
+				partition_geometries(
+						const geometry_domain_type &geometry_domain,
+						const boost::optional<Range> &geometry_range,
+						const GeometryCookieCutter::partitioned_geometry_seq_type &partitioned_domains,
+						PartitionedFeature::partitioned_geometry_seq_type &partitioned_geometries)
+				{
+					GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator
+							partitioned_domains_iter = partitioned_domains.begin();
+					GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator
+							partitioned_domains_end = partitioned_domains.end();
+					for ( ; partitioned_domains_iter != partitioned_domains_end; ++partitioned_domains_iter)
+					{
+						const geometry_domain_type &partitioned_domain = *partitioned_domains_iter;
+
+						// If there is a geometry range associated with the geometry domain then
+						// create a partitioned range associated with the partitioned domain.
+						boost::optional<geometry_range_type> partitioned_range;
+						if (geometry_range)
+						{
+							partitioned_range = geometry_range_type();
+							partition_range(partitioned_range.get(), partitioned_domain, geometry_range.get(), geometry_domain);
+						}
+
+						partitioned_geometries.push_back(
+								PartitionedFeature::PartitionedGeometry(partitioned_domain, partitioned_range));
+					}
+				}
+
+				void
+				partition_range(
+						geometry_range_type &partitioned_range,
+						const geometry_domain_type &partitioned_domain,
+						const Range &geometry_range,
+						const geometry_domain_type &geometry_domain)
+				{
+					// Get the partitioned domain points.
+					std::vector<GPlatesMaths::PointOnSphere> partitioned_domain_points;
+					GeometryUtils::get_geometry_exterior_points(*partitioned_domain, partitioned_domain_points);
+
+					const unsigned int num_partitioned_domain_points = partitioned_domain_points.size();
+
+					std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type> partitioned_range_coordinates;
+
+					// Allocated memory for partitioned range.
+					const unsigned int range_tuple_size = geometry_range.range.size();
+					partitioned_range_coordinates.resize(range_tuple_size);
+					for (unsigned int t = 0; t < range_tuple_size; ++t)
+					{
+						partitioned_range_coordinates[t].reserve(num_partitioned_domain_points);
+					}
+
+					// Map the geometry domain points to their indices into geometry domain/range and
+					// copy the associated range scalars into the partitioned range.
+					for (unsigned int n = 0; n < num_partitioned_domain_points; ++n)
+					{
+						const GPlatesMaths::PointOnSphere &partitioned_domain_point = partitioned_domain_points[n];
+
+						domain_to_range_map_type::const_iterator iter =
+								geometry_range.domain_to_range_map.find(partitioned_domain_point);
+						if (iter != geometry_range.domain_to_range_map.end())
+						{
+							// Look up the range scalar values in the original, unpartitioned range
+							// and add them to the partitioned range.
+							const unsigned int range_scalar_index = iter->second;
+							for (unsigned int t = 0; t < range_tuple_size; ++t)
+							{
+								partitioned_range_coordinates[t].push_back(
+										geometry_range.range[t]->get_coordinates()[range_scalar_index]);
+							}
+						}
+						else
+						{
+							// Partitioned domain point not found in original, unpartitioned domain geometry.
+							// This most likely happens where a polyline or polygon intersected the
+							// partitioning polygon (note that this shouldn't happen for a point or multi-point
+							// geometry since partitioning those types does not generate any new points).
+							// So we'll find the segment that the intersection point lies on and use that to
+							// interpolate the scalar values of that segment's end points.
+							unsigned int closest_point_index; // To be ignored - will also be zero.
+							unsigned int closest_domain_index; // Should be segment index into polyline/polygon.
+							// Since the current implementation of the partitioner generates polylines
+							// even when a polygon is partitioned (against a partitioning polygon)
+							// we know that all intersection points should lie *on* the partitioned polylines.
+							// Hence we can speed up the minimum distance test by using an arbitrarily
+							// small threshold since the minimum distance should theoretically be zero.
+							// We'll back it up with a slower non-threshold test just to be sure though.
+							//
+							// TODO: This needs to be changed once the partitioner is properly implemented
+							// to generate partitioned *polygons* instead of polylines. When that happens
+							// we can get partitioned points that don't fall on the original polygon.
+							// In this case we really should get the partitioner itself to generate
+							// interpolate information similar to what DateLineWrapper does.
+							if (GPlatesMaths::AngularExtent::PI == minimum_distance(
+									partitioned_domain_point,
+									*geometry_domain,
+									false/*geometry1_interior_is_solid*/,
+									false/*geometry2_interior_is_solid*/,
+									POLY_GEOMETRY_DISTANCE_THRESHOLD,
+									boost::none/*closest_positions*/,
+									boost::make_tuple(boost::ref(closest_point_index), boost::ref(closest_domain_index))))
+							{
+								// The minimum distance exceeded our threshold. This shouldn't happen
+								// but if it does then we'll do the test again without a threshold.
+								minimum_distance(
+										partitioned_domain_point,
+										*geometry_domain,
+										false/*geometry1_interior_is_solid*/,
+										false/*geometry2_interior_is_solid*/,
+										boost::none/*minimum_distance_threshold*/,
+										boost::none/*closest_positions*/,
+										boost::make_tuple(boost::ref(closest_point_index), boost::ref(closest_domain_index)));
+							}
+
+							if (geometry_range.domain_type == GPlatesMaths::GeometryType::POLYGON ||
+								geometry_range.domain_type == GPlatesMaths::GeometryType::POLYLINE)
+							{
+								const unsigned int closest_segment_index = closest_domain_index;
+
+								// Calculate the interpolation ratio of the point along the great circle arc of the segment.
+								const GPlatesMaths::PointOnSphere &segment_start_point = geometry_range.domain_points[closest_segment_index];
+								const GPlatesMaths::PointOnSphere &segment_end_point = geometry_range.domain_points[closest_segment_index + 1];
+								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point);
+								if (segment_len != GPlatesMaths::AngularDistance::ZERO)
+								{
+									const double interpolate_ratio =
+											minimum_distance(segment_start_point, partitioned_domain_point).calculate_angle().dval() /
+											segment_len.calculate_angle().dval();
+
+									// Interpolate the scalar values of segment's end points.
+									const unsigned int range_scalar_start_index = closest_segment_index;
+									for (unsigned int t = 0; t < range_tuple_size; ++t)
+									{
+										const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type &
+												range_scalars = geometry_range.range[t]->get_coordinates();
+										const double interpolated_scalar =
+												(1.0 - interpolate_ratio) * range_scalars[range_scalar_start_index] +
+													interpolate_ratio * range_scalars[range_scalar_start_index + 1];
+
+										partitioned_range_coordinates[t].push_back(interpolated_scalar);
+									}
+								}
+								else // zero length segment...
+								{
+									// Both end points of the segment are the same (within numerical tolerance)
+									// so just pick the segment start point.
+									const unsigned int range_scalar_index = closest_segment_index;
+									for (unsigned int t = 0; t < range_tuple_size; ++t)
+									{
+										partitioned_range_coordinates[t].push_back(
+												geometry_range.range[t]->get_coordinates()[range_scalar_index]);
+									}
+								}
+							}
+							else if (geometry_range.domain_type == GPlatesMaths::GeometryType::MULTIPOINT)
+							{
+								// We shouldn't be able to get here but if we do then we'll just
+								// use the scalar value of the closest point.
+								// For multipoints the closest index is a point index into multipoint.
+								const unsigned int range_scalar_index = closest_domain_index;
+								for (unsigned int t = 0; t < range_tuple_size; ++t)
+								{
+									partitioned_range_coordinates[t].push_back(
+											geometry_range.range[t]->get_coordinates()[range_scalar_index]);
+								}
+							}
+							else // geometry_range.domain_type == GPlatesMaths::GeometryType::POINT
+							{
+								for (unsigned int t = 0; t < range_tuple_size; ++t)
+								{
+									partitioned_range_coordinates[t].push_back(
+											geometry_range.range[t]->get_coordinates()[0/*range_scalar_index*/]);
+								}
+							}
+						}
+					}
+
+					// Create partitioned GmlDataBlockCoordinateList's.
+					for (unsigned int t = 0; t < range_tuple_size; ++t)
+					{
+						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
+
+						partitioned_range.push_back(
+								GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+										range_tuple_element.get_value_object_type(),
+										range_tuple_element.get_value_object_xml_attributes(),
+										partitioned_range_coordinates[t]));
+					}
+				}
+			};
+
+			const GPlatesMaths::AngularExtent PartitionFeatureGeometryProperties::POLY_GEOMETRY_DISTANCE_THRESHOLD =
+					GPlatesMaths::AngularExtent::create_from_angle(GPlatesMaths::convert_deg_to_rad(0.5));
+
+
+			/**
+			 * Calculate polyline distance along unit radius sphere.
+			 */
+			template <typename GreatCircleArcForwardIteratorType>
+			GPlatesMaths::real_t
+			calculate_arc_distance(
+					GreatCircleArcForwardIteratorType gca_begin,
+					GreatCircleArcForwardIteratorType gca_end)
+			{
+				GPlatesMaths::real_t distance = 0;
+
+				GreatCircleArcForwardIteratorType gca_iter = gca_begin;
+				for ( ; gca_iter != gca_end; ++gca_iter)
+				{
+					distance += acos(gca_iter->dot_of_endpoints());
+				}
+
+				return distance;
+			}
+
+
+			class GeometrySize :
+					public GPlatesMaths::ConstGeometryOnSphereVisitor
+			{
+			public:
+				GeometrySize(
+						unsigned int &num_points,
+						GPlatesMaths::real_t &arc_distance,
+						bool &using_arc_distance) :
+					d_num_points(num_points),
+					d_arc_distance(arc_distance),
+					d_using_arc_distance(using_arc_distance)
+				{  }
+
+				virtual
+				void
+				visit_multi_point_on_sphere(
+						GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+				{
+					d_num_points += multi_point_on_sphere->number_of_points();
+				}
+
+				virtual
+				void
+				visit_point_on_sphere(
+						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+				{
+					++d_num_points;
+				}
+
+				virtual
+				void
+				visit_polygon_on_sphere(
+						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+				{
+					d_arc_distance += polygon_on_sphere->get_arc_length();
+					d_using_arc_distance = true;
+				}
+
+				virtual
+				void
+				visit_polyline_on_sphere(
+						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+				{
+					d_arc_distance += polyline_on_sphere->get_arc_length();
+					d_using_arc_distance = true;
+				}
+
+				unsigned int &d_num_points;
+				GPlatesMaths::real_t &d_arc_distance;
+				bool &d_using_arc_distance;
+			};
+
+
+			/**
+			 * Calculates the accumulated size metric for all partitioned inside geometries
+			 * of @a partition.
+			 */
+			GeometrySizeMetric
+			calculate_partition_size_metric(
+					const PartitionedFeature::Partition &partition)
+			{
+				GeometrySizeMetric partition_size_metric;
+
+				//
+				// Iterate over the geometries inside the current partitioning polygon.
+				//
+				PartitionedFeature::partitioned_geometry_seq_type::const_iterator inside_geometries_iter =
+						partition.partitioned_geometries.begin();
+				PartitionedFeature::partitioned_geometry_seq_type::const_iterator inside_geometries_end =
+						partition.partitioned_geometries.end();
+				for ( ; inside_geometries_iter != inside_geometries_end; ++inside_geometries_iter)
+				{
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &inside_geometry =
+							inside_geometries_iter->geometry_domain;
+
+					partition_size_metric.accumulate(*inside_geometry);
+				}
+
+				return partition_size_metric;
+			}
+
+
+			/**
+			 * Returns "gpml:reconstructionPlateId".
+			 */
+			const GPlatesModel::PropertyName &
+			get_reconstruction_plate_id_property_name()
+			{
+				static const GPlatesModel::PropertyName reconstruction_plate_id_property_name =
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+				return reconstruction_plate_id_property_name;
+			}
+
+
+			/**
+			 * Returns "gpml:conjugatePlateId".
+			 */
+			const GPlatesModel::PropertyName &
+			get_conjugate_plate_id_property_name()
+			{
+				static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
+						GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
+
+				return conjugate_plate_id_property_name;
+			}
+
+
+			/**
+			 * Returns "gml:validTime".
+			 */
+			const GPlatesModel::PropertyName &
+			get_valid_time_property_name()
+			{
+				static const GPlatesModel::PropertyName valid_time_property_name =
+						GPlatesModel::PropertyName::create_gml("validTime");
+
+				return valid_time_property_name;
+			}
+
+
+			/**
+			 * Adds partitioned geometries to the partitioned feature associated with @a partition.
+			 *
+			 * If @a partition is none then adds to the special feature associated with no partition.
+			 *
+			 * All partitioned geometries are reverse reconstructed using the plate id of their partitioning polygon
+			 * (if has a plate id) and/or deformed if @a reconstruct_method_context contains deformation.
+			 */
+			void
+			add_partitioned_geometries_to_feature(
+					const PartitionedFeature::partitioned_geometry_seq_type &partitioned_geometries,
+					const GPlatesModel::PropertyName &geometry_domain_property_name,
+					const boost::optional<GPlatesModel::PropertyName> &geometry_range_property_name,
+					PartitionedFeatureManager &partitioned_feature_manager,
+					const ReconstructMethodInterface::Context &reconstruct_method_context,
+					const double &reconstruction_time,
+					boost::optional<const ReconstructionGeometry *> partition = boost::none)
+			{
+				//
+				// Iterate over the partitioned geometries.
+				//
+				PartitionedFeature::partitioned_geometry_seq_type::const_iterator partitioned_geometries_iter =
+						partitioned_geometries.begin();
+				PartitionedFeature::partitioned_geometry_seq_type::const_iterator partitioned_geometries_end =
+						partitioned_geometries.end();
+				for ( ; partitioned_geometries_iter != partitioned_geometries_end; ++partitioned_geometries_iter)
+				{
+					const PartitionedFeature::PartitionedGeometry &partitioned_geometry = *partitioned_geometries_iter;
+
+					const bool geometry_domain_has_associated_range =
+							geometry_range_property_name && partitioned_geometry.geometry_range;
+
+					// Note that we only get the partitioned feature when we know we
+					// are going to append a geometry property to it.
+					// If there are no partitioned geometries then it doesn't get called
+					// which means a new feature won't get cloned. 
+					const GPlatesModel::FeatureHandle::weak_ref partitioned_feature =
+							partitioned_feature_manager.get_feature_for_partition(
+									geometry_domain_property_name,
+									geometry_domain_has_associated_range,
+									partition);
+
+					// Reverse reconstruct to get the present day geometry.
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_partitioned_geometry =
+							reverse_reconstruct(
+									partitioned_geometry.geometry_domain,
+									partitioned_feature,
+									reconstruct_method_context,
+									reconstruction_time);
+
+					// Add the geometry domain property.
+					append_geometry_domain_to_feature(
+							present_day_partitioned_geometry,
+							geometry_domain_property_name,
+							partitioned_feature);
+
+					// If there's an associated geometry range then add it as a property.
+					if (geometry_domain_has_associated_range)
+					{
+						append_geometry_range_to_feature(
+								partitioned_geometry.geometry_range.get(),
+								geometry_range_property_name.get(),
+								partitioned_feature);
+					}
+				}
 			}
 		}
-
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
-		{
-			gpml_constant_value.value()->accept_visitor(*this);
-		}
-
-	private:
-		//! Does the cookie-cutting.
-		const GPlatesAppLogic::GeometryCookieCutter &d_cookie_cut_geometry;
-
-		//! The results of the cookie-cutting.
-		boost::shared_ptr<GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature> d_partition_results;
-
-
-		/**
-		 * Partition the geometry @a geometry of the current geometry property.
-		 */
-		void
-		partition_geometry(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
-		{
-			// Create a new partition entry for the current geometry property.
-			GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &
-					partitioned_geometry_property = add_geometry_property();
-
-			// Partition the current geometry property and store results.
-			partition_geometry(geometry, partitioned_geometry_property);
-		}
-
-		GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &
-		add_geometry_property()
-		{
-			// Property name of current geometry property.
-			const GPlatesModel::PropertyName &geometry_property_name = *current_top_level_propname();
-
-			// Create a shallow clone of the current geometry property.
-			// This is quite quick to create compared to the deep clone since it's a bunch
-			// of intrusive pointer copies.
-			// This might be used by the caller to move a geometry property between features.
-			// For example, if this geometry property requires a different plate id.
-			const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_geometry_property =
-					(**current_top_level_propiter())->clone();
-
-			// Create a new entry for the current geometry property.
-			d_partition_results->partitioned_geometry_properties.push_back(
-					GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty(
-							geometry_property_name,
-							cloned_geometry_property));
-
-			// Get a reference to the entry just added.
-			return d_partition_results->partitioned_geometry_properties.back();
-		}
-
-		inline
-		void
-		partition_geometry(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &
-						partitioned_geometry_property)
-		{
-			// Partition the current geometry property and store results.
-			d_cookie_cut_geometry.partition_geometry(
-					geometry,
-					partitioned_geometry_property.partitioned_inside_geometries,
-					partitioned_geometry_property.partitioned_outside_geometries);
-		}
-	};
-
-
-	/**
-	 * Calculate polyline distance along unit radius sphere.
-	 */
-	template <typename GreatCircleArcForwardIteratorType>
-	GPlatesMaths::real_t
-	calculate_arc_distance(
-			GreatCircleArcForwardIteratorType gca_begin,
-			GreatCircleArcForwardIteratorType gca_end)
-	{
-		GPlatesMaths::real_t distance = 0;
-
-		GreatCircleArcForwardIteratorType gca_iter = gca_begin;
-		for ( ; gca_iter != gca_end; ++gca_iter)
-		{
-			distance += acos(gca_iter->dot_of_endpoints());
-		}
-
-		return distance;
-	}
-
-
-	class GeometrySize :
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		GeometrySize(
-				unsigned int &num_points,
-				GPlatesMaths::real_t &arc_distance,
-				bool &using_arc_distance) :
-			d_num_points(num_points),
-			d_arc_distance(arc_distance),
-			d_using_arc_distance(using_arc_distance)
-		{  }
-
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			d_num_points += multi_point_on_sphere->number_of_points();
-		}
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
-		{
-			++d_num_points;
-		}
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			d_arc_distance += calculate_arc_distance(
-					polygon_on_sphere->begin(), polygon_on_sphere->end());
-			d_using_arc_distance = true;
-		}
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			d_arc_distance += calculate_arc_distance(
-					polyline_on_sphere->begin(), polyline_on_sphere->end());
-			d_using_arc_distance = true;
-		}
-
-		unsigned int &d_num_points;
-		GPlatesMaths::real_t &d_arc_distance;
-		bool &d_using_arc_distance;
-	};
-
-
-	/**
-	 * Calculates the accumulated size metric for all partitioned inside geometries
-	 * of @a partition.
-	 */
-	GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric
-	calculate_partition_size_metric(
-			const GPlatesAppLogic::GeometryCookieCutter::Partition &partition)
-	{
-		typedef GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type
-				partitioned_geometry_seq_type;
-
-		GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric partition_size_metric;
-
-		//
-		// Iterate over the geometries inside the current partitioning polygon.
-		//
-		partitioned_geometry_seq_type::const_iterator inside_geometries_iter =
-				partition.partitioned_geometries.begin();
-		partitioned_geometry_seq_type::const_iterator inside_geometries_end =
-				partition.partitioned_geometries.end();
-		for ( ; inside_geometries_iter != inside_geometries_end; ++inside_geometries_iter)
-		{
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
-					inside_geometry = *inside_geometries_iter;
-
-			partition_size_metric.accumulate(*inside_geometry);
-		}
-
-		return partition_size_metric;
-	}
-
-
-	/**
-	 * Returns "gpml:reconstructionPlateId".
-	 */
-	const GPlatesModel::PropertyName &
-	get_reconstruction_plate_id_property_name()
-	{
-		static const GPlatesModel::PropertyName reconstruction_plate_id_property_name =
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		return reconstruction_plate_id_property_name;
-	}
-
-
-	/**
-	 * Returns "gpml:conjugatePlateId".
-	 */
-	const GPlatesModel::PropertyName &
-	get_conjugate_plate_id_property_name()
-	{
-		static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
-				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
-
-		return conjugate_plate_id_property_name;
-	}
-
-
-	/**
-	 * Returns true if @a top_level_prop_ptr is a 'gpml:reconstructionPlateId' property.
-	 */
-	bool
-	is_reconstruction_plate_id_property(
-			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type top_level_prop_ptr)
-	{
-		return top_level_prop_ptr->get_property_name() == get_reconstruction_plate_id_property_name();
-	}
-
-
-	/**
-	 * Don't clone geometry properties or 'gpml:reconstructionPlateId' properties.
-	 */
-	bool
-	clone_feature_properties_except_geometry_and_plate_id(
-			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
-	{
-		return !(
-			GPlatesFeatureVisitors::is_geometry_property(top_level_prop_ptr) ||
-			is_reconstruction_plate_id_property(top_level_prop_ptr)
-			);
-	}
-
-
-	/**
-	 * Returns "gml:validTime".
-	 */
-	const GPlatesModel::PropertyName &
-	get_valid_time_property_name()
-	{
-		static const GPlatesModel::PropertyName valid_time_property_name =
-				GPlatesModel::PropertyName::create_gml("validTime");
-
-		return valid_time_property_name;
 	}
 }
 
 
 boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature>
 GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
-		bool respect_feature_time_period)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const GeometryCookieCutter &geometry_cookie_cutter,
+		bool respect_feature_time_period,
+		boost::optional< std::vector<GPlatesModel::FeatureHandle::iterator> &> partitioned_properties)
 {
 	// Only partition features that exist at the partitioning reconstruction time if we've been requested.
 	if (respect_feature_time_period &&
@@ -414,10 +820,20 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 			feature_ref,
 			geometry_cookie_cutter.get_reconstruction_time()))
 	{
-		return boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature>();
+		return boost::shared_ptr<const PartitionedFeature>();
 	}
 
-	PartitionFeatureGeometryProperties feature_partitioner(geometry_cookie_cutter);
+	// Get any scalar coverages associated with the feature's geometry properties.
+	std::vector<ScalarCoverageFeatureProperties::Coverage> geometry_coverages;
+	ScalarCoverageFeatureProperties::get_coverages(
+			geometry_coverages,
+			feature_ref,
+			geometry_cookie_cutter.get_reconstruction_time());
+
+	PartitionFeatureGeometryProperties feature_partitioner(
+			geometry_cookie_cutter,
+			geometry_coverages,
+			partitioned_properties);
 	feature_partitioner.visit_feature(feature_ref);
 
 	return feature_partitioner.get_partitioned_feature_geometries();
@@ -426,7 +842,7 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 
 GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::GenericFeaturePropertyAssigner(
 		const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
-		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+		const AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 		bool verify_information_model) :
 	d_verify_information_model(verify_information_model),
 	d_default_reconstruction_plate_id(
@@ -537,155 +953,88 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
-		const GPlatesAppLogic::GeometryCookieCutter::partitioned_geometry_seq_type &
-				partitioned_geometries,
-		const GPlatesModel::PropertyName &geometry_property_name,
+		const PartitionedFeature::GeometryProperty &geometry_property,
 		PartitionedFeatureManager &partitioned_feature_manager,
-		const ReconstructionTree &reconstruction_tree,
-		boost::optional<const ReconstructionGeometry *> partition)
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		const double &reconstruction_time)
 {
-	// Calculate the reverse rotation if we did not cookie cut at present day AND
-	// if there's a partitioning polygon AND it has a plate id.
-	const boost::optional<GPlatesMaths::FiniteRotation> reverse_rotation =
-			get_reverse_reconstruction(partition, reconstruction_tree);
-
-	//
-	// Iterate over the partitioned geometries.
-	//
-	GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geometries_iter =
-			partitioned_geometries.begin();
-	GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator partitioned_geometries_end =
-			partitioned_geometries.end();
-	for ( ; partitioned_geometries_iter != partitioned_geometries_end; ++partitioned_geometries_iter)
-	{
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &partitioned_geometry =
-				*partitioned_geometries_iter;
-
-		// If there's a reverse rotation then we'll need to apply it to reconstruct
-		// back to present day before storing the geometry in the feature.
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-				present_day_partitioned_geometry =
-						reverse_rotation
-						? reverse_rotation.get() * partitioned_geometry
-						: partitioned_geometry;
-
-		// Note that we only get the partitioned feature when we know we
-		// are going to append a geometry property to it.
-		// If there are no partitioned geometries then it doesn't get called
-		// which means a new feature won't get cloned.
-		const GPlatesModel::FeatureHandle::weak_ref partitioned_feature =
-				partitioned_feature_manager.get_feature_for_partition(partition);
-
-		append_geometry_to_feature(
-				present_day_partitioned_geometry,
-				geometry_property_name,
-				partitioned_feature);
-	}
-}
-
-
-void
-GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
-		const GPlatesAppLogic::GeometryCookieCutter::partition_seq_type &partitions,
-		const GPlatesModel::PropertyName &geometry_property_name,
-		PartitionedFeatureManager &partitioned_feature_manager,
-		const ReconstructionTree &reconstruction_tree)
-{
-	//
-	// Iterate over the partitioning polygons and add the inside geometries to features.
-	//
-	GeometryCookieCutter::partition_seq_type::const_iterator partition_iter = partitions.begin();
-	GeometryCookieCutter::partition_seq_type::const_iterator partition_end = partitions.end();
+	// Iterate over the partitioning polygons and add the *inside* geometries to features.
+	PartitionedFeature::partition_seq_type::const_iterator partition_iter =
+			geometry_property.partitioned_inside_geometries.begin();
+	PartitionedFeature::partition_seq_type::const_iterator partition_end =
+			geometry_property.partitioned_inside_geometries.end();
 	for ( ; partition_iter != partition_end; ++partition_iter)
 	{
-		const GeometryCookieCutter::Partition &partition = *partition_iter;
+		const PartitionedFeature::Partition &partition = *partition_iter;
 
-		add_partitioned_geometry_to_feature(
+		add_partitioned_geometries_to_feature(
 				partition.partitioned_geometries,
-				geometry_property_name,
+				geometry_property.domain_property_name,
+				geometry_property.range_property_name,
 				partitioned_feature_manager,
-				reconstruction_tree,
+				reconstruct_method_context,
+				reconstruction_time,
 				partition.reconstruction_geometry.get());
 	}
+
+	// Add partitioned *outside* geometries and to special feature associated with no partition.
+	add_partitioned_geometries_to_feature(
+			geometry_property.partitioned_outside_geometries,
+			geometry_property.domain_property_name,
+			geometry_property.range_property_name,
+			partitioned_feature_manager,
+			reconstruct_method_context,
+			reconstruction_time);
 }
 
 
 void
-GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
-		const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property,
-		PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
-		const ReconstructionTree &reconstruction_tree,
+GPlatesAppLogic::PartitionFeatureUtils::add_unpartitioned_geometry_to_feature(
+		const PartitionedFeature::GeometryProperty &geometry_property,
+		PartitionedFeatureManager &partitioned_feature_manager,
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		const double &reconstruction_time,
 		boost::optional<const ReconstructionGeometry *> partition)
 {
-	const GPlatesModel::FeatureHandle::weak_ref feature =
-			partitioned_feature_manager.get_feature_for_partition(partition);
-
-	// We're effectively transferring the geometry property from the original
-	// feature to the new feature (note that they could both be the same
-	// in which case we've added and then removed the same property from same feature).
-	const GPlatesModel::FeatureHandle::iterator feature_iterator = feature->add(geometry_property);
-
-	// See if we need to apply a reverse reconstruction to the geometry property.
-	const boost::optional<GPlatesMaths::FiniteRotation> reverse_rotation =
-			get_reverse_reconstruction(partition, reconstruction_tree);
-
-	if (reverse_rotation)
+	PartitionedFeature::geometry_property_clone_seq_type::const_iterator property_clone_iter =
+			geometry_property.property_clones.begin();
+	PartitionedFeature::geometry_property_clone_seq_type::const_iterator property_clone_end =
+			geometry_property.property_clones.end();
+	for ( ; property_clone_iter != property_clone_end; ++property_clone_iter)
 	{
-		// Visit the geometry property just added and rotate its geometry using 'reverse_rotation'.
-		GPlatesFeatureVisitors::GeometryRotator geometry_rotator(reverse_rotation.get());
+		const PartitionedFeature::GeometryPropertyClone &property_clone = *property_clone_iter;
 
-		const GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
-				(*feature_iterator)->clone();
-		geometry_property_clone->accept_visitor(geometry_rotator);
-		*feature_iterator = geometry_property_clone;
-	}
-}
+		const GPlatesModel::FeatureHandle::weak_ref feature =
+				partitioned_feature_manager.get_feature_for_partition(
+						geometry_property.domain_property_name,
+						property_clone.range/*geometry_domain_has_associated_range*/,
+						partition);
 
-
-boost::optional<const GPlatesAppLogic::ReconstructionGeometry *>
-GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
-		const PartitionedFeature::GeometryProperty &geometry_property)
-{
-	const GeometryCookieCutter::partition_seq_type &partitions =
-			geometry_property.partitioned_inside_geometries;
-
-	// Return early if no partitions.
-	if (partitions.empty())
-	{
-		return boost::none;
-	}
-
-	// If there's only one partition then we return it.
-	if (partitions.size() == 1)
-	{
-		return partitions.front().reconstruction_geometry.get();
-	}
-
-	GeometrySizeMetric max_partition_size_metric;
-	boost::optional<const ReconstructionGeometry *> max_partition;
-
-	//
-	// Iterate over the partitioning polygons to see which one contains the most geometry.
-	//
-	GeometryCookieCutter::partition_seq_type::const_iterator partition_iter = partitions.begin();
-	GeometryCookieCutter::partition_seq_type::const_iterator partition_end = partitions.end();
-	for ( ; partition_iter != partition_end; ++partition_iter)
-	{
-		const GeometryCookieCutter::Partition &partition = *partition_iter;
-
-		const GeometrySizeMetric partition_size_metric =
-				calculate_partition_size_metric(partition);
-
-		// If the current partition contains more geometry then
-		// set it as the maximum partition so far.
-		if (partition_size_metric > max_partition_size_metric)
+		// Extract the geometry from the geometry property clone.
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> reconstructed_geometry =
+				GeometryUtils::get_geometry_from_property(property_clone.domain);
+		if (!reconstructed_geometry)
 		{
-			max_partition_size_metric = partition_size_metric;
-			max_partition = partition.reconstruction_geometry.get();
+			// Shouldn't get here since geometry property should contain a geometry.
+			continue;
+		}
+
+		// Reverse reconstruct to get the present day geometry.
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+				reverse_reconstruct(reconstructed_geometry.get(), feature, reconstruct_method_context, reconstruction_time);
+
+		// Store the present day geometry back in the cloned property.
+		GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+		geometry_setter.set_geometry(property_clone.domain.get());
+
+		// Set the cloned geometry domain property (and optional cloned range property) on the feature.
+		const GPlatesModel::FeatureHandle::iterator geometry_domain_feature_iterator =
+				feature->add(property_clone.domain);
+		if (property_clone.range)
+		{
+			feature->add(property_clone.range.get());
 		}
 	}
-
-	return max_partition;
 }
 
 
@@ -693,19 +1042,13 @@ boost::optional<const GPlatesAppLogic::ReconstructionGeometry *>
 GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 		const PartitionedFeature &partitioned_feature)
 {
-	const PartitionedFeature::partitioned_geometry_property_seq_type &geometry_properties =
+	const PartitionedFeature::partitioned_geometry_property_map_type &geometry_properties =
 			partitioned_feature.partitioned_geometry_properties;
 
 	// Return early if no geometry properties.
 	if (geometry_properties.empty())
 	{
 		return boost::none;
-	}
-
-	// If there's only one geometry property.
-	if (geometry_properties.size() == 1)
-	{
-		return find_partition_containing_most_geometry(geometry_properties.front());
 	}
 
 	// Keep track of the various partitions and their size metrics.
@@ -720,24 +1063,24 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 	//
 	// Iterate over the geometry properties.
 	//
-	PartitionedFeature::partitioned_geometry_property_seq_type::const_iterator geometry_property_iter =
+	PartitionedFeature::partitioned_geometry_property_map_type::const_iterator geometry_property_iter =
 			geometry_properties.begin();
-	PartitionedFeature::partitioned_geometry_property_seq_type::const_iterator geometry_property_end =
+	PartitionedFeature::partitioned_geometry_property_map_type::const_iterator geometry_property_end =
 			geometry_properties.end();
 	for ( ; geometry_property_iter != geometry_property_end; ++geometry_property_iter)
 	{
-		const PartitionedFeature::GeometryProperty &geometry_property = *geometry_property_iter;
+		const PartitionedFeature::GeometryProperty &geometry_property = geometry_property_iter->second;
 
 		//
 		// Iterate over the partitioning polygons and accumulate size metrics.
 		//
-		GeometryCookieCutter::partition_seq_type::const_iterator partition_iter =
+		PartitionedFeature::partition_seq_type::const_iterator partition_iter =
 				geometry_property.partitioned_inside_geometries.begin();
-		GeometryCookieCutter::partition_seq_type::const_iterator partition_end =
+		PartitionedFeature::partition_seq_type::const_iterator partition_end =
 				geometry_property.partitioned_inside_geometries.end();
 		for ( ; partition_iter != partition_end; ++partition_iter)
 		{
-			const GeometryCookieCutter::Partition &partition = *partition_iter;
+			const PartitionedFeature::Partition &partition = *partition_iter;
 
 			// Get the map entry keyed by the partition's partitioning reconstruction geometry.
 			GeometrySizeMetric &partition_size_metric =
@@ -767,7 +1110,7 @@ GPlatesAppLogic::PartitionFeatureUtils::does_feature_exist_at_reconstruction_tim
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
 		const double &reconstruction_time)
 {
-	GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_params;
+	ReconstructionFeatureProperties reconstruction_params;
 
 	reconstruction_params.visit_feature(feature_ref);
 
@@ -775,31 +1118,27 @@ GPlatesAppLogic::PartitionFeatureUtils::does_feature_exist_at_reconstruction_tim
 }
 
 
-boost::optional<GPlatesMaths::FiniteRotation>
-GPlatesAppLogic::PartitionFeatureUtils::get_reverse_reconstruction(
-		boost::optional<const ReconstructionGeometry *> partition,
-		const ReconstructionTree &reconstruction_tree)
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::PartitionFeatureUtils::reverse_reconstruct(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		const double &reconstruction_time)
 {
-	const GPlatesMaths::real_t reconstruction_time = reconstruction_tree.get_reconstruction_time();
-	if (partition && (reconstruction_time > 0))
+	if (!feature.is_valid())
 	{
-		// Get the reconstruction plate id from the partitioning polygon.
-		const boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id =
-				ReconstructionGeometryUtils::get_plate_id(partition.get());
-
-		// If the current partitioning polygon has a plate id then find the
-		// reverse rotation to rotate the partitioned geometries back to present day.
-		if (reconstruction_plate_id)
-		{
-			// Get the composed absolute rotation needed to reverse reconstruct
-			// geometries to present day.
-			return GPlatesMaths::get_reverse(
-					reconstruction_tree.get_composed_absolute_rotation(
-							reconstruction_plate_id.get()).first);
-		}
+		return reconstructed_geometry;
 	}
 
-	return boost::none;
+	const ReconstructMethodRegistry reconstruct_method_registry;
+
+	return ReconstructUtils::reconstruct_geometry(
+					reconstructed_geometry,
+					reconstruct_method_registry,
+					feature,
+					reconstruction_time,
+					reconstruct_method_context,
+					true/*reverse_reconstruct*/);
 }
 
 
@@ -940,18 +1279,48 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 
 
 void
-GPlatesAppLogic::PartitionFeatureUtils::append_geometry_to_feature(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::PropertyName &geometry_property_name,
+GPlatesAppLogic::PartitionFeatureUtils::append_geometry_domain_to_feature(
+		const geometry_domain_type &geometry_domain,
+		const GPlatesModel::PropertyName &geometry_domain_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
-	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
-			GeometryUtils::create_geometry_property_value(geometry);
+	GPlatesModel::PropertyValue::non_null_ptr_type geometry_domain_property =
+			GeometryUtils::create_geometry_property_value(geometry_domain);
 
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-					geometry_property_name,
-					geometry_property));
+	// Use 'ModelUtils::add_property()' instead of 'FeatureHandle::add()' to ensure any
+	// necessary time-dependent wrapper is added.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			geometry_domain_property_name,
+			geometry_domain_property);
+}
+
+
+void
+GPlatesAppLogic::PartitionFeatureUtils::append_geometry_range_to_feature(
+		const geometry_range_type &geometry_range,
+		const GPlatesModel::PropertyName &geometry_range_property_name,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+{
+	// Clone to get 'non-const' from 'const'.
+	// Might also need cloning if cannot share child revisionable objects across parents?
+	std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> geometry_range_clone;
+
+	geometry_range_type::const_iterator geometry_range_iter = geometry_range.begin();
+	geometry_range_type::const_iterator geometry_range_end = geometry_range.end();
+	for ( ; geometry_range_iter != geometry_range_end; ++geometry_range_iter)
+	{
+		geometry_range_clone.push_back((*geometry_range_iter)->clone());
+	}
+
+	// Use 'ModelUtils::add_property()' instead of 'FeatureHandle::add()' to ensure any
+	// necessary time-dependent wrapper is added.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			geometry_range_property_name,
+			GPlatesPropertyValues::GmlDataBlock::create(
+					geometry_range_clone.begin(),
+					geometry_range_clone.end()));
 }
 
 
@@ -960,8 +1329,9 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::PartitionedFe
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		const boost::shared_ptr<PropertyValueAssigner> &property_value_assigner) :
 	d_original_feature(original_feature),
-	d_feature_collection(feature_collection),
 	d_has_original_feature_been_claimed(false),
+	d_feature_to_clone_from(original_feature->clone()),
+	d_feature_collection(feature_collection),
 	d_property_value_assigner(property_value_assigner)
 {
 }
@@ -969,14 +1339,54 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::PartitionedFe
 
 GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::get_feature_for_partition(
+		const GPlatesModel::PropertyName &geometry_domain_property_name,
+		bool geometry_domain_has_associated_range,
 		boost::optional<const ReconstructionGeometry *> partition)
 {
-	// See if we've already mapped the partition to a feature.
-	partition_to_feature_map_type::iterator feature_iter =
-			d_partitioned_features.find(partition);
-	if (feature_iter != d_partitioned_features.end())
+	//
+	// Search for an existing feature we can re-use.
+	//
+
+	// First iterate over the existing features created for the current partition.
+	feature_info_seq_type &feature_infos = d_partitioned_features[partition];
+	feature_info_seq_type::iterator feature_infos_iter = feature_infos.begin();
+	feature_info_seq_type::iterator feature_infos_end = feature_infos.end();
+	for ( ; feature_infos_iter != feature_infos_end; ++feature_infos_iter)
 	{
-		return feature_iter->second;
+		FeatureInfo &feature_info = *feature_infos_iter;
+
+		// See if the current feature has a geometry property with the same property name
+		// that the caller will be adding to the feature.
+		const std::pair<feature_contents_type::iterator, bool> feature_contents =
+				feature_info.contents.insert(
+						feature_contents_type::value_type(
+								geometry_domain_property_name,
+								geometry_domain_has_associated_range));
+
+		// If the current feature does not have the geometry property name then the caller
+		// can add the geometry property without any conflict (in the domain/range mapping).
+		if (feature_contents.second/*inserted*/)
+		{
+			return feature_info.feature;
+		}
+		// ...else the current feature has a geometry domain property with the same property name.
+
+		// If either:
+		//   (1) the caller is adding a range (associated with domain), or
+		//   (2) the current feature already has a range (associated with the domain)
+		// ...then we should create a new feature to avoid the problem of two domains
+		// (with the same property name) having the same number of points and hence there being an
+		// ambiguous mapping to the range(s). Note that we could check to see if the number of points
+		// are the same, but it's better to keep in separate features anyway since the user could
+		// subsequently delete points in one domain leading to the same problem.
+		if (!geometry_domain_has_associated_range &&
+			!feature_contents.first->second)
+		{
+			// No prior or subsequent ranges (associated with domain) in the current feature.
+			// So we can re-use it since can have any number of geometry domains with the same
+			// property name in a single feature without any ambiguity.
+			return feature_info.feature;
+		}
 	}
 
 	// Create a new feature.
@@ -985,7 +1395,13 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::get_feature_f
 	// Assign property values (from 'partition's feature) to the new feature.
 	assign_property_values(new_feature, partition);
 
-	d_partitioned_features.insert(std::make_pair(partition, new_feature));
+	// Record new feature and its contents.
+	feature_infos.push_back(FeatureInfo(new_feature));
+	FeatureInfo &feature_info = feature_infos.back();
+	feature_info.contents.insert(
+			feature_contents_type::value_type(
+					geometry_domain_property_name,
+					geometry_domain_has_associated_range));
 	
 	return new_feature;
 }
@@ -1000,9 +1416,7 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::create_featur
 		return d_original_feature;
 	}
 
-	return d_original_feature->clone(
-			d_feature_collection,
-			&GPlatesFeatureVisitors::is_not_geometry_property);
+	return d_feature_to_clone_from->clone(d_feature_collection);
 }
 
 

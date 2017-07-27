@@ -26,31 +26,39 @@
 #ifndef GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
 #define GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
 
+#include <utility>
 #include <vector>
 #include <QString>
+#include <QToolButton>
 
 #include "RasterLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"
 
+#include "app-logic/Layer.h"
+
+#include "gui/BuiltinColourPaletteType.h"
+#include "gui/RasterColourPalette.h"
+
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class Layer;
 }
 
 namespace GPlatesPresentation
 {
+	class RasterVisualLayerParams;
 	class ViewState;
 }
 
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
-	class ColourScaleWidget;
-	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
+	class RemappedColourPaletteWidget;
 	class ViewportWindow;
 
 	/**
@@ -98,6 +106,36 @@ namespace GPlatesQtWidgets
 		handle_use_age_palette_button_clicked();
 
 		void
+		handle_builtin_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
+
+		void
+		handle_builtin_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters);
+
+		void
+		handle_palette_range_check_box_changed(
+				int state);
+
+		void
+		handle_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_palette_max_line_editing_finished(
+				double value);
+
+		void
+		handle_palette_range_restore_min_max_button_clicked();
+
+		void
+		handle_palette_range_restore_mean_deviation_button_clicked();
+
+		void
+		handle_palette_range_restore_mean_deviation_spinbox_changed(
+				double value);
+
+		void
 		handle_opacity_spinbox_changed(
 				double value);
 
@@ -118,21 +156,22 @@ namespace GPlatesQtWidgets
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
-		void
-		make_signal_slot_connections();
+		std::pair<double, double>
+		get_raster_scalar_min_max(
+				GPlatesAppLogic::Layer &layer) const;
 
-		void
-		set_colour_palette(
-				const QString &palette_file_name);
+		std::pair<double, double>
+		get_raster_scalar_mean_std_dev(
+				GPlatesAppLogic::Layer &layer) const;
 
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 
-		FriendlyLineEdit *d_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
-		ColourScaleWidget *d_colour_scale_widget;
+		QToolButton *d_use_age_palette_button;
+		RemappedColourPaletteWidget *d_colour_palette_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

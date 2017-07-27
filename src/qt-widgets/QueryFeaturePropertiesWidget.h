@@ -87,9 +87,6 @@ namespace GPlatesQtWidgets
 
 		QTreeWidget &
 		property_tree() const;
-
-		void
-		load_data_if_necessary();
 		
 	public Q_SLOTS:
 
@@ -109,8 +106,15 @@ namespace GPlatesQtWidgets
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
-		
+
 	Q_SIGNALS:
+
+	protected:
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *event_);
 
 	private:
 		/**
@@ -128,7 +132,14 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
 
-		bool d_need_load_data;
+		/**
+		 * The property tree is only populated when this widget is visible.
+		 *
+		 * This is an optimisation that delays populating until this widget is visible in order to
+		 * avoid continually populating the widget when the reconstruction time changes or the focused
+		 * feature changes, even though the widget is not visible.
+		 */
+		bool d_populate_property_tree_when_visible;
 	};
 }
 

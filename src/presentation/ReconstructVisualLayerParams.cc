@@ -29,16 +29,16 @@
 
 
 GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
 	VisualLayerParams(
-			layer_task_params,
+			layer_params,
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
 	d_vgp_draw_circular_error(true),
 	d_fill_polygons(false),
 	d_fill_polylines(false),
 	d_fill_opacity(1.0),
 	d_fill_intensity(1.0),
-	d_show_deformed_feature_geometries(true),
+	d_show_topology_reconstructed_feature_geometries(true),
 	d_show_show_strain_accumulation(false),
 	d_strain_accumulation_scale(1)
 {
@@ -119,18 +119,18 @@ GPlatesPresentation::ReconstructVisualLayerParams::get_fill_modulate_colour() co
 
 
 void
-GPlatesPresentation::ReconstructVisualLayerParams::set_show_deformed_feature_geometries(
-		bool show_deformed_feature_geometries)
+GPlatesPresentation::ReconstructVisualLayerParams::set_show_topology_reconstructed_feature_geometries(
+		bool show_topology_reconstructed_feature_geometries)
 {
-	d_show_deformed_feature_geometries = show_deformed_feature_geometries;
+	d_show_topology_reconstructed_feature_geometries = show_topology_reconstructed_feature_geometries;
 	emit_modified();
 }
 
 
 bool 
-GPlatesPresentation::ReconstructVisualLayerParams::get_show_deformed_feature_geometries() const
+GPlatesPresentation::ReconstructVisualLayerParams::get_show_topology_reconstructed_feature_geometries() const
 {
-	return d_show_deformed_feature_geometries;
+	return d_show_topology_reconstructed_feature_geometries;
 }
 
 

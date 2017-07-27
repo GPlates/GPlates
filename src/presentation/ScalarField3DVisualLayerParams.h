@@ -28,15 +28,13 @@
 
 #include <utility>
 #include <vector>
-#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
 #include "VisualLayerParams.h"
 
-#include "gui/ColourPalette.h"
-
 #include "view-operations/ScalarField3DRenderParameters.h"
+
 
 namespace GPlatesPresentation
 {
@@ -54,10 +52,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 				GPlatesPresentation::ViewState &view_state)
 		{
-			return new ScalarField3DVisualLayerParams(layer_task_params, view_state);
+			return non_null_ptr_type(new ScalarField3DVisualLayerParams(layer_params, view_state));
 		}
 
 		/**
@@ -94,8 +92,31 @@ namespace GPlatesPresentation
 		/**
 		 * Returns all parameters as a single @a ScalarField3DRenderParameters object for convenience.
 		 */
-		GPlatesViewOperations::ScalarField3DRenderParameters
-		get_scalar_field_3d_render_parameters() const;
+		const GPlatesViewOperations::ScalarField3DRenderParameters &
+		get_scalar_field_3d_render_parameters() const
+		{
+			return d_scalar_field_3d_render_parameters;
+		}
+
+		/**
+		 * Sets all parameters as a single @a ScalarField3DRenderParameters object for convenience.
+		 */
+		void
+		set_scalar_field_3d_render_parameters(
+				const GPlatesViewOperations::ScalarField3DRenderParameters &scalar_field_3d_render_parameters)
+		{
+			d_scalar_colour_palette_parameters_initialised_from_scalar_field = true;
+			d_gradient_colour_palette_parameters_initialised_from_scalar_field = true;
+			d_isovalue_parameters_initialised_from_scalar_field = true;
+			d_depth_restriction_initialised_from_scalar_field = true;
+
+			d_scalar_field_3d_render_parameters = scalar_field_3d_render_parameters;
+
+			// If surface polygons mask not supported then disable it.
+			disable_surface_polygons_mask_if_not_supported();
+
+			emit_modified();
+		}
 
 
 		/**
@@ -104,7 +125,7 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode
 		get_render_mode() const
 		{
-			return d_render_mode;
+			return d_scalar_field_3d_render_parameters.get_render_mode();
 		}
 
 		/**
@@ -114,7 +135,12 @@ namespace GPlatesPresentation
 		set_render_mode(
 				GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode render_mode)
 		{
-			d_render_mode = render_mode;
+			if (d_scalar_field_3d_render_parameters.get_render_mode() == render_mode)
+			{
+				return;
+			}
+
+			d_scalar_field_3d_render_parameters.set_render_mode(render_mode);
 			emit_modified();
 		}
 
@@ -124,7 +150,7 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode
 		get_isosurface_deviation_window_mode() const
 		{
-			return d_isosurface_deviation_window_mode;
+			return d_scalar_field_3d_render_parameters.get_isosurface_deviation_window_mode();
 		}
 
 		/**
@@ -134,7 +160,12 @@ namespace GPlatesPresentation
 		set_isosurface_deviation_window_mode(
 				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode isosurface_deviation_window_mode)
 		{
-			d_isosurface_deviation_window_mode = isosurface_deviation_window_mode;
+			if (d_scalar_field_3d_render_parameters.get_isosurface_deviation_window_mode() == isosurface_deviation_window_mode)
+			{
+				return;
+			}
+
+			d_scalar_field_3d_render_parameters.set_isosurface_deviation_window_mode(isosurface_deviation_window_mode);
 			emit_modified();
 		}
 
@@ -144,7 +175,7 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode
 		get_isosurface_colour_mode() const
 		{
-			return d_isosurface_colour_mode;
+			return d_scalar_field_3d_render_parameters.get_isosurface_colour_mode();
 		}
 
 		/**
@@ -154,7 +185,12 @@ namespace GPlatesPresentation
 		set_isosurface_colour_mode(
 				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode isosurface_colour_mode)
 		{
-			d_isosurface_colour_mode = isosurface_colour_mode;
+			if (d_scalar_field_3d_render_parameters.get_isosurface_colour_mode() == isosurface_colour_mode)
+			{
+				return;
+			}
+
+			d_scalar_field_3d_render_parameters.set_isosurface_colour_mode(isosurface_colour_mode);
 			emit_modified();
 		}
 
@@ -164,7 +200,7 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode
 		get_cross_section_colour_mode() const
 		{
-			return d_cross_section_colour_mode;
+			return d_scalar_field_3d_render_parameters.get_cross_section_colour_mode();
 		}
 
 		/**
@@ -174,59 +210,66 @@ namespace GPlatesPresentation
 		set_cross_section_colour_mode(
 				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode cross_section_colour_mode)
 		{
-			d_cross_section_colour_mode = cross_section_colour_mode;
+			if (d_scalar_field_3d_render_parameters.get_cross_section_colour_mode() == cross_section_colour_mode)
+			{
+				return;
+			}
+
+			d_scalar_field_3d_render_parameters.set_cross_section_colour_mode(cross_section_colour_mode);
 			emit_modified();
 		}
 
 		/**
 		 * Returns the current scalar colour palette.
 		 */
-		const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &
-		get_scalar_colour_palette() const
+		const GPlatesPresentation::RemappedColourPaletteParameters &
+		get_scalar_colour_palette_parameters() const
 		{
-			return d_scalar_colour_palette;
+			return d_scalar_field_3d_render_parameters.get_scalar_colour_palette_parameters();
 		}
 
 		/**
 		 * Sets the current scalar colour palette.
 		 */
 		void
-		set_scalar_colour_palette(
-				const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &scalar_colour_palette)
+		set_scalar_colour_palette_parameters(
+				const GPlatesPresentation::RemappedColourPaletteParameters &scalar_colour_palette_parameters)
 		{
-			d_scalar_colour_palette = scalar_colour_palette;
+			d_scalar_colour_palette_parameters_initialised_from_scalar_field = true;
+
+			d_scalar_field_3d_render_parameters.set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 			emit_modified();
 		}
 
 		/**
 		 * Returns the current gradient colour palette.
 		 */
-		const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &
-		get_gradient_colour_palette() const
+		const GPlatesPresentation::RemappedColourPaletteParameters &
+		get_gradient_colour_palette_parameters() const
 		{
-			return d_gradient_colour_palette;
+			return d_scalar_field_3d_render_parameters.get_gradient_colour_palette_parameters();
 		}
 
 		/**
 		 * Sets the current gradient colour palette.
 		 */
 		void
-		set_gradient_colour_palette(
-				const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &gradient_colour_palette)
+		set_gradient_colour_palette_parameters(
+				const GPlatesPresentation::RemappedColourPaletteParameters &gradient_colour_palette_parameters)
 		{
-			d_gradient_colour_palette = gradient_colour_palette;
+			d_gradient_colour_palette_parameters_initialised_from_scalar_field = true;
+
+			d_scalar_field_3d_render_parameters.set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 			emit_modified();
 		}
 
 		/**
 		 * Returns the current isovalue parameters.
-		 *
-		 * Returns boost::none if they have not been set yet.
 		 */
-		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters>
+		const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &
 		get_isovalue_parameters() const
 		{
-			return d_isovalue_parameters;
+			return d_scalar_field_3d_render_parameters.get_isovalue_parameters();
 		}
 
 		/**
@@ -236,21 +279,23 @@ namespace GPlatesPresentation
 		set_isovalue_parameters(
 				const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters)
 		{
-			d_isovalue_parameters = isovalue_parameters;
+			d_isovalue_parameters_initialised_from_scalar_field = true;
+
+			d_scalar_field_3d_render_parameters.set_isovalue_parameters(isovalue_parameters);
 			emit_modified();
 		}
 
 		const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &
 		get_deviation_window_render_options() const
 		{
-			return d_deviation_window_render_options;
+			return d_scalar_field_3d_render_parameters.get_deviation_window_render_options();
 		}
 
 		void
 		set_deviation_window_render_options(
-				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &render_options)
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &deviation_window_render_options)
 		{
-			d_deviation_window_render_options = render_options;
+			d_scalar_field_3d_render_parameters.set_deviation_window_render_options(deviation_window_render_options);
 			emit_modified();
 		}
 
@@ -266,42 +311,48 @@ namespace GPlatesPresentation
 		const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &
 		get_surface_polygons_mask() const
 		{
-			return d_surface_polygons_mask;
+			return d_scalar_field_3d_render_parameters.get_surface_polygons_mask();
 		}
 
 		void
 		set_surface_polygons_mask(
-				const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &surface_polygons_mask)
+				GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask)
 		{
-			d_surface_polygons_mask = surface_polygons_mask;
+			d_scalar_field_3d_render_parameters.set_surface_polygons_mask(surface_polygons_mask);
+
+			// If surface polygons mask not supported then disable it.
+			disable_surface_polygons_mask_if_not_supported();
+
 			emit_modified();
 		}
 
-		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction>
+		const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &
 		get_depth_restriction() const
 		{
-			return d_depth_restriction;
+			return d_scalar_field_3d_render_parameters.get_depth_restriction();
 		}
 
 		void
 		set_depth_restriction(
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction)
 		{
-			d_depth_restriction = depth_restriction;
+			d_depth_restriction_initialised_from_scalar_field = true;
+
+			d_scalar_field_3d_render_parameters.set_depth_restriction(depth_restriction);
 			emit_modified();
 		}
 
 		const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &
 		get_quality_performance() const
 		{
-			return d_quality_performance;
+			return d_scalar_field_3d_render_parameters.get_quality_performance();
 		}
 
 		void
 		set_quality_performance(
 				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance)
 		{
-			d_quality_performance = quality_performance;
+			d_scalar_field_3d_render_parameters.set_quality_performance(quality_performance);
 			emit_modified();
 		}
 
@@ -311,7 +362,7 @@ namespace GPlatesPresentation
 		const std::vector<float> &
 		get_shader_test_variables() const
 		{
-			return d_shader_test_variables;
+			return d_scalar_field_3d_render_parameters.get_shader_test_variables();
 		}
 
 		/**
@@ -319,9 +370,9 @@ namespace GPlatesPresentation
 		 */
 		void
 		set_shader_test_variables(
-				const std::vector<float> &test_variables)
+				const std::vector<float> &shader_test_variables)
 		{
-			d_shader_test_variables = test_variables;
+			d_scalar_field_3d_render_parameters.set_shader_test_variables(shader_test_variables);
 			emit_modified();
 		}
 
@@ -329,56 +380,23 @@ namespace GPlatesPresentation
 
 		explicit
 		ScalarField3DVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 				GPlatesPresentation::ViewState &view_state);
 
 	private:
 
-		/**
-		 * See if any pertinent properties have changed.
-		 */
-		void
-		update(
-				bool always_emit_modified_signal = false);
-
-
-		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode d_render_mode;
-		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode d_isosurface_deviation_window_mode;
-		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode d_isosurface_colour_mode;
-		GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode d_cross_section_colour_mode;
-
-		/**
-		 * The current *scalar* colour palette for this layer, whether set explicitly as
-		 * loaded from a file, or auto-generated.
-		 */
-		GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette d_scalar_colour_palette;
-		//! Is false until we have done an initial range mapping using the scalar field min/max range.
-		bool d_initialised_scalar_colour_palette_range_mapping;
-
-		GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette d_gradient_colour_palette;
-		//! Is false until we have done an initial range mapping using the gradient field min/max range.
-		bool d_initialised_gradient_colour_palette_range_mapping;
-
-		// This is optional because the default isovalue cannot be set until a scalar field feature
-		// is available - the default isovalue is the mean scalar value in the scalar field.
-		// The scalar field is not immediately available due to various signal/slot dependencies.
-		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters> d_isovalue_parameters;
-
-		GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions d_deviation_window_render_options;
+		GPlatesViewOperations::ScalarField3DRenderParameters d_scalar_field_3d_render_parameters;
 
 		bool d_is_surface_polygons_mask_supported;
-		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask d_surface_polygons_mask;
 
-		// This is optional because the default depth restriction range cannot be set until a
-		// scalar field feature is available - the default depth restriction range is the
-		// depth range in the scalar field.
-		// The scalar field is not immediately available due to various signal/slot dependencies.
-		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction> d_depth_restriction;
+		bool d_scalar_colour_palette_parameters_initialised_from_scalar_field;
+		bool d_gradient_colour_palette_parameters_initialised_from_scalar_field;
+		bool d_isovalue_parameters_initialised_from_scalar_field;
+		bool d_depth_restriction_initialised_from_scalar_field;
 
-		GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance d_quality_performance;
 
-		std::vector<float> d_shader_test_variables;
-
+		void
+		disable_surface_polygons_mask_if_not_supported();
 	};
 }
 

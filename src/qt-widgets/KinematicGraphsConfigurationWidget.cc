@@ -21,7 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "KinematicGraphsDialog.h"
+#include "maths/Real.h"
+
 #include "KinematicGraphsConfigurationWidget.h"
 
 
@@ -34,9 +35,9 @@ GPlatesQtWidgets::KinematicGraphsConfigurationWidget::KinematicGraphsConfigurati
 	d_spin_box_palette = spinbox_dt->palette();
 
 	// These id values determine which values are exported to preferences.
-	button_group_velocity_method->setId(radio_t_to_t_minus_dt,KinematicGraphsDialog::T_TO_T_MINUS_DT);
-	button_group_velocity_method->setId(radio_t_plus_dt_to_t,KinematicGraphsDialog::T_PLUS_DT_TO_T);
-	button_group_velocity_method->setId(radio_t_plus_dt_to_t_minus_dt,KinematicGraphsDialog::T_PLUS_MINUS_HALF_DT);
+	button_group_velocity_method->setId(radio_t_to_t_minus_dt,T_TO_T_MINUS_DT);
+	button_group_velocity_method->setId(radio_t_plus_dt_to_t,T_PLUS_DT_TO_T);
+	button_group_velocity_method->setId(radio_t_plus_dt_to_t_minus_dt,T_PLUS_MINUS_HALF_DT);
 
 	QObject::connect(radio_t_to_t_minus_dt,SIGNAL(clicked()),this,SLOT(handle_velocity_method_changed()));
 	QObject::connect(radio_t_plus_dt_to_t,SIGNAL(clicked()),this,SLOT(handle_velocity_method_changed()));
@@ -50,7 +51,7 @@ GPlatesQtWidgets::KinematicGraphsConfigurationWidget::~KinematicGraphsConfigurat
 {
 }
 
-GPlatesQtWidgets::KinematicGraphsDialog::VelocityMethod
+GPlatesQtWidgets::KinematicGraphsConfigurationWidget::VelocityMethod
 GPlatesQtWidgets::KinematicGraphsConfigurationWidget::velocity_method()
 {
 	return d_velocity_method;
@@ -61,15 +62,15 @@ GPlatesQtWidgets::KinematicGraphsConfigurationWidget::handle_velocity_method_cha
 {
 	if (radio_t_to_t_minus_dt->isChecked())
 	{
-		d_velocity_method = KinematicGraphsDialog::T_TO_T_MINUS_DT;
+		d_velocity_method = T_TO_T_MINUS_DT;
 	}
 	else if (radio_t_plus_dt_to_t->isChecked())
 	{
-		d_velocity_method = KinematicGraphsDialog::T_PLUS_DT_TO_T;
+		d_velocity_method = T_PLUS_DT_TO_T;
 	}
 	else
 	{
-		d_velocity_method = KinematicGraphsDialog::T_PLUS_MINUS_HALF_DT;
+		d_velocity_method = T_PLUS_MINUS_HALF_DT;
 	}
 	Q_EMIT configuration_changed(true);
 }

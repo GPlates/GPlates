@@ -104,6 +104,12 @@ namespace
 		defaults.setValue(
 				"paths/default_export_dir", 
 				QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
+		defaults.setValue(
+					"paths/default_feature_collection_dir",
+					QDir::currentPath());
+		defaults.setValue(
+					"paths/default_project_dir",
+					QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
 
 
 		////////////////////////////////

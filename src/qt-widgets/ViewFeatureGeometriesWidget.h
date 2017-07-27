@@ -90,8 +90,13 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 
-	private Q_SLOTS:
-		
+	protected:
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *event_);
+
 	private:
 		/**
 		 * This is the reconstruction generator which is used to obtain the
@@ -113,6 +118,15 @@ namespace GPlatesQtWidgets
 		 * The @a ReconstructionGeometry associated with the feature that is in focus.
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
+
+		/**
+		 * The geometry tree is only populated when this widget is visible.
+		 *
+		 * This is an optimisation that delays populating until this widget is visible in order to
+		 * avoid continually populating the widget when the reconstruction time changes or the focused
+		 * feature changes, even though the widget is not visible.
+		 */
+		bool d_populate_geometry_tree_when_visible;
 	};
 }
 

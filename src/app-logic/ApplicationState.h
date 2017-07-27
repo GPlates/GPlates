@@ -66,6 +66,7 @@ namespace GPlatesFileIO
 
 namespace GPlatesAppLogic
 {
+	class AgeModelCollection;
 	class FeatureCollectionFileIO;
 	class LayerTask;
 	class LayerTaskRegistry;
@@ -88,6 +89,11 @@ namespace GPlatesAppLogic
 		ApplicationState();
 
 		~ApplicationState();
+
+		/**
+		 * Convenience typedef for the chron-to-time-interval map.
+		 */
+		typedef std::map<QString,std::pair<double,double> > chron_to_time_interval_map_type;
 
 		GPlatesModel::ModelInterface &
 		get_model_interface()
@@ -120,11 +126,19 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
 
+		//! Const overload.
+		const FeatureCollectionFileState &
+		get_feature_collection_file_state() const;
+
 		/**
 		 * Handling file formats for reading and/or writing feature collection files.
 		 */
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
 		get_feature_collection_file_format_registry();
+
+		//! Const overload.
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_feature_collection_file_format_registry() const;
 
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
@@ -132,12 +146,20 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
 
+		//! Const overload.
+		const FeatureCollectionFileIO &
+		get_feature_collection_file_io() const;
+
 		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
 		UserPreferences &
 		get_user_preferences();
-		
+
+		//! Const overload.
+		const UserPreferences &
+		get_user_preferences() const;
+
 
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
@@ -148,17 +170,29 @@ namespace GPlatesAppLogic
 		ReconstructMethodRegistry &
 		get_reconstruct_method_registry();
 
+		//! Const overload.
+		const ReconstructMethodRegistry &
+		get_reconstruct_method_registry() const;
+
 		/**
 		 * Returns the layer task registry used to create layer tasks.
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
 
+		//! Const overload.
+		const LayerTaskRegistry &
+		get_layer_task_registry() const;
+
 		/**
 		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
 		 */
 		LogModel &
 		get_log_model();
+
+		//! Const overload.
+		const LogModel &
+		get_log_model() const;
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -168,6 +202,10 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
+
+		//! Const overload.
+		const ReconstructGraph &
+		get_reconstruct_graph() const;
 
 		/**
 		 * If @a update_default is true, this updates the default reconstruction tree
@@ -201,6 +239,30 @@ namespace GPlatesAppLogic
 				bool suppress)
 		{
 			d_suppress_auto_layer_creation = suppress;
+		}
+
+		chron_to_time_interval_map_type &
+		get_chron_to_time_interval_map()
+		{
+			return d_chron_to_time_interval_map;
+		}
+
+		const chron_to_time_interval_map_type &
+		get_chron_to_time_interval_map() const
+		{
+			return d_chron_to_time_interval_map;
+		}
+
+		const AgeModelCollection &
+		get_age_model_collection() const
+		{
+			return *d_age_model_collection;
+		}
+
+		AgeModelCollection &
+		get_age_model_collection()
+		{
+			return *d_age_model_collection;
 		}
 
 
@@ -480,6 +542,18 @@ namespace GPlatesAppLogic
 		 * copies of the callback thus allowing it to get called more than once per modification.
 		 */
 		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_callback_feature_store;
+
+		/**
+		 * a std::map of type <QString, std::pair<double,double> > which represents
+		 * < chron, <younger-end-point, older-end-point> >
+		 *
+		 * The std::pair contains the youger and older end points (Ma) of the time interval which
+		 * corresponds to the chron represented by the QString.
+		 *
+		 */
+		chron_to_time_interval_map_type d_chron_to_time_interval_map;
+
+		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 
 
 		/**

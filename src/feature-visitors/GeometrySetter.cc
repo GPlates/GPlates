@@ -68,10 +68,10 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_line_string(
 	// make any sense, and to hell with the rest of them.
 	const GPlatesMaths::PolylineOnSphere *polyline_on_sphere =
 			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(d_geometry_to_set.get());
-	if (polyline_on_sphere != NULL) {
+	if (polyline_on_sphere != NULL)
+	{
 		gml_line_string.set_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(polyline_on_sphere,
-						GPlatesUtils::NullIntrusivePointerHandler()) );
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(polyline_on_sphere));
 	}
 }
 
@@ -87,10 +87,10 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_multi_point(
 	// make any sense, and to hell with the rest of them.
 	const GPlatesMaths::MultiPointOnSphere *multi_point_on_sphere =
 			dynamic_cast<const GPlatesMaths::MultiPointOnSphere *>(d_geometry_to_set.get());
-	if (multi_point_on_sphere != NULL) {
+	if (multi_point_on_sphere != NULL)
+	{
 		gml_multi_point.set_multipoint(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type(multi_point_on_sphere,
-						GPlatesUtils::NullIntrusivePointerHandler()) );
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type(multi_point_on_sphere));
 	}
 }
 
@@ -114,10 +114,10 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_point(
 	// make any sense, and to hell with the rest of them.
 	const GPlatesMaths::PointOnSphere *point_on_sphere =
 			dynamic_cast<const GPlatesMaths::PointOnSphere *>(d_geometry_to_set.get());
-	if (point_on_sphere != NULL) {
+	if (point_on_sphere != NULL)
+	{
 		gml_point.set_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(point_on_sphere,
-						GPlatesUtils::NullIntrusivePointerHandler()) );
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(point_on_sphere));
 	}
 }
 
@@ -133,10 +133,10 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_polygon(
 	// make any sense, and to hell with the rest of them.
 	const GPlatesMaths::PolygonOnSphere *polygon_on_sphere =
 			dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(d_geometry_to_set.get());
-	if (polygon_on_sphere != NULL) {
-		gml_polygon.set_exterior(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type(polygon_on_sphere,
-						GPlatesUtils::NullIntrusivePointerHandler()) );
+	if (polygon_on_sphere != NULL)
+	{
+		gml_polygon.set_polygon(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type(polygon_on_sphere));
 	}
 }
 
@@ -147,5 +147,3 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gpml_constant_value(
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
-
-

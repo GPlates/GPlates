@@ -34,6 +34,7 @@
 
 #include "FileDialogFilter.h"
 
+#include "gui/FileIODirectoryConfigurations.h"
 #include "presentation/ViewState.h"
 
 
@@ -58,11 +59,11 @@ namespace GPlatesQtWidgets
 				const QString &caption,
 				Iterator filters_begin,
 				Iterator filters_end,
-				GPlatesPresentation::ViewState &view_state) :
+				GPlatesGui::DirectoryConfiguration &configuration) :
 			d_parent(parent),
 			d_caption(caption),
-			d_last_open_directory(view_state.get_last_open_directory()),
-			d_filter(FileDialogFilter::create_filter_string(filters_begin, filters_end))
+			d_filter(FileDialogFilter::create_filter_string(filters_begin, filters_end)),
+			d_directory_configuration(configuration)
 		{  }
 
 		/**
@@ -72,11 +73,11 @@ namespace GPlatesQtWidgets
 				QWidget *parent,
 				const QString &caption,
 				const filter_list_type &filters,
-				GPlatesPresentation::ViewState &view_state) :
+				GPlatesGui::DirectoryConfiguration &configuration) :
 			d_parent(parent),
 			d_caption(caption),
-			d_last_open_directory(view_state.get_last_open_directory()),
-			d_filter(FileDialogFilter::create_filter_string(filters.begin(), filters.end()))
+			d_filter(FileDialogFilter::create_filter_string(filters.begin(), filters.end())),
+			d_directory_configuration(configuration)
 		{  }
 
 		/**
@@ -108,9 +109,9 @@ namespace GPlatesQtWidgets
 
 		QWidget *d_parent;
 		QString d_caption;
-		QString &d_last_open_directory;
 		QString d_filter;
 		QString d_selected_filter;
+		GPlatesGui::DirectoryConfiguration &d_directory_configuration;
 	};
 }
 

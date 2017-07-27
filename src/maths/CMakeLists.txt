@@ -15,10 +15,13 @@ set(srcs
     AngularDistance.h
     AngularExtent.cc
     AngularExtent.h
+    AzimuthalEqualAreaProjection.cc
+    AzimuthalEqualAreaProjection.h
     CalculateVelocity.cc
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
+    Centroid.cc
     Centroid.h
     ConstGeometryOnSphereVisitor.h
     CubeCoordinateFrame.cc
@@ -36,6 +39,8 @@ set(srcs
     FiniteRotation.h
     FiniteRotationSnapshotTable.h
     FunctionDomainException.h
+    GeneratePoints.cc
+    GeneratePoints.h
     GenericVectorOps3D.h
     GeometryDistance.cc
     GeometryDistance.h
@@ -44,11 +49,12 @@ set(srcs
     GeometryInterpolation.h
     GeometryOnSphere.h
     GeometryType.h
+    GnomonicProjection.cc
+    GnomonicProjection.h
     GreatCircle.cc
     GreatCircle.h
     GreatCircleArc.cc
     GreatCircleArc.h
-    HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h
     IndeterminateResultException.h
@@ -64,7 +70,6 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
-    MathsFwd.h
     MathsUtils.cc
     MathsUtils.h
     MultiPointOnSphere.cc
@@ -95,8 +100,6 @@ set(srcs
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
-    ProjectionUtils.cc
-    ProjectionUtils.h
     ProximityCriteria.cc
     ProximityCriteria.h
     ProximityHitDetail.cc
@@ -116,9 +119,10 @@ set(srcs
     SmallCircleCoverageMesh.cc
     SmallCircleCoverageMesh.h
     SmallCircleProximityHitDetail.h
-    SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
+    SphericalSubdivision.cc
+    SphericalSubdivision.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

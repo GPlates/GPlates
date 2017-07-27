@@ -523,9 +523,9 @@ namespace GPlatesApi
 					geometry,
 					reconstruction_method_registry,
 					feature_handle.reference(),
+					reconstruction_time,
 					reconstruction_tree_creator,
 					GPlatesAppLogic::ReconstructParams(),
-					reconstruction_time,
 					true/*reverse_reconstruct*/);
 		}
 

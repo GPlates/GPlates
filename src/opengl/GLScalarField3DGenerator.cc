@@ -975,7 +975,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 	// Adjust the dimension (either reduce or enlarge).
 	d_cube_face_dimension *= viewport_dimension_scale;
 
-	qDebug() << "initial cube_face_dimension: " << d_cube_face_dimension;
+	//qDebug() << "initial cube_face_dimension: " << d_cube_face_dimension;
 
 	// For now just limit the cube face dimension to something reasonable
 	// to avoid excessive memory usage.

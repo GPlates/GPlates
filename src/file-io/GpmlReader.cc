@@ -397,10 +397,16 @@ GPlatesFileIO::GpmlReader::read_file(
 		// gzipped, assuming gzipped GPML.
 		// Set up the gzip process.
 		input_process.setStandardInputFile(filename);
+
 		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
 		// In fact, it may need to be a user preference.
 		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
-		if ( ! input_process.waitForStarted())
+
+		// Checking the error code is a workaround for a Qt bug that causes a crash on Mac/Unix
+		// when the input file does not exist - see https://bugreports.qt.io/browse/QTBUG-33021.
+		// Without the bug only QProcess::waitForStarted() needs to be called.
+		if (input_process.error() != QProcess::UnknownError ||
+			!input_process.waitForStarted())
 		{
 			throw ErrorOpeningPipeFromGzipException(GPLATES_EXCEPTION_SOURCE,
 					gunzip_program().command(), filename);

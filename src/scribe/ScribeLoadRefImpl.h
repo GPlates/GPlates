@@ -113,17 +113,13 @@ namespace GPlatesScribe
 					//
 					// If the object is already *untracked* then this 'untrack()' call does nothing.
 					// There are two cases where the object is already *untracked*:
-					//   (1) Tracking was requested (ie, 'DONT_TRACK' was *not* specified) and
+					//   (1) Tracking was requested (ie, 'TRACK' was specified) and
 					//       the scribe client has relocated the LoadRef<> to its final object location, or
-					//   (2) The object is *not* relocatable (ie, scribe client specified DONT_TRACK) and
-					//       hence the object has already been untracked (but its children were not untracked).
-					//       In this case it's still possible that the scribe client did not use the object
-					//       (or its children) in which case the children will remain tracked unnecessarily.
-					//       However that is a rare use-case, so special care will need to be taken by the
-					//       scribe client to relocate the children (only the parent object is *not* relocatable).
+					//   (2) The object is *not* relocatable (ie, scribe client did not specify TRACK) and
+					//       hence the object has already been untracked (and its children were also untracked).
 					//
 					// If the object is currently being *tracked* then it means the object is relocatable,
-					// because the scribe client requested tracking (ie, did *not* specify DONT_TRACK),
+					// because the scribe client requested tracking (ie, specified TRACK),
 					// but the object was not relocated and hence not used.
 					// In this case we discard it which means we untrack it *and* all its children
 					// (eg, an owning pointer *and* its pointed-to object).

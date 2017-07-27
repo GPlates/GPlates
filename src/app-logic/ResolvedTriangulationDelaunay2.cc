@@ -30,37 +30,12 @@
 
 #include "utils/Profile.h"
 
-// #define DEBUG
-
-// FIXME: why can't this be implemented in a .cc ?
-#if 0 
-template < typename GT, typename Fb >
-void
-GPlatesAppLogic::ResolvedTriangulation::DelaunayFace_2<GT, Fb>::calculate_centroid() const
-{
-	// Calculate the centroid of this face 
-	qDebug() << "calculate_centroid";
-	
-	// Get the vertices as PointOnSphere 's and add them to a vector
-	std::vector<GPlatesMaths::PointOnSphere> points;
-	points.push_back( *this->vertex(0)->get_point_on_sphere() );
-	points.push_back( *this->vertex(1)->get_point_on_sphere() );
-	points.push_back( *this->vertex(2)->get_point_on_sphere() );
-
-	// compute the centroid 
-	//boost::optional<GPlatesMaths::PointOnSphere> centroid;
-	d_centroid = GPlatesMaths::Centroid::calculate_points_centroid(
-		points.begin(),
-		points.end()
-	);
-}
-#endif
-
 
 bool
 GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::calc_natural_neighbor_coordinates(
 		delaunay_natural_neighbor_coordinates_2_type &natural_neighbor_coordinates,
-		const delaunay_point_2_type &point) const
+		const delaunay_point_2_type &point,
+		Face_handle start_face_hint) const
 {
 	// Build the natural neighbor coordinates.
 	CGAL::Triple< std::back_insert_iterator<delaunay_point_coordinate_vector_2_type>, delaunay_coord_2_type, bool>
@@ -68,11 +43,56 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::calc_natural_neighbor_coordi
 					CGAL::natural_neighbor_coordinates_2(
 							*this,
 							point,
-							std::back_inserter(natural_neighbor_coordinates.first));
+							std::back_inserter(natural_neighbor_coordinates.first),
+							start_face_hint);
 
 	natural_neighbor_coordinates.second = coordinate_result.second/*norm*/;
 
-	return coordinate_result.third/*in_triangulation*/;
+	if (!coordinate_result.third/*in_triangulation*/)
+	{
+		return false;
+	}
+
+	if (natural_neighbor_coordinates.second > 0)
+	{
+		// Normalisation factor greater than zero - everything's fine.
+		return true/*in_triangulation*/;
+	}
+
+	//
+	// It appears that CGAL can trigger assertions under certain situations (at certain query points).
+	// This is most likely due to us not using exact arithmetic in our delaunay triangulation
+	// (currently we use 'CGAL::Exact_predicates_inexact_constructions_kernel').
+	// The assertion seems to manifest as a normalisation factor of zero - so we checked for zero above.
+	//
+	// We get around this by converting barycentric coordinates to natural neighbour coordinates.
+	//
+
+	delaunay_coord_2_type barycentric_coord_vertex_1;
+	delaunay_coord_2_type barycentric_coord_vertex_2;
+	delaunay_coord_2_type barycentric_coord_vertex_3;
+	const boost::optional<Face_handle> face = calc_barycentric_coordinates(
+			barycentric_coord_vertex_1,
+			barycentric_coord_vertex_2,
+			barycentric_coord_vertex_3,
+			point,
+			start_face_hint);
+	if (!face)
+	{
+		return false/*in_triangulation*/;
+	}
+
+	natural_neighbor_coordinates.first.clear();
+	natural_neighbor_coordinates.first.push_back(
+			std::make_pair(face.get()->vertex(0)->point(), barycentric_coord_vertex_1));
+	natural_neighbor_coordinates.first.push_back(
+			std::make_pair(face.get()->vertex(1)->point(), barycentric_coord_vertex_2));
+	natural_neighbor_coordinates.first.push_back(
+			std::make_pair(face.get()->vertex(2)->point(), barycentric_coord_vertex_3));
+
+	natural_neighbor_coordinates.second = 1.0;
+
+	return true/*in_triangulation*/;
 }
 
 
@@ -81,20 +101,16 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::calc_barycentric_coordinates
 		delaunay_coord_2_type &barycentric_coord_vertex_1,
 		delaunay_coord_2_type &barycentric_coord_vertex_2,
 		delaunay_coord_2_type &barycentric_coord_vertex_3,
-		const delaunay_point_2_type &point) const
+		const delaunay_point_2_type &point,
+		Face_handle start_face_hint) const
 {
 	// Locate the (finite) face that the point is inside (if any).
-	Locate_type locate_type;
-	int li;
-	const Face_handle face = locate(point, locate_type, li);
-
-	if (locate_type != FACE &&
-		locate_type != EDGE &&
-		locate_type != VERTEX)
+	const boost::optional<Face_handle> face_opt = get_face_containing_point(point, start_face_hint);
+	if (!face_opt)
 	{
-		// Point was not inside the convex hull (delaunay triangulation).
 		return boost::none;
 	}
+	const Face_handle face = face_opt.get();
 
 	delaunay_coord_2_type barycentric_norm;
 	ResolvedTriangulation::get_barycentric_coords_2(
@@ -106,6 +122,28 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::calc_barycentric_coordinates
 			barycentric_coord_vertex_1,
 			barycentric_coord_vertex_2,
 			barycentric_coord_vertex_3);
+
+	return face;
+}
+
+
+boost::optional<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle>
+GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::get_face_containing_point(
+		const delaunay_point_2_type &point,
+		Face_handle start_face_hint) const
+{
+	// Locate the (finite) face that the point is inside (if any).
+	Locate_type locate_type;
+	int li;
+	const Face_handle face = locate(point, locate_type, li, start_face_hint);
+
+	if (locate_type != FACE &&
+		locate_type != EDGE &&
+		locate_type != VERTEX)
+	{
+		// Point was not inside the convex hull (delaunay triangulation).
+		return boost::none;
+	}
 
 	return face;
 }
@@ -128,14 +166,6 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::gradient_2(
 				point,
 				std::back_inserter(coords)
 			);
-	
-	const bool in_network = coordinate_result.third;
-	if (!in_network)
-	{
-#ifdef DEBUG
-		qDebug() << " !in_network ";
-#endif
-	}
 
 	const delaunay_coord_2_type &norm = coordinate_result.second;
 

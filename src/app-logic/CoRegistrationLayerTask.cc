@@ -38,6 +38,17 @@
 #include "data-mining/DataSelector.h"
 
 
+GPlatesAppLogic::CoRegistrationLayerTask::CoRegistrationLayerTask() :
+		d_layer_params(CoRegistrationLayerParams::create()),
+		d_coregistration_layer_proxy(CoRegistrationLayerProxy::create())
+{
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_cfg_table(GPlatesAppLogic::CoRegistrationLayerParams &)),
+			this, SLOT(handle_cfg_table_modified(GPlatesAppLogic::CoRegistrationLayerParams &)));
+}
+
+
 bool
 GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -184,6 +195,36 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 			d_coregistration_layer_proxy->remove_coregistration_target_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(target_raster_layer_proxy.get()));
 		}
+
+		// Remove any configuration table rows (from our layer params) that have target rows matching
+		// the layer we are removing.
+		GPlatesDataMining::CoRegConfigurationTable new_cfg_table;
+		const GPlatesDataMining::CoRegConfigurationTable &cfg_table = d_layer_params->get_cfg_table();
+		for (std::size_t row = 0; row < cfg_table.size(); ++row)
+		{
+			const GPlatesDataMining::ConfigurationTableRow &cfg_row = cfg_table[row];
+			if (!cfg_row.target_layer.is_valid())
+			{
+				continue;
+			}
+
+			boost::optional<LayerProxy::non_null_ptr_type> cfg_target_layer_proxy =
+					cfg_row.target_layer.get_layer_output();
+			if (!cfg_target_layer_proxy || // A layer about to be removed is first deactivated
+				cfg_target_layer_proxy == layer_proxy)
+			{
+				continue;
+			}
+
+			// The current config row's target layer is valid and is not being removed so keep it.
+			new_cfg_table.push_back(cfg_row);
+		}
+
+		if (new_cfg_table.size() != cfg_table.size())
+		{
+			new_cfg_table.optimize();
+			d_layer_params->set_cfg_table(new_cfg_table);
+		}
 	}
 }
 
@@ -194,16 +235,15 @@ GPlatesAppLogic::CoRegistrationLayerTask::update(
 {
 	d_coregistration_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
-	// If the layer task params have been modified then update our reconstruct layer proxy.
-	if (d_layer_task_params.d_set_cfg_table_called)
-	{
-		// Let the layer proxy know of the updated configuration table.
-		d_coregistration_layer_proxy->set_current_coregistration_configuration_table(
-				d_layer_task_params.d_cfg_table);
-
-		d_layer_task_params.d_set_cfg_table_called = false;
-	}
-
 	// NOTE: Clients of co-registration (eg, the co-registration results dialog or co-registration
 	// export) are expected to query the layer proxy to process/get co-registration results.
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerTask::handle_cfg_table_modified(
+		CoRegistrationLayerParams &layer_params)
+{
+	// Update our co-registration layer proxy.
+	d_coregistration_layer_proxy->set_current_coregistration_configuration_table(layer_params.get_cfg_table());
 }

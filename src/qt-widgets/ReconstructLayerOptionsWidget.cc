@@ -29,9 +29,12 @@
 #include "LinkWidget.h"
 #include "QtWidgetUtils.h"
 #include "SetVGPVisibilityDialog.h"
-#include "SetDeformationParametersDialog.h"
+#include "SetTopologyReconstructionParametersDialog.h"
 #include "ViewportWindow.h"
 #include "VisualLayersDialog.h"
+
+#include "app-logic/ReconstructLayerParams.h"
+#include "app-logic/ReconstructParams.h"
 
 #include "gui/Dialogs.h"
 
@@ -39,6 +42,33 @@
 #include "presentation/VisualLayer.h"
 
 #include "utils/ComponentManager.h"
+
+
+namespace
+{
+	const QString HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TITLE =
+			QObject::tr("Using topologies to reconstruct features");
+	const QString HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Feature geometries can optionally be reconstructed using topological rigid plates and deforming networks "
+			"if <i>Yes</i> is chosen. In this case the topological layers connected via the <i>topology surfaces</i> "
+			"input channel are used to reconstruct and deform the feature geometries in this layer. However if no "
+			"topological layers are connected then <b>all</b> loaded topological layers are used. So you only need to "
+			"connect topological layers if you wish to limit reconstruction/deformation to specific topological layers.</p>"
+			"<p>Among the parameters available for this is the time span (or range) over which the topological layers are used. "
+			"During this time range each feature geometry is incrementally reconstructed/deformed from one time to the next over "
+			"a time increment (1My by default) using the velocity of the rigid plate or deforming network that each geometry point "
+			"is inside at each time step. The history of positions is stored internally over the entire time range. As such it can "
+			"take a noticeable amount of time to build up this history. And note that any changes to this layer or the topological "
+			"layers or any of their dependency layers (including rotation layers) will cause this history to be re-calculated along "
+			"with the delay involved.</p>"
+			"<p>Outside this time range each feature transitions over to regular reconstruction by plate ID and will not use "
+			"any topological rigid plates or deforming networks.</p>"
+			"<p>Parameters used for topological reconstruction can be set via the <i>Set parameters</i> link. "
+			"If <i>No</i> is currently selected then this is a check box (instead of a link). If the box is checked "
+			"then you will be prompted to modify the parameters if you select <i>Yes</i>.</p>"
+			"</body></html>\n");
+}
 
 
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
@@ -50,8 +80,13 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	d_application_state(application_state),
 	d_viewport_window(viewport_window),
 	d_set_vgp_visibility_dialog(NULL),
-	d_set_deformation_parameters_dialog(NULL),
-	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
+	d_set_topology_reconstruction_parameters_dialog(NULL),
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog()),
+	d_help_reconstruct_using_topologies_dialog(
+			new InformationDialog(
+					HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TEXT,
+					HELP_RECONSTRUCT_USING_TOPOLOGIES_DIALOG_TITLE,
+					viewport_window))
 {
 	setupUi(this);
 
@@ -66,21 +101,19 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			this,
 			SLOT(open_vgp_visibility_dialog()));
 
-	LinkWidget *set_deformation_parameters_link = new LinkWidget(
-			tr("Set Deformation parameters..."), this);
+	LinkWidget *set_topology_reconstruction_parameters_link = new LinkWidget(
+			tr("Set parameters..."), this);
 	QtWidgetUtils::add_widget_to_placeholder(
-			set_deformation_parameters_link,
+			set_topology_reconstruction_parameters_link,
 			set_deformation_placeholder_widget);
 	QObject::connect(
-			set_deformation_parameters_link,
+			set_topology_reconstruction_parameters_link,
 			SIGNAL(link_activated()),
 			this,
-			SLOT(open_deformation_parameters_dialog()));
-
+			SLOT(open_topology_reconstruction_parameters_dialog()));
 	
 	LinkWidget *draw_style_link = new LinkWidget(
-			tr("Draw Style Setting..."), this);
-
+			tr("Set Draw style..."), this);
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
 			draw_style_placeholder_widget);
@@ -89,7 +122,26 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_draw_style_setting_dlg()));
-	
+
+	dont_use_topologies_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_use_topologies_button(bool)));
+	use_topologies_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_use_topologies_button(bool)));
+
+	prompt_set_topology_reconstruction_parameters_check_box->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			prompt_set_topology_reconstruction_parameters_check_box, SIGNAL(clicked()),
+			this, SLOT(handle_prompt_set_topology_reconstruction_parameters_clicked()));
+
+	push_button_help_reconstruct_using_topologies->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_reconstruct_using_topologies, SIGNAL(clicked()),
+			d_help_reconstruct_using_topologies_dialog, SLOT(show()));
+
 	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			fill_polygons,
@@ -122,7 +174,6 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	{
 		draw_style_link->setVisible(false);
 	}
-
 }
 
 
@@ -155,6 +206,49 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::set_data(
 	// Set the state of the filled polygon checkbox.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			prompt_set_topology_reconstruction_parameters_check_box->setChecked(
+					layer_params->get_prompt_to_change_topology_reconstruction_parameters());
+
+			const GPlatesAppLogic::ReconstructParams &reconstruct_params = layer_params->get_reconstruct_params();
+
+			// Use Topologies Mode.
+			//
+			// Changing the current mode will emit signals which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+			QObject::disconnect(
+					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_use_topologies_button(bool)));
+			QObject::disconnect(
+					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_use_topologies_button(bool)));
+			if (reconstruct_params.get_reconstruct_using_topologies())
+			{
+				use_topologies_radio_button->setChecked(true);
+
+				prompt_set_topology_reconstruction_parameters_check_box->hide();
+				set_deformation_placeholder_widget->show();
+			}
+			else
+			{
+				dont_use_topologies_radio_button->setChecked(true);
+
+				prompt_set_topology_reconstruction_parameters_check_box->show();
+				set_deformation_placeholder_widget->hide();
+			}
+			QObject::connect(
+					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_use_topologies_button(bool)));
+			QObject::connect(
+					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_use_topologies_button(bool)));
+		}
+
 		GPlatesPresentation::ReconstructVisualLayerParams *visual_layer_params =
 			dynamic_cast<GPlatesPresentation::ReconstructVisualLayerParams *>(
 					locked_visual_layer->get_visual_layer_params().get());
@@ -214,19 +308,19 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 
 
 void
-GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_deformation_parameters_dialog()
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_topology_reconstruction_parameters_dialog()
 {
-	if (!d_set_deformation_parameters_dialog)
+	if (!d_set_topology_reconstruction_parameters_dialog)
 	{
-		d_set_deformation_parameters_dialog = new SetDeformationParametersDialog(
+		d_set_topology_reconstruction_parameters_dialog = new SetTopologyReconstructionParametersDialog(
 				d_application_state,
 				&d_viewport_window->dialogs().visual_layers_dialog());
 	}
 
-	d_set_deformation_parameters_dialog->populate(d_current_visual_layer);
+	d_set_topology_reconstruction_parameters_dialog->populate(d_current_visual_layer);
 
 	// This dialog is shown modally.
-	d_set_deformation_parameters_dialog->exec();
+	d_set_topology_reconstruction_parameters_dialog->exec();
 }
 
 
@@ -236,6 +330,69 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_draw_style_setting_dlg()
 	//qDebug() << "popup draw style dialog...";
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
+}
+
+
+void
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_use_topologies_button(
+		bool checked)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			if (dont_use_topologies_radio_button->isChecked())
+			{
+				GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
+				reconstruct_params.set_reconstruct_using_topologies(false);
+				layer_params->set_reconstruct_params(reconstruct_params);
+
+				prompt_set_topology_reconstruction_parameters_check_box->show();
+				set_deformation_placeholder_widget->hide();
+			}
+
+			if (use_topologies_radio_button->isChecked())
+			{
+				if (layer_params->get_prompt_to_change_topology_reconstruction_parameters())
+				{
+					// Ask the user to modify the reconstruct params *before* we switch to using topologies
+					// so that we don't get hit by a long topology reconstruction initialisation twice
+					// (once when switching it on and again when user changes parameters).
+					open_topology_reconstruction_parameters_dialog();
+				}
+
+				// Switch to using topologies.
+				GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
+				reconstruct_params.set_reconstruct_using_topologies(true);
+				layer_params->set_reconstruct_params(reconstruct_params);
+
+				prompt_set_topology_reconstruction_parameters_check_box->hide();
+				set_deformation_placeholder_widget->show();
+			}
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_prompt_set_topology_reconstruction_parameters_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			layer_params->set_prompt_to_change_topology_reconstruction_parameters(
+					prompt_set_topology_reconstruction_parameters_check_box->isChecked());
+		}
+	}
 }
 
 

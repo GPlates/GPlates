@@ -129,282 +129,21 @@
       <string>Scalar Colour Mapping</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_14">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="margin">
+       <number>6</number>
+      </property>
       <item>
-       <widget class="QWidget" name="scalar_palette_widget" native="true">
+       <widget class="QWidget" name="scalar_palette_placeholder_widget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_27">
-         <item>
-          <widget class="QLabel" name="scalar_palette_label">
-           <property name="text">
-            <string>Palette:</string>
-           </property>
-           <property name="buddy">
-            <cstring>scalar_palette_range_restore_min_max_widget</cstring>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QWidget" name="scalar_palette_filename_placeholder_widget" native="true"/>
-         </item>
-         <item>
-          <widget class="QToolButton" name="select_scalar_palette_filename_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Choose CPT File</string>
-           </property>
-           <property name="text">
-            <string>...</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QToolButton" name="use_default_scalar_palette_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Use Default Palette</string>
-           </property>
-           <property name="text">
-            <string>Use Default Palette</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../qt-resources/qt_widgets.qrc">
-             <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_24">
-        <item>
-         <widget class="QWidget" name="scalar_colour_scale_placeholder_widget" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_13">
-          <property name="spacing">
-           <number>3</number>
-          </property>
-          <item>
-           <widget class="QGroupBox" name="scalar_palette_range_mapping_group_box">
-            <property name="title">
-             <string>Palette Range</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_12">
-             <property name="spacing">
-              <number>3</number>
-             </property>
-             <property name="margin">
-              <number>6</number>
-             </property>
-             <item>
-              <widget class="QCheckBox" name="scalar_palette_range_check_box">
-               <property name="text">
-                <string>Remap range</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="scalar_palette_range_widget" native="true">
-               <layout class="QVBoxLayout" name="verticalLayout_5">
-                <property name="spacing">
-                 <number>3</number>
-                </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QWidget" name="scalar_palette_min_widget" native="true">
-                  <layout class="QHBoxLayout" name="scalar_range_min_layout">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="scalar_palette_min_label">
-                     <property name="text">
-                      <string>Lower:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="scalar_palette_min_spin_box"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QWidget" name="scalar_palette_max_widget" native="true">
-                  <layout class="QHBoxLayout" name="scalar_range_max_layout">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="scalar_palette_max_label">
-                     <property name="text">
-                      <string>Upper:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="scalar_palette_max_spin_box"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="scalar_palette_range_restore_mean_deviation_group_box">
-                  <property name="title">
-                   <string>Mean -/+ StdDev</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_15">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_11">
-                     <property name="spacing">
-                      <number>3</number>
-                     </property>
-                     <item>
-                      <widget class="QLabel" name="scalar_palette_range_restore_mean_deviation_label">
-                       <property name="text">
-                        <string>Dev:</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QDoubleSpinBox" name="scalar_palette_range_restore_mean_deviation_spin_box">
-                       <property name="minimum">
-                        <double>0.010000000000000</double>
-                       </property>
-                       <property name="maximum">
-                        <double>10.000000000000000</double>
-                       </property>
-                       <property name="singleStep">
-                        <double>0.200000000000000</double>
-                       </property>
-                       <property name="value">
-                        <double>2.000000000000000</double>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QToolButton" name="scalar_palette_range_restore_mean_deviation_button">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Use mean +/- deviation</string>
-                       </property>
-                       <property name="text">
-                        <string>Use mean +/- deviation</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../qt-resources/qt_widgets.qrc">
-                         <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QWidget" name="scalar_palette_range_restore_min_max_widget" native="true">
-                  <layout class="QHBoxLayout" name="horizontalLayout_25">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="scalar_palette_range_restore_min_max_label">
-                     <property name="text">
-                      <string>Min/Max:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QToolButton" name="scalar_palette_range_restore_min_max_button">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Use min/max</string>
-                     </property>
-                     <property name="text">
-                      <string>Use min/max</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../qt-resources/qt_widgets.qrc">
-                       <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -418,279 +157,21 @@
       <string>Gradient Colour Mapping</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_19">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="margin">
+       <number>6</number>
+      </property>
       <item>
-       <widget class="QWidget" name="gradient_palette_widget" native="true">
+       <widget class="QWidget" name="gradient_palette_placeholder_widget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_21">
-         <item>
-          <widget class="QLabel" name="gradient_palette_label">
-           <property name="text">
-            <string>Palette:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QWidget" name="gradient_palette_filename_placeholder_widget" native="true"/>
-         </item>
-         <item>
-          <widget class="QToolButton" name="select_gradient_palette_filename_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Choose CPT File</string>
-           </property>
-           <property name="text">
-            <string>...</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QToolButton" name="use_default_gradient_palette_button">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Use Default Palette</string>
-           </property>
-           <property name="text">
-            <string>Use Default Palette</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../qt-resources/qt_widgets.qrc">
-             <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_26">
-        <item>
-         <widget class="QWidget" name="gradient_colour_scale_placeholder_widget" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_16">
-          <property name="spacing">
-           <number>3</number>
-          </property>
-          <item>
-           <widget class="QGroupBox" name="gradient_palette_range_mapping_group_box">
-            <property name="title">
-             <string>Palette Range</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_17">
-             <property name="spacing">
-              <number>3</number>
-             </property>
-             <property name="margin">
-              <number>6</number>
-             </property>
-             <item>
-              <widget class="QCheckBox" name="gradient_palette_range_check_box">
-               <property name="text">
-                <string>Remap range</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="gradient_palette_range_widget" native="true">
-               <layout class="QVBoxLayout" name="verticalLayout_6">
-                <property name="spacing">
-                 <number>3</number>
-                </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QWidget" name="gradient_palette_min_widget" native="true">
-                  <layout class="QHBoxLayout" name="scalar_range_min_layout_2">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="gradient_palette_min_label">
-                     <property name="text">
-                      <string>Lower:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="gradient_palette_min_spin_box"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QWidget" name="gradient_palette_max_widget" native="true">
-                  <layout class="QHBoxLayout" name="scalar_range_max_layout_2">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="gradient_palette_max_label">
-                     <property name="text">
-                      <string>Upper:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="gradient_palette_max_spin_box"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="gradient_palette_range_restore_mean_deviation_group_box">
-                  <property name="title">
-                   <string>-/+ (Mean + StdDev)</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_18">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_30">
-                     <property name="spacing">
-                      <number>3</number>
-                     </property>
-                     <item>
-                      <widget class="QLabel" name="gradient_palette_range_restore_mean_deviation_label">
-                       <property name="text">
-                        <string>Dev:</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QDoubleSpinBox" name="gradient_palette_range_restore_mean_deviation_spin_box">
-                       <property name="minimum">
-                        <double>0.010000000000000</double>
-                       </property>
-                       <property name="maximum">
-                        <double>10.000000000000000</double>
-                       </property>
-                       <property name="singleStep">
-                        <double>0.200000000000000</double>
-                       </property>
-                       <property name="value">
-                        <double>2.000000000000000</double>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QToolButton" name="gradient_palette_range_restore_mean_deviation_button">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Use +/- (mean + deviation)</string>
-                       </property>
-                       <property name="text">
-                        <string>Use +/- (mean + deviation)</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../qt-resources/qt_widgets.qrc">
-                         <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QWidget" name="gradient_palette_range_restore_min_max_widget" native="true">
-                  <layout class="QHBoxLayout" name="horizontalLayout_29">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="margin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="gradient_palette_range_restore_min_max_label">
-                     <property name="text">
-                      <string>-/+ Max:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QToolButton" name="gradient_palette_range_restore_min_max_button">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Use -max/max</string>
-                     </property>
-                     <property name="text">
-                      <string>Use -max/max</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../qt-resources/qt_widgets.qrc">
-                       <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -767,6 +248,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="isovalue1_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -865,6 +349,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue1_lower_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -907,6 +394,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue1_upper_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -952,6 +442,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue1_symmetric_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -1006,6 +499,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="isovalue2_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1101,6 +597,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue2_lower_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -1143,6 +642,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue2_upper_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -1188,6 +690,9 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="isovalue2_symmetric_deviation_spin_box">
+              <property name="keyboardTracking">
+               <bool>false</bool>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -1264,6 +769,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="opacity_deviation_surfaces_spin_box">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="maximum">
             <double>1.000000000000000</double>
            </property>
@@ -1329,6 +837,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="opacity_deviation_volume_rendering_spin_box">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="maximum">
             <double>1.000000000000000</double>
            </property>
@@ -1378,6 +889,9 @@
          </item>
          <item>
           <widget class="QSpinBox" name="isoline_frequency_spin_box">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="maximum">
             <number>100</number>
            </property>
@@ -1536,6 +1050,9 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="min_depth_spin_box">
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
           <property name="decimals">
            <number>4</number>
           </property>
@@ -1569,6 +1086,9 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="max_depth_spin_box">
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
           <property name="decimals">
            <number>4</number>
           </property>
@@ -1668,6 +1188,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="sampling_rate_spin_box">
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
           <property name="minimum">
            <number>10</number>
           </property>
@@ -1704,6 +1227,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="bisection_iterations_spin_box">
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
           <property name="maximum">
            <number>10</number>
           </property>
@@ -1752,6 +1278,9 @@
          </item>
          <item>
           <widget class="QSpinBox" name="improve_performance_during_drag_globe_spin_box">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="minimum">
             <number>2</number>
            </property>
@@ -1796,6 +1325,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_0_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1853,6 +1385,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_1_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1910,6 +1445,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_2_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1967,6 +1505,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_3_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2024,6 +1565,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_4_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2081,6 +1625,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_5_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2138,6 +1685,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_6_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2195,6 +1745,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_7_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2252,6 +1805,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_8_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2309,6 +1865,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_9_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2366,6 +1925,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_10_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2423,6 +1985,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_11_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2480,6 +2045,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_12_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2537,6 +2105,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_13_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2594,6 +2165,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_14_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -2651,6 +2225,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="test_variable_15_spinbox">
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>

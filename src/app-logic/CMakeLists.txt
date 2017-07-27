@@ -11,21 +11,25 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AgeModelCollection.cc
+    AgeModelCollection.h
     ApplicationState.cc
     ApplicationState.h
-    AppLogicFwd.h
     AppLogicUtils.cc
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
     CoRegistrationData.cc
     CoRegistrationData.h
+    CoRegistrationLayerParams.cc
+    CoRegistrationLayerParams.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
-    DeformedFeatureGeometry.cc
-    DeformedFeatureGeometry.h
+    DeformationStrain.h
+    DependentTopologicalSectionLayers.cc
+    DependentTopologicalSectionLayers.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
     ExtractScalarField3DFeatureProperties.cc
@@ -46,8 +50,6 @@ set(srcs
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
-    GeometryDeformation.cc
-    GeometryDeformation.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -57,14 +59,16 @@ set(srcs
     LayerInputChannelName.cc
     LayerInputChannelName.h
     LayerInputChannelType.h
+    LayerParams.h
+    LayerParamsVisitor.h
     LayerProxy.h
     LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
     LayerTask.h
-    LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
+    LayerTaskType.cc
     LayerTaskType.h
     LogModel.cc
     LogModel.h
@@ -76,6 +80,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
+    NetRotationUtils.cc
+    NetRotationUtils.h
     PalaeomagUtils.cc
     PalaeomagUtils.h
     PartitionFeatureTask.cc
@@ -86,6 +92,8 @@ set(srcs
     PlateVelocityUtils.h
     PropertyExtractors.cc
     PropertyExtractors.h
+    RasterLayerParams.cc
+    RasterLayerParams.h
     RasterLayerProxy.cc
     RasterLayerProxy.h
     RasterLayerTask.cc
@@ -136,6 +144,8 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ReconstructLayerParams.cc
+    ReconstructLayerParams.h
     ReconstructLayerProxy.cc
     ReconstructLayerProxy.h
     ReconstructLayerTask.cc
@@ -160,6 +170,8 @@ set(srcs
     ReconstructMethodVirtualGeomagneticPole.h
     ReconstructParams.cc
     ReconstructParams.h
+    ReconstructScalarCoverageLayerParams.cc
+    ReconstructScalarCoverageLayerParams.h
     ReconstructScalarCoverageLayerProxy.cc
     ReconstructScalarCoverageLayerProxy.h
     ReconstructScalarCoverageLayerTask.cc
@@ -197,6 +209,8 @@ set(srcs
     ScalarCoverageEvolution.h
     ScalarCoverageFeatureProperties.cc
     ScalarCoverageFeatureProperties.h
+    ScalarField3DLayerParams.cc
+    ScalarField3DLayerParams.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
@@ -216,22 +230,35 @@ set(srcs
     TopologyInternalUtils.h
     TopologyIntersections.cc
     TopologyIntersections.h
+    TopologyNetworkLayerParams.h
+    TopologyNetworkParams.cc
+    TopologyNetworkParams.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
     TopologyNetworkResolverLayerProxy.cc
     TopologyNetworkResolverLayerProxy.h
     TopologyNetworkResolverLayerTask.cc
     TopologyNetworkResolverLayerTask.h
+    TopologyPointLocation.h
+    TopologyReconstruct.cc
+    TopologyReconstruct.h
+    TopologyReconstructedFeatureGeometry.cc
+    TopologyReconstructedFeatureGeometry.h
     TopologyUtils.cc
     TopologyUtils.h
     TRSUtils.cc
     TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
+    VelocityDeltaTime.cc
+    VelocityDeltaTime.h
+    VelocityFieldCalculatorLayerParams.cc
+    VelocityFieldCalculatorLayerParams.h
     VelocityFieldCalculatorLayerProxy.cc
     VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
+    VelocityParams.cc
     VelocityParams.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h

@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		enum ActionRequested { CLOSE_GPLATES, CLEAR_SESSION };
+		enum ActionRequested { CLOSE_GPLATES, CLEAR_SESSION, LOAD_PREVIOUS_SESSION, LOAD_PROJECT };
 
 		explicit
 		UnsavedChangesWarningDialog(
@@ -67,36 +67,36 @@ namespace GPlatesQtWidgets
 			QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 		{
 			setupUi(this);
-			set_action_requested(CLOSE_GPLATES);
+
+			set_action_requested(
+					CLOSE_GPLATES,
+					QStringList()/*unsaved_feature_collection_filenames*/,
+					false/*has_unsaved_project_changes*/);
+
 			connect_buttons();
 		}
 
 		virtual
 		~UnsavedChangesWarningDialog()
 		{  }
-		
-		/**
-		 * Changes the list of filenames displayed in the dialog.
-		 */
-		void
-		set_filename_list(
-				QStringList filenames)
-		{
-			list_files->clear();
-			list_files->addItems(filenames);
-		}
 
 		/**
 		 * Changes the label text and button labels to be appropriate
 		 * for the corresponding action requested by the user (that
 		 * GPlates is interrupting on account of the unsaved changes).
+		 *
+		 * Also lists any unsaved feature collection filenames.
 		 */
 		void
 		set_action_requested(
-				ActionRequested act)
+				ActionRequested act,
+				QStringList unsaved_feature_collection_filenames,
+				bool has_unsaved_project_changes)
 		{
+			tweak_file_list(unsaved_feature_collection_filenames);
 			tweak_buttons(act);
-			tweak_label(act);
+			tweak_label(act, !unsaved_feature_collection_filenames.isEmpty(), has_unsaved_project_changes);
+
 			adjustSize();
 			ensurePolished();
 		}
@@ -117,6 +117,26 @@ namespace GPlatesQtWidgets
 		}
 
 	private:
+
+		/**
+		 * Populate the unsaved feature collection list or hide it if all are saved.
+		 */
+		void
+		tweak_file_list(
+				QStringList unsaved_feature_collection_filenames)
+		{
+			list_files->clear();
+
+			if (!unsaved_feature_collection_filenames.isEmpty())
+			{
+				list_files->addItems(unsaved_feature_collection_filenames);
+				unsaved_feature_collections_widget->setVisible(true);
+			}
+			else // no unsaved files so hide the list widget...
+			{
+				unsaved_feature_collections_widget->setVisible(false);
+			}
+		}
 
 		/**
 		 * Overrides the default labels on the StandardButtons Qt provides,
@@ -151,6 +171,26 @@ namespace GPlatesQtWidgets
 					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
 					abort->setIconSize(QSize(22, 22));
 					break;
+
+			case LOAD_PREVIOUS_SESSION:
+					discard->setText(tr("&Discard changes, load session"));
+					discard->setIcon(QIcon(":/discard_changes_22.png"));
+					discard->setIconSize(QSize(22, 22));
+
+					abort->setText(tr("D&on't load new session"));
+					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
+					abort->setIconSize(QSize(22, 22));
+					break;
+
+			case LOAD_PROJECT:
+					discard->setText(tr("&Discard changes, open project"));
+					discard->setIcon(QIcon(":/discard_changes_22.png"));
+					discard->setIconSize(QSize(22, 22));
+
+					abort->setText(tr("D&on't open new project"));
+					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
+					abort->setIconSize(QSize(22, 22));
+					break;
 			}
 			buttonbox->adjustSize();
 		}
@@ -161,22 +201,51 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		tweak_label(
-				ActionRequested act)
+				ActionRequested act,
+				bool has_unsaved_feature_collections,
+				bool has_unsaved_project_changes)
 		{
+			QString label_text;
+
 			switch (act)
 			{
 			default:
 			case CLOSE_GPLATES:
-					label_context->setText(tr("GPlates is closing."));
+					label_text = tr("GPlates is closing.\n");
 					break;
 
 			case CLEAR_SESSION:
-					label_context->setText(tr(
-						"Clearing session.\n"
-						"Clearing the current session will unload all"
-						" currently loaded feature collections."));
+					label_text = tr("Clearing session.\n");
+					break;
+
+			case LOAD_PREVIOUS_SESSION:
+					label_text = tr("Loading session.\n");
+					break;
+
+			case LOAD_PROJECT:
+					label_text = tr("Loading project.\n");
 					break;
 			}
+
+			if (has_unsaved_feature_collections)
+			{
+				if (has_unsaved_project_changes)
+				{
+					label_text +=
+							"The current project has unsaved session changes.\n"
+							"And there are unsaved feature collections.";
+				}
+				else
+				{
+					label_text += "There are unsaved feature collections.";
+				}
+			}
+			else if (has_unsaved_project_changes)
+			{
+				label_text += "The current project has unsaved session changes.";
+			}
+
+			label_context->setText(label_text);
 		}
 
 		/**

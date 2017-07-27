@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_LAYERINPUTCHANNELNAME_H
 #define GPLATES_APP_LOGIC_LAYERINPUTCHANNELNAME_H
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
 
@@ -51,7 +52,7 @@ namespace GPlatesAppLogic
 			RASTER_FEATURE,
 			SCALAR_FIELD_FEATURE,
 			RECONSTRUCTION_TREE,
-			DEFORMATION_SURFACES,
+			TOPOLOGY_SURFACES,
 			TOPOLOGICAL_SECTION_LAYERS,
 			VELOCITY_DOMAIN_LAYERS,
 			VELOCITY_SURFACE_LAYERS,
@@ -63,6 +64,8 @@ namespace GPlatesAppLogic
 			CO_REGISTRATION_SEED_GEOMETRIES,
 			CO_REGISTRATION_TARGET_GEOMETRIES,
 			RECONSTRUCTED_SCALAR_COVERAGE_DOMAINS,
+
+			// NOTE: Any new values should also be added to @a transcribe.
 
 			UNUSED
 		};

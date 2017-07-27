@@ -359,30 +359,32 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.get_exterior();
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.get_polygon();
 
-	write_polygon_ring(polygon_ptr);
+	write_polygon_ring(
+			polygon_ptr->exterior_ring_vertex_begin(),
+			polygon_ptr->exterior_ring_vertex_end());
 
 	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
-	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator iter = gml_polygon.get_interiors().begin();
-	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = gml_polygon.get_interiors().end();
-
-	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_ptr->number_of_interior_rings();
+		++interior_ring_index)
 	{
 		QString interior;
 		interior.append(QObject::tr("gml:interior"));
 		interior.append(QObject::tr(" #"));
-		interior.append(QString().setNum(ring_number));
+		interior.append(QString().setNum(interior_ring_index + 1));
 
 		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
 				add_child_to_current_item(d_tree_widget_builder, interior);
 
 		d_tree_widget_builder.push_current_item(interior_item_handle);
 
-		write_polygon_ring(*iter);
+		write_polygon_ring(
+				polygon_ptr->interior_ring_vertex_begin(interior_ring_index),
+				polygon_ptr->interior_ring_vertex_end(interior_ring_index));
 
 		d_tree_widget_builder.pop_current_item();
 	}
@@ -646,7 +648,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_valu
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end)
 {
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:posList"));
@@ -654,11 +657,10 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_rin
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
-
-	for (unsigned point_number = 1; iter != end; ++iter, ++point_number) {
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+	GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_iter = ring_begin;
+	for (unsigned point_number = 1; ring_iter != ring_end; ++ring_iter, ++point_number)
+	{
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*ring_iter);
 
 		QLocale locale;
 

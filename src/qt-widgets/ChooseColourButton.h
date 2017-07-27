@@ -48,7 +48,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Set the colour.
 		 *
-		 * NOTE: This emits the 'colour_changed' signal.
+		 * Note: This emits the 'colour_changed' signal if the colour changed.
 		 */
 		void
 		set_colour(

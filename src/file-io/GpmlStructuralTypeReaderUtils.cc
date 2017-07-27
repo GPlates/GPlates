@@ -1384,15 +1384,10 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polyline(
 					GPlatesMaths::LatLonPoint(lat,lon)));
 	}
 
-	// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-	std::pair<
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-			invalid_points;
 	// We want to return a different ReadError Description for each possible return
 	// value of evaluate_construction_parameter_validity().
 	polyline_type::ConstructionParameterValidity polyline_validity =
-			polyline_type::evaluate_construction_parameter_validity(points, invalid_points);
+			polyline_type::evaluate_construction_parameter_validity(points);
 	switch (polyline_validity)
 	{
 	case polyline_type::VALID:
@@ -1424,8 +1419,8 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polyline(
 }
 
 
-GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon(
+boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> >
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon_ring(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
@@ -1436,8 +1431,9 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon(
 
 	// XXX: Currently assuming srsDimension is 2!!
 
-	std::vector<GPlatesMaths::PointOnSphere> points;
-	points.reserve(estimate_number_of_points(str));
+	boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> > ring_points(
+			new std::vector<GPlatesMaths::PointOnSphere>());
+	ring_points->reserve(estimate_number_of_points(str));
 
 	// Transform the text into a sequence of PointOnSphere.
 	QTextStream is(&str, QIODevice::ReadOnly);
@@ -1460,38 +1456,37 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon(
 					elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
 					EXCEPTION_SOURCE);
 		}
-		points.push_back(GPlatesMaths::make_point_on_sphere(
-					GPlatesMaths::LatLonPoint(lat,lon)));
+		ring_points->push_back(
+				GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon)));
 	}
-	
-	// GML Polygons require the first and last points of a polygon to be identical,
-	// because the format wasn't verbose enough. GPlates expects that the first
-	// and last points of a PolygonOnSphere are implicitly joined.
-	if (points.size() >= 4) {
-		GPlatesMaths::PointOnSphere &p1 = *(points.begin());
-		GPlatesMaths::PointOnSphere &p2 = *(--points.end());
-		if (p1 == p2) {
-			points.pop_back();
-		} else {
-			throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-					elem, GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
-					EXCEPTION_SOURCE);
-		}
-	} else {
+
+	// There should be at least 3 points in a polygon.
+	if (ring_points->size() < 3)
+	{
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 				elem, GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
 				EXCEPTION_SOURCE);
 	}
 
-	// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-	std::pair<
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-			invalid_points;
+	// GML Polygons require the first and last points of a polygon to be identical,
+	// because the format wasn't verbose enough. GPlates expects that the first
+	// and last points of a PolygonOnSphere are implicitly joined.
+	// If the first and last points are the same then we'll remove the last point
+	// (provided that leaves us with at least 3 points for the polygon).
+	if (ring_points->size() >= 4)
+	{
+		const GPlatesMaths::PointOnSphere &p1 = *(ring_points->begin());
+		const GPlatesMaths::PointOnSphere &p2 = *(--ring_points->end());
+		if (p1 == p2)
+		{
+			ring_points->pop_back();
+		}
+	}
+
 	// We want to return a different ReadError Description for each possible return
 	// value of evaluate_construction_parameter_validity().
 	polygon_type::ConstructionParameterValidity polygon_validity =
-			polygon_type::evaluate_construction_parameter_validity(points, invalid_points);
+			polygon_type::evaluate_construction_parameter_validity(*ring_points);
 	switch (polygon_validity)
 	{
 	case polygon_type::VALID:
@@ -1520,11 +1515,12 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polygon(
 					EXCEPTION_SOURCE);
 			break;
 	}
-	return polygon_type::create_on_heap(points);
+
+	return ring_points;
 }
 
 
-GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> >
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_linear_ring(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
@@ -1537,12 +1533,10 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_linear_ring(
 	GPlatesModel::XmlElementNode::non_null_ptr_type
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		polygon = find_and_create_one(elem, &create_polygon, POS_LIST, gpml_version, read_errors);
+	boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> >
+		ring_points = find_and_create_one(elem, &create_polygon_ring, POS_LIST, gpml_version, read_errors);
 
-	// FIXME: We need to give the srsName et al. attributes from the posList 
-	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
-	return polygon;
+	return ring_points;
 }
 
 

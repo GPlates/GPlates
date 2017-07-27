@@ -32,7 +32,6 @@
 #include "PartitionFeatureTask.h"
 
 #include "PartitionFeatureUtils.h"
-#include "ReconstructionTree.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -53,7 +52,6 @@ namespace GPlatesAppLogic
 		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 		 */
 		GenericPartitionFeatureTask(
-				const ReconstructionTree &reconstruction_tree,
 				GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 				const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 				bool verify_information_model);
@@ -74,12 +72,13 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GeometryCookieCutter &geometry_cookie_cutter,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time,
 				bool respect_feature_time_period);
 
 	private:
 		bool d_verify_information_model;
 
-		const ReconstructionTree &d_reconstruction_tree;
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 		GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
 
@@ -88,26 +87,26 @@ namespace GPlatesAppLogic
 		partition_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
-				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager);
+				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time);
 
 
 		void
 		assign_feature_to_plate_it_overlaps_the_most(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
-				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager);
-
-		void
-		assign_feature_sub_geometry_to_plate_it_overlaps_the_most(
-				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
-				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager);
+				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time);
 
 		void
 		partition_feature_into_plates(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
-				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager);
+				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time);
 	};
 }
 

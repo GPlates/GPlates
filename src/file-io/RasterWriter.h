@@ -76,18 +76,28 @@ namespace GPlatesFileIO
 					const QString &description_,
 					const QString &mime_type_,
 					FormatHandler handler_,
-					const std::vector<GPlatesPropertyValues::RasterType::Type> band_types_) :
+					const std::vector<GPlatesPropertyValues::RasterType::Type> band_types_,
+					bool has_option_to_compress_ = false) :
 				description(description_),
 				mime_type(mime_type_),
 				handler(handler_),
-				band_types(band_types_)
+				band_types(band_types_),
+				has_option_to_compress(has_option_to_compress_)
 			{  }
 
 			QString description;
 			QString mime_type;
 			FormatHandler handler;
+
 			//! Supported band types.
 			std::vector<GPlatesPropertyValues::RasterType::Type> band_types;
+
+			/**
+			 * Whether supports optional compression.
+			 *
+			 * Note: Formats like JPEG are always compressed and hence don't have the option to compress.
+			 */
+			bool has_option_to_compress;
 		};
 
 		//! Typedef for a map of filename extensions for format information.
@@ -141,6 +151,11 @@ namespace GPlatesFileIO
 		 *
 		 * Note that the no-data value (applicable to integer/floating-point rasters only) is
 		 * determined by the region data written (see @a write_region_data).
+		 *
+		 * If @a compress is true (and the file format has the option to compress
+		 * (see FormatInfo::has_option_to_compress) then the raster is compressed,
+		 * otherwise it is ignored.
+		 * By default the raster is not compressed.
 		 */
 		static
 		non_null_ptr_type
@@ -149,7 +164,8 @@ namespace GPlatesFileIO
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int num_raster_bands,
-				GPlatesPropertyValues::RasterType::Type raster_band_type);
+				GPlatesPropertyValues::RasterType::Type raster_band_type,
+				bool compress = false);
 
 
 		/**
@@ -280,7 +296,8 @@ namespace GPlatesFileIO
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int num_raster_bands,
-				GPlatesPropertyValues::RasterType::Type raster_band_type);
+				GPlatesPropertyValues::RasterType::Type raster_band_type,
+				bool compress);
 
 		boost::scoped_ptr<RasterWriterImpl> d_impl;
 		QString d_filename;

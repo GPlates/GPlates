@@ -102,8 +102,13 @@ namespace GPlatesScribe
 	 *		ENUM_VALUE_1,
 	 *		ENUM_VALUE_2,
 	 *		ENUM_VALUE_3
+	 *		
+	 *		// NOTE: Any new values should also be added to @a transcribe.
 	 *	};
 	 *  
+	 *  //
+	 *  // Transcribe for sessions/projects.
+	 *  //
 	 *	GPlatesScribe::TranscribeResult
 	 *	transcribe(
 	 *			GPlatesScribe::Scribe &scribe,
@@ -111,6 +116,7 @@ namespace GPlatesScribe
 	 *			bool transcribed_construct_data)
 	 *	{
 	 *		// WARNING: Changing the string ids will break backward/forward compatibility.
+	 *		//          So don't change the string ids even if the enum name changes.
 	 *		static const GPlatesScribe::EnumValue enum_values[] =
 	 *		{
 	 *			GPlatesScribe::EnumValue("ENUM_VALUE_1", ENUM_VALUE_1),
@@ -137,11 +143,20 @@ namespace GPlatesScribe
 	 *
 	 *		enum Enum
 	 *		{
-	 *			...
+	 *			ENUM_VALUE_1,
+	 *			ENUM_VALUE_2,
+	 *			ENUM_VALUE_3
+	 *			
+	 *			// NOTE: Any new values should also be added to @a transcribe.
 	 *		};
 	 *
+	 *		//
+	 *		// Transcribe for sessions/projects.
+	 *		//
 	 *		// Use friend function (injection) so can access private enum.
-	 *		// Injects into the namespace of MyClass.
+	 *		// And implement in class body otherwise some compilers will complain
+	 *		// that the enum argument is not accessible (since enum is private).
+	 *		//
 	 *		friend
 	 *		GPlatesScribe::TranscribeResult
 	 *		transcribe(
@@ -149,9 +164,21 @@ namespace GPlatesScribe
 	 *				Enum &e,
 	 *				bool transcribed_construct_data)
 	 *		{
-	 *			// Implement in class body since otherwise some compilers will complain that the
-	 *			// 'Enum &e' function argument declaration is not accessible (since 'Enum' private).
-	 *			...
+	 *			// WARNING: Changing the string ids will break backward/forward compatibility.
+	 *			//          So don't change the string ids even if the enum name changes.
+	 *			static const GPlatesScribe::EnumValue enum_values[] =
+	 *			{
+	 *				GPlatesScribe::EnumValue("ENUM_VALUE_1", ENUM_VALUE_1),
+	 *				GPlatesScribe::EnumValue("ENUM_VALUE_2", ENUM_VALUE_2),
+	 *				GPlatesScribe::EnumValue("ENUM_VALUE_3", ENUM_VALUE_3)
+	 *			};
+	 *		
+	 *			return GPlatesScribe::transcribe_enum_protocol(
+	 *					TRANSCRIBE_SOURCE,
+	 *					scribe,
+	 *					e,
+	 *					enum_values,
+	 *					enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 	 *		}
 	 *	
 	 *	public:

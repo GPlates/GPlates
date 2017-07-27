@@ -89,51 +89,27 @@ GPlatesAppLogic::TimeSpanUtils::TimeRange::TimeRange(
 }
 
 
-double
-GPlatesAppLogic::TimeSpanUtils::TimeRange::get_time(
-		unsigned int time_slot) const
-{
-	return d_begin_time - time_slot * d_time_increment;
-}
-
-
 boost::optional<unsigned int>
 GPlatesAppLogic::TimeSpanUtils::TimeRange::get_time_slot(
 		const double &time) const
 {
-	if (GPlatesMaths::are_geo_times_approximately_equal(time, d_begin_time))
-	{
-		return static_cast<unsigned int>(0);
-	}
-
-	if (GPlatesMaths::are_geo_times_approximately_equal(time, d_end_time))
-	{
-		// Note that there's always at least two time slots.
-		return get_num_time_slots() - 1;
-	}
-
-	// We don't do this before epsilon testing equality with begin/end time because that would
-	// discard times that are very close to begin/end time (yet outside exact time range).
-	if (time > d_begin_time || time < d_end_time)
-	{
-		// Outside time span.
-		return boost::none;
-	}
-
-	double delta_time_div_time_increment;
-	const double delta_time_mod_time_increment =
-			std::modf((d_begin_time - time) / d_time_increment, &delta_time_div_time_increment);
-
-	// See if the specified time lies at an integer multiple of time increment.
-	if (!GPlatesMaths::are_almost_exactly_equal(delta_time_mod_time_increment, 0.0))
+	double interpolate_position;
+	boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+			bounding_time_slots_opt = get_bounding_time_slots(time, interpolate_position);
+	if (!bounding_time_slots_opt)
 	{
 		return boost::none;
 	}
 
-	// Convert to integer (it's already integral - the 0.5 is just to avoid numerical precision issues).
-	const unsigned int time_slot = static_cast<int>(delta_time_div_time_increment + 0.5);
+	const std::pair<unsigned int, unsigned int> &bounding_time_slots = bounding_time_slots_opt.get();
 
-	return time_slot;
+	// If the specified time does not lie on an integer multiple of time increment.
+	if (bounding_time_slots.first != bounding_time_slots.second)
+	{
+		return boost::none;
+	}
+
+	return bounding_time_slots.first;
 }
 
 
@@ -141,17 +117,89 @@ boost::optional<unsigned int>
 GPlatesAppLogic::TimeSpanUtils::TimeRange::get_nearest_time_slot(
 		const double &time) const
 {
-	if (time > d_begin_time || time < d_end_time)
+	double interpolate_position;
+	boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
+			bounding_time_slots_opt = get_bounding_time_slots(time, interpolate_position);
+	if (!bounding_time_slots_opt)
 	{
-		// Outside time span.
 		return boost::none;
 	}
 
-	// The 0.5 is to round to the nearest integer.
-	// Casting to 'int' is optimised on Visual Studio compared to 'unsigned int'.
-	const unsigned int time_slot = static_cast<int>(0.5 + (d_begin_time - time) / d_time_increment);
+	const std::pair<unsigned int, unsigned int> &bounding_time_slots = bounding_time_slots_opt.get();
 
-	return time_slot;
+	// This also works when both time slots are equal (and 'interpolate_position == 0').
+	return interpolate_position < 0.5
+			? bounding_time_slots.first
+			: bounding_time_slots.second;
+}
+
+
+boost::optional< std::pair<unsigned int/*begin_time_slot*/, unsigned int/*end_time_slot*/> >
+GPlatesAppLogic::TimeSpanUtils::TimeRange::get_bounding_time_slots(
+		const double &time,
+		double &interpolate_position) const
+{
+	// Detect whether the time is outside the time range or at the begin/end time (within epsilon).
+	if (time > d_begin_time - GPlatesMaths::GEO_TIMES_EPSILON)
+	{
+		if (time > d_begin_time + GPlatesMaths::GEO_TIMES_EPSILON)
+		{
+			// Outside time range.
+			return boost::none;
+		}
+
+		// It's very close to zero - let's make it exactly zero.
+		interpolate_position = 0.0;
+
+		// Return two identical time slots to indicate we're on the first time slot and
+		// hence no interpolation is necessary.
+		const unsigned int begin_time_slot = 0;
+		return std::make_pair(begin_time_slot, begin_time_slot);
+	}
+	if (time < d_end_time + GPlatesMaths::GEO_TIMES_EPSILON)
+	{
+		if (time < d_end_time - GPlatesMaths::GEO_TIMES_EPSILON)
+		{
+			// Outside time range.
+			return boost::none;
+		}
+
+		// It's very close to zero - let's make it exactly zero.
+		interpolate_position = 0.0;
+
+		// Return two identical time slots to indicate we're on the last time slot and
+		// hence no interpolation is necessary.
+		const unsigned int end_time_slot = d_num_time_slots - 1;
+		return std::make_pair(end_time_slot, end_time_slot);
+	}
+
+	double first_time_slot_integer;
+	interpolate_position = std::modf((d_begin_time - time) / d_time_increment, &first_time_slot_integer);
+
+	// Convert to integer (it's already integral - the 0.5 is just to avoid numerical precision issues).
+	const unsigned int first_time_slot = static_cast<int>(first_time_slot_integer + 0.5);
+
+	// See if we're very close to being exactly on a time slot.
+	if (interpolate_position < GPlatesMaths::GEO_TIMES_EPSILON)
+	{
+		// It's very close to zero - let's make it exactly zero.
+		interpolate_position = 0.0;
+
+		// Return two identical time slots to indicate we're on a time slot and
+		// hence no interpolation is necessary.
+		return std::make_pair(first_time_slot, first_time_slot);
+	}
+	else if (interpolate_position > 1 - GPlatesMaths::GEO_TIMES_EPSILON)
+	{
+		// It's very close to one - let's make it exactly zero (and increment the integer time slot).
+		interpolate_position = 0.0;
+
+		// Return two identical time slots to indicate we're on a time slot and
+		// hence no interpolation is necessary.
+		return std::make_pair(first_time_slot + 1, first_time_slot + 1);
+	}
+
+	return std::make_pair(first_time_slot, first_time_slot + 1);
 }
 
 
@@ -177,7 +225,7 @@ GPlatesAppLogic::TimeSpanUtils::TimeRange::calc_num_time_slots(
 	//
 	// For example, for begin_time = 12.1 and end_time = 10.0 and time_increment = 1.0,
 	// we get four time slots which are at times 13.0, 12.0, 11.0 and 10.0 and they are
-	// bound the three time intervals [13.0, 12.0], [12.0, 11.0] and [11.0, 10.0].
+	// bound by the three time intervals [13.0, 12.0], [12.0, 11.0] and [11.0, 10.0].
 	const unsigned int num_time_slots = 1 + static_cast<int>(
 			(1 - round_threshold) + (begin_time - end_time) / time_increment);
 

@@ -37,6 +37,9 @@
 #include <QString>
 #include <QVariant>
 
+#include "api/PythonInterpreterLocker.h"
+
+
 namespace GPlatesGui
 {
 	class Palette;
@@ -192,7 +195,7 @@ namespace GPlatesGui
 		}
 
 		QString
-		get_value()
+		get_value() const
 		{
 			return d_value.toString();
 		}
@@ -202,7 +205,7 @@ namespace GPlatesGui
 		clone() const = 0;
 		
 		virtual
-		~PythonCfgItem(){ }
+		~PythonCfgItem();
 
 	protected:
 		boost::python::object d_py_obj;
@@ -254,6 +257,13 @@ namespace GPlatesGui
 		{
 			return new PythonCfgPalette(*this);
 		}
+
+		/**
+		 * Returns true if palette corresponds to one of the builtin types, otherwise should be a CPT filename.
+		 */
+		bool
+		is_built_in_palette() const;
+
 	private:
 		boost::shared_ptr<Palette> d_palette;
 	};
@@ -277,6 +287,10 @@ namespace GPlatesGui
 		{
 			d_value = new_value;
 			QString new_str = d_value.toString().trimmed();
+
+			// Previous Python object could get destroyed.
+			GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
 			d_py_obj = bp::object(new_str.toStdString());
 		}
 

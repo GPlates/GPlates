@@ -238,7 +238,9 @@ namespace GPlatesQtWidgets
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
-		calculate_scale();
+		calculate_scale(
+				int paint_device_width,
+				int paint_device_height);
 
 	};
 }

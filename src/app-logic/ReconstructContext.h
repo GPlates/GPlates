@@ -26,13 +26,13 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
 
+#include <set>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "GeometryDeformation.h"
 #include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
@@ -42,10 +42,12 @@
 #include "ReconstructMethodInterface.h"
 #include "ReconstructMethodType.h"
 #include "TimeSpanUtils.h"
+#include "VelocityDeltaTime.h"
 
 #include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureId.h"
 
 
 namespace GPlatesAppLogic
@@ -312,6 +314,93 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Similar to @a ReconstructedFeatureTimeSpan but specific to feature's reconstructed using topologies and
+		 * returns a TopologyReconstruct::GeometryTimeSpan instead of a @a TopologyReconstructedFeatureGeometry.
+		 */
+		class TopologyReconstructedFeatureTimeSpan
+		{
+		public:
+
+			/**
+			 * Association of geometry time span with geometry property.
+			 */
+			class GeometryTimeSpan
+			{
+			public:
+
+				GeometryTimeSpan(
+						GPlatesModel::FeatureHandle::iterator geometry_property_iterator,
+						const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span) :
+					d_geometry_property_iterator(geometry_property_iterator),
+					d_geometry_time_span(geometry_time_span)
+				{  }
+
+				/**
+				 * Returns the geometry property iterator.
+				 */
+				const GPlatesModel::FeatureHandle::iterator
+				get_geometry_property_iterator() const
+				{
+					return d_geometry_property_iterator;
+				}
+
+				/**
+				 * The geometry time span associated with this geometry property.
+				 */
+				TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type
+				get_geometry_time_span() const
+				{
+					return d_geometry_time_span;
+				}
+
+			private:
+				GPlatesModel::FeatureHandle::iterator d_geometry_property_iterator;
+				TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type d_geometry_time_span;
+			};
+
+			//! Typedef for a sequence of @a GeometryTimeSpan objects.
+			typedef std::vector<GeometryTimeSpan> geometry_time_span_seq_type;
+
+
+			TopologyReconstructedFeatureTimeSpan(
+					const GPlatesModel::FeatureHandle::weak_ref &feature) :
+				d_feature(feature)
+			{  }
+
+			TopologyReconstructedFeatureTimeSpan(
+					const GPlatesModel::FeatureHandle::weak_ref &feature,
+					const geometry_time_span_seq_type &geometry_time_spans) :
+				d_feature(feature),
+				d_geometry_time_spans(geometry_time_spans)
+			{  }
+
+			/**
+			 * Returns the feature.
+			 */
+			const GPlatesModel::FeatureHandle::weak_ref &
+			get_feature() const
+			{
+				return d_feature;
+			}
+
+			/**
+			 * Returns the geometry time spans of 'this' feature.
+			 */
+			const geometry_time_span_seq_type &
+			get_geometry_time_spans() const
+			{
+				return d_geometry_time_spans;
+			}
+
+		private:
+			GPlatesModel::FeatureHandle::weak_ref d_feature;
+			geometry_time_span_seq_type d_geometry_time_spans;
+
+			friend class ReconstructContext;
+		};
+
+
+		/**
 		 * Extrinsic reconstruction state that features are reconstructed with.
 		 *
 		 * The intrinsic state is the properties of the features being reconstructed.
@@ -521,6 +610,40 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns any topology-reconstructed feature time spans.
+		 *
+		 * These are only used when features are reconstructed using *topologies*.
+		 * They store the results of incrementally reconstructing using resolved topological plates/networks.
+		 * If the features are *not* reconstructed using topologies then no geometry time spans will be returned.
+		 */
+		void
+		get_topology_reconstructed_feature_time_spans(
+				std::vector<TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
+				const context_state_reference_type &context_state_ref);
+
+
+		/**
+		 * Reconstructs the features specified in the constructor, or the most recent call
+		 * to @a set_features, to the specified reconstruction time using the specified
+		 * reconstruct context state and limited to features matching the specified feature IDs.
+		 *
+		 * This method is similar to @a get_reconstructed_feature_geometries, except it limits
+		 * features to those matching the specified feature IDs.
+		 *
+		 * This method is meant as an optimisation to avoid unnecessary reconstructions.
+		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
+		 */
+		ReconstructHandle::type
+		get_reconstructed_topological_sections(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const context_state_reference_type &context_state_ref,
+				const double &reconstruction_time);
+
+
+		/**
 		 * Calculate velocities at the geometry reconstruction positions of the features specified
 		 * in the constructor, or the most recent call to @a set_features, at the specified
 		 * reconstruction time using the specified reconstruct context state.
@@ -532,7 +655,9 @@ namespace GPlatesAppLogic
 		reconstruct_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const context_state_reference_type &context_state_ref,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
 
 	private:
 

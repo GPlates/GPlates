@@ -279,7 +279,8 @@ namespace GPlatesQtWidgets
 		create_feature(
 		        const GPlatesModel::FeatureType feature_type,
 		        const CreateFeaturePropertiesPage::property_seq_type feature_properties,
-		        const GPlatesModel::PropertyName geometry_property_name);
+		        const GPlatesModel::PropertyName geometry_property_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		
 		boost::optional<GPlatesModel::FeatureHandle::iterator>
@@ -290,7 +291,8 @@ namespace GPlatesQtWidgets
 		bool
 		reverse_reconstruct_geometry_property(
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
+				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		/**
 		 * Given two features and a property name (e.g. gpml:conjugate), create a FeatureReference

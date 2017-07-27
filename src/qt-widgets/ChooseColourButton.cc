@@ -33,9 +33,10 @@
 
 GPlatesQtWidgets::ChooseColourButton::ChooseColourButton(
 		QWidget *parent_) :
-	QToolButton(parent_),
-	d_colour(GPlatesGui::Colour::get_white())
+	QToolButton(parent_)
 {
+	set_colour(GPlatesGui::Colour::get_white());
+
 	QObject::connect(
 			this,
 			SIGNAL(clicked()),
@@ -48,6 +49,11 @@ void
 GPlatesQtWidgets::ChooseColourButton::set_colour(
 		const GPlatesGui::Colour &colour)
 {
+	if (d_colour == colour)
+	{
+		return;
+	}
+
 	d_colour = colour;
 	
 	// Set tooltip to display R, G and B of colour.

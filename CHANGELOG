@@ -1,3 +1,214 @@
+GPlates 2.0
+===========
+
+Changes since 1.5:
+
+ * Projects and recent sessions:
+   * Now saves and restores all layer information:
+     * Including layer order, visibility and all settings within each layer (such as colour styles and colour palette filenames).
+   * Open projects using File menu, drag'n'drop, double-clicking or command-line.
+   * Project name displayed in window title.
+   * Copy a project to another computer. For example:
+     * Zip up a folder containing project file and associated data files (including colour palette files).
+     * Unzip to another computer and open project file in GPlates.
+   * Option to locate missing data files (when loading project or recent session):
+     * Useful when data files moved after project or session was saved.
+   * Option to resolve ambiguous data files (when loading relocated project):
+     *Useful when data files exist in both original and relocated locations.
+   * GPlates 2.0 can open projects and recent sessions saved by all prior versions of GPlates:
+     * However information saved by earlier versions is limited.
+   * GPlates 1.5 can open projects and recent sessions saved by GPlates 2.0:
+     * However restored information is limited (to what GPlates 1.5 can understand).
+   * Handle broken forwards compatibility (broken in GPlates 1.5):
+     * By saving a special isolated session state to tag "session_state_version4".
+     * Also load/save regular session state to "session_state" tag.
+   * Scribe system uses multi-section tag strings:
+     * No longer require a C++ class just to transcribe a group of values under the same tag.
+   * Support Infinity and NaN (for float/double) in the scribe archive writers and readers:
+     * In text and XML formats. Binary already has support due to QDataStream.
+   * Internal sessions stored in compressed binary archive instead of uncompressed text archive:
+     * Reduce chances of exceeding Windows Registry key limit of 1Mb.
+ * New Hellinger tool:
+   * A new workflow to determine best-fitting poles by the method of Hellinger:
+     * Import and export data files compatible with the FORTRAN programs of Chang and co-workers.
+     * Edit and create magnetic pick data points, via the canvas or tabularly via the Hellinger dialog.
+     * Adjust segmentation of magnetic picks.
+     * Enable/disable magnetic picks from inclusion in the fitting algorithms.
+     * Specify pole and angle estimates via the canvas or via the Hellinger dialog.
+     * Perform fitting using a python implementation the FORTRAN programs.
+     * Visualise resulting fit and uncertainty on the canvas.
+     * Export fit and uncertainty data to text file.
+ * Deformation:
+   * Topological networks:
+     * Boundary is similar to a topological closed plate boundary, but also has:
+       * A deforming interior region (due to individual deforming points).
+       * Optional interior rigid blocks.
+     * Build New Network Topology tool now publicly available (without requiring command-line switch to enable).
+     * Export topological network boundaries in general Resolved Topologies export.
+     * Query and visualise velocities and strain rates at arbitrary points in networks.
+       * Strain rates use logarithmic colour scale.
+     * Optionally display total (accumulated) strain at arbitrary points:
+       * Displays principal components and orientation.
+       * Outward-facing red arrows for extension.
+       * Inward-facing blue arrows for compression.
+   * Reconstructing regular features using topologies:
+     * Use both topological rigid plates and deforming networks to reconstructed regular features.
+     * Incrementally reconstructs by plate ID in topological rigid plates.
+     * Incrementally deforms in topological deforming networks.
+     * Begin incremental reconstruction at a feature's time of appearance, digitisation time or present day.
+     * Use specific topological layers or default to all loaded topologies.
+     * Option to detect lifetime of each point in a geometry:
+       * Oceanic points appear (mid-ocean ridges) and disappear (subduct).
+       * Based on convergence velocity and distance to plate boundary during a plate/network transition.
+   * Scalar coverages:
+     * A new geometry type in a new layer type.
+     * Each point in a multipoint/polyline/polygon has a scalar value associated with it.
+     * For example, visualise mid-ocean ridge spreading rates and asymmetry calculated externally using pyGPlates.
+   * Crustal thinning:
+     * A specific type of scalar coverage containing crustal thickness values.
+     * GPlates recognises this coverage type internally:
+       * Uses deformation strain rates to evolve crustal thickness over time.
+     * An input dialog generates initial crustal thickness points:
+       * Uniform distribution of points within a topological rigid plate or deforming network boundary (with optional random offset).
+       * Specify initial constant/flat crustal thickness at a past geological time.
+     * Choose from a selection of built-in colour palettes to visualise crustal thickness variations over time.
+     * Export crustal thickness values to GMT(xy) or GPML format.
+     * Also added a separate export for deformation (strain rates).
+ * Official public release of volume visualisation:
+   * No longer require command-line switch to enable importing of 3D scalar fields.
+ * Net rotation export:
+   * Calculates and exports net rotation of the lithosphere (based on the method of Torsvik et al., 2010) using global coverages of dynamic plate polygons.
+   * Net rotations are exported via the standard "Export…" tool, and by selecting the "Net rotation" export type.
+   * Any dynamic plate-polygon data sets currently active in GPlates will be used as the basis for net rotation calculations. 
+ * Improved OGR spatial reference system (SRS) support:
+     * More complete support for OGR-supported files (e.g. ESRI shape file, OGR-GMT and others) which provide spatial reference system / projection information.
+     * Any SRSs supported by the PROJ4 library should now be accepted by GPlates.
+     * When saving to a file which had a non-WGS84 SRS associated with it, GPlates will prompt the user to export in either the original SRS, or in WGS84.
+     * All other forms of file export in GPlates continue to use WGS84.
+ * Improved handling of import / export directories
+   * Now stores the last used directory for Project files.
+   * More fine-grained support for both Feature Collection and Project folder preferences (can adjust through the Preferences (Ctrl+,) dialog).
+ * Visibility of all layers can be toggled as a group using the new visibility icons in the Layers dialog.
+ * Support non-zero central meridian in dateline wrapper.
+ * In Pole Manipulation tool, only render highlights on geometries in visible layers.
+ * Half-stage reconstruct method now defaults to a new version (3) of half-stage rotation calculation:
+   * First reconstructs using only left plate to digitisation time of mid-ocean ridge (if digitised in GPlates 2.0 or above).
+   * Then half-stage rotates from digitisation time to reconstruction time.
+   * Changes to spreading asymmetry no longer move ridge to incorrect position (at digitisation time).
+ * Can adjust line width in Graticule settings.
+ * Assign Plate IDs dialog:
+   * Time of appearance and disappearance are now separate options.
+   * Added conjugate plate ID option.
+   * Added option to only copy/assign requested feature properties that are allowed (by GPGIM) for the partitioned feature type.
+ * No longer overwrite comment in rotation pole when using Pole Manipulation tool.
+ * Intersection and distance queries:
+   * Calculate minimum distance between two geometries:
+     * Each geometry can be a point, multipoint, polyline or polygon.
+     * Can use optional distance threshold and optionally returns closest positions and indices (into points or segments).
+     * Polygons can be treated as non-solid (outline) or solid (geometries inside polygon are zero distance).
+     * Uses a binary bounding small circle tree for polylines/polygons for efficient early rejection.
+       * Traverses tree and uses minimum distance between two small circles.
+   * Calculate optimal bounding small circle around two other small circles.
+   * Added centroid calculation function for polygons/polylines based on weighting the segment lengths.
+   * Have separate boundary and interior centroids for polygons:
+     * The latter being closer to the centre-of-mass of polygon interior.
+   * Fixed spherical version of centroid calculation for polygons:
+     * For clockwise polygons the centroid was on the opposite side of the globe.
+   * Point-in-polygon test defaults to adaptive:
+     * Starts off low-speed then moves to medium and high speed as more point-in-polygon calls are made.
+   * Can interpolate two polylines along small circles about a (stage pole) rotation axis.
+   * Can tessellate polylines and polygons.
+   * Added tessellation to dateline wrapper:
+     * Useful for polygons crossing dateline in non-rectangular 2D map views (polygon section along dateline is curved).
+ * Added support for donut polygons (containing interior holes):
+   * GPML, OGR (shapefile), PLATES (line) and GMT(xy) readers/writers supported.
+   * Feature query/edit dialogs display interior holes.
+   * Supported by raster reconstruction, raster co-registration and filled polygons display.
+   * Also supported by 3D scalar fields (cross-sections, surface masks and polygon walls).
+   * Also supported by for point-in-polygon test, spherical area, centroid, orientation and dateline wrapper.
+ * Colour palette improvements:
+   * Available in raster, 3D scalar field and scalar coverage layers.
+   * Remap the range using mean and standard deviation of the layer data (raster, 3D scalar field or scalar coverage).
+   * Added a variety of built-in colour palettes based on ColorBrewer sequential and diverging colour scales.
+ * Raster reconstruction improvements:
+   * Connecting raster layer to polygons much more stable and noticeably faster (using our own polygon mesh refinement).
+   * No more seams/cracks in raster between adjacent polygons (matching tessellation of shared polygon boundaries).
+ * Added image compression to raster export (colour and numerical) for TIFF and Erdas formats.
+ * Resolving topologies can also generate non-overlapping sub-segments shared by adjacent topology boundaries/networks:
+   * No duplication/overlap in this set of segments (as opposed to boundary segments of each resolved boundary/network).
+ * Only those layers and features that can actually contribute to resolved topologies are reconstructed:
+   * Improves performance noticeably when topologies are used to reconstruct regular features.
+ * Support partitioning of point/multi-point/polyline/polygon scalar coverages when assigning plate IDs.
+ * Removed option to assign plate IDs to each sub-geometry of a feature. Now the only two options are:
+   * Assigning based on the polygon that most overlap the *entire* geometry of a feature (all its sub-geometries combined), and
+   * Partitioning into polygons.
+ * Added Earth class for parameters such as Earth radius.
+ * Topology geometry and network layers also support fill opacity/intensity.
+ * Can merge selected (or all) rotation layers into one layer:
+   * Avoids user having to manually connect multiple rotation files into a single rotation layer.
+ * Added velocity delta-time options to velocity layer:
+   * Can change delta-time interval, and choose 't+dt->t', 't->t-dt' or 't+dt/2->t-dt/2'.
+   * Attempt to calculate non-zero velocities, when one of the times in delta interval is negative, by shifting time interval.
+ * Can now import and register 'internal' Python scripts (stored in Qt resource files embedded inside application):
+   * This will mean that important scripts such as colouring scripts will always get registered.
+   * No longer need to ensure they are installed in the correct place on the user's file system for example.
+ * Allow Python colouring classes to declare their own set of 'built in' config variants.
+ * Added new colour styles with arbitrary colours (HSV configurable) and properties.
+ * Colour vector geometries on the rear of the globe the same as the background colour:
+   * Results in less visual interference/clutter for geometries on the front of the globe (when globe is semi-transparent).
+ * Can create conjugate isochron linked to original (cannot yet follow links in GUI though).
+ * Store +/- Infinity in GeoTimeInstant (for distant past/future).
+ * GPlates Geological Information Model (GPGIM) updates:
+   * Added stratigraphic timescale.
+   * Added support for named ages (in contrast to absolute ages) with timescale information and uncertainty tracking:
+     * GUI supports find-as-you-type named ages with timescale colouring.
+   * Updated Mag Pick and Lineations.
+   * Added XSLT stylesheet to make GPGIM XML viewable in web browser (with formatted clickable links and inheritance unrolling).
+   * Added GPGIM XSD.
+ * Write lat/lon/angle to PLATES rotation files with 4 digits of precision instead of 2.
+ * Use the North pole (90,0) as the axis for zero-angle (identity) rotations when writing out PLATES rotation file.
+ * When exporting reconstructed/resolved geometries to a single output file, retain shapefile attributes if the associated features all came from a single file.
+ * OGR geometry exporter can write multiple geometries as a single feature (if geometries came from same feature).
+ * Added progress bar when adding depth layers during 3D scalar field import (and when adding time sequence during time-dependent raster import).
+ * Remove depth layer raster cache files after importing 3D scalar field if the cache files didn't exist prior to the import:
+   * Frees the user's disk space of the cache files generated during import process.
+ * When importing 3D scalar field, read georeferencing and SRS from first depth layer raster (if has that info):
+   * Otherwise ask user for georeferencing (and assume WGS84 SRS).
+ * Compiling software:
+   * Remove dependency on ImageMagick.
+   * Add "/LARGEADDRESSAWARE" for Win32 builds to enable 4Gb (versus 2Gb) for 32-bit builds on a 64-bit Windows OS.
+ * Fixed horizontal lines in 2D map view for grid marks sample data.
+ * Fix mixing of single and multi polylines/polygons in OGR-GMT files.
+ * Fix error adding delaunay points from a topological line that is, in turn, made from a series of points.
+ * Fix unhandled math exception in 2D map projection renderer when dateline wrapper creates a polygon arc with antipodal end points (at North and South poles).
+ * Fixed infinite loop bug in polyline intersections code (caused hang when assigning plate IDs with specific dataset).
+ * Fixed bug in polyline intersections code (incorrect reversal of inside-outside test).
+ * Avoid potentially incorrect result in polyline/polygon partitioning when encounter two zero-length great circle arcs.
+ * Fixed so that points equal (within epsilon) to a great circle arc's start point should be considered to lie on the arc.
+ * Fixed another infinite loop bug in polyline intersections code (two overlapping arcs assumed pointing in wrong direction relative to each other).
+ * Fix two polylines intersecting at a common vertex (prevent tunnelling through each other without being noticed).
+ * Fixed rendering of filled polylines in 2D map views.
+ * Fixed bug in polyline/polygon (outline) centroid caused by point-in-polygon test incorrectly passing polygon consisted of coincident points.
+ * Fix dateline wrapping bug where a small polygon incorrectly covers the entire globe/map if intersects North or South pole (on a polygon segment that lies on the dateline plane).
+ * No longer update stage pole location when Enable Pole checkbox is not checked (also update when checkbox is checked again).
+ * Fixed velocity layer options not updating when changing the solve-velocities-method.
+ * Fixed azimuthal equal area projection exception when unprojecting a point that is coincident with the centre of projection.
+ * Fixed flickering cross-sections in 3D scalar fields (bug in mapping OpenGL buffers for streaming).
+ * Fixed crash when reloading an age grid or 3D scalar field.
+ * Unmap age grid colour palette when 'age' button clicked to avoid incorrect colours.
+ * Fixed terminating due to uncaught scribe exception when encountering a corrupt session archive.
+ * Fixed open file read error not showing in Read Errors dialog (when a feature collection file is missing).
+ * Fixed CPT file read errors not showing in Read Errors dialog.
+ * Fixed main globe/map view (and associated draw style's preview icon) not getting updated when the draw style's configuration changed (eg, changing colour or palette).
+ * Fixed crash when changing draw style configuration parameters in GUI or when removing a draw style in GUI.
+ * Fixed infinite recursion bug in model notification. This was noticed when importing a raster.
+ * Fixed SVG export of 3D scalar field isosurfaces (on Mac OS X) which appeared to be incorrectly rotated and offset from centre of globe.
+ * Fixed 3D scalar field cross-sections generating 'invalid operation' in OpenGL on Mac OS X (during draw call due to shader program being invalid).
+ * No longer require first and last point of GML polygon to be identical (when reading GPML file):
+   * Some GPML files have only three points (instead of the required 4 points - since first and last should be identical) since really only need 3 points for a polygon.
+ * No longer show the GPGIM version warning dialog when overwriting a GPML file with an older version.
+ * Fixed Move Vertex tool (and other geometry tools) not working with flowlines.
+
 GPlates 1.5
 ===========
 

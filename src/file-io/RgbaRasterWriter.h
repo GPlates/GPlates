@@ -59,7 +59,8 @@ namespace GPlatesFileIO
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int num_raster_bands,
-				GPlatesPropertyValues::RasterType::Type raster_band_type);
+				GPlatesPropertyValues::RasterType::Type raster_band_type,
+				bool compress = false);
 
 		virtual
 		bool

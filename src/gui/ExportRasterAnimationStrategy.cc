@@ -280,7 +280,7 @@ namespace
 						ColourRaster(
 								visible_raster_visual_layer->get_name()/*layer_name*/,
 								resolved_raster.get(),
-								raster_layer_params->get_colour_palette(),
+								raster_layer_params->get_colour_palette_parameters().get_colour_palette(),
 								raster_layer_params->get_modulate_colour(),
 								raster_layer_params->get_surface_relief_scale()));
 			}
@@ -638,6 +638,7 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
+			bool export_raster_compress,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 			GPlatesOpenGL::GLRenderer &renderer,
@@ -650,7 +651,8 @@ namespace
 						export_raster_width,
 						export_raster_height,
 						1/*num_raster_bands*/,
-						GPlatesPropertyValues::RasterType::RGBA8);
+						GPlatesPropertyValues::RasterType::RGBA8,
+						export_raster_compress);
 
 		if (!raster_writer->can_write())
 		{
@@ -991,6 +993,7 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
+			bool export_raster_compress,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
 			GPlatesOpenGL::GLRenderer &renderer,
 			const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type &map_cube_mesh)
@@ -1003,7 +1006,8 @@ namespace
 						export_raster_width,
 						export_raster_height,
 						raster.numerical_bands.size(),
-						GPlatesPropertyValues::RasterType::FLOAT);
+						GPlatesPropertyValues::RasterType::FLOAT,
+						export_raster_compress);
 
 		if (!raster_writer->can_write())
 		{
@@ -1111,6 +1115,9 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_height,
 						lat_lon_extents);
 
+		// Compress raster if it is supported and has been turned on.
+		const bool export_raster_compress = d_configuration->compress && d_configuration->compress.get();
+
 		if (d_configuration->raster_type == Configuration::COLOUR)
 		{
 			// Start an explicit render scope.
@@ -1167,6 +1174,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_filename.get(),
 						export_raster_width,
 						export_raster_height,
+						export_raster_compress,
 						lat_lon_extents,
 						gl_visual_layers,
 						*renderer,
@@ -1228,6 +1236,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_filename.get(),
 						export_raster_width,
 						export_raster_height,
+						export_raster_compress,
 						lat_lon_extents,
 						*renderer,
 						map_cube_mesh);

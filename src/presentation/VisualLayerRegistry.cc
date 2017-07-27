@@ -130,9 +130,9 @@ namespace
 	// create_visual_layer_params_function.
 	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 	default_visual_layer_params(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+			GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 	{
-		return GPlatesPresentation::VisualLayerParams::create(layer_task_params);
+		return GPlatesPresentation::VisualLayerParams::create(layer_params);
 	}
 }
 
@@ -350,14 +350,14 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
 		VisualLayerType::Type visual_layer_type,
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) const
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) const
 {
 	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
 	if (iter != d_visual_layer_info_map.end())
 	{
-		return iter->second.create_visual_layer_params_function(layer_task_params);
+		return iter->second.create_visual_layer_params_function(layer_params);
 	}
-	return VisualLayerParams::create(layer_task_params);
+	return VisualLayerParams::create(layer_params);
 }
 
 
@@ -429,6 +429,26 @@ GPlatesPresentation::register_default_visual_layers(
 				RECONSTRUCT),
 			&GPlatesQtWidgets::ReconstructLayerOptionsWidget::create,
 			&ReconstructVisualLayerParams::create,
+			true);
+
+	// Need to put reconstructed scalar coverages in same group (BASIC_DATA) as
+	// reconstructed feature geometries because the scalar coverages are coloured
+	// per-point and this needs to be displayed on top of the feature geometries
+	// which have a constant colour across the entire geometry.
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(RECONSTRUCT_SCALAR_COVERAGE),
+			VisualLayerGroup::BASIC_DATA,
+			"Reconstructed Scalar Coverages",
+			"Geometries containing a scalar value at each point.",
+			*html_colours.get_colour("lightslategray"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				RECONSTRUCT_SCALAR_COVERAGE),
+			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
+			boost::bind(
+					&ReconstructScalarCoverageVisualLayerParams::create,
+					_1),
 			true);
 
 	registry.register_visual_layer_type(
@@ -549,27 +569,6 @@ GPlatesPresentation::register_default_visual_layers(
 				&default_visual_layer_params,
 				true);
 	}
-
-	// Temporarily disable until it's ready...
-	//
-	// Also need to sort out Scribe serialisation to handle backwards compatibility with GPlates 1.5...
-#if 0
-	registry.register_visual_layer_type(
-			VisualLayerType::Type(RECONSTRUCT_SCALAR_COVERAGE),
-			VisualLayerGroup::DERIVED_DATA,
-			"Reconstructed Scalar Coverages",
-			"Geometries containing a scalar value at each point.",
-			*html_colours.get_colour("peachpuff"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				RECONSTRUCT_SCALAR_COVERAGE),
-			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
-			boost::bind(
-					&ReconstructScalarCoverageVisualLayerParams::create,
-					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
-			true);
-#endif
 
 	//
 	// The following visual layer types do not have corresponding app-logic layers

@@ -30,7 +30,7 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "GeometryDeformation.h"
+#include "DeformationStrain.h"
 #include "ReconstructScalarCoverageParams.h"
 
 #include "property-values/ValueObjectType.h"
@@ -39,16 +39,25 @@
 namespace GPlatesAppLogic
 {
 	/**
-	 * Convenience typedef for a function that evolves a sequence of (per-point) scalar values
-	 * from one time to another.
+	 * Convenience typedef for a function that evolves a sequence of (per-point) scalar values from one time to another.
+	 *
+	 * Note that 'boost::optional' is used for each point's scalar, strain rate and strain.
+	 * This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
+	 * do not get re-activated (inactive->active). So if the initial strain rate is inactive then so should the final strain rate.
+	 * Also the active state of the initial scalar value should match that of the initial deformation strain rate
+	 * (because they represent the same point). If the initial scalar value is inactive then it just remains inactive.
+	 * And if the initial scalar value is active then it becomes inactive if the final strain rate is inactive, otherwise
+	 * both (initial and final) strain rates are active and the scalar value is evolved from its initial value to its final value.
+	 * This ensures the active state of the final scalar values matches that of the final deformation strain rate
+	 * (which in turn comes from the active state of the associated domain geometry point).
 	 */
 	typedef boost::function<
 			void (
-					std::vector<double> &,                                    // per-point output scalars
-					const std::vector<double> &,                              // per-point input scalars
-					const std::vector<GeometryDeformation::DeformationInfo> &,// per-point input deform info
-					const double &,                                           // initial time
-					const double &)>                                          // final time
+					std::vector< boost::optional<double> > &,                  // initial->final per-point scalars
+					const std::vector< boost::optional<DeformationStrain> > &, // initial per-point input deformation strain rates
+					const std::vector< boost::optional<DeformationStrain> > &, // final per-point input deformation strain rates
+					const double &,                                            // initial time
+					const double &)>                                           // final time
 							scalar_evolution_function_type;
 
 
@@ -72,21 +81,19 @@ namespace GPlatesAppLogic
 	namespace ScalarCoverageEvolution
 	{
 		/**
-		 * Evolves the crustal thickness from @a input_crustal_thickness to @a output_crustal_thickness.
+		 * Evolves the crustal thickness values in @a input_output_crustal_thickness.
 		 *
-		 * Output values are appended to @a output_crustal_thickness.
+		 * Each values in @a input_output_crustal_thickness is replaced with its updated value.
 		 *
 		 * Throws exception if the sizes of the input arrays do not match.
 		 */
 		void
 		crustal_thinning(
-			std::vector<double> &output_crustal_thickness,
-			const std::vector<double> &input_crustal_thickness,
-			const std::vector<GeometryDeformation::DeformationInfo> &deformation_info,
-			const double &initial_time,
-			const double &final_time,
-			const double &oceanic_density,
-			const double &continental_density);
+				std::vector< boost::optional<double> > &input_output_crustal_thickness,
+				const std::vector< boost::optional<DeformationStrain> > &initial_deformation_strain_rates,
+				const std::vector< boost::optional<DeformationStrain> > &final_deformation_strain_rates,
+				const double &initial_time,
+				const double &final_time);
 	}
 }
 

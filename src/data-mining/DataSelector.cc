@@ -36,7 +36,6 @@
 #include "CoRegFilterMapReduceFactory.h"
 #include "DataSelector.h"
 #include "DataMiningUtils.h"
-#include "IsCloseEnoughChecker.h"
 #include "RegionOfInterestFilter.h"
 
 #include "app-logic/RasterLayerProxy.h"
@@ -50,6 +49,7 @@
 
 #include "opengl/GLRasterCoRegistration.h"
 
+#include "utils/Earth.h"
 #include "utils/Profile.h"
 
 GPlatesDataMining::DataTable GPlatesDataMining::DataSelector::d_data_table;
@@ -71,7 +71,7 @@ GPlatesDataMining::DataSelector::select(
 	if (!is_config_table_valid(target_layer_proxies))
 	{
 		qWarning() << "Co-registration configuration table references target layers that are currently disabled "
-				"or not connected to his co-registration layer - skipping co-registration altogether.";
+				"or not connected to this co-registration layer - skipping co-registration altogether.";
 		return;
 	}
 		
@@ -162,7 +162,7 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
 		const GPlatesUtils::UnicodeString raster_band_name(config_row.attr_name);
 
 		// Associate the config row with the raster.
-		const raster_id_type raster_id = std::make_pair(config_row.target_layer, raster_band_name);
+		const raster_id_type raster_id = std::make_pair(target_layer, raster_band_name);
 		config_rows_from_raster_layer_lookup[raster_id].push_back(config_row_index);
 	}
 
@@ -261,7 +261,7 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
 			// Add the raster operation.
 			raster_operations.push_back(
 					GPlatesOpenGL::GLRasterCoRegistration::Operation(
-							range / DEFAULT_RADIUS_OF_EARTH_KMS/* angular radial extent in radians */,
+							range / GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS /* angular radial extent in radians */,
 							operation_type,
 							config_row.raster_fill_polygons));
 

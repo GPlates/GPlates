@@ -41,12 +41,19 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
+#include <QDataStream>
 #include <QLinkedList>
+#include <QList>
 #include <QMap>
 #include <QSet>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 #include <QVector>
+
+#include "maths/Real.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 #include "scribe/ScribeArchiveReader.h"
 #include "scribe/ScribeArchiveWriter.h"
@@ -130,7 +137,11 @@ namespace GPlatesUnitTest
 				ENUM2_VALUE_3
 			};
 
+			//
 			// Use friend function (injection) so can access private enum.
+			// And implement in class body otherwise some compilers will complain
+			// that the enum argument is not accessible (since enum is private).
+			//
 			friend
 			GPlatesScribe::TranscribeResult
 			transcribe(
@@ -139,6 +150,7 @@ namespace GPlatesUnitTest
 					bool transcribed_construct_data)
 			{
 				// WARNING: Changing the string ids will break backward/forward compatibility.
+				//          So don't change the string ids even if the enum name changes.
 				static const GPlatesScribe::EnumValue enum_values[] =
 				{
 					GPlatesScribe::EnumValue("ENUM2_VALUE_1", ENUM2_VALUE_1),
@@ -176,6 +188,30 @@ namespace GPlatesUnitTest
 				friend class GPlatesScribe::Access;
 			};
 
+			struct QStringWrapper
+			{
+				QStringWrapper()
+				{}
+
+
+				QString str;
+
+				bool
+				operator==(
+						const QStringWrapper &other) const
+				{
+					return str == other.str;
+				}
+
+			private:
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						bool transcribed_construct_data);
+
+				friend class GPlatesScribe::Access;
+			};
+
 		private:
 
 			int ia[2][2];
@@ -184,6 +220,12 @@ namespace GPlatesUnitTest
 			bool b;
 			float f;
 			const double d;
+			float f_pos_inf, f_neg_inf, f_nan;
+			double d_pos_inf, d_neg_inf, d_nan;
+			GPlatesMaths::Real real;
+			GPlatesPropertyValues::GeoTimeInstant geo_real_time;
+			GPlatesPropertyValues::GeoTimeInstant geo_distant_past;
+			GPlatesPropertyValues::GeoTimeInstant geo_distant_future;
 			char c;
 			short s;
 			long l;
@@ -191,6 +233,7 @@ namespace GPlatesUnitTest
 			int j;
 			std::vector<int> signed_ints;
 			QString u;
+			QStringWrapper uw;
 			int *pi;
 			int *pj;
 			int *pk;
@@ -222,6 +265,10 @@ namespace GPlatesUnitTest
 			boost::variant<int, char, QString, double> bv;
 			NonDefaultConstructable *pbv2;
 			boost::variant<NonDefaultConstructable, char, QString, double> bv2;
+			QVariant qv;
+			QVariant qv_reg;
+			QList<QVariant> lqv;
+			QVariant qv_list;
 
 			GPlatesScribe::TranscribeResult
 			transcribe(
@@ -265,6 +312,26 @@ namespace GPlatesUnitTest
 				const Data::NonDefaultConstructable (*const *const before_non_default_constructable_sub_array_ptr_ptr)[2],
 				const Data::NonDefaultConstructable *&before_non_default_constructable_array_element_ptr);
 	};
+
+	inline
+	QDataStream &
+	operator<<(
+			QDataStream &out,
+			const TranscribePrimitivesTest::Data::StringWithEmbeddedZeros &obj)
+	{
+		out << obj.str;
+		return out;
+	}
+
+	inline
+	QDataStream &
+	operator>>(
+			QDataStream &in,
+			TranscribePrimitivesTest::Data::StringWithEmbeddedZeros &obj)
+	{
+		in >> obj.str;
+		return in;
+	}
 
 	GPlatesScribe::TranscribeResult
 	transcribe(
@@ -693,8 +760,8 @@ namespace GPlatesUnitTest
 		private:
 
 			boost::scoped_ptr<Base> d_scoped_ptr;
-			boost::shared_ptr<Base> d_shared_ptr;
-			boost::intrusive_ptr<Base> d_intrusive_ptr;
+			boost::shared_ptr<Base> d_shared_ptr, d_shared_ptr2;
+			boost::intrusive_ptr<Base> d_intrusive_ptr, d_intrusive_ptr2;
 			std::auto_ptr<Base> d_auto_ptr;
 			GPlatesUtils::non_null_intrusive_ptr<Base> d_non_null_intrusive_ptr;
 
@@ -729,6 +796,12 @@ namespace GPlatesUnitTest
 	};
 
 
+
+	//
+	// To run only Transcribe test suite:
+	//
+	// gplates-unit-test.exe --G_test_to_run=*/Transcribe
+	//
 	class TranscribeTestSuite : 
 		public GPlatesUnitTest::GPlatesTestSuite
 	{

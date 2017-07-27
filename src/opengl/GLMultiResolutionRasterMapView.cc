@@ -169,7 +169,7 @@ namespace GPlatesOpenGL
 #endif
 
 			// Convert to ARGB32 format so it's easier to load into a texture.
-			debug_image.convertToFormat(QImage::Format_ARGB32);
+			debug_image = debug_image.convertToFormat(QImage::Format_ARGB32);
 
 			// Load cached image into raster texture.
 			GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(

@@ -70,6 +70,7 @@ namespace GPlatesGui
 	class ExportAnimationRegistry;
 	class FeatureTableModel;
 	class FeatureFocus;
+	class FileIODirectoryConfigurations;
 	class GraticuleSettings;
 	class MapTransform;
 	class PythonManager;
@@ -109,6 +110,7 @@ namespace GPlatesPresentation
 		
 	public:
 
+		explicit
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
 
@@ -118,12 +120,8 @@ namespace GPlatesPresentation
 		GPlatesAppLogic::ApplicationState &
 		get_application_state();
 
-		inline
 		const GPlatesAppLogic::ApplicationState &
-		get_application_state() const
-		{
-			return d_application_state;
-		}
+		get_application_state() const;
 
 
 		///////////////////////////////////
@@ -156,44 +154,74 @@ namespace GPlatesPresentation
 		GPlatesGui::AnimationController &
 		get_animation_controller();
 
+		const GPlatesGui::AnimationController &
+		get_animation_controller() const;
+
 		/**
 		 * Stores/Loads loaded file information to and from persistent storage.
 		 */
 		SessionManagement &
 		get_session_management();
 
+		const SessionManagement &
+		get_session_management() const;
+
 
 		GPlatesViewOperations::RenderedGeometryCollection &
 		get_rendered_geometry_collection();
+
+		const GPlatesViewOperations::RenderedGeometryCollection &
+		get_rendered_geometry_collection() const;
 
 
 		GPlatesGui::FeatureFocus &
 		get_feature_focus();
 
+		const GPlatesGui::FeatureFocus &
+		get_feature_focus() const;
+
 
 		GPlatesGui::FeatureTableModel &
 		get_feature_table_model();
+
+		const GPlatesGui::FeatureTableModel &
+		get_feature_table_model() const;
 
 
 		GPlatesGui::ViewportZoom &
 		get_viewport_zoom();
 
+		const GPlatesGui::ViewportZoom &
+		get_viewport_zoom() const;
+
 
 		GPlatesGui::ViewportProjection &
 		get_viewport_projection();
+
+		const GPlatesGui::ViewportProjection &
+		get_viewport_projection() const;
 
 
 		GPlatesViewOperations::GeometryBuilder &
 		get_digitise_geometry_builder();
 
+		const GPlatesViewOperations::GeometryBuilder &
+		get_digitise_geometry_builder() const;
+
 
 		GPlatesViewOperations::GeometryBuilder &
 		get_focused_feature_geometry_builder();
+
+		const GPlatesViewOperations::GeometryBuilder &
+		get_focused_feature_geometry_builder() const;
 
 
 		//! Returns all loaded colour schemes, sorted by category.
 		GPlatesGui::ColourSchemeContainer &
 		get_colour_scheme_container();
+
+		const GPlatesGui::ColourSchemeContainer &
+		get_colour_scheme_container() const;
 
 
 		/**
@@ -208,33 +236,57 @@ namespace GPlatesPresentation
 		GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 		get_colour_scheme();
 
+		GPlatesGlobal::PointerTraits<const GPlatesGui::ColourScheme>::non_null_ptr_type
+		get_colour_scheme() const;
+
 
 		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
 		get_colour_scheme_delegator();
+
+		GPlatesGlobal::PointerTraits<const GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+		get_colour_scheme_delegator() const;
 
 
 		GPlatesGui::RenderSettings &
 		get_render_settings();
 
+		const GPlatesGui::RenderSettings &
+		get_render_settings() const;
+
 
 		GPlatesViewOperations::RenderedGeometryParameters &
 		get_rendered_geometry_parameters();
+
+		const GPlatesViewOperations::RenderedGeometryParameters &
+		get_rendered_geometry_parameters() const;
 
 
 		GPlatesGui::SceneLightingParameters &
 		get_scene_lighting_parameters();
 
+		const GPlatesGui::SceneLightingParameters &
+		get_scene_lighting_parameters() const;
+
 
 		VisualLayers &
 		get_visual_layers();
+
+		const VisualLayers &
+		get_visual_layers() const;
 
 
 		VisualLayerRegistry &
 		get_visual_layer_registry();
 
+		const VisualLayerRegistry &
+		get_visual_layer_registry() const;
+
 
 		GPlatesGui::MapTransform &
 		get_map_transform();
+
+		const GPlatesGui::MapTransform &
+		get_map_transform() const;
 
 
 		const std::pair<int, int> &
@@ -253,14 +305,13 @@ namespace GPlatesPresentation
 		int
 		get_main_viewport_max_dimension() const;
 
-
+		// TODO: the get_last_open_directory methods should be obsolete now, but retain
+		// until the FileIODirectoryConfiguration stuff has been tested further.
 		QString &
 		get_last_open_directory();
 
-
 		const QString &
 		get_last_open_directory() const;
-
 
 		bool
 		get_show_stars() const;
@@ -297,21 +348,37 @@ namespace GPlatesPresentation
 
 		GPlatesGui::TextOverlaySettings &
 		get_text_overlay_settings();
-
 		
 		const GPlatesGui::TextOverlaySettings &
 		get_text_overlay_settings() const;
 
+
 		GPlatesGui::ExportAnimationRegistry &
+		get_export_animation_registry();
+
+		const GPlatesGui::ExportAnimationRegistry &
 		get_export_animation_registry() const;
 
 
 		GPlatesGui::TopologySectionsContainer &
 		get_topology_boundary_sections_container();
 
+		const GPlatesGui::TopologySectionsContainer &
+		get_topology_boundary_sections_container() const;
+
 
 		GPlatesGui::TopologySectionsContainer &
 		get_topology_interior_sections_container();
+
+		const GPlatesGui::TopologySectionsContainer &
+		get_topology_interior_sections_container() const;
+
+
+		GPlatesGui::FileIODirectoryConfigurations&
+		get_file_io_directory_configurations();
+
+		const GPlatesGui::FileIODirectoryConfigurations&
+		get_file_io_directory_configurations() const;
 
 
 		GPlatesGui::PythonManager&
@@ -319,6 +386,7 @@ namespace GPlatesPresentation
 		{
 			return *d_python_manager_ptr;
 		}
+
 
 	private Q_SLOTS:
 
@@ -435,8 +503,16 @@ namespace GPlatesPresentation
 		/**
 		 * Stores the directory containing the files last opened, or the last opened
 		 * directory.
+		 *
+		 * This should be obsolete now that FileIODirectoryConfigurations are being
+		 * used, but will retain for the time being.
 		 */
 		QString d_last_open_directory;
+
+		/**
+		 * Stores last-used directories, preferred behaviour etc for various file types
+		 */
+		boost::scoped_ptr<GPlatesGui::FileIODirectoryConfigurations> d_file_io_directory_configurations;
 
 		/**
 		 * Whether to draw stars behind the 3D globe.

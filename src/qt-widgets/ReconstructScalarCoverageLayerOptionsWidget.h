@@ -26,9 +26,17 @@
 #ifndef GPLATES_QT_WIDGETS_RECONSTRUCTSCALARCOVERAGELAYEROPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_RECONSTRUCTSCALARCOVERAGELAYEROPTIONSWIDGET_H
 
+#include <utility>
+
 #include "ReconstructScalarCoverageLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
+#include "OpenFileDialog.h"
+
+#include "app-logic/Layer.h"
+
+#include "gui/BuiltinColourPaletteType.h"
+#include "gui/RasterColourPalette.h"
 
 
 namespace GPlatesAppLogic
@@ -43,7 +51,8 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	// Forward declaration.
+	// Forward declarations.
+	class RemappedColourPaletteWidget;
 	class ViewportWindow;
 
 	/**
@@ -81,6 +90,42 @@ namespace GPlatesQtWidgets
 		handle_scalar_type_combobox_activated(
 				const QString &text);
 
+		void
+		handle_select_palette_filename_button_clicked();
+
+		void
+		handle_use_default_palette_button_clicked();
+
+		void
+		handle_builtin_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
+
+		void
+		handle_builtin_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_parameters);
+
+		void
+		handle_palette_range_check_box_changed(
+				int state);
+
+		void
+		handle_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_palette_max_line_editing_finished(
+				double value);
+
+		void
+		handle_palette_range_restore_min_max_button_clicked();
+
+		void
+		handle_palette_range_restore_mean_deviation_button_clicked();
+
+		void
+		handle_palette_range_restore_mean_deviation_spinbox_changed(
+				double value);
+
 	private:
 
 		ReconstructScalarCoverageLayerOptionsWidget(
@@ -89,13 +134,20 @@ namespace GPlatesQtWidgets
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
-		void
-		make_signal_slot_connections();
+		std::pair<double, double>
+		get_scalar_min_max(
+				GPlatesAppLogic::Layer &layer) const;
+
+		std::pair<double, double>
+		get_scalar_mean_std_dev(
+				GPlatesAppLogic::Layer &layer) const;
 
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
+		OpenFileDialog d_open_file_dialog;
+		RemappedColourPaletteWidget *d_colour_palette_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

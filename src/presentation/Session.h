@@ -123,11 +123,11 @@ namespace GPlatesPresentation
 		 * NOTE: Throws an exception derived from GPlatesScribe::Exceptions::ExceptionBase
 		 * if there was an error during serialization of the session state.
 		 *
-		 * Returns a list of feature collection files that were not loaded
-		 * (either they don't exist or the load failed).
+		 * Any files that were not loaded (either they don't exist or the load failed) get reported
+		 * in the read errors dialog.
 		 */
 		virtual
-		QStringList
+		void
 		restore_session() const = 0;
 
 	protected:

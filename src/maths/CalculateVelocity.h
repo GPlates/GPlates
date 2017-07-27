@@ -85,12 +85,33 @@ namespace GPlatesMaths
 	 * That is, t1 should be less than t2 in GPlates age based system.
 	 * For example: t1 = 10 Ma, t2 = 11 Ma.
 	 *
+	 * @a delta_time should be t2-t1.
+	 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 	 */
 	Vector3D
 	calculate_velocity_vector(
 			const PointOnSphere &point, 
 			const FiniteRotation &fr_t1,
+			const FiniteRotation &fr_t2,
+			const double &delta_time);
+
+	/**
+	 * Similar to @a calculate_velocity_vector but returns the stage rotation.
+	 */
+	FiniteRotation
+	calculate_stage_rotation(
+			const FiniteRotation &fr_t1,
 			const FiniteRotation &fr_t2);
+
+	/**
+	 * Similar to @a calculate_velocity_vector but uses a stage rotation instead
+	 * of two equivalent rotations.
+	 */
+	Vector3D
+	calculate_velocity_vector(
+			const PointOnSphere &point, 
+			const FiniteRotation &stage_rotation,
+			const double &delta_time);
 
 	/**
 	 * @brief calculate_velocity_vector_and_omega - as calculate_velocity_vector but
@@ -101,6 +122,7 @@ namespace GPlatesMaths
 			const PointOnSphere &point,
 			const FiniteRotation &fr_t1,
 			const FiniteRotation &fr_t2,
+			const double &delta_time,
 			const boost::optional<UnitVector3D> &axis_hint);
 
 	/**

@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_EXPORTRASTERANIMATIONSTRATEGY_H
 #define GPLATES_GUI_EXPORTRASTERANIMATIONSTRATEGY_H
 
+#include <boost/optional.hpp>
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
@@ -81,11 +82,13 @@ namespace GPlatesGui
 					const QString& filename_template_,
 					RasterType raster_type_,
 					const double &resolution_in_degrees_,
-					const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents_) :
+					const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents_,
+					boost::optional<bool> compress_ = boost::none) :
 				ConfigurationBase(filename_template_),
 				raster_type(raster_type_),
 				resolution_in_degrees(resolution_in_degrees_),
-				lat_lon_extents(lat_lon_extents_)
+				lat_lon_extents(lat_lon_extents_),
+				compress(compress_)
 			{  }
 
 			virtual
@@ -98,6 +101,14 @@ namespace GPlatesGui
 			RasterType raster_type;
 			double resolution_in_degrees;
 			GPlatesPropertyValues::Georeferencing::lat_lon_extents_type lat_lon_extents;
+
+			/**
+			 * Whether to compress raster or not.
+			 *
+			 * Note: If boost::none then the option to compress is not supported.
+			 * Otherwise the 'bool' value determines whether to compress or not.
+			 */
+			boost::optional<bool> compress;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

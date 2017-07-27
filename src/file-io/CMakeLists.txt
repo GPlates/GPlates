@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    AgeModelReader.cc
+    AgeModelReader.h
     ArbitraryNodeProcessor.h
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
@@ -26,6 +28,8 @@ set(srcs
     CitcomsResolvedTopologicalBoundaryExportImpl.h
     CptReader.cc
     CptReader.h
+    DeformationExport.cc
+    DeformationExport.h
     ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
@@ -69,6 +73,8 @@ set(srcs
     GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
+    GMTFormatDeformationExport.cc
+    GMTFormatDeformationExport.h
     GMTFormatFlowlineExport.cc
     GMTFormatFlowlineExport.h
     GMTFormatGeometryExporter.cc
@@ -81,6 +87,8 @@ set(srcs
     GMTFormatMultiPointVectorFieldExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
+    GMTFormatReconstructedScalarCoverageExport.cc
+    GMTFormatReconstructedScalarCoverageExport.h
     GMTFormatResolvedTopologicalGeometryExport.cc
     GMTFormatResolvedTopologicalGeometryExport.h
     GMTFormatWriter.cc
@@ -91,8 +99,12 @@ set(srcs
     GpmlFeatureReaderImpl.h
     GpmlFeatureReaderInterface.cc
     GpmlFeatureReaderInterface.h
+    GpmlFormatDeformationExport.cc
+    GpmlFormatDeformationExport.h
     GpmlFormatMultiPointVectorFieldExport.cc
     GpmlFormatMultiPointVectorFieldExport.h
+    GpmlFormatReconstructedScalarCoverageExport.cc
+    GpmlFormatReconstructedScalarCoverageExport.h
     GpmlOutputVisitor.cc
     GpmlOutputVisitor.h
     GpmlPropertyReader.cc
@@ -121,6 +133,10 @@ set(srcs
     GsmlPropertyDef.h
     GsmlPropertyHandlers.cc
     GsmlPropertyHandlers.h
+    HellingerReader.cc
+    HellingerReader.h
+    HellingerWriter.cc
+    HellingerWriter.h
     LineReader.cc
     LineReader.h
     LogToFileHandler.cc
@@ -192,6 +208,8 @@ set(srcs
     ReconstructedFlowlineExport.h
     ReconstructedMotionPathExport.cc
     ReconstructedMotionPathExport.h
+    ReconstructedScalarCoverageExport.cc
+    ReconstructedScalarCoverageExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
     ResolvedTopologicalGeometryExport.cc

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/shared_ptr.hpp>
 #include <QFileInfo>
 #include <QDir>
@@ -31,25 +32,74 @@
 #include "TopologyNetworkResolverLayerOptionsWidget.h"
 
 #include "ColourScaleWidget.h"
+#include "DrawStyleDialog.h"
 #include "FriendlyLineEdit.h"
+#include "LinkWidget.h"
 #include "QtWidgetUtils.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "ViewportWindow.h"
+
+#include "app-logic/TopologyNetworkLayerParams.h"
+#include "app-logic/TopologyNetworkParams.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "gui/Colour.h"
-#include "gui/ColourPaletteAdapter.h"
+#include "gui/ColourPaletteUtils.h"
 #include "gui/ColourSpectrum.h"
-#include "gui/CptColourPalette.h"
 #include "gui/Dialogs.h"
+#include "gui/RasterColourPalette.h"
 
 #include "presentation/TopologyNetworkVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
 #include "utils/ComponentManager.h"
 #include "property-values/XsString.h"
+
+
+namespace
+{
+	const QString HELP_STRAIN_RATE_SMOOTHING_DIALOG_TITLE =
+			QObject::tr("Smoothing strain rates");
+	const QString HELP_STRAIN_RATE_SMOOTHING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The strain rate at an arbitrary point location within a deforming network can be smoothed with the following choices:</p>"
+			"<ul>"
+			"<li><i>No smoothing</i>: The strain rate is constant within each triangle of the network triangulation and is the "
+			"gradient of the triangle's three vertex velocities. This gives a faceted appearance to the triangulation when coloured "
+			"by dilatation strain rate.</li>"
+			"<li><i>Barycentric smoothing</i>: First each vertex is initialised with a strain rate that is an area-weighting of the "
+			"strain rates of incident triangles. Then the smoothed strain rate, at an arbitrary point, is a barycentric interpolation "
+			"of the smoothed vertex strain rates.</li>"
+			"<li><i>Natural neighbour smoothing</i>: First each vertex is initialised with a strain rate that is an area-weighting of the "
+			"strain rates of incident triangles. Then the smoothed strain rate, at an arbitrary point, is a natural neighbour interpolation "
+			"of the smoothed vertex strain rates. Natural neighbour interpolation uses a larger number of nearby vertices compared to "
+			"barycentric (which only interpolates the three vertices of the triangle containing the point).</li>"
+			"</ul>"
+			"<p>Note the the choice of smoothing affects the strain rates and hence also affects crustal thinning.</p>"
+			"</body></html>\n");
+
+	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE =
+			QObject::tr("Network triangulation colouring");
+	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The network triangulation is coloured with <i>use draw style</i> by default. "
+			"This colours the network boundary and any interior rigid blocks using the colour scheme selected "
+			"for the layer. It also does not actually display the triangulation structure itself.</p>"
+			"<p>Alternatively the network triangulation can be displayed with <i>dilatation strain rate</i> or "
+			"<i>second invariant strain rate</i> which colours the triangulation edges by looking up the strain rate "
+			"using a colour palette.</p>"
+			"<p>In all cases the deforming region of the network can be filled by selecting <i>fill triangulation</i> and "
+			"the rigid blocks filled by selecting <i>fill rigid interior blocks</i> (note that the rigid blocks are "
+			"always displayed using the <i>draw style</i>).</p>"
+			"</body></html>\n");
+}
+
+
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::DILATATION_SCALE = 1e+17;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SECOND_INVARIANT_SCALE = 1e+17;
 
 
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkResolverLayerOptionsWidget(
@@ -61,67 +111,120 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_palette_filename_lineedit(
-		new FriendlyLineEdit( 
-			QString(), 
-			tr("Default Palette"), 
-			this)),
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog()),
 	d_open_file_dialog( 
 		this, 
 		tr("Open CPT File"), 
 		tr("Regular CPT file (*.cpt);;All files (*)"), 
 		view_state),
-	d_colour_scale_widget(
+	d_dilatation_palette_filename_lineedit(
+			new FriendlyLineEdit( 
+				QString(), 
+				tr("Default Palette"), 
+				this)),
+	d_dilatation_colour_scale_widget(
 			new ColourScaleWidget(
 				view_state, 
 				viewport_window, 
-				this))
+				this)),
+	d_second_invariant_palette_filename_lineedit(
+			new FriendlyLineEdit( 
+				QString(), 
+				tr("Default Palette"), 
+				this)),
+	d_second_invariant_colour_scale_widget(
+			new ColourScaleWidget(
+				view_state, 
+				viewport_window, 
+				this)),
+	d_help_strain_rate_smoothing_dialog(
+			new InformationDialog(
+					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TEXT,
+					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TITLE,
+					viewport_window)),
+	d_help_triangulation_colour_mode_dialog(
+			new InformationDialog(
+					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT,
+					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE,
+					viewport_window))
 {
 	setupUi(this);
-	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
-	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
-	mesh_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	constrained_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	total_triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	fill_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));	d_palette_filename_lineedit->setReadOnly(true);
+
+	fill_triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	fill_rigid_blocks_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+
+	// Smoothing mode.
+	no_smoothing_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			no_smoothing_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_strain_rate_smoothing_button(bool)));
+	barycentric_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			barycentric_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_strain_rate_smoothing_button(bool)));
+	natural_neighbour_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			natural_neighbour_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_strain_rate_smoothing_button(bool)));
+	push_button_help_strain_rate_smoothing->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_strain_rate_smoothing, SIGNAL(clicked()),
+			d_help_strain_rate_smoothing_dialog, SLOT(show()));
+
+	// Colour mode.
+	dilatation_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			dilatation_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_colour_mode_button(bool)));
+	second_invariant_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			second_invariant_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_colour_mode_button(bool)));
+	default_draw_style_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			default_draw_style_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_colour_mode_button(bool)));
+	push_button_help_triangulation_colour_mode->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_triangulation_colour_mode, SIGNAL(clicked()),
+			d_help_triangulation_colour_mode_dialog, SLOT(show()));
+
+	// Set up the dilatation controls.
+	min_abs_dilatation_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	max_abs_dilatation_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	select_dilatation_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_dilatation_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	d_dilatation_palette_filename_lineedit->setReadOnly(true);
 	QtWidgetUtils::add_widget_to_placeholder(
-		d_palette_filename_lineedit,
-		palette_filename_placeholder_widget);
+		d_dilatation_palette_filename_lineedit,
+		dilatation_palette_filename_placeholder_widget);
 
-	// set up scale1
+	// Set up the dilatation colour scale.
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_colour_scale_widget,
-			colour_scale_placeholder_widget);
-	QPalette colour_scale_palette = d_colour_scale_widget->palette();
-	colour_scale_palette.setColor(QPalette::Window, Qt::white);
-	d_colour_scale_widget->setPalette(colour_scale_palette);
+			d_dilatation_colour_scale_widget,
+			dilatation_colour_scale_placeholder_widget);
+	QPalette dilatation_colour_scale_palette = d_dilatation_colour_scale_widget->palette();
+	dilatation_colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_dilatation_colour_scale_widget->setPalette(dilatation_colour_scale_palette);
 
-	// set up signals and slots
-	QObject::connect(
-			triangulation_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_triangulation_clicked()));
+	// Set up the second invariant controls.
+	min_abs_second_invariant_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	max_abs_second_invariant_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	select_second_invariant_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_second_invariant_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	d_second_invariant_palette_filename_lineedit->setReadOnly(true);
+	QtWidgetUtils::add_widget_to_placeholder(
+		d_second_invariant_palette_filename_lineedit,
+		second_invariant_palette_filename_placeholder_widget);
 
-	QObject::connect(
-			constrained_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_constrained_clicked()));
-
-	QObject::connect(
-			mesh_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_mesh_clicked()));
-
-	QObject::connect(
-			total_triangulation_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_total_triangulation_clicked()));
+	// Set up the second invariant colour scale.
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_second_invariant_colour_scale_widget,
+			second_invariant_colour_scale_placeholder_widget);
+	QPalette second_invariant_colour_scale_palette = d_second_invariant_colour_scale_widget->palette();
+	second_invariant_colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_second_invariant_colour_scale_widget->setPalette(second_invariant_colour_scale_palette);
 
 	QObject::connect(
 			segment_velocity_checkbox,
@@ -130,47 +233,70 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			SLOT(handle_segment_velocity_clicked()));
 
 	QObject::connect(
-			fill_checkbox,
+			fill_triangulation_checkbox,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_fill_clicked()));
-
+			SLOT(handle_fill_triangulation_clicked()));
 	QObject::connect(
-			color_index_combobox,
-			SIGNAL(activated(int)),
-			this,
-			SLOT(handle_color_index_combobox_activated()));
-
-	QObject::connect(
-			color_index_combobox,
-			SIGNAL(currentIndexChanged(int)),
-			this,
-			SLOT(handle_color_index_combobox_activated()));
-
-	// update button
-	QObject::connect(
-			update_button,
+			fill_rigid_blocks_checkbox,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_update_button_clicked()));
+			SLOT(handle_fill_rigid_blocks_clicked()));
 
 	QObject::connect(
-			select_palette_filename_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_select_palette_filename_button_clicked()));
+			min_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_min_abs_dilatation_spinbox_changed(double)));
+	QObject::connect(
+			max_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_max_abs_dilatation_spinbox_changed(double)));
 
 	QObject::connect(
-			use_default_palette_button,
+			select_dilatation_palette_filename_button,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_use_default_palette_button_clicked()));
+			SLOT(handle_select_dilatation_palette_filename_button_clicked()));
 
+	QObject::connect(
+			use_default_dilatation_palette_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_default_dilatation_palette_button_clicked()));
 
-#if 0
+	QObject::connect(
+			min_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_min_abs_second_invariant_spinbox_changed(double)));
+	QObject::connect(
+			max_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_max_abs_second_invariant_spinbox_changed(double)));
+
+	QObject::connect(
+			select_second_invariant_palette_filename_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_select_second_invariant_palette_filename_button_clicked()));
+
+	QObject::connect(
+			use_default_second_invariant_palette_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_default_second_invariant_palette_button_clicked()));
+
+	fill_opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			fill_opacity_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(handle_fill_opacity_spinbox_changed(double)));
+
+	fill_intensity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			fill_intensity_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(handle_fill_intensity_spinbox_changed(double)));
+
 	LinkWidget *draw_style_link = new LinkWidget(
-			tr("Draw Style Setting..."), this);
-
+			tr("Set Draw style..."), this);
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
 			draw_style_placeholder_widget);
@@ -183,8 +309,6 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	{
 		draw_style_link->setVisible(false);
 	}
-#endif
-
 }
 
 
@@ -213,100 +337,264 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = 
 			d_current_visual_layer.lock())
 	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::TopologyNetworkLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::TopologyNetworkLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			const GPlatesAppLogic::TopologyNetworkParams &topology_network_params =
+					layer_params->get_topology_network_params();
+
+			// Smoothing Mode.
+			//
+			// Changing the current mode will emit signals which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+			QObject::disconnect(
+					no_smoothing_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::disconnect(
+					barycentric_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::disconnect(
+					natural_neighbour_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			switch (topology_network_params.get_strain_rate_smoothing())
+			{
+			case GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING:
+				no_smoothing_radio_button->setChecked(true);
+				break;
+			case GPlatesAppLogic::TopologyNetworkParams::BARYCENTRIC_SMOOTHING:
+				barycentric_radio_button->setChecked(true);
+				break;
+			case GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING:
+				natural_neighbour_radio_button->setChecked(true);
+				break;
+			default:
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
+			QObject::connect(
+					no_smoothing_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::connect(
+					barycentric_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::connect(
+					natural_neighbour_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+		}
+
 		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
 			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
 					locked_visual_layer->get_visual_layer_params().get());
 
 		if (params)
 		{
-			// Check boxes
-			mesh_checkbox->setChecked(params->show_mesh_triangulation());
-			constrained_checkbox->setChecked(params->show_constrained_triangulation());
-			triangulation_checkbox->setChecked(params->show_delaunay_triangulation());
-			total_triangulation_checkbox->setChecked(params->show_total_triangulation());
-			fill_checkbox->setChecked(params->show_fill());
+			// Check boxes.
+			fill_triangulation_checkbox->setChecked(params->get_fill_triangulation());
+			fill_rigid_blocks_checkbox->setChecked(params->get_fill_rigid_blocks());
 			segment_velocity_checkbox->setChecked(params->show_segment_velocity());
 
-			// Colour Index
+			// Colour Mode.
 			//
-			// Changing the current index will emit signals which can lead to an infinitely recursive decent.
+			// Changing the current mode will emit signals which can lead to an infinitely recursive decent.
 			// To avoid this we temporarily disconnect their signals.
 			QObject::disconnect(
-					color_index_combobox, SIGNAL(currentIndexChanged(int)), this,
-					SLOT(handle_color_index_combobox_activated()));
-			color_index_combobox->setCurrentIndex( params->color_index() );
+					dilatation_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::disconnect(
+					second_invariant_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::disconnect(
+					default_draw_style_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			switch (params->get_colour_mode())
+			{
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+				dilatation_radio_button->setChecked(true);
+				break;
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+				second_invariant_radio_button->setChecked(true);
+				break;
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+				default_draw_style_radio_button->setChecked(true);
+				break;
+			default:
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
 			QObject::connect(
-					color_index_combobox, SIGNAL(currentIndexChanged(int)), this,
-					SLOT(handle_color_index_combobox_activated()));
+					dilatation_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::connect(
+					second_invariant_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::connect(
+					default_draw_style_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
 
-			// Populate the palette filename.
-			d_palette_filename_lineedit->setText(params->get_colour_palette_filename());
+			//
+			// Dilatation.
+			//
 
-			// Set the range values
-			range1_max->setValue( params->get_range1_max() );
-			range1_min->setValue( params->get_range1_min() );
+			// Populate the dilatation palette filename.
+			d_dilatation_palette_filename_lineedit->setText(params->get_dilatation_colour_palette_filename());
 
-			range2_max->setValue( params->get_range2_max() );
-			range2_min->setValue( params->get_range2_min() );
+			QObject::disconnect(
+					min_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_abs_dilatation_spinbox_changed(double)));
+			QObject::disconnect(
+					max_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_abs_dilatation_spinbox_changed(double)));
+			// Set the dilatation values.
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			min_abs_dilatation_spinbox->setValue(params->get_min_abs_dilatation() * DILATATION_SCALE);
+			max_abs_dilatation_spinbox->setValue(params->get_max_abs_dilatation() * DILATATION_SCALE);
+			QObject::connect(
+					min_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_abs_dilatation_spinbox_changed(double)));
+			QObject::connect(
+					max_abs_dilatation_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_abs_dilatation_spinbox_changed(double)));
 
+			if (params->get_dilatation_colour_palette())
+			{
+				// Start with a reasonable default value.
+				boost::optional<double> use_log_scale(4.0);
 
-			// Set the fg colour spinbox
-			int fg_index = 4; // default is white 
-			if 		( params->get_fg_colour() == GPlatesGui::Colour::get_red() ) 	{fg_index = 0;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_yellow() )	{fg_index = 1;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_green() ) 	{fg_index = 2;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_blue() )	{fg_index = 3;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_white() ) 	{fg_index = 4;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{fg_index = 5;}
-			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_black() )	{fg_index = 6;}
-			fg_colour_combobox->setCurrentIndex( fg_index );
+				// Specify a tailored value if using default palette.
+				if (params->get_dilatation_colour_palette_filename().isEmpty())
+				{
+					// Both values should be positive but we'll check just to be sure.
+					if (params->get_max_abs_dilatation() > params->get_min_abs_dilatation() &&
+						params->get_min_abs_dilatation() > 0)
+					{
+						// The default min/max range includes zero so specify how close the log scaling gets to zero.
+						// Increase it a little beyond the abs(min)/abs(max range) so that values in
+						// range [-min, min] around zero show up in the colour scale.
+						use_log_scale = 1.05 * (std::log10(params->get_max_abs_dilatation()) - std::log10(params->get_min_abs_dilatation()));
+					}
+				}
 
-			// Set the max colour spinbox
-			int max_index = 0;
-			if ( 	  params->get_max_colour() == GPlatesGui::Colour::get_red() ) 	{max_index = 0;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_yellow() ){max_index = 1;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_green() ) {max_index = 2;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_blue() ) 	{max_index = 3;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_white() ) {max_index = 4;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{max_index = 5;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_black() )	{max_index = 6;}
-			max_colour_combobox->setCurrentIndex( max_index );
+				d_dilatation_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create<double>(
+								params->get_dilatation_colour_palette().get()),
+						use_log_scale);
+			}
+			else
+			{
+				d_dilatation_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create());
+			}
 
-			// Set the mid colour spinbox
-			int mid_index = 0;
-			if ( 	  params->get_mid_colour() == GPlatesGui::Colour::get_red() ) 	{mid_index = 0;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_yellow() ){mid_index = 1;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_green() ) {mid_index = 2;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_blue() ) 	{mid_index = 3;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_white() ) {mid_index = 4;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{mid_index = 5;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_black() )	{mid_index = 6;}
-			mid_colour_combobox->setCurrentIndex( mid_index );
+			// Only show default dilatation palette controls when not using a user-defined palette.
+			dilatation_default_palette_controls->setVisible(
+					params->get_dilatation_colour_palette_filename().isEmpty());
 
-			// Set the min colour spinbox
-			int min_index = 0;
-			if ( 	  params->get_min_colour() == GPlatesGui::Colour::get_red() ) 	{min_index = 0;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_yellow() ){min_index = 1;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_green() ) {min_index = 2;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_blue() ) 	{min_index = 3;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_white() ) {min_index = 4;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{min_index = 5;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_black() )	{min_index = 6;}
-			min_colour_combobox->setCurrentIndex( min_index );
+			//
+			// Second invariant.
+			//
 
-			// Set the bg colour spinbox
-			int bg_index = 4; // default is white 
-			if 		( params->get_bg_colour() == GPlatesGui::Colour::get_red() ) 	{bg_index = 0;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_yellow() )	{bg_index = 1;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_green() ) 	{bg_index = 2;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_blue() )	{bg_index = 3;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_white() ) 	{bg_index = 4;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{bg_index = 5;}
-			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_black() )	{bg_index = 6;}
-			bg_colour_combobox->setCurrentIndex( bg_index );
+			// Populate the second invariant palette filename.
+			d_second_invariant_palette_filename_lineedit->setText(params->get_second_invariant_colour_palette_filename());
 
-			d_colour_scale_widget->populate(params->get_colour_palette());
-			colour_scale_placeholder_widget->setVisible(true);
+			QObject::disconnect(
+					min_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_abs_second_invariant_spinbox_changed(double)));
+			QObject::disconnect(
+					max_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_abs_second_invariant_spinbox_changed(double)));
+			// Set the second invariant values.
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			min_abs_second_invariant_spinbox->setValue(params->get_min_abs_second_invariant() * SECOND_INVARIANT_SCALE);
+			max_abs_second_invariant_spinbox->setValue(params->get_max_abs_second_invariant() * SECOND_INVARIANT_SCALE);
+			QObject::connect(
+					min_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_abs_second_invariant_spinbox_changed(double)));
+			QObject::connect(
+					max_abs_second_invariant_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_abs_second_invariant_spinbox_changed(double)));
+
+			if (params->get_second_invariant_colour_palette())
+			{
+				// Start with a reasonable default value.
+				boost::optional<double> use_log_scale(4.0);
+
+				// Specify a tailored value if using default palette.
+				if (params->get_second_invariant_colour_palette_filename().isEmpty())
+				{
+					// Both values should be positive but we'll check just to be sure.
+					if (params->get_max_abs_second_invariant() > params->get_min_abs_second_invariant() &&
+						params->get_min_abs_second_invariant() > 0)
+					{
+						// The default min/max range includes zero so specify how close the log scaling gets to zero.
+						// Increase it a little beyond the abs(min)/abs(max range) so that values in
+						// range [-min, min] around zero show up in the colour scale.
+						use_log_scale = 1.05 * (std::log10(params->get_max_abs_second_invariant()) - std::log10(params->get_min_abs_second_invariant()));
+					}
+				}
+
+				d_second_invariant_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create<double>(
+								params->get_second_invariant_colour_palette().get()),
+						use_log_scale);
+			}
+			else
+			{
+				d_second_invariant_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create());
+			}
+
+			// Only show default second invariant palette controls when not using a user-defined palette.
+			second_invariant_default_palette_controls->setVisible(
+					params->get_second_invariant_colour_palette_filename().isEmpty());
+
+			// Setting the values in the spin boxes will emit signals if the value changes
+			// which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+
+			QObject::disconnect(
+					fill_opacity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_fill_opacity_spinbox_changed(double)));
+			fill_opacity_spinbox->setValue(params->get_fill_opacity());
+			QObject::connect(
+					fill_opacity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_fill_opacity_spinbox_changed(double)));
+
+			QObject::disconnect(
+					fill_intensity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_fill_intensity_spinbox_changed(double)));
+			fill_intensity_spinbox->setValue(params->get_fill_intensity());
+			QObject::connect(
+					fill_intensity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_fill_intensity_spinbox_changed(double)));
+
+			//
+			// Enable/disable colour mode options.
+			//
+
+			switch (params->get_colour_mode())
+			{
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+				dilatation_group_box->show();
+				second_invariant_group_box->hide();
+				break;
+
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+				second_invariant_group_box->show();
+				dilatation_group_box->hide();
+				break;
+
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+				dilatation_group_box->hide();
+				second_invariant_group_box->hide();
+				break;
+
+			default:
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
 		}
 	}
 }
@@ -321,7 +609,43 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::get_title()
 
 
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_mesh_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_strain_rate_smoothing_button(
+		bool checked)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::TopologyNetworkLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::TopologyNetworkLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			GPlatesAppLogic::TopologyNetworkParams topology_network_params = layer_params->get_topology_network_params();
+
+			if (no_smoothing_radio_button->isChecked())
+			{
+				topology_network_params.set_strain_rate_smoothing(
+						GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING);
+			}
+			if (barycentric_radio_button->isChecked())
+			{
+				topology_network_params.set_strain_rate_smoothing(
+						GPlatesAppLogic::TopologyNetworkParams::BARYCENTRIC_SMOOTHING);
+			}
+			if (natural_neighbour_radio_button->isChecked())
+			{
+				topology_network_params.set_strain_rate_smoothing(
+						GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING);
+			}
+
+			layer_params->set_topology_network_params(topology_network_params);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_triangulation_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -330,13 +654,13 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_mesh_clicked
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_show_mesh_triangulation(mesh_checkbox->isChecked());
+			params->set_fill_triangulation(fill_triangulation_checkbox->isChecked());
 		}
 	}
 }
 
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_constrained_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_rigid_blocks_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -345,37 +669,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_constrained_
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_show_constrained_triangulation(constrained_checkbox->isChecked());
-		}
-	}
-}
-
-void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_triangulation_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
-		{
-			params->set_show_delaunay_triangulation(triangulation_checkbox->isChecked());
-		}
-	}
-}
-
-void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_total_triangulation_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
-		{
-			params->set_show_total_triangulation(total_triangulation_checkbox->isChecked());
+			params->set_fill_rigid_blocks(fill_rigid_blocks_checkbox->isChecked());
 		}
 	}
 }
@@ -396,7 +690,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_segment_velo
 }
 
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_colour_mode_button(
+		bool checked)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -405,13 +700,28 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_clicked
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_show_fill(fill_checkbox->isChecked());
+			if (dilatation_radio_button->isChecked())
+			{
+				params->set_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE);
+			}
+			if (second_invariant_radio_button->isChecked())
+			{
+				params->set_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE);
+			}
+			if (default_draw_style_radio_button->isChecked())
+			{
+				params->set_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE);
+			}
 		}
 	}
 }
 
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_color_index_combobox_activated()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_min_abs_dilatation_spinbox_changed(
+		double min_abs_dilatation)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -420,113 +730,45 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_color_index_
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_color_index( color_index_combobox->currentIndex() );
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			if (min_abs_dilatation > params->get_max_abs_dilatation() * DILATATION_SCALE)
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				min_abs_dilatation_spinbox->setValue(params->get_max_abs_dilatation() * DILATATION_SCALE);
+				return;
+			}
+
+			params->set_min_abs_dilatation(min_abs_dilatation / DILATATION_SCALE);
 		}
 	}
 }
 
-
-
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_button_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_max_abs_dilatation_spinbox_changed(
+		double max_abs_dilatation)
 {
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
-			d_current_visual_layer.lock())
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
 		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
 			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
 					locked_visual_layer->get_visual_layer_params().get());
-		if (!params)
+		if (params)
 		{
-			return;
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			if (max_abs_dilatation < params->get_min_abs_dilatation() * DILATATION_SCALE)
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				max_abs_dilatation_spinbox->setValue(params->get_min_abs_dilatation() * DILATATION_SCALE);
+				return;
+			}
+
+			params->set_max_abs_dilatation(max_abs_dilatation / DILATATION_SCALE);
 		}
-
-		// Set the values
-		params->set_range1_max( range1_max->value() );
-		params->set_range1_min( range1_min->value() );
-
-		params->set_range2_max( range2_max->value() );
-		params->set_range2_min( range2_min->value() );
-
-		// Get the fg colour from the combobox index	
-		int fg_index = fg_colour_combobox->currentIndex();
-		GPlatesGui::Colour fg_colour;
-		if 		( fg_index == 0 ) { fg_colour = GPlatesGui::Colour::get_red(); }
-		else if ( fg_index == 1 ) { fg_colour = GPlatesGui::Colour::get_yellow(); }
-		else if ( fg_index == 2 ) { fg_colour = GPlatesGui::Colour::get_green(); }
-		else if ( fg_index == 3 ) { fg_colour = GPlatesGui::Colour::get_blue(); }
-		else if ( fg_index == 4 ) { fg_colour = GPlatesGui::Colour::get_white(); }
-		else if ( fg_index == 5 ) { fg_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
-		else if ( fg_index == 6 ) { fg_colour = GPlatesGui::Colour::get_black(); }
-		else					  { fg_colour = GPlatesGui::Colour::get_black(); }
-		// Set the colour
-		params->set_fg_colour( fg_colour );
-
-		// Get the max colour from the combobox index	
-		int max_index = max_colour_combobox->currentIndex();
-		GPlatesGui::Colour max_colour;
-		if 		( max_index == 0 ) { max_colour = GPlatesGui::Colour::get_red(); }
-		else if ( max_index == 1 ) { max_colour = GPlatesGui::Colour::get_yellow(); }
-		else if ( max_index == 2 ) { max_colour = GPlatesGui::Colour::get_green(); }
-		else if ( max_index == 3 ) { max_colour = GPlatesGui::Colour::get_blue(); }
-		else if ( max_index == 4 ) { max_colour = GPlatesGui::Colour::get_white(); }
-		else if ( max_index == 5 ) { max_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
-		else if ( max_index == 6 ) { max_colour = GPlatesGui::Colour::get_black(); }
-		else		               { max_colour = GPlatesGui::Colour::get_white(); }
-		// Set the colour
-		params->set_max_colour( max_colour );
-
-		// Get the mid colour from the combobox index	
-		int mid_index = mid_colour_combobox->currentIndex();
-		GPlatesGui::Colour mid_colour;
-		if 		( mid_index == 0 ) { mid_colour = GPlatesGui::Colour::get_red(); }
-		else if ( mid_index == 1 ) { mid_colour = GPlatesGui::Colour::get_yellow(); }
-		else if ( mid_index == 2 ) { mid_colour = GPlatesGui::Colour::get_green(); }
-		else if ( mid_index == 3 ) { mid_colour = GPlatesGui::Colour::get_blue(); }
-		else if ( mid_index == 4 ) { mid_colour = GPlatesGui::Colour::get_white(); }
-		else if ( mid_index == 5 ) { mid_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
-		else if ( mid_index == 6 ) { mid_colour = GPlatesGui::Colour::get_black(); }
-		else					   { mid_colour = GPlatesGui::Colour::get_grey(); }
-		// Set the colour
-		params->set_mid_colour( mid_colour );
-
-		// Get the min colour from the combobox index	
-		int min_index = min_colour_combobox->currentIndex();
-		GPlatesGui::Colour min_colour;
-		if 		( min_index == 0 ) { min_colour = GPlatesGui::Colour::get_red(); }
-		else if ( min_index == 1 ) { min_colour = GPlatesGui::Colour::get_yellow(); }
-		else if ( min_index == 2 ) { min_colour = GPlatesGui::Colour::get_green(); }
-		else if ( min_index == 3 ) { min_colour = GPlatesGui::Colour::get_blue(); }
-		else if ( min_index == 4 ) { min_colour = GPlatesGui::Colour::get_white(); }
-		else if ( min_index == 5 ) { min_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
-		else if ( min_index == 6 ) { min_colour = GPlatesGui::Colour::get_black(); }
-		else					   { min_colour = GPlatesGui::Colour::get_black(); }
-		// Set the colour
-		params->set_min_colour( min_colour );
-
-		// Get the bg colour from the combobox index	
-		int bg_index = bg_colour_combobox->currentIndex();
-		GPlatesGui::Colour bg_colour;
-		if 		( bg_index == 0 ) { bg_colour = GPlatesGui::Colour::get_red(); }
-		else if ( bg_index == 1 ) { bg_colour = GPlatesGui::Colour::get_yellow(); }
-		else if ( bg_index == 2 ) { bg_colour = GPlatesGui::Colour::get_green(); }
-		else if ( bg_index == 3 ) { bg_colour = GPlatesGui::Colour::get_blue(); }
-		else if ( bg_index == 4 ) { bg_colour = GPlatesGui::Colour::get_white(); }
-		else if ( bg_index == 5 ) { bg_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
-		else if ( bg_index == 6 ) { bg_colour = GPlatesGui::Colour::get_black(); }
-		else					  { bg_colour = GPlatesGui::Colour::get_black(); }
-		// Set the colour
-		params->set_bg_colour( bg_colour );
-
-
-		// Create the palette
-		params->user_generated_colour_palette();
 	}
 }
 
-
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_palette_filename_button_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_dilatation_palette_filename_button_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -545,83 +787,36 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_palet
 			return;
 		}
 
-		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
-		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
-
-		GPlatesFileIO::RegularCptReader regular_cpt_reader;
-		GPlatesFileIO::ReadErrorAccumulation regular_errors;
-		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
-			regular_cpt_reader.read_file(palette_file_name, regular_errors);
-
-		// There is a slight complication in the detection of whether a
-		// CPT file is regular or categorical. For the most part, a line
-		// in a categorical CPT file looks nothing like a line in a
-		// regular CPT file and will not be successfully parsed; the
-		// exception to the rule are the "BFN" lines, the format of
-		// which is common to both regular and categorical CPT files.
-		// For that reason, we also check if the regular_palette has any
-		// ColourSlices.
-		//
-		// Note: this flow of code is very similar to that in class IntegerCptReader.
-		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
-		{
-			// Add all the errors reported to read_errors.
-			read_errors.accumulate(regular_errors);
-
-			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
-				GPlatesGui::convert_colour_palette<
-					GPlatesMaths::Real,
-					double
-				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
-
-			params->set_colour_palette(
-					palette_file_name,
-					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
-
-			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
-		}
-		else
-		{
-			// Attempt to read the file as a regular CPT file has failed.
-			// Now, let's try to parse it as a categorical CPT file.
-			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
-			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
-			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
-				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
-
-			if (categorical_colour_palette_opt)
-			{
-				// This time, we return the colour palette even if it just
-				// contains "BFN" lines and no ColourEntrys.
-
-				// Add all the errors reported to errors.
-				read_errors.accumulate(categorical_errors);
-
-				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
-						categorical_colour_palette_opt.get());
-
-				params->set_colour_palette(
-						palette_file_name,
-						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
-
-				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
-			}
-		}
-
-		read_errors_dialog.update();
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-		if (num_initial_errors != num_final_errors)
-		{
-			read_errors_dialog.show();
-		}
-
 		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
+
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+				GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+						palette_file_name,
+						// We only allow real-valued colour palettes since our data is real-valued...
+						false/*allow_integer_colour_palette*/,
+						cpt_read_errors);
+
+		// If we successfully read a real-valued colour palette.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+				GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+		if (colour_palette)
+		{
+			params->set_dilatation_colour_palette(palette_file_name, colour_palette.get());
+
+			d_dilatation_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+
+		// Show any read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
 	}
 }
 
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_palette_button_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_dilatation_palette_button_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -631,11 +826,158 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			handle_update_button_clicked();
+			params->use_default_dilatation_colour_palette();
 		}
 	}
 }
 
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_min_abs_second_invariant_spinbox_changed(
+		double min_abs_second_invariant)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			if (min_abs_second_invariant > params->get_max_abs_second_invariant() * SECOND_INVARIANT_SCALE)
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				min_abs_second_invariant_spinbox->setValue(params->get_max_abs_second_invariant() * SECOND_INVARIANT_SCALE);
+				return;
+			}
+
+			params->set_min_abs_second_invariant(min_abs_second_invariant / SECOND_INVARIANT_SCALE);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_max_abs_second_invariant_spinbox_changed(
+		double max_abs_second_invariant)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Scale to a reasonable range since we only have a finite number of decimal places in spinbox.
+			if (max_abs_second_invariant < params->get_min_abs_second_invariant() * SECOND_INVARIANT_SCALE)
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				max_abs_second_invariant_spinbox->setValue(params->get_min_abs_second_invariant() * SECOND_INVARIANT_SCALE);
+				return;
+			}
+
+			params->set_max_abs_second_invariant(max_abs_second_invariant / SECOND_INVARIANT_SCALE);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_second_invariant_palette_filename_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
+		if (palette_file_name.isEmpty())
+		{
+			return;
+		}
+
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
+
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+				GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+						palette_file_name,
+						// We only allow real-valued colour palettes since our data is real-valued...
+						false/*allow_integer_colour_palette*/,
+						cpt_read_errors);
+
+		// If we successfully read a real-valued colour palette.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+				GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+		if (colour_palette)
+		{
+			params->set_second_invariant_colour_palette(palette_file_name, colour_palette.get());
+
+			d_second_invariant_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+
+		// Show any read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_second_invariant_palette_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->use_default_second_invariant_colour_palette();
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_opacity_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_fill_opacity(value);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_intensity_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_fill_intensity(value);
+		}
+	}
+}
 
 
 void

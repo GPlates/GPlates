@@ -121,6 +121,7 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
+    ScalarCoverageStatistics.h
     SpatialReferenceSystem.cc
     SpatialReferenceSystem.h
     StructuralType.h

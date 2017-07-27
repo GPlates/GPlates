@@ -705,7 +705,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_line_section.get()->source_geometry()->clone()));
+									topological_line_section.get()->get_source_geometry()->clone()));
 				}
 				else
 				{
@@ -717,7 +717,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 					{
 						topological_interiors->push_back(
 								GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-										topological_point.get()->source_geometry()->clone()));
+										topological_point.get()->get_source_geometry()->clone()));
 					}
 				}
 			}

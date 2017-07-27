@@ -1223,29 +1223,35 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 		const GPlatesMaths::PolygonOnSphere &polygon,
-		const GPlatesGui::Colour &colour,
+		GPlatesGui::rgba8_t rgba8_color,
 		const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
 {
 	// Need at least three points for a polygon.
-	if (polygon.number_of_vertices() < 3)
+	if (polygon.number_of_vertices_in_exterior_ring() < 3)
 	{
 		return;
 	}
 
-	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::Colour pre_multiplied_alpha_colour(
-			colour.red() * colour.alpha(),
-			colour.green() * colour.alpha(),
-			colour.blue() * colour.alpha(),
-			colour.alpha());
-
 	begin_filled_drawable();
 
-	add_polygon_mesh_to_current_filled_drawable(
-			polygon.vertex_begin(),
-			polygon.number_of_vertices(),
+	// Add the polygon's exterior ring.
+	add_polygon_ring_mesh_to_current_filled_drawable(
+			polygon.exterior_ring_vertex_begin(),
+			polygon.number_of_vertices_in_exterior_ring(),
 			polygon.get_boundary_centroid(),
-			GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
+			rgba8_color);
+
+	// Add the polygon's interior rings.
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon.number_of_interior_rings();
+		++interior_ring_index)
+	{
+		add_polygon_ring_mesh_to_current_filled_drawable(
+				polygon.interior_ring_vertex_begin(interior_ring_index),
+				polygon.number_of_vertices_in_interior_ring(interior_ring_index),
+				polygon.get_boundary_centroid(),
+				rgba8_color);
+	}
 
 	end_filled_drawable(cube_quad_tree_location);
 }
@@ -1254,7 +1260,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 		const GPlatesMaths::PolylineOnSphere &polyline,
-		const GPlatesGui::Colour &colour,
+		GPlatesGui::rgba8_t rgba8_color,
 		const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
 {
 	// Need at least three points for a polygon.
@@ -1263,20 +1269,13 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 		return;
 	}
 
-	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::Colour pre_multiplied_alpha_colour(
-			colour.red() * colour.alpha(),
-			colour.green() * colour.alpha(),
-			colour.blue() * colour.alpha(),
-			colour.alpha());
-
 	begin_filled_drawable();
 
-	add_polygon_mesh_to_current_filled_drawable(
+	add_polygon_ring_mesh_to_current_filled_drawable(
 			polyline.vertex_begin(),
 			polyline.number_of_vertices(),
 			polyline.get_centroid(),
-			GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
+			rgba8_color);
 
 	end_filled_drawable(cube_quad_tree_location);
 }
@@ -1287,26 +1286,50 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_t
 		const GPlatesMaths::PointOnSphere &vertex1,
 		const GPlatesMaths::PointOnSphere &vertex2,
 		const GPlatesMaths::PointOnSphere &vertex3,
-		const GPlatesGui::Colour &colour)
+		GPlatesGui::rgba8_t rgba8_triangle_color)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_current_drawable,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::rgba8_t rgba_colour =
-			GPlatesGui::Colour::to_rgba8(
-					GPlatesGui::Colour(
-							colour.red() * colour.alpha(),
-							colour.green() * colour.alpha(),
-							colour.blue() * colour.alpha(),
-							colour.alpha()));
+	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_triangle_colour = pre_multiply_alpha(rgba8_triangle_color);
 
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), rgba_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), rgba_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+
+	d_drawable_vertex_elements.push_back(base_vertex_index);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 2);
+
+	// Update the current filled drawable.
+	d_current_drawable->end += 3;
+	d_current_drawable->count += 3;
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_to_mesh(
+		const GPlatesMaths::PointOnSphere &vertex1,
+		const GPlatesMaths::PointOnSphere &vertex2,
+		const GPlatesMaths::PointOnSphere &vertex3,
+		GPlatesGui::rgba8_t rgba8_vertex_color1,
+		GPlatesGui::rgba8_t rgba8_vertex_color2,
+		GPlatesGui::rgba8_t rgba8_vertex_color3)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiply_alpha(rgba8_vertex_color1)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiply_alpha(rgba8_vertex_color2)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiply_alpha(rgba8_vertex_color3)));
 
 	d_drawable_vertex_elements.push_back(base_vertex_index);
 	d_drawable_vertex_elements.push_back(base_vertex_index + 1);

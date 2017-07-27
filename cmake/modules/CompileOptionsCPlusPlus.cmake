@@ -227,6 +227,16 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # where '*' is EXE, SHARED and MODULE.
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+# Suppress warnings under clang (at least under Apple LLVM 5.1)
+# Otherwise we get a lot of redeclared-class-member warnings from boost (from boost 1.47 at least), related to BOOST_BIMAP, and
+# unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
+# of which may be in /Library/Frameworks
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+endif()
+
+
 # The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
 # Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application
 # is required to define it and it needs to be defined before any header inclusion to ensure it is defined

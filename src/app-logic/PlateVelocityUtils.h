@@ -33,8 +33,11 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
+#include "MultiPointVectorField.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "VelocityDeltaTime.h"
 
 #include "file-io/FileInfo.h"
 
@@ -54,6 +57,8 @@
 
 namespace GPlatesAppLogic
 {
+	class ResolvedTopologicalNetwork;
+
 	namespace PlateVelocityUtils
 	{
 		/**
@@ -130,6 +135,10 @@ namespace GPlatesAppLogic
 		 * static polygons and resolved topological plates/networks and the velocities then depend
 		 * on these surfaces.
 		 *
+		 * @a velocity_delta_time is the time interval over which velocities are calculated - defaults to 1My.
+		 * @a velocity_delta_time_type is the offset of the delta-time interval relative to the reconstruction time -
+		 * defaults to (t+dt, t) since this never results in negative times for t>=0.
+		 *
 		 * If @a velocity_smoothing_options is specified then it provides the angular distance (radians)
 		 * over which velocities are smoothed across a plate/network boundary and whether smoothing
 		 * should occur for points within a deforming region (including network rigid blocks).
@@ -156,15 +165,17 @@ namespace GPlatesAppLogic
 		 */
 		void
 		solve_velocities_on_surfaces(
-				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
+				std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_velocity_fields,
 				const double &reconstruction_time,
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_domains,
-				// NOTE: Not specifying default arguments because that forces definition of the recon geom classes
-				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring recon geom definition)
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+				// NOTE: Not specifying default arguments because that forces definition of class ResolvedTopologicalNetwork
+				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring ResolvedTopologicalNetwork definition)
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
-				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+				const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
 
 
@@ -175,52 +186,105 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
+		 *
+		 * @a delta_time should be t2-t1.
+		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
-		calc_velocity_colat_lon(
+		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
-				const GPlatesMaths::FiniteRotation &finite_rotation2);
+				const GPlatesMaths::FiniteRotation &finite_rotation2,
+				const double &delta_time);
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times represented by @a reconstruction_tree1
-		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
-		 * to lookup the two rotations.
+		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
+		 *
+		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
+		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
+		 *
+		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
+		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
+		 * moved to (old_time - young_time, 0) and retried.
+		 * This enables rare users to support negative (future) times in rotation files if they wish
+		 * but also supports most users having only non-negative rotations yet still supplying a valid
+		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
+		 *
+		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
+		 * in which case the velocity delta time interval is moved to
+		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
+		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
+		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
 		 */
 		GPlatesMaths::VectorColatitudeLongitude
-		calc_velocity_colat_lon(
+		calculate_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
-				const ReconstructionTree &reconstruction_tree1,
-				const ReconstructionTree &reconstruction_tree2,
-				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
+		 *
+		 * @a delta_time should be t2-t1.
+		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
 		inline
 		GPlatesMaths::Vector3D
-		calc_velocity_vector(
+		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
-				const GPlatesMaths::FiniteRotation &finite_rotation2)
+				const GPlatesMaths::FiniteRotation &finite_rotation2,
+				const double &delta_time)
 		{
-			return GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2);
+			return GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2, delta_time);
 		}
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between two
-		 * nearby reconstruction times represented by @a reconstruction_tree1
-		 * and @a reconstruction_tree2 and using @a reconstruction_plate_id
-		 * to lookup the two rotations.
+		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
+		 *
+		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned
+		 * (aside from the exceptions mentioned below). This avoids extraneously large velocities when plate ID
+		 * is found at one time but not the other.
+		 *
+		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
+		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
+		 * moved to (old_time - young_time, 0) and retried.
+		 * This enables rare users to support negative (future) times in rotation files if they wish
+		 * but also supports most users having only non-negative rotations yet still supplying a valid
+		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
+		 *
+		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
+		 * in which case the velocity delta time interval is moved to
+		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
+		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
+		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
 		 */
 		GPlatesMaths::Vector3D
-		calc_velocity_vector(
+		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
-				const ReconstructionTree &reconstruction_tree1,
-				const ReconstructionTree &reconstruction_tree2,
-				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
+
+
+		/**
+		 * Similar to @a calculate_velocity_vector but returns the stage rotation.
+		 *
+		 * Note that the stage rotation is also going forward in time (most old to young).
+		 */
+		GPlatesMaths::FiniteRotation
+		calculate_stage_rotation(
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
 
 
 		////////////////////////////////////////////////
@@ -237,7 +301,7 @@ namespace GPlatesAppLogic
 
 			explicit
 			TopologicalNetworksVelocities(
-					const std::vector<resolved_topological_network_non_null_ptr_type> &networks);
+					const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &networks);
 
 			/**
 			 * Returns the velocity at location @a point if it's inside any network's boundary,
@@ -253,11 +317,13 @@ namespace GPlatesAppLogic
 							const ReconstructionGeometry *,
 							GPlatesMaths::Vector3D> >
 			calculate_velocity(
-					const GPlatesMaths::PointOnSphere &point) const;
+					const GPlatesMaths::PointOnSphere &point,
+					const double &velocity_delta_time = 1.0,
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
 
 		private:
 
-			typedef std::vector<resolved_topological_network_non_null_ptr_type> network_seq_type;
+			typedef std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> network_seq_type;
 
 			network_seq_type d_networks;
 		};

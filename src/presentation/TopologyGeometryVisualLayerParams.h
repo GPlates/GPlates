@@ -44,9 +44,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new TopologyGeometryVisualLayerParams( layer_task_params );
+			return new TopologyGeometryVisualLayerParams( layer_params );
 		}
 
 		void
@@ -134,9 +134,9 @@ namespace GPlatesPresentation
 	protected:
 		explicit
 		TopologyGeometryVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
 			VisualLayerParams(
-					layer_task_params,
+					layer_params,
 					GPlatesGui::DrawStyleManager::instance()->default_style()),
 			d_fill_polygons(false),
 			d_fill_opacity(1.0),
@@ -149,7 +149,7 @@ namespace GPlatesPresentation
 
 		//! The opacity of filled primitives in the range [0,1].
 		double d_fill_opacity;
-		//! The intensity of the raster in the range [0,1].
+		//! The intensity of filled primitives in the range [0,1].
 		double d_fill_intensity;
 	};
 }

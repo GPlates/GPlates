@@ -46,10 +46,10 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsString.h"
 
+#include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPoint.h"
 #include "maths/UnitQuaternion3D.h"
 
 #include "utils/StringFormattingUtils.h"
@@ -90,9 +90,9 @@ namespace
 			int fixed_plate_id,
 			const double &time)
 	{
-		double latitude = 0;
-		double longitude = 0;
-		double angle = 0;
+		double latitude;
+		double longitude;
+		double angle;
 
 		const GPlatesMaths::UnitQuaternion3D &quat = finite_rotation.unit_quat();
 		if (!GPlatesMaths::represents_identity_rotation(quat)) 
@@ -107,6 +107,28 @@ namespace
 			latitude = pole.latitude();
 			longitude = pole.longitude();
 			angle = GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval());
+		}
+		else // identity rotation...
+		{
+			if (moving_plate_id == 999 &&
+				(fixed_plate_id == 0 || fixed_plate_id == 999) &&
+				GPlatesMaths::are_almost_exactly_equal(time, 0.0))
+			{
+				// For rotations "999 0.0 0.0 0.0 0.0 999" or "999 0.0 0.0 0.0 0.0 000"
+				// leave latitude as zero (instead of 90 for North pole).
+				// There are various documents that suggesting these lines are general comments.
+				// So we probably shouldn't change that these lines case it messes up some software's parser.
+				latitude = 0.0;
+			}
+			else
+			{
+				// Note that we use the North pole as the axis for zero-angle (identity) rotations since
+				// most of the time, when dealing with palaeomag and Euler pole situations, users think of a
+				// zero rotation about a pole situated at the north pole, not at the equator.
+				latitude = 90.0;
+			}
+			longitude = 0;
+			angle = 0;
 		}
 
 		/*

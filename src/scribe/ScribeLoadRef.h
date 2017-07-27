@@ -108,11 +108,11 @@ namespace GPlatesScribe
 		 *    {
 		 *    	if (scribe.is_saving())
 		 *    	{
-		 *    		scribe.save(TRANSCRIBE_SOURCE, a->x, "x");
+		 *    		scribe.save(TRANSCRIBE_SOURCE, a->x, "x", GPlatesScribe::TRACK);
 		 *    	}
 		 *    	else // loading...
 		 *    	{
-		 *    		GPlatesScribe::LoadRef<int> x = scribe.load<int>(TRANSCRIBE_SOURCE, "x");
+		 *    		GPlatesScribe::LoadRef<int> x = scribe.load<int>(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 		 *    		if (!x.is_valid())
 		 *    		{
 		 *    			return scribe.get_transcribe_result();

@@ -36,13 +36,17 @@
 #include "maths/PolygonProximityHitDetail.h"
 #include "maths/ProximityCriteria.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+#include "gui/Colour.h"
 #include "gui/ColourProxy.h"
 
 
 namespace GPlatesViewOperations
 {
 	/**
-	 * A filled triangle mesh on the surface of the globe where each triangle is filled
+	 * A filled triangle mesh on the surface of the globe where each triangle or each vertex is filled
 	 * with its own colour.
 	 */
 	class RenderedColouredTriangleSurfaceMesh :
@@ -56,10 +60,7 @@ namespace GPlatesViewOperations
 			Triangle(
 					unsigned int vertex_index1,
 					unsigned int vertex_index2,
-					unsigned int vertex_index3,
-					// TODO: Change this to Colour once the deferred (until painting) colouring has been removed...
-					const GPlatesGui::ColourProxy &colour_) :
-				colour(colour_)
+					unsigned int vertex_index3)
 			{
 				vertex_indices[0] = vertex_index1;
 				vertex_indices[1] = vertex_index2;
@@ -70,36 +71,50 @@ namespace GPlatesViewOperations
 			 * Indices into the vertex array returned by the parent class @a get_mesh_vertices method.
 			 */
 			unsigned int vertex_indices[3];
-
-			// TODO: Change this to Colour once the deferred (until painting) colouring has been removed.
-			GPlatesGui::ColourProxy colour;
 		};
 
 		typedef std::vector<Triangle> triangle_seq_type;
 
 		typedef std::vector<GPlatesMaths::PointOnSphere> vertex_seq_type;
 
+		// TODO: Change this to Colour once the deferred (until painting) colouring has been removed.
+		typedef std::vector<GPlatesGui::ColourProxy> colour_seq_type;
+
 
 		/**
 		 * Construct from a sequence of triangles and a sequence of vertices (@a PointOnSphere).
+		 *
+		 * If @a use_vertex_colours is true then [colours_begin, colours_end) are vertex colours,
+		 * otherwise they are triangle colours.
 		 */
-		template <typename TriangleForwardIter, typename PointOnSphereForwardIter>
+		template <typename TriangleForwardIter, typename PointOnSphereForwardIter, typename ColourForwardIter>
 		RenderedColouredTriangleSurfaceMesh(
 				TriangleForwardIter triangles_begin,
 				TriangleForwardIter triangles_end,
 				PointOnSphereForwardIter vertices_begin,
-				PointOnSphereForwardIter vertices_end) :
+				PointOnSphereForwardIter vertices_end,
+				ColourForwardIter colours_begin,
+				ColourForwardIter colours_end,
+				bool use_vertex_colours,
+				const GPlatesGui::Colour &fill_modulate_colour = GPlatesGui::Colour::get_white()) :
 			d_mesh_triangles(triangles_begin, triangles_end),
-			d_mesh_vertices(vertices_begin, vertices_end)
-		{  }
+			d_mesh_vertices(vertices_begin, vertices_end),
+			d_mesh_colours(colours_begin, colours_end),
+			d_use_vertex_colours(use_vertex_colours),
+			d_fill_modulate_colour(fill_modulate_colour)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					d_use_vertex_colours
+							? d_mesh_colours.size() == d_mesh_vertices.size()
+							: d_mesh_colours.size() == d_mesh_triangles.size(),
+					GPLATES_ASSERTION_SOURCE);
+		}
 
 
 		/**
 		 * Returns the mesh triangles.
 		 *
 		 * NOTE: The triangles should be rendered as filled.
-		 * It does not make sense to render the triangles edges (as line segments) because the
-		 * triangles adjacent to it could have different colours so the edge colour is unknown.
 		 */
 		const triangle_seq_type &
 		get_mesh_triangles() const
@@ -114,6 +129,33 @@ namespace GPlatesViewOperations
 		get_mesh_vertices() const
 		{
 			return d_mesh_vertices;
+		}
+
+		/**
+		 * Whether the colours are per-vertex (true) or per-triangle (false).
+		 */
+		bool
+		get_use_vertex_colours() const
+		{
+			return d_use_vertex_colours;
+		}
+
+		/**
+		 * Returns the mesh colours.
+		 */
+		const colour_seq_type &
+		get_mesh_colours() const
+		{
+			return d_mesh_colours;
+		}
+
+		/**
+		 * Returns the colour to modulate each filled triangle colour with.
+		 */
+		const GPlatesGui::Colour &
+		get_fill_modulate_colour() const
+		{
+			return d_fill_modulate_colour;
 		}
 
 
@@ -216,6 +258,14 @@ namespace GPlatesViewOperations
 
 		triangle_seq_type d_mesh_triangles;
 		vertex_seq_type d_mesh_vertices;
+
+		/**
+		 * These colours are either per-vertex or per-triangle depending on @a d_use_vertex_colours.
+		 */
+		colour_seq_type d_mesh_colours;
+		bool d_use_vertex_colours;
+
+		GPlatesGui::Colour d_fill_modulate_colour;
 	};
 }
 

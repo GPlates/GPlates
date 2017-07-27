@@ -27,14 +27,21 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTION_GEOMETRY_RENDERER_H
 #define GPLATES_PRESENTATION_RECONSTRUCTION_GEOMETRY_RENDERER_H
 
+#include <functional>
+#include <utility>
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/optional.hpp>
 
+#include "TopologyNetworkVisualLayerParams.h"
+#include "VisualLayer.h"
 #include "VisualLayerParamsVisitor.h"
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ResolvedTriangulationDelaunay2.h"
+#include "app-logic/ResolvedTriangulationNetwork.h"
+#include "app-logic/ResolvedTriangulationUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -49,10 +56,11 @@
 
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
+#include "maths/PointOnSphere.h"
+#include "maths/Real.h"
 #include "maths/Rotation.h"
 
-#include "presentation/VisualLayer.h"
-
+#include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/ScalarField3DRenderParameters.h"
 
@@ -78,34 +86,23 @@ namespace GPlatesPresentation
 		 */
 		struct RenderParams
 		{
+			explicit
 			RenderParams(
 					const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters_,
 					bool fill_polygons_ = false,
-					bool fill_polylines_ = false,
-					float ratio_zoom_dependent_bin_dimension_to_globe_radius_ = 0,
-
-					bool show_deformed_feature_geometries_ = true,
-					bool show_strain_accumulation_ = false,
-					double strain_accumulation_scale_ = 1.0,
-
-					// NOTE: these defaults do not control the GUI defaults
-					// see the values set in presentation/TopologyNetworkVisualLayerParams.h
-					//
-					// They do control what the focused feature highlight does though, so we set
-					// the default topological network option to show delaunay triangulations.
-
-					bool show_topological_network_delaunay_triangulation_ 		= true,
-					bool show_topological_network_constrained_triangulation_ 	= false,
-					bool show_topological_network_mesh_triangulation_ 			= false,
-					bool show_topological_network_total_triangulation_ 			= false,
-					bool show_topological_network_segment_velocity_				= false,
-					int topological_network_color_index_						= 0
-			);
+					bool fill_polylines_ = false);
 
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
 			bool fill_polygons;
 			bool fill_polylines;
+
+			/**
+			 * Modulate colour (eg, to control opacity/intensity).
+			 *
+			 * This is currently used for rasters, filled polygons/polylines and deforming network triangulations.
+			 */
+			GPlatesGui::Colour fill_modulate_colour;
 
 			/**
 			 * Used to control density of points/arrows in rendered geometry layer
@@ -118,20 +115,26 @@ namespace GPlatesPresentation
 			float ratio_arrow_unit_vector_direction_to_globe_radius;
 			float ratio_arrowhead_size_to_globe_radius;
 
+			//
 			// Scalar field render parameters.
+			//
+
 			GPlatesViewOperations::ScalarField3DRenderParameters scalar_field_render_parameters;
+
+			//
+			// Scalar-coverage-specific parameters.
+			//
+
+			//! Scalar colour palette.
+			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type scalar_coverage_colour_palette;
 
 			//
 			// Raster-specific parameters.
 			//
+
 			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
-			/**
-			 * Modulate colour (eg, to control opacity/intensity).
-			 *
-			 * This is currently used both for rasters and filled polygons/polylines.
-			 */
-			GPlatesGui::Colour fill_modulate_colour;
+
 			/**
 			 * Scales the heights used to calculate normals in a normal map raster.
 			 *
@@ -140,24 +143,27 @@ namespace GPlatesPresentation
 			 */
 			float normal_map_height_field_scale_factor;
 
+			//
 			// VGP-specific parameters.
+			//
 			bool vgp_draw_circular_error;
 
-			// Deformed feature geoemetry settings.
-			bool show_deformed_feature_geometries;
+			//
+			// Topology_reconstructed feature geometry settings.
+			//
+			bool show_topology_reconstructed_feature_geometries;
 			bool show_strain_accumulation;
 			double strain_accumulation_scale;
 
-			// Topological network settings:
-			bool show_topological_network_delaunay_triangulation;
-			bool show_topological_network_constrained_triangulation;
-			bool show_topological_network_mesh_triangulation;
-			bool show_topological_network_total_triangulation;
+			//
+			// Topological network settings.
+			//
+			bool fill_topological_network_triangulation;
+			bool fill_topological_network_rigid_blocks;
 			bool show_topological_network_segment_velocity;
-			int topological_network_color_index;
-
-			// 
-			GPlatesGui::UserColourPalette::non_null_ptr_type user_colour_palette;
+			TopologyNetworkVisualLayerParams::ColourMode topological_network_triangulation_colour_mode;
+			//! Delaunay triangulation colour palette.
+			boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> topological_network_triangulation_colour_palette;
 		};
 
 
@@ -245,7 +251,7 @@ namespace GPlatesPresentation
 				const RenderParams &render_params,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
-				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+				boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
 				boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor = boost::none);
 
 
@@ -322,11 +328,6 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
-
-		virtual
-		void
-		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 		virtual
@@ -347,7 +348,7 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsf);
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
         virtual
         void
@@ -379,6 +380,11 @@ namespace GPlatesPresentation
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<topology_reconstructed_feature_geometry_type> &trfg);
+
 	private:
 
 		/**
@@ -390,7 +396,7 @@ namespace GPlatesPresentation
 		RenderParams d_render_params;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
-		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
+		boost::optional<const GPlatesGui::symbol_map_type &> d_feature_type_symbol_map;
 		boost::optional<const GPlatesGui::StyleAdapter &> d_style_adapter;
 
 		/**
@@ -451,16 +457,76 @@ namespace GPlatesPresentation
 		}
 
 
-		void
-		render_topological_network_delaunay_triangulation(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
-				bool clip_to_mesh);
+		typedef std::pair<
+				GPlatesMaths::PointOnSphere, 
+				GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle>
+						smoothed_vertex_type;
+
+		/**
+		 * Enables @a smoothed_vertex_type to be used as a key in a 'std::map'.
+		 */
+		class SmoothedVertexMapPredicate :
+				public std::binary_function<smoothed_vertex_type, smoothed_vertex_type, bool>
+		{
+		public:
+			bool
+			operator()(
+					const smoothed_vertex_type &lhs,
+					const smoothed_vertex_type &rhs) const
+			{
+				return d_point_on_sphere_predicate(lhs.first, rhs.first);
+			}
+
+		private:
+			GPlatesMaths::PointOnSphereMapPredicate d_point_on_sphere_predicate;
+		};
+
+		typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
+				smoothed_vertex_type,
+				SmoothedVertexMapPredicate>
+						smoothed_vertex_indices_type;
+
+		typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
+				GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle>
+						unsmoothed_vertex_indices_type;
+
 
 		void
-		render_topological_network_constrained_delaunay_triangulation(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
-				bool clip_to_mesh,
-				const GPlatesGui::ColourProxy &colour);
+		render_topological_network_delaunay_face_smoothed_strain_rate(
+				const GPlatesMaths::PointOnSphere &point1,
+				const GPlatesMaths::PointOnSphere &point2,
+				const GPlatesMaths::PointOnSphere &point3,
+				smoothed_vertex_indices_type &vertex_indices,
+				GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type &rendered_triangle_mesh_triangles,
+				const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network,
+				GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face,
+				const double &subdivide_face_threshold);
+
+		void
+		render_topological_network_delaunay_faces_smoothed_strain_rates(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
+				const double &subdivide_face_threshold);
+
+		void
+		render_topological_network_delaunay_faces_unsmoothed_strain_rates(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
+
+		void
+		render_topological_network_delaunay_edges_smoothed_strain_rates(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
+				const double &subdivide_edge_threshold_angle);
+
+		void
+		render_topological_network_delaunay_edges_unsmoothed_strain_rates(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
+
+		void
+		render_topological_network_boundary(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
+
+		void
+		render_topological_network_rigid_blocks(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
 
 		/**
 		 * Get the reconstruction geometries that are resolved topological networks and
@@ -468,7 +534,7 @@ namespace GPlatesPresentation
 		 */
 		void
 		render_topological_network_velocities(
-				const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &topological_network);
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &topological_network);
 	};
 
 

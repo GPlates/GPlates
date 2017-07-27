@@ -63,10 +63,10 @@ POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
 
+#include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
-#include "maths/ProjectionUtils.h"
 
 #include "utils/Profile.h"
 

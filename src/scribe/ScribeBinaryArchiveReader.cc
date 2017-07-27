@@ -100,11 +100,11 @@ GPlatesScribe::BinaryArchiveReader::read_transcription()
 
 	const unsigned int num_object_tags = read_unsigned();
 
-	for (unsigned int object_tag_id = 0; object_tag_id < num_object_tags; ++object_tag_id)
+	for (unsigned int object_tag_name_id = 0; object_tag_name_id < num_object_tags; ++object_tag_name_id)
 	{
-		const std::string object_tag = read_string();
+		const std::string object_tag_name = read_string();
 
-		transcription->add_object_tag(object_tag);
+		transcription->add_object_tag_name(object_tag_name);
 	}
 
 	//
@@ -204,9 +204,9 @@ GPlatesScribe::BinaryArchiveReader::read(
 	for (unsigned int key_index = 0; key_index < num_keys; ++key_index)
 	{
 		// Read the current child key.
-		const Transcription::object_tag_id_type object_tag_id = read_unsigned();
+		const Transcription::object_tag_name_id_type object_tag_name_id = read_unsigned();
 		const Transcription::object_tag_version_type object_tag_version = read_unsigned();
-		const Transcription::object_key_type object_key(object_tag_id, object_tag_version);
+		const Transcription::object_key_type object_key(object_tag_name_id, object_tag_version);
 
 		const unsigned int num_children_with_key = read_unsigned();
 
@@ -215,7 +215,7 @@ GPlatesScribe::BinaryArchiveReader::read(
 		{
 			const Transcription::object_id_type object_id = read_unsigned();
 
-			composite_object.add_child(object_key, object_id);
+			composite_object.set_child(object_key, object_id, child_index);
 		}
 	}
 }
@@ -309,6 +309,9 @@ float
 GPlatesScribe::BinaryArchiveReader::read_float()
 {
 	float object;
+
+	// QDataStream handles infinity and NaN so we don't need any special code to handle it like
+	// the other archive readers.
 	d_input_stream >> object;
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
@@ -324,6 +327,9 @@ double
 GPlatesScribe::BinaryArchiveReader::read_double()
 {
 	double object;
+
+	// QDataStream handles infinity and NaN so we don't need any special code to handle it like
+	// the other archive readers.
 	d_input_stream >> object;
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(

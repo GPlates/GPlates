@@ -34,6 +34,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/Real.h"
+
 
 const QLocale GPlatesScribe::XmlArchiveWriter::C_LOCALE(QLocale::c());
 
@@ -217,11 +219,11 @@ GPlatesScribe::XmlArchiveWriter::write_transcription(
 	d_output_stream.writeStartElement(ArchiveCommon::XML_OBJECT_TAG_GROUP_ELEMENT_NAME);
 
 	const unsigned int num_object_tags = transcription.get_num_object_tags();
-	for (unsigned int object_tag_id = 0; object_tag_id < num_object_tags; ++object_tag_id)
+	for (unsigned int object_tag_name_id = 0; object_tag_name_id < num_object_tags; ++object_tag_name_id)
 	{
 		d_output_stream.writeStartElement(ArchiveCommon::XML_OBJECT_TAG_ELEMENT_NAME);
 
-		write(transcription.get_object_tag(object_tag_id));
+		write(transcription.get_object_tag_name(object_tag_name_id));
 
 		d_output_stream.writeEndElement(); // XML_OBJECT_TAG_ELEMENT_NAME
 	}
@@ -386,9 +388,28 @@ void
 GPlatesScribe::XmlArchiveWriter::write(
 		const float object)
 {
-	// Ensure enough precision is written out.
-	d_output_stream.writeCharacters(
-			C_LOCALE.toString(object, 'g', std::numeric_limits<float>::digits10 + 2));
+	if (GPlatesMaths::is_finite(object))
+	{
+		// Ensure enough precision is written out.
+		d_output_stream.writeCharacters(
+				C_LOCALE.toString(object, 'g', std::numeric_limits<float>::digits10 + 2));
+	}
+	else if (GPlatesMaths::is_positive_infinity(object))
+	{
+		d_output_stream.writeCharacters(ArchiveCommon::XML_POSITIVE_INFINITY_VALUE);
+	}
+	else if (GPlatesMaths::is_negative_infinity(object))
+	{
+		d_output_stream.writeCharacters(ArchiveCommon::XML_NEGATIVE_INFINITY_VALUE);
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				GPlatesMaths::is_nan(object),
+				GPLATES_ASSERTION_SOURCE);
+
+		d_output_stream.writeCharacters(ArchiveCommon::XML_NAN_VALUE);
+	}
 }
 
 
@@ -396,9 +417,28 @@ void
 GPlatesScribe::XmlArchiveWriter::write(
 		const double &object)
 {
-	// Ensure enough precision is written out.
-	d_output_stream.writeCharacters(
-			C_LOCALE.toString(object, 'g', std::numeric_limits<double>::digits10 + 2));
+	if (GPlatesMaths::is_finite(object))
+	{
+		// Ensure enough precision is written out.
+		d_output_stream.writeCharacters(
+				C_LOCALE.toString(object, 'g', std::numeric_limits<double>::digits10 + 2));
+	}
+	else if (GPlatesMaths::is_positive_infinity(object))
+	{
+		d_output_stream.writeCharacters(ArchiveCommon::XML_POSITIVE_INFINITY_VALUE);
+	}
+	else if (GPlatesMaths::is_negative_infinity(object))
+	{
+		d_output_stream.writeCharacters(ArchiveCommon::XML_NEGATIVE_INFINITY_VALUE);
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				GPlatesMaths::is_nan(object),
+				GPLATES_ASSERTION_SOURCE);
+
+		d_output_stream.writeCharacters(ArchiveCommon::XML_NAN_VALUE);
+	}
 }
 
 

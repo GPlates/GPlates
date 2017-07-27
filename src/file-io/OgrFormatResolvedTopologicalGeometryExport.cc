@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <vector>
 #include <QDebug>
 #include <QFile>
 #include <QStringList>
@@ -58,6 +59,9 @@ namespace
 
 	//! Convenience typedef for a sequence of resolved topologies.
 	typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topologies_seq_type;
+
+	//! Convenience typedef for a sequence of shared sub-segments.
+	typedef std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> shared_sub_segment_seq_type;
 
 
 	void
@@ -164,10 +168,9 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		}
 
 		// Iterate through the resolved geometries of the current feature.
-		resolved_topologies_seq_type::const_iterator rt_iter;
-		for (rt_iter = feature_geom_group.recon_geoms.begin();
-			rt_iter != feature_geom_group.recon_geoms.end();
-			++rt_iter)
+		resolved_topologies_seq_type::const_iterator rt_iter = feature_geom_group.recon_geoms.begin();
+		resolved_topologies_seq_type::const_iterator rt_end = feature_geom_group.recon_geoms.end();
+		for ( ; rt_iter != rt_end; ++rt_iter)
 		{
 			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
 
@@ -216,13 +219,12 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 						reconstruction_time,
 						export_per_collection);
 
-		// Iterate through the resolved geometries of the current feature and write to output.
-		// Note that this will export each geometry as a separate entry in the shapefile, even if they
-		// come from the same feature. 
-		resolved_topologies_seq_type::const_iterator rt_iter;
-		for (rt_iter = feature_geom_group.recon_geoms.begin();
-			rt_iter != feature_geom_group.recon_geoms.end();
-			++rt_iter)
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_geometries;
+
+		// Iterate through the resolved geometries of the current feature and collect the geometries.
+		resolved_topologies_seq_type::const_iterator rt_iter = feature_geom_group.recon_geoms.begin();
+		resolved_topologies_seq_type::const_iterator rt_end = feature_geom_group.recon_geoms.end();
+		for ( ; rt_iter != rt_end; ++rt_iter)
 		{
 			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
 
@@ -238,6 +240,9 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
 			// driver stores exterior rings as clockwise and interior as counter-clockwise -
 			// so whatever we do here could just get undone by the Shapefile driver.
+			// The Shapefile OGR driver will also combine two polygons into a single polygon with
+			// an exterior and interior ring (provided one polygon is fully contained inside
+			// the other - ie, if they don't intersect) and orient the rings as mentioned above.
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					force_polygon_orientation
 					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
@@ -245,9 +250,14 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 							force_polygon_orientation.get())
 					: resolved_topology_geometry.get();
 
-			// Write the resolved geometry.
-			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
+			resolved_geometries.push_back(resolved_geometry);
 		}
+
+		// Write the resolved geometries as a single feature.
+		geom_exporter.export_geometries(
+				resolved_geometries.begin(),
+				resolved_geometries.end(),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(kvd_for_export)); 
 	}
 }
 
@@ -280,13 +290,13 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		}
 
 		// Iterate through the sub-segments of the current section.
-		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &sub_segments =
-				section->get_shared_sub_segments();
-		std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>::const_iterator sub_segments_iter;
-		for (sub_segments_iter = sub_segments.begin(); sub_segments_iter != sub_segments.end(); ++sub_segments_iter)
+		const shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
+		shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
+		shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
+		for ( ; shared_sub_segments_iter != shared_sub_segments_end; ++shared_sub_segments_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment = *sub_segments_iter;
-			sub_segment.get_geometry()->accept_visitor(finder);
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment = *shared_sub_segments_iter;
+			shared_sub_segment.get_geometry()->accept_visitor(finder);
 		}
 	}
 
@@ -320,17 +330,24 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 						reconstruction_time,
 						export_per_collection);
 
-		// Iterate through the sub-segments of the current section.
-		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &sub_segments =
-				section->get_shared_sub_segments();
-		std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>::const_iterator sub_segments_iter;
-		for (sub_segments_iter = sub_segments.begin(); sub_segments_iter != sub_segments.end(); ++sub_segments_iter)
-		{
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment = *sub_segments_iter;
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> shared_sub_segment_geometries;
 
-			// Write the sub-segment geometry.
-			geom_exporter.export_geometry(sub_segment.get_geometry(), kvd_for_export); 
+		// Iterate through the shared sub-segments of the current section feature and collect their geometries.
+		const shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
+		shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
+		shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
+		for ( ; shared_sub_segments_iter != shared_sub_segments_end; ++shared_sub_segments_iter)
+		{
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment = *shared_sub_segments_iter;
+
+			shared_sub_segment_geometries.push_back(shared_sub_segment.get_geometry());
 		}
+
+		// Write the shared sub-segment geometries as a single feature.
+		geom_exporter.export_geometries(
+				shared_sub_segment_geometries.begin(),
+				shared_sub_segment_geometries.end(),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(kvd_for_export)); 
 	}
 }
 

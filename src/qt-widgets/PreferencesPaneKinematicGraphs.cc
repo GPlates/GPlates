@@ -47,18 +47,20 @@ GPlatesQtWidgets::PreferencesPaneKinematicGraphs::PreferencesPaneKinematicGraphs
 	GPlatesAppLogic::UserPreferences &prefs = app_state.get_user_preferences();
 
 	// TODO: Add reset button - this will need to be in the Widget, and hence also usable from the KinematicGraphs dialog's settings.
-	// TODO: Settle on key names before 1.5
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->delta_time_spinbox(), prefs,
 														  "tools/kinematics/velocity_delta_time",0);
 
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->velocity_yellow_spinbox(), prefs,
-                                                          "tools/kinematics/velocity_warning_1",0);
+														  "tools/kinematics/velocity_warning_1",0);
 
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(d_configuration_widget->velocity_red_spinbox(), prefs,
-                                                          "tools/kinematics/velocity_warning_2",0);
+														  "tools/kinematics/velocity_warning_2",0);
 
-	GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(d_configuration_widget->velocity_method_button_group(), prefs,
-																"tools/kinematics/velocity_method",0);
+	GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(d_configuration_widget->velocity_method_button_group(),
+																prefs,
+																"tools/kinematics/velocity_method",
+																GPlatesQtWidgets::KinematicGraphsConfigurationWidget::build_velocity_method_description_map(),
+																0);
 
 }
 

@@ -211,8 +211,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_reconstructed_geometry_for_property(
-				const GPlatesModel::FeatureHandle::iterator property,
-				unsigned idx = 0);
+				const GPlatesModel::FeatureHandle::iterator property);
 
 
 		void
@@ -223,8 +222,8 @@ namespace GPlatesFeatureVisitors
 
 		void
 		write_polygon_ring(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr,
-				unsigned idx = 0);
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon,
+				boost::optional<unsigned int> interior_ring_index = boost::none);
 
 	};
 

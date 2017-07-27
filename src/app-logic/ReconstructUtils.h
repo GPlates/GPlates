@@ -35,11 +35,12 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "AppLogicFwd.h"
 #include "ReconstructContext.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
+#include "ReconstructMethodInterface.h"
 #include "ReconstructMethodRegistry.h"
 #include "RotationUtils.h"
 
@@ -160,7 +161,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		reconstruct(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -210,7 +211,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		reconstruct(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -265,19 +266,37 @@ namespace GPlatesAppLogic
 		 * reverse reconstructed to present day before it can be attached back onto the feature
 		 * because feature's typically store present day geometry in their geometry properties.
 		 *
-		 * Note that @a reconstruction_tree_creator can be used to get reconstruction trees at times
-		 * other than @a reconstruction_time.
+		 * Note that @a reconstruct_method_context contains a @a ReconstructionTreeCreator that can
+		 * be used to get reconstruction trees at times other than @a reconstruction_time.
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
+		 *
+		 * Note that @a reconstruct_method_context can also contain deformation information used
+		 * to deform the specified geometry.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const double &reconstruction_time,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				bool reverse_reconstruct = false);
+
+
+		/**
+		 * Same as other overload of @a reconstruct_geometry but creates a temporary
+		 * @a ReconstructMethodInterface::Context internally using @a reconstruction_tree_creator
+		 * and @a reconstruct_params.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time,
 				bool reverse_reconstruct = false);
 
 
@@ -351,6 +370,10 @@ namespace GPlatesAppLogic
 		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
 		 * represents zero stage rotation (left plate).
 		 *
+		 * Spreading starts at @a spreading_start_time and finishes at @a reconstruction_time.
+		 * However rotation by the left plate still happens from present day to @a reconstruction_time
+		 * (spreading is relative to the left plate).
+		 *
 		 * If present day to reconstruction time is greater than @a half_stage_rotation_interval
 		 * then it will be divided into multiple half-stage intervals of this size (except for
 		 * the last interval that ends at the reconstruction time).
@@ -368,6 +391,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry = 0.0,
+				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
 
@@ -385,6 +409,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry = 0.0,
+				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
 	}
@@ -428,6 +453,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &spreading_asymmetry,
+				const double &spreading_start_time,
 				const double &half_stage_rotation_interval,
 				bool reverse_reconstruct)
 		{
@@ -440,6 +466,7 @@ namespace GPlatesAppLogic
 							left_plate_id,
 							right_plate_id,
 							spreading_asymmetry,
+							spreading_start_time,
 							half_stage_rotation_interval);
 
 			// Are we reversing reconstruction back to present day ?

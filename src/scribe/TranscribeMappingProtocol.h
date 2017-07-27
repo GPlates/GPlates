@@ -57,11 +57,11 @@ namespace GPlatesScribe
 	 *
 	 * If you want to test elements for 'TRANSCRIBE_UNKNOWN_TYPE', to skip them for example,
 	 * then you can explicitly use the mapping protocol which is:
-	 *  (1) Load an integer with object tag "size", and
-	 *  (2) Load up to "size" number of elements.
+	 *  (1) Load an integer with object tag specifying ObjectTag::map_size(), and
+	 *  (2) Load up to ObjectTag::map_size() number of elements.
 	 *      Each element has:
-	 *      (a) A key with with object tag "item_key", and
-	 *      (b) A value with with object tag "item_value".
+	 *      (a) A key with with object tag ObjectTag::map_item_key(index), and
+	 *      (b) A value with with object tag ObjectTag::map_item_value(index).
 	 */
 	template <typename MapType>
 	TranscribeResult
@@ -203,25 +203,24 @@ namespace GPlatesScribe
 
 		if (scribe.is_saving())
 		{
-			// 'map_size' won't be referenced by other objects.
 			const unsigned int map_size = TranscribeMap<MapType>::get_length(map);
-			scribe.save(TRANSCRIBE_SOURCE, map_size, "size", DONT_TRACK);
+			scribe.save(TRANSCRIBE_SOURCE, map_size, ObjectTag().map_size());
 
 			const std::pair<map_iterator, map_iterator> items = TranscribeMap<MapType>::get_items(map);
 
-			unsigned int num_items_saved = 0;
+			unsigned int n = 0;
 			map_iterator items_iter = items.first;
-			for ( ; items_iter != items.second; ++items_iter, ++num_items_saved)
+			for ( ; items_iter != items.second; ++items_iter, ++n)
 			{
 				const key_type &key = TranscribeMap<MapType>::get_key(items_iter);
 				const mapped_type &value = TranscribeMap<MapType>::get_value(items_iter);
 
-				scribe.save(TRANSCRIBE_SOURCE, key, "item_key", DONT_TRACK);
-				scribe.save(TRANSCRIBE_SOURCE, value, "item_value");
+				scribe.save(TRANSCRIBE_SOURCE, key, ObjectTag().map_item_key(n));
+				scribe.save(TRANSCRIBE_SOURCE, value, ObjectTag().map_item_value(n), TRACK);
 			}
 
 			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
-					num_items_saved == map_size,
+					n == map_size,
 					GPLATES_ASSERTION_SOURCE,
 					"Length of map does not match number of items saved.");
 		}
@@ -230,8 +229,7 @@ namespace GPlatesScribe
 			// Make sure map starts out empty.
 			TranscribeMap<MapType>::clear(map);
 
-			// 'map_size' won't be referenced by other objects.
-			LoadRef<unsigned int> map_size = scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "size", DONT_TRACK);
+			LoadRef<unsigned int> map_size = scribe.load<unsigned int>(TRANSCRIBE_SOURCE, ObjectTag().map_size());
 			if (!map_size.is_valid())
 			{
 				return scribe.get_transcribe_result();
@@ -247,7 +245,7 @@ namespace GPlatesScribe
 			unsigned int n;
 			for (n = 0; n < map_size.get(); ++n)
 			{
-				LoadRef<key_type> item_key = scribe.load<key_type>(TRANSCRIBE_SOURCE, "item_key", DONT_TRACK);
+				LoadRef<key_type> item_key = scribe.load<key_type>(TRANSCRIBE_SOURCE, ObjectTag().map_item_key(n));
 				if (!item_key.is_valid())
 				{
 					// Clear the map in case caller tries to use it - which they shouldn't
@@ -257,7 +255,7 @@ namespace GPlatesScribe
 					return scribe.get_transcribe_result();
 				}
 
-				LoadRef<mapped_type> item_value = scribe.load<mapped_type>(TRANSCRIBE_SOURCE, "item_value");
+				LoadRef<mapped_type> item_value = scribe.load<mapped_type>(TRANSCRIBE_SOURCE, ObjectTag().map_item_value(n), TRACK);
 				if (!item_value.is_valid())
 				{
 					// Clear the map in case caller tries to use it - which they shouldn't

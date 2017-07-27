@@ -28,6 +28,9 @@
 
 #include <boost/optional.hpp>
 #include <QSize>
+#include "qt-widgets/VelocityMethodWidget.h"
+
+#include "app-logic/VelocityDeltaTime.h"
 
 
 namespace GPlatesGui
@@ -155,23 +158,47 @@ namespace GPlatesGui
 
 
 		/**
-		 * Velocity smoothing options.
+		 * Velocity calculation options.
 		 */
-		struct ExportVelocitySmoothingOptions
+		struct ExportVelocityCalculationOptions
 		{
 			explicit
-			ExportVelocitySmoothingOptions(
+			ExportVelocityCalculationOptions(
+					GPlatesAppLogic::VelocityDeltaTime::Type delta_time_type_,
+					const double &delta_time_,
 					bool is_boundary_smoothing_enabled_,
 					const double &boundary_smoothing_angular_half_extent_degrees_,
 					bool exclude_deforming_regions_) :
+				delta_time_type(delta_time_type_),
+				delta_time(delta_time_),
 				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
 				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_),
 				exclude_deforming_regions(exclude_deforming_regions_)
 			{  }
 
+			GPlatesAppLogic::VelocityDeltaTime::Type delta_time_type;
+			double delta_time;
+
 			bool is_boundary_smoothing_enabled;
 			double boundary_smoothing_angular_half_extent_degrees;
 			bool exclude_deforming_regions;
+		};
+
+		/**
+		 * Net Rotation options
+		 */
+		struct ExportNetRotationOptions
+		{
+		    explicit
+		    ExportNetRotationOptions(
+			    const double &delta_time_,
+			    const GPlatesQtWidgets::VelocityMethodWidget::VelocityMethod &velocity_method_):
+			delta_time(delta_time_),
+			velocity_method(velocity_method_)
+		    {}
+
+		    double delta_time;
+		    GPlatesQtWidgets::VelocityMethodWidget::VelocityMethod velocity_method;
 		};
 	}
 }

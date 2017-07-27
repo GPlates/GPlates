@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 
 #include "global/GPlatesException.h"
 
@@ -180,7 +181,10 @@ namespace GPlatesScribe
 		 *
 		 * This indicates either an error in the transcribed stream/archive or an error
 		 * in the Scribe library implementation.
+		 *
 		 * Errors due to incorrect usage of the Scribe library should generate different exceptions.
+		 * Although in some cases this exception can get thrown due to either an internal library error
+		 * or incorrect usage of the Scribe library.
 		 */
 		class ScribeLibraryError :
 				public BaseException
@@ -602,7 +606,8 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Exception thrown if an object (at a particular memory address) has already been transcribed.
+		 * Exception thrown if a tracked object has already been saved at a particular memory address,
+		 * or already been loaded (at same object tag location in transcription).
 		 */
 		class AlreadyTranscribedObject :
 				public BaseException
@@ -611,9 +616,11 @@ namespace GPlatesScribe
 
 			AlreadyTranscribedObject(
 					const GPlatesUtils::CallStack::Trace &exception_source,
-					const std::type_info &object_type_info) :
+					const std::type_info &object_type_info,
+					bool scribe_is_saving) :
 				BaseException(exception_source),
-				d_object_type_name(object_type_info.name())
+				d_object_type_name(object_type_info.name()),
+				d_scribe_is_saving(scribe_is_saving)
 			{  }
 
 			~AlreadyTranscribedObject() throw() { }
@@ -635,6 +642,7 @@ namespace GPlatesScribe
 		private:
 
 			std::string d_object_type_name;
+			bool d_scribe_is_saving;
 		};
 
 
@@ -716,8 +724,8 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Exception thrown when an object is untracked and it has transcribed pointers or
-		 * references referencing it.
+		 * Exception thrown when an object is untracked (or discarded) and it has transcribed pointers
+		 * or references referencing it.
 		 */
 		class UntrackingObjectWithReferences :
 				public BaseException
@@ -1197,6 +1205,48 @@ namespace GPlatesScribe
 			std::string d_class_type;
 			std::string d_class_name1;
 			std::string d_class_name2;
+		};
+
+
+		/**
+		 * Exception thrown when the type stored in a transcribed QVariant is not registered with Qt
+		 * using 'qRegisterMetaType()' and 'qRegisterMetaTypeStreamOperators()'.
+		 *
+		 * Registration is required for any types that are used in transcribed QVariant objects,
+		 * except for Qt builtin types (see 'QMetaType::Type'). This enables them to be
+		 * serialised/deserialised using QDataStream.
+		 */
+		class UnregisteredQVariantMetaType :
+				public BaseException
+		{
+		public:
+
+			UnregisteredQVariantMetaType(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const QVariant &qvariant_object) :
+				BaseException(exception_source),
+				d_type_name(qvariant_object.typeName())
+			{  }
+
+			~UnregisteredQVariantMetaType() throw() { }
+
+		protected:
+
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "UnregisteredQVariantMetaType";
+			}
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const;
+
+		private:
+
+			std::string d_type_name;
 		};
 	}
 }

@@ -28,19 +28,19 @@
 
 #include "ReconstructMethodByPlateId.h"
 
-#include "DeformedFeatureGeometry.h"
 #include "PlateVelocityUtils.h"
-#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructMethodFiniteRotation.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
+#include "TopologyReconstructedFeatureGeometry.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "maths/FiniteRotation.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -312,11 +312,10 @@ namespace GPlatesAppLogic
 			visit_gml_polygon(
 					GPlatesPropertyValues::GmlPolygon &gml_polygon)
 			{
-				// TODO: Add interior polygons when PolygonOnSphere contains interior polygons.
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_polygon.get_exterior()));
+								gml_polygon.get_polygon()));
 			}
 
 			virtual
@@ -350,11 +349,6 @@ GPlatesAppLogic::ReconstructMethodByPlateId::ReconstructMethodByPlateId(
 		const Context &context) :
 	ReconstructMethodInterface(ReconstructMethod::BY_PLATE_ID, feature_ref)
 {
-	// If the geometries should be deformed then generate a deformed geometry look up table.
-	if (context.geometry_deformation)
-	{
-		initialise_deformation(context);
-	}
 }
 
 
@@ -362,9 +356,20 @@ void
 GPlatesAppLogic::ReconstructMethodByPlateId::get_present_day_feature_geometries(
 		std::vector<Geometry> &present_day_geometries) const
 {
-	GetPresentDayGeometries visitor(present_day_geometries);
+	// Cache present day geometries (if not already).
+	if (!d_present_day_geometries)
+	{
+		d_present_day_geometries = std::vector<Geometry>();
 
-	visitor.visit_feature(get_feature_ref());
+		GetPresentDayGeometries visitor(d_present_day_geometries.get());
+		visitor.visit_feature(get_feature_ref());
+	}
+
+	// Copy to caller's sequence.
+	present_day_geometries.insert(
+			present_day_geometries.end(),
+			d_present_day_geometries->begin(),
+			d_present_day_geometries->end());
 }
 
 
@@ -375,74 +380,60 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 		const Context &context,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
-
-	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties;
-	reconstruction_feature_properties.visit_feature(get_feature_ref());
-
-	if (d_deformed_geometry_property_time_spans)
+	boost::optional<const topology_reconstructed_geometry_time_span_sequence_type &>
+			topology_reconstructed_geometry_time_spans = get_topology_reconstruction_info(context);
+	if (topology_reconstructed_geometry_time_spans)
 	{
-		// We have deformed geometries.
+		// We have topology reconstructed geometries.
+
+		const ReconstructionInfo &reconstruction_info = get_reconstruction_info(context);
 
 		// The feature must be defined at the reconstruction time.
-		if (!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
+		if (!reconstruction_info.valid_time.is_valid_at_recon_time(reconstruction_time))
 		{
 			return;
 		}
 
-		//DEF-CHECK - This function launches the deformation workflow 
-
 		// Output an RFG for each geometry property in the feature.
 		BOOST_FOREACH(
-				const DeformedGeometryPropertyTimeSpan &deformed_geometry_property_time_span,
-				d_deformed_geometry_property_time_spans.get())
+				const TopologyReconstructedGeometryTimeSpan &topology_reconstructed_geometry_time_span,
+				topology_reconstructed_geometry_time_spans.get())
 		{
-			// In addition to the geometry we get the per-point deformation information.
-			std::vector<GeometryDeformation::DeformationInfo> deformation_info_points;
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type deformed_geometry =
-					deformed_geometry_property_time_span.geometry_time_span
-							->get_geometry_and_deformation_information(
-									reconstruction_time,
-									context.reconstruction_tree_creator,
-									deformation_info_points);
-
-			const DeformedFeatureGeometry::non_null_ptr_type deformed_feature_geometry =
-					DeformedFeatureGeometry::create(
-							context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time),
-							context.reconstruction_tree_creator,
-							*get_feature_ref(),
-							deformed_geometry_property_time_span.property_iterator,
-							deformed_geometry,
-							deformation_info_points,
-							reconstruction_feature_properties.get_recon_plate_id(),
-							reconstruction_feature_properties.get_time_of_appearance(),
-							reconstruct_handle);
-			reconstructed_feature_geometries.push_back(deformed_feature_geometry);
+			// If the geometry has not been subducted/consumed at the reconstruction time then
+			// create a topology reconstructed feature geometry.
+			if (topology_reconstructed_geometry_time_span.geometry_time_span->is_valid(reconstruction_time))
+			{
+				const TopologyReconstructedFeatureGeometry::non_null_ptr_type topology_reconstructed_feature_geometry =
+						TopologyReconstructedFeatureGeometry::create(
+								context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time),
+								context.reconstruction_tree_creator,
+								*get_feature_ref(),
+								topology_reconstructed_geometry_time_span.property_iterator,
+								topology_reconstructed_geometry_time_span.geometry_time_span,
+								reconstruction_info.reconstruction_plate_id,
+								reconstruction_info.valid_time.time_of_appearance,
+								reconstruct_handle);
+				reconstructed_feature_geometries.push_back(topology_reconstructed_feature_geometry);
+			}
 		}
 
 		return;
 	}
 
 	//
-	// We don't have deforming geometries so reconstruct using rigid rotations by plate id.
+	// We don't have topology reconstructed geometries so reconstruct using rigid rotations by plate id.
 	//
 
-	// The feature must be defined at the reconstruction time, *unless* we've been requested to
-	// reconstruct for all times (even times when the feature is not defined - but we only do
-	// this for rigid rotations since it affects geometry positioning when deformation is present).
-	if (!context.reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period() &&
-		!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
-	{
-		return;
-	}
+	const ReconstructionInfo &reconstruction_info = get_reconstruction_info(context);
 
-	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
-	// which can still give a non-identity rotation if the anchor plate id is non-zero.
-	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-	if (reconstruction_feature_properties.get_recon_plate_id())
+	// The feature must be defined at the reconstruction time, *unless* we've been requested to
+	// reconstruct for all times (even times when the feature is not defined).
+	if (!context.reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period())
 	{
-		reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
+		if (!reconstruction_info.valid_time.is_valid_at_recon_time(reconstruction_time))
+		{
+			return;
+		}
 	}
 
 	// Get the reconstruction tree for the current reconstruction time.
@@ -453,8 +444,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 	// need to reconstruct according to the reconstruction plate ID.
 	const Transform::non_null_ptr_type reconstruction_rotation =
 			Transform::create(
-					reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first,
-					reconstruction_plate_id);
+					reconstruction_tree->get_composed_absolute_rotation(reconstruction_info.reconstruction_plate_id).first,
+					reconstruction_info.reconstruction_plate_id);
 
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
@@ -470,8 +461,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 						present_day_geometry.geometry,
 						reconstruction_rotation.get(),
 						ReconstructMethod::BY_PLATE_ID,
-						reconstruction_feature_properties.get_recon_plate_id(),
-						reconstruction_feature_properties.get_time_of_appearance(),
+						reconstruction_info.reconstruction_plate_id,
+						reconstruction_info.valid_time.time_of_appearance,
 						reconstruct_handle);
 		reconstructed_feature_geometries.push_back(rigid_rfg);
 	}
@@ -483,55 +474,63 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const ReconstructHandle::type &reconstruct_handle,
 		const Context &context,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
 	//PROFILE_FUNC();
 
-	// If we don't have deforming geometries then reconstruct using rigid rotations by plate id.
-	if (!d_deformed_geometry_property_time_spans)
+	// If we don't have topology reconstructed geometries then reconstruct using rigid rotations by plate id.
+	boost::optional<const topology_reconstructed_geometry_time_span_sequence_type &>
+			topology_reconstructed_geometry_time_spans = get_topology_reconstruction_info(context);
+	if (!topology_reconstructed_geometry_time_spans)
 	{
 		reconstruct_feature_velocities_by_plate_id(
 				reconstructed_feature_velocities,
 				reconstruct_handle,
 				context,
-				reconstruction_time);
+				reconstruction_time,
+				velocity_delta_time,
+				velocity_delta_time_type);
 
 		return;
 	}
 
-	// We have deformed geometries.
+	const ReconstructionInfo &reconstruction_info = get_reconstruction_info(context);
 
-	// Should not be able to have deformed geometries without a geometry deformation context.
+	// We have topology reconstructed geometries.
+
+	// Should not be able to have topology reconstructed geometries without a topology reconstruct context.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			context.geometry_deformation,
+			context.topology_reconstruct,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties;
-	reconstruction_feature_properties.visit_feature(get_feature_ref());
-
 	// The feature must be defined at the reconstruction time.
-	if (!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
+	if (!reconstruction_info.valid_time.is_valid_at_recon_time(reconstruction_time))
 	{
 		return;
 	}
 
 	// Output a multi-point velocity vector field for each geometry property in the feature.
 	BOOST_FOREACH(
-			const DeformedGeometryPropertyTimeSpan &deformed_geometry_property_time_span,
-			d_deformed_geometry_property_time_spans.get())
+			const TopologyReconstructedGeometryTimeSpan &topology_reconstructed_geometry_time_span,
+			topology_reconstructed_geometry_time_spans.get())
 	{
-		// Calculate the velocities at the deformed geometry (domain) points.
+		// Calculate the velocities at the topology reconstructed geometry (domain) points.
 		std::vector<GPlatesMaths::PointOnSphere> domain_points;
 		std::vector<GPlatesMaths::Vector3D> velocities;
 		std::vector< boost::optional<const ReconstructionGeometry *> > surfaces;
-		deformed_geometry_property_time_span.geometry_time_span->get_velocities(
+		if (!topology_reconstructed_geometry_time_span.geometry_time_span->get_velocities(
 				domain_points,
 				velocities,
 				surfaces,
 				reconstruction_time,
-				context.reconstruction_tree_creator,
-				context.geometry_deformation.get());
+				velocity_delta_time,
+				velocity_delta_time_type))
+		{
+			// The geometry has been subducted/consumed at the reconstruction time so there are no domain points.
+			continue;
+		}
 
 		// Create a multi-point-on-sphere with the domain points.
 		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type domain_multi_point_geometry =
@@ -547,11 +546,11 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 						context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time),
 						context.reconstruction_tree_creator,
 						*get_feature_ref(),
-						deformed_geometry_property_time_span.property_iterator,
+						topology_reconstructed_geometry_time_span.property_iterator,
 						domain_multi_point_geometry,
 						ReconstructMethod::BY_PLATE_ID,
-						reconstruction_feature_properties.get_recon_plate_id(),
-						reconstruction_feature_properties.get_time_of_appearance(),
+						reconstruction_info.reconstruction_plate_id,
+						reconstruction_info.valid_time.time_of_appearance,
 						reconstruct_handle);
 
 		const MultiPointVectorField::non_null_ptr_type vector_field =
@@ -559,7 +558,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 						reconstruction_time,
 						domain_multi_point_geometry,
 						*get_feature_ref(),
-						deformed_geometry_property_time_span.property_iterator,
+						topology_reconstructed_geometry_time_span.property_iterator,
 						reconstruct_handle);
 
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -594,7 +593,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 				*field_iter = MultiPointVectorField::CodomainElement(
 						*velocities_iter,
 						MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
-						reconstruction_feature_properties.get_recon_plate_id(),
+						reconstruction_info.reconstruction_plate_id,
 						rigid_rfg.get());
 			}
 		}
@@ -611,78 +610,150 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_geometry(
 		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
-	// Get the values of the properties at present day.
-	ReconstructionFeatureProperties reconstruction_feature_properties;
-
-	reconstruction_feature_properties.visit_feature(get_feature_ref());
-
-	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
-	// which can still give a non-identity rotation if the anchor plate id is non-zero.
-	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-	if (reconstruction_feature_properties.get_recon_plate_id())
-	{
-		reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
-	}
-
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
+	const ReconstructionInfo &reconstruction_info = get_reconstruction_info(context);
+
 	// We obtained the reconstruction plate ID so reconstruct (or reverse reconstruct) the geometry.
+	//
+	// Note that we don't reconstruct using topologies (even if we have topologies).
 	return ReconstructUtils::reconstruct_by_plate_id(
 			geometry,
-			reconstruction_plate_id,
+			reconstruction_info.reconstruction_plate_id,
 			*reconstruction_tree,
 			reverse_reconstruct);
 }
 
 
 void
-GPlatesAppLogic::ReconstructMethodByPlateId::initialise_deformation(
+GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstructed_geometry_time_spans(
+		topology_reconstructed_geometry_time_span_sequence_type &topology_reconstructed_geometry_time_spans,
 		const Context &context)
 {
-	PROFILE_FUNC();
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			context.geometry_deformation && !d_deformed_geometry_property_time_spans,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_deformed_geometry_property_time_spans = deformed_geometry_time_span_sequence_type();
-
-	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties;
-	reconstruction_feature_properties.visit_feature(get_feature_ref());
-
-	GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id =
-			reconstruction_feature_properties.get_recon_plate_id()
-			? reconstruction_feature_properties.get_recon_plate_id().get()
-			: 0;
-#if 0 // Feature begin/end times no longer affect generation of deformed geometry time span.
-	const GPlatesPropertyValues::GeoTimeInstant feature_begin_time =
-			reconstruction_feature_properties.get_time_of_appearance()
-			? reconstruction_feature_properties.get_time_of_appearance().get()
-			: GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-	const GPlatesPropertyValues::GeoTimeInstant feature_end_time =
-			reconstruction_feature_properties.get_time_of_dissappearance()
-			? reconstruction_feature_properties.get_time_of_dissappearance().get()
-			: GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-#endif
-
-	// Iterate over the feature's present day geometries and generate a deforming geometry
-	// time span for each geometry.
-	std::vector<Geometry> present_day_geometries;
-	get_present_day_feature_geometries(present_day_geometries);
-	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
+	boost::optional<const topology_reconstructed_geometry_time_span_sequence_type &> geometry_time_spans =
+			get_topology_reconstruction_info(context);
+	if (geometry_time_spans)
 	{
-		const GeometryDeformation::GeometryTimeSpan::non_null_ptr_type deformed_geometry_time_span =
-				GeometryDeformation::GeometryTimeSpan::create(
-						context.geometry_deformation.get(),
-						context.reconstruction_tree_creator,
-						present_day_geometry.geometry,
-						feature_reconstruction_plate_id);
-
-		d_deformed_geometry_property_time_spans->push_back(
-				DeformedGeometryPropertyTimeSpan(
-						present_day_geometry.property_iterator,
-						deformed_geometry_time_span));
+		topology_reconstructed_geometry_time_spans.insert(
+				topology_reconstructed_geometry_time_spans.end(),
+				geometry_time_spans->begin(),
+				geometry_time_spans->end());
 	}
+}
+
+
+const GPlatesAppLogic::ReconstructMethodByPlateId::ReconstructionInfo &
+GPlatesAppLogic::ReconstructMethodByPlateId::get_reconstruction_info(
+		const Context &context) const
+{
+	if (!d_reconstruction_info)
+	{
+		d_reconstruction_info = ReconstructionInfo();
+
+		// Get the feature's reconstruction plate id and begin/end time.
+		ReconstructionFeatureProperties reconstruction_feature_properties;
+		reconstruction_feature_properties.visit_feature(get_feature_ref());
+
+		// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis).
+		if (reconstruction_feature_properties.get_recon_plate_id())
+		{
+			d_reconstruction_info->reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
+		}
+
+		d_reconstruction_info->valid_time = reconstruction_feature_properties.get_valid_time();
+
+		// The geometry import time uses the time-of-appearance if user requested to override.
+		// Otherwise use geometry import time property (if available), otherwise defaults to zero.
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time;
+		if (context.reconstruct_params.get_topology_reconstruction_use_time_of_appearance())
+		{
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_appearance =
+					reconstruction_feature_properties.get_time_of_appearance();
+			// Can only set the geometry import time if it's a real number (not distant past or future).
+			if (time_of_appearance &&
+				time_of_appearance->is_real())
+			{
+				geometry_import_time = time_of_appearance;
+			}
+		}
+		if (!geometry_import_time)
+		{
+			geometry_import_time = reconstruction_feature_properties.get_geometry_import_time();
+		}
+
+		// Can only set the geometry import time if it's a real number (not distant past or future).
+		// The geometry import time (defaults to zero if not available).
+		if (geometry_import_time &&
+			geometry_import_time->is_real())
+		{
+			d_reconstruction_info->geometry_import_time = geometry_import_time->value();
+		}
+	}
+
+	return d_reconstruction_info.get();
+}
+
+
+boost::optional<const GPlatesAppLogic::ReconstructMethodByPlateId::topology_reconstructed_geometry_time_span_sequence_type &>
+GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
+		const Context &context) const
+{
+	if (!context.topology_reconstruct)
+	{
+		// There's no reconstruction using topologies.
+		return boost::none;
+	}
+
+	if (!d_topology_reconstructed_geometry_time_spans)
+	{
+		d_topology_reconstructed_geometry_time_spans = topology_reconstructed_geometry_time_span_sequence_type();
+
+		const ReconstructionInfo &reconstruction_info = get_reconstruction_info(context);
+
+		// Tessellation of polylines/polygons.
+		boost::optional<double> line_tessellation_radians;
+		if (context.reconstruct_params.get_topology_reconstruction_enable_line_tessellation())
+		{
+			// Convert degrees to radians.
+			line_tessellation_radians = GPlatesMaths::convert_deg_to_rad(
+					context.reconstruct_params.get_topology_reconstruction_line_tessellation_degrees());
+		}
+
+		// Lifetime detection of individual points in the reconstructed/deformed geometries.
+		boost::optional<TopologyReconstruct::ActivePointParameters> active_point_parameters;
+		if (context.reconstruct_params.get_topology_reconstruction_enable_lifetime_detection())
+		{
+			active_point_parameters = TopologyReconstruct::ActivePointParameters(
+					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta(),
+					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary());
+		}
+
+		// Use natural neighbour coordinates when deforming points in topological networks.
+		const bool deformation_use_natural_neighbour_interpolation =
+				context.reconstruct_params.get_topology_deformation_use_natural_neighbour_interpolation();
+
+		// Iterate over the feature's present day geometries and generate a topology reconstructed geometry
+		// time span for each geometry.
+		std::vector<Geometry> present_day_geometries;
+		get_present_day_feature_geometries(present_day_geometries);
+		BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
+		{
+			const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type topology_reconstructed_geometry_time_span =
+					context.topology_reconstruct.get()->create_geometry_time_span(
+							present_day_geometry.geometry,
+							reconstruction_info.reconstruction_plate_id,
+							reconstruction_info.geometry_import_time,
+							line_tessellation_radians,
+							active_point_parameters,
+							deformation_use_natural_neighbour_interpolation);
+
+			d_topology_reconstructed_geometry_time_spans->push_back(
+					TopologyReconstructedGeometryTimeSpan(
+							present_day_geometry.property_iterator,
+							topology_reconstructed_geometry_time_span));
+		}
+	}
+
+	return d_topology_reconstructed_geometry_time_spans.get();
 }

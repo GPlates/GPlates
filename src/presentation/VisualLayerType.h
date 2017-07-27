@@ -32,29 +32,15 @@
 namespace GPlatesPresentation
 {
 	/**
-	 * An enumeration of visual layer types. This enumeration exists separately and
-	 * in addition to the enumeration of app-logic layer task types, to allow for
-	 * the existence of visual layers that are not backed by an app-logic layer.
+	 * This is now just a typedef of the application logic layer type.
 	 *
-	 * Even though they are not explicitly defined, the first values of this
-	 * enumeration are taken to be all of the members of the enumeration
-	 * GPlatesAppLogic::LayerTaskType::Type. As such, the first explicitly defined
-	 * member of this enumeration must have the value of
-	 * GPlatesAppLogic::LayerTaskType::NUM_TYPES to avoid conflict between values.
-	 *
-	 * Note that while it is always safe to convert from a
-	 * GPlatesAppLogic::LayerTaskType::Type to a VisualLayerType::Type, the reverse
-	 * may result in undefined behaviour (see Stroustrup, section 4.8).
+	 * Previously this enumeration existed in addition to the enumeration of app-logic layer task types
+	 * to allow for the existence of visual layers that are not backed by an app-logic layer.
+	 * However this is no longer the case.
 	 */
 	namespace VisualLayerType
 	{
-		enum Type
-		{
-			GRATICULES = static_cast<unsigned int>(GPlatesAppLogic::LayerTaskType::NUM_TYPES), // See note above.
-			SPHERE,
-
-			NUM_TYPES // This must be the last entry.
-		};
+		typedef GPlatesAppLogic::LayerTaskType::Type Type;
 	}
 }
 

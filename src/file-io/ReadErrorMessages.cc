@@ -232,12 +232,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidPointsInPolygon,
 				QT_TR_NOOP("Invalid points in polygon"),
 				QT_TR_NOOP("The points of the polygon are invalid (No specific error message is available).") },
-		{ GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
-				QT_TR_NOOP("Invalid polygon end point"),
-				QT_TR_NOOP("GML Polygons' terminating point must be identical to their starting point.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
 				QT_TR_NOOP("Insufficient points in polygon"),
-				QT_TR_NOOP("GML Polygons must be defined with at least four points (which includes the identical start and end point).") },
+				QT_TR_NOOP("Polygons must be defined with at least three points.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
 				QT_TR_NOOP("Insufficient distinct points in polygon"),
 				QT_TR_NOOP("Polygons must be defined with at least three distinct points.") },
@@ -489,16 +486,30 @@ namespace
 				QT_TR_NOOP("No semi-colon before label."),
 				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
 
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat,
+				QT_TR_NOOP("Invalid Hellinger .com file format."),
+				QT_TR_NOOP("The format of the Hellinger .com was not as expected.")	},
+		{ GPlatesFileIO::ReadErrors::HellingerPickFormatError,
+				QT_TR_NOOP("Hellinger pick format error."),
+				QT_TR_NOOP("The format of a Hellinger pick was not as expected.") },
+
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file."),
 				QT_TR_NOOP("Error opening the file for reading.") },
+		{ GPlatesFileIO::ReadErrors::FileFormatNotSupported,
+				QT_TR_NOOP("File format not supported."),
+				QT_TR_NOOP("Loading files in this format is currently not supported.") },
 		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
 				QT_TR_NOOP("File is empty."),
 				QT_TR_NOOP("The file contains no data.") },
 		{ GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
 				QT_TR_NOOP("No features in file."),
-				QT_TR_NOOP("The file contains no features.") }
+				QT_TR_NOOP("The file contains no features.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingFile,
+				QT_TR_NOOP("Error reading file."),
+				QT_TR_NOOP("The was an error reading the file.") }
 	};
 	
 	/**
@@ -589,6 +600,12 @@ namespace
 		// The following apply to GMT CPT files
 		{ GPlatesFileIO::ReadErrors::CptLineIgnored,
 				QT_TR_NOOP("CPT line was ignored.") },
+
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::HellingerComFileNotImported,
+				QT_TR_NOOP("The .com file was not imported.") },
+		{ GPlatesFileIO::ReadErrors::HellingerPickIgnored,
+				QT_TR_NOOP("The pick was ignored.") },
 
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,

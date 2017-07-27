@@ -34,6 +34,17 @@
 #include "TopologyUtils.h"
 
 
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::TopologyNetworkResolverLayerTask() :
+		d_layer_params(TopologyNetworkLayerParams::create()),
+		d_topology_network_resolver_layer_proxy(TopologyNetworkResolverLayerProxy::create())
+{
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_topology_network_params(GPlatesAppLogic::TopologyNetworkLayerParams &)),
+			this, SLOT(handle_topology_network_params_modified(GPlatesAppLogic::TopologyNetworkLayerParams &)));
+}
+
+
 bool
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -92,12 +103,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::activate(
 	// If deactivated then specify an empty set of topological sections layer proxies.
 	if (!active)
 	{
-		// Topological sections that are reconstructed static geometries.
-		d_topology_network_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				std::vector<ReconstructLayerProxy::non_null_ptr_type>());
-
-		// Topological sections that are resolved topological lines.
-		d_topology_network_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+		// Set the current topological sections.
+		d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+				std::vector<ReconstructLayerProxy::non_null_ptr_type>(),
 				std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>());
 	}
 }
@@ -162,12 +170,12 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connect
 					reconstruct_layer_proxy.get());
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_line_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (topological_line_resolver_layer_proxy)
 		{
 			d_current_resolved_line_topological_sections_layer_proxies.push_back(
-					topological_boundary_resolver_layer_proxy.get());
+					topological_line_resolver_layer_proxy.get());
 		}
 	}
 }
@@ -196,15 +204,15 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_conn
 					d_current_reconstructed_geometry_topological_sections_layer_proxies.end());
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_line_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (topological_line_resolver_layer_proxy)
 		{
 			d_current_resolved_line_topological_sections_layer_proxies.erase(
 					std::remove(
 							d_current_resolved_line_topological_sections_layer_proxies.begin(),
 							d_current_resolved_line_topological_sections_layer_proxies.end(),
-							topological_boundary_resolver_layer_proxy.get()),
+							topological_line_resolver_layer_proxy.get()),
 					d_current_resolved_line_topological_sections_layer_proxies.end());
 		}
 	}
@@ -224,10 +232,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::update(
 			reconstructed_geometry_topological_sections_layer_proxies,
 			reconstruction);
 
-	// Notify our layer proxy of the reconstructed topological sections layer proxies.
-	d_topology_network_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
-			reconstructed_geometry_topological_sections_layer_proxies);
-
 	// Get the 'resolved line' topological section layers.
 	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>
 			resolved_line_topological_sections_layer_proxies;
@@ -235,8 +239,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::update(
 			resolved_line_topological_sections_layer_proxies,
 			reconstruction);
 
-	// Notify our layer proxy of the resolved topological line sections layer proxies.
-	d_topology_network_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+	// Notify our layer proxy of the topological sections layer proxies.
+	d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+			reconstructed_geometry_topological_sections_layer_proxies,
 			resolved_line_topological_sections_layer_proxies);
 }
 
@@ -270,18 +275,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_reconstructed_geometry_to
 		reconstruction->get_active_layer_outputs<ReconstructLayerProxy>(
 				reconstructed_geometry_topological_sections_layer_proxies);
 	}
-
-	// Filter out reconstructed geometry layers that are connected (and hence deformed) by
-	// topological network layers. These reconstructed geometry layers cannot supply
-	// topological sections (to topological network layers) because these reconstructed geometries
-	// are deformed by the topological networks which in turn would use the reconstructed geometries
-	// to build the topological networks - thus creating a cyclic dependency.
-	reconstructed_geometry_topological_sections_layer_proxies.erase(
-			std::remove_if(
-					reconstructed_geometry_topological_sections_layer_proxies.begin(),
-					reconstructed_geometry_topological_sections_layer_proxies.end(),
-					boost::bind(&ReconstructLayerProxy::connected_to_topological_layer_proxies, _1)),
-			reconstructed_geometry_topological_sections_layer_proxies.end());
 }
 
 
@@ -305,4 +298,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_resolved_line_topological
 		reconstruction->get_active_layer_outputs<TopologyGeometryResolverLayerProxy>(
 				resolved_line_topological_sections_layer_proxies);
 	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::handle_topology_network_params_modified(
+		TopologyNetworkLayerParams &layer_params)
+{
+	// Update our velocity layer proxy.
+	d_topology_network_resolver_layer_proxy->set_current_topology_network_params(layer_params.get_topology_network_params());
 }

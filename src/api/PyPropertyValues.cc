@@ -1187,14 +1187,14 @@ export_gml_polygon()
 				"   polygon_property = pygplates.GmlPolygon(polygon)\n")
 		.def("get_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
-				&GPlatesPropertyValues::GmlPolygon::get_exterior,
+				&GPlatesPropertyValues::GmlPolygon::get_polygon,
 				"get_polygon()\n"
 				"  Returns the polygon geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
 		.def("set_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
-				&GPlatesPropertyValues::GmlPolygon::set_exterior,
+				&GPlatesPropertyValues::GmlPolygon::set_polygon,
 				(bp::arg("polygon")),
 				"set_polygon(polygon)\n"
 				"  Sets the polygon geometry of this property value.\n"

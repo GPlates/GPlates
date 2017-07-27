@@ -26,9 +26,13 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTSCALARCOVERAGEVISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_RECONSTRUCTSCALARCOVERAGEVISUALLAYERPARAMS_H
 
+#include <map>
+#include <boost/optional.hpp>
+
+#include "RemappedColourPaletteParameters.h"
 #include "VisualLayerParams.h"
 
-#include "view-operations/RenderedGeometryParameters.h"
+#include "property-values/ValueObjectType.h"
 
 
 namespace GPlatesPresentation
@@ -44,11 +48,57 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params,
-			const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new ReconstructScalarCoverageVisualLayerParams(layer_task_params, rendered_geometry_parameters);
+			return new ReconstructScalarCoverageVisualLayerParams(layer_params);
 		}
+
+
+		/**
+		 * Returns the current colour palette (associated with the current scalar type).
+		 */
+		const RemappedColourPaletteParameters &
+		get_current_colour_palette_parameters() const;
+
+		/**
+		 * Sets the current colour palette (associated with the current scalar type).
+		 */
+		void
+		set_current_colour_palette_parameters(
+				const RemappedColourPaletteParameters &colour_palette_parameters);
+
+
+		/**
+		 * Returns the colour palette associated with the specified scalar type.
+		 */
+		boost::optional<const RemappedColourPaletteParameters &>
+		get_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
+
+		/**
+		 * Sets the colour palette associated with the specified scalar type.
+		 */
+		void
+		set_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
+				const RemappedColourPaletteParameters &colour_palette_parameters);
+
+
+		/**
+		 * Returns the currently selected scalar type.
+		 *
+		 * Delegates to app-logic ReconstructScalarCoverageLayerParams::get_scalar_type().
+		 */
+		const GPlatesPropertyValues::ValueObjectType &
+		get_current_scalar_type() const;
+
+		/**
+		 * Returns the list of scalar types available in the scalar coverage features.
+		 *
+		 * Delegates to app-logic ReconstructScalarCoverageLayerParams::get_scalar_types().
+		 */
+		const std::vector<GPlatesPropertyValues::ValueObjectType> &
+		get_scalar_types() const;
 
 
 		virtual
@@ -67,17 +117,44 @@ namespace GPlatesPresentation
 			visitor.visit_reconstruct_scalar_coverage_visual_layer_params(*this);
 		}
 
+		virtual
+		void
+		handle_layer_modified(
+				const GPlatesAppLogic::Layer &layer);
+
 	protected:
 
 		explicit 
 		ReconstructScalarCoverageVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params,
-				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
-			VisualLayerParams(layer_task_params)
-		{  }
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
 
+		/**
+		 * Typedef for map from scalar type to colour palette parameters.
+		 */
+		typedef std::map<GPlatesPropertyValues::ValueObjectType, RemappedColourPaletteParameters>
+				colour_palette_parameters_map_type;
+
+
+		/**
+		 * The colour palette(s) for this layer, whether set explicitly as loaded from a file,
+		 * or auto-generated.
+		 *
+		 * These are mapped from the scalar type.
+		 *
+		 * Note: It's mutable since palettes are created on retrieval if they don't already exist.
+		 */
+		mutable colour_palette_parameters_map_type d_colour_palette_parameters_map;
+
+
+		const RemappedColourPaletteParameters &
+		create_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
+
+		const RemappedColourPaletteParameters &
+		get_or_create_colour_palette_parameters(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
 	};
 }
 

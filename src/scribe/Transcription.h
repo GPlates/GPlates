@@ -32,6 +32,7 @@
 #include <vector>
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
 
@@ -55,7 +56,8 @@ namespace GPlatesScribe
 	 * to the same extent as the archives).
 	 */
 	class Transcription :
-			public GPlatesUtils::ReferenceCount<Transcription>
+			public GPlatesUtils::ReferenceCount<Transcription>,
+			public boost::equality_comparable<Transcription>
 	{
 	public:
 
@@ -75,19 +77,24 @@ namespace GPlatesScribe
 		typedef unsigned int object_tag_version_type;
 
 		/**
-		 * Typedef for integer object tag identifier that indexes into the sequence returned
-		 * by @a get_object_tag.
+		 * Typedef for a unique object tag name (string).
 		 */
-		typedef unsigned int object_tag_id_type;
+		typedef std::string object_tag_name_type;
+
+		/**
+		 * Typedef for integer object tag name identifier that indexes into the sequence returned
+		 * by @a get_object_tag_name.
+		 */
+		typedef unsigned int object_tag_name_id_type;
 
 		/**
 		 * Typedef for an object key used to lookup a child object id in @a CompositeObject.
 		 */
-		typedef std::pair<object_tag_id_type, object_tag_version_type> object_key_type;
+		typedef std::pair<object_tag_name_id_type, object_tag_version_type> object_key_type;
 
 
 		/**
-		 * A composite object contains child object ids indexed by @a object_key_type (object tag/version).
+		 * A composite object contains child object ids indexed by @a object_key_type (object tag name/version).
 		 *
 		 * Each child object id, in turn, can be used to identify a primitive or composite object.
 		 */
@@ -112,26 +119,66 @@ namespace GPlatesScribe
 			 * Returns the number of child object ids associated with @a object_key.
 			 *
 			 * Returns zero if there are no keys equal to @a object_key.
+			 *
+			 * The number of children includes any that are not yet valid
+			 * (see description of holes @a set_child).
 			 */
 			unsigned int
 			get_num_children_with_key(
 					const object_key_type &object_key) const;
 
 			/**
+			 * Returns whether the child object id associated with @a object_key and at the specified index
+			 * is valid or not.
+			 *
+			 * A valid child is one that has had its object ID set (see description of holes @a set_child).
+			 */
+			boost::optional<object_id_type>
+			has_valid_child(
+					const object_key_type &object_key,
+					unsigned int index = 0) const;
+
+			/**
 			 * Returns the child object id associated with @a object_key and at the specified index.
 			 *
 			 * Note that there can be more than one child object id associated with a single object key.
+			 *
+			 * Throws @a ScribeLibraryError
+			 * - if there are no children associated with @a object_key, or
+			 * - if 'index >= get_num_children_with_key(object_key)', or
+			 * - if there is no child at the specified index (ie, a hole - see @a set_child).
 			 */
 			object_id_type
 			get_child(
 					const object_key_type &object_key,
-					unsigned int index) const;
+					unsigned int index = 0) const;
 
-			//! Adds the specified child object id to be associated with @a object_key.
+			/**
+			 * Sets the specified child object id, at the specified child index, to be associated with @a object_key.
+			 *
+			 * This expands the number of children if 'index >= get_num_children_with_key(object_key)'.
+			 *
+			 * Any extra children at holes (when 'index > get_num_children_with_key(object_key)') will
+			 * have no object IDs - these must subsequently be set before @a is_complete is called
+			 * otherwise it will detect an incomplete transcription.
+			 * For example:
+			 *
+			 *   transcription.set_child("item", item0_object_id, 0);
+			 *   transcription.set_child("item", item1_object_id, 1);
+			 *   transcription.set_child("item", item3_object_id, 3);
+			 *
+			 * ...will result in an incomplete transcription unless the following is subsequently called...
+			 *
+			 *   transcription.set_child("item", item2_object_id, 2);
+			 *
+			 * Throws @a ScribeLibraryError if there is already a child associated with @a object_key
+			 * at the specified index.
+			 */
 			void
-			add_child(
+			set_child(
 					const object_key_type &object_key,
-					object_id_type object_id);
+					object_id_type object_id,
+					unsigned int index = 0);
 
 		private:
 
@@ -145,6 +192,21 @@ namespace GPlatesScribe
 			boost::optional<unsigned int>
 			find_key(
 					const object_key_type &object_key) const;
+
+			/**
+			 * Adds a new object key and the first (child) object associated with it.
+			 *
+			 * @a num_children_with_key is the number of children to allocate space for.
+			 * Initially their object IDs will be UNUSED_OBJECT_ID.
+			 *
+			 * Prerequisite is @a find_key returns none.
+			 *
+			 * Returns the index into the encoding array at the start of the new key.
+			 */
+			unsigned int
+			add_key(
+					const object_key_type &object_key,
+					unsigned int num_children_with_key);
 
 
 			// Offsets from beginning of each object key sub-array in encoding array to the
@@ -225,6 +287,12 @@ namespace GPlatesScribe
 				object_id_type object_id,
 				int32_type value);
 
+		//! Changes an *existing* object's value.
+		void
+		set_signed_integer(
+				object_id_type object_id,
+				int32_type value);
+
 
 		uint32_type
 		get_unsigned_integer(
@@ -232,6 +300,12 @@ namespace GPlatesScribe
 
 		void
 		add_unsigned_integer(
+				object_id_type object_id,
+				uint32_type value);
+
+		//! Changes an *existing* object's value.
+		void
+		set_unsigned_integer(
 				object_id_type object_id,
 				uint32_type value);
 
@@ -274,13 +348,9 @@ namespace GPlatesScribe
 		get_composite_object(
 				object_id_type object_id) const;
 
-		void
+		CompositeObject &
 		add_composite_object(
 				object_id_type object_id);
-
-
-		//! Typedef for a unique object tag (string).
-		typedef std::string object_tag_type;
 
 
 		/**
@@ -291,30 +361,30 @@ namespace GPlatesScribe
 		unsigned int
 		get_num_object_tags() const
 		{
-			return d_object_tags.size();
+			return d_object_tag_names.size();
 		}
 
 		/**
-		 * Returns the unique object tag identified by @a object_tag_id.
+		 * Returns the unique object tag name identified by @a object_tag_name_id.
 		 *
 		 * Used by archive writers.
 		 */
-		const object_tag_type &
-		get_object_tag(
-				object_tag_id_type object_tag_id) const;
+		const object_tag_name_type &
+		get_object_tag_name(
+				object_tag_name_id_type object_tag_name_id) const;
 
 
 		/**
-		 * Adds a unique object tag.
+		 * Adds a unique object tag name.
 		 *
 		 * Used by archive readers.
 		 *
-		 * Note that all added object tags must be unique and they must be added
+		 * Note that all added object tag names must be unique and they must be added
 		 * in the same order they were read/obtained.
 		 */
-		object_tag_id_type
-		add_object_tag(
-				const object_tag_type &object_tag);
+		object_tag_name_id_type
+		add_object_tag_name(
+				const object_tag_name_type &object_tag_name);
 
 
 		/**
@@ -352,7 +422,7 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Returns the string object identified by @a object_tag_id.
+		 * Returns the string object identified by @a object_id.
 		 *
 		 * The string object is actually an index into the unique strings.
 		 *
@@ -377,26 +447,26 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Returns the specified object tag/version as an object key.
+		 * Returns the specified object tag name/version as an object key.
 		 *
 		 * Used by class TranscriptionScribeContext.
 		 *
-		 * Returns none if the object tag/version are not used by any (composite) objects.
+		 * Returns none if the object tag name/version are not used by any (composite) objects.
 		 */
 		boost::optional<object_key_type>
 		get_object_key(
-				const char *object_tag,
+				const object_tag_name_type &object_tag_name,
 				object_tag_version_type object_tag_version) const;
 
 		/**
-		 * Returns the specified object tag/version as an object key if it already exists,
+		 * Returns the specified object tag name/version as an object key if it already exists,
 		 * or creates a new object key if needed.
 		 *
 		 * Used by class TranscriptionScribeContext.
 		 */
 		object_key_type
 		get_or_create_object_key(
-				const char *object_tag,
+				const object_tag_name_type &object_tag_name,
 				object_tag_version_type object_tag_version);
 
 
@@ -415,10 +485,26 @@ namespace GPlatesScribe
 				object_id_type null_pointer_object_id,
 				bool emit_warnings = true) const;
 
+
+
+		/**
+		 * Equality comparison operator ('!=' provided by boost::equality_comparable).
+		 *
+		 * NOTE: Two transcriptions only compare equal if they were transcribed in the same way
+		 * (objects transcribed in the same order, etc). This usually only happens when *saving*
+		 * the same session state using the same code path. As a result this can be used to save
+		 * session state at two different times and comparing them to see if any session state has changed.
+		 * For other comparisons it might pay to implement a separate 'are_equivalent()' method and
+		 * even provide composite objects tags to include/exclude in the comparison.
+		 */
+		bool
+		operator==(
+				const Transcription &other) const;
+
 	private:
 
-		//! Typedef for mapping unique object tags to tag ids (indices into @a object_tag_seq_type).
-		typedef std::map<object_tag_type, object_tag_id_type> object_tag_id_map_type;
+		//! Typedef for mapping unique object tag names to tag name ids (indices into @a object_tag_seq_type).
+		typedef std::map<object_tag_name_type, object_tag_name_id_type> object_tag_name_id_map_type;
 
 
 		//! Typedef for mapping unique string objects to indices (into @a string_object_seq_type).
@@ -448,9 +534,18 @@ namespace GPlatesScribe
 		typedef boost::object_pool<CompositeObject> composite_object_pool_type;
 
 
-		// Keep track of unique object tags (strings) and map them to integer tag ids.
-		std::vector<object_tag_type> d_object_tags;
-		object_tag_id_map_type d_object_tag_id_map;
+		/**
+		 * Used to identify holes in arrays (eg, when a child is added to a composite object at
+		 * index 2 leaving holes at indices 0 and 1 that client will later need to fill).
+		 *
+		 * Using the maximum integer value since it is too high to ever get used by client.
+		 */
+		static const object_id_type UNUSED_OBJECT_ID;
+
+
+		// Keep track of unique object tag names (strings) and map them to integer tag name ids.
+		std::vector<object_tag_name_type> d_object_tag_names;
+		object_tag_name_id_map_type d_object_tag_name_id_map;
 
 		// Info on where to find the primitive/composite objects.
 		object_location_seq_type d_object_locations;
@@ -478,6 +573,11 @@ namespace GPlatesScribe
 		get_object_location(
 				object_id_type object_id,
 				ObjectType object_type) const;
+
+		ObjectLocation &
+		get_object_location(
+				object_id_type object_id,
+				ObjectType object_type);
 
 		ObjectLocation &
 		add_object_location(

@@ -98,6 +98,14 @@ namespace GPlatesQtWidgets
 				double arrowhead_scale_log10);
 
 		void
+		handle_velocity_delta_time_type_button(
+				bool checked);
+
+		void
+		handle_velocity_delta_time_value_changed(
+				double value);
+
+		void
 		handle_velocity_smoothing_check_box_changed();
 
 		void
@@ -128,6 +136,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::InformationDialog *d_help_arrow_spacing_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_arrow_scale_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_velocity_smoothing_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_velocity_time_delta_dialog;
 	};
 }
 

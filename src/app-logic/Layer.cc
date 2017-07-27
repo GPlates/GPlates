@@ -324,8 +324,8 @@ GPlatesAppLogic::Layer::get_all_inputs() const
 }
 
 
-GPlatesAppLogic::LayerTaskParams &
-GPlatesAppLogic::Layer::get_layer_task_params()
+GPlatesAppLogic::LayerParams::non_null_ptr_type
+GPlatesAppLogic::Layer::get_layer_params() const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -334,7 +334,7 @@ GPlatesAppLogic::Layer::get_layer_task_params()
 
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
 
-	return layer_impl->get_layer_task_params();
+	return layer_impl->get_layer_params();
 }
 
 

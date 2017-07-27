@@ -177,8 +177,8 @@ namespace GPlatesMaths
 			/**
 			 * Returns the index of the first great circle arc bounded by this node.
 			 *
-			 * This is the index into the PolylineOnSphere or PolygonOnSphere or sequence of
-			 * great circle arcs passed into PolyGreatCircleArcBoundingTree constructor.
+			 * This is the index into the PolylineOnSphere or ring of a PolygonOnSphere or sequence
+			 * of great circle arcs passed into PolyGreatCircleArcBoundingTree constructor.
 			 */
 			unsigned int
 			get_bounded_great_circle_arcs_begin_index() const
@@ -244,60 +244,27 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Constructs a binary bounding tree over the great circle arcs of a polyline.
-		 *
-		 * @param max_num_node_great_circle_arcs_per_leaf_node the maximum number of great circles arcs
-		 * to bound at each leaf node - ensures that each leaf node will bound at least this number
-		 * of great circle arcs.
-		 *
-		 * If @a keep_shared_reference_to_polyline is true then a shared pointer to @a polyline
-		 * is kept internally in order to ensure the sequence of great circle arcs (inside the polyline)
-		 * remain alive for the lifetime of the newly constructed bounding tree.
-		 * This is set to false by PolylineOnSphere itself since it has a shared pointer to us
-		 * (otherwise we'd get a memory island and hence a memory leak).
-		 */
-		PolyGreatCircleArcBoundingTree(
-				const PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-				bool keep_shared_reference_to_polyline = true,
-				unsigned int max_num_node_great_circle_arcs_per_leaf_node =
-						DEFAULT_MAX_NUM_NODE_GREAT_CIRCLE_ARCS_PER_LEAF_NODE);
-
-
-		/**
-		 * Constructs a binary bounding tree over the great circle arcs of a polygon.
-		 *
-		 * @param max_num_node_great_circle_arcs_per_leaf_node the maximum number of great circles arcs
-		 * to bound at each leaf node - ensures that each leaf node will bound at least this number
-		 * of great circle arcs.
-		 *
-		 * If @a keep_shared_reference_to_polygon is true then a shared pointer to @a polygon
-		 * is kept internally in order to ensure the sequence of great circle arcs (inside the polygon)
-		 * remain alive for the lifetime of the newly constructed bounding tree.
-		 * This is set to false by PolygonOnSphere itself since it has a shared pointer to us
-		 * (otherwise we'd get a memory island and hence a memory leak).
-		 */
-		PolyGreatCircleArcBoundingTree(
-				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-				bool keep_shared_reference_to_polygon = true,
-				unsigned int max_num_node_great_circle_arcs_per_leaf_node =
-						DEFAULT_MAX_NUM_NODE_GREAT_CIRCLE_ARCS_PER_LEAF_NODE);
-
-
-		/**
 		 * Constructs a binary bounding tree over the specified iteration sequence of great circle arcs.
 		 *
 		 * @param max_num_node_great_circle_arcs_per_leaf_node the maximum number of great circles arcs
 		 * to bound at each leaf node - ensures that each leaf node will bound at least this number
 		 * of great circle arcs.
 		 *
-		 * NOTE: It is the caller's responsibility to ensure the sequence of great circle arcs
-		 * (in the iterable range) remain alive for the lifetime of the newly constructed bounding tree.
+		 * If @a shared_reference_to_geometry is specified then a shared pointer to the geometry is kept internally
+		 * in order to ensure the sequence of great circle arcs inside the geometry (eg, inside a PolylineOnSphere
+		 * or inside an exterior/interior ring of PolygonOnSphere) remain alive for the lifetime of the newly
+		 * constructed bounding tree.
+		 * Note that this is set to none in the internals of PolylineOnSphere/PolygonOnSphere since they have a
+		 * shared pointer to us (otherwise we'd get a memory island and hence a memory leak).
+		 * If @a shared_reference_to_geometry is *not* specified then it is the caller's responsibility to
+		 * ensure the sequence of great circle arcs (in the iterable range) remain alive for the lifetime
+		 * of the newly constructed bounding tree.
 		 */
 		PolyGreatCircleArcBoundingTree(
 				GreatCircleArcConstIteratorType begin_great_circle_arcs,
 				GreatCircleArcConstIteratorType end_great_circle_arcs,
-				unsigned int max_num_node_great_circle_arcs_per_leaf_node =
-						DEFAULT_MAX_NUM_NODE_GREAT_CIRCLE_ARCS_PER_LEAF_NODE);
+				boost::optional<GeometryOnSphere::non_null_ptr_to_const_type> shared_reference_to_geometry = boost::none,
+				unsigned int max_num_node_great_circle_arcs_per_leaf_node = DEFAULT_MAX_NUM_NODE_GREAT_CIRCLE_ARCS_PER_LEAF_NODE);
 
 
 		/**
@@ -361,41 +328,17 @@ namespace GPlatesMaths
 
 	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
 	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
-			const PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-			bool keep_shared_reference_to_polyline,
-			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
-	{
-		initialise(polyline->begin(), polyline->end(), max_num_node_great_circle_arcs_per_leaf_node);
-
-		if (keep_shared_reference_to_polyline)
-		{
-			d_geometry_shared_pointer = GeometryOnSphere::non_null_ptr_to_const_type(polyline);
-		}
-	}
-
-
-	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
-			const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-			bool keep_shared_reference_to_polygon,
-			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
-	{
-		initialise(polygon->begin(), polygon->end(), max_num_node_great_circle_arcs_per_leaf_node);
-
-		if (keep_shared_reference_to_polygon)
-		{
-			d_geometry_shared_pointer = GeometryOnSphere::non_null_ptr_to_const_type(polygon);
-		}
-	}
-
-
-	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
 			GreatCircleArcConstIteratorType begin_great_circle_arcs,
 			GreatCircleArcConstIteratorType end_great_circle_arcs,
+			boost::optional<GeometryOnSphere::non_null_ptr_to_const_type> shared_reference_to_geometry,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
 	{
 		initialise(begin_great_circle_arcs, end_great_circle_arcs, max_num_node_great_circle_arcs_per_leaf_node);
+
+		if (shared_reference_to_geometry)
+		{
+			d_geometry_shared_pointer = shared_reference_to_geometry.get();
+		}
 	}
 
 

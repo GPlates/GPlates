@@ -122,7 +122,7 @@ namespace GPlatesScribe
 	/**
 	 * Transcribe boost::variant.
 	 *
-	 * NOTE: All stored types in the boost::variant must be registered in 'ScribeExportRegistration.h'.
+	 * NOTE: All stored types in the boost::variant must be export registered (see 'ScribeExportRegistration.h').
 	 *
 	 * A boost::variant instantiation is only default constructable if its first type is default constructable.
 	 * If a boost::variant instantiation is default-constructable then it can be transcribed with or
@@ -238,7 +238,7 @@ namespace GPlatesScribe
 			initialised = optional_object;
 		}
 
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, initialised, "initialised", DONT_TRACK))
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, initialised, "initialised"))
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -248,13 +248,13 @@ namespace GPlatesScribe
 			if (scribe.is_saving())
 			{
 				// Mirror the load path.
-				scribe.save(TRANSCRIBE_SOURCE, optional_object.get(), "value");
+				scribe.save(TRANSCRIBE_SOURCE, optional_object.get(), "value", TRACK);
 			}
 			else // loading...
 			{
 				// We don't know if 'T' has default constructor or not.
 				// And track the object that's inside the boost::optional in case someone has a reference to it.
-				LoadRef<T> value = scribe.load<T>(TRANSCRIBE_SOURCE, "value");
+				LoadRef<T> value = scribe.load<T>(TRANSCRIBE_SOURCE, "value", TRACK);
 				if (!value.is_valid())
 				{
 					return scribe.get_transcribe_result();
@@ -305,7 +305,7 @@ namespace GPlatesScribe
 			initialised = optional_object_reference;
 		}
 
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, initialised, "initialised", DONT_TRACK))
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, initialised, "initialised"))
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -472,7 +472,7 @@ namespace GPlatesScribe
 					const BoundedType &value) const
 			{
 				// Mirror the load path.
-				d_scribe.save(TRANSCRIBE_SOURCE, value, "stored_value");
+				d_scribe.save(TRANSCRIBE_SOURCE, value, "stored_value", TRACK);
 			}
 
 		private:
@@ -492,7 +492,7 @@ namespace GPlatesScribe
 			// Throw exception if the stored object's type has not been export registered.
 			//
 			// If this assertion is triggered then it means:
-			//   * The stored object's type was not export registered in 'ScribeExportRegistration.h'.
+			//   * The stored object's type was not export registered (see 'ScribeExportRegistration.h').
 			//
 			GPlatesGlobal::Assert<Exceptions::UnregisteredClassType>(
 					export_class_type,
@@ -501,7 +501,7 @@ namespace GPlatesScribe
 
 			// Transcribe the stored type name.
 			const std::string &stored_type_name = export_class_type->type_id_name;
-			scribe.transcribe(TRANSCRIBE_SOURCE, stored_type_name, "stored_type", DONT_TRACK);
+			scribe.transcribe(TRANSCRIBE_SOURCE, stored_type_name, "stored_type");
 
 			SaveVariantVisitor visitor(scribe);
 			variant_object.apply_visitor(visitor);
@@ -538,7 +538,8 @@ namespace GPlatesScribe
 			if (typeid(stored_type) == stored_type_info)
 			{
 				// Load the variant value.
-				LoadRef<stored_type> stored_value = scribe.load<stored_type>(TRANSCRIBE_SOURCE, "stored_value");
+				LoadRef<stored_type> stored_value =
+						scribe.load<stored_type>(TRANSCRIBE_SOURCE, "stored_value", TRACK);
 				if (!stored_value.is_valid())
 				{
 					return scribe.get_transcribe_result();
@@ -578,7 +579,7 @@ namespace GPlatesScribe
 		{
 			// Transcribe the stored type name.
 			std::string stored_type_name;
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, stored_type_name, "stored_type", DONT_TRACK))
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, stored_type_name, "stored_type"))
 			{
 				return scribe.get_transcribe_result();
 			}

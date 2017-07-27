@@ -404,11 +404,14 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 				colour.get(),
 				rendered_polygon_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
 		paint_fill_geometry<GPlatesMaths::PolygonOnSphere>(
 				filled_polygons,
 				polygon_on_sphere,
-				fill_colour);
+				rgba8_fill_colour);
 
 		return;
 	}
@@ -420,7 +423,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	paint_line_geometry<GPlatesMaths::PolygonOnSphere>(polygon_on_sphere, colour.get(), stream);
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+
+	paint_line_geometry<GPlatesMaths::PolygonOnSphere>(polygon_on_sphere, rgba8_color, stream);
 }
 
 void
@@ -451,11 +457,14 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 				colour.get(),
 				rendered_polyline_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
 		paint_fill_geometry<GPlatesMaths::PolylineOnSphere>(
 				filled_polygons,
 				polyline_on_sphere,
-				fill_colour);
+				rgba8_fill_colour);
 
 		return;
 	}
@@ -467,7 +476,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere, colour.get(), stream);
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere, rgba8_color, stream);
 }
 
 
@@ -489,19 +501,28 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 			rendered_coloured_edge_surface_mesh.get_mesh_edges();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_edge_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_edge_surface_mesh.get_mesh_colours();
 
 	// Iterate over the mesh edges.
-	mesh_type::edge_seq_type::const_iterator mesh_edges_iter = mesh_edges.begin();
-	mesh_type::edge_seq_type::const_iterator mesh_edges_end = mesh_edges.end();
-	for ( ; mesh_edges_iter != mesh_edges_end; ++mesh_edges_iter)
+	const unsigned int num_mesh_edges = mesh_edges.size();
+	for (unsigned int e = 0; e < num_mesh_edges; ++e)
 	{
-		const mesh_type::Edge &mesh_edge = *mesh_edges_iter;
+		const mesh_type::Edge &mesh_edge = mesh_edges[e];
 
-		boost::optional<Colour> colour = mesh_edge.colour.get_colour(d_colour_scheme);
+		if (rendered_coloured_edge_surface_mesh.get_use_vertex_colours())
+		{
+			continue;
+		}
+
+		boost::optional<Colour> colour = mesh_colours[e].get_colour(d_colour_scheme);
 		if (!colour)
 		{
 			continue;
 		}
+
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
 
 		// Create a polyline with two points for the current edge.
 		const GPlatesMaths::PointOnSphere edge_points[2] =
@@ -516,7 +537,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 
 		// Paint the current single great circle arc edge (it might get dateline wrapped and
 		// tessellated into smaller arcs).
-		paint_line_geometry<GPlatesMaths::PolylineOnSphere>(edge, colour.get(), stream);
+		paint_line_geometry<GPlatesMaths::PolylineOnSphere>(edge, rgba8_color, stream);
 	}
 }
 
@@ -535,19 +556,33 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 			rendered_coloured_triangle_surface_mesh.get_mesh_triangles();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_triangle_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_triangle_surface_mesh.get_mesh_colours();
 
 	// Iterate over the mesh triangles.
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_iter = mesh_triangles.begin();
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_end = mesh_triangles.end();
-	for ( ; mesh_triangles_iter != mesh_triangles_end; ++mesh_triangles_iter)
+	const unsigned int num_mesh_triangles = mesh_triangles.size();
+	for (unsigned int t = 0; t < num_mesh_triangles; ++t)
 	{
-		const mesh_type::Triangle &mesh_triangle = *mesh_triangles_iter;
+		const mesh_type::Triangle &mesh_triangle = mesh_triangles[t];
 
-		boost::optional<Colour> colour = mesh_triangle.colour.get_colour(d_colour_scheme);
+		if (rendered_coloured_triangle_surface_mesh.get_use_vertex_colours())
+		{
+			continue;
+		}
+
+		boost::optional<Colour> colour = mesh_colours[t].get_colour(d_colour_scheme);
 		if (!colour)
 		{
 			continue;
 		}
+
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour());
+
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
 
 		// Create a PolygonOnSphere for the current triangle so we can pass it through the
 		// dateline wrapping and projection code.
@@ -567,8 +602,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 				dateline_wrapped_projected_triangle,
 				triangle_polygon);
 
-		const std::vector<unsigned int> &geometries =
-				dateline_wrapped_projected_triangle.get_geometries();
+		const std::vector<unsigned int> &geometries = dateline_wrapped_projected_triangle.get_geometries();
 		const unsigned int num_geometries = geometries.size();
 		if (num_geometries == 0)
 		{
@@ -576,46 +610,53 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 			continue;
 		}
 
+		unsigned int geometry_part_index = 0;
+		const std::vector<unsigned int> &geometry_parts = dateline_wrapped_projected_triangle.get_geometry_parts();
+
 		unsigned int projected_vertex_index = 0;
-		const std::vector<QPointF> &projected_vertices =
-				dateline_wrapped_projected_triangle.get_vertices();
+		const std::vector<QPointF> &projected_vertices = dateline_wrapped_projected_triangle.get_vertices();
 
 		// Iterate over the dateline wrapped geometries.
 		for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
 		{
-			std::vector<QPointF> filled_triangle_geometry;
-
-			// Iterate over the vertices of the current geometry.
-			const unsigned int end_projected_vertex_index = geometries[geometry_index];
-			for ( ; projected_vertex_index < end_projected_vertex_index; ++projected_vertex_index)
+			// Iterate over the parts of the current geometry.
+			const unsigned int end_geometry_part_index = geometries[geometry_index];
+			for ( ; geometry_part_index < end_geometry_part_index; ++geometry_part_index)
 			{
-				filled_triangle_geometry.push_back(projected_vertices[projected_vertex_index]);
-			}
+				std::vector<QPointF> filled_triangle_geometry;
 
-			// If the dateline wrapped geometry remains a triangle (ie, same as before dateline wrapping)
-			// then add it to the current triangle mesh drawable since it results in faster rendering.
-			// Otherwise start a new polygon drawable (since it's not a triangle and could be concave).
-			// We test for 4 vertices instead of 3 for a triangle because the dateline wrapping code
-			// iterates over great circle arcs and outputs a vertex at beginning of first GCA and
-			// also at end of last GCA (which is a duplicate vertex for a closed polygon).
-			if (filled_triangle_geometry.size() == 4)
-			{
-				filled_polygons.add_filled_triangle_to_mesh(
-						filled_triangle_geometry[0],
-						filled_triangle_geometry[1],
-						filled_triangle_geometry[2],
-						colour.get());
-			}
-			else
-			{
-				// End the current mesh drawable.
-				filled_polygons.end_filled_triangle_mesh();
+				// Iterate over the vertices of the current geometry part.
+				const unsigned int end_projected_vertex_index = geometry_parts[geometry_part_index];
+				for ( ; projected_vertex_index < end_projected_vertex_index; ++projected_vertex_index)
+				{
+					filled_triangle_geometry.push_back(projected_vertices[projected_vertex_index]);
+				}
 
-				// Add the filled polygon geometry.
-				filled_polygons.add_filled_polygon(filled_triangle_geometry, colour.get());
+				// If the dateline wrapped geometry remains a triangle (ie, same as before dateline wrapping)
+				// then add it to the current triangle mesh drawable since it results in faster rendering.
+				// Otherwise start a new polygon drawable (since it's not a triangle and could be concave).
+				//
+				// We test for 4 vertices instead of 3 for a triangle because 'dateline_wrap_and_project_line_geometry()',
+				// for a polygon, ensures the last point duplicates the first point (to close off ring).
+				if (filled_triangle_geometry.size() == 4)
+				{
+					filled_polygons.add_filled_triangle_to_mesh(
+							filled_triangle_geometry[0],
+							filled_triangle_geometry[1],
+							filled_triangle_geometry[2],
+							rgba8_fill_colour);
+				}
+				else
+				{
+					// End the current mesh drawable.
+					filled_polygons.end_filled_triangle_mesh();
 
-				// Start a new mesh drawable.
-				filled_polygons.begin_filled_triangle_mesh();
+					// Add the filled polygon geometry.
+					filled_polygons.add_filled_polygon(filled_triangle_geometry, rgba8_fill_colour);
+
+					// Start a new mesh drawable.
+					filled_polygons.begin_filled_triangle_mesh();
+				}
 			}
 		}
 	}
@@ -671,6 +712,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		return;
 	}
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+
 	// Tessellate the small circle.
 	std::vector<GPlatesMaths::PointOnSphere> points;
 	tessellate(points, rendered_small_circle.get_small_circle(), SMALL_CIRCLE_ANGULAR_INCREMENT);
@@ -688,7 +732,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle(
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the small circle tessellated as a closed polyline.
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, colour.get(), lines_stream);
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, rgba8_color, lines_stream);
 }
 
 void
@@ -700,6 +744,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
 
 	// Tessellate the small circle arc.
 	std::vector<GPlatesMaths::PointOnSphere> points;
@@ -715,7 +762,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the small circle arc tessellated as a polyline.
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, colour.get(), lines_stream);
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, rgba8_color, lines_stream);
 }
 
 void
@@ -733,6 +780,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
 
 	// See comments in the GlobeRenderedGeometryLayerPainter for possibilities
 	// of making the number of steps zoom-dependent.
@@ -766,7 +816,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the ellipse tessellated as a closed polyline.
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(ellipse_polyline, colour.get(), lines_stream);
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(ellipse_polyline, rgba8_color, lines_stream);
 }
 
 void
@@ -901,6 +951,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		return;
 	}
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+
 	// Start of arrow.
 	const GPlatesMaths::UnitVector3D &start = rendered_tangential_arrow.get_start_position().position_vector();
 
@@ -955,7 +1008,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type arrow =
 			GPlatesMaths::PolylineOnSphere::create_on_heap(arrow_end_points, arrow_end_points + 2);
 
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(arrow, colour.get(), line_stream, arrowhead_size);
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(arrow, rgba8_color, line_stream, arrowhead_size);
 }
 
 void
@@ -967,6 +1020,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 			rendered_arrowed_polyline.get_polyline_on_sphere();
@@ -984,7 +1040,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	stream_primitives_type &lines_stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline, colour.get(), lines_stream, arrowhead_size);
+	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline, rgba8_color, lines_stream, arrowhead_size);
 }
 
 void
@@ -1019,9 +1075,12 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	QPointF pb(pcentre.x()-0.86*r,pcentre.y()-0.5*r);
 	QPointF pc(pcentre.x()+0.86*r,pcentre.y()-0.5*r);
 
-	coloured_vertex_type va(pa.x(), pa.y(), 0,Colour::to_rgba8(*colour));
-	coloured_vertex_type vb(pb.x(), pb.y(), 0,Colour::to_rgba8(*colour));
-	coloured_vertex_type vc(pc.x(), pc.y(), 0,Colour::to_rgba8(*colour));
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+
+	coloured_vertex_type va(pa.x(), pa.y(), 0, rgba8_color);
+	coloured_vertex_type vb(pb.x(), pb.y(), 0, rgba8_color);
+	coloured_vertex_type vc(pc.x(), pc.y(), 0, rgba8_color);
 
 	if (filled)
 	{
@@ -1089,11 +1148,14 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	QPointF pd(pa.x()-size,pa.y()-size);
 	QPointF pe(pa.x()-size,pa.y()+size);
 
-	coloured_vertex_type va(pa.x(), pa.y(),0,Colour::to_rgba8(*colour));
-	coloured_vertex_type vb(pb.x(), pb.y(),0,Colour::to_rgba8(*colour));
-	coloured_vertex_type vc(pc.x(), pc.y(),0,Colour::to_rgba8(*colour));
-	coloured_vertex_type vd(pd.x(), pd.y(),0,Colour::to_rgba8(*colour));
-	coloured_vertex_type ve(pe.x(), pe.y(),0,Colour::to_rgba8(*colour));
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+
+	coloured_vertex_type va(pa.x(), pa.y(),0, rgba8_color);
+	coloured_vertex_type vb(pb.x(), pb.y(),0, rgba8_color);
+	coloured_vertex_type vc(pc.x(), pc.y(),0, rgba8_color);
+	coloured_vertex_type vd(pd.x(), pd.y(),0, rgba8_color);
+	coloured_vertex_type ve(pe.x(), pe.y(),0, rgba8_color);
 
 	if (filled)
 	{
@@ -1306,10 +1368,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 		// (to tessellate line segments) and then converting back to lat/lon prior to projection.
 		// Instead, unwrapped polylines can just be tessellated and then converted to lat/lon,
 		// saving expensive x/y/z <-> lat/lon conversions.
-		project_and_tessellate_unwrapped_line_geometry(
+		project_and_tessellate_unwrapped_polyline(
 				dateline_wrapped_projected_line_geometry,
-				polyline_on_sphere->begin(),
-				polyline_on_sphere->end());
+				polyline_on_sphere);
 
 		return;
 	}
@@ -1329,11 +1390,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 			const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_polyline,
 			wrapped_polylines)
 	{
-		project_tessellated_wrapped_line_geometry(
+		project_tessellated_wrapped_polyline(
 				dateline_wrapped_projected_line_geometry,
-				wrapped_polyline.get_points(),
-				wrapped_polyline.get_is_original_point_flags(),
-				false/*is_polygon*/);
+				wrapped_polyline);
 	}
 }
 
@@ -1351,10 +1410,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 		// (to tessellate line segments) and then converting back to lat/lon prior to projection.
 		// Instead, unwrapped polygons can just be tessellated and then converted to lat/lon,
 		// saving expensive x/y/z <-> lat/lon conversions.
-		project_and_tessellate_unwrapped_line_geometry(
+		project_and_tessellate_unwrapped_polygon(
 				dateline_wrapped_projected_line_geometry,
-				polygon_on_sphere->begin(),
-				polygon_on_sphere->end());
+				polygon_on_sphere);
 
 		return;
 	}
@@ -1367,35 +1425,37 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 	d_dateline_wrapper->wrap_polygon(
 			polygon_on_sphere,
 			wrapped_polygons,
-			GREAT_CIRCLE_ARC_ANGULAR_EXTENT_THRESHOLD);
+			GREAT_CIRCLE_ARC_ANGULAR_EXTENT_THRESHOLD,
+			// This can noticeably speed up rendering of some complex polygons containing lots of
+			// interior rings, where some of the polygon's rings intersect dateline but many don't,
+			// since it avoids attempting to group interior rings with exteriors.
+			// 
+			// It doesn't matter if all the rings end up in separate polygons as exterior rings because
+			// the line rendering of rings is the same regardless of whether they are exterior or interior,
+			// and for filled rendering we just take all the rings regardless of whether they are
+			// exterior or interior rings and render them the same way (inverting pixel's stencil buffer
+			// value each time pixel drawn takes care of correctly masking out polygon holes and intersections).
+			false/*group_interior_with_exterior_rings*/);
 
 	// Paint each wrapped piece of the original geometry.
 	BOOST_FOREACH(
 			GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_polygon,
 			wrapped_polygons)
 	{
-		project_tessellated_wrapped_line_geometry(
+		project_tessellated_wrapped_polygon(
 				dateline_wrapped_projected_line_geometry,
-				wrapped_polygon.get_exterior_points(),
-				wrapped_polygon.get_is_original_exterior_point_flags(),
-				true/*is_polygon*/);
+				wrapped_polygon);
 	}
 }
 
 
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_line_geometry(
+GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_geometry_part(
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &lat_lon_points,
 		const std::vector<bool> &is_original_point_flags,
-		bool is_polygon)
+		bool is_polygon_ring)
 {
-	if (lat_lon_points.empty() ||
-		is_original_point_flags.empty())
-	{
-		return;
-	}
-
 	// Add the first vertex of the sequence of points.
 	dateline_wrapped_projected_line_geometry.add_vertex(
 			get_projected_wrapped_position(lat_lon_points.front()),
@@ -1410,7 +1470,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_line_ge
 				is_original_point_flags[lat_lon_point_index]);
 	}
 
-	if (is_polygon)
+	if (is_polygon_ring)
 	{
 		// It's a wrapped polygon (not a polyline) so add the start point to the end in order
 		// to close the loop - we need to do this because we're iterating over vertices not arcs.
@@ -1419,22 +1479,59 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_line_ge
 				is_original_point_flags.front());
 	}
 
+	dateline_wrapped_projected_line_geometry.add_geometry_part();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_polyline(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_polyline)
+{
+	project_tessellated_wrapped_geometry_part(
+			dateline_wrapped_projected_line_geometry,
+			wrapped_polyline.get_points(),
+			wrapped_polyline.get_is_original_point_flags(),
+			false/*is_polygon_ring*/);
+
+	dateline_wrapped_projected_line_geometry.add_geometry();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_polygon(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_polygon)
+{
+	// Polygon's exterior ring.
+	project_tessellated_wrapped_geometry_part(
+			dateline_wrapped_projected_line_geometry,
+			wrapped_polygon.get_exterior_ring_points(),
+			wrapped_polygon.get_is_exterior_ring_point_in_original_polygon_flags(),
+			true/*is_polygon_ring*/);
+
+	// Polygon's interior rings.
+	const unsigned int num_interior_rings = wrapped_polygon.get_num_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		project_tessellated_wrapped_geometry_part(
+				dateline_wrapped_projected_line_geometry,
+				wrapped_polygon.get_interior_ring_points(interior_ring_index),
+				wrapped_polygon.get_is_interior_ring_point_in_original_polygon_flags(interior_ring_index),
+				true/*is_polygon_ring*/);
+	}
+
 	dateline_wrapped_projected_line_geometry.add_geometry();
 }
 
 
 template <typename GreatCircleArcForwardIter>
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_line_geometry(
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_geometry_part(
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const GreatCircleArcForwardIter &begin_arcs,
 		const GreatCircleArcForwardIter &end_arcs)
 {
-	if (begin_arcs == end_arcs)
-	{
-		return;
-	}
-
 	// Add the first vertex of the sequence of great circle arcs.
 	// Keep track of the last projected point to calculate arrow head tangent direction.
 	dateline_wrapped_projected_line_geometry.add_vertex(
@@ -1470,6 +1567,45 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_li
 				true/*is_original_point*/);
 	}
 
+	dateline_wrapped_projected_line_geometry.add_geometry_part();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_polyline(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline_on_sphere)
+{
+	project_and_tessellate_unwrapped_geometry_part(
+			dateline_wrapped_projected_line_geometry,
+			polyline_on_sphere->begin(),
+			polyline_on_sphere->end());
+
+	dateline_wrapped_projected_line_geometry.add_geometry();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_polygon(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_on_sphere)
+{
+	// Polygon's exterior ring.
+	project_and_tessellate_unwrapped_geometry_part(
+			dateline_wrapped_projected_line_geometry,
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end());
+
+	// Polygon's interior rings.
+	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		project_and_tessellate_unwrapped_geometry_part(
+				dateline_wrapped_projected_line_geometry,
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index));
+	}
+
 	dateline_wrapped_projected_line_geometry.add_geometry();
 }
 
@@ -1479,7 +1615,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons,
 		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
-		const Colour &colour)
+		rgba8_t rgba8_color)
 {
 	// Note: We always dateline-wrap a polygon even if the line geometry is a polyline.
 	// This is because the geometry is filled and only a polygon is wrapped correctly for filling.
@@ -1488,7 +1624,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 			dateline_wrapped_projected_line_geometry,
 			GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polygon(*line_geometry));
 
-	const std::vector<unsigned int> &geometries = dateline_wrapped_projected_line_geometry.get_geometries();
+	const std::vector<unsigned int> &geometries =
+			dateline_wrapped_projected_line_geometry.get_geometries();
 	const unsigned int num_geometries = geometries.size();
 	if (num_geometries == 0)
 	{
@@ -1496,25 +1633,46 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 		return;
 	}
 
+	unsigned int geometry_part_index = 0;
+	const std::vector<unsigned int> &geometry_parts = dateline_wrapped_projected_line_geometry.get_geometry_parts();
+
 	unsigned int vertex_index = 0;
-	const std::vector<QPointF> &vertices =
-			dateline_wrapped_projected_line_geometry.get_vertices();
+	const std::vector<QPointF> &vertices = dateline_wrapped_projected_line_geometry.get_vertices();
+
+	// Even though the filled polyline/polygon might have been dateline wrapped into multiple
+	// geometries (each with potentially multiple parts/rings) we still render them all together
+	// in one filled polygon drawable so that they can invert each other where they intersect.
+	// They are, after all, coming from a single input polyline/polygon.
+	// This also puts less pressure on the dateline wrapper to correctly assign polygon unclipped
+	// interior rings to the correct clipped exterior ring for example.
+	//
+	// TODO: Should probably convert self-intersecting polygons to non-self-intersecting parts
+	// before passing to dateline wrapper - although that might slow us down.
+	std::vector< std::vector<QPointF> > filled_polygon;
+	filled_polygon.reserve(geometry_parts.size());
 
 	// Iterate over the dateline wrapped geometries.
 	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
 	{
-		std::vector<QPointF> filled_polygon_geometry;
-
-		// Iterate over the vertices of the current geometry.
-		const unsigned int end_vertex_index = geometries[geometry_index];
-		for ( ; vertex_index < end_vertex_index; ++vertex_index)
+		// Iterate over the parts of the current geometry.
+		const unsigned int end_geometry_part_index = geometries[geometry_index];
+		for ( ; geometry_part_index < end_geometry_part_index; ++geometry_part_index)
 		{
-			filled_polygon_geometry.push_back(vertices[vertex_index]);
-		}
+			// Add a new ring to the polygon.
+			filled_polygon.push_back(std::vector<QPointF>());
+			std::vector<QPointF> &filled_polygon_ring = filled_polygon.back();
 
-		// Add the current filled polygon geometry.
-		filled_polygons.add_filled_polygon(filled_polygon_geometry, colour);
+			// Iterate over the vertices of the current geometry part.
+			const unsigned int end_vertex_index = geometry_parts[geometry_part_index];
+			for ( ; vertex_index < end_vertex_index; ++vertex_index)
+			{
+				filled_polygon_ring.push_back(vertices[vertex_index]);
+			}
+		}
 	}
+
+	// Add the current filled polygon geometry.
+	filled_polygons.add_filled_polygon(filled_polygon, rgba8_color);
 }
 
 
@@ -1522,7 +1680,7 @@ template <typename LineGeometryType>
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
 		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
-		const Colour &colour,
+		rgba8_t rgba8_color,
 		stream_primitives_type &lines_stream,
 		boost::optional<double> arrow_head_size)
 {
@@ -1539,14 +1697,14 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
 		return;
 	}
 
+	unsigned int geometry_part_index = 0;
+	const std::vector<unsigned int> &geometry_parts = dateline_wrapped_projected_line_geometry.get_geometry_parts();
+
 	unsigned int vertex_index = 0;
 	const std::vector<QPointF> &vertices =
 			dateline_wrapped_projected_line_geometry.get_vertices();
 	const std::vector<bool> &is_original_point_flags =
 			dateline_wrapped_projected_line_geometry.get_is_original_point_flags();
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line strips to the stream.
 	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
@@ -1554,33 +1712,38 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
 	// Iterate over the dateline wrapped geometries.
 	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
 	{
-		stream_line_strips.begin_line_strip();
-
-		// Iterate over the vertices of the current geometry.
-		const unsigned int start_vertex_index = vertex_index;
-		const unsigned int end_vertex_index = geometries[geometry_index];
-		for ( ; vertex_index < end_vertex_index; ++vertex_index)
+		// Iterate over the parts of the current geometry (either a polyline or a ring of a polygon).
+		const unsigned int end_geometry_part_index = geometries[geometry_index];
+		for ( ; geometry_part_index < end_geometry_part_index; ++geometry_part_index)
 		{
-			const QPointF &vertex = vertices[vertex_index];
-			const coloured_vertex_type coloured_vertex(vertex.x(), vertex.y(), 0/*z*/, rgba8_color);
-			stream_line_strips.add_vertex(coloured_vertex);
+			stream_line_strips.begin_line_strip();
 
-			// If we're painting arrow heads they are only painted at the end points of
-			// the original (un-dateline-wrapped and untessellated) arcs.
-			if (arrow_head_size &&
-				is_original_point_flags[vertex_index] &&
-				vertex_index != start_vertex_index)
+			// Iterate over the vertices of the current geometry part.
+			const unsigned int start_vertex_index = vertex_index;
+			const unsigned int end_vertex_index = geometry_parts[geometry_part_index];
+			for ( ; vertex_index < end_vertex_index; ++vertex_index)
 			{
-				paint_arrow_head(
-						vertex,
-						// Our best estimate of the arrow direction tangent at the GCA end point...
-						vertex - vertices[vertex_index - 1],
-						arrow_head_size.get(),
-						rgba8_color);
-			}
-		}
+				const QPointF &vertex = vertices[vertex_index];
+				const coloured_vertex_type coloured_vertex(vertex.x(), vertex.y(), 0/*z*/, rgba8_color);
+				stream_line_strips.add_vertex(coloured_vertex);
 
-		stream_line_strips.end_line_strip();
+				// If we're painting arrow heads they are only painted at the end points of
+				// the original (un-dateline-wrapped and untessellated) arcs.
+				if (arrow_head_size &&
+					is_original_point_flags[vertex_index] &&
+					vertex_index != start_vertex_index)
+				{
+					paint_arrow_head(
+							vertex,
+							// Our best estimate of the arrow direction tangent at the GCA end point...
+							vertex - vertices[vertex_index - 1],
+							arrow_head_size.get(),
+							rgba8_color);
+				}
+			}
+
+			stream_line_strips.end_line_strip();
+		}
 	}
 }
 

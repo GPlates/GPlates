@@ -34,6 +34,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/GPlatesException.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
@@ -289,7 +290,21 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file'.
 		bool contains_unsaved_changes;
-		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors, contains_unsaved_changes);
+		try
+		{
+			d_file_format_registry.read_feature_collection(file->get_reference(), read_errors, contains_unsaved_changes);
+		}
+		catch (GPlatesGlobal::Exception &)
+		{
+			// Emit any read errors before re-throwing (otherwise we'll lose them).
+			emit_handle_read_errors_signal(read_errors);
+
+			// Rethrow the exception to let caller know that an error occurred.
+			// This is important because the caller is expecting a valid feature collection
+			// unless an exception is thrown so if we don't throw one then the caller
+			// will try to dereference the feature collection and crash.
+			throw;
+		}
 
 		// The file has been freshly loaded from disk.
 		// If no model changes were needed (eg, to make it compatible with GPGIM) then it's clean.
@@ -322,7 +337,21 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	// Read new features from the file into the feature collection.
 	// Both the filename and target feature collection are in 'file_ref'.
 	bool contains_unsaved_changes;
-	d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
+	try
+	{
+		d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
+	}
+	catch (GPlatesGlobal::Exception &)
+	{
+		// Emit any read errors before re-throwing (otherwise we'll lose them).
+		emit_handle_read_errors_signal(read_errors);
+
+		// Rethrow the exception to let caller know that an error occurred.
+		// This is important because the caller is expecting a valid feature collection
+		// unless an exception is thrown so if we don't throw one then the caller
+		// will try to dereference the feature collection and crash.
+		throw;
+	}
 
 	// The file has been freshly loaded from disk.
 	// If no model changes were needed during loading (eg, to make it compatible with GPGIM) then it's clean.
@@ -348,6 +377,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::emit_handle_read_errors_signal(
 	// This is useful for client code interested in displaying errors to the user.
 	if (!read_errors.is_empty())
 	{
-		Q_EMIT handle_read_errors(*this, read_errors);
+		Q_EMIT handle_read_errors(read_errors);
 	}
 }

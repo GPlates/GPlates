@@ -82,6 +82,7 @@
 #include "ScribeExceptions.h"
 #include "ScribeInternalUtils.h"
 #include "ScribeLoadRef.h"
+#include "ScribeObjectTag.h"
 #include "ScribeOptions.h"
 #include "ScribeSaveLoadConstructObject.h"
 #include "ScribeVoidCastRegistry.h"
@@ -114,7 +115,7 @@
  * Each increment of 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' doubles the number of combinations.
  * So the slowdown/memory-usage is exponential.
  */
-#define GPLATES_SCRIBE_MAX_POINTER_DIMENSION 3
+#define GPLATES_SCRIBE_MAX_POINTER_DIMENSION 2
 
 /**
  * The maximum dimension of transcribable native arrays.
@@ -317,60 +318,55 @@ namespace GPlatesScribe
 		 * enabling arrays of any dimension).
 		 *
 		 * @a object_tag is an arbitrary name for the object that is used, along with an optional
-		 * Version in @a options, to identify the transcribed object in the archive - it only needs
-		 * to be unique in the scope of the parent transcribed object (ie, what is calling this
-		 * transcribe function) because it's only used to search in that scope.
-		 *
-		 * @a options can contain zero, one or more options combined using the comma operator as in:
-		 *
-		 *     (GPlatesScribe::DONT_TRACK, GPlatesScribe::SHARED_OWNER)
-		 *
-		 * ...for a pointer with shared ownership and disabled tracking (see "ScribeOptions.h").
-		 *
-		 * @a options can also contain an optional Version (defaults to zero if not specified) as in...
-		 *
-		 *     (GPlatesScribe::DONT_TRACK, GPlatesScribe::SHARED_OWNER, GPlatesScribe::Version(1))
-		 *
-		 * ...and the Version can be incremented when the transcribed object associated with
-		 * @a object_tag has its type changed such that it is no longer forward compatible (such as
+		 * version (defaults to zero), to identify the transcribed object in the archive - it only needs
+		 * to be unique in the scope of the parent transcribed object (ie, what is calling this transcribe function)
+		 * because it's only used to search in that scope.
+		 * The optional version (in @a object_tag) can be incremented when the transcribed object associated
+		 * with @a object_tag has its type changed such that it is no longer forward compatible (such as
 		 * changing an 'int' to a 'std::vector<int>'). Old applications will no longer be able
 		 * to load the object and 'transcribe()' will return false - note that changing the
 		 * @a object_tag string has the same effect because both the object tag and version are used
 		 * to locate the object to load in the archive (within the scope of the parent object).
 		 *
-		 * Tracking is enabled by default - this means the address of the specified object will be
+		 * @a options can contain zero, one or more options combined using the OR ('|') operator as in:
+		 *
+		 *     GPlatesScribe::TRACK | GPlatesScribe::SHARED_OWNER
+		 *
+		 * ...for a pointer with shared ownership and tracking (see "ScribeOptions.h").
+		 *
+		 * Tracking is disabled by default. Tracking means the address of the specified object will be
 		 * recorded so that the scribe can detect subsequent references/pointers to the object.
-		 * It should normally be left enabled by default - but can be disabled by specifying
-		 * DONT_TRACK in @a options - this is usually only useful when you want to transcribe
-		 * a temporary object (such as an integer loop counter) and you know that no other
-		 * transcribed object/pointer will reference or point to it.
-		 * Leaving tracking enabled has the following benefits:
+		 * It can be enabled by specifying GPlatesScribe::TRACK in @a options. Leaving tracking disabled
+		 * is useful when you want to transcribe a temporary object (such as an integer loop counter)
+		 * and you know that no other transcribed object/pointer will reference or point to it.
+		 * Enabling tracking has the following benefits:
 		 *  (1) During saving: subsequently saved references to the object (if any) can find it, and
 		 *  (2) During loading: references to the object can be re-built, and
 		 *  (3) During loading: relocated objects can be tracked (in case they are referenced elsewhere).
 		 *
 		 * However if the object loaded from the archive is only a temporary copy then object tracking should either:
-		 *  (1) be turned off to prevent errors caused by transcribing the same object address more than once, or
-		 *  (2) be left on, but then use @a relocated to notify the final object destination.
+		 *  (1) be left off to prevent errors caused by transcribing the same object address more than once, or
+		 *  (2) be turned on, but then use @a relocated to notify the final object destination.
 		 *
 		 * For example, the following erroneous situation...
 		 *
 		 *   if (scribe.is_saving())
 		 *   {
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item"); // Tracking enabled by default.
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item"); // Tracking enabled by default.
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item", GPlatesScribe::TRACK);
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item", GPlatesScribe::TRACK);
 		 *   }
 		 *   else // scribe.is_loading()
 		 *   {
 		 *		A a; // Need to construct on C runtime stack if cannot transcribe directly into container.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Tracking enabled by default.
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
 		 *		container.append(a);
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Error: have already transcribed to object address "&a".
+		 *		// Error: have already transcribed to object address "&a"...
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -381,20 +377,20 @@ namespace GPlatesScribe
 		 *
 		 *   if (scribe.is_saving())
 		 *   {
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item", GPlatesScribe::DONT_TRACK); // Disable tracking
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item", GPlatesScribe::DONT_TRACK); // Disable tracking
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item"); // Disable tracking
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item"); // Disable tracking
 		 *   }
 		 *   else // scribe.is_loading()
 		 *   {
 		 *		A a; // Need to construct on C runtime stack if cannot transcribe directly into container.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::DONT_TRACK)) // Disable tracking
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Disable tracking
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
 		 *		container.append(a);
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::DONT_TRACK)) // Disable tracking
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Disable tracking
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -407,22 +403,23 @@ namespace GPlatesScribe
 		 *
 		 *   if (scribe.is_saving())
 		 *   {
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item"); // Tracking enabled by default.
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item"); // Tracking enabled by default.
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item", GPlatesScribe::TRACK);
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item", GPlatesScribe::TRACK);
 		 *   }
 		 *   else // scribe.is_loading()
 		 *   {
 		 *		A a; // Need to construct on C runtime stack if cannot transcribe directly into container.
 		 *		container.reserve(2); // Avoid re-allocations during 'append'.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Tracking enabled by default.
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
 		 *		container.append(a);
 		 *		scribe.relocatedTRANSCRIBE_SOURCE, (container[0], a); // Now registers &container[0] as the object address.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Is fine since &a != &container[0]
+		 *		// Is fine since &a != &container[0] ...
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -442,8 +439,8 @@ namespace GPlatesScribe
 		transcribe(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				ObjectType &object,
-				const char *object_tag,
-				Options options = Options());
+				const ObjectTag &object_tag,
+				unsigned int options = 0);
 
 		/**
 		 * Transcribe the base object sub-part (with type 'BaseType') of the specified derived object
@@ -472,8 +469,8 @@ namespace GPlatesScribe
 		 *
 		 * An example,
 		 *
-		 *   class A { virtual ~A(); int a; virtual void do() = 0; }; // Abstract base class.
-		 *   class B : public A { int b; virtual void do(); };
+		 *   class A { public: virtual ~A(); int a; virtual void do() = 0; }; // Abstract base class.
+		 *   class B : public A { public: int b; virtual void do(); };
 		 *
 		 *   GPlatesScribe::TranscribeResult
 		 *   transcribe(
@@ -481,7 +478,7 @@ namespace GPlatesScribe
 		 *			A &a,
 		 *			bool transcribed_construct_data)
 		 *   {
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.a, "a"))
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.a, "a", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -497,7 +494,7 @@ namespace GPlatesScribe
 		 *   {
 		 *		// Transcribe base class A.
 		 *		if (!scribe.transcribe_base<A>(TRANSCRIBE_SOURCE, b, "A") ||
-		 *			!scribe.transcribe(TRANSCRIBE_SOURCE, b.b, "b"))
+		 *			!scribe.transcribe(TRANSCRIBE_SOURCE, b.b, "b", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -527,7 +524,7 @@ namespace GPlatesScribe
 		 *				GPlatesScribe::Scribe &scribe,
 		 *				bool transcribed_construct_data)
 		 *		{
-		 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"))
+		 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK))
 		 *			{
 		 *				return scribe.get_transcribe_result();
 		 *			}
@@ -556,7 +553,7 @@ namespace GPlatesScribe
 		 *		{
 		 *			// Transcribe base class A.
 		 *			if (!scribe.transcribe_base<A>(TRANSCRIBE_SOURCE, *this, "A") ||
-		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b"))
+		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK))
 		 *			{
 		 *				return scribe.get_transcribe_result();
 		 *			}
@@ -575,8 +572,7 @@ namespace GPlatesScribe
 		transcribe_base(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				DerivedType &derived_object,
-				const char *base_object_tag,
-				Version version = Version());
+				const ObjectTag &base_object_tag);
 
 
 		/**
@@ -597,8 +593,8 @@ namespace GPlatesScribe
 		 *
 		 * An example,
 		 *
-		 *   class A { virtual ~A(); virtual void do() = 0; }; // Abstract base class.
-		 *   class B : public A { int b; virtual void do(); };
+		 *   class A { public: virtual ~A(); virtual void do() = 0; }; // Abstract base class.
+		 *   class B : public A { public: int b; virtual void do(); };
 		 *
 		 *   GPlatesScribe::TranscribeResult
 		 *   transcribe(
@@ -611,7 +607,7 @@ namespace GPlatesScribe
 		 *		// So we transcribe it without passing the base class sub-object.
 		 *		// Really just registers conversion casts between B <--> A.
 		 *		if (!scribe.transcribe_base<A, B>(TRANSCRIBE_SOURCE) ||
-		 *			!scribe.transcribe(TRANSCRIBE_SOURCE, b.b, "b"))
+		 *			!scribe.transcribe(TRANSCRIBE_SOURCE, b.b, "b", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -645,7 +641,7 @@ namespace GPlatesScribe
 		 *			// So we transcribe it without passing the base class sub-object.
 		 *			// Really just registers conversion casts between B <--> A.
 		 *			if (!scribe.transcribe_base<A, B>(TRANSCRIBE_SOURCE) ||
-		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b"))
+		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK))
 		 *			{
 		 *				return scribe.get_transcribe_result();
 		 *			}
@@ -659,8 +655,8 @@ namespace GPlatesScribe
 		 *   
 		 *   B b;
 		 *   A *a = &b;
-		 *   scribe.transcribe(TRANSCRIBE_SOURCE, b, "b");
-		 *   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+		 *   scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK);
+		 *   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 		 *
 		 *
 		 * NOTE: Currently this method always returns true (but we still return a result to keep
@@ -691,11 +687,11 @@ namespace GPlatesScribe
 		 *   {
 		 *		if (scribe.is_saving())
 		 *		{
-		 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x");
+		 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x", GPlatesScribe::TRACK);
 		 *		}
 		 *		else // loading
 		 *		{
-		 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
+		 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 		 *			if (!x.is_valid())
 		 *			{
 		 *				return scribe.get_transcribe_result();
@@ -713,8 +709,8 @@ namespace GPlatesScribe
 		save(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				const ObjectType &object,
-				const char *object_tag,
-				Options options = Options());
+				const ObjectTag &object_tag,
+				unsigned int options = 0);
 
 
 		/**
@@ -740,11 +736,11 @@ namespace GPlatesScribe
 		 *   {
 		 *		if (scribe.is_saving())
 		 *		{
-		 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x");
+		 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x", GPlatesScribe::TRACK);
 		 *		}
 		 *		else // loading
 		 *		{
-		 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
+		 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 		 *			if (!x.is_valid())
 		 *			{
 		 *				return scribe.get_transcribe_result();
@@ -758,15 +754,19 @@ namespace GPlatesScribe
 		 *   }
 		 * 
 		 * Note that the loaded object 'x' has been relocated from outside 'A' to inside 'A'.
-		 * If it had *not* been relocated then a run-time exception would have been thrown because
-		 * the loaded object was tracked (tracking is on by default) but the scribe system would not
-		 * have known which object to track (once 'x' went out of scope without being relocated).
+		 *
+		 * If you don't relocate (a tracked object) then, when all LoadRef's to the tracked object
+		 * go out of scope, the object is automatically untracked/discarded. This assumes that you
+		 * decided not to use the loaded object for some reason. If you meant to relocate but forgot
+		 * to then it should still be OK unless a transcribed pointer references the untracked object
+		 * in which case loading will fail.
 		 *
 		 *
 		 * Alternatively, if the loaded object is not being tracked then it does not need to be
 		 * relocated as the following example shows...
 		 *
-		 *	 GPlatesScribe::LoadRef<int> num_elements_ref = scribe.load<int>(TRANSCRIBE_SOURCE, "num_elements");
+		 *	 GPlatesScribe::LoadRef<int> num_elements_ref =
+		 *	     scribe.load<int>(TRANSCRIBE_SOURCE, "num_elements", GPlatesScribe::TRACK);
 		 *	 if (!num_elements_ref.is_valid())
 		 *	 {
 		 *		return scribe.get_transcribe_result();
@@ -774,16 +774,13 @@ namespace GPlatesScribe
 		 *   int num_elements = num_elements_ref;
 		 *
 		 * ...where the 'LoadRef<int>' returned by Scribe::load() is automatically converted to an 'int'.
-		 * Note that if tracking had been enabled then this would have thrown an exception when
-		 * 'num_elements_ref' went out of scope (since the loaded object would not have been relocated -
-		 * in fact it's not possible to relocate it without access to the LoadRef<>).
 		 */
 		template <typename ObjectType>
 		LoadRef<ObjectType>
 		load(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
-				const char *object_tag,
-				Options options = Options());
+				const ObjectTag &object_tag,
+				unsigned int options = 0);
 
 
 		/**
@@ -838,8 +835,7 @@ namespace GPlatesScribe
 		save_reference(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				ObjectType &object_reference,
-				const char *object_tag,
-				Version version = Version());
+				const ObjectTag &object_tag);
 
 
 		/**
@@ -899,8 +895,7 @@ namespace GPlatesScribe
 		LoadRef<ObjectType>
 		load_reference(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
-				const char *object_tag,
-				Version version = Version());
+				const ObjectTag &object_tag);
 
 
 		/**
@@ -920,8 +915,8 @@ namespace GPlatesScribe
 		 *				A &a,
 		 *				bool transcribed_construct_data)
 		 *		{
-		 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.x, "x") ||
-		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, a.y, "y"))
+		 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.x, "x", GPlatesScribe::TRACK) ||
+		 *				!scribe.transcribe(TRANSCRIBE_SOURCE, a.y, "y", GPlatesScribe::TRACK))
 		 *			{
 		 *				return scribe.get_transcribe_result();
 		 *			}
@@ -940,7 +935,7 @@ namespace GPlatesScribe
 		 * Notifies the Scribe that a previously transcribed (loaded) object has been moved to a
 		 * new memory location.
 		 *
-		 * This only applies to *tracked* objects (ie, objects transcribed without the DONT_TRACK option).
+		 * This only applies to *tracked* objects (ie, objects transcribed with the TRACK option).
 		 *
 		 * This enables tracked objects to continue to be tracked which is essential for
 		 * resolving multiple pointers or references to the same object.
@@ -950,22 +945,22 @@ namespace GPlatesScribe
 		 *
 		 *   if (scribe.is_saving())
 		 *   {
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item"); // Tracking enabled by default.
-		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item"); // Tracking enabled by default.
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(0), "item", GPlatesScribe::TRACK);
+		 *		scribe.transcribe(TRANSCRIBE_SOURCE, container.at(1), "item", GPlatesScribe::TRACK);
 		 *   }
 		 *   else // scribe.is_loading()
 		 *   {
 		 *		A a; // Need to construct on C runtime stack if cannot transcribe directly into container.
 		 *		container.reserve(2); // Avoid re-allocations during 'append'.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Tracking enabled by default.
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK))
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
 		 *		container.append(a);
 		 *		scribe.relocated(TRANSCRIBE_SOURCE, container[0], a); // Now registers &container[0] as the object address.
 		 *		
-		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item")) // Is fine since &a != &container[0]
+		 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "item", GPlatesScribe::TRACK)) // Is fine since &a != &container[0]
 		 *		{
 		 *			return scribe.get_transcribe_result();
 		 *		}
@@ -1011,9 +1006,9 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Used to determine if the specified object has been transcribed.
+		 * Used to determine if the specified (tracked) object has been transcribed.
 		 *
-		 * The object must be a tracked object. If it was not transcribed as a tracked object then
+		 * NOTE: The object must be a tracked object. If it was not transcribed as a tracked object then
 		 * this method will return false regardless of whether the object was transcribed or not.
 		 *
 		 * Transcribing an object includes calling @a transcribe, @a transcribe_base, @a load or @a save.
@@ -1022,6 +1017,8 @@ namespace GPlatesScribe
 		 * In this case it's possible that some of the object's data members were transcribed
 		 * as constructor parameters and then relocated into the object's data member.
 		 * This method can be used to detect this situation to avoid transcribing the data members twice.
+		 * Although this can also now be done using the 'transcribed_construct_data' parameter of
+		 * the object's 'transcribe()' function (see "Transcribe.h").
 		 *
 		 * Note that even though @a transcribe may have previously been called on @a object, the object
 		 * won't necessarily be completely initialised (when loading from archive) - this is the case
@@ -1036,6 +1033,19 @@ namespace GPlatesScribe
 		bool
 		has_been_transcribed(
 				ObjectType &object);
+
+
+		/**
+		 * Determines whether the specified object tag exists in the transcription
+		 * (transcription is either being written to, on save path, or read from, on load path).
+		 *
+		 * As with @a transcribe, @a save, @a load, @a save_reference and @a load_reference, the
+		 * object tag is relative to the scope of the parent transcribed object (if any, ie, what
+		 * is calling this transcribe function) because it's only used to search in that scope.
+		 */
+		bool
+		is_in_transcription(
+				const ObjectTag &object_tag) const;
 
 
 		//
@@ -1066,7 +1076,8 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Accesses the most recently pushed transcribe context for the specified 'ObjectType'.
+		 * Accesses the most recently pushed transcribe context for the specified 'ObjectType', or
+		 * return boost::none if none have been pushed (for 'ObjectType').
 		 *
 		 * This is typically called from within a 'transcribe_construct_data()' specialisation or overload
 		 * (see "Transcribe.h") in order to access information required to construct an object that is
@@ -1113,9 +1124,13 @@ namespace GPlatesScribe
 		 *			}
 		 *
 		 *			// Get information that is *not* transcribed into the archive.
-		 *			GPlatesScribe::TranscribeContext<A> &a_context = scribe.get_transcribe_context<A>();
-
-		 *			a.construct_object(x, a_context.y);
+		 *			boost::optional<GPlatesScribe::TranscribeContext<A> &> a_context = scribe.get_transcribe_context<A>();
+		 *			if (!a_context)
+		 *			{
+		 *				return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
+		 *			}
+		 *			
+		 *			a.construct_object(x, a_context->y);
 		 *		}
 		 *		
 		 *		return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -1123,11 +1138,11 @@ namespace GPlatesScribe
 		 *
 		 *   Y untranscribed_y;
 		 *   TranscribeContext<A> a_context(untranscribed_y);
-		 *   GPlatesScribe::ScopedTranscribeContextGuard<A> a_context_guard(scribe, a_context, "TranscribeContext_A");
+		 *   GPlatesScribe::ScopedTranscribeContextGuard<A> a_context_guard(scribe, a_context);
 		 *   ... // Start transcribing.
 		 */
 		template <typename ObjectType>
-		TranscribeContext<ObjectType> &
+		boost::optional<TranscribeContext<ObjectType> &>
 		get_transcribe_context();
 
 
@@ -1175,7 +1190,7 @@ namespace GPlatesScribe
 		/**
 		 * Returns the call stack trace at the last point the transcribe was incompatible.
 		 *
-		 * This is useful when and TranscribeResult code other than TRANSCRIBE_SUCCESS
+		 * This is useful when a TranscribeResult code other than TRANSCRIBE_SUCCESS
 		 * is propagated back to a root transcribe call (which usually means the session/project
 		 * restore failed to load due to an incompatible archive - ie, it was too old or too new).
 		 *
@@ -1239,8 +1254,8 @@ namespace GPlatesScribe
 		 * If saving (default constructor) then the transcription contains results of transcribing.
 		 * If loading then just returns the transcription passed into the constructor.
 		 */
-		Transcription::non_null_ptr_type
-		get_transcription()
+		Transcription::non_null_ptr_to_const_type
+		get_transcription() const
 		{
 			return d_transcription;
 		}
@@ -1427,7 +1442,7 @@ namespace GPlatesScribe
 			 * For a tracked object this address will remain set (and possibly relocated).
 			 * For an untracked object this address will get reset to none once transcribing
 			 * has ended on the object - untracked objects include objects specified by client
-			 * as DONT_TRACK as well as tracked objects that fail to be successfully transcribed.
+			 * *without* 'TRACK' as well as tracked objects that fail to be successfully transcribed.
 			 */
 			boost::optional<void *> object_address;
 
@@ -1567,34 +1582,19 @@ namespace GPlatesScribe
 		static const unsigned int CURRENT_SCRIBE_VERSION = 0;
 
 		/**
-		 * A value of 0 is used to identify NULL pointers.
-		 *
-		 * Ie, the pointed-to object has an object id of 0 (not the pointer 'object' itself).
+		 * The object ID used to identify NULL pointers.
 		 */
-		static const object_id_type NULL_POINTER_OBJECT_ID = 0;
-
-		/**
-		 * The object id of the root object used to store root-level transcribe calls.
-		 *
-		 * It's not a real object - it's just we need to simulate one for the TranscriptionScribeContext.
-		 */
-		static const object_id_type ROOT_OBJECT_ID = 1;
+		static const object_id_type NULL_POINTER_OBJECT_ID = TranscriptionScribeContext::NULL_POINTER_OBJECT_ID;
 
 		/**
 		 * An object tag used to transcribe the id of an object pointed-to by a pointer.
 		 */
-		static const char *POINTS_TO_OBJECT_TAG;
-
-		//! The version associated with @a POINTS_TO_OBJECT_TAG.
-		static const unsigned int POINTS_TO_OBJECT_VERSION = 0;
+		static const ObjectTag POINTS_TO_OBJECT_TAG;
 
 		/**
 		 * An object tag used to transcribe the class name of an object pointed-to by a pointer.
 		 */
-		static const char *POINTS_TO_CLASS_TAG;
-
-		//! The version associated with @a POINTS_TO_CLASS_TAG.
-		static const unsigned int POINTS_TO_CLASS_VERSION = 0;
+		static const ObjectTag POINTS_TO_CLASS_TAG;
 
 
 		/**
@@ -1631,9 +1631,6 @@ namespace GPlatesScribe
 
 		//! Information about each object, indexed by object id.
 		object_info_seq_type d_object_infos;
-
-		//! The next available object id for the *save* path.
-		unsigned int d_next_save_object_id;
 
 		//! Maps addresses of tracked objects to their integer object ids.
 		tracked_object_address_to_id_map_type d_tracked_object_address_to_id_map;
@@ -1708,8 +1705,8 @@ namespace GPlatesScribe
 		//    template <typename ObjectType, int N1, int N2>
 		//    void transcribe_const_cast(
 		//            const ObjectType (*const *const &object_array)[N1][N2],
-		//            const char *object_tag,
-		//            Options options)
+		//            const ObjectTag &object_tag,
+		//            unsigned int options)
 		//    {
 		//        // Delegate to non-const version.
 		//        transcribe_object(
@@ -1920,8 +1917,8 @@ namespace GPlatesScribe
 				bool \
 				transcribe_const_cast( \
 						qualified_object() ObjectType qualified_pointer() &object, \
-						const char *object_tag, \
-						Options options) \
+						const ObjectTag &object_tag, \
+						unsigned int options) \
 				{ \
 					return transcribe_object( \
 							const_cast<ObjectType unqualified_pointer() &>(object), \
@@ -1933,8 +1930,8 @@ namespace GPlatesScribe
 				bool \
 				transcribe_construct_const_cast( \
 						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
-						const char *object_tag, \
-						Options options) \
+						const ObjectTag &object_tag, \
+						unsigned int options) \
 				{ \
 					return transcribe_construct_object( \
 							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
@@ -1947,7 +1944,7 @@ namespace GPlatesScribe
 				transcribe_construct_const_cast( \
 						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
 						object_id_type object_id, \
-						Options options) \
+						unsigned int options) \
 				{ \
 					return transcribe_construct_object( \
 							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
@@ -1992,13 +1989,11 @@ namespace GPlatesScribe
 				void \
 				save_reference_const_cast( \
 						qualified_object() ObjectType qualified_pointer() &object_reference, \
-						const char *object_tag, \
-						Version version) \
+						const ObjectTag &object_tag) \
 				{ \
 					save_object_reference( \
 							const_cast<ObjectType unqualified_pointer() &>(object_reference), \
-							object_tag, \
-							version); \
+							object_tag); \
 				} \
 				/**/
 
@@ -2015,8 +2010,8 @@ namespace GPlatesScribe
 				bool \
 				transcribe_const_cast( \
 						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices, \
-						const char *object_tag, \
-						Options options) \
+						const ObjectTag &object_tag, \
+						unsigned int options) \
 				{ \
 					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
 					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
@@ -2065,16 +2060,14 @@ namespace GPlatesScribe
 				void \
 				save_reference_const_cast( \
 						qualified_object() ObjectType (qualified_pointer() &array_reference) array_template_indices, \
-						const char *object_tag, \
-						Version version) \
+						const ObjectTag &object_tag) \
 				{ \
 					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
 					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
 					\
 					save_object_reference( \
 							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array_reference), \
-							object_tag, \
-							version); \
+							object_tag); \
 				} \
 				/**/
 
@@ -2526,15 +2519,15 @@ namespace GPlatesScribe
 		bool
 		transcribe_construct(
 				ConstructObject<ObjectType> &object,
-				const char *object_tag,
-				Options options = Options())
+				const ObjectTag &object_tag,
+				unsigned int options)
 		{
 			return transcribe_construct_const_cast(object, object_tag, options);
 		}
 
 
 		/**
-		 * An overload of @a transcribe_construct that accepts an object id instead of object tag/version.
+		 * An overload of @a transcribe_construct that accepts an object id instead of object tag name/version.
 		 *
 		 * This is used when the object id has already been transcribed.
 		 */
@@ -2543,7 +2536,7 @@ namespace GPlatesScribe
 		transcribe_construct(
 				ConstructObject<ObjectType> &object,
 				object_id_type object_id,
-				Options options)
+				unsigned int options)
 		{
 			return transcribe_construct_const_cast(object, object_id, options);
 		}
@@ -2569,6 +2562,113 @@ namespace GPlatesScribe
 
 
 		/**
+		 * A transcribed object type has delegated transcribing to another object type.
+		 *
+		 * This method enables object types to be interchangeable since they are transcription
+		 * compatible with each other without breaking backward/forward compatibility.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate(
+				ObjectType &object);
+
+		/**
+		 * A transcribed object type has delegated transcribing to another object type.
+		 *
+		 * This method enables object types to be interchangeable since they are transcription
+		 * compatible with each other without breaking backward/forward compatibility.
+		 */
+		template <typename ObjectType>
+		void
+		save_delegate(
+				const ObjectType &object);
+
+		/**
+		 * A transcribed object type has delegated transcribing to another object type.
+		 *
+		 * This method enables object types to be interchangeable since they are transcription
+		 * compatible with each other without breaking backward/forward compatibility.
+		 */
+		template <typename ObjectType>
+		LoadRef<ObjectType>
+		load_delegate(
+				const GPlatesUtils::CallStack::Trace &transcribe_source);
+
+
+		/**
+		 * Delegates to @a transcribe_delegate_object.
+		 *
+		 * We don't have to worry about const-casting pointers and native arrays.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_const_cast(
+				ObjectType &object)
+		{
+			return transcribe_delegate_object(object);
+		}
+
+		/**
+		 * Delegates to @a transcribe_delegate_object.
+		 *
+		 * We don't have to worry about const-casting pointers and native arrays.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_const_cast(
+				const ObjectType &object)
+		{
+			return transcribe_delegate_object(const_cast<ObjectType &>(object));
+		}
+
+
+		/**
+		 * A transcribed object type has delegated transcribing to another object type.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_object(
+				ObjectType &object);
+
+
+		/**
+		 * Delegates to @a transcribe_delegate_construct_object.
+		 *
+		 * We don't have to worry about const-casting pointers and native arrays.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_construct_const_cast(
+				ConstructObject<ObjectType> &construct_object)
+		{
+			return transcribe_delegate_construct_object(construct_object);
+		}
+
+		/**
+		 * Delegates to @a transcribe_delegate_construct_object.
+		 *
+		 * We don't have to worry about const-casting pointers and native arrays.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_construct_const_cast(
+				ConstructObject<const ObjectType> &construct_object)
+		{
+			return transcribe_delegate_construct_object(
+					reinterpret_cast<ConstructObject<ObjectType> &>(construct_object));
+		}
+
+
+		/**
+		 * A transcribed object type has delegated transcribing to another object type.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_delegate_construct_object(
+				ConstructObject<ObjectType> &construct_object);
+
+
+		/**
 		 * Delegates to @a transcribe_base_object.
 		 *
 		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
@@ -2578,15 +2678,13 @@ namespace GPlatesScribe
 		bool
 		transcribe_base_const_cast(
 				DerivedType &derived_object,
-				const char *base_object_tag,
-				Version version)
+				const ObjectTag &base_object_tag)
 		{
 			return transcribe_base_object<
 					// Remove 'const' from 'BaseType' (if needed)...
 					typename boost::remove_const<BaseType>::type>(
 							derived_object,
-							base_object_tag,
-							version);
+							base_object_tag);
 		}
 
 		/**
@@ -2599,15 +2697,13 @@ namespace GPlatesScribe
 		bool
 		transcribe_base_const_cast(
 				const DerivedType &derived_object,
-				const char *base_object_tag,
-				Version version)
+				const ObjectTag &base_object_tag)
 		{
 			return transcribe_base_object<
 					// Remove 'const' from 'BaseType' (if needed)...
 					typename boost::remove_const<BaseType>::type>(
 							const_cast<DerivedType &>(derived_object),
-							base_object_tag,
-							version);
+							base_object_tag);
 		}
 
 
@@ -2638,8 +2734,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_object(
 				ObjectType &object,
-				const char *object_tag,
-				Options options);
+				const ObjectTag &object_tag,
+				unsigned int options);
 
 		/**
 		 * Transcribe a *non-pointer* object.
@@ -2651,7 +2747,7 @@ namespace GPlatesScribe
 		transcribe_object(
 				ObjectType &object,
 				object_id_type object_id,
-				Options options);
+				unsigned int options);
 
 		/**
 		 * Transcribe a *non-pointer* ConstructObject object wrapper.
@@ -2660,8 +2756,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_construct_object(
 				ConstructObject<ObjectType> &construct_object,
-				const char *object_tag,
-				Options options);
+				const ObjectTag &object_tag,
+				unsigned int options);
 
 		/**
 		 * Transcribe a *non-pointer* ConstructObject object wrapper.
@@ -2673,7 +2769,7 @@ namespace GPlatesScribe
 		transcribe_construct_object(
 				ConstructObject<ObjectType> &construct_object,
 				object_id_type object_id,
-				Options options);
+				unsigned int options);
 
 		/**
 		 * Transcribe a *pointer* object and possibly transcribe the pointed-to object depending
@@ -2683,8 +2779,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_object(
 				ObjectType *&object_ptr,
-				const char *object_tag,
-				Options options);
+				const ObjectTag &object_tag,
+				unsigned int options);
 
 		/**
 		 * Transcribe a *pointer* object and possibly transcribe the pointed-to object depending
@@ -2697,7 +2793,7 @@ namespace GPlatesScribe
 		transcribe_object(
 				ObjectType *&object_ptr,
 				const object_id_type object_id,
-				Options options);
+				unsigned int options);
 
 		/**
 		 * Transcribe a *pointer* object, in ConstructObject wrapper, and possibly transcribe the
@@ -2707,8 +2803,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_construct_object(
 				ConstructObject<ObjectType *> &construct_object_ptr,
-				const char *object_tag,
-				Options options);
+				const ObjectTag &object_tag,
+				unsigned int options);
 
 		/**
 		 * Transcribe a *pointer* object, in ConstructObject wrapper, and possibly transcribe the
@@ -2721,7 +2817,7 @@ namespace GPlatesScribe
 		transcribe_construct_object(
 				ConstructObject<ObjectType *> &construct_object_ptr,
 				object_id_type object_id,
-				Options options);
+				unsigned int options);
 
 
 		/**
@@ -2768,7 +2864,7 @@ namespace GPlatesScribe
 		void
 		post_transcribe(
 				object_id_type object_id,
-				Options options,
+				unsigned int options,
 				bool discard,
 				bool is_object_initialised = true);
 
@@ -2782,8 +2878,7 @@ namespace GPlatesScribe
 		bool
 		transcribe_base_object(
 				DerivedType &derived_object,
-				const char *base_object_tag,
-				Version version);
+				const ObjectTag &base_object_tag);
 
 		/**
 		 * Transcribe the BaseType/DerivedType inheritance relationship only.
@@ -2799,8 +2894,7 @@ namespace GPlatesScribe
 		void
 		save_object_reference(
 				ObjectType &object_reference,
-				const char *object_tag,
-				Version version);
+				const ObjectTag &object_tag);
 
 		/**
 		 * Load a *reference* to an object.
@@ -2809,8 +2903,7 @@ namespace GPlatesScribe
 		LoadRef<ObjectType>
 		load_object_reference(
 				const GPlatesUtils::CallStack::Trace &transcribe_source,
-				const char *object_tag,
-				Version version);
+				const ObjectTag &object_tag);
 
 		/**
 		 * A previously transcribed (loaded) object has been moved to a new memory location.
@@ -2856,16 +2949,15 @@ namespace GPlatesScribe
 		 * transcribing a null pointer.
 		 * On the *load* path @a save_object_address is always ignored.
 		 *
-		 * Returns false if could not find 'object_tag' + 'version' (in the load path)
-		 * within parent object scope in the archive.
+		 * Returns false if could not find 'object_tag' (in the load path) within
+		 * parent object scope in the archive.
 		 *
 		 * The save path never returns false.
 		 */
 		bool
 		transcribe_object_id(
 				const object_address_type &save_object_address,
-				const char *object_tag,
-				unsigned int version,
+				const ObjectTag &object_tag,
 				boost::optional<object_id_type &> return_object_id = boost::none);
 
 		/**
@@ -2887,8 +2979,7 @@ namespace GPlatesScribe
 		bool
 		transcribe_class_name(
 				const std::type_info *save_class_type_info,
-				boost::optional<
-						boost::optional<const ExportClassType &> &> return_export_class_type = boost::none);
+				boost::optional<const ExportClassType &> &export_class_type);
 
 		/**
 		 * Obtain and transcribe the class name for the object pointed to by @a object_ptr if
@@ -3003,7 +3094,7 @@ namespace GPlatesScribe
 
 		/**
 		 * Unmap tracked object address associated with the specified object id and unmap all
-		 * child-object (if @a discard is true) or sub-object addresses recursively.
+		 * child-object addresses recursively.
 		 */
 		void
 		unmap_tracked_object_address_to_object_id(
@@ -3246,9 +3337,11 @@ namespace GPlatesScribe
 				object_id_type object_id);
 
 		/**
-		 * Returns the transcribe context stack associated with the specified class type.
+		 * Returns the transcribe context stack associated with the specified class type, or
+		 * boost::none if a ClassInfo has not already been created for the specified class type
+		 * (eg, by object type registration or by pushing a transcribe context).
 		 */
-		transcribe_context_stack_type &
+		boost::optional<transcribe_context_stack_type &>
 		get_transcribe_context_stack(
 				const std::type_info &class_type_info);
 
@@ -3372,8 +3465,8 @@ namespace GPlatesScribe
 	Scribe::transcribe(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			ObjectType &object,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
@@ -3385,11 +3478,11 @@ namespace GPlatesScribe
 		//
 		// The following example can trigger this assertion:
 		//
-		//   class A { virtual ~A() { } };
+		//   class A { public: virtual ~A() { } };
 		//   class B : public A { };
 		//   B b;
 		//   A &a = b;
-		//   if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a")) // Error: typeid(A) != typeid(a)
+		//   if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK)) // Error: typeid(A) != typeid(a)
 		//   {
 		//		return scribe.get_transcribe_result();
 		//   }
@@ -3397,7 +3490,7 @@ namespace GPlatesScribe
 		// ...which can be solved by...
 		//
 		//   B b;
-		//   if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b")) // This is fine since typeid(B) == typeid(b)
+		//   if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK)) // This is fine since typeid(B) == typeid(b)
 		//   {
 		//		return scribe.get_transcribe_result();
 		//   }
@@ -3428,8 +3521,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_base(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			DerivedType &derived_object,
-			const char *base_object_tag,
-			Version version)
+			const ObjectTag &base_object_tag)
 	{
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
@@ -3437,7 +3529,7 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_base_const_cast<BaseType>(derived_object, base_object_tag, version),
+				transcribe_base_const_cast<BaseType>(derived_object, base_object_tag),
 				is_loading()/*require_check*/);
 	}
 
@@ -3460,9 +3552,18 @@ namespace GPlatesScribe
 	Scribe::save(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			const ObjectType &object,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
+		// Compile-time assertion to ensure no native arrays use 'save()' (must use 'transcribe()' instead).
+		//
+		// If this assertion is triggered then it means:
+		//   * 'save()' has been called for a native array (instead of 'transcribe()').
+		//
+		// See "TranscribeArray.h" for more details.
+		//
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
+
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
@@ -3473,16 +3574,16 @@ namespace GPlatesScribe
 		//
 		// The following example can trigger this assertion:
 		//
-		//   class A { virtual ~A() { } };
+		//   class A { public: virtual ~A() { } };
 		//   class B : public A { };
 		//   B b;
 		//   A &a = b;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"); // Error: typeid(A) != typeid(a)
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK); // Error: typeid(A) != typeid(a)
 		//
 		// ...which can be solved by...
 		//
 		//   B b;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, b, "b"); // This is fine since typeid(B) == typeid(b)
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK); // This is fine since typeid(B) == typeid(b)
 		//   A &a = b;
 		//
 		// Note that this detection only works for polymorphic types.
@@ -3508,16 +3609,25 @@ namespace GPlatesScribe
 	LoadRef<ObjectType>
 	Scribe::load(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
+		// Compile-time assertion to ensure no native arrays use 'load()' (must use 'transcribe()' instead).
+		//
+		// If this assertion is triggered then it means:
+		//   * 'load()' has been called for a native array (instead of 'transcribe()').
+		//
+		// See "TranscribeArray.h" for more details.
+		//
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
+
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
 		LoadConstructObjectOnHeap<ObjectType> load_construct_object;
 		if (!transcribe_construct(load_construct_object, object_tag, options))
 		{
-			// Heap-allocated object destructed/deallocated by construct object on returning...
+			// Heap-allocated object destructed/deallocated by construct object 'load_construct_object' on returning...
 			return LoadRef<ObjectType>();
 		}
 
@@ -3536,13 +3646,12 @@ namespace GPlatesScribe
 	Scribe::save_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			ObjectType &object_reference,
-			const char *object_tag,
-			Version version)
+			const ObjectTag &object_tag)
 	{
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		save_reference_const_cast(object_reference, object_tag, version);
+		save_reference_const_cast(object_reference, object_tag);
 	}
 
 
@@ -3550,13 +3659,12 @@ namespace GPlatesScribe
 	LoadRef<ObjectType>
 	Scribe::load_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
-			const char *object_tag,
-			Version version)
+			const ObjectTag &object_tag)
 	{
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		return load_object_reference<ObjectType>(transcribe_source, object_tag, version);
+		return load_object_reference<ObjectType>(transcribe_source, object_tag);
 	}
 
 
@@ -3663,7 +3771,7 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
-	TranscribeContext<ObjectType> &
+	boost::optional<TranscribeContext<ObjectType> &>
 	Scribe::get_transcribe_context()
 	{
 		// Remove 'const' from the object type (if needed).
@@ -3671,21 +3779,21 @@ namespace GPlatesScribe
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
 
-		transcribe_context_stack_type &transcribe_context_stack =
+		// Get the transcribe context stack unless class type has not been registered or
+		// its associated transcribe context hasn't never pushed yet.
+		boost::optional<transcribe_context_stack_type &> transcribe_context_stack =
 				get_transcribe_context_stack(class_type_info);
-
-		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
-				!transcribe_context_stack.empty(),
-				GPLATES_ASSERTION_SOURCE,
-				std::string("No transcribe context available for the object type '") +
-						class_type_info.name() +
-						"'.");
+		if (!transcribe_context_stack ||
+			transcribe_context_stack->empty())
+		{
+			return boost::none;
+		}
 
 		// We don't use 'dynamic_cast<void *>' because we always cast between 'void' and
 		// 'TranscribeContext<ObjectType>' and hence it is not necessary.
 		TranscribeContext<ObjectType> *transcribe_context =
 				static_cast<TranscribeContext<ObjectType> *>(
-						transcribe_context_stack.top());
+						transcribe_context_stack->top());
 
 		return *transcribe_context;
 	}
@@ -3700,18 +3808,132 @@ namespace GPlatesScribe
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
 
-		transcribe_context_stack_type &transcribe_context_stack =
+		// Get the transcribe context stack. This should not fail unless the
+		// transcribe context (associated with class type) has never been pushed.
+		boost::optional<transcribe_context_stack_type &> transcribe_context_stack =
 				get_transcribe_context_stack(class_type_info);
 
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
-				!transcribe_context_stack.empty(),
+				transcribe_context_stack &&
+					!transcribe_context_stack->empty(),
 				GPLATES_ASSERTION_SOURCE,
 				std::string("No transcribe context available for the object type '") +
 						class_type_info.name() +
 						"'.");
 
 		// Pop the transcribe context off the stack.
-		transcribe_context_stack.pop();
+		transcribe_context_stack->pop();
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_delegate(
+			ObjectType &object)
+	{
+		// Compile-time assertion to ensure no pointers or native arrays are transcribed.
+		//
+		// If this assertion is triggered then it means:
+		//   * 'transcribe_delegate_protocol()' has been called on a pointer or a native array.
+		//
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<ObjectType> >::value);
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
+
+		// Throw exception if the object is not the type we expect it to be (it should be type 'ObjectType').
+		//
+		// If this assertion is triggered then it means:
+		//   * A Scribe client has called 'transcribe_delegate_protocol' on an object *reference* instead of an object.
+		//
+		// Note that this detection only works for polymorphic types.
+		//
+		GPlatesGlobal::Assert<Exceptions::TranscribedReferenceInsteadOfObject>(
+				typeid(ObjectType) == typeid(object),
+				GPLATES_ASSERTION_SOURCE,
+				object);
+
+		return transcribe_delegate_const_cast(object);
+	}
+
+
+	template <typename ObjectType>
+	void
+	Scribe::save_delegate(
+			const ObjectType &object)
+	{
+		// Compile-time assertion to ensure no pointers or native arrays are transcribed.
+		//
+		// If this assertion is triggered then it means:
+		//   * 'save_delegate_protocol()' has been called for a pointer or a native array.
+		//
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<ObjectType> >::value);
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
+
+		// Throw exception if the object is not the type we expect it to be (it should be type 'ObjectType').
+		//
+		// If this assertion is triggered then it means:
+		//   * A Scribe client has called 'save_delegate_protocol' on an object *reference* instead of an object.
+		//
+		// Note that this detection only works for polymorphic types.
+		//
+		GPlatesGlobal::Assert<Exceptions::TranscribedReferenceInsteadOfObject>(
+				typeid(ObjectType) == typeid(object),
+				GPLATES_ASSERTION_SOURCE,
+				object);
+
+		// Mirror the load path.
+		SaveConstructObject<ObjectType> save_construct_object(object);
+		// We're on the *save* path so no need to check return value.
+		transcribe_delegate_construct_const_cast(save_construct_object);
+	}
+
+
+	template <typename ObjectType>
+	LoadRef<ObjectType>
+	Scribe::load_delegate(
+			const GPlatesUtils::CallStack::Trace &transcribe_source)
+	{
+		// Compile-time assertion to ensure no pointers or native arrays are transcribed.
+		//
+		// If this assertion is triggered then it means:
+		//   * 'load_delegate_protocol()' has been called for a pointer or a native array.
+		//
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<ObjectType> >::value);
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
+
+		LoadConstructObjectOnHeap<ObjectType> load_construct_object;
+		if (!transcribe_delegate_construct_const_cast(load_construct_object))
+		{
+			// Heap-allocated object destructed/deallocated by construct object 'load_construct_object' on returning...
+			return LoadRef<ObjectType>();
+		}
+
+		// Object now owned by LoadRef (released from construct object)...
+		return LoadRef<ObjectType>(
+				transcribe_source,
+				*this,
+				load_construct_object.release(),
+				// Transferring ownership...
+				true/*release*/);
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_delegate_object(
+			ObjectType &object)
+	{
+		// This streams directly to ObjectType to transcribe the object.
+		return stream_object(object);
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_delegate_construct_object(
+			ConstructObject<ObjectType> &construct_object)
+	{
+		// This streams a ConstructObject<ObjectType> to both save/load construct the object and to transcribe it.
+		return stream_construct_object(construct_object);
 	}
 
 
@@ -3719,8 +3941,8 @@ namespace GPlatesScribe
 	bool
 	Scribe::transcribe_object(
 			ObjectType &object,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
 		//
 		// Transcribe the object id.
@@ -3730,11 +3952,12 @@ namespace GPlatesScribe
 		const object_address_type object_address = InternalUtils::get_static_object_address(&object);
 
 		object_id_type object_id;
-		if (!transcribe_object_id(object_address, object_tag, options.get_version(), object_id))
+		if (!transcribe_object_id(object_address, object_tag, object_id))
 		{
 			return false;
 		}
 
+		//
 		// Transcribe the object.
 		//
 
@@ -3747,14 +3970,14 @@ namespace GPlatesScribe
 	Scribe::transcribe_object(
 			ObjectType &object,
 			object_id_type object_id,
-			Options options)
+			unsigned int options)
 	{
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
 		// Object is not a pointer so it shouldn't have any pointer ownership options.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
-				!(options.get_flags() & (EXCLUSIVE_OWNER.get() | SHARED_OWNER.get())),
+				!(options & (EXCLUSIVE_OWNER | SHARED_OWNER)),
 				GPLATES_ASSERTION_SOURCE,
 				"Pointer ownership options were specified for a non-pointer object.");
 
@@ -3796,8 +4019,8 @@ namespace GPlatesScribe
 	bool
 	Scribe::transcribe_construct_object(
 			ConstructObject<ObjectType> &construct_object,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
 		//
 		// Transcribe the object id.
@@ -3811,7 +4034,7 @@ namespace GPlatesScribe
 						construct_object.get_object_address());
 
 		object_id_type object_id;
-		if (!transcribe_object_id(object_address, object_tag, options.get_version(), object_id))
+		if (!transcribe_object_id(object_address, object_tag, object_id))
 		{
 			return false;
 		}
@@ -3829,14 +4052,14 @@ namespace GPlatesScribe
 	Scribe::transcribe_construct_object(
 			ConstructObject<ObjectType> &construct_object,
 			object_id_type object_id,
-			Options options)
+			unsigned int options)
 	{
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
 		// Object is not a pointer so it shouldn't have any pointer ownership options.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
-				!(options.get_flags() & (EXCLUSIVE_OWNER.get() | SHARED_OWNER.get())),
+				!(options & (EXCLUSIVE_OWNER | SHARED_OWNER)),
 				GPLATES_ASSERTION_SOURCE,
 				"Pointer ownership options were specified for a non-pointer object.");
 
@@ -3882,8 +4105,8 @@ namespace GPlatesScribe
 	bool
 	Scribe::transcribe_object(
 			ObjectType *&object_ptr,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
 		// If loading then set the pointer to NULL in case it doesn't get initialised later.
 		// This can happen when the pointer does not own the pointed-to object and the pointed-to
@@ -3904,7 +4127,7 @@ namespace GPlatesScribe
 		const object_address_type pointer_object_address = InternalUtils::get_static_object_address(&object_ptr);
 
 		object_id_type pointer_object_id;
-		if (!transcribe_object_id(pointer_object_address, object_tag, options.get_version(), pointer_object_id))
+		if (!transcribe_object_id(pointer_object_address, object_tag, pointer_object_id))
 		{
 			return false;
 		}
@@ -3922,7 +4145,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_object(
 			ObjectType *&object_ptr,
 			object_id_type pointer_object_id,
-			Options options)
+			unsigned int options)
 	{
 		// Ensure maximum supported pointer dimension has not been exceeded.
 		//
@@ -3936,7 +4159,7 @@ namespace GPlatesScribe
 
 		// Should not have both pointer ownership options specified together.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
-				!((options.get_flags() & EXCLUSIVE_OWNER.get()) && (options.get_flags() & SHARED_OWNER.get())),
+				!((options & EXCLUSIVE_OWNER) && (options & SHARED_OWNER)),
 				GPLATES_ASSERTION_SOURCE,
 				"Pointer ownership cannot be both shared and exclusive at the same time.");
 
@@ -3989,13 +4212,13 @@ namespace GPlatesScribe
 		//
 
 		// If the pointer owns the pointed-to object then we need to transcribe the pointed-to object.
-		if (options.get_flags() & (EXCLUSIVE_OWNER.get() | SHARED_OWNER.get()))
+		if (options & (EXCLUSIVE_OWNER | SHARED_OWNER))
 		{
 			object_id_type object_id;
 			if (transcribe_pointer_owned_object(
 					// The pointer will be NULL in the load path before calling function...
 					object_ptr,
-					options.get_flags() & SHARED_OWNER.get()/*shared_ownership*/,
+					options & SHARED_OWNER/*shared_ownership*/,
 					object_id))
 			{
 				pointer_streamed = true;
@@ -4012,17 +4235,24 @@ namespace GPlatesScribe
 					// the transcribed pointed-to object.
 					pointer_is_initialised = true;
 
-					if (options.get_flags() & DONT_TRACK.get())
+					if (options & TRACK)
+					{
+						// Add our pointer to the list of pointers that reference the pointed-to object.
+						// This is useful if the pointed-to object is later relocated - in which case the
+						// pointer will get re-initialised to point to the object's relocated location.
+						add_pointer_referencing_object(object_id, pointer_object_id);
+					}
+					else // The pointer is *not* being tracked...
 					{
 						// Note: We're not tracking the pointer but we also don't mark the pointed-to object as
 						// referenced by an untracked pointer (as is the case with a non-owning pointer) because
-						// relocating the pointed-to object means a new owning pointer has being created with a
+						// relocating the pointed-to object means a new owning pointer is being created with a
 						// new pointed-to object. In this case we don't want the original owning pointer to point
 						// to the new pointed-to object (it should still point to the original pointed-to object).
 						// For example when an exclusive owning pointer is copied and relocated:
 						//
 						//   int *x;
-						//   scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::EXCLUSIVE_OWNER);
+						//   scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::EXCLUSIVE_OWNER | GPlatesScribe::TRACK);
 						//   int *y = new int(*x);  // Copy 'y' from 'x' keeping same integer value.
 						//   scribe.relocated(TRANSCRIBE_SOURCE, y, x);
 						//   scribe.relocated(TRANSCRIBE_SOURCE, *y, *x);
@@ -4038,13 +4268,11 @@ namespace GPlatesScribe
 						// (versus exclusive) then typically the pointed-to object never needs to be relocated
 						// (because when a shared pointer is copied/moved it still points to the same pointed-to
 						// object address) and so this problem doesn't arise.
-					}
-					else // The pointer is being tracked...
-					{
-						// Add our pointer to the list of pointers that reference the pointed-to object.
-						// This is useful if the pointed-to object is later relocated - in which case the
-						// pointer will get re-initialised to point to the object's relocated location.
-						add_pointer_referencing_object(object_id, pointer_object_id);
+						//
+						//
+						// UPDATE: The above no longer applies because now an untracked owning pointer also
+						// results in an untracked pointed-to object.
+						//
 					}
 				}
 			}
@@ -4064,7 +4292,7 @@ namespace GPlatesScribe
 			// Transcribe the pointed-to object's id.
 			// Note: 'object_address' will be NULL in the load path...
 			object_id_type object_id;
-			if (transcribe_object_id(object_address, POINTS_TO_OBJECT_TAG, POINTS_TO_OBJECT_VERSION, object_id))
+			if (transcribe_object_id(object_address, POINTS_TO_OBJECT_TAG, object_id))
 			{
 				// Exclude NULL pointers since there's no pointed-to object to point to...
 				if (object_id == NULL_POINTER_OBJECT_ID)
@@ -4131,7 +4359,21 @@ namespace GPlatesScribe
 
 					if (pointer_streamed)
 					{
-						if (options.get_flags() & DONT_TRACK.get())
+						if (options & TRACK)
+						{
+							// Add our pointer to the list of pointers that reference the pointed-to object.
+							//
+							// In the load path, if the pointed-to object address was not available, then
+							// we are now delaying initialisation of the pointer until the pointed-to object
+							// is loaded.
+							//
+							// Even if the pointer was initialised above, this is still useful for when/if
+							// the pointed-to object is subsequently relocated (*after* the pointer is
+							// initialised to point to it) - in which case the pointer will get
+							// re-initialised to point to the object's relocated location.
+							add_pointer_referencing_object(object_id, pointer_object_id);
+						}
+						else // The pointer is *not* being tracked...
 						{
 							// The pointer is *not* being tracked so we avoid using 'add_pointer_referencing_object()'
 							// (and 'resolve_pointer_reference_to_object()') since they record our pointer's address
@@ -4155,20 +4397,6 @@ namespace GPlatesScribe
 								object_info.is_load_object_bound_to_a_reference_or_untracked_pointer = true;
 							}
 						}
-						else // The pointer is being tracked...
-						{
-							// Add our pointer to the list of pointers that reference the pointed-to object.
-							//
-							// In the load path, if the pointed-to object address was not available, then
-							// we are now delaying initialisation of the pointer until the pointed-to object
-							// is loaded.
-							//
-							// Even if the pointer was initialised above, this is still useful for when/if
-							// the pointed-to object is subsequently relocated (*after* the pointer is
-							// initialised to point to it) - in which case the pointer will get
-							// re-initialised to point to the object's relocated location.
-							add_pointer_referencing_object(object_id, pointer_object_id);
-						}
 					}
 				}
 			}
@@ -4189,8 +4417,8 @@ namespace GPlatesScribe
 	bool
 	Scribe::transcribe_construct_object(
 			ConstructObject<ObjectType *> &construct_object_ptr,
-			const char *object_tag,
-			Options options)
+			const ObjectTag &object_tag,
+			unsigned int options)
 	{
 		// Pointers don't have non-default constructors like regular objects and don't need to
 		// be constructed like regular objects (because can just assign a pointer value to them).
@@ -4215,7 +4443,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_construct_object(
 			ConstructObject<ObjectType *> &construct_object_ptr,
 			object_id_type object_id,
-			Options options)
+			unsigned int options)
 	{
 		// Pointers don't have non-default constructors like regular objects and don't need to
 		// be constructed like regular objects (because can just assign a pointer value to them).
@@ -4263,7 +4491,7 @@ namespace GPlatesScribe
 		// Transcribe the pointed-to object's id.
 		// Note: 'object_address' will be NULL in the load path...
 		object_id_type object_id;
-		if (!transcribe_object_id(object_address, POINTS_TO_OBJECT_TAG, POINTS_TO_OBJECT_VERSION, object_id))
+		if (!transcribe_object_id(object_address, POINTS_TO_OBJECT_TAG, object_id))
 		{
 			return false;
 		}
@@ -4310,7 +4538,8 @@ namespace GPlatesScribe
 					shared_ownership,
 					GPLATES_ASSERTION_SOURCE,
 					// Note that this is the pointed-to object itself and not the pointer...
-					typeid(ObjectType));
+					typeid(ObjectType),
+					is_saving());
 
 			// A pre-initialised object should have an address.
 			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
@@ -4367,8 +4596,7 @@ namespace GPlatesScribe
 					// that's where the full dynamic object will get created...
 					object_address.address,
 					object_id,
-					// Default options (means object is tracked)...
-					Options());
+					TRACK);
 		}
 		else // loading...
 		{
@@ -4379,8 +4607,7 @@ namespace GPlatesScribe
 			if (!transcribe_owning_pointer.get()->load_object(
 					*this,
 					object_id,
-					// Default options (means object is tracked)...
-					Options()))
+					TRACK))
 			{
 				return false;
 			}
@@ -4433,13 +4660,13 @@ namespace GPlatesScribe
 			bool shared_ownership)
 	{
 		// Note: We don't mark the pointed-to object as referenced by an untracked pointer because
-		// relocating the pointed-to object means a new smart pointer has being created with a new
+		// relocating the pointed-to object means a new smart pointer is being created with a new
 		// pointed-to object. In this case we don't want the original smart pointer to point to
 		// the new pointed-to object (it should still point to the original pointed-to object).
 		// For example when a boost::scoped_ptr<> is copied and relocated:
 		//
 		//   boost::scoped_ptr<int> x;
-		//   scribe.transcribe(TRANSCRIBE_SOURCE, x, "x");
+		//   scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::TRACK);
 		//   boost::scoped_ptr<int> y(new int(*x));  // Copy 'y' from 'x' keeping same integer value.
 		//   scribe.relocated(TRANSCRIBE_SOURCE, y, x);
 		//   scribe.relocated(TRANSCRIBE_SOURCE, *y, *x);
@@ -4465,8 +4692,7 @@ namespace GPlatesScribe
 	bool
 	Scribe::transcribe_base_object(
 			DerivedType &derived_object,
-			const char *base_object_tag,
-			Version version)
+			const ObjectTag &base_object_tag)
 	{
 		// Registers that class 'DerivedType' derives from class 'BaseType'.
 		// Doing this enables base class pointers and references to be correctly upcast from
@@ -4501,8 +4727,8 @@ namespace GPlatesScribe
 				// The tracking of base class object should always be enabled even if the client requested
 				// tracking be disabled for the derived class object.
 				// When the derived class object has finished transcribing it will disable tracking of all
-				// its sub-objects (base classes and data members)...
-				version))
+				// its child-objects (includes base classes and data members)...
+				TRACK))
 		{
 			return false;
 		}
@@ -4558,8 +4784,7 @@ namespace GPlatesScribe
 	void
 	Scribe::save_object_reference(
 			ObjectType &object_reference,
-			const char *object_tag,
-			Version version)
+			const ObjectTag &object_tag)
 	{
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
@@ -4610,7 +4835,7 @@ namespace GPlatesScribe
 
 		// Transcribe the referenced object id.
 		// We're on the *save* path so no need to check return value.
-		transcribe_object_id(object_address, object_tag, version.get());
+		transcribe_object_id(object_address, object_tag);
 	}
 
 
@@ -4618,8 +4843,7 @@ namespace GPlatesScribe
 	LoadRef<ObjectType>
 	Scribe::load_object_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
-			const char *object_tag,
-			Version version)
+			const ObjectTag &object_tag)
 	{
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 				is_loading(),
@@ -4630,7 +4854,7 @@ namespace GPlatesScribe
 		//
 		// Note: The object address is NULL in this load path (we don't know it until we get the object id)...
 		object_id_type object_id;
-		if (!transcribe_object_id(object_address_type(), object_tag, version.get(), object_id))
+		if (!transcribe_object_id(object_address_type(), object_tag, object_id))
 		{
 			// Return NULL reference.
 			return LoadRef<ObjectType>();
@@ -4862,7 +5086,7 @@ namespace GPlatesScribe
 			// The actual (polymorphic) type of the pointed-to object could differ from 'ObjectType'
 			// so we transcribe the class name.
 			//
-			// We expect the actual type to have been export registered using in 'ScribeExportRegistration.h'.
+			// We expect the actual type to have been export registered (see 'ScribeExportRegistration.h').
 			// So we need to search the export registered classes and output a class name.
 			const std::type_info &save_object_type_info = typeid(*object_ptr);
 
@@ -4887,7 +5111,7 @@ namespace GPlatesScribe
 		{
 			// Attempt to load the class name associated with the actual type of the pointed-to object.
 			//
-			// This is the actual type that was export registered in 'ScribeExportRegistration.h'.
+			// This is the actual type that was export registered (see 'ScribeExportRegistration.h').
 			boost::optional<const ExportClassType &> export_class_type;
 			if (transcribe_class_name(NULL, export_class_type))
 			{
@@ -4920,7 +5144,7 @@ namespace GPlatesScribe
 					// a class name - it's not an error (yet) as far as the caller is concerned.
 					set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_SUCCESS);
 
-					// We couldn't find "class name" info ('object_tag' + 'version'), in the load path,
+					// We couldn't find "class name" info ('object_tag'), in the load path,
 					// within parent object scope.
 					//
 					// This means the save path did not transcribe the class name because it
@@ -5176,6 +5400,7 @@ namespace GPlatesScribe
 			//		template <typename T>
 			//		class A
 			//		{
+			//		public:
 			//			virtual ~A() { }
 			//		};
 			//
@@ -5186,16 +5411,16 @@ namespace GPlatesScribe
 			// ...where saving on machine X with 'std::size_t' typedef'ed to 'unsigned int'...
 			//
 			//		boost::shared_ptr< A<std::size_t> > b(new B<std::size_t>());
-			//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b");
+			//		scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK);
 			//		A<std::size_t> *a = b;
-			//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a");
+			//		scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK);
 			//
 			// ...where loading on machine Y with 'std::size_t' typedef'ed to 'unsigned long'...
 			//
 			//		boost::shared_ptr< A<std::size_t> > b;
-			//		if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b")) { ... }  // Actually this would fail first
+			//		if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b", GPlatesScribe::TRACK)) { ... }  // Actually this would fail first
 			//		A<std::size_t> *a;
-			//		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a")) { ... }
+			//		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a", GPlatesScribe::TRACK)) { ... }
 			//
 			// ...where 'b' is saved on machine X as 'B<unsigned int>' and 'b' is also loaded on
 			// machine Y as 'B<unsigned int>' (since that's the class name stored in the transcription).

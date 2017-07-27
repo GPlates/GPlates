@@ -31,12 +31,12 @@
 #include <vector>
 
 #include "model/FeatureVisitor.h"
-#include "model/PropertyName.h"
 #include "maths/GeometryOnSphere.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
-#include "maths/PolygonOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "model/PropertyName.h"
 
 
 namespace GPlatesFeatureVisitors
@@ -173,7 +173,7 @@ namespace GPlatesFeatureVisitors
 		}
 
 
-		// 
+		// Return true if any geometries have been found.
 		bool
 		has_found_geometries() const
 		{

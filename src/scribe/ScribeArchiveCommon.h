@@ -207,6 +207,38 @@ namespace GPlatesScribe
 		const QString XML_OBJECT_ID = QString::fromLatin1("oid");
 
 		/**
+		 * Used to read/write positive infinity floating-point value from/to XML archive.
+		 */
+		const QString XML_POSITIVE_INFINITY_VALUE = QString::fromLatin1("inf");
+
+		/**
+		 * Used to read/write positive infinity floating-point value from/to XML archive.
+		 */
+		const QString XML_NEGATIVE_INFINITY_VALUE = QString::fromLatin1("-inf");
+
+		/**
+		 * Used to read/write NaN floating-point value from/to XML archive.
+		 */
+		const QString XML_NAN_VALUE = QString::fromLatin1("nan");
+
+
+		/**
+		 * Used to read/write positive infinity floating-point value from/to text archive.
+		 */
+		const std::string TEXT_POSITIVE_INFINITY_VALUE = std::string("inf");
+
+		/**
+		 * Used to read/write positive infinity floating-point value from/to text archive.
+		 */
+		const std::string TEXT_NEGATIVE_INFINITY_VALUE = std::string("-inf");
+
+		/**
+		 * Used to read/write NaN floating-point value from/to text archive.
+		 */
+		const std::string TEXT_NAN_VALUE = std::string("nan");
+
+
+		/**
 		 * Converts a string to an XML element name and optionally checks XML name validity.
 		 *
 		 * If the string begins with a number or valid punctuation character ('-' or '.') then the

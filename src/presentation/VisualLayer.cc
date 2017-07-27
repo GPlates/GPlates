@@ -48,10 +48,12 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 		GPlatesAppLogic::Layer &layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+		const GPlatesGui::symbol_map_type &symbol_map,
 		int layer_number) :
 	d_visual_layers(visual_layers),
 	d_visual_layer_registry(visual_layer_registry),
 	d_rendered_geometry_parameters(rendered_geometry_parameters),
+	d_symbol_map(symbol_map),
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
 	d_rendered_geometry_layer_index(
@@ -66,7 +68,7 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_visual_layer_params(
 			visual_layer_registry.create_visual_layer_params(
 					get_layer_type(),
-					layer.get_layer_task_params()))
+					layer.get_layer_params()))
 {
 	d_widget_sections_expanded[ALL] = false;
 	d_widget_sections_expanded[INPUT_CHANNELS] = true;
@@ -76,8 +78,8 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_visual_layer_params->handle_layer_modified(layer);
 
 	QObject::connect(
-			&d_layer.get_layer_task_params(),
-			SIGNAL(modified()),
+			d_layer.get_layer_params().get(),
+			SIGNAL(modified(GPlatesAppLogic::LayerParams &)),
 			this,
 			SLOT(handle_params_modified()));
 	QObject::connect(
@@ -96,8 +98,7 @@ GPlatesPresentation::VisualLayer::get_layer_type() const
 
 
 void
-GPlatesPresentation::VisualLayer::create_rendered_geometries(
-    const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map)
+GPlatesPresentation::VisualLayer::create_rendered_geometries()
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -150,7 +151,7 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries(
 			render_params_populator.get_render_params(),
 			boost::none, // colour 
             boost::none, // rotation adjustment
-			feature_type_symbol_map,
+			d_symbol_map,
 			draw_style_adapter);
 
 	// Visit the layer output in order to render it.

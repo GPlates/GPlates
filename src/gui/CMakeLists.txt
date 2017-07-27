@@ -17,6 +17,10 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
+    BuiltinColourPalettes.cc
+    BuiltinColourPalettes.h
+    BuiltinColourPaletteType.cc
+    BuiltinColourPaletteType.h
     CanvasToolWorkflow.cc
     CanvasToolWorkflow.h
     CanvasToolWorkflows.cc
@@ -31,10 +35,14 @@ set(srcs
     ColourPalette.h
     ColourPaletteAdapter.h
     ColourPaletteRangeRemapper.h
+    ColourPaletteUtils.cc
+    ColourPaletteUtils.h
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
     ColourRawRaster.h
+    ColourScaleGenerator.cc
+    ColourScaleGenerator.h
     ColourScheme.h
     ColourSchemeContainer.cc
     ColourSchemeContainer.h
@@ -83,6 +91,8 @@ set(srcs
     ExportCitcomsResolvedTopologyAnimationStrategy.h
     ExportCoRegistrationAnimationStrategy.cc
     ExportCoRegistrationAnimationStrategy.h
+    ExportDeformationAnimationStrategy.cc
+    ExportDeformationAnimationStrategy.h
     ExportFileNameTemplateValidationUtils.cc
     ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
@@ -91,6 +101,8 @@ set(srcs
     ExportImageAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
+    ExportNetRotationAnimationStrategy.cc
+    ExportNetRotationAnimationStrategy.h
     ExportOptionsUtils.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h
@@ -98,6 +110,8 @@ set(srcs
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
+    ExportScalarCoverageAnimationStrategy.cc
+    ExportScalarCoverageAnimationStrategy.h
     ExportStageRotationAnimationStrategy.cc
     ExportStageRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
@@ -120,6 +134,8 @@ set(srcs
     FeatureTypeColourPalette.h
     FeedbackOpenGLToQPainter.cc
     FeedbackOpenGLToQPainter.h
+    FileIODirectoryConfigurations.cc
+    FileIODirectoryConfigurations.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
@@ -148,6 +164,8 @@ set(srcs
     GuiDebug.cc
     GuiDebug.h
     GuiException.h
+    HellingerCanvasToolWorkflow.cc
+    HellingerCanvasToolWorkflow.h
     HTMLColourNames.cc
     HTMLColourNames.h
     ImportMenu.cc

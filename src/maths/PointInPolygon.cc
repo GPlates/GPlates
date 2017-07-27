@@ -257,33 +257,33 @@ namespace GPlatesMaths
 
 		/**
 		 * Returns the number of polygon edges crossed by the great circle arc joining
-		 * @a crossing_arc_start_point and @a crossing_arc_end_point.
+		 * @a crossings_arc_start_point and @a crossings_arc_end_point.
 		 *
-		 * The sequence of edges begins at @a polygon_edges_begin and ends
-		 * at @a polygon_edges_end. Note that the sequence of edges must *not* wrap
+		 * The sequence of edges begins at @a edges_begin and ends
+		 * at @a edges_end. Note that the sequence of edges must *not* wrap
 		 * past the last edge of the polygon.
 		 *
-		 * @a crossing_arc_plane_normal is the plane normal of the great circle
+		 * @a crossings_arc_plane_normal is the plane normal of the great circle
 		 * passing through the crossing arc points.
 		 * If the arc is zero length or the arc endpoints are antipodal then the plane normal
 		 * can be any plane that passes through one (and hence both) of the arc points.
 		 */
 		unsigned int
 		get_num_polygon_edges_crossed(
-				const PolygonOnSphere::const_iterator &polygon_edges_begin,
-				const PolygonOnSphere::const_iterator &polygon_edges_end,
-				const UnitVector3D &crossing_arc_start_point,
-				const UnitVector3D &crossing_arc_end_point,
-				const UnitVector3D &crossing_arc_plane_normal,
+				const PolygonOnSphere::ring_const_iterator &edges_begin,
+				const PolygonOnSphere::ring_const_iterator &edges_end,
+				const UnitVector3D &crossings_arc_start_point,
+				const UnitVector3D &crossings_arc_end_point,
+				const UnitVector3D &crossings_arc_plane_normal,
 				const double &dot_crossings_arc_end_points)
 		{
-			if (polygon_edges_begin == polygon_edges_end)
+			if (edges_begin == edges_end)
 			{
 				return 0;
 			}
 
-			unsigned int num_polygon_edges_crossed = 0;
-			PolygonOnSphere::const_iterator polygon_edge_iter = polygon_edges_begin;
+			unsigned int num_edges_crossed = 0;
+			PolygonOnSphere::ring_const_iterator edge_iter = edges_begin;
 
 			//
 			// If the arc intersects a polygon vertex we need to make sure the
@@ -300,22 +300,22 @@ namespace GPlatesMaths
 
 			// Determine which side of arc plane the start vertex of the first edge is on.
 			// Note: this is *not* an epsilon test.
-			const GreatCircleArc &first_edge = *polygon_edge_iter;
+			const GreatCircleArc &first_edge = *edge_iter;
 			bool is_edge_start_on_negative_side_of_crossings_arc_plane =
-					dot(crossing_arc_plane_normal,
+					dot(crossings_arc_plane_normal,
 						first_edge.start_point().position_vector()).dval() < 0;
 
 			// Iterate over the polygon edges in the sequence.
 			do
 			{
-				const GreatCircleArc &edge = *polygon_edge_iter;
+				const GreatCircleArc &edge = *edge_iter;
 				const UnitVector3D &edge_end_point = edge.end_point().position_vector();
 
 				// Determine which side of arc plane the end vertex of the current edge is on.
 				// Note: this is *not* an epsilon test.
 				// Note: this should be the exact same comparison as with the start vertex.
 				const bool is_edge_end_on_negative_side_of_crossings_arc_plane =
-						dot(crossing_arc_plane_normal, edge_end_point).dval() < 0;
+						dot(crossings_arc_plane_normal, edge_end_point).dval() < 0;
 
 				// If the start and end of the current edge are on different sides
 				// of the arc plane then it's possible we have a crossing.
@@ -338,12 +338,12 @@ namespace GPlatesMaths
 					if (edge.is_zero_length())
 					{
 						if (if_point_lies_on_gc_does_it_also_lie_on_gca(
-								crossing_arc_start_point,
-								crossing_arc_plane_normal,
+								crossings_arc_start_point,
+								crossings_arc_plane_normal,
 								dot_crossings_arc_end_points,
 								edge_end_point))
 						{
-							++num_polygon_edges_crossed;
+							++num_edges_crossed;
 						}
 					}
 					else // The polygon edge (GCA) has a rotation axis (plane normal)...
@@ -353,7 +353,7 @@ namespace GPlatesMaths
 						// Get a measure of how closely aligned the polygon edge arc
 						// is relative to the crossings arc.
 						const double crossings_arc_normal_dot_edge_normal =
-								dot(crossing_arc_plane_normal, edge_plane_normal).dval();
+								dot(crossings_arc_plane_normal, edge_plane_normal).dval();
 
 						// If the polygon edge is *not* too closely aligned with the crossing
 						// arc then we can see if the polygon edge plane separates the crossing
@@ -391,10 +391,10 @@ namespace GPlatesMaths
 								// the edge plane *and* the crossings-arc start point must
 								// be on the *positive* side since the polygon edge start point
 								// is on the *negative* side of the crossings-arc plane.
-								if (dot(edge_plane_normal, crossing_arc_start_point).dval() >= 0 &&
-									dot(edge_plane_normal, crossing_arc_end_point).dval() <= 0)
+								if (dot(edge_plane_normal, crossings_arc_start_point).dval() >= 0 &&
+									dot(edge_plane_normal, crossings_arc_end_point).dval() <= 0)
 								{
-									++num_polygon_edges_crossed;
+									++num_edges_crossed;
 								}
 							}
 							else // edge start point is on positive side of crossings-arc plane...
@@ -403,10 +403,10 @@ namespace GPlatesMaths
 								// the edge plane *and* the crossings-arc start point must
 								// be on the *negative* side since the polygon edge start point
 								// is on the *positive* side of the crossings-arc plane.
-								if (dot(edge_plane_normal, crossing_arc_start_point).dval() <= 0 &&
-									dot(edge_plane_normal, crossing_arc_end_point).dval() >= 0)
+								if (dot(edge_plane_normal, crossings_arc_start_point).dval() <= 0 &&
+									dot(edge_plane_normal, crossings_arc_end_point).dval() >= 0)
 								{
-									++num_polygon_edges_crossed;
+									++num_edges_crossed;
 								}
 							}
 						}
@@ -426,19 +426,19 @@ namespace GPlatesMaths
 							// the signed distance in each iteration of the main loop
 							// (like we do the edge start flags) since that adds an overhead
 							// to the non-rare cases.
-							const UnitVector3D polygon_edge_intersects_crossings_arc_plane =
+							const UnitVector3D ring_edge_intersects_crossings_arc_plane =
 									if_plane_divides_gca_get_intersection_of_gca_and_plane(
-											edge, crossing_arc_plane_normal);
+											edge, crossings_arc_plane_normal);
 
 							// If the intersection lies on the crossings-arc then
 							// increment the number of polygon edges crossed.
 							if (if_point_lies_on_gc_does_it_also_lie_on_gca(
-									crossing_arc_start_point,
-									crossing_arc_plane_normal,
+									crossings_arc_start_point,
+									crossings_arc_plane_normal,
 									dot_crossings_arc_end_points,
-									polygon_edge_intersects_crossings_arc_plane))
+									ring_edge_intersects_crossings_arc_plane))
 							{
-								++num_polygon_edges_crossed;
+								++num_edges_crossed;
 							}
 						}
 					}
@@ -451,7 +451,47 @@ namespace GPlatesMaths
 			// The sequence of edges will not wrap past the last polygon edge.
 			// If there is a sequence that does wrap it will be divided into two
 			// sequences by the caller.
-			while (++polygon_edge_iter != polygon_edges_end);
+			while (++edge_iter != edges_end);
+
+			return num_edges_crossed;
+		}
+
+
+		/**
+		 * Returns the total number of polygon edges crossed (including interior rings) by the
+		 * great circle arc joining @a crossings_arc_start_point and @a crossings_arc_end_point.
+		 */
+		unsigned int
+		get_num_polygon_edges_crossed(
+				const PolygonOnSphere &polygon,
+				const UnitVector3D &crossings_arc_start_point,
+				const UnitVector3D &crossings_arc_end_point)
+		{
+			const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
+					crossings_arc_start_point, crossings_arc_end_point);
+
+			const double dot_crossings_arc_end_points =
+					dot(crossings_arc_start_point, crossings_arc_end_point).dval();
+
+			// The polygon has an exterior ring and zero or more interior rings.
+			//
+			// Add the number of crossings from all rings (exterior and interiors).
+
+			unsigned int num_polygon_edges_crossed = get_num_polygon_edges_crossed(
+					polygon.exterior_ring_begin(), polygon.exterior_ring_end(),
+					crossings_arc_start_point, crossings_arc_end_point,
+					crossings_arc_plane_normal, dot_crossings_arc_end_points);
+			
+			for (unsigned int interior_ring_index = 0;
+				interior_ring_index < polygon.number_of_interior_rings();
+				++interior_ring_index)
+			{
+				num_polygon_edges_crossed += get_num_polygon_edges_crossed(
+						polygon.interior_ring_begin(interior_ring_index),
+						polygon.interior_ring_end(interior_ring_index),
+						crossings_arc_start_point, crossings_arc_end_point,
+						crossings_arc_plane_normal, dot_crossings_arc_end_points);
+			}
 
 			return num_polygon_edges_crossed;
 		}
@@ -462,14 +502,14 @@ namespace GPlatesMaths
 		{
 		public:
 			EdgeSequence(
-					const PolygonOnSphere::const_iterator &begin_,
-					const PolygonOnSphere::const_iterator &end_) :
+					const PolygonOnSphere::ring_const_iterator &begin_,
+					const PolygonOnSphere::ring_const_iterator &end_) :
 				begin(begin_),
 				end(end_)
 			{  }
 
-			PolygonOnSphere::const_iterator begin;
-			PolygonOnSphere::const_iterator end;
+			PolygonOnSphere::ring_const_iterator begin;
+			PolygonOnSphere::ring_const_iterator end;
 		};
 
 		//! Typedef for a list of polygon edge ranges.
@@ -478,8 +518,7 @@ namespace GPlatesMaths
 
 		/**
 		 * Returns the number of polygon edges crossed by the arc defined by
-		 * @a crossings_arc_start_point, @a crossings_arc_end_point and
-		 * @a dot_crossings_arc_end_points.
+		 * @a crossings_arc_start_point and @a crossings_arc_end_point.
 		 *
 		 * The polygon edges are defined by a sequence of edge sequences
 		 * @a edge_sequences_begin and @a edge_sequences_end.
@@ -489,11 +528,13 @@ namespace GPlatesMaths
 				const edge_sequence_list_type::const_iterator &edge_sequences_begin,
 				const edge_sequence_list_type::const_iterator &edge_sequences_end,
 				const UnitVector3D &crossings_arc_start_point,
-				const UnitVector3D &crossings_arc_end_point,
-				const double &dot_crossings_arc_end_points)
+				const UnitVector3D &crossings_arc_end_point)
 		{
 			const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
 					crossings_arc_start_point, crossings_arc_end_point);
+
+			const double dot_crossings_arc_end_points =
+					dot(crossings_arc_start_point, crossings_arc_end_point).dval();
 
 			unsigned int num_polygon_edges_crossed = 0;
 
@@ -530,7 +571,7 @@ namespace GPlatesMaths
 			BOOST_FOREACH(const EdgeSequence &edge_sequence, edge_sequences)
 			{
 				// Iterate over the polygon edges to be tested for intersection.
-				PolygonOnSphere::const_iterator polygon_edge_iter = edge_sequence.begin;
+				PolygonOnSphere::ring_const_iterator polygon_edge_iter = edge_sequence.begin;
 				for ( ; polygon_edge_iter != edge_sequence.end; ++polygon_edge_iter)
 				{
 					const GreatCircleArc &edge = *polygon_edge_iter;
@@ -956,7 +997,7 @@ namespace GPlatesMaths
 			// Only build a tree if we've been asked to *and* there are enough polygon edges
 			// to make it worthwhile.
 			if (!build_ologn_hint ||
-				polygon->number_of_segments() <= TreeBuilder::AVERAGE_NUM_EDGES_PER_LEAF_NODE)
+				polygon->number_of_segments_in_all_rings() <= TreeBuilder::AVERAGE_NUM_EDGES_PER_LEAF_NODE)
 			{
 				// Don't build a spherical lune tree.
 				// But can still benefit from the bounds data.
@@ -1045,16 +1086,8 @@ namespace GPlatesMaths
 				const UnitVector3D &crossings_arc_start_point = d_polygon_centroid_antipodal;
 				const UnitVector3D &crossings_arc_end_point = test_point;
 
-				const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
-						crossings_arc_start_point, crossings_arc_end_point);
-
-				const double dot_crossings_arc_end_points =
-						dot(crossings_arc_start_point, crossings_arc_end_point).dval();
-
 				return GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
-							d_polygon.begin(), d_polygon.end(),
-							crossings_arc_start_point, crossings_arc_end_point,
-							crossings_arc_plane_normal, dot_crossings_arc_end_points);
+							d_polygon, crossings_arc_start_point, crossings_arc_end_point);
 			}
 
 			// Start by recursing into the root node.
@@ -1135,8 +1168,7 @@ namespace GPlatesMaths
 					edge_sequence_list_begin,
 					edge_sequence_list_end,
 					d_polygon_centroid_antipodal,
-					test_point,
-					dot(test_point, d_polygon_centroid_antipodal).dval());
+					test_point);
 		}
 
 
@@ -1145,9 +1177,6 @@ namespace GPlatesMaths
 				const PolygonOnSphere &polygon) :
 			d_antipodal_centroid_bounds_builder(polygon_centroid_antipodal)
 		{
-			const edge_sequence_list_type all_polygon_edges(1,
-					EdgeSequence(polygon.begin(), polygon.end()));
-
 			// Get the number of edges crossed from polygon centroid antipodal to polygon centroid.
 			// This will vary depending on which arbitrary crossings-arc is chosen (it's arbitrary
 			// because the arc start and end points are antipodal to each other), but it
@@ -1155,10 +1184,9 @@ namespace GPlatesMaths
 			// regardless of which arc is chosen.
 			d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal =
 					(1 & GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
-							all_polygon_edges.begin(), all_polygon_edges.end(),
+							polygon,
 							polygon_centroid_antipodal,
-							-polygon_centroid_antipodal,
-							-1.0/*dot product polygon centroid with its antipodal point*/));
+							-polygon_centroid_antipodal));
 		}
 
 
@@ -1185,8 +1213,8 @@ namespace GPlatesMaths
 			d_polygon_centroid_antipodal(polygon_centroid_antipodal),
 			d_polygon_centroid(-polygon_centroid_antipodal)
 		{
-			const unsigned int num_edges = polygon.number_of_segments();
-			const double num_leaf_nodes = double(num_edges) / AVERAGE_NUM_EDGES_PER_LEAF_NODE;
+			const unsigned int num_polygon_edges = polygon.number_of_segments_in_all_rings();
+			const double num_leaf_nodes = double(num_polygon_edges) / AVERAGE_NUM_EDGES_PER_LEAF_NODE;
 			// The tree depth is less log2(num_leaf_nodes) rounded up.
 			// For example if 'num_leaf_nodes' is 65 then 'max_tree_depth' is 7 which supports
 			// 128 leaf nodes but since leaf nodes cannot have more than
@@ -1212,8 +1240,23 @@ namespace GPlatesMaths
 			const UnitVector3D child_nodes_splitting_plane(
 					cross(d_polygon_centroid, root_node_splitting_plane));
 
-			const edge_sequence_list_type all_polygon_edges(1,
-					EdgeSequence(d_polygon.begin(), d_polygon.end()));
+			// All polygon edges.
+			edge_sequence_list_type all_polygon_edges;
+
+			// Add polygon edges in exterior ring.
+			all_polygon_edges.push_back(
+					EdgeSequence(d_polygon.exterior_ring_begin(), d_polygon.exterior_ring_end()));
+
+			// Add polygon edges in interior rings.
+			for (unsigned int interior_ring_index = 0;
+				interior_ring_index < d_polygon.number_of_interior_rings();
+				++interior_ring_index)
+			{
+				all_polygon_edges.push_back(
+						EdgeSequence(
+								d_polygon.interior_ring_begin(interior_ring_index),
+								d_polygon.interior_ring_end(interior_ring_index)));
+			}
 
 			// Create the four grandchildren nodes that represents the four equal area
 			// spherical lunes partitioning the entire sphere.
@@ -1409,11 +1452,11 @@ namespace GPlatesMaths
 			unsigned int num_intersecting_edges = 0;
 
 			// Keep track of the current sequence of edges that intersect the spherical lune.
-			PolygonOnSphere::const_iterator current_intersecting_edge_sequence_start =
+			PolygonOnSphere::ring_const_iterator current_intersecting_edge_sequence_start =
 					edge_sequence.begin;
 
 			// Iterate over the polygon edges to be tested for intersection.
-			PolygonOnSphere::const_iterator polygon_edge_iter = edge_sequence.begin;
+			PolygonOnSphere::ring_const_iterator polygon_edge_iter = edge_sequence.begin;
 			for ( ; polygon_edge_iter != edge_sequence.end; ++polygon_edge_iter)
 			{
 				const GreatCircleArc &edge = *polygon_edge_iter;
@@ -1556,18 +1599,11 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 
 	const UnitVector3D &crossings_arc_end_point = point.position_vector();
 
-	const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
-			crossings_arc_start_point, crossings_arc_end_point);
-
-	const double dot_crossings_arc_end_points =
-			dot(crossings_arc_start_point, crossings_arc_end_point).dval();
-
+	// Calculate the number of polygon edges crossed (includes exterior and any interior rings).
 	const unsigned int num_polygon_edges_crossed = get_num_polygon_edges_crossed(
-			polygon.begin(), polygon.end(),
-			crossings_arc_start_point, crossings_arc_end_point,
-			crossings_arc_plane_normal, dot_crossings_arc_end_points);
+			polygon, crossings_arc_start_point, crossings_arc_end_point);
 
-	// If number of edges crossed is even then point is outside the polygon.
+	// If number of edges crossed is odd then point is inside the polygon.
 	return (num_polygon_edges_crossed & 1) == 1;
 }
 
@@ -1591,6 +1627,6 @@ GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 	const unsigned int num_polygon_edges_crossed =
 		d_spherical_lune_tree->get_num_polygon_edges_crossed(test_point.position_vector());
 
-	// If number of edges crossed is even then point is outside the polygon.
+	// If number of edges crossed is odd then point is inside the polygon.
 	return (num_polygon_edges_crossed & 1) == 1;
 }

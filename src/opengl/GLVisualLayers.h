@@ -33,6 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 
 #include "GLAgeGridMaskSource.h"
 #include "GLContext.h"
@@ -52,7 +53,6 @@
 #include "GLReconstructedStaticPolygonMeshes.h"
 #include "GLTexture.h"
 #include "GLVisualRasterSource.h"
-#include "OpenGLFwd.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerProxy.h"
@@ -623,8 +623,8 @@ namespace GPlatesOpenGL
 			void
 			set_reconstructing_layer_inputs(
 					GLRenderer &renderer,
-					const GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> &
-							reconstructed_polygon_meshes_layer_usage,
+					const std::vector< GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
+							reconstructed_polygon_meshes_layer_usages,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
 					float height_field_scale_factor,
@@ -671,10 +671,9 @@ namespace GPlatesOpenGL
 			GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> d_cube_raster_layer_usage;
 
 			// Used when reconstructing raster.
-			boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
-					d_reconstructed_polygon_meshes;
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
-					d_reconstructed_polygon_meshes_layer_usage;
+			std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> d_reconstructed_polygon_meshes;
+			std::vector< GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
+					d_reconstructed_polygon_meshes_layer_usages;
 
 			// Used when *not* reconstructing raster.
 			boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>

@@ -100,6 +100,15 @@ namespace GPlatesPropertyValues
 			return ptr;
 		}
 
+		static
+		const non_null_ptr_type
+		create(
+				const GmlDataBlockCoordinateList::non_null_ptr_type &list_)
+		{
+			std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_(1, list_);
+			return create(tuple_list_.begin(), tuple_list_.end());
+		}
+
 		const non_null_ptr_type
 		clone() const
 		{

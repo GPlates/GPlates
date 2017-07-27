@@ -31,15 +31,15 @@
 #include <iosfwd>
 
 #include "types.h"  /* real_t */
-#include "Vector3D.h"
 #include "GenericVectorOps3D.h"
 
-#include "utils/CallStackTracker.h"
 #include "utils/QtStreamable.h"
 
 
 namespace GPlatesMaths
 {
+	class Vector3D;
+
 	/** 
 	 * A three-dimensional unit vector.
 	 * Thus, the magnitude of this vector must be identical to 1.
@@ -59,7 +59,7 @@ namespace GPlatesMaths
 		/**
 		 * Create a 3D vector from the specified x, y and z components.
 		 *
-		 * NOTE: Only set @a check_validity to false if you are sure that the components
+		 * NOTE: Only set @a check_validity_ to false if you are sure that the components
 		 * form a unit vector and the components are strictly within the range [-1,1].
 		 * This is *only* useful in areas of code that require efficiency and where we are
 		 * certain that the above conditions hold (eg, taking an existing unit vector and
@@ -70,7 +70,7 @@ namespace GPlatesMaths
 		 * @param z_comp The z-component.
 		 *
 		 * @throw ViolatedUnitVectorInvariantException if the
-		 *   @a check_validity is true and the resulting vector does not have unit magnitude.
+		 *   @a check_validity_ is true and the resulting vector does not have unit magnitude.
 		 *
 		 * FIXME:  This should become a 'create' function,
 		 * invoking a private ctor.
@@ -79,15 +79,18 @@ namespace GPlatesMaths
 				const real_t &x_comp,
 				const real_t &y_comp,
 				const real_t &z_comp,
-				bool check_validity = true);
+				bool check_validity_ = true);
 
 
+		/**
+		 * Construct using a @a Vector3D.
+		 *
+		 * See @a check_validity_ in constructor above.
+		 */
 		explicit
 		UnitVector3D(
-				const Vector3D &v);
-
-
-		// FIXME:  Add a magnitude-checking cctor.
+				const Vector3D &v,
+				bool check_validity_ = true);
 
 
 		~UnitVector3D() {  }
@@ -154,13 +157,56 @@ namespace GPlatesMaths
 		 * Assert the class invariant.
 		 * @throw ViolatedUnitVectorInvariantException
 		 *   if the invariant has been violated.
+		 *
+		 * If passes invariant (threshold) check then ensures values are in range [-1, 1] and also
+		 * adjusts values if magnitude still slightly different than 1.0 (using a smaller threshold
+		 * than the class invariant assertion.
 		 */
-		void AssertInvariant(
-				const GPlatesUtils::CallStack::Trace &exception_source) const;
+		void
+		check_validity();
 
 		real_t d_x, d_y, d_z;
 
 	};
+}
+
+
+#include "Vector3D.h"
+
+
+namespace GPlatesMaths
+{
+	inline
+	UnitVector3D::UnitVector3D(
+			const real_t &x_comp,
+			const real_t &y_comp,
+			const real_t &z_comp,
+			bool check_validity_) :
+		d_x(x_comp),
+		d_y(y_comp),
+		d_z(z_comp)
+	{
+		if (check_validity_)
+		{
+			check_validity();
+		}
+	}
+
+
+	inline
+	UnitVector3D::UnitVector3D(
+			const Vector3D &v,
+			bool check_validity_) :
+		d_x(v.x()),
+		d_y(v.y()),
+		d_z(v.z())
+	{
+		if (check_validity_)
+		{
+			check_validity();
+		}
+	}
+
 
 	inline
 	const real_t

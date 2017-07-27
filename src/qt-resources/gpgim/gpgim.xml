@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="gpgim.xsl" type="text/xsl"?>
 <GPGIM
-	gpgim:version="1.6.0334"
+	gpgim:version="1.6.0336"
 	xmlns="http://www.gplates.org/gpgim"
 	xmlns:gpgim="http://www.gplates.org/gpgim"
 	xmlns:gpml="http://www.gplates.org/gplates"
@@ -478,11 +478,16 @@
 			</Content>
 			<Content>
 				<Value>HalfStageRotation</Value>
-				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'. Uses only a single half-stage between present day and reconstruction time. See 'HalfStageRotationVersion2' for an improved version.</Description>
+				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'. Uses only a single half-stage between present day and reconstruction time. See 'HalfStageRotationVersion3' for an improved version.</Description>
 			</Content>
 			<Content>
 				<Value>HalfStageRotationVersion2</Value>
-				<Description>Reconstruct using half-stage rotations between a 'gpml:leftPlate' and 'gpml:rightPlate'. This is a more accurate version that accumulates a half-stage rotation every 10My from present day to reconstruction time.</Description>
+				<Description>Reconstruct using half-stage rotations between a 'gpml:leftPlate' and 'gpml:rightPlate'. This is a more accurate version that accumulates a half-stage rotation every 10My from present day to reconstruction time. See 'HalfStageRotationVersion3' for an improved version.</Description>
+			</Content>
+			<Content>
+				<Value>HalfStageRotationVersion3</Value>
+				<Description>Reconstruct using half-stage rotations between a 'gpml:leftPlate' and 'gpml:rightPlate'. This is similar to 'HalfStageRotationVersion2' except only the left plate ID is used to reconstruct to the time specified in 'gpml:geometryImportTime', and then half-staqe spreading from there to the reconstruction time.</Description>
+			<Comment>This enables the user to subsequently change the spreading asymmetry without significantly affecting the position (with no effect at the import time).</Comment>
 			</Content>
 		</Enumeration>
 		
@@ -1102,6 +1107,16 @@
 
 		<!-- G -->
 
+		<Property>
+			<Name>gpml:geometryImportTime</Name>
+			<Description>The geological time that the feature's geometry was imported.</Description>
+			<Type>gml:TimeInstant</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>This property is added when a new feature is digitised in GPlates (its value is the geological time at which the feature is digitised). The digitised geometry is still stored in present day coordinates though (ie, reverse reconstructed to present day).</Comment>
+			<Comment>Used by MidOceanRidge features, along with left plate ID, to reconstruct ridge position to the import time and then perform ridge-spreading from there. This enables the user to subsequently change the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time) when the 'HalfStageRotationVersion3' reconstruct method is used.</Comment>
+			<Comment>Also used when a feature's geometry is reconstructed using topologies (instead of using the feature's properties, eg, reconstruction plate ID). This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies through time (mid-ocean ridges going backward in time and subduction zones going forward in time).</Comment>
+		</Property>
+
 		<!-- H -->
 
 		<Property>
@@ -1204,6 +1219,12 @@
 			<Description>Global positions to calculate plate velocities at.</Description>
 			<Type>gml:MultiPoint</Type>
 			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:meshPointsCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:meshPoints' geometry.</Description>
+			<Type>gml:DataBlock</Type>
+			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		
 		<Property>
@@ -2404,6 +2425,7 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 			<Property>gpml:meshPoints</Property>
+			<Property>gpml:meshPointsCoverage</Property>
 		</FeatureClass>
 		
 		<FeatureClass>
@@ -2589,9 +2611,9 @@
 		</FeatureClass>
 		
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
-			<!-- FIXME: This should really be part of the 'gpml:TopologicalNetwork' property type (not a feature type). -->
+			<!-- NOTE: This is no longer needed, but retained for old data that might be loaded. Now any interior of a 'gpml:TopologicalNetwork' that's a polygon is a rigid block. -->
 			<Name>gpml:PolygonCentroidPoint</Name>
-			<Description>The centroid of a polygon used when meshing a deforming region that contains non-deforming interior blocks.</Description>
+			<Description>To be deprecated. Previously used to mark interior rigid blocks of topological networks. Now all polygon interiors automatically become rigid blocks.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 			<Property>gpml:position</Property>
@@ -2631,6 +2653,7 @@
 			<ClassType>abstract</ClassType>
 			<Inherits>gpml:TimeVariantFeature</Inherits>
 			<Property>gpml:reconstructionPlateId</Property>
+			<Property>gpml:geometryImportTime</Property>
 			<Property>gpml:truncatedSection</Property>
 			<Comment>A ReconstructableFeature may be rotated relative to another ReconstructableFeature by the action of Finite Rotations (Inside a TotalReconstructionSequence).</Comment>
 		</FeatureClass>

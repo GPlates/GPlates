@@ -176,7 +176,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		in_rgb_range(
-				int value);
+				double value);
 
 
 		/**
@@ -184,7 +184,7 @@ namespace GPlatesFileIO
 		 */
 		GPlatesGui::Colour
 		make_rgb_colour(
-				int r, int g, int b);
+				double r, double g, double b);
 
 
 		/**
@@ -219,7 +219,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		in_cmyk_range(
-				int value);
+				double value);
 
 
 		/**
@@ -227,7 +227,7 @@ namespace GPlatesFileIO
 		 */
 		GPlatesGui::Colour
 		make_cmyk_colour(
-				int c, int m, int y, int k);
+				double c, double m, double y, double k);
 
 
 		/**
@@ -236,7 +236,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		in_grey_range(
-				int value);
+				double value);
 
 
 		/**
@@ -244,7 +244,7 @@ namespace GPlatesFileIO
 		 */
 		GPlatesGui::Colour
 		make_grey_colour(
-				int value);
+				double value);
 
 
 		/**
@@ -261,6 +261,21 @@ namespace GPlatesFileIO
 		bool
 		is_pattern_fill_specification(
 				const QString &token);
+
+
+		/**
+		 * Parses components and converts the parsed components into a colour.
+		 */
+		template<class ColourSpecification>
+		inline
+		boost::optional<GPlatesGui::Colour>
+		convert_tokens(
+				const QStringList &tokens,
+				unsigned int starting_index = 0)
+		{
+			return ColourSpecification::convert(
+					parse_components<typename ColourSpecification::components_type>(tokens, starting_index));
+		}
 
 
 		template<int Base>
@@ -281,9 +296,55 @@ namespace GPlatesFileIO
 			}
 		};
 
-
-		typedef BaseRGBColourSpecification<10> RGBColourSpecification;
 		typedef BaseRGBColourSpecification<16> HexRGBColourSpecification;
+
+
+		struct RGBColourSpecification
+		{
+			typedef boost::tuple<double, double, double> components_type;
+
+			static
+			inline
+			boost::optional<GPlatesGui::Colour>
+			convert(
+					const components_type& components)
+			{
+				return make_rgb_colour(
+						get<0>(components),
+						get<1>(components),
+						get<2>(components));
+			}
+		};
+
+
+		//! Parsed as "R/G/B" instead of "R G B".
+		struct RGBTripletColourSpecification
+		{
+			typedef boost::tuple<const QString &> components_type;
+
+			static
+			inline
+			boost::optional<GPlatesGui::Colour>
+			convert(
+					const components_type& components)
+			{
+				const QString &token = get<0>(components);
+				if (!token.contains('/'))
+				{
+					throw BadTokenException();
+				}
+
+				// R/G/B triplet.
+				QStringList subtokens = token.split('/');
+				if (subtokens.size() != 3)
+				{
+					throw BadTokenException();
+				}
+
+				// Convert the colour.
+				return convert_tokens<RGBColourSpecification>(subtokens);
+			}
+		};
 
 
 		struct HSVColourSpecification
@@ -304,9 +365,39 @@ namespace GPlatesFileIO
 		};
 
 
+		//! Parsed as "H-S-V" instead of "H S V".
+		struct HSVTripletColourSpecification
+		{
+			typedef boost::tuple<const QString &> components_type;
+
+			static
+			inline
+			boost::optional<GPlatesGui::Colour>
+			convert(
+					const components_type& components)
+			{
+				const QString &token = get<0>(components);
+				if (!token.contains('-'))
+				{
+					throw BadTokenException();
+				}
+
+				// H-S-V triplet.
+				QStringList subtokens = token.split('-');
+				if (subtokens.size() != 3)
+				{
+					throw BadTokenException();
+				}
+
+				// Convert the colour.
+				return convert_tokens<HSVColourSpecification>(subtokens);
+			}
+		};
+
+
 		struct CMYKColourSpecification
 		{
-			typedef boost::tuple<int, int, int, int> components_type;
+			typedef boost::tuple<double, double, double, double> components_type;
 
 			static
 			inline
@@ -325,7 +416,7 @@ namespace GPlatesFileIO
 
 		struct GreyColourSpecification
 		{
-			typedef boost::tuple<int> components_type;
+			typedef boost::tuple<double> components_type;
 
 			static
 			inline
@@ -400,21 +491,6 @@ namespace GPlatesFileIO
 				}
 			}
 		};
-
-
-		/**
-		 * Parses components and converts the parsed components into a colour.
-		 */
-		template<class ColourSpecification>
-		inline
-		boost::optional<GPlatesGui::Colour>
-		convert_tokens(
-				const QStringList &tokens,
-				unsigned int starting_index = 0)
-		{
-			return ColourSpecification::convert(
-					parse_components<typename ColourSpecification::components_type>(tokens, starting_index));
-		}
 
 
 		/**
@@ -986,7 +1062,17 @@ namespace GPlatesFileIO
 			{
 				// Note the use of the short-circuiting mechanism.
 				return try_process_categorical_cpt_colour_entry(tokens, parser_state) ||
-						try_process_rgb_or_hsv_bfn<CategoricalCptFileFormat<T> >(tokens, parser_state);
+						try_process_rgb_or_hsv_bfn<CategoricalCptFileFormat<T> >(tokens, parser_state) ||
+
+						// R/G/B and H-S-V don't depend on COLOR_MODEL (like "R G B" and "H S V" do)...
+						try_process_bfn<CategoricalCptFileFormat<T>, RGBTripletColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, HSVTripletColourSpecification>(tokens, parser_state) ||
+
+						try_process_bfn<CategoricalCptFileFormat<T>, GMTNameColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, CMYKColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, GreyColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, InvisibleColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, PatternFillColourSpecification>(tokens, parser_state);
 			}
 		};
 

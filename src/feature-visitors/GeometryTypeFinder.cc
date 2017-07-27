@@ -113,20 +113,6 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_polygon_on_sphere(
 	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
 	++d_num_polygon_geometries_found;
-
-		
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
-
-	// Output all the points of the polygon.
-	for ( ; iter != end; ++iter) 
-	{
-		d_points_list.push_back( *iter );
-	}
-
-	// Finally, to produce a closed polygon ring, we should return to the initial point
-	// (Assuming that option was specified, which it is by default).
-	d_points_list.push_back ( *polygon_on_sphere->vertex_begin() );
 }
 
 void
@@ -231,5 +217,3 @@ GPlatesFeatureVisitors::is_geometry_property(
 {
 	return !is_not_geometry_property(top_level_prop_ptr);
 }
-
-

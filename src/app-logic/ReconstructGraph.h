@@ -58,6 +58,7 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class LayerParams;
 	class LayerTask;
 	class LayerTaskRegistry;
 
@@ -451,6 +452,15 @@ namespace GPlatesAppLogic
 				bool activation);
 
 		/**
+		 * Emitted when layer @a layer has been activated or deactivated.
+		 */
+		void
+		layer_params_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::LayerParams &layer_params);
+
+		/**
 		 * Emitted when layer @a layer has added a new input connection.
 		 */
 		void
@@ -500,6 +510,9 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
 	public Q_SLOTS:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
 
 		/**
 		 * Used by GuiDebug to print out current reconstruct graph state.
@@ -507,6 +520,18 @@ namespace GPlatesAppLogic
 		void
 		debug_reconstruct_graph_state();
 
+
+	private Q_SLOTS:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		/**
+		 * Handles changes to the layer params of a layer.
+		 */
+		void
+		handle_layer_params_changed(
+				GPlatesAppLogic::LayerParams &layer_params);
 
 	private:
 
@@ -524,22 +549,28 @@ namespace GPlatesAppLogic
 				const Layer &layer,
 				bool activation);
 
+		//! Emits the @a layer_params_changed signal.
+		void
+		emit_layer_params_changed(
+				const Layer &layer,
+				LayerParams &layer_params);
+
 		//! Emits the @a layer_added_input_connection signal.
 		void
 		emit_layer_added_input_connection(
-				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::Layer::InputConnection input_connection);
+				Layer layer,
+				Layer::InputConnection input_connection);
 
 		//! Emits the @a layer_about_to_remove_input_connection signal.
 		void
 		emit_layer_about_to_remove_input_connection(
-				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::Layer::InputConnection input_connection);
+				Layer layer,
+				Layer::InputConnection input_connection);
 
 		//! Emits the @a layer_removed_input_connection signal.
 		void
 		emit_layer_removed_input_connection(
-				GPlatesAppLogic::Layer layer);
+				Layer layer);
 
 		friend class Layer;
 

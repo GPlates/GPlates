@@ -82,6 +82,12 @@ namespace GPlatesQtWidgets
 		void
 		handle_colouring_button_clicked();
 
+		void
+		handle_show_all_button_clicked();
+
+		void
+		handle_hide_all_button_clicked();
+
 	private:
 
 		/**

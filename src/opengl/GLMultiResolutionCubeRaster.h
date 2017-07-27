@@ -38,9 +38,7 @@
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLTransform.h"
-#include "OpenGLFwd.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -547,7 +545,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Typedef for a @a GLCubeSubvision cache.
 		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
+		typedef GLCubeSubdivisionCache<
 				true/*CacheProjectionTransform*/>
 						cube_subdivision_cache_type;
 

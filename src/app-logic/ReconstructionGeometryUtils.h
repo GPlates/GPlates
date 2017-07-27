@@ -34,7 +34,6 @@
 #include <boost/type_traits/is_pointer.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
-#include "AppLogicFwd.h"
 #include "GeometryUtils.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"

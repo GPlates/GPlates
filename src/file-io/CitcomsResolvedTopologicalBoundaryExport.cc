@@ -33,6 +33,10 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 POP_MSVC_WARNINGS
 
+// Suppress compiler warning 4503 'decorated name length exceeded' in Visual Studio 2008.
+// It's too hard to avoid using the 'convert typedef to struct' trick.
+DISABLE_MSVC_WARNING(4503)
+
 #include "CitcomsResolvedTopologicalBoundaryExport.h"
 
 #include "CitcomsGMTFormatResolvedTopologicalBoundaryExport.h"

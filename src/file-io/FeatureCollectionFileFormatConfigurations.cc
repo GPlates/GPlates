@@ -45,3 +45,16 @@ GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attri
 
 	return boost::any_cast<model_to_attribute_map_type &>(model_to_attribute_map_tag);
 }
+
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_original_file_srs() const
+{
+	return d_original_file_srs;
+}
+
+void
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::set_original_file_srs(
+		const GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type &srs)
+{
+	d_original_file_srs.reset(srs);
+}

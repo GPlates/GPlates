@@ -464,13 +464,28 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 		d_grid->paint(renderer);
 	}
 
+	// Colour vector geometries on the rear of the globe the same colour as background so that
+	// they're less intrusive to the geometries on the front of the globe.
+	boost::optional<Colour> vector_geometries_override_colour;
+	if (!is_front_half_globe)
+	{
+		// Note that the background colour may include transparency, in which case the vector
+		// geometries will become doubly-transparent due to rendering sphere background
+		// (translucent sphere) that also uses background colour.
+		// But it produces a nice subtle effect to the rear geometries and also means the
+		// rear geometries will disappear when the background alpha approaches zero, which is
+		// useful if user wants to remove the rear geometries.
+		vector_geometries_override_colour = d_view_state.get_background_colour();
+	}
+
 	// Draw the rendered geometries.
 	// Draw in reverse order if drawing to the rear half of the globe.
 	d_rendered_geom_collection_painter.set_visual_layers_reversed(!is_front_half_globe);
 	const cache_handle_type rendered_geoms_cache_half_globe =
 			d_rendered_geom_collection_painter.paint_surface(
 					renderer,
-					viewport_zoom_factor);
+					viewport_zoom_factor,
+					vector_geometries_override_colour);
 	cache_handle.push_back(rendered_geoms_cache_half_globe);
 
 	if (is_front_half_globe)

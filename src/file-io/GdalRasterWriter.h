@@ -69,7 +69,8 @@ namespace GPlatesFileIO
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int num_raster_bands,
-				GPlatesPropertyValues::RasterType::Type raster_band_type);
+				GPlatesPropertyValues::RasterType::Type raster_band_type,
+				bool compress = false);
 
 		~GDALRasterWriter();
 
@@ -218,20 +219,77 @@ namespace GPlatesFileIO
 		/**
 		 * Information not contained in GPlatesFileIO::RasterWriter::FormatInfo.
 		 */
-		struct InternalFormatInfo
+		class InternalFormatInfo
 		{
+		public:
+
+			explicit
 			InternalFormatInfo(
 					const std::string &driver_name_,
-					const std::vector<std::string> &creation_options_) :
+					const std::vector<std::string> &general_creation_options = std::vector<std::string>()) :
 				driver_name(driver_name_),
-				creation_options(creation_options_)
+				d_general_creation_options(general_creation_options)
 			{  }
 
 			//! GDAL driver name.
 			std::string driver_name;
 
-			//! Options passed to 'GDALDriver::CreateCopy()'. 
-			std::vector<std::string> creation_options;
+			void
+			get_creation_options(
+					std::vector<std::string> &creation_options,
+					GPlatesPropertyValues::RasterType::Type raster_band_type,
+					bool compress) const;
+
+			bool
+			has_option_to_compress() const
+			{
+				return !d_compression_creation_options.empty() ||
+					!d_specific_compression_creation_options.empty();
+			}
+
+			/**
+			 * Set general compression options or, if raster band type specified, compression options
+			 * specific to a raster band type (overrides general compression options for that type).
+			 */
+			void
+			set_compression_creation_options(
+					const std::vector<std::string> &compression_creation_options,
+					boost::optional<GPlatesPropertyValues::RasterType::Type> raster_band_type = boost::none)
+			{
+				if (raster_band_type)
+				{
+					d_specific_compression_creation_options[raster_band_type.get()] = compression_creation_options;
+				}
+				else
+				{
+					d_compression_creation_options = compression_creation_options;
+				}
+			}
+
+		private:
+
+			//
+			// Options passed to 'GDALDriver::CreateCopy()'.
+			//
+
+			typedef std::vector<std::string> creation_options_type;
+
+			typedef std::map<GPlatesPropertyValues::RasterType::Type, creation_options_type>
+					raster_type_specific_creation_options_type;
+
+
+			//! General options.
+			std::vector<std::string> d_general_creation_options;
+
+			//! Compression options not specific to any raster type.
+			creation_options_type d_compression_creation_options;
+
+			/**
+			 * Compression options not specific to any raster type (if needed).
+			 *
+			 * Note: These override any compression options in @a d_compression_creation_options.
+			 */
+			raster_type_specific_creation_options_type d_specific_compression_creation_options;
 		};
 
 		// Map format descriptions to internal format information.
@@ -251,8 +309,7 @@ namespace GPlatesFileIO
 				const QString &filename_extension,
 				const QString &format_description,
 				const QString &format_mime_type,
-				const char *driver_name,
-				const std::vector<std::string> &creation_options = std::vector<std::string>());
+				const InternalFormatInfo &internal_format_info);
 
 
 		/**
@@ -284,6 +341,7 @@ namespace GPlatesFileIO
 		QString d_filename;
 		unsigned int d_num_raster_bands;
 		GPlatesPropertyValues::RasterType::Type d_raster_band_type;
+		bool d_compress;
 
 		//! The optional no-data value for each raster band.
 		std::vector< boost::optional<double> > d_raster_band_no_data_values;

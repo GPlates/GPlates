@@ -38,6 +38,9 @@
 
 #include "MathsUtils.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -166,6 +169,15 @@ namespace GPlatesMaths
 		friend bool operator<(const Real &, const Real &);
 		friend std::ostream &operator<<(std::ostream &, const Real &);
 		friend std::istream &operator>>(std::istream &, Real &);
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

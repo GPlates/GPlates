@@ -36,6 +36,7 @@
 
 #include "TopologyInternalUtils.h"
 
+#include "AppLogicUtils.h"
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
@@ -44,6 +45,7 @@
 #include "ReconstructionTree.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
+#include "TopologyReconstructedFeatureGeometry.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -220,11 +222,16 @@ namespace
 		visit_gml_multi_point(
 			const GPlatesPropertyValues::GmlMultiPoint &/*gml_multi_point*/)
 		{
+			// Nothing to do - we don't create topological sections for multi-points.
+
+// The caller will be able to detect this error since they'll end up with no topological section.
+#if 0
 			qWarning() << "WARNING: GpmlTopologicalSection not created for gml:MultiPoint.";
 			qWarning() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
 					d_geometry_property.handle_weak_ref()->feature_id().get());
 			qWarning() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_geometry_property)->get_property_name().get_name());
+#endif
 		}
 
 
@@ -502,6 +509,228 @@ namespace
 	};
 
 
+	/**
+	 * Used to find feature IDs of all topological sections referenced by topological geometries/networks.
+	 */
+	class FindTopologicalSectionsReferenced :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		explicit
+		FindTopologicalSectionsReferenced(
+				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type = boost::none,
+				boost::optional<double> reconstruction_time = boost::none) :
+			d_topological_sections_referenced(topological_sections_referenced),
+			d_topology_geometry_type(topology_geometry_type),
+			d_reconstruction_time(reconstruction_time)
+		{  }
+
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+			// If we have a reconstruction time then make sure this feature is defined at that time.
+			if (d_reconstruction_time)
+			{
+				GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_params;
+				reconstruction_params.visit_feature(feature_handle.reference());
+				if (!reconstruction_params.is_feature_defined_at_recon_time(d_reconstruction_time.get()))
+				{
+					return false;
+				}
+			}
+
+			// Now visit each of the properties in turn.
+			return true;
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.time_windows();
+
+			// NOTE: If there's only one time window then we do not check its time period against the
+			// current reconstruction time (if checking reconstruction time).
+			// This mirrors the compromise implemented in TopologyNetworkResolver and TopologyGeometryResolver
+			// (see 'visit_gpml_piecewise_aggregation()' in those classes for more details).
+			if (time_windows.size() == 1)
+			{
+				time_windows.front().get()->time_dependent_value()->accept_visitor(*this);
+				return;
+			}
+
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter = time_windows.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end = time_windows.end();
+			for ( ; iter != end; ++iter) 
+			{
+				const GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter->get();
+
+				// If we have a reconstruction time and the time window period contains it then visit the time window.
+				// The time periods should be mutually exclusive - if we happen to be in
+				// two time periods then we're probably right on the boundary between the two
+				// in which case we'll only visit the first time window encountered to mirror what
+				// the topology geometry/network resolvers do.
+				if (d_reconstruction_time)
+				{
+					if (time_window.valid_time()->contains(d_reconstruction_time.get()))
+					{
+						time_window.time_dependent_value()->accept_visitor(*this);
+						return;
+					}
+				}
+				else
+				{
+					// We don't have a reconstruction time so we'll visit all time windows.
+					time_window.time_dependent_value()->accept_visitor(*this);
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_topological_network(
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::NETWORK)
+			{
+				return;
+			}
+
+			// Loop over all the boundary sections.
+			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type boundary_sections =
+					gpml_topological_network.get_boundary_sections();
+
+			// Loop over all the boundary sections.
+			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator boundary_iter =
+					boundary_sections.begin();
+			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator boundary_end =
+					boundary_sections.end();
+			for ( ; boundary_iter != boundary_end; ++boundary_iter)
+			{
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+						boundary_iter->get_source_section();
+
+				topological_section->accept_visitor(*this);
+			}
+
+			// Loop over all the interior geometries.
+			GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type interior_geometries =
+					gpml_topological_network.get_interior_geometries();
+
+			// Loop over all the interior geometries.
+			GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator interior_iter =
+					interior_geometries.begin();
+			GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator interior_end =
+					interior_geometries.end();
+			for ( ; interior_iter != interior_end; ++interior_iter)
+			{
+				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &interior = *interior_iter;
+
+				// Add the feature ID of the interior geometry.
+				d_topological_sections_referenced.insert(
+						interior.get_source_geometry()->get_feature_id());
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::LINE)
+			{
+				return;
+			}
+
+			// Loop over all the sections.
+			GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type sections =
+					gpml_topological_line.get_sections();
+
+			GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator sections_iter = sections.begin();
+			GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator sections_end = sections.end();
+			for ( ; sections_iter != sections_end; ++sections_iter)
+			{
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section =
+						sections_iter->get_source_section();
+
+				topological_section->accept_visitor(*this);
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+		{
+			// Filter based on topology geometry type (if requested).
+			if (d_topology_geometry_type &&
+				d_topology_geometry_type.get() != GPlatesAppLogic::TopologyGeometry::BOUNDARY)
+			{
+				return;
+			}
+
+			// Loop over all the exterior sections.
+			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type exterior_sections =
+					gpml_topological_polygon.get_exterior_sections();
+			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator exterior_sections_iter =
+					exterior_sections.begin();
+			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator exterior_sections_end =
+					exterior_sections.end();
+			for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
+			{
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section =
+						exterior_sections_iter->get_source_section();
+
+				topological_section->accept_visitor(*this);
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		{
+			// Add the feature ID of the line section geometry.
+			d_topological_sections_referenced.insert(
+					gpml_toplogical_line_section.get_source_geometry()->get_feature_id());
+		}
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		{
+			// Add the feature ID of the point geometry.
+			d_topological_sections_referenced.insert(
+					gpml_toplogical_point.get_source_geometry()->get_feature_id());
+		}
+
+	private:
+		std::set<GPlatesModel::FeatureId> &d_topological_sections_referenced;
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> d_topology_geometry_type;
+		boost::optional<double> d_reconstruction_time;
+	};
+
+
 	boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 	find_topological_section_reconstruction_geometry(
 			const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> &found_rgs,
@@ -513,6 +742,9 @@ namespace
 
 		if (found_rgs.empty())
 		{
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 			// If we found no RFG then it probably means the reconstruction time is outside the age range
 			// of the referenced features. This is ok - it's not necessarily an error.
 			// In fact we only report an error if any of the referenced features exist at the current
@@ -550,6 +782,7 @@ namespace
 					break;
 				}
 			}
+#endif
 
 			return boost::none;
 		}
@@ -583,14 +816,22 @@ namespace
 				// All reconstruction geometries should refer to the same feature.
 				if (feature_ref.get() != found_feature_ref.get())
 				{
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 					qWarning() 
 						<< "Multiple features for feature-id = "
 						<< GPlatesUtils::make_qstring_from_icu_string(
 								feature_ref.get()->feature_id().get() );
+#endif
+
 					return boost::none;
 				}
 			}
 
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 			if (found_feature_ref)
 			{
 				// We should only return boost::none for the case == 0, as above.
@@ -614,6 +855,7 @@ namespace
 				qWarning() << "  property name =" << property_name.get_name().qstring();
 				qWarning() << "  Using the first topological section found.";
 			}
+#endif
 		}
 
 		// Return the first RG found.
@@ -714,17 +956,19 @@ namespace
 				// This should happen rarely since most topological sections
 				// will be polylines and not polygons - so the expense of conversion
 				// should happen rarely if at all.
-				d_first_geom_as_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+				d_first_geom_as_polyline = GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+						*polygon_on_sphere,
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 				break;
 			case VISITING_SECOND_GEOM_TO_GET_POLYLINE:
 				// This should happen rarely since most topological sections
 				// will be polylines and not polygons - so the expense of conversion
 				// should happen rarely if at all.
-				d_second_geom_as_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+				d_second_geom_as_polyline = GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+						*polygon_on_sphere,
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 				break;
 			}
 		}
@@ -929,6 +1173,30 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 }
 
 
+void
+GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+		std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+		const GPlatesModel::FeatureHandle::weak_ref &topology_feature_ref,
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
+		boost::optional<double> reconstruction_time)
+{
+	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
+	visitor.visit_feature(topology_feature_ref);
+}
+
+
+void
+GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+		std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
+		boost::optional<double> reconstruction_time)
+{
+	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
+	AppLogicUtils::visit_feature_collection(topology_feature_collection_ref, visitor);
+}
+
+
 GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 		const GPlatesModel::FeatureId &feature_id)
@@ -963,9 +1231,14 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	// If there are no features with the delegate feature id...
 	if (resolved_features.empty())
 	{
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 		qWarning() 
 			<< "Missing feature for feature-id = "
 			<< GPlatesUtils::make_qstring_from_icu_string(geometry_delegate.get_feature_id().get());
+#endif
+
 		return boost::none;
 	}
 
@@ -1026,129 +1299,6 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 			std::vector<GPlatesModel::FeatureHandle::weak_ref>(1, feature_ref),
 			(*geometry_property)->get_property_name(),
 			reconstruction_time);
-}
-
-
-boost::tuple<
-		boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*second_section_closest_segment*/>
-GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_geometry,
-		const GPlatesMaths::PointOnSphere &first_section_reference_point,
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_geometry,
-		const GPlatesMaths::PointOnSphere &second_section_reference_point)
-{
-	typedef boost::optional<GPlatesMaths::PointOnSphere> optional_intersection_point_type;
-
-	// Get the two geometries as polylines if they are intersectable - that is if neither
-	// geometry is a point or a multi-point.
-	boost::optional<
-		std::pair<
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > polylines_for_intersection =
-				get_polylines_for_intersection(first_section_geometry, second_section_geometry);
-
-	// If the two geometries are not intersectable then just return the original geometries.
-	if (!polylines_for_intersection)
-	{
-		// Return original geometries.
-		return boost::make_tuple<optional_intersection_point_type>(
-				boost::none, first_section_geometry, second_section_geometry);
-	}
-
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline =
-			polylines_for_intersection->first;
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline =
-			polylines_for_intersection->second;
-
-	return intersect_topological_sections(
-			first_section_polyline,
-			first_section_reference_point,
-			second_section_polyline,
-			second_section_reference_point);
-}
-
-
-boost::tuple<
-		boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type/*second_section_closest_segment*/>
-GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline,
-		const GPlatesMaths::PointOnSphere &first_section_reference_point,
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline,
-		const GPlatesMaths::PointOnSphere &second_section_reference_point)
-{
-	typedef boost::optional<GPlatesMaths::PointOnSphere> optional_intersection_point_type;
-
-	boost::optional<
-		boost::tuple<
-			/*intersection point*/
-			GPlatesMaths::PointOnSphere,
-			/*head_first_section*/
-			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-			/*tail_first_section*/
-			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-			/*head_second_section*/
-			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-			/*tail_second_section*/
-			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
-		intersected_segments = intersect_topological_sections(
-				first_section_polyline,
-				second_section_polyline);
-
-	// If there were no intersections then return the original geometries.
-	if (!intersected_segments)
-	{
-		// Return original geometries.
-		return boost::make_tuple<optional_intersection_point_type>(
-				boost::none,
-				first_section_polyline,
-				second_section_polyline);
-	}
-
-	// It's possible for the intersection to form a T-junction where
-	// one polyline is divided into two (or even a V-junction where
-	// both polylines meet at either of their endpoints).
-	// If that happens then we don't need to test a polyline that is not divided
-	// because it will be the closest segment to the reference point already.
-
-	const GPlatesMaths::PointOnSphere &intersection_point = boost::get<0>(*intersected_segments);
-
-	// We are guaranteed that at least one of head or tail is non-null.
-	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
-			head_first_section = boost::get<1>(*intersected_segments);
-	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
-			tail_first_section = boost::get<2>(*intersected_segments);
-
-	// We are guaranteed that at least one of head or tail is non-null.
-	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
-			head_second_section = boost::get<3>(*intersected_segments);
-	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
-			tail_second_section = boost::get<4>(*intersected_segments);
-
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_closest_segment =
-			head_first_section && tail_first_section
-					? find_closest_intersected_segment_to_reference_point(
-							first_section_reference_point,
-							*head_first_section,
-							*tail_first_section)
-					: (head_first_section ? *head_first_section : *tail_first_section);
-
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_closest_segment =
-			head_second_section && tail_second_section
-					? find_closest_intersected_segment_to_reference_point(
-							second_section_reference_point,
-							*head_second_section,
-							*tail_second_section)
-					: (head_second_section ? *head_second_section : *tail_second_section);
-
-	return boost::make_tuple(
-			// The single intersection point...
-			intersection_point,
-			first_section_closest_segment,
-			second_section_closest_segment);
 }
 
 
@@ -1259,6 +1409,9 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 		return boost::none;
 	}
 
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 	// Produce a warning message if there is more than one intersection.
 	if (intersection_graph->intersections.size() >= 2)
 	{
@@ -1267,6 +1420,7 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 		qWarning() << "	Boundary feature intersection relations may not be correct!";
 		qWarning() << "	Make sure boundary feature's only intersect once.";
 	}
+#endif
 
 	//
 	// We have at least one intersection - ideally we're only expecting one intersection.
@@ -1487,6 +1641,9 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 		return boost::none;
 	}
 
+// These errors never really get fixed in the topology datasets so might as well stop spamming the log.
+// Better to write a pyGPlates script to detect these types of errors as a post-process.
+#if 0
 	// Produce a warning message if there is more than two intersections.
 	if (intersection_graph->intersections.size() >= 3)
 	{
@@ -1495,6 +1652,7 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 		qWarning() << "	Boundary feature intersection relations may not be correct!";
 		qWarning() << "	Make sure a boundary with exactly two sections only intersects twice.";
 	}
+#endif
 
 	//
 	// We have at least one intersection - ideally we're only expecting one or two intersections.
@@ -1701,49 +1859,6 @@ GPlatesAppLogic::TopologyInternalUtils::get_polylines_for_intersection(
 }
 
 
-GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_reference_point(
-		const GPlatesMaths::PointOnSphere &section_reference_point,
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_intersected_segment,
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment)
-{
-	// Setup up proximity test parameters.
-	static GPlatesMaths::AngularExtent closeness_angular_extent_threshold =
-			GPlatesMaths::AngularExtent::create_from_cosine(0.9);
-
-	// Determine closeness to first intersected segment.
-	GPlatesMaths::real_t closeness_first_segment = -1/*least close*/;
-	const bool is_reference_point_close_to_first_segment = first_intersected_segment->is_close_to(
-		section_reference_point,
-		closeness_angular_extent_threshold,
-		closeness_first_segment);
-
-	// Determine closeness to second intersected segment.
-	GPlatesMaths::real_t closeness_second_segment = -1/*least close*/;
-	const bool is_reference_point_close_to_second_segment = second_intersected_segment->is_close_to(
-		section_reference_point,
-		closeness_angular_extent_threshold,
-		closeness_second_segment);
-
-	// Make sure that the reference point is close to one of the segments.
-	if ( !is_reference_point_close_to_first_segment &&
-		!is_reference_point_close_to_second_segment ) 
-	{
-		qWarning() << "TopologyInternalUtils::find_closest_intersected_segment_to_reference_point: ";
-		qWarning() << "	reference point not close to anything!";
-		qWarning() << "	Arbitrarily selecting one of the intersected segments!";
-
-		// FIXME: do something better than just arbitrarily select one of the segments as closest.
-		return first_intersected_segment;
-	}
-
-	// Return the closest segment.
-	return (closeness_first_segment > closeness_second_segment)
-			? first_intersected_segment
-			: second_intersected_segment;
-}
-
-
 void
 GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 		sub_segment_seq_type &merged_sub_segments,
@@ -1833,7 +1948,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 			++sub_segment_iter)
 		{
 			// Add the current deforming point to the merged deforming polyline.
-			GeometryUtils::get_geometry_points(
+			GeometryUtils::get_geometry_exterior_points(
 					*sub_segment_iter->get_geometry(),
 					merged_deforming_polyline_points,
 					false/*reverse_points*/);
@@ -1890,7 +2005,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 					GPlatesMaths::PointOnSphere/*start point*/,
 					GPlatesMaths::PointOnSphere/*end point*/>
 						prev_sub_segment_geometry_end_points =
-							GeometryUtils::get_geometry_end_points(
+							GeometryUtils::get_geometry_exterior_end_points(
 									*prev_sub_segment->get_geometry(),
 									prev_sub_segment->get_use_reverse());
 				merged_deforming_polyline_points.push_back(
@@ -1898,7 +2013,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 			}
 
 			// Add the current deforming point to the merged deforming polyline.
-			GeometryUtils::get_geometry_points(
+			GeometryUtils::get_geometry_exterior_points(
 					*sub_segment.get_geometry(),
 					merged_deforming_polyline_points,
 					false/*reverse_points*/);
@@ -1913,7 +2028,7 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 					GPlatesMaths::PointOnSphere/*start point*/,
 					GPlatesMaths::PointOnSphere/*end point*/>
 						sub_segment_geometry_end_points =
-							GeometryUtils::get_geometry_end_points(
+							GeometryUtils::get_geometry_exterior_end_points(
 									*sub_segment.get_geometry(),
 									sub_segment.get_use_reverse());
 				merged_deforming_polyline_points.push_back(
@@ -1966,28 +2081,25 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 		return false;
 	}
 
-	// TODO: Filter out reconstructed geometries that have been deformed by topological network layers.
-	// These reconstructed geometries cannot supply topological sections (to topological network layers)
-	// because these reconstructed geometries are deformed by the topological networks which in turn
-	// would use the reconstructed geometries to build the topological networks - thus creating a
-	// cyclic dependency (so the layer system excludes those reconstruct layers that are deformed).
-	// Note that these reconstructed geometries also cannot supply topological sections to
-	// topological 'geometry' layers, eg containing topological lines, because those resolved
-	// topological lines can, in turn, be used as topological sections by topological networks -
-	// so there's still a cyclic dependency (it's just a more round-about or indirect dependency).
+	// Filter out reconstructed geometries that have been reconstructed using topological boundaries/networks.
 	//
-	// This is a bit tricky because it's not easy to find the layer than reconstructed the RFG
-	// (so that we can query whether it's connected to topological layers) because RFGs should
-	// not know which layer they were generated from because they might not have been generated from
-	// a layer (eg, if generated by GPlates command-line tool) or simply just not created from a layer.
+	// These reconstructed geometries cannot supply topological sections because they were
+	// reconstructed using topological boundaries/networks thus creating a cyclic dependency
+	// (so the layer system excludes those reconstruct layers that reconstruct using topologies).
 	//
-	// It's not so bad though because even if we could detect this it would not prevent the
-	// user from building a topology using an RFG and then subsequently connecting that RFG's layer
-	// to a topology layer (to deform it). In this situation the RFG would disappear from the
-	// topology's boundary (or interior) as soon as its layer was connected a topology layer.
-	//
-	// In any case it'll be up to the topology builder user to not use deformed geometries as
-	// topological sections.
+	// Note that this still does not prevent the user from building a topology using an RFG and then
+	// subsequently connecting that RFG's layer to a topology layer (thus turning it into a DFG).
+	// In this situation the RFG would disappear from the topology's boundary (or interior) as soon as
+	// its layer was connected a topology layer.
+	// In this case it'll be up to the topology builder user to not use reconstructed geometries,
+	// that have been reconstructed using topological boundaries/networks, as topological sections.
+	boost::optional<const TopologyReconstructedFeatureGeometry *> trfg =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const TopologyReconstructedFeatureGeometry *>(rfg.get());
+	if (trfg)
+	{
+		return false;
+	}
 
 	return true;
 }

@@ -39,6 +39,7 @@
 
 #include "maths/GeometryOnSphere.h"
 
+#include "model/FeatureHandle.h"
 #include "model/types.h"
 
 
@@ -202,16 +203,12 @@ namespace GPlatesViewOperations
 		convert_secondary_geometries_to_features();
 
 		/**
-		 * Reconstructs the specified geometry forward or backward in time using
-		 * current reconstruction tree and plate_id of currently focused feature.
-		 * If @a reverse_reconstruct is true then reconstruct back to present day.
+		 * Reverse reconstructs the specified geometry using the currently focused feature.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct(
+		reverse_reconstruct(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
-				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
-				const GPlatesAppLogic::ReconstructParams &reconstruct_params,
-				bool reverse_reconstruct);
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
 		/**
 		 * Reconstructs the specified geometry forward or backward in time using

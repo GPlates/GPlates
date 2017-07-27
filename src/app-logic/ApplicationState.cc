@@ -28,6 +28,7 @@
 
 #include "ApplicationState.h"
 
+#include "AgeModelCollection.h"
 #include "AppLogicUtils.h"
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
@@ -98,7 +99,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_reconstruct_on_scope_exit(false),
 	d_currently_reconstructing(false),
 	d_suppress_auto_layer_creation(false),
-	d_callback_feature_store(d_model->root())
+	d_callback_feature_store(d_model->root()),
+	d_age_model_collection(new AgeModelCollection())
 {
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);
@@ -290,14 +292,34 @@ GPlatesAppLogic::ApplicationState::get_feature_collection_file_state()
 	return *d_feature_collection_file_state;
 }
 
+const GPlatesAppLogic::FeatureCollectionFileState &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_state() const
+{
+	return *d_feature_collection_file_state;
+}
+
+
 GPlatesFileIO::FeatureCollectionFileFormat::Registry &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry()
 {
 	return *d_feature_collection_file_format_registry;
 }
 
+const GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry() const
+{
+	return *d_feature_collection_file_format_registry;
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
+{
+	return *d_feature_collection_file_io;
+}
+
+const GPlatesAppLogic::FeatureCollectionFileIO &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_io() const
 {
 	return *d_feature_collection_file_io;
 }
@@ -309,9 +331,21 @@ GPlatesAppLogic::ApplicationState::get_user_preferences()
 	return *d_user_preferences_ptr;
 }
 
+const GPlatesAppLogic::UserPreferences &
+GPlatesAppLogic::ApplicationState::get_user_preferences() const
+{
+	return *d_user_preferences_ptr;
+}
+
 
 GPlatesAppLogic::ReconstructMethodRegistry &
 GPlatesAppLogic::ApplicationState::get_reconstruct_method_registry()
+{
+	return *d_reconstruct_method_registry;
+}
+
+const GPlatesAppLogic::ReconstructMethodRegistry &
+GPlatesAppLogic::ApplicationState::get_reconstruct_method_registry() const
 {
 	return *d_reconstruct_method_registry;
 }
@@ -323,6 +357,12 @@ GPlatesAppLogic::ApplicationState::get_layer_task_registry()
 	return *d_layer_task_registry;
 }
 
+const GPlatesAppLogic::LayerTaskRegistry &
+GPlatesAppLogic::ApplicationState::get_layer_task_registry() const
+{
+	return *d_layer_task_registry;
+}
+
 
 GPlatesAppLogic::LogModel &
 GPlatesAppLogic::ApplicationState::get_log_model()
@@ -330,9 +370,21 @@ GPlatesAppLogic::ApplicationState::get_log_model()
 	return *d_log_model;
 }
 
+const GPlatesAppLogic::LogModel &
+GPlatesAppLogic::ApplicationState::get_log_model() const
+{
+	return *d_log_model;
+}
+
 
 GPlatesAppLogic::ReconstructGraph &
 GPlatesAppLogic::ApplicationState::get_reconstruct_graph()
+{
+	return *d_reconstruct_graph;
+}
+
+const GPlatesAppLogic::ReconstructGraph &
+GPlatesAppLogic::ApplicationState::get_reconstruct_graph() const
 {
 	return *d_reconstruct_graph;
 }
@@ -387,6 +439,14 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
 					bool)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
+			SIGNAL(layer_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerParams &)),
 			this,
 			SLOT(reconstruct()));
 	QObject::connect(

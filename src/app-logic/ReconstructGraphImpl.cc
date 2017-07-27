@@ -524,10 +524,10 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::activate(
 }
 
 
-GPlatesAppLogic::LayerTaskParams &
-GPlatesAppLogic::ReconstructGraphImpl::Layer::get_layer_task_params()
+GPlatesAppLogic::LayerParams::non_null_ptr_type
+GPlatesAppLogic::ReconstructGraphImpl::Layer::get_layer_params()
 {
-	return d_layer_task->get_layer_task_params();
+	return d_layer_task->get_layer_params();
 }
 
 

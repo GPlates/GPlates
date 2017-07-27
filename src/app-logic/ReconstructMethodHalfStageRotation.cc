@@ -169,6 +169,7 @@ namespace GPlatesAppLogic
 		 * a new enumeration in the 'gpml:ReconstructionMethod' property.
 		 */
 		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2 = 10.0;
+		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3 = 10.0;
 
 		/**
 		 * The version 2 method of calculating half-stage rotations using multiple fixed-size
@@ -188,8 +189,33 @@ namespace GPlatesAppLogic
 					left_plate_id,
 					right_plate_id,
 					spreading_asymmetry,
+					0.0/*geometry_import_time*/,
 					// Note: To ensure backward compatibility, must use a value that doesn't change...
 					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2);
+		}
+
+		/**
+		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
+		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_half_stage_rotation_version_3(
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &spreading_asymmetry,
+				const double &spreading_start_time,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator)
+		{
+			return RotationUtils::get_half_stage_rotation(
+					reconstruction_tree_creator,
+					reconstruction_time,
+					left_plate_id,
+					right_plate_id,
+					spreading_asymmetry,
+					spreading_start_time,
+					// Note: To ensure backward compatibility, must use a value that doesn't change...
+					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3);
 		}
 
 
@@ -214,8 +240,37 @@ namespace GPlatesAppLogic
 					reconstruction_time,
 					reconstruction_tree_creator,
 					spreading_asymmetry,
+					0.0/*spreading_start_time*/,
 					// Note: To ensure backward compatibility, must use a value that doesn't change...
 					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2,
+					reverse_reconstruct);
+		}
+
+		/**
+		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
+		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_as_half_stage_version_3(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry,
+				const double &spreading_start_time,
+				bool reverse_reconstruct)
+		{
+			return ReconstructUtils::reconstruct_as_half_stage(
+					geometry,
+					left_plate_id,
+					right_plate_id,
+					reconstruction_time,
+					reconstruction_tree_creator,
+					spreading_asymmetry,
+					spreading_start_time,
+					// Note: To ensure backward compatibility, must use a value that doesn't change...
+					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3,
 					reverse_reconstruct);
 		}
 
@@ -247,14 +302,41 @@ namespace GPlatesAppLogic
 
 			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
+
+			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+					reconstruction_params.get_reconstruction_method();
 
 			// Get the half-stage rotation.
-			if (reconstruction_params.get_reconstruction_method() == enumeration_half_stage_rotation_version_2)
+			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
+				reconstruction_method == enumeration_half_stage_rotation_version_2)
 			{
 				double spreading_asymmetry = 0.0;
 				if (reconstruction_params.get_spreading_asymmetry())
 				{
 					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
+				}
+
+				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
+				{
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
+							reconstruction_params.get_geometry_import_time();
+
+					double spreading_start_time = 0.0;
+					if (geometry_import_time &&
+						geometry_import_time->is_real())
+					{
+						spreading_start_time = geometry_import_time->value();
+					}
+
+					return get_half_stage_rotation_version_3(
+							left_plate_id,
+							right_plate_id,
+							spreading_asymmetry,
+							spreading_start_time,
+							reconstruction_time,
+							reconstruction_tree_creator);
 				}
 
 				return get_half_stage_rotation_version_2(
@@ -304,14 +386,43 @@ namespace GPlatesAppLogic
 
 			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
+
+			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+					reconstruction_params.get_reconstruction_method();
 
 			// Get the half-stage rotation.
-			if (reconstruction_params.get_reconstruction_method() == enumeration_half_stage_rotation_version_2)
+			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
+				reconstruction_method == enumeration_half_stage_rotation_version_2)
 			{
 				double spreading_asymmetry = 0.0;
 				if (reconstruction_params.get_spreading_asymmetry())
 				{
 					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
+				}
+
+				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
+				{
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
+							reconstruction_params.get_geometry_import_time();
+
+					double spreading_start_time = 0.0;
+					if (geometry_import_time &&
+						geometry_import_time->is_real())
+					{
+						spreading_start_time = geometry_import_time->value();
+					}
+
+					return reconstruct_as_half_stage_version_3(
+							geometry,
+							left_plate_id,
+							right_plate_id,
+							reconstruction_time,
+							reconstruction_tree_creator,
+							spreading_asymmetry,
+							spreading_start_time,
+							reverse_reconstruct);
 				}
 
 				return reconstruct_as_half_stage_version_2(
@@ -449,10 +560,13 @@ namespace GPlatesAppLogic
 						GPlatesPropertyValues::EnumerationContent("HalfStageRotation");
 				static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
 						GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+				static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+						GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
 
 				// Must have the correct reconstruct method property.
 				if (reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation &&
-					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_2)
+					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_2 &&
+					reconstruction_params.get_reconstruction_method() != enumeration_half_stage_rotation_version_3)
 				{
 					return false;
 				}
@@ -594,11 +708,10 @@ namespace GPlatesAppLogic
 			visit_gml_polygon(
 					GPlatesPropertyValues::GmlPolygon &gml_polygon)
 			{
-				// TODO: Add interior polygons when PolygonOnSphere contains interior polygons.
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_polygon.get_exterior()));
+								gml_polygon.get_polygon()));
 			}
 
 			virtual
@@ -756,36 +869,13 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_polygon.get_exterior(),
+								gml_polygon.get_polygon(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),
 								d_reconstruction_params.get_time_of_appearance(),
 								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
-					
-				// Repeat the same procedure for each of the interior rings, if any.
-				const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
-				GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator it = interiors.begin();
-				GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = interiors.end();
-				for ( ; it != end; ++it) 
-				{
-					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_interior = *it;
-
-					const ReconstructedFeatureGeometry::non_null_ptr_type rfg_p =
-							ReconstructedFeatureGeometry::create(
-									d_reconstruction_tree,
-									d_reconstruction_tree_creator,
-									*property.handle_weak_ref(),
-									property,
-									polygon_interior,
-									d_reconstruction_rotation.get(),
-									ReconstructMethod::HALF_STAGE_ROTATION,
-									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance(),
-									d_reconstruct_handle);
-					d_reconstructed_feature_geometries.push_back(rfg_p);
-				}
 			}
 
 
@@ -860,7 +950,9 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const ReconstructHandle::type &reconstruct_handle,
 		const Context &context,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
 {
 	// Get the feature's reconstruction left/right plate ids.
 	ReconstructionFeatureProperties reconstruction_feature_properties;
@@ -872,6 +964,9 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		return;
 	}
 
+	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
 	get_present_day_feature_geometries(present_day_geometries);
@@ -880,21 +975,34 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		// Get the half-stage rotation.
 		GPlatesModel::integer_plate_id_type left_plate_id;
 		GPlatesModel::integer_plate_id_type right_plate_id;
-		const GPlatesMaths::FiniteRotation finite_rotation =
+		const GPlatesMaths::FiniteRotation finite_rotation_1 =
 				get_half_stage_rotation(
 						left_plate_id,
 						right_plate_id,
-						reconstruction_time,
+						time_range.second/*young*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
 		const GPlatesMaths::FiniteRotation finite_rotation_2 =
 				get_half_stage_rotation(
 						left_plate_id,
 						right_plate_id,
-						// FIXME:  Should this '1' should be user controllable? ...
-						reconstruction_time + 1,
+						time_range.first/*old*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
+
+		// Use either the young or old half-stage rotations if the reconstruction time matches.
+		// Otherwise calculate a new half-stage rotation.
+		const GPlatesMaths::FiniteRotation finite_rotation =
+				GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.second/*young*/)
+				? finite_rotation_1
+				: (GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.first/*old*/)
+						? finite_rotation_2
+						: get_half_stage_rotation(
+								left_plate_id,
+								right_plate_id,
+								reconstruction_time,
+								reconstruction_feature_properties,
+								context.reconstruction_tree_creator));
 
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the
@@ -943,8 +1051,9 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 			const GPlatesMaths::Vector3D vector_xyz =
 					GPlatesMaths::calculate_velocity_vector(
 							*domain_iter,
-							finite_rotation,
-							finite_rotation_2);
+							finite_rotation_1,
+							finite_rotation_2,
+							time_range.first/*old*/ - time_range.second/*young*/);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

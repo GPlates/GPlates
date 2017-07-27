@@ -280,10 +280,10 @@ namespace
 			int offset,
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
 	{
-		ensure_table_size(table, offset + static_cast<int>(polygon->number_of_vertices()));
+		ensure_table_size(table, offset + static_cast<int>(polygon->number_of_vertices_in_exterior_ring()));
 		
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator it = polygon->vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator it = polygon->exterior_ring_vertex_begin();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator end = polygon->exterior_ring_vertex_end();
 		for (int row = offset; it != end; ++it, ++row) {
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*it);
 			populate_table_row_from_lat_lon(geometry_widget, table, row,
@@ -556,18 +556,9 @@ namespace
 			std::vector<GPlatesMaths::PointOnSphere> &points,
 			PolylineConstructionProblems &problems)
 	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-				invalid_points;
-		// FIXME: It would be nice if we could look at those iterators, calculate the appropriate
-		// table rows (remember, we may have skipped rows!), and highlight the bad ones.
-		
 		// Evaluate construction parameter validity.
 		// FIXME: Switch to GPlatesUtils::GeometryConstruction::GeometryConstructionValidity.
-		problems.polyline_validity = polyline_type::evaluate_construction_parameter_validity(
-				points, invalid_points);
+		problems.polyline_validity = polyline_type::evaluate_construction_parameter_validity(points);
 
 		// FIXME: how strict do we want to be when we say "valid"? Remember, we may have
 		// skipped over some points.
@@ -763,7 +754,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
-	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.get_exterior());
+	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.get_polygon());
 	
 	d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 

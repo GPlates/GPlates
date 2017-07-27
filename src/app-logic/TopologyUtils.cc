@@ -203,7 +203,7 @@ namespace GPlatesAppLogic
 				std::pair<
 						GPlatesMaths::PointOnSphere/*start point*/,
 						GPlatesMaths::PointOnSphere/*end point*/> sub_segment_end_points =
-								GeometryUtils::get_geometry_end_points(
+								GeometryUtils::get_geometry_exterior_end_points(
 										*sub_segment_info.sub_segment.get_geometry());
 
 				enum { START, END };
@@ -588,7 +588,7 @@ GPlatesAppLogic::TopologyUtils::has_topological_line_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
-		std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
@@ -658,7 +658,7 @@ GPlatesAppLogic::TopologyUtils::has_topological_boundary_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
@@ -730,10 +730,12 @@ GPlatesAppLogic::TopologyUtils::has_topological_network_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
-		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 		const double &reconstruction_time,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
+		const TopologyNetworkParams &topology_network_params,
+		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced)
 {
 	// Get the next global reconstruct handle - it'll be stored in each RTN.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -743,7 +745,9 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 			resolved_topological_networks,
 			reconstruction_time,
 			reconstruct_handle,
-			topological_geometry_reconstruct_handles);
+			topological_geometry_reconstruct_handles,
+			topology_network_params,
+			topological_sections_referenced);
 
 	AppLogicUtils::visit_feature_collections(
 			topological_network_features_collection.begin(),
@@ -885,7 +889,10 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 		// The section geometry is either a polyline or a polygon.
 		// Convert it to a polyline (in most cases, due to intersections, it will already be a polyline).
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> section_polyline_opt =
-				GeometryUtils::convert_geometry_to_polyline(*section_geometry.get());
+				GeometryUtils::convert_geometry_to_polyline(
+						*section_geometry.get(),
+						// We don't care if the polygon has interior rings (just using the exterior ring)...
+						false/*exclude_polygons_with_interior_rings*/);
 		// A polyline or polygon should always be convertible to a polyline.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				section_polyline_opt,

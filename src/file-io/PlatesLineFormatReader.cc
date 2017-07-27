@@ -1886,10 +1886,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// We want to return a different ReadError Description for each possible return
 		// value of evaluate_construction_parameter_validity().
-		std::pair<point_seq_type::const_iterator, point_seq_type::const_iterator> invalid_points;
 		GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity polyline_validity =
 				GPlatesMaths::PolylineOnSphere::evaluate_construction_parameter_validity(
-						point_seq.begin(), point_seq.end(), invalid_points);
+						point_seq.begin(), point_seq.end());
 
 		if (polyline_validity == GPlatesMaths::PolylineOnSphere::VALID)
 		{

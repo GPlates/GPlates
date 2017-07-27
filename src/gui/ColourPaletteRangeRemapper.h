@@ -46,6 +46,9 @@ namespace GPlatesGui
 	/**
 	 * Remaps the value range of the specified colour palette.
 	 *
+	 * Returns none (currently) if @a colour_palette is not a @a RegularCptColourPalette.
+	 * This is because each ColourSlice in palette is remapped and only @a RegularCptColourPalette has them.
+	 *
 	 * The colours in the returned palette are the same but the colour slice ranges are
 	 * scaled and translated to map to the new range.
 	 */
@@ -64,7 +67,7 @@ namespace GPlatesGui
 	 */
 	boost::optional<ColourPalette<double>::non_null_ptr_type>
 	remap_colour_palette_range(
-			const RasterColourPalette::non_null_ptr_type &colour_palette,
+			const RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
 			const double &remapped_lower_bound,
 			const double &remapped_upper_bound);
 
@@ -109,81 +112,6 @@ namespace GPlatesGui
 
 			virtual
 			void
-			visit_default_raster_colour_palette(
-					const DefaultRasterColourPalette &colour_palette)
-			{
-				generate_remapped_colour_palette(
-						colour_palette.get_background_colour(),
-						colour_palette.get_foreground_colour(),
-						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
-						colour_palette.get_colour_slices());
-			}
-
-
-			virtual
-			void
-			visit_user_colour_palette(
-					const UserColourPalette &colour_palette)
-			{
-				generate_remapped_colour_palette(
-						colour_palette.get_background_colour(),
-						colour_palette.get_foreground_colour(),
-						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
-						colour_palette.get_colour_slices());
-			}
-
-
-			virtual
-			void
-			visit_deformation_colour_palette(
-					const DeformationColourPalette &colour_palette)
-			{
-				generate_remapped_colour_palette(
-						colour_palette.get_background_colour(),
-						colour_palette.get_foreground_colour(),
-						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
-						colour_palette.get_colour_slices());
-			}
-
-
-			virtual
-			void
-			visit_default_scalar_field_scalar_colour_palette(
-					const DefaultScalarFieldScalarColourPalette &colour_palette)
-			{
-				generate_remapped_colour_palette(
-						colour_palette.get_background_colour(),
-						colour_palette.get_foreground_colour(),
-						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
-						colour_palette.get_colour_slices());
-			}
-
-
-			virtual
-			void
-			visit_default_scalar_field_gradient_colour_palette(
-					const DefaultScalarFieldGradientColourPalette &colour_palette)
-			{
-				generate_remapped_colour_palette(
-						colour_palette.get_background_colour(),
-						colour_palette.get_foreground_colour(),
-						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
-						colour_palette.get_colour_slices());
-			}
-
-
-			virtual
-			void
 			visit_regular_cpt_colour_palette(
 					const RegularCptColourPalette &colour_palette)
 			{
@@ -220,7 +148,14 @@ namespace GPlatesGui
 					const std::vector<ColourSlice> &colour_slices)
 			{
 				double inv_range = 0.0;
-				if (!GPlatesMaths::are_almost_exactly_equal(lower_bound, upper_bound))
+
+				// Make sure not exactly the same...
+				//
+				// NOTE: Not using 'GPlatesMaths::are_almost_exactly_equal()') since some values
+				// may be *very* small and it would compare then equal.
+				// If exactly the same then leave inverse range as zero.
+				if (lower_bound < upper_bound ||
+					lower_bound > upper_bound)
 				{
 					if (lower_bound > upper_bound)
 					{
@@ -324,7 +259,7 @@ namespace GPlatesGui
 	inline
 	boost::optional<ColourPalette<double>::non_null_ptr_type>
 	remap_colour_palette_range(
-			const RasterColourPalette::non_null_ptr_type &colour_palette,
+			const RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
 			const double &remapped_lower_bound,
 			const double &remapped_upper_bound)
 	{

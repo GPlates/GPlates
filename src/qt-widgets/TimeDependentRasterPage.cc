@@ -45,6 +45,7 @@
 
 #include "FriendlyLineEdit.h"
 #include "ImportRasterDialog.h"
+#include "ProgressDialog.h"
 
 #include "file-io/RasterReader.h"
 
@@ -774,17 +775,52 @@ GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 
 void
 GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
-		const QFileInfoList &file_infos)
+		QFileInfoList file_infos)
 {
-	if (!file_infos.count())
+	//
+	// Not all files will necessarily be raster files (especially when an entire directory was added).
+	// So we reduce the list to supported rasters - also makes the progress dialog more accurate
+	//
+	const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &raster_formats =
+			GPlatesFileIO::RasterReader::get_supported_formats();
+	for (int n = 0; n < file_infos.size(); )
+	{
+		// If filename extension not supported then remove file from list.
+		if (raster_formats.find(file_infos[n].suffix()) == raster_formats.end())
+		{
+			file_infos.erase(file_infos.begin() + n);
+		}
+		else
+		{
+			++n;
+		}
+	}
+
+	const int num_files = file_infos.size();
+
+	if (num_files == 0)
 	{
 		return;
 	}
 
 	TimeDependentRasterSequence new_sequence;
 
-	BOOST_FOREACH(const QFileInfo &file_info, file_infos)
+	// Setup a progress dialog.
+	ProgressDialog *progress_dialog = new ProgressDialog(this);
+	const QString progress_dialog_text = tr("Caching time sequence...");
+	// Make progress dialog modal so cannot interact with import dialog
+	// until processing finished or cancel button pressed.
+	progress_dialog->setWindowModality(Qt::WindowModal);
+	progress_dialog->setRange(0, num_files);
+	progress_dialog->setValue(0);
+	progress_dialog->show();
+
+	for (int file_index = 0; file_index < num_files; ++file_index)
 	{
+		progress_dialog->update_progress(file_index, progress_dialog_text);
+
+		const QFileInfo &file_info = file_infos[file_index];
+
 		// Attempt to read the number of bands in the file.
 		QString absolute_file_path = file_info.absoluteFilePath();
 		GPlatesFileIO::RasterReader::non_null_ptr_type reader =
@@ -825,7 +861,15 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 					raster_size.first,
 					raster_size.second);
 		}
+
+		if (progress_dialog->canceled())
+		{
+			progress_dialog->close();
+			return;
+		}
 	}
+
+	progress_dialog->close();
 
 	new_sequence.sort_by_time();
 	d_raster_sequence.add_all(new_sequence);

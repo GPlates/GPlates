@@ -731,9 +731,11 @@ namespace GPlatesQtWidgets
 		get_universe_coord_z(
 				int screen_y) const;
 
-		//! Calculates scaling for lines, points and text based on size of canvas
+		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
-		calculate_scale();
+		calculate_scale(
+				int paint_device_width,
+				int paint_device_height);
 
 	};
 

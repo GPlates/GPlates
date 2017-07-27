@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "presentation/ViewState.h"
 #include "SaveFileDialog.h"
 
 #include "SaveFileDialogImpl.h"
@@ -47,14 +48,36 @@ GPlatesQtWidgets::SaveFileDialog::SaveFileDialog(
 				parent,
 				caption,
 				filters,
-				view_state))
+				view_state.get_file_io_directory_configurations().feature_collection_configuration()))
 #else
 	d_impl(
 			new SaveFileDialogInternals::QtSaveFileDialog(
 				parent,
 				caption,
 				filters,
-				view_state))
+				view_state.get_file_io_directory_configurations().feature_collection_configuration()))
+#endif
+{  }
+
+GPlatesQtWidgets::SaveFileDialog::SaveFileDialog(
+		QWidget *parent,
+		const QString &caption,
+		const filter_list_type &filters,
+		GPlatesGui::DirectoryConfiguration &configuration) :
+#if defined(GPLATES_USE_NATIVE_FILE_DIALOG)
+	d_impl(
+			new SaveFileDialogInternals::NativeSaveFileDialog(
+				parent,
+				caption,
+				filters,
+				configuration))
+#else
+	d_impl(
+			new SaveFileDialogInternals::QtSaveFileDialog(
+				parent,
+				caption,
+				filters,
+				configuration))
 #endif
 {  }
 

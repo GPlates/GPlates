@@ -34,10 +34,10 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "AppLogicFwd.h"
 #include "GeometryCookieCutter.h"
 #include "LayerProxy.h"
 #include "ReconstructionTreeCreator.h"
+#include "ReconstructMethodInterface.h"
 #include "ReconstructUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -78,33 +78,6 @@ namespace GPlatesAppLogic
 			 * then its reconstruction plate id property is removed.
 			 */
 			ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE,
-
-			/**
-			 * Assign, to each sub-geometry of each feature, a single plate id
-			 * corresponding to the plate that the sub-geometry overlaps the most.
-			 *
-			 * This can create extra features, for example if a feature has two
-			 * sub-geometries and one overlaps plate A the most and the other
-			 * overlaps plate B the most then the original feature (with the two
-			 * geometries) will get split into two features - one feature will contain
-			 * the first geometry (and have plate id A) and the other feature will
-			 * contain the second geometry (and have plate id B).
-			 * The original feature will be used for the first feature and
-			 * a cloned version of the original feature will be used for the second -
-			 * the original feature will have its second geometry removed since it's
-			 * now being moved over to the second (cloned) feature.
-			 * When cloning, all non-geometry properties of the original feature are
-			 * copied over.
-			 *
-			 * If a feature sub-geometry does not overlap any plates (unlikely if the
-			 * plate polygon model covers the entire globe) then the
-			 * reconstruction plate id property is removed from its containing feature.
-			 * Using the above example, if one of the two geometries overlaps no plates
-			 * and the other overlaps plate A then the first feature has no plate id
-			 * while the second feature has plate id A.
-			 */
-			ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE,
-
 
 			/**
 			 * Partition all geometries of each feature into the plates
@@ -163,8 +136,7 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_feature_collections, @a reconstruction_time and @a anchor_plate_id
 		 * to create a new set of partitioning polygons to be used for cookie-cutting.
 		 *
-		 * @a partitioning_feature_collections can be a source of dynamic polygons or
-		 * static polygons.
+		 * @a partitioning_feature_collections can be a source of dynamic polygons or static polygons.
 		 * That is they can contain TopologicalClosedPlateBoundary features or TopologicalNetwork or
 		 * regular static polygon features.
 		 *
@@ -177,12 +149,11 @@ namespace GPlatesAppLogic
 		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
 		 * the rotation file).
 		 *
-		 * @a reconstruction_feature_collections contains rotations required to reconstruct
-		 * the partitioning polygon features and to reverse reconstruct any features
-		 * partitioned by them.
+		 * @a default_reconstruction_tree_creator is used to reconstruct the partitioning polygon features.
+		 * It is also used to reverse reconstruct geometries if no 'ReconstructMethodInterface::Context'
+		 * is passed to @a assign_reconstruction_plate_ids or @a assign_reconstruction_plate_id.
 		 *
-		 * The default value of @a feature_properties_to_assign only assigns
-		 * the reconstruction plate id.
+		 * The default value of @a feature_properties_to_assign only assigns the reconstruction plate id.
 		 *
 		 * If @a verify_information_model is true then feature property types are only assigned if
 		 * they don't not violate the GPGIM.
@@ -197,9 +168,8 @@ namespace GPlatesAppLogic
 		create(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &partitioning_feature_collections,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+				const ReconstructionTreeCreator &default_reconstruction_tree_creator,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign = RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool verify_information_model = true,
 				bool respect_feature_time_period = true)
@@ -207,9 +177,8 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
 					partitioning_feature_collections,
-					reconstruction_feature_collections,
+					default_reconstruction_tree_creator,
 					reconstruction_time,
-					anchor_plate_id,
 					feature_property_types_to_assign,
 					verify_information_model,
 					respect_feature_time_period));
@@ -232,10 +201,11 @@ namespace GPlatesAppLogic
 		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
 		 * the rotation file).
 		 *
-		 * @a reconstruction_tree is used to reverse reconstruct geometries (if necessary).
+		 * @a default_reconstruction_tree_creator is used to reverse reconstruct geometries
+		 * if no 'ReconstructMethodInterface::Context' is passed to @a assign_reconstruction_plate_ids
+		 * or @a assign_reconstruction_plate_id.
 		 *
-		 * The default value of @a feature_properties_to_assign only assigns
-		 * the reconstruction plate id.
+		 * The default value of @a feature_properties_to_assign only assigns the reconstruction plate id.
 		 *
 		 * If @a verify_information_model is true then feature property types are only assigned if
 		 * they don't not violate the GPGIM.
@@ -250,7 +220,8 @@ namespace GPlatesAppLogic
 		create(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &default_reconstruction_tree_creator,
+				const double &reconstruction_time,
 				const feature_property_flags_type &feature_property_types_to_assign = RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool verify_information_model = true,
 				bool respect_feature_time_period = true)
@@ -258,7 +229,8 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
 					partitioning_layer_proxies,
-					reconstruction_tree,
+					default_reconstruction_tree_creator,
+					reconstruction_time,
 					feature_property_types_to_assign,
 					verify_information_model,
 					respect_feature_time_period));
@@ -279,10 +251,18 @@ namespace GPlatesAppLogic
 		 * Assign reconstruction plate ids to all features in the feature collection.
 		 *
 		 * This will do nothing if @a has_partitioning_polygons returns false.
+		 *
+		 * If @a reconstruct_method_context specified then it is used to reverse reconstruct
+		 * partitioned geometries (otherwise the default ReconstructionTreeCreator passed to
+		 * @a create is used). This usually comes from the ReconstructLayerProxy that
+		 * reconstructs @a feature_collection_ref so that the partitioned features can be
+		 * reverse reconstructed according to that layer (eg, might use deformation).
 		 */
 		void
 		assign_reconstruction_plate_ids(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				boost::optional<const ReconstructMethodInterface::Context &> reconstruct_method_context = boost::none);
+
 
 		/**
 		 * Assign reconstruction plate ids to all features in a list of features.
@@ -290,11 +270,19 @@ namespace GPlatesAppLogic
 		 * All features in @a feature_refs should be contained by @a feature_collection_ref.
 		 *
 		 * This will do nothing if @a has_partitioning_polygons returns false.
+		 *
+		 * If @a reconstruct_method_context specified then it is used to reverse reconstruct
+		 * partitioned geometries (otherwise the default ReconstructionTreeCreator passed to
+		 * @a create is used). This usually comes from the ReconstructLayerProxy that
+		 * reconstructs @a feature_collection_ref so that the partitioned features can be
+		 * reverse reconstructed according to that layer (eg, might use deformation).
 		 */
 		void
 		assign_reconstruction_plate_ids(
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &feature_refs,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				boost::optional<const ReconstructMethodInterface::Context &> reconstruct_method_context = boost::none);
+
 
 		/**
 		 * Assign a reconstruction plate id to a feature.
@@ -302,11 +290,18 @@ namespace GPlatesAppLogic
 		 * @a feature_ref should be contained by @a feature_collection_ref.
 		 *
 		 * This will do nothing if @a has_partitioning_polygons returns false.
+		 *
+		 * If @a reconstruct_method_context specified then it is used to reverse reconstruct
+		 * partitioned geometries (otherwise the default ReconstructionTreeCreator passed to
+		 * @a create is used). This usually comes from the ReconstructLayerProxy that
+		 * reconstructs @a feature_collection_ref so that the partitioned features can be
+		 * reverse reconstructed according to that layer (eg, might use deformation).
 		 */
 		void
 		assign_reconstruction_plate_id(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				boost::optional<const ReconstructMethodInterface::Context &> reconstruct_method_context = boost::none);
 
 	private:
 		/**
@@ -328,6 +323,17 @@ namespace GPlatesAppLogic
 		std::vector< boost::shared_ptr<PartitionFeatureTask> > d_partition_feature_tasks;
 
 		/**
+		 * Default reconstruction used to reverse reconstruct partitioned geometries.
+		 */
+		ReconstructMethodInterface::Context d_default_reconstruct_method_context;
+
+		/**
+		 * The time that the partitioned geometries are at, and
+		 * that the partitioning polygons are reconstructed/resolve to.
+		 */
+		double d_reconstruction_time;
+
+		/**
 		 * Determines if features are only partitioned if the reconstruction time is within
 		 * the time period over which the features are defined.
 		 *
@@ -344,9 +350,8 @@ namespace GPlatesAppLogic
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &partitioning_feature_collections,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+				const ReconstructionTreeCreator &default_reconstruction_tree_creator,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool verify_information_model,
 				bool respect_feature_time_period);
@@ -359,17 +364,24 @@ namespace GPlatesAppLogic
 		 * (for static partitioning polygons), @a TopologyGeometryResolverLayerProxy or
 		 * @a TopologyNetworkResolverLayerProxy, otherwise no partitioning will occur.
 		 *
-		 * @a reconstruction_tree is used to reverse reconstruct geometries (if necessary).
+		 * @a default_reconstruction_tree_creator is used to reverse reconstruct geometries (if necessary).
 		 *
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &default_reconstruction_tree_creator,
+				const double &reconstruction_time,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool verify_information_model,
 				bool respect_feature_time_period);
+
+		void
+		assign_reconstruction_plate_id_internal(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				const ReconstructMethodInterface::Context &reconstruct_method_context);
 	};
 }
 

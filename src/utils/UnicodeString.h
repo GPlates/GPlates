@@ -33,6 +33,9 @@
 
 #include "QtStreamable.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // This is a hold-over from using ICU's UnicodeString.
 #ifndef GPLATES_ICU_BOOL
@@ -162,6 +165,15 @@ namespace GPlatesUtils
 
 	private:
 		QString d_qstring;
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

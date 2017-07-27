@@ -70,7 +70,9 @@ void main (void)
 	// Convert from the screen-space of the raster frustum to view-space using
 	// the inverse view-projection *inverse* matrix.
 	// The view position is used in the fragment shader to adjust for cube map distortion.
-	view_position = gl_ModelViewProjectionMatrixInverse * raster_frustum_position;
+	//
+	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+	view_position = gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse * raster_frustum_position;
 #endif
 
 	// Post-projection translate/scale to position NDC space around render target frustum.

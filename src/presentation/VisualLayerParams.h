@@ -31,6 +31,8 @@
 
 #include "VisualLayerParamsVisitor.h"
 
+#include "app-logic/LayerParams.h"
+
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -38,7 +40,6 @@
 namespace GPlatesAppLogic
 {
 	class Layer;
-	class LayerTaskParams;
 }
 
 namespace GPlatesGui
@@ -53,12 +54,12 @@ namespace GPlatesPresentation
 	 * to particular types of visual layers. This allows us to keep the
 	 * @a VisualLayers class clean from code specific to one type of visual layer.
 	 *
-	 * This is the visual layers analogue of @a GPlatesAppLogic::LayerTaskParams.
+	 * This is the visual layers analogue of @a GPlatesAppLogic::LayerParams.
 	 * If the parameters and options that you wish to store impact upon the
-	 * operation of a @a LayerTask, they need to reside in a @a LayerTaskParams
+	 * operation of a @a LayerTask, they need to reside in a @a LayerParams
 	 * derivation, not in a @a VisualLayerParams derivation. (But of course, one
 	 * may wish to have both a @a VisualLayerParams derivation, for visualisation-
-	 * specific options and a @a LayerTaskParams derivation.)
+	 * specific options and a @a LayerParams derivation.)
 	 */
 	class VisualLayerParams :
 			public QObject,
@@ -74,9 +75,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new VisualLayerParams(layer_task_params);
+			return new VisualLayerParams(layer_params);
 		}
 
 		virtual
@@ -110,7 +111,7 @@ namespace GPlatesPresentation
 		{  }
 
 		void
-		set_style_adaper(
+		set_style_adapter(
 				const GPlatesGui::StyleAdapter* adapter)
 		{
 			d_style = adapter;
@@ -134,16 +135,16 @@ namespace GPlatesPresentation
 
 		explicit
 		VisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 				const GPlatesGui::StyleAdapter* style = NULL) :
-			d_layer_task_params(layer_task_params),
+			d_layer_params(layer_params),
 			d_style(style)
 		{  }
 
-		GPlatesAppLogic::LayerTaskParams &
-		get_layer_task_params() const
+		GPlatesAppLogic::LayerParams::non_null_ptr_type
+		get_layer_params() const
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
 
 		/**
@@ -158,7 +159,7 @@ namespace GPlatesPresentation
 
 	private:
 
-		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
+		GPlatesAppLogic::LayerParams::non_null_ptr_type d_layer_params;
 		const GPlatesGui::StyleAdapter* d_style;
 	};
 }

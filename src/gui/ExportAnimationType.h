@@ -49,6 +49,8 @@ namespace GPlatesGui
 			IMAGE, // Screenshot of viewport
 			COLOUR_RASTER, // Lat/lon colour raster export
 			NUMERICAL_RASTER, // Lat/lon floating-point raster export
+			SCALAR_COVERAGES, // Per-point scalar values.
+			DEFORMATION,
 			VELOCITIES,
 			RESOLVED_TOPOLOGIES, // General (non-CitcomS-specific) resolved topology exports
 			RESOLVED_TOPOLOGIES_CITCOMS, // CitcomS-specific resolved topology exports
@@ -59,6 +61,7 @@ namespace GPlatesGui
 			FLOWLINES,
 			MOTION_PATHS,
 			CO_REGISTRATION,
+			NET_ROTATIONS,
 
 			NUM_TYPES,
 

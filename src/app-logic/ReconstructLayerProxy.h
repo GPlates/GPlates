@@ -26,12 +26,11 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTLAYERPROXY_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTLAYERPROXY_H
 
+#include <map>
+#include <set>
 #include <utility>
 #include <vector>
-#include <map>
 #include <boost/optional.hpp>
-
-#include "AppLogicFwd.h"
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
@@ -39,8 +38,11 @@
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
+#include "ReconstructMethodInterface.h"
 #include "TimeSpanUtils.h"
-#include "TopologyNetworkResolverLayerProxy.h"
+#include "VelocityDeltaTime.h"
+
+#include "global/PointerTraits.h"
 
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
@@ -48,6 +50,8 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolygonMesh.h"
 #include "maths/types.h"
+
+#include "model/FeatureId.h"
 
 #include "utils/KeyValueCache.h"
 #include "utils/SubjectObserverToken.h"
@@ -57,6 +61,8 @@ namespace GPlatesAppLogic
 {
 	class ReconstructParams;
 	class ReconstructMethodRegistry;
+	class TopologyGeometryResolverLayerProxy;
+	class TopologyNetworkResolverLayerProxy;
 
 	/**
 	 * A layer proxy for reconstructing regular (non-topological) features containing vector geometry.
@@ -136,6 +142,9 @@ namespace GPlatesAppLogic
 					new ReconstructLayerProxy(
 							reconstruct_method_registry, reconstruct_params, max_num_reconstructions_in_cache));
 		}
+
+
+		~ReconstructLayerProxy();
 
 
 		//
@@ -437,6 +446,10 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 
+		//
+		// Getting a sequence of @a ReconstructContext::ReconstructedFeatureTimeSpan objects.
+		//
+
 		/**
 		 * Returns reconstructed feature time spans for the current reconstruct params.
 		 *
@@ -461,6 +474,93 @@ namespace GPlatesAppLogic
 				std::vector<ReconstructContext::ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
 				const TimeSpanUtils::TimeRange &time_range,
 				const ReconstructParams &reconstruct_params);
+
+
+		//
+		// Getting a sequence of @a ReconstructContext::TopologyReconstructedFeatureTimeSpan objects.
+		//
+
+		/**
+		 * Returns any topology-reconstructed feature time spans, for the current reconstruct params.
+		 *
+		 * These are only used when features are reconstructed using *topologies*.
+		 * They store the results of incrementally reconstructing using resolved topological plates/networks.
+		 */
+		void
+		get_topology_reconstructed_feature_time_spans(
+				std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans)
+		{
+			return get_topology_reconstructed_feature_time_spans(
+					topology_reconstructed_feature_time_spans, d_current_reconstruct_params);
+		}
+
+		/**
+		 * Returns any topology-reconstructed feature time spans, for the specified reconstruct params.
+		 */
+		void
+		get_topology_reconstructed_feature_time_spans(
+				std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
+				const ReconstructParams &reconstruct_params);
+
+
+		//
+		// Getting a sequence of @a ReconstructedFeatureGeometry objects representing topological sections
+		// referenced by a topology layer.
+		//
+
+		/**
+		 * Returns the reconstructed topological sections with matching feature IDs, for the current reconstruct params and
+		 * current reconstruction time, by appending them to @a reconstructed_topological_sections.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_topological_sections(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced)
+		{
+			return get_reconstructed_topological_sections(
+					reconstructed_topological_sections, topological_sections_referenced, d_current_reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed topological sections with matching feature IDs, for the specified reconstruct params and
+		 * current reconstruction time, by appending them to @a reconstructed_topological_sections.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_topological_sections(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructed_topological_sections(
+					reconstructed_topological_sections, topological_sections_referenced, reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed topological sections with matching feature IDs, for the current reconstruct params and
+		 * specified reconstruction time, by appending them to @a reconstructed_topological_sections.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_topological_sections(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const double &reconstruction_time)
+		{
+			return get_reconstructed_topological_sections(
+					reconstructed_topological_sections, topological_sections_referenced, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed topological sections with matching feature IDs, for the specified reconstruct params and
+		 * reconstruction time, by appending them to @a v.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed topological sections.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_topological_sections(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
 
 
 		/**
@@ -512,10 +612,16 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
-				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities)
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, d_current_reconstruct_params, d_current_reconstruction_time);
+					reconstructed_feature_velocities,
+					d_current_reconstruct_params,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -526,10 +632,16 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
-				const ReconstructParams &reconstruct_params)
+				const ReconstructParams &reconstruct_params,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, reconstruct_params, d_current_reconstruction_time);
+					reconstructed_feature_velocities,
+					reconstruct_params,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -540,10 +652,16 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
-					reconstructed_feature_velocities, d_current_reconstruct_params, reconstruction_time);
+					reconstructed_feature_velocities,
+					d_current_reconstruct_params,
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
 		}
 
 		/**
@@ -557,7 +675,26 @@ namespace GPlatesAppLogic
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0);
+
+
+		/**
+		 * Returns the reconstruct method context, for the current reconstruct params, used to reconstruct features.
+		 */
+		ReconstructMethodInterface::Context
+		get_reconstruct_method_context() const
+		{
+			return get_reconstruct_method_context(d_current_reconstruct_params);
+		}
+
+		/**
+		 * Returns the reconstruct method context, for the specified reconstruct params, used to reconstruct features.
+		 */
+		ReconstructMethodInterface::Context
+		get_reconstruct_method_context(
+				const ReconstructParams &reconstruct_params) const;
 
 
 		//
@@ -652,11 +789,19 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Gets the current features used for reconstructing.
+		 * Returns all features set by @a add_reconstructable_feature_collection, etc.
+		 *
+		 * Note that the features might be a mixture of non-topological and topological.
+		 *
+		 * If @a only_non_topological_features is true then only the sub-set of features
+		 * (set by @a add_reconstructable_feature_collection, etc)
+		 * that are actually non-topological features are returned.
+		 * By default all features are returned.
 		 */
 		void
-		get_current_reconstructable_features(
-				std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features) const;
+		get_current_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+				bool only_non_topological_features = false) const;
 
 
 		/**
@@ -736,6 +881,16 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
+		 * Sets the current topology surface layer proxies (used if reconstructing using topologies).
+		 */
+		void
+		set_current_topology_surface_layer_proxies(
+				const std::vector<GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type> &
+						resolved_boundary_topology_surface_layer_proxies,
+				const std::vector<GPlatesGlobal::PointerTraits<TopologyNetworkResolverLayerProxy>::non_null_ptr_type> &
+						resolved_network_topology_surface_layer_proxies);
+
+		/**
 		 * Add to the list of feature collections that will be reconstructed.
 		 */
 		void
@@ -757,24 +912,10 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		/**
-		 * Add a topological network resolver layer proxy.
-		 */
-		void
-		add_topological_network_resolver_layer_proxy(
-				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
-
-		/**
-		 * Remove a topological network resolver layer proxy.
-		 */
-		void
-		remove_topological_network_resolver_layer_proxy(
-				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
-
-		/**
-		 * Returns true if one or more topological network resolver layers are currently connected.
+		 * Returns true if we are reconstructing geometries using topologies.
 		 */
 		bool
-		connected_to_topological_layer_proxies() const;		
+		using_topologies_to_reconstruct() const;
 
 	private:
 		/**
@@ -840,12 +981,21 @@ namespace GPlatesAppLogic
 			boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
 					cached_reconstructions_spatial_partition;
 
+			//
+			// Velocities.
+			//
 
 			/**
 			 * The reconstruct handle that identifies all cached reconstructed feature *velocities*
 			 * in this structure.
 			 */
 			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_velocities_handle;
+
+			/**
+			 * Cached velocity delta time.
+			 */
+			boost::optional< std::pair<VelocityDeltaTime::Type, GPlatesMaths::real_t> >
+					cached_velocity_delta_time_params;
 
 			/**
 			 * The cached reconstructed feature velocities.
@@ -966,6 +1116,12 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * PolygonMesh objects are mesh refined such that all mesh edge lengths are below this threshold.
+		 */
+		static const double POLYGON_MESH_EDGE_LENGTH_THRESHOLD_RADIANS;
+
+
+		/**
 		 * Used to associate features with reconstruct methods.
 		 */
 		const ReconstructMethodRegistry &d_reconstruct_method_registry;
@@ -997,7 +1153,13 @@ namespace GPlatesAppLogic
 		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
 
 		/**
-		 * Used to get resolved topology network
+		 * Used to get resolved topology boundaries.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy> 
+			d_current_topological_boundary_resolver_layer_proxies;
+
+		/**
+		 * Used to get resolved topology networks.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy> 
 			d_current_topological_network_resolver_layer_proxies;
@@ -1127,7 +1289,9 @@ namespace GPlatesAppLogic
 		std::vector<MultiPointVectorField::non_null_ptr_type> &
 		cache_reconstructed_feature_velocities(
 				ReconstructionInfo &reconstruction_info,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				const double &velocity_delta_time);
 
 
 		/**
@@ -1140,11 +1304,6 @@ namespace GPlatesAppLogic
 		ReconstructionInfo
 		create_reconstruction_info(
 				const reconstruction_cache_key_type &reconstruction_cache_key);
-
-
-		ReconstructContext::context_state_reference_type
-		create_reconstruct_context_state(
-				const ReconstructParams &reconstruct_params);
 	};
 }
 

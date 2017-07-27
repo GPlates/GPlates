@@ -35,7 +35,10 @@
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"
 
-#include "gui/ColourPalette.h"
+#include "app-logic/Layer.h"
+
+#include "gui/BuiltinColourPaletteType.h"
+#include "gui/RasterColourPalette.h"
 
 #include "view-operations/ScalarField3DRenderParameters.h"
 
@@ -54,9 +57,8 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
-	class ColourScaleWidget;
-	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
+	class RemappedColourPaletteWidget;
 	class ViewportWindow;
 
 	/**
@@ -115,10 +117,23 @@ namespace GPlatesQtWidgets
 		handle_use_default_scalar_palette_button_clicked();
 
 		void
-		handle_scalar_palette_range_check_box_changed();
+		handle_builtin_scalar_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_scalar_colour_palette_type);
 
 		void
-		handle_scalar_palette_spinbox_changed(
+		handle_builtin_scalar_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_scalar_parameters);
+
+		void
+		handle_scalar_palette_range_check_box_changed(
+				int state);
+
+		void
+		handle_scalar_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_scalar_palette_max_line_editing_finished(
 				double value);
 
 		void
@@ -138,10 +153,23 @@ namespace GPlatesQtWidgets
 		handle_use_default_gradient_palette_button_clicked();
 
 		void
-		handle_gradient_palette_range_check_box_changed();
+		handle_builtin_gradient_colour_palette_selected(
+				const GPlatesGui::BuiltinColourPaletteType &builtin_gradient_colour_palette_type);
 
 		void
-		handle_gradient_palette_spinbox_changed(
+		handle_builtin_gradient_parameters_changed(
+				const GPlatesGui::BuiltinColourPaletteType::Parameters &builtin_gradient_parameters);
+
+		void
+		handle_gradient_palette_range_check_box_changed(
+				int state);
+
+		void
+		handle_gradient_palette_min_line_editing_finished(
+				double value);
+
+		void
+		handle_gradient_palette_max_line_editing_finished(
 				double value);
 
 		void
@@ -250,11 +278,6 @@ namespace GPlatesQtWidgets
 		get_depth_min_max(
 				GPlatesAppLogic::Layer &layer) const;
 
-		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
-		load_colour_palette(
-				const QString &palette_file_name,
-				std::pair<double, double> &colour_palette_range);
-
 
 		/**
 		 * The number of QDoubleSpinBox's used for shader test variables.
@@ -266,11 +289,9 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 
-		FriendlyLineEdit *d_scalar_palette_filename_lineedit;
-		FriendlyLineEdit *d_gradient_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
-		ColourScaleWidget *d_scalar_colour_scale_widget;
-		ColourScaleWidget *d_gradient_colour_scale_widget;
+		RemappedColourPaletteWidget *d_scalar_colour_palette_widget;
+		RemappedColourPaletteWidget *d_gradient_colour_palette_widget;
 
 		std::vector<float> d_shader_test_variables;
 

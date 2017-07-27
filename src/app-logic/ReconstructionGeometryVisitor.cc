@@ -26,23 +26,13 @@
 #include "ReconstructionGeometryVisitor.h"
 
 // Class definitions of ReconstructedFeatureGeometry derivations are needed below for static pointer casts.
-#include "DeformedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
-
-
-template <class ReconstructionGeometryType>
-void
-GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg)
-{
-	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-	visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(dfg));
-}
+#include "TopologyReconstructedFeatureGeometry.h"
 
 
 template <class ReconstructionGeometryType>
@@ -102,6 +92,16 @@ GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::
 {
 	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
 	visit(GPlatesUtils::static_pointer_cast<resolved_topological_geometry_type>(rtl));
+}
+
+
+template <class ReconstructionGeometryType>
+void
+GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<topology_reconstructed_feature_geometry_type> &trfg)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(trfg));
 }
 
 

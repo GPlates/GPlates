@@ -27,21 +27,26 @@
 #define GPLATES_APP_LOGIC_LAYERPROXYUTILS_H
 
 #include <algorithm>
+#include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
-#include "AppLogicFwd.h"
 #include "LayerProxyVisitor.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
+#include "ResolvedTopologicalLine.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
 #include "global/PreconditionViolationError.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 
 #include "utils/CopyConst.h"
@@ -52,7 +57,9 @@
 
 namespace GPlatesAppLogic
 {
+	class ReconstructGraph;
 	class Reconstruction;
+	class ReconstructLayerProxy;
 
 	namespace LayerProxyUtils
 	{
@@ -119,7 +126,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_reconstructed_feature_geometries(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
 				const Reconstruction &reconstruction);
 
@@ -140,8 +147,33 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
+				const Reconstruction &reconstruction);
+
+
+		/**
+		 * Returns the reconstruct layer outputs that reconstruct specified feature collection, and
+		 * limited to active reconstruct layers in @a reconstruction.
+		 *
+		 * These are the reconstruct layers that connect, to the specified feature collection,
+		 * on their main input channel.
+		 */
+		void
+		find_reconstruct_layer_outputs_of_feature_collection(
+				std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &reconstruct_layer_outputs,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				const ReconstructGraph &reconstruct_graph);
+
+
+		/**
+		 * Returns the reconstruct layer outputs that reconstructed the feature @a feature_ref, and
+		 * limited to active reconstruct layers in @a reconstruction.
+		 */
+		void
+		find_reconstruct_layer_outputs_of_feature(
+				std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &reconstruct_layer_outputs,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const Reconstruction &reconstruction);
 
 
@@ -151,8 +183,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		find_reconstructed_feature_geometries_of_feature(
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const Reconstruction &reconstruction);
 
 
@@ -168,8 +200,7 @@ namespace GPlatesAppLogic
 		public:
 
 			//! Typedef for layer proxy non-null intrusive pointer.
-			typedef typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type
-					layer_proxy_non_null_ptr_type;
+			typedef typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type layer_proxy_non_null_ptr_type;
 
 			//! Typedef for a layer proxy member function that returns a subject token.
 			typedef const GPlatesUtils::SubjectToken & (LayerProxyType::*subject_token_method_type)();
@@ -203,6 +234,11 @@ namespace GPlatesAppLogic
 			set_input_layer_proxy(
 					const layer_proxy_non_null_ptr_type &input_layer_proxy)
 			{
+				if (d_input_layer_proxy == input_layer_proxy)
+				{
+					return;
+				}
+
 				d_input_layer_proxy = input_layer_proxy;
 				d_input_layer_proxy_observer_token.reset();
 			}
@@ -253,6 +289,10 @@ namespace GPlatesAppLogic
 				public GPlatesUtils::SafeBool<OptionalInputLayerProxy<LayerProxyType> >
 		{
 		public:
+
+			//! Typedef for layer proxy non-null intrusive pointer.
+			typedef typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type layer_proxy_non_null_ptr_type;
+
 			//! Default constructor stores no input layer proxy.
 			explicit
 			OptionalInputLayerProxy() :
@@ -262,7 +302,7 @@ namespace GPlatesAppLogic
 			//! Constructor to store an input layer proxy.
 			explicit
 			OptionalInputLayerProxy(
-					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy) :
+					const layer_proxy_non_null_ptr_type &input_layer_proxy) :
 				d_optional_input_layer_proxy(input_layer_proxy),
 				d_is_none_and_up_to_date(false)
 			{  }
@@ -284,7 +324,7 @@ namespace GPlatesAppLogic
 			 * NOTE: Be sure to use 'if (proxy)' to test that an input layer proxy is wrapped
 			 * before calling this method.
 			 */
-			const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &
+			const layer_proxy_non_null_ptr_type &
 			get_input_layer_proxy() const
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -297,7 +337,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the input layer proxy wrapped by this object as a boost::optional.
 			 */
-			boost::optional<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type>
+			boost::optional<layer_proxy_non_null_ptr_type>
 			get_optional_input_layer_proxy() const
 			{
 				if (!d_optional_input_layer_proxy)
@@ -317,8 +357,7 @@ namespace GPlatesAppLogic
 			 */
 			void
 			set_input_layer_proxy(
-					const boost::optional<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type> &
-							optional_input_layer_proxy = boost::none)
+					const boost::optional<layer_proxy_non_null_ptr_type> &optional_input_layer_proxy = boost::none)
 			{
 				if (d_optional_input_layer_proxy)
 				{
@@ -391,25 +430,78 @@ namespace GPlatesAppLogic
 		{
 		public:
 
-			//! Typedef for a sequence of @a InputLayerProxy objects.
-			typedef std::vector<InputLayerProxy<LayerProxyType> > seq_type;
-
 			//! Typedef for a layer proxy member function that returns a subject token.
 			typedef const GPlatesUtils::SubjectToken & (LayerProxyType::*subject_token_method_type)();
 
+			//! Typedef for a non-null layer proxy pointer.
+			typedef typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type layer_proxy_non_null_ptr_type;
 
-			//! Get the 'const' sequence of input layer proxies.
-			const seq_type &
-			get_input_layer_proxies() const
+			//! Typedef for a mapping of layer proxies to their container @a InputLayerProxy objects.
+			typedef std::map< layer_proxy_non_null_ptr_type, InputLayerProxy<LayerProxyType> > layer_proxies_map_type;
+
+			//! Typedef for 'const' iterator over 'InputLayerProxy' input layer proxies.
+			typedef boost::transform_iterator<
+					const InputLayerProxy<LayerProxyType> & (*)(const typename layer_proxies_map_type::value_type &),
+					typename layer_proxies_map_type::const_iterator>
+							const_iterator;
+
+			//! Typedef for 'non-const' iterator over 'InputLayerProxy' input layer proxies.
+			typedef boost::transform_iterator<
+					InputLayerProxy<LayerProxyType> & (*)(typename layer_proxies_map_type::value_type &),
+					typename layer_proxies_map_type::iterator>
+							iterator;
+
+
+			//! Return true if contains no input layer proxies.
+			bool
+			empty() const
 			{
-				return d_seq;
+				return d_layer_proxies.empty();
 			}
 
-			//! Get the 'non-const' sequence of input layer proxies.
-			seq_type &
-			get_input_layer_proxies()
+			//! Return number of input layer proxies.
+			unsigned int
+			size() const
 			{
-				return d_seq;
+				return d_layer_proxies.size();
+			}
+
+
+			//! Get the begin 'const' iterator over the 'InputLayerProxy' input layer proxies.
+			const_iterator
+			begin() const
+			{
+				return boost::make_transform_iterator(
+						d_layer_proxies.begin(),
+						&InputLayerProxySequence<LayerProxyType>::get_const_map_value);
+			}
+
+			//! Get the end 'const' iterator over the 'InputLayerProxy' input layer proxies.
+			const_iterator
+			end() const
+			{
+				return boost::make_transform_iterator(
+						d_layer_proxies.end(),
+						&InputLayerProxySequence<LayerProxyType>::get_const_map_value);
+			}
+
+
+			//! Get the begin 'non-const' iterator over the 'InputLayerProxy' input layer proxies.
+			iterator
+			begin()
+			{
+				return boost::make_transform_iterator(
+						d_layer_proxies.begin(),
+						&InputLayerProxySequence<LayerProxyType>::get_map_value);
+			}
+
+			//! Get the end 'non-const' iterator over the 'InputLayerProxy' input layer proxies.
+			iterator
+			end()
+			{
+				return boost::make_transform_iterator(
+						d_layer_proxies.end(),
+						&InputLayerProxySequence<LayerProxyType>::get_map_value);
 			}
 
 			/**
@@ -421,58 +513,70 @@ namespace GPlatesAppLogic
 			 */
 			bool
 			set_input_layer_proxies(
-					const std::vector<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type> &src_input_layer_proxies,
+					const std::vector<layer_proxy_non_null_ptr_type> &src_input_layer_proxies,
 					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
 				bool input_layer_proxies_updated = false;
 
-				// If the number of input layer proxies has changed then we've been updated.
-				if (src_input_layer_proxies.size() != d_seq.size())
+				// Create a std::set from the source layer proxies for fast searching.
+				typedef std::set<layer_proxy_non_null_ptr_type> source_seq_type;
+				source_seq_type source_seq(src_input_layer_proxies.begin(), src_input_layer_proxies.end());
+
+				//
+				// NOTE: We make sure we don't remove and then immediately re-add any internal layer proxies.
+				// This ensures the observer tokens of those internal layer proxies don't get reset
+				// (causing unnecessary updates for any dependent layer proxies).
+				//
+
+				// Iterate over our internal sequence and remove any layer proxy objects not in the source sequence.
+				for (typename layer_proxies_map_type::iterator input_layer_proxy_iter = d_layer_proxies.begin();
+					input_layer_proxy_iter != d_layer_proxies.end();
+					)
 				{
-					input_layer_proxies_updated = true;
-				}
-				else
-				{
-					// Both sequences are the same size.
-					// Iterate over our internal sequence and see if they are the same layer proxy objects.
-					typename seq_type::iterator input_layer_proxy_iter = d_seq.begin();
-					const typename seq_type::iterator input_layer_proxy_end = d_seq.end();
-					for ( ; input_layer_proxy_iter != input_layer_proxy_end; ++input_layer_proxy_iter)
+					InputLayerProxy<LayerProxyType> &input_layer_proxy = input_layer_proxy_iter->second;
+
+					// Search the source (caller's) sequence for the current input layer proxy.
+					typename source_seq_type::const_iterator src_layer_proxy_iter =
+							source_seq.find(input_layer_proxy.get_input_layer_proxy());
+
+					// If it wasn't found in the source (caller's) sequence, or
+					// if it was found but the subject token method is different, then
+					// then remove it from our internal sequence.
+					if (src_layer_proxy_iter == source_seq.end() ||
+						input_layer_proxy.get_subject_token_method() != subject_token_method)
 					{
-						// Search the source (caller's) sequence for the current input layer proxy.
-						typename std::vector<typename LayerProxyType::non_null_ptr_type>::const_iterator
-								src_layer_proxy_iter = std::find(
-										src_input_layer_proxies.begin(),
-										src_input_layer_proxies.end(),
-										input_layer_proxy_iter->get_input_layer_proxy());
+						typename layer_proxies_map_type::iterator erase_iter = input_layer_proxy_iter;
+						++input_layer_proxy_iter;
+						d_layer_proxies.erase(erase_iter);
 
-						// If it wasn't found then the source sequence and our internal sequence differ.
-						if (src_layer_proxy_iter == src_input_layer_proxies.end())
-						{
-							input_layer_proxies_updated = true;
-							break;
-						}
-
-						// If the layer proxy is the same but the subject token method is different
-						// then the source sequence and our internal sequence differ.
-						if (input_layer_proxy_iter->get_subject_token_method() != subject_token_method)
-						{
-							input_layer_proxies_updated = true;
-							break;
-						}
+						input_layer_proxies_updated = true;
+					}
+					else
+					{
+						++input_layer_proxy_iter;
 					}
 				}
 
-				// Re-initialise our internal sequence if it's different to the caller's.
-				if (input_layer_proxies_updated)
+				// Iterate over the source sequence and add any layer proxy objects not in our internal sequence.
+				typename source_seq_type::const_iterator src_layer_proxy_iter = source_seq.begin();
+				typename source_seq_type::const_iterator src_layer_proxy_end = source_seq.end();
+				for ( ; src_layer_proxy_iter != src_layer_proxy_end; ++src_layer_proxy_iter)
 				{
-					d_seq.clear();
+					const layer_proxy_non_null_ptr_type &src_layer_proxy = *src_layer_proxy_iter;
 
-					BOOST_FOREACH(
-							const typename LayerProxyType::non_null_ptr_type &src_input_layer_proxy,
-							src_input_layer_proxies)
+					// Search our internal sequence for the current source layer proxy.
+					typename layer_proxies_map_type::iterator input_layer_proxy_iter =
+							d_layer_proxies.find(src_layer_proxy);
+
+					// If wasn't found in our internal sequence then add it.
+					if (input_layer_proxy_iter == d_layer_proxies.end())
 					{
-						add_input_layer_proxy(src_input_layer_proxy, subject_token_method);
+						d_layer_proxies.insert(
+								typename layer_proxies_map_type::value_type(
+										src_layer_proxy,
+										InputLayerProxy<LayerProxyType>(src_layer_proxy, subject_token_method)));
+
+						input_layer_proxies_updated = true;
 					}
 				}
 
@@ -485,10 +589,13 @@ namespace GPlatesAppLogic
 			 */
 			void
 			add_input_layer_proxy(
-					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy,
+					const layer_proxy_non_null_ptr_type &input_layer_proxy,
 					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
-				d_seq.push_back(InputLayerProxy<LayerProxyType>(input_layer_proxy, subject_token_method));
+				d_layer_proxies.insert(
+						typename layer_proxies_map_type::value_type(
+								input_layer_proxy,
+								InputLayerProxy<LayerProxyType>(input_layer_proxy, subject_token_method)));
 			}
 
 			/**
@@ -496,23 +603,37 @@ namespace GPlatesAppLogic
 			 */
 			void
 			remove_input_layer_proxy(
-					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy)
+					const layer_proxy_non_null_ptr_type &input_layer_proxy)
 			{
 				// Search and erase the input layer proxy from our sequence.
-				typename seq_type::iterator input_layer_proxy_iter = d_seq.begin();
-				const typename seq_type::iterator input_layer_proxy_end = d_seq.end();
-				for ( ; input_layer_proxy_iter != input_layer_proxy_end; ++input_layer_proxy_iter)
+				typename layer_proxies_map_type::iterator input_layer_proxy_iter = d_layer_proxies.find(input_layer_proxy);
+				if (input_layer_proxy_iter != d_layer_proxies.end())
 				{
-					if (input_layer_proxy_iter->get_input_layer_proxy() == input_layer_proxy)
-					{
-						d_seq.erase(input_layer_proxy_iter);
-						return;
-					}
+					d_layer_proxies.erase(input_layer_proxy_iter);
 				}
 			}
 			
 		private:
-			seq_type d_seq;
+			layer_proxies_map_type d_layer_proxies;
+
+
+			//! Extract the 'const' value from a map's key/value entry.
+			static
+			const InputLayerProxy<LayerProxyType> &
+			get_const_map_value(
+						const typename layer_proxies_map_type::value_type &map_value)
+			{
+				return map_value.second;
+			}
+
+			//! Extract the 'non-const' value from a map's key/value entry.
+			static
+			InputLayerProxy<LayerProxyType> &
+			get_map_value(
+						typename layer_proxies_map_type::value_type &map_value)
+			{
+				return map_value.second;
+			}
 		};
 	}
 }

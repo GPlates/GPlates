@@ -39,6 +39,7 @@ namespace GPlatesUtils
 			DATA_MINING = 0,
 			PYTHON,
 			SYMBOLOGY,
+			HELLINGER_THREE_PLATE,
 			COMP_NUM
 		};
 
@@ -65,6 +66,13 @@ namespace GPlatesUtils
 			symbology()
 			{
 				return Component(ComponentManager::SYMBOLOGY);
+			}
+
+			static
+			Component
+			hellinger_three_plate()
+			{
+				return Component(ComponentManager::HELLINGER_THREE_PLATE);
 			}
 
 			operator 

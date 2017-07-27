@@ -56,6 +56,8 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/LayerProxyUtils.h"
+#include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
@@ -220,6 +222,29 @@ namespace
 	{
 		return is_geometry(
 				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
+	}
+
+
+	/**
+	 * Query the GPGIM to determine whether we can add the 'gpml:geometryImportTime' property.
+	 * This is based on FeatureType.
+	 */
+	bool
+	should_add_import_geometry_time_prop(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type)
+	{
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+		// See if the feature type supports a geometry import time property.
+		return GPlatesModel::Gpgim::instance().get_feature_property(
+				feature_type.get(),
+				GEOMETRY_IMPORT_TIME_PROPERTY_NAME);
 	}
 
 
@@ -1219,6 +1244,26 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 				GPlatesModel::PropertyName::create_gml("validTime"),
 				d_time_period_widget->create_property_value_from_widget());
 
+		// Add a gpml:geometryImportTime property if the feature type supports it.
+		//
+		// This gets added to all reconstructable features.
+		// It is used by MidOceanRidge features, along with left plate ID, to reconstruct ridge position to the
+		// import time and then perform ridge-spreading from there. This enables the user to subsequently change
+		// the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time)
+		//
+		// Also used when a feature's geometry is reconstructed using topologies
+		// (instead of using the feature's properties, eg, reconstruction plate ID).
+		// This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies
+		// through time (mid-ocean ridges going backward in time and subduction zones going forward in time).
+		if (should_add_import_geometry_time_prop(d_feature_type))
+		{
+			copy_common_property_into_all_properties(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					GPlatesModel::ModelUtils::create_gml_time_instant(
+							GPlatesPropertyValues::GeoTimeInstant(
+									d_application_state_ptr->get_current_reconstruction_time())));
+		}
+
 		// If we are using half stage rotation.
 		// Note that the 'if' and 'else' parts do the reverse of each other.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
@@ -1228,7 +1273,7 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 					GPlatesPropertyValues::Enumeration::create(
 							GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
-							"HalfStageRotationVersion2"));
+							"HalfStageRotationVersion3"));
 
 			// Add gpml:leftPlate and gpml:rightPlate properties.
 			copy_common_property_into_all_properties(
@@ -1974,7 +2019,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		
 		// Create the primary feature based on the list of properties we have assembled.
 		GPlatesModel::FeatureHandle::non_null_ptr_type primary_feature = create_feature(
-				d_feature_type.get(), d_feature_properties, geometry_property_name);
+				d_feature_type.get(), d_feature_properties, geometry_property_name, feature_collection);
 
 		// Add the primary feature to the feature collection.
 		feature_collection->add(primary_feature);
@@ -1985,7 +2030,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				d_feature_type, d_geometry_property_type, *d_create_conjugate_feature_checkbox))
 		{
 			GPlatesModel::FeatureHandle::non_null_ptr_type conjugate_feature = create_feature(
-					d_feature_type.get(), d_conjugate_properties, geometry_property_name);
+					d_feature_type.get(), d_conjugate_properties, geometry_property_name, feature_collection);
 			feature_collection->add(conjugate_feature);
 			
 			// Since we are in the position to know with absolute certainty that these two
@@ -2167,7 +2212,8 @@ GPlatesModel::FeatureHandle::non_null_ptr_type
 GPlatesQtWidgets::CreateFeatureDialog::create_feature(
         const GPlatesModel::FeatureType feature_type,
         const CreateFeaturePropertiesPage::property_seq_type feature_properties,
-        const GPlatesModel::PropertyName geometry_property_name)
+        const GPlatesModel::PropertyName geometry_property_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Create a feature with no properties (yet).
 	GPlatesModel::FeatureHandle::non_null_ptr_type feature =
@@ -2193,7 +2239,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_feature(
 
 	// Reverse-reconstruct the geometry (just added) back to present day.
 	// This does nothing for topological geometries since they reference another feature's geometry.
-	if ( ! reverse_reconstruct_geometry_property(feature->reference(), geometry_property_iterator.get()))
+	if ( ! reverse_reconstruct_geometry_property(feature->reference(), geometry_property_iterator.get(), feature_collection))
 	{
 		throw InvalidPropertyValueException(GPLATES_EXCEPTION_SOURCE, 
 				tr("There was an error reverse-reconstructing the geometry to create the feature. Please check that it has a valid plate ID."));
@@ -2278,7 +2324,8 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry_property(
 bool
 GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator)
+		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	if (!geometry_property_iterator.is_still_valid())
 	{
@@ -2321,63 +2368,72 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 		return false;
 	}
 
+	//
     // Un-Reconstruct the temporary geometry so that it's coordinates are
     // expressed in terms of present day location, given the plate ID that is associated
     // with it and the current reconstruction time.
     //
-    // FIXME: Currently we can have multiple reconstruction tree visual layers but we
-    // only allow one active at a time - when this changes we'll need to somehow figure out
-    // which reconstruction tree to use here.
-    // We could search the layers for the one that reconstructs the feature collection that
-    // will contain the new feature and see which reconstruction tree that layer uses in turn.
-    // This could fail if the containing feature collection is reconstructed by multiple layers
-    // (for example if the user wants to reconstruct the same features using two different
-    // reconstruction trees). We could detect this case and ask the user which reconstruction tree
-    // to use (for reverse reconstructing).
-    // This can also fail if the user is adding the created feature to a new feature collection
-    // in which case we cannot know which reconstruction tree they will choose when they wrap
-    // the new feature collection in a new layer. Although when the new feature collection is
-    // created it will automatically create a new layer and set the "default" reconstruction tree
-    // layer as its input (where 'default' will probably be the most recently created
-    // reconstruction tree layer that is currently active). In this case we could figure out
-    // which reconstruction tree layer this is going to be. But this is not ideal because the
-    // user may then immediately switch to a different reconstruction tree input layer and our
-    // reverse reconstruction will not be the one they wanted.
-    // Perhaps the safest solution here is to again ask the user which reconstruction tree layer
-    // to use and then use that instead of the 'default' when creating a new layer for the new
-    // feature collection.
-    // So in summary:
-    // * if adding feature to an existing feature collection:
-    //   * if feature collection is being processed by only one layer then reverse reconstruct
-    //     using the reconstruction tree used by that layer,
-    //   * if feature collection is being processed by more than one layer then gather the
-    //     reconstruction trees used by those layers and ask user which one to
-    //     reverse reconstruct with,
-    // * if adding feature to a new feature collection gather all reconstruction tree layers
-    //   including inactive ones and ask user which one to use for the new layer that will
-    //   wrap the new feature collection.
-    //
 
-	// The default reconstruction tree.
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state_ptr->get_current_reconstruction()
-					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+	// Get the reconstruct layers (if any) that reconstruct the feature collection that our
+	// feature will be added to.
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_outputs;
+	GPlatesAppLogic::LayerProxyUtils::find_reconstruct_layer_outputs_of_feature_collection(
+			reconstruct_layer_outputs,
+			feature_collection,
+			d_application_state_ptr->get_reconstruct_graph());
 
 	// Use the feature properties added so far to the new feature to determine how to
 	// reconstruct the geometry back to present-day.
 	// This takes advantage of the reconstruct-method framework and avoids a bunch of if-else
 	// statements here.
-	//
 	// NOTE: The feature must have a geometry property present (even if it's not the correct present
 	// day geometry) because some reconstruct methods will only be chosen if a geometry is present.
+	//
+	// If we found a reconstruct layer then use its reconstruct method context (contains the
+	// reconstruct parameters, reconstruction tree creator and optional deformation).
+    // This could fail if feature collection is reconstructed by multiple layers (for example if the user wants
+    // to reconstruct the same features using two different reconstruction trees).
+	// We could detect this case and ask the user which reconstruction tree to use (for reverse reconstructing).
+	//
+	// If there's no reconstruct layers then use the default reconstruction tree creator and
+	// default reconstruct parameters.
+    // This can happen if the user is adding the created feature to a new feature collection
+    // in which case we cannot know which reconstruction tree they will choose when they wrap
+    // the new feature collection in a new layer. Although when the new feature collection is
+    // created it will automatically create a new layer and set the "default" reconstruction tree
+    // layer as its input (where 'default' will probably be the most recently created
+    // reconstruction tree layer that is currently active). So currently we just use this
+    // reconstruction tree layer. But this is not ideal because the user may then immediately switch
+	// to a different reconstruction tree input layer and our reverse reconstruction will not be the
+	// one they wanted.
+	//
+    // TODO: So in summary:
+    // * if adding feature to an existing feature collection:
+    //   * if feature collection is being processed by only one layer then reverse reconstruct
+    //     using that layer,
+    //   * if feature collection is being processed by more than one layer then gather the
+    //     those layers and ask user which one to reverse reconstruct with,
+    // * if adding feature to a new feature collection gather all reconstruction tree layers
+    //   including inactive ones and ask user which one to use for the new layer that will
+    //   wrap the new feature collection.
+    //
+	const GPlatesAppLogic::Reconstruction &reconstruction = d_application_state_ptr->get_current_reconstruction();
+	const GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+			!reconstruct_layer_outputs.empty()
+			? GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					reconstructed_geometry.get(),
+					reconstruct_method_registry,
 					feature,
-					*default_reconstruction_tree,
-					// FIXME: Using default reconstruct parameters, but will probably need to
-					// get this from the layer that the created feature is being assigned to.
-					// For example a layer the deforms might need to deform geometry to present day...
+					reconstruction.get_reconstruction_time(),
+					reconstruct_layer_outputs.front()->get_reconstruct_method_context(),
+					true/*reverse_reconstruct*/)
+			: GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+					reconstructed_geometry.get(),
+					reconstruct_method_registry,
+					feature,
+					reconstruction.get_reconstruction_time(),
+					reconstruction.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator(),
 					GPlatesAppLogic::ReconstructParams(),
 					true/*reverse_reconstruct*/);
 

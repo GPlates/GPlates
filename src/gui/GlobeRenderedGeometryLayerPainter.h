@@ -36,6 +36,7 @@
 #include <opengl/OpenGL.h>
 
 #include "Colour.h"
+#include "ColourProxy.h"
 #include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
@@ -95,11 +96,13 @@ namespace GPlatesGui
 		/**
 		 * @a paint_region specifies whether to draw surface or sub-surface rendered geometries in @a paint.
 		 *
+		 * @a vector_geometries_override_colour is used to optionally override the colour of vector geometries
+		 *    on the surface (this is useful when rendering geometries gray on rear of globe).
 		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * It is only used when rendering sub-surface geometries.
+		 *    of the surface geometries/rasters on the *front* of the globe.
+		 *    It is only used when rendering sub-surface geometries.
 		 * @a improve_performance_reduce_quality_hint a hint to improve performance by presumably
-		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
+		 *    reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
@@ -108,6 +111,7 @@ namespace GPlatesGui
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
+				boost::optional<Colour> vector_geometries_override_colour = boost::none,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
 						surface_occlusion_texture = boost::none,
 				bool improve_performance_reduce_quality_hint = false);
@@ -345,6 +349,11 @@ namespace GPlatesGui
 		boost::optional<GPlatesOpenGL::GLFrustum> d_frustum_planes;
 
 		/**
+		 * Optional override colour of vector geometries (useful when rendering geometries gray on rear of globe).
+		 */
+		boost::optional<Colour> d_vector_geometries_override_colour;
+
+		/**
 		 * A viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
 		 * It is only used when rendering sub-surface geometries.
@@ -373,7 +382,6 @@ namespace GPlatesGui
 
 		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
-		static const float STRAIN_LINE_WIDTH_ADJUSTMENT;
 
 
 		/**
@@ -402,13 +410,22 @@ namespace GPlatesGui
 				boost::uint32_t frustum_plane_mask);
 
 		/**
-		 * Determines the colour of a RenderedGeometry type using d_colour_scheme
+		 * Determines the colour of vector geometries.
+		 *
+		 * If an override colour has been provided then returns that, otherwise returns colour of a
+		 * ColourProxy using our colour scheme.
+		 *
+		 * TODO: Remove colour schemes when full symbology implemented.
+		 * We're no longer really using colour schemes (via colour proxies) anymore since
+		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
+		 * colours stored internally instead of delegating to a colour scheme).
+		 * But we still need a central colour access point (like this method) to override
+		 * rendered geometry colours (such as geometries on rear of globe rendered gray).
 		 */
-		template <class T>
 		inline
 		boost::optional<Colour>
-		get_colour_of_rendered_geometry(
-				const T &geom);
+		get_vector_geometry_colour(
+				const ColourProxy &colour_proxy);
 
 		/**
 		 * Paints great circle arcs of polylines and polygons.
@@ -418,7 +435,7 @@ namespace GPlatesGui
 		paint_great_circle_arcs(
 				GreatCircleArcForwardIter begin_arcs,
 				GreatCircleArcForwardIter end_arcs,
-				const Colour &colour,
+				rgba8_t rgba8_color,
 				stream_primitives_type &lines_stream);
 
 		/**
@@ -427,7 +444,7 @@ namespace GPlatesGui
 		void
 		paint_ellipse(
 				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
-				const Colour &colour,
+				rgba8_t rgba8_color,
 				stream_primitives_type &lines_stream);
 
 		/**

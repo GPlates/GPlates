@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 #define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 
+#include <boost/optional.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -78,14 +79,22 @@ namespace GPlatesQtWidgets
 			VisualLayersComboBox(visual_layers, visual_layer_registry, predicate, parent_)
 		{
 			insert_all();
+			setCurrentIndex(0); // Set index to the "All" entry we just inserted at beginning.
 		}
-	protected:
+
+		/**
+		 * Override base class since need to handle 'all' layers (represented by an invalid weak_ptr).
+		 */
+		virtual
 		void
-		populate()
-		{
-			VisualLayersComboBox::populate();
-			insert_all();
-		}
+		set_selected_visual_layer(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+	protected:
+
+		virtual
+		void
+		populate();
 
 		void
 		insert_all();
@@ -103,16 +112,36 @@ namespace GPlatesQtWidgets
 				QWidget* parent_ = NULL);
 
 		~DrawStyleDialog();
-		
-		void
-		init_category_table();
 
+		/**
+		 * Similar to the other overload of @a reset, but uses the layer (or none) currently set by
+		 * the most recent call to that @a reset.
+		 *
+		 * This is used after this dialog is popped up, but not from within a specific layer.
+		 */
 		void
-		init_dlg();
+		reset();
 
+		/**
+		 * Set up this dialog (after it has been popped up) for a specific layer, or 'all' layers
+		 * if @a layer is invalid.
+		 */
 		void
 		reset(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer,
+				//
+				// FIXME: DrawStyleDialog should update its GUI when the draw style changes in visual layer params.
+				//
+				// Currently DrawStyleDialog clobbers the draw style in the visual layer params.
+				// DrawStyleDialog should just be one observer of visual layer params
+				// (ie, it is not the only one who can change its state).
+				//
+				// As a temporary hack to get around this we allow another observer to set the draw style via
+				// DrawStyleDialog using the following style parameter (this also sets it in the layer's visual params).
+				// This means that when DrawStyleDialog is popped up by the user it will reset the draw style
+				// (to the state that is stored in its GUI) but that state will be up-to-date (ie, not old state).
+				//
+				boost::optional<const GPlatesGui::StyleAdapter *> style_ = boost::none);
 
 	protected:
 
@@ -120,6 +149,12 @@ namespace GPlatesQtWidgets
 		void
 		showEvent(
 				QShowEvent *show_event);
+		
+		void
+		init_category_table();
+
+		void
+		init_dlg();
 
 		void
 		make_signal_slot_connections();
@@ -242,9 +277,6 @@ namespace GPlatesQtWidgets
 				bool);
 
 		void
-		focus_style();
-
-		void
 		handle_show_thumbnails_changed(
 				int state)
 		{
@@ -306,7 +338,7 @@ namespace GPlatesQtWidgets
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
-		GPlatesGui::StyleAdapter* d_style_of_all;
+		const GPlatesGui::StyleAdapter* d_style_of_all;
 	};
 }
 

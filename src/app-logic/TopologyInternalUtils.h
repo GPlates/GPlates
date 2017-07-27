@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_TOPOLOGYINTERNALUTILS_H
 #define GPLATES_APP_LOGIC_TOPOLOGYINTERNALUTILS_H
 
+#include <set>
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -146,14 +147,44 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Finds all topological section features referenced by the topological feature
+		 * @a topology_feature_ref (which can be a topological line, boundary or network).
+		 *
+		 * If @a topology_geometry_type is specified then only matching topology geometries in
+		 * @a topology_feature_ref are searched.
+		 *
+		 * If @a reconstruction_time is specified then @a topology_feature_ref is only searched
+		 * if it exists at the reconstruction time, in which case only those time-dependent topologies
+		 * at the reconstruction time are considered (otherwise all topologies in a time-dependent
+		 * sequence are considered).
+		 */
+		void
+		find_topological_sections_referenced(
+				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const GPlatesModel::FeatureHandle::weak_ref &topology_feature_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
+				boost::optional<double> reconstruction_time = boost::none);
+
+		/**
+		 * An overload of @a find_topological_sections_referenced accepting a topological
+		 * feature collection instead of a single topological feature.
+		 */
+		void
+		find_topological_sections_referenced(
+				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
+				boost::optional<double> reconstruction_time = boost::none);
+
+
+		/**
 		 * Finds the reconstruction geometry for the geometry property referenced by the
 		 * property delegate @a geometry_delegate.
 		 *
 		 * If @a reconstruct_handles is specified then an RG is returned only if it has a
 		 * reconstruct handle in that set.
 		 *
-		 * NOTE: If more than one RG is found then the first found is returned and a warning message
-		 * is output to the console.
+		 * NOTE: If more than one RG is found then the first found is returned.
 		 *
 		 * NOTE: The RGs must be generated before calling this function otherwise no RGs will be found.
 		 * This includes reconstructing static geometries and resolving topological lines since both
@@ -164,15 +195,14 @@ namespace GPlatesAppLogic
 		 * - there are multiple RGs satisfying the specified constraints (reconstruct handles)
 		 *   and they came from *different* features (it's ok to have more than one feature with
 		 *   same feature id but the constraints, reconstruct handles, must reduce the set of RGs
-		 *   such that they come from only *one* feature (in this case a warning message is
-		 *   output to the console).
+		 *   such that they come from only *one* feature).
 		 *
 		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the
 		 * other constraints, then either:
 		 *  - the reconstruction time @a reconstruction_time is outside the age range of the
 		 *    delegate feature (this is OK and useful in some situations), or
 		 *  - the reconstruction time @a reconstruction_time is inside the age range of the
-		 *    delegate feature but the RG still cannot be found (in which case a warning is logged).
+		 *    delegate feature but the RG still cannot be found.
 		 *
 		 * If there is more than one RG referencing the delegate feature then either:
 		 * - there are multiple geometry properties in the delegate feature that have the same
@@ -201,8 +231,7 @@ namespace GPlatesAppLogic
 		 * If @a reconstruct_handles is specified then an RG is returned only if it has a
 		 * reconstruct handle in that set.
 		 *
-		 * NOTE: If more than one RG is found then the first found is returned and a warning message
-		 * is output to the console.
+		 * NOTE: If more than one RG is found then the first found is returned.
 		 *
 		 * NOTE: The RGs must be generated before calling this function otherwise no RGs will be found.
 		 * This includes reconstructing static geometries and resolving topological lines since both
@@ -217,7 +246,7 @@ namespace GPlatesAppLogic
 		 *  - the reconstruction time @a reconstruction_time is outside the age range of the
 		 *    delegate feature (this is OK and useful in some situations), or
 		 *  - the reconstruction time @a reconstruction_time is inside the age range of the
-		 *    delegate feature but the RG still cannot be found (in which case a warning is logged).
+		 *    delegate feature but the RG still cannot be found.
 		 *
 		 * If there is more than one RG referencing the feature (containing @a geometry_property) then either:
 		 * - somewhere, in GPlates, more than one RG is being generated for the same
@@ -231,59 +260,6 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
 				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
-
-
-		/**
-		 * Intersects geometries @a first_section_reconstructed_geometry and
-		 * @a second_section_reconstructed_geometry if they are intersectable
-		 * (see @a get_polylines_for_intersection) and for each intersected section
-		 * (assuming each section is intersected into two segments)
-		 * returns the segment that is closest to the respective reference point.
-		 *
-		 * If the geometries are not intersectable then the original geometries are returned.
-		 *
-		 * The optional @a PointOnSphere returned is the intersection point if the sections
-		 * intersected - this can be tested for 'false' to see if an intersection occurred.
-		 * Even if 'false' is returned the two returned segment geometries are still valid
-		 * (but they are just the geometries passed into this function).
-		 *
-		 * If there is more than one intersection then only the first intersection is
-		 * considered such that this function still divides the two input sections into
-		 * (up to) two segments each (instead of several segments each).
-		 * It does this by concatenating divided segments (of each section) before or after
-		 * the intersection point into a single segment.
-		 */
-		boost::tuple<
-				boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*second_section_closest_segment*/>
-		intersect_topological_sections(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				const GPlatesMaths::PointOnSphere &first_section_reconstructed_reference_point,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry,
-				const GPlatesMaths::PointOnSphere &second_section_reconstructed_reference_point);
-
-
-		/**
-		 * Same as above overload of @a intersect_topological_sections but accepts and
-		 * returns @a PolylineOnSphere objects instead of @a GeometryOnSphere objects.
-		 *
-		 * The above overload of @a intersect_topological_sections basically calls
-		 * @a get_polylines_for_intersection and then calls this function internally.
-		 *
-		 * This method is useful when you need to know whether the two geometries are even
-		 * intersectable (eg, consist of polylines and/or polygons).
-		 * 
-		 */
-		boost::tuple<
-				boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type/*second_section_closest_segment*/>
-		intersect_topological_sections(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				const GPlatesMaths::PointOnSphere &first_section_reconstructed_reference_point,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry,
-				const GPlatesMaths::PointOnSphere &second_section_reconstructed_reference_point);
 
 
 		/**
@@ -461,7 +437,8 @@ namespace GPlatesAppLogic
 		 *
 		 * If either geometries is a point or multi-point then the geometries are
 		 * not intersectable and false is returned. If the two geometries consist of polylines
-		 * and/or polygons then the polygon geometries get converted to polylines before returning.
+		 * and/or polygons then the polygon geometries get converted to polylines before returning
+		 * (however only the exterior rings of polygons are used - interior rings are ignored).
 		 *
 		 * The output of this function is designed to be used with
 		 * @a PolylineIntersections::partition_intersecting_polylines.
@@ -473,20 +450,6 @@ namespace GPlatesAppLogic
 		get_polylines_for_intersection(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_geometry,
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_geometry);
-
-
-		/**
-		 * Returns the closest segment (@a first_intersected_segment or
-		 * @a second_intersected_segment) to @a section_reference_point.
-		 *
-		 * FIXME: if the reference point is not close enough to either segment
-		 * (within a implementation-defined limit) then the first segment is returned.
-		 */
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		find_closest_intersected_segment_to_reference_point(
-				const GPlatesMaths::PointOnSphere &section_reference_point,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_intersected_segment,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment);
 
 
 		/**
@@ -521,7 +484,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry.
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry).
 		 */
 		bool
 		can_use_as_resolved_line_topological_section(
@@ -531,8 +495,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalLine).
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry) or a resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_boundary_topological_section(
@@ -542,8 +506,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
-		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalLine).
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry
+		 * (but not a @a TopologyReconstructedFeatureGeometry) or a resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_network_topological_section(

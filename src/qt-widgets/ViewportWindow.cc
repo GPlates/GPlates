@@ -97,6 +97,7 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/SymbolFileReader.h"
 
+#include "global/Constants.h"
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
@@ -210,6 +211,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				*this,
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
+				get_view_state().get_session_management(),
 				this)),
 	d_file_io_feedback_ptr(
 			new GPlatesGui::FileIOFeedback(
@@ -369,11 +371,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(
 			&get_application_state().get_feature_collection_file_io(),
 			SIGNAL(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
 					const GPlatesFileIO::ReadErrorAccumulation &)),
 			this,
 			SLOT(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
 					const GPlatesFileIO::ReadErrorAccumulation &)));
 
 
@@ -417,8 +417,16 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(layer_added(size_t)),
 			this,
 			SLOT(handle_visual_layer_added(size_t)));
-	
-	set_internal_release_window_title();
+
+	// Get notified about project filename changes so we can change the project filename in
+	// the window title.
+	QObject::connect(
+			&(get_view_state().get_session_management()),
+			SIGNAL(changed_project_filename(boost::optional<QString>)),
+			this,
+			SLOT(handle_changed_project_filename(boost::optional<QString>)));
+
+	set_window_title();
 
     // Create the visual layers dialog (but don't show it yet).
     // This is so it can listen for signals before it first pops up
@@ -478,7 +486,6 @@ GPlatesQtWidgets::ViewportWindow::display()
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_read_errors(
-		GPlatesAppLogic::FeatureCollectionFileIO &,
 		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
 {
 	// Pop up errors only if we have new read errors.
@@ -550,8 +557,29 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 	QObject::connect(action_Save_Project, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(save_project()));
 
+	QObject::connect(action_Save_Project_As, SIGNAL(triggered()),
+			d_file_io_feedback_ptr, SLOT(save_project_as()));
+
 	QObject::connect(action_Clear_Session, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(clear_session()));
+
+	// Show the status tips related to projects/sessions in the status bar.
+	// This is needed since the status tips don't appear to show on some platforms.
+	QObject::connect(
+			action_Open_Project, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Save_Project, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Save_Project_As, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			action_Clear_Session, SIGNAL(hovered()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
+	QObject::connect(
+			menu_Open_Recent_Session, SIGNAL(aboutToShow()),
+			this, SLOT(show_menu_item_status_tip_in_status_bar()));
 
 	// ----
 	// Import submenu logic is handled by the ImportMenu class.
@@ -702,6 +730,9 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_multipoint_display()));
 	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
 			this, SLOT(enable_arrows_display()));
+	// Also update the GUI when the RenderSettings change.
+	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
+			this, SLOT(handle_render_settings_changed()));
 }
 
 
@@ -739,6 +770,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 	QObject::connect(action_Generate_LatitudeLongitude_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_lat_lon_dialog()));
+	QObject::connect(action_Generate_Crustal_Thickness_Points, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_generate_crustal_thickness_points_dialog()));
 }
 
 
@@ -781,7 +814,16 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	QObject::connect(action_Open_Kinematics_Tool, SIGNAL(triggered()),
 					 &dialogs(), SLOT(pop_up_kinematics_tool_dialog()));
-	
+
+	if (GPlatesUtils::ComponentManager::instance().is_enabled(
+				GPlatesUtils::ComponentManager::Component::hellinger_three_plate()))
+	{
+		action_Manage_Age_Models->setVisible(true);
+		QObject::connect(action_Manage_Age_Models, SIGNAL(triggered()),
+				&dialogs(), SLOT(pop_up_age_model_manager_dialog()));
+
+	}
+
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
@@ -1137,22 +1179,25 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	//        and then merely call it from here (checking the bool return value naturally)
 
 	// STEP 1: UNSAVED CHANGES WARNING
-	
-	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
-	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
-	if ( ! close_ok) {
+
+	// Check for unsaved changes and ask the user what to do if there are any.
+	const GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult unsaved_changes_result =
+			d_unsaved_changes_tracker_ptr->close_event_hook();
+	if (unsaved_changes_result == GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES)
+	{
 		// User is Not OK with quitting GPlates at this point.
 		close_event->ignore();
 		return;
 	}
 
 	// STEP 2: RECORDING SESSION DETAILS
-	
-	// Unload all empty-filename feature collections, triggering the removal of their layer info,
-	// so that the Session we record as being the user's previous session is self-consistent.
-	get_view_state().get_session_management().unload_all_unnamed_files();
-	// Remember the current set of loaded files for next time.
-	get_view_state().get_session_management().close_event_hook();
+
+	// Remember the current session for next time unless user is discarding unsaved changes
+	// (feature collections and/or project session changes).
+	if (unsaved_changes_result != GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES)
+	{
+		get_view_state().get_session_management().close_event_hook();
+	}
 
 	// STEP 3: FINAL TIDY-UP BEFORE QUITTING
 
@@ -1291,6 +1336,20 @@ GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
 {
 	get_view_state().get_render_settings().set_show_arrows(
 			action_Show_Arrow_Decorations->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
+{
+	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
+
+	// Note: Calling 'setChecked()' does not result in the QAction 'triggered' signal so
+	// we don't need to worry about infinite recursion.
+	action_Show_Point_Features->setChecked(render_settings.show_points());
+	action_Show_Line_Features->setChecked(render_settings.show_lines());
+	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
+	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
+	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
 }
 
 void
@@ -1443,10 +1502,70 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		d_task_panel_ptr->choose_small_circle_tab();
 		break;
 
+	case GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
+		// NOTE: We don't currently have any hellinger task panels
+		// (and we may never have any), so we just open the
+		// Hellinger dialog here, unlike most other tools which will
+		// activate their associated task panels.
+		dialogs().pop_up_and_reposition_hellinger_dialog();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
+		dialogs().pop_up_hellinger_dialog();
+		break;
+
 	default:
 		// Shouldn't get here.
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_changed_project_filename(
+		boost::optional<QString> project_filename)
+{
+	// Add the project filename (if any) in the window title.
+	if (project_filename)
+	{
+		// 'completeBaseName()' removes the path and the last extension.
+		const QString project_file_display_name = QFileInfo(project_filename.get()).completeBaseName();
+
+		set_window_title(project_file_display_name);
+	}
+	else
+	{
+		set_window_title();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::show_menu_item_status_tip_in_status_bar()
+{
+	// Get the QObject that triggered this slot.
+	QObject *signal_sender = sender();
+	// Return early in case this slot not activated by a signal - shouldn't happen.
+	if (!signal_sender)
+	{
+		return;
+	}
+
+	// See if a QAction triggered this slot.
+	QAction *action = qobject_cast<QAction *>(signal_sender);
+	if (action)
+	{
+		status_message(action->statusTip());
+		return;
+	}
+
+	// See if a QMenu triggered this slot.
+	QMenu *menu = qobject_cast<QMenu *>(signal_sender);
+	if (menu)
+	{
+		status_message(menu->statusTip());
+		return;
 	}
 }
 
@@ -1474,8 +1593,11 @@ GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
+GPlatesQtWidgets::ViewportWindow::set_window_title(
+		boost::optional<QString> project_filename)
 {
+	QString window_title("GPlates");
+
 	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
 
 	// If the subversion branch name is the empty string, that should mean that
@@ -1484,7 +1606,6 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 	if (!subversion_branch_name.isEmpty())
 	{
 		QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
-		QString window_title = windowTitle();
 
 		if (subversion_version_number.isEmpty())
 		{
@@ -1497,9 +1618,16 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 
 			window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
 		}
-
-		setWindowTitle(window_title);
 	}
+
+	// Add the project filename if there is one.
+	if (project_filename)
+	{
+		window_title.append(" - ");
+		window_title.append(project_filename.get());
+	}
+
+	setWindowTitle(window_title);
 }
 
 
@@ -1572,7 +1700,7 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
 		bool time_dependent_raster)
 {
-	// Note: the ImportRasterDialog needs to be reconstructed each time we want to
+	// Note: the ImportRasterDialog needs to be constructed each time we want to
 	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
 	ImportRasterDialog import_raster_dialog(
 			get_application_state(),
@@ -1612,7 +1740,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_scalar_field_3d_dialog()
 {
-	// Note: the ImportScalarField3DDialog needs to be reconstructed each time we want to
+	// Note: the ImportScalarField3DDialog needs to be constructed each time we want to
 	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
 	ImportScalarField3DDialog import_scalar_field_dialog(
 			get_application_state(),
@@ -1712,7 +1840,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_1.5_data_sources.html"));
+			QUrl("http://www.earthbyte.org/gplates-2-0-software-and-data-sets"));
 }
 
 

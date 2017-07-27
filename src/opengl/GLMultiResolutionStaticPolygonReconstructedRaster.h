@@ -50,7 +50,6 @@
 
 #include "gui/SceneLightingParameters.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
@@ -173,7 +172,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
-				const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes,
+				const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
 				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_raster = boost::none,
 				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_raster = boost::none,
 				boost::optional<GLLight::non_null_ptr_type> light = boost::none)
@@ -218,7 +217,7 @@ namespace GPlatesOpenGL
 							renderer,
 							reconstruction_time,
 							source_raster,
-							boost::none/*reconstructed_static_polygon_meshes*/,
+							std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type>()/*reconstructed_static_polygon_meshes*/,
 							multi_resolution_cube_mesh,
 							age_grid_raster,
 							normal_map_raster,
@@ -688,18 +687,19 @@ namespace GPlatesOpenGL
 		mutable GPlatesUtils::ObserverToken d_source_raster_texture_observer_token;
 
 		/**
-		 * The reconstructed present day static polygon meshes, or none if raster is being
-		 * rendered at present day.
+		 * The reconstructed present day static polygon meshes.
+		 *
+		 * Is empty if raster is being rendered at present day.
 		 */
-		boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> d_reconstructed_static_polygon_meshes;
+		std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> d_reconstructed_static_polygon_meshes;
+
+		//! Keep track of changes to @a d_reconstructed_static_polygon_meshes.
+		mutable std::vector<GPlatesUtils::ObserverToken> d_reconstructed_static_polygon_meshes_observer_tokens;
 
 		/**
 		 * The multi-resolution mesh used when the raster is not reconstructed.
 		 */
 		boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type> d_multi_resolution_cube_mesh;
-
-		//! Keep track of changes to @a d_reconstructed_static_polygon_meshes.
-		mutable GPlatesUtils::ObserverToken d_reconstructed_static_polygon_meshes_observer_token;
 
 		/**
 		 * Optional age grid raster.
@@ -835,7 +835,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
-				boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_static_polygon_meshes,
+				const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
 				boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type> multi_resolution_cube_mesh,
 				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_raster,
 				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_raster,
@@ -848,7 +848,7 @@ namespace GPlatesOpenGL
 		bool
 		reconstructing_raster() const
 		{
-			return d_reconstructed_static_polygon_meshes;
+			return !d_reconstructed_static_polygon_meshes.empty();
 		}
 
 		void

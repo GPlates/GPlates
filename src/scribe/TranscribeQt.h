@@ -38,6 +38,7 @@
 #include <QStack>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 #include <QVector>
 
 #include "ScribeExceptions.h"
@@ -68,6 +69,13 @@ namespace GPlatesScribe
 			QByteArray &qbytearray_object,
 			bool transcribed_construct_data);
 
+	//! Transcribe QDateTime.
+	TranscribeResult
+	transcribe(
+			Scribe &scribe,
+			QDateTime &qdatetime_object,
+			bool transcribed_construct_data);
+
 	/**
 	 * Transcribe QString by converting it to UTF8 format.
 	 *
@@ -80,11 +88,31 @@ namespace GPlatesScribe
 			QString &qstring_object,
 			bool transcribed_construct_data);
 
-	//! Transcribe QDateTime.
+	/**
+	 * Transcribe QVariant.
+	 *
+	 * NOTE: If the type stored in the QVariant is a user type (ie, not a builtin type - see 'QVariant::Type')
+	 * then it must be registered with 'qRegisterMetaType()' and 'qRegisterMetaTypeStreamOperators()'.
+	 * And it must also supply QDataStream '<<' and '>>' operators for the user type.
+	 * This also applies to any user types that the stored type depends on (if it is a template type).
+	 *
+	 * For example a QVariant containing a QList<MyClassType> must register 'MyClassType', but it
+	 * doesn't need to register QList since that's a QVariant builtin type.
+	 * Note that this differs from a QList<MyClassType> that is *not* wrapped in a QVariant - this is
+	 * transcribed using a Scribe both on QList (already provided below) and on MyClassType.
+	 *
+	 * Essentially transcribing a QVariant means bypassing the Scribe system for anything wrapped inside
+	 * the QVariant, and instead relying on QDataStream '<<' and '>>' operators which are not as flexible
+	 * (eg, don't directly support backwards/forwards compatibility when MyClassType is changed).
+	 *
+	 * Note that using boost::variant (instead of QVariant) avoids having to provide QDataStream
+	 * '<<' and '>>' operators for user-defined types. Instead it just requires export registration
+	 * (see 'ScribeExportRegistration.h').
+	 */
 	TranscribeResult
 	transcribe(
 			Scribe &scribe,
-			QDateTime &qdatetime_object,
+			QVariant &qvariant_object,
 			bool transcribed_construct_data);
 
 

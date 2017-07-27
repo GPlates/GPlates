@@ -41,7 +41,7 @@ namespace
 {
 	QString
 	create_tooltip_from_session(
-			const GPlatesPresentation::Session &session)
+			const GPlatesPresentation::SessionManagement::InternalSessionInfo &session)
 	{
 		QStringList files = session.get_loaded_files();
 		return files.join("\n");
@@ -49,7 +49,7 @@ namespace
 
 	QString
 	create_statustip_from_session(
-			const GPlatesPresentation::Session &session)
+			const GPlatesPresentation::SessionManagement::InternalSessionInfo &session)
 	{
 		QStringList files = session.get_loaded_files();
 		return files.join(", ");
@@ -113,7 +113,7 @@ GPlatesGui::SessionMenu::init(
 void
 GPlatesGui::SessionMenu::regenerate_menu()
 {
-	QList<GPlatesPresentation::InternalSession::non_null_ptr_to_const_type> recent_sessions =
+	QList<GPlatesPresentation::SessionManagement::InternalSessionInfo> recent_sessions =
 			d_session_management_ptr->get_recent_session_list();
 	
 	if (recent_sessions.isEmpty()) {
@@ -132,7 +132,7 @@ GPlatesGui::SessionMenu::regenerate_menu()
 		for (int i = 0; i < d_recent_session_actions.size(); ++i) {
 			QAction *act = d_recent_session_actions.at(i);
 			if (i < recent_sessions.size()) {
-				const GPlatesPresentation::InternalSession &session = *recent_sessions.at(i);
+				const GPlatesPresentation::SessionManagement::InternalSessionInfo &session = recent_sessions.at(i);
 
 				// This menu slot corresponds to a Session on the list.
 				act->setVisible(true);

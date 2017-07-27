@@ -154,10 +154,13 @@ namespace GPlatesApi
 	{
 		bp::list exterior_point_list;
 
+		const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &exterior_ring_points =
+				lat_lon_polygon.get_exterior_ring_points();
+
 		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_iter =
-				lat_lon_polygon.get_exterior_points().begin();
+				exterior_ring_points.begin();
 		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_end =
-				lat_lon_polygon.get_exterior_points().end();
+				exterior_ring_points.end();
 		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
 			exterior_point_list.append(*exterior_points_iter);
@@ -172,10 +175,13 @@ namespace GPlatesApi
 	{
 		bp::list is_original_exterior_point_flags_list;
 
+		const std::vector<bool> &is_original_exterior_point_flags =
+				lat_lon_polygon.get_is_exterior_ring_point_in_original_polygon_flags();
+
 		std::vector<bool>::const_iterator is_original_exterior_point_flags_iter =
-				lat_lon_polygon.get_is_original_exterior_point_flags().begin();
+				is_original_exterior_point_flags.begin();
 		std::vector<bool>::const_iterator is_original_exterior_point_flags_end =
-				lat_lon_polygon.get_is_original_exterior_point_flags().end();
+				is_original_exterior_point_flags.end();
 		for ( ;
 			is_original_exterior_point_flags_iter != is_original_exterior_point_flags_end;
 			++is_original_exterior_point_flags_iter)

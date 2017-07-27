@@ -119,7 +119,6 @@ namespace
 
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
-const float GPlatesGui::GlobeRenderedGeometryLayerPainter::STRAIN_LINE_WIDTH_ADJUSTMENT = 1.0f;
 
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
@@ -129,6 +128,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
+		boost::optional<Colour> vector_geometries_override_colour,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
@@ -138,6 +138,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_paint_region(paint_region),
+	d_vector_geometries_override_colour(vector_geometries_override_colour),
 	d_surface_occlusion_texture(surface_occlusion_texture),
 	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint)
 {
@@ -201,11 +202,15 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_point_on_sphere);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_point_on_sphere.get_colour());
 	if (!colour)
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 #if 0
 	//////////////////////////////////////////////////////////////////////////////////////
 	// Force triangle rendering for testing. This lets me easily create triangles via the
@@ -235,7 +240,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Vertex representing the point's position and colour.
 	// Convert colour from floats to bytes to use less vertex memory.
-	const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
+	const coloured_vertex_type vertex(pos, rgba8_colour);
 
 	// Used to add points to the stream.
 	stream_primitives_type::Points stream_points(stream);
@@ -260,7 +265,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_multi_point_on_sphere);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_multi_point_on_sphere.get_colour());
 	if (!colour)
 	{
 		return;
@@ -315,7 +320,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polyline_on_sphere);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polyline_on_sphere.get_colour());
 	if (!colour)
 	{
 		return;
@@ -334,10 +339,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 				colour.get(),
 				rendered_polyline_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(
 				*polyline_on_sphere,
-				fill_colour,
+				rgba8_fill_colour,
 				d_current_spatial_partition_location.get());
 
 		return;
@@ -350,10 +358,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
 	paint_great_circle_arcs(
 			polyline_on_sphere->begin(),
 			polyline_on_sphere->end(),
-			colour.get(),
+			rgba8_colour,
 			stream);
 }
 
@@ -372,7 +383,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		return;
 	}
 	
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polygon_on_sphere);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polygon_on_sphere.get_colour());
 	if (!colour)
 	{
 		return;
@@ -391,10 +402,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 				colour.get(),
 				rendered_polygon_on_sphere.get_fill_modulate_colour());
 
+		// Convert colour from floats to bytes to use less vertex memory.
+		const rgba8_t rgba8_fill_colour = Colour::to_rgba8(fill_colour);
+
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(
 				*polygon_on_sphere,
-				fill_colour,
+				rgba8_fill_colour,
 				d_current_spatial_partition_location.get());
 
 		return;
@@ -407,11 +421,27 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
+	// Paint the polygon's exterior ring.
 	paint_great_circle_arcs(
-			polygon_on_sphere->begin(),
-			polygon_on_sphere->end(),
-			colour.get(),
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end(),
+			rgba8_colour,
 			stream);
+
+	// Paint the polygon's interior rings.
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_on_sphere->number_of_interior_rings();
+		++interior_ring_index)
+	{
+		paint_great_circle_arcs(
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index),
+				rgba8_colour,
+				stream);
+	}
 }
 
 
@@ -437,29 +467,147 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surf
 			rendered_coloured_edge_surface_mesh.get_mesh_edges();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_edge_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_edge_surface_mesh.get_mesh_colours();
 
-	// Iterate over the mesh edges.
-	mesh_type::edge_seq_type::const_iterator mesh_edges_iter = mesh_edges.begin();
-	mesh_type::edge_seq_type::const_iterator mesh_edges_end = mesh_edges.end();
-	for ( ; mesh_edges_iter != mesh_edges_end; ++mesh_edges_iter)
+	if (rendered_coloured_edge_surface_mesh.get_use_vertex_colours())
 	{
-		const mesh_type::Edge &mesh_edge = *mesh_edges_iter;
+		// Used to add vertex-indexed lines to the stream.
+		stream_primitives_type::Primitives stream_lines(stream);
 
-		boost::optional<Colour> colour = mesh_edge.colour.get_colour(d_colour_scheme);
-		if (!colour)
+		// Note that we don't really need to specify valid sizes here because we're using a
+		// dynamic (GLDynamicStreamPrimitives) stream and not a static one.
+		// Tessellating edges will only add more vertices (making our size specification incorrect anyway).
+		stream_lines.begin_primitive(mesh_vertices.size(), 2 * mesh_edges.size());
+
+		const unsigned int num_mesh_colours = mesh_colours.size();
+
+		// Convert the mesh vertex colours.
+		std::vector<Colour> vertex_colours;
+		vertex_colours.reserve(mesh_colours.size());
+		for (unsigned int c = 0; c < num_mesh_colours; ++c)
 		{
-			continue;
+			boost::optional<Colour> vertex_colour = get_vector_geometry_colour(mesh_colours[c]);
+			if (!vertex_colour)
+			{
+				// Should always get a valid vertex colour - if not then return without rendering mesh.
+				return;
+			}
+
+			vertex_colours.push_back(vertex_colour.get());
+
+			stream_lines.add_vertex(coloured_vertex_type(
+					mesh_vertices[c].position_vector(),
+					Colour::to_rgba8(vertex_colour.get())));
 		}
 
-		const GPlatesMaths::GreatCircleArc edge[1] =
-		{
-				GPlatesMaths::GreatCircleArc::create(
-						mesh_vertices[mesh_edge.vertex_indices[0]],
-						mesh_vertices[mesh_edge.vertex_indices[1]])
-		};
+		// Used for any new (tessellated) vertices.
+		vertex_element_type next_vertex_index(mesh_vertices.size());
 
-		// Paint the current single great circle arc edge (it might get tessellated into smaller arcs).
-		paint_great_circle_arcs(edge, edge + 1, colour.get(), stream);
+		// Iterate over the mesh edges.
+		const unsigned int num_mesh_edges = mesh_edges.size();
+		for (unsigned int e = 0; e < num_mesh_edges; ++e)
+		{
+			const mesh_type::Edge &mesh_edge = mesh_edges[e];
+
+			// Edge start vertex.
+			stream_lines.add_vertex_element(mesh_edge.vertex_indices[0]);
+
+			const GPlatesMaths::PointOnSphere &point1 = mesh_vertices[mesh_edge.vertex_indices[0]];
+			const GPlatesMaths::PointOnSphere &point2 = mesh_vertices[mesh_edge.vertex_indices[1]];
+			if (dot(point1.position_vector(), point2.position_vector()) < COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
+			{
+				// Subdivide the edge (great circle arc).
+				std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
+				tessellate(
+						tessellation_points,
+						GPlatesMaths::GreatCircleArc::create(point1, point2),
+						GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
+
+				// Iterate over the subdivided points.
+				const unsigned int num_subdivided_edges = tessellation_points.size() - 1;
+				const double inv_num_subdivided_edges = 1.0 / num_subdivided_edges;
+				for (unsigned int p = 1; p < num_subdivided_edges; ++p)
+				{
+					const Colour subdivided_colour = Colour::linearly_interpolate(
+							vertex_colours[mesh_edge.vertex_indices[0]],
+							vertex_colours[mesh_edge.vertex_indices[1]],
+							p * inv_num_subdivided_edges);
+
+					// Previous subdivided edge end vertex.
+					stream_lines.add_vertex_element(next_vertex_index);
+					// Next subdivided edge start vertex.
+					stream_lines.add_vertex_element(next_vertex_index);
+
+					// Subdivided vertex.
+					stream_lines.add_vertex(coloured_vertex_type(
+							tessellation_points[p].position_vector(),
+							Colour::to_rgba8(subdivided_colour)));
+					++next_vertex_index;
+				}
+			}
+
+			// Edge end vertex.
+			stream_lines.add_vertex_element(mesh_edge.vertex_indices[1]);
+		}
+
+		stream_lines.end_primitive();
+	}
+	else
+	{
+		// Used to add line strips to the stream.
+		stream_primitives_type::LineStrips stream_line_strips(stream);
+
+		// Iterate over the mesh edges.
+		const unsigned int num_mesh_edges = mesh_edges.size();
+		for (unsigned int e = 0; e < num_mesh_edges; ++e)
+		{
+			const mesh_type::Edge &mesh_edge = mesh_edges[e];
+
+			boost::optional<Colour> edge_colour = get_vector_geometry_colour(mesh_colours[e]);
+			if (!edge_colour)
+			{
+				continue;
+			}
+
+			// Convert colour from floats to bytes to use less vertex memory.
+			const rgba8_t rgba8_edge_colour = Colour::to_rgba8(edge_colour.get());
+
+			const GPlatesMaths::PointOnSphere &point1 = mesh_vertices[mesh_edge.vertex_indices[0]];
+			const GPlatesMaths::PointOnSphere &point2 = mesh_vertices[mesh_edge.vertex_indices[1]];
+
+			stream_line_strips.begin_line_strip();
+
+			// Edge start vertex.
+			stream_line_strips.add_vertex(
+					coloured_vertex_type(point1.position_vector(), rgba8_edge_colour));
+
+			if (dot(point1.position_vector(), point2.position_vector()) < COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
+			{
+				// Subdivide the edge (great circle arc).
+				std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
+				tessellate(
+						tessellation_points,
+						GPlatesMaths::GreatCircleArc::create(point1, point2),
+						GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
+
+				// Iterate over the subdivided points.
+				const unsigned int num_subdivided_edges = tessellation_points.size() - 1;
+				for (unsigned int p = 1; p < num_subdivided_edges; ++p)
+				{
+					// Subdivided vertex.
+					stream_line_strips.add_vertex(coloured_vertex_type(
+							tessellation_points[p].position_vector(),
+							rgba8_edge_colour));
+				}
+			}
+
+			// Edge end vertex.
+			stream_line_strips.add_vertex(
+					coloured_vertex_type(point2.position_vector(), rgba8_edge_colour));
+
+			stream_line_strips.end_line_strip();
+		}
 	}
 }
 
@@ -484,26 +632,80 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_
 			rendered_coloured_triangle_surface_mesh.get_mesh_triangles();
 	const mesh_type::vertex_seq_type &mesh_vertices =
 			rendered_coloured_triangle_surface_mesh.get_mesh_vertices();
+	const mesh_type::colour_seq_type &mesh_colours =
+			rendered_coloured_triangle_surface_mesh.get_mesh_colours();
 
-	// Iterate over the mesh triangles.
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_iter = mesh_triangles.begin();
-	mesh_type::triangle_seq_type::const_iterator mesh_triangles_end = mesh_triangles.end();
-	for ( ; mesh_triangles_iter != mesh_triangles_end; ++mesh_triangles_iter)
+	if (rendered_coloured_triangle_surface_mesh.get_use_vertex_colours())
 	{
-		const mesh_type::Triangle &mesh_triangle = *mesh_triangles_iter;
+		const unsigned int num_mesh_colours = mesh_colours.size();
 
-		boost::optional<Colour> colour = mesh_triangle.colour.get_colour(d_colour_scheme);
-		if (!colour)
+		// Convert the mesh vertex colours.
+		std::vector< boost::optional<rgba8_t> > rgba8_mesh_vertex_colours;
+		rgba8_mesh_vertex_colours.resize(num_mesh_colours);
+		for (unsigned int c = 0; c < num_mesh_colours; ++c)
 		{
-			continue;
+			boost::optional<Colour> colour = get_vector_geometry_colour(mesh_colours[c]);
+			if (colour)
+			{
+				rgba8_mesh_vertex_colours[c] = Colour::to_rgba8(
+						// Modulate with the fill modulate colour...
+						Colour::modulate(
+								colour.get(),
+								rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour()));
+			}
 		}
 
-		// Add the current filled triangle.
-		filled_polygons.add_filled_triangle_to_mesh(
-				mesh_vertices[mesh_triangle.vertex_indices[0]],
-				mesh_vertices[mesh_triangle.vertex_indices[1]],
-				mesh_vertices[mesh_triangle.vertex_indices[2]],
-				colour.get());
+		// Iterate over the mesh triangles.
+		const unsigned int num_mesh_triangles = mesh_triangles.size();
+		for (unsigned int t = 0; t < num_mesh_triangles; ++t)
+		{
+			const mesh_type::Triangle &mesh_triangle = mesh_triangles[t];
+
+			const boost::optional<rgba8_t> rgba8_vertex_colours[3] =
+			{
+				rgba8_mesh_vertex_colours[mesh_triangle.vertex_indices[0]],
+				rgba8_mesh_vertex_colours[mesh_triangle.vertex_indices[1]],
+				rgba8_mesh_vertex_colours[mesh_triangle.vertex_indices[2]]
+			};
+
+			if (rgba8_vertex_colours[0] &&
+				rgba8_vertex_colours[1] &&
+				rgba8_vertex_colours[2])
+			{
+				// Add the current filled triangle.
+				filled_polygons.add_filled_triangle_to_mesh(
+						mesh_vertices[mesh_triangle.vertex_indices[0]],
+						mesh_vertices[mesh_triangle.vertex_indices[1]],
+						mesh_vertices[mesh_triangle.vertex_indices[2]],
+						rgba8_vertex_colours[0].get(),
+						rgba8_vertex_colours[1].get(),
+						rgba8_vertex_colours[2].get());
+			}
+		}
+	}
+	else // vertex colouring ...
+	{
+		// Iterate over the mesh triangles.
+		const unsigned int num_mesh_triangles = mesh_triangles.size();
+		for (unsigned int t = 0; t < num_mesh_triangles; ++t)
+		{
+			const mesh_type::Triangle &mesh_triangle = mesh_triangles[t];
+
+			boost::optional<Colour> triangle_colour = get_vector_geometry_colour(mesh_colours[t]);
+			if (triangle_colour)
+			{
+				// Add the current filled triangle.
+				filled_polygons.add_filled_triangle_to_mesh(
+						mesh_vertices[mesh_triangle.vertex_indices[0]],
+						mesh_vertices[mesh_triangle.vertex_indices[1]],
+						mesh_vertices[mesh_triangle.vertex_indices[2]],
+						Colour::to_rgba8(
+								// Modulate with the fill modulate colour...
+								Colour::modulate(
+										triangle_colour.get(),
+										rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour())));
+			}
+		}
 	}
 
 	// Add the filled mesh at the current location (if any) in the rendered geometries spatial partition.
@@ -627,7 +829,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 	// Render the arrow.
 	//
 
-	boost::optional<Colour> arrow_colour = rendered_radial_arrow.get_arrow_colour().get_colour(d_colour_scheme);
+	boost::optional<Colour> arrow_colour = get_vector_geometry_colour(rendered_radial_arrow.get_arrow_colour());
 	if (!arrow_colour)
 	{
 		return;
@@ -658,7 +860,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 	// Render the symbol.
 	//
 
-    boost::optional<Colour> symbol_colour = rendered_radial_arrow.get_symbol_colour().get_colour(d_colour_scheme);
+    boost::optional<Colour> symbol_colour = get_vector_geometry_colour(rendered_radial_arrow.get_symbol_colour());
     if (!symbol_colour)
     {
 		return;
@@ -835,7 +1037,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_tangential_arrow);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_tangential_arrow.get_colour());
 	if (!colour)
 	{
 		return;
@@ -901,8 +1103,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 						rendered_string.get_point_on_sphere().position_vector(),
 						rendered_string.get_x_offset(),
 						rendered_string.get_y_offset(),
-						get_colour_of_rendered_geometry(rendered_string),
-						rendered_string.get_shadow_colour().get_colour(d_colour_scheme)));
+						get_vector_geometry_colour(rendered_string.get_colour()),
+						get_vector_geometry_colour(rendered_string.get_shadow_colour())));
 	}
 }
 
@@ -916,7 +1118,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_small_circle.get_colour());
 	if (!colour)
 	{
 		return;
@@ -957,7 +1159,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle_arc);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_small_circle_arc.get_colour());
 	if (!colour)
 	{
 		return;
@@ -998,11 +1200,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_ellipse);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_ellipse.get_colour());
 	if (!colour)
 	{
 		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
 
 	const float line_width = rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -1010,7 +1215,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	paint_ellipse(rendered_ellipse, colour.get(), stream);
+	paint_ellipse(rendered_ellipse, rgba8_colour, stream);
 }
 
 
@@ -1025,12 +1230,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 
 	// Based on the "visit_rendered_tangential_arrow" code 
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_arrowed_polyline);
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_arrowed_polyline.get_colour());
 	if (!colour)
 	{
 		return;
 	}
 
+	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
@@ -1080,7 +1286,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	paint_great_circle_arcs(
 		polyline->begin(),
 		polyline->end(),
-		colour.get(),
+		rgba8_colour,
 		lines_stream);
 }
 
@@ -1094,11 +1300,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 		return;
 	}
 
-    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_triangle_symbol);
+    boost::optional<Colour> colour = get_vector_geometry_colour(rendered_triangle_symbol.get_colour());
     if (!colour)
     {
             return;
     }
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
     bool filled = rendered_triangle_symbol.get_is_filled();
 
@@ -1150,9 +1359,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	vc = r3 * vc;
 
 
-	coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
-	coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
-	coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
+	coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(), rgba8_colour);
+	coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(), rgba8_colour);
+	coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(), rgba8_colour);
 
 	if (filled)
 	{
@@ -1197,11 +1406,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 		return;
 	}
 
-    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_square_symbol);
+    boost::optional<Colour> colour = get_vector_geometry_colour(rendered_square_symbol.get_colour());
     if (!colour)
     {
 	    return;
     }
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
     bool filled = rendered_square_symbol.get_is_filled();
 
@@ -1252,11 +1464,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
     v3d_e = r3 * v3d_e;
 
 
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(), rgba8_colour);
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(), rgba8_colour);
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(), rgba8_colour);
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(), rgba8_colour);
+    coloured_vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(), rgba8_colour);
 
     if (filled)
     {
@@ -1305,11 +1517,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 		return;
 	}
 
-    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_circle_symbol);
+    boost::optional<Colour> colour = get_vector_geometry_colour(rendered_circle_symbol.get_colour());
     if (!colour)
     {
 	    return;
     }
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
     bool filled = rendered_circle_symbol.get_is_filled();
 	
@@ -1329,7 +1544,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		// Vertex representing the point's position and colour.
 		// Convert colour from floats to bytes to use less vertex memory.
-		const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
+		const coloured_vertex_type vertex(pos, rgba8_colour);
 
 		// Used to add points to the stream.
 		stream_primitives_type::Points stream_points(stream);
@@ -1348,9 +1563,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 		stream_primitives_type &stream =
 				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-		// Convert colour from floats to bytes to use less vertex memory.
-		const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
-
 		const GPlatesMaths::SmallCircle small_circle = GPlatesMaths::SmallCircle::create_colatitude(
 				rendered_circle_symbol.get_centre().position_vector(),
 				radius);
@@ -1365,7 +1577,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		for (unsigned int i = 0; i < points.size(); ++i)
 		{
-			stream_line_loops.add_vertex(coloured_vertex_type(points[i].position_vector(), rgba8_color));
+			stream_line_loops.add_vertex(coloured_vertex_type(points[i].position_vector(), rgba8_colour));
 		}
 
 		stream_line_loops.end_line_loop();
@@ -1384,13 +1596,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 		return;
 	}
 
-    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_cross_symbol);
+    boost::optional<Colour> colour = get_vector_geometry_colour(rendered_cross_symbol.get_colour());
     if (!colour)
     {
 	    return;
     }
 
-    //
+ 	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
+   //
     // Reminder about coordinate system:
     // x is out of the screen as we look at the globe on startup.
     // y is towards right (east) as we look at the globe on startup.
@@ -1427,10 +1642,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
     v3d_d = r3 * v3d_d;
 
 
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(), rgba8_colour);
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(), rgba8_colour);
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(), rgba8_colour);
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(), rgba8_colour);
 
 
     const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
@@ -1462,108 +1677,184 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
 		return;
 	}
 
-    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_strain_marker_symbol);
-    if (!colour)
-    {
-	    return;
-    }
+    const double scaled_size = 0.1 * d_inverse_zoom_factor * rendered_strain_marker_symbol.get_size(); 
 
-    // Define the square in the tangent plane at the north pole,
+	// Strain principal x and y components.
+   	const double x = rendered_strain_marker_symbol.get_scale_x() * scaled_size;
+   	const double y = rendered_strain_marker_symbol.get_scale_y() * scaled_size;
+	const double length_x = std::fabs(x);
+	const double length_y = std::fabs(y);
+
+	const GPlatesMaths::PointOnSphere &centre = rendered_strain_marker_symbol.get_centre();
+
+	// Cull the strain marker if it's outside the view frustum.
+	// This helps the relatively high CPU cost of drawing the arrows in the strain marker
+	// (setting up the arrow geometry) when there are many strain markers.
+	// Note that the strain markers cannot take advantage of the rendered geometries spatial partition
+	// (because arrows are off the sphere and also arrow length is not known ahead of time so bounds
+	// cannot be determined for placement in spatial partition) and hence is not affected by our
+	// hierarchical view frustum culling in 'get_visible_rendered_geometries()'.
+	//
+	// Use a bounding sphere around the strain marker arrows - we also know that the arrowheads will
+	// always fit within this bounding sphere because their axes are never longer than the arrow lines
+	// and the angle of its cones (relative to the arrow lines) is 45 degrees, and the maximum arrowhead
+	// length is typically limited to half the arrowline length.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_frustum_planes,
+			GPLATES_ASSERTION_SOURCE);
+	if (!GPlatesOpenGL::GLIntersect::intersect_sphere_frustum(
+		GPlatesOpenGL::GLIntersect::Sphere(
+				GPlatesMaths::Vector3D(centre.position_vector())/*centre of strain marker*/,
+				length_x > length_y ? length_x : length_y/*maximum arrow length*/),
+		d_frustum_planes->get_planes(),
+		GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK))
+	{
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	// Use similar extension/contraction colours used in the default strain colour palette
+	// (see 'DefaultColourPalettes::create_strain_colour_palette()').
+	const rgba8_t rgba8_contraction_colour = Colour::to_rgba8(
+			d_vector_geometries_override_colour
+					? d_vector_geometries_override_colour.get()
+					: Colour(QColor("#2166ac")));
+	const rgba8_t rgba8_extension_colour = Colour::to_rgba8(
+			d_vector_geometries_override_colour
+					? d_vector_geometries_override_colour.get()
+					: Colour(QColor("#b2182b")));
+
+    // Define the square in the tangent plane at the North pole,
     // then rotate down to required latitude, and
-    // then east/west to required longitude.
-    //
-    // (Two rotations are required to maintain the north-alignment).
-    //
-    // Can I use a new render node to do this rotation more efficiently?
-    //
-    // Reminder about coordinate system:
-    // x is out of the screen as we look at the globe on startup.
-    // y is towards right (east) as we look at the globe on startup.
-    // z is up...
+    // then East/West to required longitude.
 
-    // Get the point position.
-    const GPlatesMaths::PointOnSphere &pos =
-		    rendered_strain_marker_symbol.get_centre();
+    // Get the centre position.
+    const GPlatesMaths::LatLonPoint centre_llp = GPlatesMaths::make_lat_lon_point(centre);
 
-    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+	// The rotation orientation from cross at North pole to final position/orientation.
+    const GPlatesMaths::Rotation orientation =
+			// Rotate East/West to required longitude...
+			GPlatesMaths::Rotation::create(
+					GPlatesMaths::UnitVector3D::zBasis(),
+					GPlatesMaths::convert_deg_to_rad(centre_llp.longitude())) *
+			// Rotate South to required latitude...
+			GPlatesMaths::Rotation::create(
+					GPlatesMaths::UnitVector3D::yBasis(),
+					GPlatesMaths::HALF_PI - GPlatesMaths::convert_deg_to_rad(centre_llp.latitude())) *
+			// Re-orient cross symbol according to its angle (in tangent plane at North pole)...
+			GPlatesMaths::Rotation::create(
+					GPlatesMaths::UnitVector3D::zBasis(),
+					rendered_strain_marker_symbol.get_angle());
 
+	const float max_ratio_arrowhead_to_arrowline_length = 0.75;
+	axially_symmetric_mesh_stream_primitives_type &axially_symmetric_mesh_triangles_stream =
+			d_layer_painter->drawables_off_the_sphere.get_axially_symmetric_mesh_triangles_stream();
 
-	// rotations to locate the symbol
-    static const GPlatesMaths::UnitVector3D axis1 = GPlatesMaths::UnitVector3D(0.,1.,0.);
-    GPlatesMaths::Rotation r1 =
-		GPlatesMaths::Rotation::create(axis1,GPlatesMaths::HALF_PI - GPlatesMaths::convert_deg_to_rad(llp.latitude()));
+	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
+	if (!GPlatesMaths::are_almost_exactly_equal(length_x, 0.0))
+	{
+		const bool x_negative = x < 0;
 
-    static const GPlatesMaths::UnitVector3D axis2 = GPlatesMaths::UnitVector3D(0.,0.,1.);
-    GPlatesMaths::Rotation r2 =
-	    GPlatesMaths::Rotation::create(axis2,GPlatesMaths::convert_deg_to_rad(llp.longitude()));
+		// Define a scaled cross symbol at the north pole.
+		//
+		// Note that the since the second rotation rotates to the correct latitude around the global 'y-axis'
+		// we need to align the cross symbol's x-axis (colatitude) with the global x-axis and its
+		// y-axis (longitude) with the global y-axis. This aligns the cross symbols' x and y axes with the
+		// local colatitude and longitude at the cross symbol's actual location.
+		//
+		// If strain is negative then both arrows should points towards the centre (rather than away).
+		const GPlatesMaths::Vector3D start_x1 = x_negative ? GPlatesMaths::Vector3D(x, 0, 1) : GPlatesMaths::Vector3D(0, 0, 1);
+		const GPlatesMaths::Vector3D end_x1 = x_negative ? GPlatesMaths::Vector3D(0, 0, 1) : GPlatesMaths::Vector3D(x, 0, 1);
+		const GPlatesMaths::Vector3D start_x2 = x_negative ? GPlatesMaths::Vector3D(-x, 0, 1) : GPlatesMaths::Vector3D(0, 0, 1);
+		const GPlatesMaths::Vector3D end_x2 = x_negative ? GPlatesMaths::Vector3D(0, 0, 1) : GPlatesMaths::Vector3D(-x, 0, 1);
 
-    GPlatesMaths::Rotation r3 = r2*r1;
+		const GPlatesMaths::UnitVector3D unit_vector_x1((1.0 / length_x) * (end_x1 - start_x1));
+		const GPlatesMaths::UnitVector3D unit_vector_x2 = -unit_vector_x1;
 
+		// We want to keep the projected arrowhead size constant regardless of the
+		// the length of the arrowline, except...
+		//
+		// ...if the ratio of arrowhead size to arrowline length is large enough then
+		// we need to start scaling the arrowhead size by the arrowline length so
+		// that the arrowhead disappears as the arrowline disappears.
+		GPlatesMaths::real_t arrowhead_size_x = d_inverse_zoom_factor * 0.03;
+		if (arrowhead_size_x > max_ratio_arrowhead_to_arrowline_length * length_x)
+		{
+			arrowhead_size_x = max_ratio_arrowhead_to_arrowline_length * length_x;
+		}
 
-	// a rotation to orient relative to projected tanget x,y plane
-	GPlatesMaths::Real angle( rendered_strain_marker_symbol.get_angle() );
-//qDebug() << "visit_rendered_strain_marker_symbol: angle = " << angle; 
+		const GPlatesMaths::real_t arrowline_width_x = 0.2 * arrowhead_size_x;
 
-    static const GPlatesMaths::UnitVector3D axis_z = GPlatesMaths::UnitVector3D(0.,0.,1.);
-    GPlatesMaths::Rotation r_orient =
-	    GPlatesMaths::Rotation::create(axis_z,angle);
+		paint_arrow(
+				orientation * start_x1,
+				orientation * end_x1,
+				orientation * unit_vector_x1,
+				arrowline_width_x,
+				arrowhead_size_x,
+				x_negative ? rgba8_contraction_colour : rgba8_extension_colour,
+				axially_symmetric_mesh_triangles_stream);
+		paint_arrow(
+				orientation * start_x2,
+				orientation * end_x2,
+				orientation * unit_vector_x2,
+				arrowline_width_x,
+				arrowhead_size_x,
+				x_negative ? rgba8_contraction_colour : rgba8_extension_colour,
+				axially_symmetric_mesh_triangles_stream);
+	}
 
-	// fairly arbitrary initial half-altitude for testing.
-    double d = 0.1 * d_inverse_zoom_factor * rendered_strain_marker_symbol.get_size(); 
+	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
+	if (!GPlatesMaths::are_almost_exactly_equal(length_y, 0.0))
+	{
+		const bool y_negative = y < 0;
 
-    // Set up the vertices of a cross with centre (0,0,1).
-   	double x = rendered_strain_marker_symbol.get_scale_x();
-   	double y = rendered_strain_marker_symbol.get_scale_y();
-	
-//qDebug() << "BEFOR: x = " << x << "; y =" << y; 
+		// Define a scaled cross symbol at the north pole.
+		//
+		// Note that the since the second rotation rotates to the correct latitude around the global 'y-axis'
+		// we need to align the cross symbol's x-axis (colatitude) with the global x-axis and its
+		// y-axis (longitude) with the global y-axis. This aligns the cross symbols' x and y axes with the
+		// local colatitude and longitude at the cross symbol's actual location.
+		//
+		// If strain is negative then both arrows should points towards the centre (rather than away).
+		const GPlatesMaths::Vector3D start_y1 = y_negative ? GPlatesMaths::Vector3D(0, y, 1) : GPlatesMaths::Vector3D(0, 0, 1);
+		const GPlatesMaths::Vector3D end_y1 = y_negative ? GPlatesMaths::Vector3D(0, 0, 1) : GPlatesMaths::Vector3D(0, y, 1);
+		const GPlatesMaths::Vector3D start_y2 = y_negative ? GPlatesMaths::Vector3D(0, -y, 1) : GPlatesMaths::Vector3D(0, 0, 1);
+		const GPlatesMaths::Vector3D end_y2 = y_negative ? GPlatesMaths::Vector3D(0, 0, 1) : GPlatesMaths::Vector3D(0, -y, 1);
 
-	// scale the lenght of the cross
-	x = x * d;
-	y = y * d;
+		const GPlatesMaths::UnitVector3D unit_vector_y1((1.0 / length_y) * (end_y1 - start_y1));
+		const GPlatesMaths::UnitVector3D unit_vector_y2 = -unit_vector_y1;
 
-//qDebug() << "AFTER: x = " << x << "; y =" << y; 
+		// We want to keep the projected arrowhead size constant regardless of the
+		// the length of the arrowline, except...
+		//
+		// ...if the ratio of arrowhead size to arrowline length is large enough then
+		// we need to start scaling the arrowhead size by the arrowline length so
+		// that the arrowhead disappears as the arrowline disappears.
+		GPlatesMaths::real_t arrowhead_size_y = d_inverse_zoom_factor * 0.03;
+		if (arrowhead_size_y > max_ratio_arrowhead_to_arrowline_length * length_y)
+		{
+			arrowhead_size_y = max_ratio_arrowhead_to_arrowline_length * length_y;
+		}
 
-	// Define a scaled cross symbol at the north pole
-    GPlatesMaths::Vector3D v3d_a(0.,y,1.);
-    GPlatesMaths::Vector3D v3d_b(0,-y,1.);
-    GPlatesMaths::Vector3D v3d_c(-x,0.,1.);
-    GPlatesMaths::Vector3D v3d_d(x,0.,1.);
+		const GPlatesMaths::real_t arrowline_width_y = 0.2 * arrowhead_size_y;
 
-	// First rotate the strain marker cross to the correct angle
-    v3d_a = r_orient * v3d_a;
-    v3d_b = r_orient * v3d_b;
-    v3d_c = r_orient * v3d_c;
-    v3d_d = r_orient * v3d_d;
-
-    // Rotate to desired location.
-    v3d_a = r3 * v3d_a;
-    v3d_b = r3 * v3d_b;
-    v3d_c = r3 * v3d_c;
-    v3d_d = r3 * v3d_d;
-
-
-    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
-
-    const float line_width = rendered_strain_marker_symbol.get_line_width_hint() * STRAIN_LINE_WIDTH_ADJUSTMENT * d_scale;
-
-    stream_primitives_type &stream =
-	    d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
-
-    stream_primitives_type::LineStrips stream_line_strips(stream);
-
-    stream_line_strips.begin_line_strip();
-    stream_line_strips.add_vertex(va);
-    stream_line_strips.add_vertex(vb);
-    stream_line_strips.end_line_strip();
-
-    stream_line_strips.begin_line_strip();
-    stream_line_strips.add_vertex(vc);
-    stream_line_strips.add_vertex(vd);
-    stream_line_strips.end_line_strip();
-
+		paint_arrow(
+				orientation * start_y1,
+				orientation * end_y1,
+				orientation * unit_vector_y1,
+				arrowline_width_y,
+				arrowhead_size_y,
+				y_negative ? rgba8_contraction_colour : rgba8_extension_colour,
+				axially_symmetric_mesh_triangles_stream);
+		paint_arrow(
+				orientation * start_y2,
+				orientation * end_y2,
+				orientation * unit_vector_y2,
+				arrowline_width_y,
+				arrowhead_size_y,
+				y_negative ? rgba8_contraction_colour : rgba8_extension_colour,
+				axially_symmetric_mesh_triangles_stream);
+	}
 }
 
 void
@@ -1789,12 +2080,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries_f
 }
 
 
-template <class T>
 boost::optional<GPlatesGui::Colour>
-GPlatesGui::GlobeRenderedGeometryLayerPainter::get_colour_of_rendered_geometry(
-		const T &geom)
+GPlatesGui::GlobeRenderedGeometryLayerPainter::get_vector_geometry_colour(
+		const ColourProxy &colour_proxy)
 {
-	return geom.get_colour().get_colour(d_colour_scheme);
+	if (d_vector_geometries_override_colour)
+	{
+		return d_vector_geometries_override_colour.get();
+	}
+
+	return colour_proxy.get_colour(d_colour_scheme);
 }
 
 
@@ -1803,16 +2098,13 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 		GreatCircleArcForwardIter begin_arcs,
 		GreatCircleArcForwardIter end_arcs,
-		const Colour &colour,
+		rgba8_t rgba8_color,
 		stream_primitives_type &lines_stream)
 {
 	if (begin_arcs == end_arcs)
 	{
 		return;
 	}
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line strips to the stream.
 	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
@@ -1859,7 +2151,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
-		const Colour &colour,
+		rgba8_t rgba8_color,
 		stream_primitives_type &lines_stream)
 {
 	// We could make this zoom dependent, but:
@@ -1888,9 +2180,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 			rendered_ellipse.get_semi_major_axis_radians(),
 			rendered_ellipse.get_semi_minor_axis_radians(),
 			rendered_ellipse.get_axis());
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line loops to the stream.
 	stream_primitives_type::LineLoops stream_line_loops(lines_stream);

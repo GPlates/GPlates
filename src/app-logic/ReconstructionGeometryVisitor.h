@@ -56,7 +56,6 @@ namespace GPlatesAppLogic
 
 	// Forward declarations of ReconstructionGeometry derived types.
 	class CoRegistrationData;
-	class DeformedFeatureGeometry;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
@@ -70,6 +69,7 @@ namespace GPlatesAppLogic
 	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalLine;
 	class ResolvedTopologicalNetwork;
+	class TopologyReconstructedFeatureGeometry;
 
 
 	/**
@@ -90,15 +90,10 @@ namespace GPlatesAppLogic
 	{
 	public:
 
-		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
+		//! Typedef for @a CoRegistrationData of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, CoRegistrationData>::type
 						co_registration_data_type;
-
-		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
-		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, DeformedFeatureGeometry>::type
-						deformed_feature_geometry_type;
 
 		//! Typedef for @a MultiPointVectorField of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -165,6 +160,11 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedTopologicalNetwork>::type
 						resolved_topological_network_type;
 
+		//! Typedef for @a TopologyReconstructedFeatureGeometry of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, TopologyReconstructedFeatureGeometry>::type
+						topology_reconstructed_feature_geometry_type;
+
 		// We'll make this function pure virtual so that the class is abstract.  The class
 		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
 		// member functions have (empty) definitions.
@@ -182,14 +182,6 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
 		{  }
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
 
 		/**
 		 * Override this function in your own derived class.
@@ -301,6 +293,14 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<topology_reconstructed_feature_geometry_type> &trfg);
 
 
 	private:

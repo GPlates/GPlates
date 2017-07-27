@@ -201,7 +201,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_piecewise_agg
 				time_window->valid_time();
 
 		// If the time window period contains the current reconstruction time then visit.
-		// The time periods should be mutually exclusive - if we happen to be it
+		// The time periods should be mutually exclusive - if we happen to be in
 		// two time periods then we're probably right on the boundary between the two
 		// and then it doesn't really matter which one we choose.
 		if (time_period->contains(d_reconstruction_time))

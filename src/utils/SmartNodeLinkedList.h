@@ -29,6 +29,7 @@
 #define GPLATES_UTILS_SMARTNODELINKEDLIST_H
 
 #include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/type_traits/add_const.hpp>
 
@@ -52,7 +53,8 @@ namespace GPlatesUtils
 	 * for an empty list.
 	 */
 	template <typename T>
-	class SmartNodeLinkedList
+	class SmartNodeLinkedList :
+			private boost::noncopyable
 	{
 	public:
 		typedef T element_type;
@@ -303,23 +305,6 @@ namespace GPlatesUtils
 		{  }
 
 		/**
-		 * Copy-constructor.
-		 *
-		 * Note that we're relying upon the copy-constructor of Node (which is invoked for
-		 * the sentinel member) to perform the appropriate actions to ensure that we don't
-		 * trash the list-structure of @a other.
-		 *
-		 * Currently, the copy-constructor of Node doesn't copy the list-links, only the
-		 * element; the list-links are initialised so the Node has no neighbours.  As a
-		 * result, copy-constructing a SmartNodeLinkedList simply creates a new instance
-		 * with the same sentinel element.
-		 */
-		SmartNodeLinkedList(
-				const SmartNodeLinkedList &other):
-			d_sentinel(other.d_sentinel)
-		{  }
-
-		/**
 		 * Clears the list.
 		 *
 		 * After this operation the nodes (that were in this list) are no longer in this list
@@ -370,11 +355,6 @@ namespace GPlatesUtils
 
 	private:
 		Node d_sentinel;
-
-		// Disallow copy-assignment.
-		SmartNodeLinkedList &
-		operator=(
-				const SmartNodeLinkedList &other);
 	};
 
 
