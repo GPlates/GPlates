@@ -161,7 +161,21 @@ namespace GPlatesApi
 }
 
 
-const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 32;
+// We don't want this excessively large because it uses memory, but make it large enough so
+// that all reconstruction trees (times) used to reconstruct a mid-ocean ridge fit in the cache.
+// The default half-stage time interval is 10My (see RotationUtils::get_half_stage_rotation()')
+// so a caching 100 entries will support mid-ocean ridges as old as 1,000 Ma.
+// An example of such caching is reconstructing (or reverse reconstructing) a group of
+// mid-ocean ridges with the same time-of-appearance. They need to have the same time of appearance
+// because version 3 half-stage rotations start spreading at the time-of-appearance
+// (ie, the 10My intervals are 'begin_time', 'begin_time-10', begin_time-20', ..., reconstruction_time).
+// Because the mid-ocean ridges have the same time intervals they'll reuse the cache entries.
+// Whereas version 2 starts at present day, which means mid-ocean ridges with different
+// appearances times will still share 10My intervals (ie, 0Ma, 10Ma, 20Ma, ..., reconstruction_time).
+// So version 2 is less restrictive in its ability to share cache entries.
+//
+// Each cache entry (reconstruction tree) consumes ~0.5Mb.
+const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 100;
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
