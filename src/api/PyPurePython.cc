@@ -58,7 +58,7 @@ namespace
 		// Read the entire file.
 		const QByteArray python_code = python_code_file.readAll();
 
-#ifdef GPLATES_PYTHON_3
+#if PY_MAJOR_VERSION >= 3
         bp::object main = bp::import("__main__");
         bp::object global(main.attr("__dict__"));
 #endif
@@ -81,13 +81,13 @@ namespace
 		bp::object eval_object = bp::object(bp::handle<>(
 				// Returns a new reference so no need for 'bp::borrowed'...
 				PyEval_EvalCode(
-#ifndef GPLATES_PYTHON_3 
+#if PY_MAJOR_VERSION < 3
 						reinterpret_cast<PyCodeObject *>(compiled_object.ptr()),
                         pygplates_globals.ptr(),
-#else //GPLATES_PYTHON_3
+#else
                         reinterpret_cast<PyObject *>(compiled_object.ptr()),
                         global.ptr(),
-#endif //GPLATES_PYTHON_3
+#endif
 						pygplates_globals.ptr())));
 #endif
 	}

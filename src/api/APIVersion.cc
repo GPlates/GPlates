@@ -291,7 +291,7 @@ export_version()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::Version>();
 
 	// Supply a module '__version__' string - see http://legacy.python.org/dev/peps/pep-0396/#specification.
-#ifndef GPLATES_PYTHON_3
+#if PY_MAJOR_VERSION < 3
     GPlatesApi::get_pygplates_module().attr("__version__") =
 #else
 	bp::scope().attr("__version__") =

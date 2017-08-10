@@ -54,7 +54,7 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
-#if defined(GPLATES_PYTHON_3)
+#if PY_MAJOR_VERSION >= 3
 extern "C" PyMODINIT_FUNC PyInit_pygplates(void);
 #else
 extern "C" void initpygplates();
@@ -223,7 +223,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-#if defined(GPLATES_PYTHON_3)
+#if PY_MAJOR_VERSION >= 3
 	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
 #else
     if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
@@ -244,7 +244,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	string in static storage whose contents will not change for the duration of the program’s 
 	execution. No code in the Python interpreter will change the contents of this storage.
 	*/
-#if defined(GPLATES_PYTHON_3)
+#if PY_MAJOR_VERSION >= 3
     //TODO: convert char* to wchar_t*
     //Py_SetProgramName(argv[0]);
 #else

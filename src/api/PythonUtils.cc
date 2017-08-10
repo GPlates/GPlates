@@ -165,7 +165,7 @@ GPlatesApi::PythonUtils::get_error_message()
 	else
 	{
 		PyObject *p_str;
-#if !defined(GPLATES_PYTHON_3)
+#if PY_MAJOR_VERSION < 3
 		if ((p_str=PyObject_Str(type)) && PyString_Check(p_str))
 			msg.append(PyString_AsString(p_str)).append("\n");
 #else
@@ -174,7 +174,7 @@ GPlatesApi::PythonUtils::get_error_message()
 #endif
 		Py_XDECREF(p_str);
 
-#if !defined(GPLATES_PYTHON_3)	
+#if PY_MAJOR_VERSION < 3
 		if ((p_str=PyObject_Str(value)) && PyString_Check(p_str)) 
 			msg.append(PyString_AsString(value)).append("\n");
 #else

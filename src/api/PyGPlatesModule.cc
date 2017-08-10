@@ -206,7 +206,7 @@ namespace
 	void
 	cache_builtin_attributes()
     {
-#ifndef GPLATES_PYTHON_3
+#if PY_MAJOR_VERSION < 3
         builtin_hash = pygplates_module.attr("__builtins__").attr("hash");
         builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
         builtin_next = pygplates_module.attr("__builtins__").attr("next");
@@ -262,7 +262,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	}
 
 	// The 'pygplates' module is the current scope.
-#ifndef GPLATES_PYTHON_3
+#if PY_MAJOR_VERSION < 3
     pygplates_module = bp::scope();
 #endif
 
@@ -293,7 +293,7 @@ BOOST_PYTHON_MODULE(pygplates)
 			false/*show_cpp_signatures*/);
 
 	// Set the 'pygplates' module docstring.
-#ifndef GPLATES_PYTHON_3
+#if PY_MAJOR_VERSION < 3
     pygplates_module.attr("__doc__") =
 #else
     bp::scope().attr("__doc__") =
@@ -319,7 +319,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
-#ifndef GPLATES_PYTHON_3    
+#if PY_MAJOR_VERSION < 3
     pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
 #else
     bp::scope().attr("__dict__")["builtins"] = bp::import("builtins");

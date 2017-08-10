@@ -406,7 +406,7 @@ GPlatesApi::PythonRunner::handle_system_exit(
 	{
 		object value = object(handle<>(value_ptr));
 		object code = value.attr("code");
-#if !defined(GPLATES_PYTHON_3)
+#if PY_MAJOR_VERSION < 3
         bool is_int = static_cast<bool>(PyInt_Check(code.ptr()));
 #else
         bool is_int = static_cast<bool>(PyLong_Check(code.ptr()));
