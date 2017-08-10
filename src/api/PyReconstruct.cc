@@ -725,6 +725,9 @@ namespace GPlatesApi
 		//
 		// Either export the reconstructed geometries to a file or append them to a python list.
 		//
+		// NOTE: In both cases the reconstructed geometries are output in the same order as that of their
+		// respective features with each feature collection (and the order across feature collections).
+		//
 
 		if (const QString *export_file_name = boost::get<QString>(&reconstructed_feature_geometries_argument))
 		{

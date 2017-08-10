@@ -67,7 +67,7 @@ For example, the rotation of plate *801* relative to plate *291* follows an *edg
 path that goes via plates *202*, *201*, *701* and *802*. However it should be noted
 that if the edge between *001* and *701* did not exist then, even though a path
 would still exist between *291* and *801*, the *relative* rotation (and *equivalent*
-rotations of *291* and *801* for that matter) would be an :meth:`identity rotation"
+rotations of *291* and *801* for that matter) would be an :meth:`identity rotation
 <pygplates.FiniteRotation.represents_identity_rotation>`. This is because the sub-tree
 below *001* would not get built into the reconstruction tree and hence all plates
 in the sub-tree would be missing. This can happen when the rotation sequence

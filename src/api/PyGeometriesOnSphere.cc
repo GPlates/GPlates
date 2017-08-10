@@ -2890,7 +2890,7 @@ export_polygon_on_sphere()
 		.def("get_segments",
 				&GPlatesApi::polygon_on_sphere_get_exterior_ring_arcs_view,
 				"get_segments()\n"
-				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
+				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polygon.\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
