@@ -95,7 +95,7 @@ There are two ways to run Python source code that uses *pygplates*.
 You can run it in either:
 
 * an *external* Python interpreter, or
-* a Python interpreter *embedded* within the GPlates desktop application.
+* a Python interpreter *embedded* within the GPlates desktop application (**NOTE: this option is not yet available**).
 
 .. note:: A Python **interpreter** executes source code written in the Python programming language.
 
@@ -141,7 +141,7 @@ revision ``@PYGPLATES_REVISION@`` is associated with GPlates @GPLATES_PACKAGE_VE
 Using pygplates with the GPlates *embedded* Python interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. note:: This option is **not** yet available.
+.. warning:: This option is **not** yet available.
 
 In this scenario you are running Python source code using a Python interpreter that is embedded inside
 the GPlates desktop application.
