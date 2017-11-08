@@ -254,12 +254,20 @@ And on MacOS X the error message (in a similar situation) is more cryptic:
 
 It is also important to use matching architectures (32-bit versus 64-bit).
 
-For example, on Windows if you attempt to import a pre-built *pygplates* library compiled for
-**32-bit** Python 2.7.x into a **64-bit** Python 2.7.x interpreter then you will get the following
+For example, on Windows if you attempt to import the pre-built *pygplates* library (compiled for
+**32-bit** Python 2.7.x) into a **64-bit** Python 2.7.x interpreter then you will get the following
 error:
 ::
 
   ImportError: DLL load failed: %1 is not a valid Win32 application.
+
+And for MacOS X there are two Python 2.7 installers ("64-bit/32-bit" and "32-bit i386/PPC"),
+so if you attempt to import the pre-built *pygplates* library (compiled for **64-bit** Python 2.7.x)
+into a **32-bit** Python 2.7.x interpreter (eg, installed from "i386/PPC") then you will get the following
+error:
+::
+
+  ... no suitable image found.  Did find: .../pygplates.so: mach-o, but wrong architecture
 
 To find out which Python interpreter version you are currently using you can type the following
 in the *Terminal* or *Command* window:
