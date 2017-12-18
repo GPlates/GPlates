@@ -59,6 +59,7 @@
 #include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/TopologySectionsContainer.h"
+#include "gui/VelocityLegendOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -156,6 +157,8 @@ GPlatesPresentation::ViewState::ViewState(
 				get_default_graticules_colour())),
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
+	d_velocity_legend_overlay_settings(
+			new GPlatesGui::VelocityLegendOverlaySettings()),
 	d_export_animation_registry(
 			new GPlatesGui::ExportAnimationRegistry()),
 	d_topology_boundary_sections_container_ptr(
@@ -617,6 +620,18 @@ const GPlatesGui::TextOverlaySettings &
 GPlatesPresentation::ViewState::get_text_overlay_settings() const
 {
 	return *d_text_overlay_settings;
+}
+
+GPlatesGui::VelocityLegendOverlaySettings &
+GPlatesPresentation::ViewState::get_velocity_legend_overlay_settings()
+{
+	return *d_velocity_legend_overlay_settings;
+}
+
+const GPlatesGui::VelocityLegendOverlaySettings &
+GPlatesPresentation::ViewState::get_velocity_legend_overlay_settings() const
+{
+	return *d_velocity_legend_overlay_settings;
 }
 
 

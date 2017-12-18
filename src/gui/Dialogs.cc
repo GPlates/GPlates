@@ -62,6 +62,7 @@
 #include "qt-widgets/ConfigureCanvasToolGeometryRenderParametersDialog.h"
 #include "qt-widgets/ConfigureGraticulesDialog.h"
 #include "qt-widgets/ConfigureTextOverlayDialog.h"
+#include "qt-widgets/ConfigureVelocityLegendOverlayDialog.h"
 #include "qt-widgets/ConnectWFSDialog.h"
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
@@ -340,6 +341,30 @@ void
 GPlatesGui::Dialogs::pop_up_configure_text_overlay_dialog()
 {
 	if (configure_text_overlay_dialog().exec(view_state().get_text_overlay_settings()) == QDialog::Accepted)
+	{
+		viewport_window().reconstruction_view_widget().update();
+	}
+}
+
+GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog &
+GPlatesGui::Dialogs::configure_velocity_legend_overlay_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_CONFIGURE_VELOCITY_LEGEND_OVERLAY;
+	typedef GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(),&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_configure_velocity_legend_overlay_dialog()
+{
+	if (configure_velocity_legend_overlay_dialog().exec(view_state().get_velocity_legend_overlay_settings()) == QDialog::Accepted)
 	{
 		viewport_window().reconstruction_view_widget().update();
 	}

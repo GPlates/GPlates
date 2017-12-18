@@ -250,6 +250,10 @@ set(srcs
     UnsavedChangesTracker.h
     UtilitiesMenu.cc
     UtilitiesMenu.h
+    VelocityLegendOverlay.cc
+    VelocityLegendOverlay.h
+    VelocityLegendOverlaySettings.cc
+    VelocityLegendOverlaySettings.h
     ViewCanvasToolWorkflow.cc
     ViewCanvasToolWorkflow.h
     ViewportProjection.h
