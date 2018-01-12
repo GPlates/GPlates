@@ -280,7 +280,19 @@ namespace GPlatesApi
 		}
 
 		// The distance (in radians).
-		const GPlatesMaths::real_t distance = angular_distance.calculate_angle();
+		//
+		// NOTE: We clamp to zero if the angular distance is equal to zero within epsilon.
+		// This is done because the same epsilon comparison tests are done in GPlatesMaths::minimum_distance()
+		// and so it's possible that 'angular_distance' is very small (but non-zero) and yet still compares
+		// equal to AngularDistance::ZERO. An example is polygon-to-polygon distance with solid set to true -
+		// in this case if the polygon outlines are close enough then it will avoid doing the solid tests and
+		// just return the non-zero result (even though the solid tests would have returned AngularDistance::ZERO,
+		// ie, exactly 0.0). Client C++ code will be fine here because it (epsilon) tests against AngularDistance::ZERO,
+		// but Python code typically tests exactly for 0.0 and so we need to set anything to 0.0 that (epsilon) compares
+		// equal to AngularDistance::ZERO.
+		const GPlatesMaths::real_t distance = (angular_distance != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
+				? angular_distance.calculate_angle()
+				: 0.0;
 
 		//
 		// If returning closest positions and/or closest indices then return a python tuple.
