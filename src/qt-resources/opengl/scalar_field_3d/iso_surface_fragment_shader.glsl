@@ -458,10 +458,8 @@ get_blended_crossing_colour(
 	// Gradient strength to isosurface colour-mapping
 	if (colour_mode_gradient)
 	{
-		// If positive crossing then ray crosses surfaces in gradient direction: dot(ray.direction,gradient) > 0.
-		// If positive crossing then the first window surface (crossed by ray)
-		// is the one with a gradient pointing "to" the isosurface - and the second window
-		// has a gradient pointing "away" from the isosurface.
+		// The first window surface (lowest isovalue) is the one with a gradient pointing "to" the isosurface.
+		// The second window has a gradient pointing "away" from the isosurface.
 		// The first window maps ||gradient|| to colour.
 		// The second window maps -||gradient|| to colour.
 		float field_gradient_magnitude = length(field_gradient);
@@ -1957,8 +1955,6 @@ main()
 	// Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
 	// depth will get written (if depth writes enabled) using the fixed-function depth which is that
 	// of our full-screen quad (not the actual ray-traced depth).
-	//
-	// NOTE: Currently depth writes are turned off for scalar fields but will be turned on soon.
 	vec4 screen_space_iso_surface_position = gl_ModelViewProjectionMatrix * vec4(iso_surface_position, 1.0);
 	float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
 
@@ -1969,11 +1965,14 @@ main()
 	//
 	// Using multiple render targets here.
 	//
-	// This is in case another scalar field is rendered as an iso-surface (or cross-section) in which case
-	// it cannot use the hardware depth buffer because we're not rendering traditional geometry
-	// (and so instead it must query a depth texture).
-	// This enables correct depth sorting of the cross-sections and iso-surfaces (although it doesn't
-	// work with semi-transparency but that's a much harder problem to solve - depth peeling).
+	// This is in case another scalar field is rendered as an iso-surface in which case
+	// it cannot use the hardware depth buffer because it's not rendering traditional geometry.
+	// Well it can, but it's not efficient because it cannot early cull rays (it needs to do the full
+	// ray trace before it can output fragment depth to make use of the depth buffer).
+	// So instead it must query a depth texture in order to early-cull rays.
+	// The hardware depth buffer is still used for correct depth sorting of the cross-sections and iso-surfaces.
+	// Note that this doesn't work with semi-transparency (non-zero deviation windows) but that's a much harder
+	// problem to solve - depth peeling.
 	//
 
 	// According to the GLSL spec...

@@ -1243,5 +1243,5 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 			0, GL_RGBA, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }

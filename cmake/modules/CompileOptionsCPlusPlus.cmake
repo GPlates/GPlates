@@ -182,13 +182,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
 			endif (CXX_MINOR_VERSION EQUAL "9")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
-		if (CXX_MAJOR_VERSION EQUAL "5")
-			# gcc 5.x reports warnings on unused functions. We prefer to keep unused functions available,
-			# so suppress the warning.
+		if ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
+			# gcc 5.x, 6.x and 7.x report warnings on unused functions.
+			# We prefer to keep unused functions available, so suppress the warning.
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
 			# boost::optional<> is used widely throughout GPlates. So supress the error for now.
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-		endif (CXX_MAJOR_VERSION EQUAL "5")
+		endif ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )

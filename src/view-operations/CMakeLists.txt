@@ -43,6 +43,9 @@ set(srcs
     RenderedArrowedPolyline.h
     RenderedCircleSymbol.h
     RenderedColouredEdgeSurfaceMesh.h
+    RenderedColouredMultiPointOnSphere.h
+    RenderedColouredPolygonOnSphere.h
+    RenderedColouredPolylineOnSphere.h
     RenderedColouredTriangleSurfaceMesh.h
     RenderedCrossSymbol.h
     RenderedEllipse.h

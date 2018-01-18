@@ -35,6 +35,8 @@
 #include <QStringList>
 #include <QVariant>
 
+#include "Gdal.h"
+#include "GdalUtils.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
@@ -76,6 +78,7 @@
 
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
+
 
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::OgrReader::s_property_mapper;
 
@@ -862,18 +865,20 @@ GPlatesFileIO::OgrReader::OgrReader():
 	d_total_features(0),
 	d_current_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
-	OGRRegisterAll();
+	GdalUtils::register_all_drivers();
 }
 
 GPlatesFileIO::OgrReader::~OgrReader()
 {
-	try{
-		if(d_data_source_ptr)
+	try
+	{
+		if (d_data_source_ptr)
 		{
-			OGRDataSource::DestroyDataSource(d_data_source_ptr);
+			GdalUtils::close_vector(d_data_source_ptr);
 		}
 	}
-	catch (...) {
+	catch (...)
+	{
 	}
 }
 
@@ -942,16 +947,15 @@ GPlatesFileIO::OgrReader::check_file_format(
 
 bool
 GPlatesFileIO::OgrReader::open_file(
-		const QString &filename)
+		const QString &filename,
+		ReadErrorAccumulation &read_errors)
 {
-
-	std::string fname = filename.toStdString();
-	
-	d_data_source_ptr = OGRSFDriverRegistrar::Open(fname.c_str());
+	d_data_source_ptr = GdalUtils::open_vector(filename, false/*update*/, &read_errors);
 	if	(d_data_source_ptr == NULL)
 	{
 		return false;
 	}
+
 	d_filename = filename;
 	return true;
 }
@@ -1582,7 +1586,8 @@ GPlatesFileIO::OgrReader::read_file(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename)){
+	if (!reader.open_file(absolute_path_filename, read_errors))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
@@ -2261,7 +2266,7 @@ GPlatesFileIO::OgrReader::read_field_names(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename))
+	if (!reader.open_file(absolute_path_filename, read_errors))
 	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}

@@ -88,6 +88,9 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 {
 	setupUi(this);
 
+	fixed_plate_spinbox->setMinimum(0);
+	fixed_plate_spinbox->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	// Set up fill button's menu.
 	fill_toolbutton->setMenu(d_fill_menu);
 	QObject::connect(

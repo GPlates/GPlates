@@ -30,6 +30,9 @@
 #include "RenderedArrowedPolyline.h"
 #include "RenderedCircleSymbol.h"
 #include "RenderedColouredEdgeSurfaceMesh.h"
+#include "RenderedColouredMultiPointOnSphere.h"
+#include "RenderedColouredPolygonOnSphere.h"
+#include "RenderedColouredPolylineOnSphere.h"
 #include "RenderedColouredTriangleSurfaceMesh.h"
 #include "RenderedCrossSymbol.h"
 #include "RenderedEllipse.h"
@@ -48,7 +51,12 @@
 #include "RenderedString.h"
 #include "RenderedTangentialArrow.h"
 #include "RenderedTriangleSymbol.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "gui/Symbol.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 
@@ -59,8 +67,7 @@ namespace GPlatesViewOperations
 		namespace
 		{
 			/**
-			 * Determines derived type of a @a GeometryOnSphere and creates
-			 * a @a RenderedGeometry from it.
+			 * Determines derived type of a @a GeometryOnSphere and creates a @a RenderedGeometry from it.
 			 */
 			class CreateRenderedGeometryFromGeometryOnSphere :
 				private GPlatesMaths::ConstGeometryOnSphereVisitor
@@ -117,46 +124,12 @@ namespace GPlatesViewOperations
 				{
 					if (d_symbol)
 					{
-						switch(d_symbol->d_symbol_type){
-						case GPlatesGui::Symbol::TRIANGLE:
-						d_rendered_geom = create_rendered_triangle_symbol(
-							*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
-						break;
-
-						case GPlatesGui::Symbol::SQUARE:
-						d_rendered_geom = create_rendered_square_symbol(
-							*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
-						break;
-
-						case GPlatesGui::Symbol::CIRCLE:
-						d_rendered_geom = create_rendered_circle_symbol(
-							*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
-						break;
-
-						case GPlatesGui::Symbol::CROSS:
-						d_rendered_geom = create_rendered_cross_symbol(
-							*point_on_sphere, d_colour, d_symbol->d_size, d_line_width_hint);
-						break;
-
-						case GPlatesGui::Symbol::STRAIN_MARKER:
-						d_rendered_geom = create_rendered_strain_marker_symbol(
-							*point_on_sphere, d_symbol->d_size,
-							d_symbol->d_scale_x.get(), d_symbol->d_scale_y.get(), d_symbol->d_angle.get());
-						break;
-
-						default:
-						d_rendered_geom = create_rendered_point_on_sphere(
-								*point_on_sphere, d_colour, d_point_size_hint);
-						break;
-						}
-
+						d_rendered_geom = create_rendered_symbol(*point_on_sphere, d_symbol.get(), d_colour, d_line_width_hint);
 					}
 					else
 					{
-						d_rendered_geom = create_rendered_point_on_sphere(
-								*point_on_sphere, d_colour, d_point_size_hint);
+						d_rendered_geom = create_rendered_point_on_sphere(*point_on_sphere, d_colour, d_point_size_hint);
 					}
-
 				}
 
 				virtual
@@ -192,6 +165,104 @@ namespace GPlatesViewOperations
 				bool d_fill_polygon;
 				bool d_fill_polyline;
 				GPlatesGui::Colour d_fill_modulate_colour;
+				const boost::optional<GPlatesGui::Symbol> &d_symbol;
+				RenderedGeometry d_rendered_geom;
+			};
+
+
+			/**
+			 * Determines derived type of a @a GeometryOnSphere and creates a @a RenderedGeometry from it.
+			 */
+			class CreateRenderedGeometryFromColouredGeometryOnSphere :
+				private GPlatesMaths::ConstGeometryOnSphereVisitor
+			{
+			public:
+				CreateRenderedGeometryFromColouredGeometryOnSphere(
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
+					const std::vector<GPlatesGui::ColourProxy> &point_colours,
+					float point_size_hint,
+					float line_width_hint,
+					const boost::optional<GPlatesGui::Symbol> &symbol_ = boost::none) :
+				d_geom_on_sphere(geom_on_sphere),
+				d_point_colours(point_colours),
+				d_point_size_hint(point_size_hint),
+				d_line_width_hint(line_width_hint),
+				d_symbol(symbol_)
+				{  }
+
+				/**
+				 * Creates a @a RenderedGeometryImpl from @a GeometryOnSphere passed into constructor.
+				 */
+				RenderedGeometry
+				create_rendered_geometry()
+				{
+					d_geom_on_sphere->accept_visitor(*this);
+
+					// Transfer created rendered geometry to caller.
+					const RenderedGeometry rendered_geom = d_rendered_geom;
+					d_rendered_geom = RenderedGeometry();
+
+					return rendered_geom;
+				}
+
+			private:
+				virtual
+				void
+				visit_multi_point_on_sphere(
+						GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+				{
+					d_rendered_geom = create_rendered_coloured_multi_point_on_sphere(
+							multi_point_on_sphere, d_point_colours, d_point_size_hint);
+				}
+
+				virtual
+				void
+				visit_point_on_sphere(
+						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				{
+					// There should be exactly one colour (for one point).
+					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+							d_point_colours.size() == 1,
+							GPLATES_ASSERTION_SOURCE);
+
+					if (d_symbol)
+					{
+						d_rendered_geom = create_rendered_symbol(
+								*point_on_sphere, d_symbol.get(), d_point_colours.front(), d_line_width_hint);
+					}
+					else
+					{
+						d_rendered_geom = create_rendered_point_on_sphere(
+								*point_on_sphere, d_point_colours.front(), d_point_size_hint);
+					}
+				}
+
+				virtual
+				void
+				visit_polygon_on_sphere(
+						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+				{
+					d_rendered_geom = create_rendered_coloured_polygon_on_sphere(
+							polygon_on_sphere,
+							d_point_colours,
+							d_line_width_hint);
+				}
+
+				virtual
+				void
+				visit_polyline_on_sphere(
+						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+				{
+					d_rendered_geom = create_rendered_coloured_polyline_on_sphere(
+							polyline_on_sphere,
+							d_point_colours,
+							d_line_width_hint);
+				}
+
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geom_on_sphere;
+				std::vector<GPlatesGui::ColourProxy> d_point_colours;
+				float d_point_size_hint;
+				float d_line_width_hint;
 				const boost::optional<GPlatesGui::Symbol> &d_symbol;
 				RenderedGeometry d_rendered_geom;
 			};
@@ -284,6 +355,72 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 					line_width_hint,
 					filled,
 					fill_modulate_colour));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_geometry_on_sphere(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
+		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		float point_size_hint,
+		float line_width_hint,
+		const boost::optional<GPlatesGui::Symbol> &symbol)
+{
+	// This is used to determine the derived type of 'geom_on_sphere'
+	// and create a RenderedGeometryImpl for it.
+	CreateRenderedGeometryFromColouredGeometryOnSphere create_rendered_geom(
+			geom_on_sphere,
+			point_colours,
+			point_size_hint,
+			line_width_hint,
+			symbol);
+
+	return create_rendered_geom.create_rendered_geometry();
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_multi_point_on_sphere(
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
+		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		float point_size_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedColouredMultiPointOnSphere(
+			multi_point_on_sphere, point_colours, point_size_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_polyline_on_sphere(
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedColouredPolylineOnSphere(
+					polyline_on_sphere,
+					point_colours,
+					line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_polygon_on_sphere(
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedColouredPolygonOnSphere(
+					polygon_on_sphere,
+					point_colours,
+					line_width_hint));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -509,6 +646,38 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline
 }
 
 GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_symbol(
+		const GPlatesMaths::PointOnSphere &centre,
+		const GPlatesGui::Symbol &symbol,
+		const GPlatesGui::ColourProxy &colour,
+		float line_width_hint)
+{
+	switch (symbol.d_symbol_type)
+	{
+	case GPlatesGui::Symbol::TRIANGLE:
+		return create_rendered_triangle_symbol(centre, colour, symbol.d_size, symbol.d_filled, line_width_hint);
+
+	case GPlatesGui::Symbol::SQUARE:
+		return create_rendered_square_symbol(centre, colour, symbol.d_size, symbol.d_filled, line_width_hint);
+
+	case GPlatesGui::Symbol::CIRCLE:
+		return create_rendered_circle_symbol(centre, colour, symbol.d_size, symbol.d_filled, line_width_hint);
+
+	case GPlatesGui::Symbol::CROSS:
+		return create_rendered_cross_symbol(centre, colour, symbol.d_size, line_width_hint);
+
+	case GPlatesGui::Symbol::STRAIN_MARKER:
+		return create_rendered_strain_marker_symbol(
+				centre, symbol.d_size, symbol.d_scale_x.get(), symbol.d_scale_y.get(), symbol.d_angle.get());
+
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		return RenderedGeometry();
+	}
+}
+
+GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_triangle_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
         const GPlatesGui::ColourProxy &colour,
@@ -520,7 +689,6 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_triangle_symbol(
 	    centre,colour,size,filled,line_width_hint));
 
     return RenderedGeometry(rendered_geom_impl);
-
 }
 
 GPlatesViewOperations::RenderedGeometry

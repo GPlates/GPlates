@@ -36,23 +36,55 @@ namespace GPlatesMaths
 {
 	namespace GeneratePoints
 	{
+		//
+		// In the following functions...
+		//
+		// The uniform distribution is based on a subdivided Rhombic Triacontahedron.
+		// Points at a @a point_density_level of zero are spaced roughly 40 degrees apart.
+		// Each increment of @a point_density_level halves the spacing.
+		//
+		// If @a point_random_offset is specified then it must be in the range [0, 1] with 0
+		// meaning no random offset, and 1 meaning full random offset whereby each point is randomly
+		// offset within a circle of radius half the spacing between points.
+		//
+
+
+		/**
+		 * Generate a uniform distribution of points across the entire globe.
+		 */
+		void
+		create_global_uniform_points(
+				std::vector<PointOnSphere> &points,
+				unsigned int point_density_level,
+				const double &point_random_offset);
+
+
+		/**
+		 * Generate a uniform distribution of points within a latitude/longitude extent.
+		 *
+		 * @a top and @a bottom must be in range [-90, 90].
+		 * @a left and @a right must be in range [-360, 360].
+		 */
+		void
+		create_uniform_points_in_lat_lon_extent(
+				std::vector<PointOnSphere> &points,
+				unsigned int point_density_level,
+				const double &point_random_offset,
+				const double &top,    // Max lat.
+				const double &bottom, // Min lat.
+				const double &left,   // Min lon.
+				const double &right); // Max lon.
+
+
 		/**
 		 * Generate a uniform distribution of points inside the specified polygon.
-		 *
-		 * The uniform distribution is based on a subdivided Rhombic Triacontahedron.
-		 * Points at a @a point_density_level of zero are spaced roughly 40 degrees apart.
-		 * Each increment of @a point_density_level halves the spacing.
-		 *
-		 * If @a point_random_offset is specified then it must be in the range [0, 1] with 0
-		 * meaning no random offset, and 1 meaning full random offset whereby each point is randomly
-		 * offset within a circle of radius half the spacing between points.
 		 */
 		void
 		create_uniform_points_in_polygon(
 				std::vector<PointOnSphere> &points,
-				const PolygonOnSphere &polygon,
 				unsigned int point_density_level,
-				const double &point_random_offset);
+				const double &point_random_offset,
+				const PolygonOnSphere &polygon);
 	}
 }
 

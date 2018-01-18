@@ -644,22 +644,6 @@ namespace GPlatesGui
 
 				return diverging_map[std::make_pair(diverging_type, diverging_classes)];
 			}
-
-
-			// These colours are arbitrary.
-			const Colour DEFAULT_SCALAR_COLOURS[] = {
-					Colour(0, 0, 1) /* blue - low */,
-					Colour(0, 1, 1) /* cyan */,
-					Colour(0, 1, 0) /* green - middle */,
-					Colour(1, 1, 0) /* yellow */,
-					Colour(1, 0, 0) /* red - high */
-			};
-
-			const unsigned int NUM_DEFAULT_RASTER_COLOURS =
-					sizeof(DEFAULT_SCALAR_COLOURS) / sizeof(Colour);
-
-			const double DEFAULT_SCALAR_LOWER_BOUND = 0;
-			const double DEFAULT_SCALAR_UPPER_BOUND = 1;
 		}
 	}
 }
@@ -952,12 +936,24 @@ GPlatesGui::BuiltinColourPalettes::create_colorbrewer_diverging_palette(
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette()
 {
-	RegularCptColourPalette::non_null_ptr_type colour_palette = RegularCptColourPalette::create();
+	// These colours are arbitrary.
+	static const Colour DEFAULT_SCALAR_COLOURS[] = {
+			Colour(0, 0, 1) /* blue - low */,
+			Colour(0, 1, 1) /* cyan */,
+			Colour(0, 1, 0) /* green - middle */,
+			Colour(1, 1, 0) /* yellow */,
+			Colour(1, 0, 0) /* red - high */
+	};
+
+	static const unsigned int NUM_DEFAULT_RASTER_COLOURS =
+			sizeof(DEFAULT_SCALAR_COLOURS) / sizeof(Colour);
 
 	// [min, max] is the range [0, 1].
-	const double min = DEFAULT_SCALAR_LOWER_BOUND;
-	const double max = DEFAULT_SCALAR_UPPER_BOUND;
+	const double min = 0;
+	const double max = 1;
 	const double range = max - min;
+
+	RegularCptColourPalette::non_null_ptr_type colour_palette = RegularCptColourPalette::create();
 
 	// Background colour, for values before min value.
 	colour_palette->set_background_colour(DEFAULT_SCALAR_COLOURS[0]);
@@ -1026,9 +1022,9 @@ GPlatesGui::BuiltinColourPalettes::create_gradient_colour_palette()
 
 
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
-GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
-		double min_abs_strain,
-		double max_abs_strain,
+GPlatesGui::BuiltinColourPalettes::create_strain_rate_dilatation_colour_palette(
+		double min_abs_strain_rate,
+		double max_abs_strain_rate,
 		const double &max_log_spacing)
 {
 	// Color symbols: ColorBrewer.org
@@ -1053,19 +1049,19 @@ GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
 		QColor("#67001f")
 	};
 
-	if (min_abs_strain < 1e-40)
+	if (min_abs_strain_rate < 1e-40)
 	{
-		min_abs_strain = 1e-40;
+		min_abs_strain_rate = 1e-40;
 	}
-	if (max_abs_strain < min_abs_strain)
+	if (max_abs_strain_rate < min_abs_strain_rate)
 	{
-		max_abs_strain = min_abs_strain;
+		max_abs_strain_rate = min_abs_strain_rate;
 	}
 
-	const double log_min_abs_strain = std::log10(min_abs_strain);
-	const double log_max_abs_strain = std::log10(max_abs_strain);
+	const double log_min_abs_strain_rate = std::log10(min_abs_strain_rate);
+	const double log_max_abs_strain_rate = std::log10(max_abs_strain_rate);
 
-	const double log_spacing_per_blend = (log_max_abs_strain - log_min_abs_strain) / num_blends;
+	const double log_spacing_per_blend = (log_max_abs_strain_rate - log_min_abs_strain_rate) / num_blends;
 	const unsigned int num_slices_per_blend = max_log_spacing > 1e-6
 			? static_cast<unsigned int>(std::ceil(log_spacing_per_blend / max_log_spacing))
 			: 0;
@@ -1090,12 +1086,12 @@ GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
 		for (unsigned int c = num_slices_per_blend; c > 0; --c)
 		{
 			const ColourSlice colour_slice_contraction(
-					-std::pow(10.0, log_min_abs_strain + (bc - 1) * log_spacing_per_blend + c * log_spacing),
+					-std::pow(10.0, log_min_abs_strain_rate + (bc - 1) * log_spacing_per_blend + c * log_spacing),
 					Colour::linearly_interpolate(
 							contraction_colours[bc - 1],
 							contraction_colours[bc],
 							c * inv_num_slices_per_blend),
-					-std::pow(10.0, log_min_abs_strain + (bc - 1) * log_spacing_per_blend + (c - 1) * log_spacing),
+					-std::pow(10.0, log_min_abs_strain_rate + (bc - 1) * log_spacing_per_blend + (c - 1) * log_spacing),
 					Colour::linearly_interpolate(
 							contraction_colours[bc - 1],
 							contraction_colours[bc],
@@ -1106,9 +1102,9 @@ GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
 
 	// Add the middle to the spectrum (around zero).
 	const ColourSlice colour_slice_zero(
-			-min_abs_strain,
+			-min_abs_strain_rate,
 			zero_colour,
-			min_abs_strain,
+			min_abs_strain_rate,
 			zero_colour);
 	colour_palette->add_entry(colour_slice_zero);
 
@@ -1118,12 +1114,12 @@ GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
 		for (unsigned int e = 0; e < num_slices_per_blend; ++e)
 		{
 			const ColourSlice colour_slice_extension(
-					std::pow(10.0, log_min_abs_strain + be * log_spacing_per_blend + e * log_spacing),
+					std::pow(10.0, log_min_abs_strain_rate + be * log_spacing_per_blend + e * log_spacing),
 					Colour::linearly_interpolate(
 							extension_colours[be],
 							extension_colours[be + 1],
 							e * inv_num_slices_per_blend),
-					std::pow(10.0, log_min_abs_strain + be * log_spacing_per_blend + (e + 1) * log_spacing),
+					std::pow(10.0, log_min_abs_strain_rate + be * log_spacing_per_blend + (e + 1) * log_spacing),
 					Colour::linearly_interpolate(
 							extension_colours[be],
 							extension_colours[be + 1],
@@ -1134,6 +1130,102 @@ GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
 
 	// Foreground colour for max extension value.
 	colour_palette->set_foreground_colour(extension_colours[num_blends]);
+
+	// Set NaN colour.
+	colour_palette->set_nan_colour( Colour(0.5, 0.5, 0.5) );
+
+	// Convert/adapt Real to double.
+	return convert_colour_palette<
+			RegularCptColourPalette::key_type,
+			double,
+			RealToBuiltInConverter<double> >(
+					colour_palette,
+					RealToBuiltInConverter<double>());
+}
+
+
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::create_strain_rate_second_invariant_colour_palette(
+		double min_abs_strain_rate,
+		double max_abs_strain_rate,
+		const double &max_log_spacing)
+{
+	// Colours for second-invariant strain rate.
+	//
+	// These are similar to those used in Kreemer at al. 2014 for second invariant strain rate.
+	static const Colour zero_colour = QColor(Qt::white);
+	static const Colour colours[] =
+	{
+		zero_colour,
+		QColor(Qt::blue),
+		QColor(Qt::cyan),
+		QColor(Qt::yellow),
+		QColor(Qt::red),
+		QColor(Qt::magenta),
+		QColor(Qt::darkMagenta)
+	};
+	static const unsigned int num_colours = sizeof(colours) / sizeof(Colour);
+	static const unsigned int num_blends = num_colours - 1;
+
+	if (min_abs_strain_rate < 1e-40)
+	{
+		min_abs_strain_rate = 1e-40;
+	}
+	if (max_abs_strain_rate < min_abs_strain_rate)
+	{
+		max_abs_strain_rate = min_abs_strain_rate;
+	}
+
+	const double log_min_abs_strain_rate = std::log10(min_abs_strain_rate);
+	const double log_max_abs_strain_rate = std::log10(max_abs_strain_rate);
+
+	const double log_spacing_per_blend = (log_max_abs_strain_rate - log_min_abs_strain_rate) / num_blends;
+	const unsigned int num_slices_per_blend = max_log_spacing > 1e-6
+			? static_cast<unsigned int>(std::ceil(log_spacing_per_blend / max_log_spacing))
+			: 0;
+	double inv_num_slices_per_blend = 0;
+	double log_spacing = 0;
+	if (num_slices_per_blend > 0)
+	{
+		inv_num_slices_per_blend = 1.0 / num_slices_per_blend;
+		log_spacing = inv_num_slices_per_blend * log_spacing_per_blend;
+	}
+
+	RegularCptColourPalette::non_null_ptr_type colour_palette = RegularCptColourPalette::create();
+
+	// Background colour for zero value.
+	colour_palette->set_background_colour(zero_colour);
+
+	// Add colour near zero.
+	const ColourSlice colour_slice_zero(
+			0.0,
+			zero_colour,
+			min_abs_strain_rate,
+			zero_colour);
+	colour_palette->add_entry(colour_slice_zero);
+
+	// Add the colour slices.
+	for (unsigned int b = 0; b < num_blends; ++b)
+	{
+		for (unsigned int s = 0; s < num_slices_per_blend; ++s)
+		{
+			const ColourSlice colour_slice(
+					std::pow(10.0, log_min_abs_strain_rate + b * log_spacing_per_blend + s * log_spacing),
+					Colour::linearly_interpolate(
+							colours[b],
+							colours[b + 1],
+							s * inv_num_slices_per_blend),
+					std::pow(10.0, log_min_abs_strain_rate + b * log_spacing_per_blend + (s + 1) * log_spacing),
+					Colour::linearly_interpolate(
+							colours[b],
+							colours[b + 1],
+							(s + 1) * inv_num_slices_per_blend));
+			colour_palette->add_entry(colour_slice);
+		}
+	}
+
+	// Foreground colour for max value.
+	colour_palette->set_foreground_colour(colours[num_blends]);
 
 	// Set NaN colour.
 	colour_palette->set_nan_colour( Colour(0.5, 0.5, 0.5) );

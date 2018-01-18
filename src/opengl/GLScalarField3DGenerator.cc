@@ -541,6 +541,23 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 
 		// If the raster is regional (non-global) then its mask has been written into the stencil buffer.
 		// So we convert that stencil mask into a texture and read the texture back to the CPU.
+		//
+		// TODO: Currently 'generate_scalar_field_depth_tile()' clears the stencil buffer before
+		// rendering each depth layer. Ideally it shouldn't do this since we want to accumulate
+		// the stencils of each layer (since represents whether any depth layer is drawn at each pixel).
+		// Currently it doesn't matter because we're generating ones in the geo-referenced domain of
+		// the (regional) raster and zeros outside it - and this is identical for all depth layers.
+		// However later we may want to support masked 3D scalar fields (containing NaNs at locations
+		// where there is no data/field) and this requires accumulating stencil properly over the layers.
+		// Currently 'GLScalarFieldDepthLayersSource::generate_scalar_gradient_values()' just sets
+		// RGBA (R=scalar, GBA=gradient) to zeros if the coverage is zero - but we'd need a way to pass
+		// coverage (equivalent of NaN) - perhaps implement a GLCoverageSource containing just coverage data
+		// or just use a GLDataRasterSource (which contains coverage in green channel) and render that into
+		// tile mask (with alpha-testing enabled to avoid rendering zero-coverage pixels into stencil buffer).
+		// Also 'generate_scalar_field_tile_mask()' clears the stencil buffer by writing a reference value
+		// of zero into the stencil buffer for pixels where the raster region is drawn - it then
+		// mentions this is unnecessary since a stencil buffer clear later happens - so may need to be
+		// careful when re-organising code.
 		generate_scalar_field_tile_mask(renderer, pixel_buffer, tile_resolution, mask_data_array);
 
 		// Specify the current tile's metadata.

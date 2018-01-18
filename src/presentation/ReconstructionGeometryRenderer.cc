@@ -65,6 +65,7 @@
 
 #include "data-mining/DataTable.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -197,14 +198,8 @@ namespace
 
 	// Threshold used when subdividing a topological network delaunay face to visualise 'smoothed' strain rates.
 	// Natural neighbour tends to need more subdivision than barycentric.
-
-	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
-	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_COSINE =
-			std::cos(SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE);
-
-	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
-	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_COSINE =
-			std::cos(SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE);
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_BARYCENTRIC_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
+	const double SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE = GPlatesMaths::convert_deg_to_rad(0.5);
 }
 
 
@@ -229,10 +224,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	show_topology_reconstructed_feature_geometries(true),
 	show_strain_accumulation(false),
 	strain_accumulation_scale(1.0),
-	fill_topological_network_triangulation(false),
 	fill_topological_network_rigid_blocks(false),
 	show_topological_network_segment_velocity(false),
-	topological_network_triangulation_colour_mode(TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE)
+	topological_network_triangulation_colour_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE),
+	topological_network_triangulation_draw_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
 {
 }
 
@@ -291,22 +286,22 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const TopologyNetworkVisualLayerParams &params)
 {
 	d_render_params.show_topological_network_segment_velocity = params.show_segment_velocity();
-	d_render_params.fill_topological_network_triangulation = params.get_fill_triangulation();
 	d_render_params.fill_topological_network_rigid_blocks = params.get_fill_rigid_blocks();
 	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
-	d_render_params.topological_network_triangulation_colour_mode = params.get_colour_mode();
+	d_render_params.topological_network_triangulation_colour_mode = params.get_triangulation_colour_mode();
+	d_render_params.topological_network_triangulation_draw_mode = params.get_triangulation_draw_mode();
 
-	switch (params.get_colour_mode())
+	switch (params.get_triangulation_colour_mode())
 	{
-	case TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE:
 		d_render_params.topological_network_triangulation_colour_palette = params.get_dilatation_colour_palette();
 		break;
 
-	case TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE:
 		d_render_params.topological_network_triangulation_colour_palette = params.get_second_invariant_colour_palette();
 		break;
 
-	case TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 	default:
 		// When using the draw style we don't use a colour palette.
 		d_render_params.topological_network_triangulation_colour_palette = boost::none;
@@ -524,7 +519,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							// Scale the strain accumulation...
 							d_render_params.strain_accumulation_scale * point_deformation_total_strain_principle.principal1, // scale_x
 							d_render_params.strain_accumulation_scale * point_deformation_total_strain_principle.principal2, // scale_y
-							point_deformation_total_strain.get_strain_principal_angle()); // orientation angle
+							point_deformation_total_strain_principle.angle); // orientation angle
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and
 			// a RenderedGeometry associated with it.
@@ -742,17 +737,20 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	// This was previously in...
-	//    ResolvedTopologicalNetwork::get_resolved_topology_geometries_from_triangulation_2()
-	// ...but that method has been removed and simplified inline here so this is just to keep
-	// the debugging until it's not needed anymore (at which point this method should be removed).
-	rtn->report_deformation_to_file();
-
-	if (d_render_params.topological_network_triangulation_colour_mode == TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE)
+	if (d_render_params.topological_network_triangulation_colour_mode ==
+		TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE)
 	{
-		render_topological_network_boundary(rtn);
+		if (d_render_params.topological_network_triangulation_draw_mode ==
+			TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
+		{
+			render_topological_network_delaunay_edges_using_draw_style(rtn);
+		}
+		else // draw boundary (optionally filled) using draw style ...
+		{
+			render_topological_network_boundary_using_draw_style(rtn);
+		}
 	}
-	else // Draw delaunay triangulation either as filled triangles or unfilled edges...
+	else // colour by dilatation or second invariant strain rate...
 	{
 		// If we're using smoothed strain rates then each vertex of a face/edge will have a different colour.
 		// In contrast, a non-smoothed strain rate is constant across each face/edge.
@@ -760,40 +758,56 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				rtn->get_triangulation_network().get_strain_rate_smoothing();
 		if (strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING)
 		{
-			if (d_render_params.fill_topological_network_triangulation)
+			if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
 			{
-				render_topological_network_delaunay_faces_unsmoothed_strain_rates(rtn);
+				render_topological_network_delaunay_edges_unsmoothed_strain_rates(rtn, true/*only_boundary_edges*/);
 			}
-			else
+			else if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
 			{
 				render_topological_network_delaunay_edges_unsmoothed_strain_rates(rtn);
+			}
+			else // TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL ...
+			{
+				render_topological_network_delaunay_faces_unsmoothed_strain_rates(rtn);
 			}
 		}
 		else // smoothed strain rates...
 		{
-			if (d_render_params.fill_topological_network_triangulation)
-			{
-				const double subdivide_face_threshold_cosine =
-						(strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING)
-								? SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_COSINE
-								: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_COSINE;
+			const double subdivide_threshold_angle =
+					(strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING)
+							? SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE
+							: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_BARYCENTRIC_SMOOTHED_ANGLE;
 
-				render_topological_network_delaunay_faces_smoothed_strain_rates(rtn, subdivide_face_threshold_cosine);
+			if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
+			{
+				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_threshold_angle, true/*only_boundary_edges*/);
 			}
-			else
+			else if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
 			{
-				const double subdivide_edge_threshold_angle =
-						(strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING)
-								? SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_NATURAL_NEIGHBOUR_SMOOTHED_ANGLE
-								: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_FACE_BARYCENTRIC_SMOOTHED_ANGLE;
-
-				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_edge_threshold_angle);
+				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_threshold_angle);
+			}
+			else // TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL ...
+			{
+				render_topological_network_delaunay_faces_smoothed_strain_rates(rtn, std::cos(subdivide_threshold_angle));
 			}
 		}
 	}
 
 	// Render rigid interior blocks.
-	render_topological_network_rigid_blocks(rtn);
+	//
+	// Note: We only render interior blocks when they are filled or we are colouring the deforming region by draw style,
+	// otherwise the dilatation or second invariant strain rate colouring is overwritten around the
+	// boundary of the interior blocks.
+	if (d_render_params.fill_topological_network_rigid_blocks ||
+		d_render_params.topological_network_triangulation_colour_mode ==
+			TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE)
+	{
+		render_topological_network_rigid_blocks(rtn);
+	}
 
 	// Check for drawing velocity vectors at vertices of delaunay triangulation.
 	if (d_render_params.show_topological_network_segment_velocity)
@@ -898,19 +912,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Get the domain geometry points.
-	std::vector<GPlatesMaths::PointOnSphere> domain_points;
-	rsc->get_reconstructed_points(domain_points);
+	// Get the domain geometry.
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_geometry = rsc->get_reconstructed_geometry();
 
 	// Get the scalar values.
 	GPlatesAppLogic::ReconstructedScalarCoverage::point_scalar_value_seq_type scalar_values;
 	rsc->get_reconstructed_point_scalar_values(scalar_values);
-
-	// The number of domain points should match the number of scalars.
-	// The ReconstructedScalarCoverage interface guarantees this.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			domain_points.size() == scalar_values.size(),
-			GPLATES_ASSERTION_SOURCE);
 
 	// We should have a real-valued colour palette.
 	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> scalar_colour_palette =
@@ -921,26 +928,39 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		return;
 	}
 
-	// Iterate over the points/scalars.
-	unsigned int num_points = domain_points.size();
+	unsigned int num_points = scalar_values.size();
+
+	// Convert the scalars to colours.
+	std::vector<GPlatesGui::ColourProxy> point_colours;
+	point_colours.reserve(num_points);
 	for (unsigned int point_index = 0; point_index < num_points; ++point_index)
 	{
-		const GPlatesMaths::PointOnSphere &point = domain_points[point_index];
 		const double scalar = scalar_values[point_index];
 
 		// Look up the scalar value in the colour palette.
 		boost::optional<GPlatesGui::Colour> colour = scalar_colour_palette.get()->get_colour(scalar);
-
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						point.get_non_null_pointer(),
-						rsc,
-						d_render_params,
-						GPlatesGui::ColourProxy(colour),
-						d_reconstruction_adjustment,
-						d_feature_type_symbol_map);
-		render_reconstruction_geometry_on_sphere(rendered_geometry);
+		point_colours.push_back(GPlatesGui::ColourProxy(colour));
 	}
+
+	boost::optional<GPlatesGui::Symbol> symbol = get_symbol(d_feature_type_symbol_map, rsc);
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_geometry_on_sphere(
+					d_reconstruction_adjustment
+							? d_reconstruction_adjustment.get() * domain_geometry
+							: domain_geometry,
+					point_colours,
+					d_render_params.reconstruction_point_size_hint,
+					d_render_params.reconstruction_line_width_hint,
+					symbol);
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rsc,
+			rendered_geometry);
+
+	// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
 }
 
 void
@@ -1200,18 +1220,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					resolved_triangulation_network.calculate_deformation_in_deforming_region(point, delaunay_face);
 
 			if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
 				vertex_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
 				vertex_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
 		}
 
@@ -1296,18 +1316,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					deformation_info = finite_faces_2_iter->get_deformation_info();
 
 			if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
 				face_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
 				face_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
 		}
 
@@ -1368,7 +1388,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_smoothed_strain_rates(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-		const double &subdivide_edge_threshold_angle)
+		const double &subdivide_edge_threshold_angle,
+		bool only_boundary_edges)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -1387,7 +1408,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
 	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::colour_seq_type rendered_edge_mesh_colours;
 
-	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	// Keep track of vertex indices of unique triangulation vertices referenced by the edges.
 	smoothed_vertex_indices_type vertex_indices;
 
 	// Iterate over the edges of the delaunay triangulation.
@@ -1408,7 +1429,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		unsigned int num_valid_faces = 0;
 		for (unsigned int t = 0; t < 2; ++t)
 		{
-			// Skip infinite faces. These occur on boundary edges.
+			// Skip infinite faces. These occur on convex hull edges.
 			// Also skip faces with centroid outside deforming region.
 			if (delaunay_triangulation_2.is_infinite(face_handle[t]) ||
 				!face_handle[t]->is_in_deforming_region())
@@ -1422,6 +1443,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// If both triangles adjoining current edge are outside deforming region or are
 		// infinite faces for some reason then the skip the current edge.
 		if (num_valid_faces == 0)
+		{
+			continue;
+		}
+
+		// If we've been requested to only include boundary edges then only include edges with one adjacent face.
+		if (only_boundary_edges &&
+			num_valid_faces != 1)
 		{
 			continue;
 		}
@@ -1489,18 +1517,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					resolved_triangulation_network.calculate_deformation_in_deforming_region(point, delaunay_face);
 
 			if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
 				vertex_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_dilatation()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
-				TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
 				vertex_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_second_invariant()));
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
 		}
 
@@ -1538,7 +1566,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_unsmoothed_strain_rates(
-		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
+		bool only_boundary_edges)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -1557,7 +1586,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
 	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::colour_seq_type rendered_edge_mesh_colours;
 
-	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	// Keep track of vertex indices of unique triangulation vertices referenced by the edges.
 	unsmoothed_vertex_indices_type vertex_indices;
 
 	// Iterate over the edges of the delaunay triangulation.
@@ -1574,14 +1603,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			finite_edges_2_iter->first->neighbor(finite_edges_2_iter->second)
 		};
 
-		boost::optional<double> face_strain[2];
+		boost::optional<double> face_strain_rate[2];
 		GPlatesMaths::Real face_area[2];
 		unsigned int num_valid_faces = 0;
 
 		// Iterate over both faces adjoining the current edge.
 		for (unsigned int t = 0; t < 2; ++t)
 		{
-			// Skip infinite faces. These occur on boundary edges.
+			// Skip infinite faces. These occur on convex hull edges.
 			// Also skip faces with centroid outside deforming region.
 			if (delaunay_triangulation_2.is_infinite(face_handle[t]) ||
 				!face_handle[t]->is_in_deforming_region())
@@ -1599,14 +1628,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 						deformation_info = face_handle[t]->get_deformation_info();
 
 				if (d_render_params.topological_network_triangulation_colour_mode ==
-					TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE)
+					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 				{
-					face_strain[t] = deformation_info.get_strain_rate().get_dilatation();
+					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_dilatation();
 				}
 				else if (d_render_params.topological_network_triangulation_colour_mode ==
-					TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 				{
-					face_strain[t] = deformation_info.get_strain_rate().get_second_invariant();
+					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_second_invariant();
 				}
 			}
 
@@ -1620,33 +1649,40 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			continue;
 		}
 
+		// If we've been requested to only include boundary edges then only include edges with one adjacent face.
+		if (only_boundary_edges &&
+			num_valid_faces != 1)
+		{
+			continue;
+		}
+
 		boost::optional<GPlatesGui::ColourProxy> edge_colour;
 
 		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
 		{
 			edge_colour = GPlatesGui::ColourProxy(d_colour.get());
 		}
-		else if (face_strain[0] || face_strain[1])
+		else if (face_strain_rate[0] || face_strain_rate[1])
 		{
-			// If both triangles share the current edge then average their strains (weighted by their areas).
-			if (face_strain[0] && face_strain[1])
+			// If both triangles share the current edge then average their strain rates (weighted by their areas).
+			if (face_strain_rate[0] && face_strain_rate[1])
 			{
 				const double total_area = face_area[0].dval() + face_area[1].dval();
 				if (total_area > 0)
 				{
-					const double edge_strain = (face_area[0].dval() * face_strain[0].get() +
-							face_area[1].dval() * face_strain[1].get()) / total_area;
+					const double edge_strain_rate = (face_area[0].dval() * face_strain_rate[0].get() +
+							face_area[1].dval() * face_strain_rate[1].get()) / total_area;
 
 					edge_colour = GPlatesGui::ColourProxy(
 							d_render_params.topological_network_triangulation_colour_palette.get()
-									->get_colour(edge_strain));
+									->get_colour(edge_strain_rate));
 				}
 			}
 			else // only one triangle adjacent to edge ...
 			{
 				edge_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(face_strain[0] ? face_strain[0].get() : face_strain[1].get()));
+								->get_colour(face_strain_rate[0] ? face_strain_rate[0].get() : face_strain_rate[1].get()));
 			}
 		}
 
@@ -1706,11 +1742,126 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_boundary(
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_using_draw_style(
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
+{
+	// The entire mesh has the same colour (determined by draw style).
+	const GPlatesGui::ColourProxy colour = get_colour(rtn, d_colour, d_style_adapter);
+
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
+
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
+
+	//
+	// Render mesh as edges/lines.
+	//
+
+	// The edges/vertices of our rendered mesh (fill is turned off).
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::colour_seq_type rendered_edge_mesh_colours;
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the edges.
+	unsmoothed_vertex_indices_type vertex_indices;
+
+	// Iterate over the edges of the delaunay triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_iter = delaunay_triangulation_2.finite_edges_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_edges_iterator
+			finite_edges_2_end = delaunay_triangulation_2.finite_edges_end();
+	for ( ; finite_edges_2_iter != finite_edges_2_end; ++finite_edges_2_iter)
+	{
+		// Get the two faces adjoining the current edge.
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle face_handle[2] =
+		{
+			finite_edges_2_iter->first,
+			finite_edges_2_iter->first->neighbor(finite_edges_2_iter->second)
+		};
+
+		bool valid_edge = false;
+
+		// Iterate over both faces adjoining the current edge.
+		for (unsigned int t = 0; t < 2; ++t)
+		{
+			// Skip infinite faces. These occur on convex hull edges.
+			// Also skip faces with centroid outside deforming region.
+			if (!delaunay_triangulation_2.is_infinite(face_handle[t]) &&
+				face_handle[t]->is_in_deforming_region())
+			{
+				valid_edge = true;
+				break;
+			}
+		}
+
+		// If both triangles adjoining current edge are outside deforming region or are
+		// infinite faces for some reason then the skip the current edge.
+		if (!valid_edge)
+		{
+			continue;
+		}
+
+		// Get the edge vertices.
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle edge_vertex_handles[2] =
+		{
+			finite_edges_2_iter->first->vertex(delaunay_triangulation_2.cw(finite_edges_2_iter->second)),
+			finite_edges_2_iter->first->vertex(delaunay_triangulation_2.ccw(finite_edges_2_iter->second))
+		};
+
+		// Add the edge colour.
+		rendered_edge_mesh_colours.push_back(colour);
+
+		// Add the edge.
+		const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge(
+				vertex_indices.add_vertex(edge_vertex_handles[0]),
+				vertex_indices.add_vertex(edge_vertex_handles[1]));
+		rendered_edge_mesh_edges.push_back(rendered_mesh_edge);
+	}
+
+	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
+	// 2D vertex back onto the 3D globe.
+	const unsmoothed_vertex_indices_type::vertex_seq_type &mesh_vertices = vertex_indices.get_vertices();
+
+	rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
+
+	// Iterate over the (referenced) triangulation vertices.
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_iter = mesh_vertices.begin();
+	unsmoothed_vertex_indices_type::vertex_seq_type::const_iterator mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		// Get the un-projected 2D triangulation vertex position back onto the 3D sphere.
+		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle mesh_vertex = *mesh_vertices_iter;
+		rendered_edge_mesh_vertices.push_back(mesh_vertex->get_point_on_sphere());
+	}
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
+			rendered_edge_mesh_edges,
+			rendered_edge_mesh_vertices,
+			rendered_edge_mesh_colours,
+			false/*use_vertex_colours*/,
+			d_render_params.reconstruction_line_width_hint);
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry is the triangulation, which is on the sphere and within the bounds of the
+	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_boundary_using_draw_style(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
 	RenderParams render_params(d_render_params);
-	if (d_render_params.fill_topological_network_triangulation)
+	if (d_render_params.topological_network_triangulation_draw_mode == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
 	{
 		// Make a copy of the render params, but with fill polygons turned on since our network boundary is a polygon.
 		render_params.fill_polygons = true;

@@ -33,6 +33,7 @@
 #include <boost/pool/object_pool.hpp>
 
 #include "DeformationStrain.h"
+#include "DeformationStrainRate.h"
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -146,7 +147,7 @@ namespace GPlatesAppLogic
 		 * The internal resolved boundary/network time spans are used to reconstruct the geometry (within the time range).
 		 * Outside that time range the geometry is rigidly reconstructed using the specified
 		 * reconstruction plate id. Although within that time range the geometry can be rigidly
-		 * reconstructed if it does not intersect any resolved boundaries/networks at specific times).
+		 * reconstructed if it does not intersect any resolved boundaries/networks at specific times.
 		 *
 		 * If @a geometry_import_time is specified then the present day geometry is rigidly reconstructed
 		 * (using @a feature_reconstruction_plate_id) to the geometry import time. That geometry is then
@@ -235,7 +236,7 @@ namespace GPlatesAppLogic
 			get_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> points = boost::none,
-					boost::optional< std::vector<DeformationStrain> &> strain_rates = boost::none,
+					boost::optional< std::vector<DeformationStrainRate> &> strain_rates = boost::none,
 					boost::optional< std::vector<DeformationStrain> &> strains = boost::none) const;
 
 			/**
@@ -249,15 +250,15 @@ namespace GPlatesAppLogic
 			get_all_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points = boost::none,
-					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strain_rates = boost::none,
+					boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates = boost::none,
 					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none) const;
 
 
 			/**
 			 * Calculate velocities at the geometry (domain) points at the specified time.
 			 *
-			 * @a surfaces returns the resolved network (or network interior rigid block) that
-			 * each domain point intersects (if any).
+			 * @a surfaces returns the resolved network (or network interior rigid block) or resolved plate boundary
+			 * that each domain point intersects (if any).
 			 *
 			 * The sizes of @a domain_points, @a velocities and @a surfaces are the same and match the number
 			 * of original geometry points that have not been subducted/consumed at the reconstruction time.
@@ -411,7 +412,7 @@ namespace GPlatesAppLogic
 				// Using a UnitVector3D saves 8 bytes over a PointOnSphere...
 				GPlatesMaths::UnitVector3D position;
 				TopologyPointLocation location;
-				DeformationStrain *strain_rate; // NULL means zero strain rate
+				DeformationStrainRate *strain_rate; // NULL means zero strain rate
 				DeformationStrain *strain;      // NULL means zero strain
 			};
 
@@ -436,6 +437,7 @@ namespace GPlatesAppLogic
 
 				boost::object_pool<GeometryPoint> geometry_point_pool;
 				boost::object_pool<DeformationStrain> deformation_strain_pool;
+				boost::object_pool<DeformationStrainRate> deformation_strain_rate_pool;
 
 			private:
 				PoolAllocator()

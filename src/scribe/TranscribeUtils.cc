@@ -363,7 +363,9 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 #if defined(Q_WS_WIN)
 
 	// Add a Windows drive letter to absolute paths if necessary.
-	if (file_path.startsWith('/'))
+	if (file_path.startsWith('/') &&
+		// But exclude sharenames ('//sharename/') since they are compatible with Windows...
+		WINDOWS_SHARE_NAME_REGEXP.indexIn(file_path) < 0)
 	{
 		// Change "/dir/file.txt" into "C:/dir/file.txt" for example.
 		return QDir::rootPath() + file_path.mid(1);

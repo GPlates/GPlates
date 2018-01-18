@@ -551,12 +551,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 	//   reconstruction_time + time_increment -> reconstruction_time                  , or
 	//   reconstruction_time                  -> reconstruction_time - time_increment .
 	//
-	// ...depending on 'reverse_deform'.
+	// ...for 'reverse_deform' being false and true respectively (reverse deform means forward in time).
 	//
-	// However, when 'reverse_deform' is false (ie, going backward in time) we'll need to reverse our rotations to get:
+	// However, when 'reverse_deform' is false (ie, going backward in time) we'll need to reverse its rotation to get:
 	//
 	//  backward in time:   reconstruction_time -> reconstruction_time + time_increment
 	//  forward  in time:   reconstruction_time -> reconstruction_time - time_increment
+	//
+	// ...for 'reverse_deform' being false and true respectively (reverse deform means forward in time).
 	//
 	const VelocityDeltaTime::Type velocity_delta_time_type =
 			reverse_deform ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
@@ -975,7 +977,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 {
 	PROFILE_FUNC();
 
-	d_delaunay_2 = boost::in_place(d_projection, d_reconstruction_time);
+	// See if strain rate clamping requested.
+	boost::optional<double> clamp_total_strain_rate;
+	if (get_strain_rate_clamping().enable_clamping)
+	{
+		clamp_total_strain_rate = get_strain_rate_clamping().max_total_strain_rate;
+	}
+
+	d_delaunay_2 = boost::in_place(d_projection, d_reconstruction_time, clamp_total_strain_rate);
 
 	// Improve performance by spatially sorting the delaunay points.
 	// This is what is done by the CGAL overload that inserts a *range* of points into a delauany triangulation.

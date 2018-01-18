@@ -489,7 +489,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::create_tile_texture(
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 

@@ -293,7 +293,7 @@ namespace GPlatesFileIO
 					dilatation_rates->reserve(deformation_strain_rates.size());
 					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
 					{
-						dilatation_rates->push_back(deformation_strain_rates[n].get_dilatation());
+						dilatation_rates->push_back(deformation_strain_rates[n].get_strain_rate_dilatation());
 					}
 				}
 
@@ -310,7 +310,7 @@ namespace GPlatesFileIO
 					dilatations->reserve(deformation_strains.size());
 					for (unsigned int n = 0; n < deformation_strains.size(); ++n)
 					{
-						dilatations->push_back(deformation_strains[n].get_dilatation());
+						dilatations->push_back(deformation_strains[n].get_strain_dilatation());
 					}
 				}
 

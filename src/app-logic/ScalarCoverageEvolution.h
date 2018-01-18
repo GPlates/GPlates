@@ -30,7 +30,7 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "DeformationStrain.h"
+#include "DeformationStrainRate.h"
 #include "ReconstructScalarCoverageParams.h"
 
 #include "property-values/ValueObjectType.h"
@@ -53,11 +53,11 @@ namespace GPlatesAppLogic
 	 */
 	typedef boost::function<
 			void (
-					std::vector< boost::optional<double> > &,                  // initial->final per-point scalars
-					const std::vector< boost::optional<DeformationStrain> > &, // initial per-point input deformation strain rates
-					const std::vector< boost::optional<DeformationStrain> > &, // final per-point input deformation strain rates
-					const double &,                                            // initial time
-					const double &)>                                           // final time
+					std::vector< boost::optional<double> > &,                      // initial->final per-point scalars
+					const std::vector< boost::optional<DeformationStrainRate> > &, // initial per-point input deformation strain rates
+					const std::vector< boost::optional<DeformationStrainRate> > &, // final per-point input deformation strain rates
+					const double &,                                                // initial time
+					const double &)>                                               // final time
 							scalar_evolution_function_type;
 
 
@@ -80,20 +80,35 @@ namespace GPlatesAppLogic
 	 */
 	namespace ScalarCoverageEvolution
 	{
+		enum CrustalThicknessType
+		{
+			// This can be absolute thickness (eg, in kms), or
+			// a thickness ratio such as T/Ti (where T/Ti is current/initial thickness)...
+			CRUSTAL_THICKNESS,
+			// Stretching (beta) factor where 'beta = Ti/T' ...
+			CRUSTAL_STRETCHING_FACTOR,
+			// Thinning (gamma) factor where 'gamma = (1 - T/Ti)' ...
+			CRUSTAL_THINNING_FACTOR
+		};
+
 		/**
 		 * Evolves the crustal thickness values in @a input_output_crustal_thickness.
 		 *
 		 * Each values in @a input_output_crustal_thickness is replaced with its updated value.
+		 *
+		 * Other quantities besides crustal thickness (or thickness ratio) in @a input_output_crustal_thickness
+		 * that are related to crustal thickness can be specified with @a crustal_thickness_type.
 		 *
 		 * Throws exception if the sizes of the input arrays do not match.
 		 */
 		void
 		crustal_thinning(
 				std::vector< boost::optional<double> > &input_output_crustal_thickness,
-				const std::vector< boost::optional<DeformationStrain> > &initial_deformation_strain_rates,
-				const std::vector< boost::optional<DeformationStrain> > &final_deformation_strain_rates,
+				const std::vector< boost::optional<DeformationStrainRate> > &initial_deformation_strain_rates,
+				const std::vector< boost::optional<DeformationStrainRate> > &final_deformation_strain_rates,
 				const double &initial_time,
-				const double &final_time);
+				const double &final_time,
+				CrustalThicknessType crustal_thickness_type = CRUSTAL_THICKNESS);
 	}
 }
 

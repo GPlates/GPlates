@@ -78,28 +78,51 @@ namespace
 			"of the smoothed vertex strain rates. Natural neighbour interpolation uses a larger number of nearby vertices compared to "
 			"barycentric (which only interpolates the three vertices of the triangle containing the point).</li>"
 			"</ul>"
-			"<p>Note the the choice of smoothing affects the strain rates and hence also affects crustal thinning.</p>"
+			"<p>Note that the choice of smoothing affects the strain rates and hence also affects crustal thinning.</p>"
+			"</body></html>\n");
+
+	const QString HELP_STRAIN_RATE_CLAMPING_DIALOG_TITLE =
+			QObject::tr("Clamping strain rates");
+	const QString HELP_STRAIN_RATE_CLAMPING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Strain rates can optionally be clamped to a maximum value.</p>"
+			"<p>Clamping can be enabled when strain rates in some triangles of the network triangulation are excessively high. "
+			"Note clamping is applied to each triangle and this occurs prior to any smoothing of strain rates.</p>"
+			"<p>The <i>total</i> strain rate (of each triangle) is clamped since this includes both the normal and shear "
+			"components of deformation. When clamped, all components are scaled equally such that the <i>total</i> strain rate "
+			"equals the maximum total strain rate.</p>"
+			"<p>Note that, by affecting strain rates, clamping can also affect crustal thinning.</p>"
 			"</body></html>\n");
 
 	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE =
-			QObject::tr("Network triangulation colouring");
+			QObject::tr("Network triangulation colour mode");
 	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<p>The network triangulation is coloured with <i>use draw style</i> by default. "
-			"This colours the network boundary and any interior rigid blocks using the colour scheme selected "
-			"for the layer. It also does not actually display the triangulation structure itself.</p>"
-			"<p>Alternatively the network triangulation can be displayed with <i>dilatation strain rate</i> or "
-			"<i>second invariant strain rate</i> which colours the triangulation edges by looking up the strain rate "
-			"using a colour palette.</p>"
-			"<p>In all cases the deforming region of the network can be filled by selecting <i>fill triangulation</i> and "
-			"the rigid blocks filled by selecting <i>fill rigid interior blocks</i> (note that the rigid blocks are "
-			"always displayed using the <i>draw style</i>).</p>"
+			"This colours the network triangulation and any interior rigid blocks using the colour scheme selected for the layer.</p>"
+			"<p>Alternatively the network triangulation can be coloured using <i>dilatation strain rate</i> or "
+			"<i>second invariant strain rate</i> and a colour palette.</p>"
+			"</body></html>\n");
+
+	const QString HELP_TRIANGULATION_DRAW_MODE_DIALOG_TITLE =
+			QObject::tr("Network triangulation draw mode");
+	const QString HELP_TRIANGULATION_DRAW_MODE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>To display only the boundary of the network triangulation select <i>Boundary</i>. "
+			"<p>Alternatively the triangulation wireframe mesh can be displayed with <i>Mesh</i> or "
+			"the triangulation can be filled with <i>Fill</i>.</p>"
+			"<p>Note that the rigid interior blocks (if any) can be filled by selecting <i>fill rigid interior blocks</i> "
+			"and are always displayed using the <i>draw style</i>.</p>"
 			"</body></html>\n");
 }
 
 
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::DILATATION_SCALE = 1e+17;
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SECOND_INVARIANT_SCALE = 1e+17;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::CLAMP_SECOND_INVARIANT_SCALE = 1e+17;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::CLAMP_SECOND_INVARIANT_SCALED_MIN = 1e-6;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::CLAMP_SECOND_INVARIANT_SCALED_MAX = 1e+6;
+const int GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::CLAMP_SECOND_INVARIANT_SCALED_DECIMAL_PLACES = 6;
 
 
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkResolverLayerOptionsWidget(
@@ -142,15 +165,24 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TEXT,
 					HELP_STRAIN_RATE_SMOOTHING_DIALOG_TITLE,
 					viewport_window)),
+	d_help_strain_rate_clamping_dialog(
+			new InformationDialog(
+					HELP_STRAIN_RATE_CLAMPING_DIALOG_TEXT,
+					HELP_STRAIN_RATE_CLAMPING_DIALOG_TITLE,
+					viewport_window)),
 	d_help_triangulation_colour_mode_dialog(
 			new InformationDialog(
 					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT,
 					HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TITLE,
+					viewport_window)),
+	d_help_triangulation_draw_mode_dialog(
+			new InformationDialog(
+					HELP_TRIANGULATION_DRAW_MODE_DIALOG_TEXT,
+					HELP_TRIANGULATION_DRAW_MODE_DIALOG_TITLE,
 					viewport_window))
 {
 	setupUi(this);
 
-	fill_triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	fill_rigid_blocks_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 
@@ -172,6 +204,29 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			push_button_help_strain_rate_smoothing, SIGNAL(clicked()),
 			d_help_strain_rate_smoothing_dialog, SLOT(show()));
 
+	// Clamping mode.
+	enable_clamping_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			enable_clamping_checkbox, SIGNAL(clicked()),
+			this, SLOT(handle_strain_rate_clamping_clicked()));
+	clamp_strain_rate_line_edit->setCursor(QCursor(Qt::ArrowCursor));
+	d_clamp_strain_rate_line_edit_double_validator = 
+			new QDoubleValidator(
+					// Text must be numeric 'double' within a reasonable range of total strain rates.
+					// And these values are subsequently multiplied by 'CLAMP_SECOND_INVARIANT_SCALE'.
+					CLAMP_SECOND_INVARIANT_SCALED_MIN,
+					CLAMP_SECOND_INVARIANT_SCALED_MAX,
+					CLAMP_SECOND_INVARIANT_SCALED_DECIMAL_PLACES,
+					clamp_strain_rate_line_edit);
+	clamp_strain_rate_line_edit->setValidator(d_clamp_strain_rate_line_edit_double_validator);
+	QObject::connect(
+			clamp_strain_rate_line_edit, SIGNAL(editingFinished()),
+			this, SLOT(handle_strain_rate_clamping_line_editing_finished()));
+	push_button_help_strain_rate_clamping->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_strain_rate_clamping, SIGNAL(clicked()),
+			d_help_strain_rate_clamping_dialog, SLOT(show()));
+
 	// Colour mode.
 	dilatation_radio_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
@@ -189,6 +244,24 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	QObject::connect(
 			push_button_help_triangulation_colour_mode, SIGNAL(clicked()),
 			d_help_triangulation_colour_mode_dialog, SLOT(show()));
+
+	// Draw mode.
+	boundary_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_draw_mode_button(bool)));
+	mesh_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			mesh_draw_mode_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_draw_mode_button(bool)));
+	fill_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			fill_draw_mode_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_draw_mode_button(bool)));
+	push_button_help_triangulation_draw_mode->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			push_button_help_triangulation_draw_mode, SIGNAL(clicked()),
+			d_help_triangulation_draw_mode_dialog, SLOT(show()));
 
 	// Set up the dilatation controls.
 	min_abs_dilatation_spinbox->setCursor(QCursor(Qt::ArrowCursor));
@@ -232,11 +305,6 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			this,
 			SLOT(handle_segment_velocity_clicked()));
 
-	QObject::connect(
-			fill_triangulation_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_fill_triangulation_clicked()));
 	QObject::connect(
 			fill_rigid_blocks_checkbox,
 			SIGNAL(clicked()),
@@ -383,6 +451,40 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			QObject::connect(
 					natural_neighbour_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
+
+			// Clamping mode.
+			//
+			const GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping &strain_rate_clamping =
+					topology_network_params.get_strain_rate_clamping();
+			const double scaled_max_total_strain_rate =
+					strain_rate_clamping.max_total_strain_rate * CLAMP_SECOND_INVARIANT_SCALE;
+			// Since QLineEdit::setText() does not validate we need to expand the validator's
+			// acceptable range to include our clamp value before we set it.
+			if (scaled_max_total_strain_rate < d_clamp_strain_rate_line_edit_double_validator->bottom())
+			{
+				d_clamp_strain_rate_line_edit_double_validator->setBottom(scaled_max_total_strain_rate);
+			}
+			else if (scaled_max_total_strain_rate > d_clamp_strain_rate_line_edit_double_validator->top())
+			{
+				d_clamp_strain_rate_line_edit_double_validator->setTop(scaled_max_total_strain_rate);
+			}
+			// Changing the line edit text might(?) emit signals which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+			QObject::disconnect(
+					clamp_strain_rate_line_edit, SIGNAL(editingFinished()),
+					this, SLOT(handle_strain_rate_clamping_line_editing_finished()));
+			// Use same locale (to convert double to text) as line edit validator (to convert text to double).
+			clamp_strain_rate_line_edit->setText(
+					clamp_strain_rate_line_edit->validator()->locale().toString(
+							scaled_max_total_strain_rate, 'f', CLAMP_SECOND_INVARIANT_SCALED_DECIMAL_PLACES));
+			QObject::connect(
+					clamp_strain_rate_line_edit, SIGNAL(editingFinished()),
+					this, SLOT(handle_strain_rate_clamping_line_editing_finished()));
+
+			enable_clamping_checkbox->setChecked(strain_rate_clamping.enable_clamping);
+			// All clamping controls only apply if 'Enable clamping' is checked.
+			clamp_strain_rate_parameters_widget->setEnabled(
+					enable_clamping_checkbox->isChecked());
 		}
 
 		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
@@ -392,7 +494,6 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 		if (params)
 		{
 			// Check boxes.
-			fill_triangulation_checkbox->setChecked(params->get_fill_triangulation());
 			fill_rigid_blocks_checkbox->setChecked(params->get_fill_rigid_blocks());
 			segment_velocity_checkbox->setChecked(params->show_segment_velocity());
 
@@ -409,15 +510,15 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			QObject::disconnect(
 					default_draw_style_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
-			switch (params->get_colour_mode())
+			switch (params->get_triangulation_colour_mode())
 			{
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE:
 				dilatation_radio_button->setChecked(true);
 				break;
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE:
 				second_invariant_radio_button->setChecked(true);
 				break;
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 				default_draw_style_radio_button->setChecked(true);
 				break;
 			default:
@@ -433,6 +534,44 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			QObject::connect(
 					default_draw_style_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
+
+			// Draw Mode.
+			//
+			// Changing the current mode will emit signals which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+			QObject::disconnect(
+					boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
+			QObject::disconnect(
+					mesh_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
+			QObject::disconnect(
+					fill_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
+			switch (params->get_triangulation_draw_mode())
+			{
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY:
+				boundary_draw_mode_radio_button->setChecked(true);
+				break;
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH:
+				mesh_draw_mode_radio_button->setChecked(true);
+				break;
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL:
+				fill_draw_mode_radio_button->setChecked(true);
+				break;
+			default:
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
+			QObject::connect(
+					boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
+			QObject::connect(
+					mesh_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
+			QObject::connect(
+					fill_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_draw_mode_button(bool)));
 
 			//
 			// Dilatation.
@@ -574,19 +713,19 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			// Enable/disable colour mode options.
 			//
 
-			switch (params->get_colour_mode())
+			switch (params->get_triangulation_colour_mode())
 			{
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE:
 				dilatation_group_box->show();
 				second_invariant_group_box->hide();
 				break;
 
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE:
 				second_invariant_group_box->show();
 				dilatation_group_box->hide();
 				break;
 
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE:
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 				dilatation_group_box->hide();
 				second_invariant_group_box->hide();
 				break;
@@ -643,18 +782,72 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_strain_rate_
 	}
 }
 
-
 void
-GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_triangulation_clicked()
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_strain_rate_clamping_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::TopologyNetworkLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::TopologyNetworkLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
 		{
-			params->set_fill_triangulation(fill_triangulation_checkbox->isChecked());
+			// All clamping controls only apply if 'Enable clamping' is checked.
+			//
+			// Note: We enable/disable before updating the layer params since the latter can take
+			// a long time (since triggers full topology reconstruction through time history)
+			// and we'd like the enable/disable status to be visible while that's happening
+			// (otherwise user might think GPlates has crashed or just not responded to their click).
+			clamp_strain_rate_parameters_widget->setEnabled(
+					enable_clamping_checkbox->isChecked());
+
+			GPlatesAppLogic::TopologyNetworkParams topology_network_params = layer_params->get_topology_network_params();
+
+			GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping strain_rate_clamping =
+					topology_network_params.get_strain_rate_clamping();
+
+			strain_rate_clamping.enable_clamping = enable_clamping_checkbox->isChecked();
+
+			topology_network_params.set_strain_rate_clamping(strain_rate_clamping);
+
+			layer_params->set_topology_network_params(topology_network_params);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_strain_rate_clamping_line_editing_finished()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::TopologyNetworkLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::TopologyNetworkLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			GPlatesAppLogic::TopologyNetworkParams topology_network_params = layer_params->get_topology_network_params();
+
+			GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping strain_rate_clamping =
+					topology_network_params.get_strain_rate_clamping();
+
+			// Conversion to double assuming the system locale, falling back to C locale.
+			bool ok;
+			double scaled_max_total_strain_rate = d_clamp_strain_rate_line_edit_double_validator->locale().toDouble(
+					clamp_strain_rate_line_edit->text(), &ok);
+			if (!ok)
+			{
+				// It appears QString::toDouble() only uses C locale despite its documentation.
+				scaled_max_total_strain_rate = clamp_strain_rate_line_edit->text().toDouble(&ok);
+			}
+			if (ok)
+			{
+				strain_rate_clamping.max_total_strain_rate = scaled_max_total_strain_rate / CLAMP_SECOND_INVARIANT_SCALE;
+				topology_network_params.set_strain_rate_clamping(strain_rate_clamping);
+			}
+
+			layer_params->set_topology_network_params(topology_network_params);
 		}
 	}
 }
@@ -702,18 +895,48 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_colour_mode_
 		{
 			if (dilatation_radio_button->isChecked())
 			{
-				params->set_colour_mode(
-						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE);
+				params->set_triangulation_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE);
 			}
 			if (second_invariant_radio_button->isChecked())
 			{
-				params->set_colour_mode(
-						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE);
+				params->set_triangulation_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE);
 			}
 			if (default_draw_style_radio_button->isChecked())
 			{
-				params->set_colour_mode(
-						GPlatesPresentation::TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE);
+				params->set_triangulation_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE);
+			}
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_draw_mode_button(
+		bool checked)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			if (boundary_draw_mode_radio_button->isChecked())
+			{
+				params->set_triangulation_draw_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY);
+			}
+			if (mesh_draw_mode_radio_button->isChecked())
+			{
+				params->set_triangulation_draw_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH);
+			}
+			if (fill_draw_mode_radio_button->isChecked())
+			{
+				params->set_triangulation_draw_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL);
 			}
 		}
 	}

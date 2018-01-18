@@ -59,7 +59,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&amp;Top (lat):</string>
+               <string>Start latitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -110,7 +110,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&amp;Bottom (lat):</string>
+               <string>End latitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -161,7 +161,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&amp;Left (lon):</string>
+               <string>Start longitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -212,7 +212,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&amp;Right (lon):</string>
+               <string>End longitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -255,6 +255,26 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="lat_extents_label">
+            <property name="text">
+             <string>If start latitude is less than end latitude then raster is flipped vertically.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lon_extents_label">
+            <property name="text">
+             <string>If end longitude is less than start longitude then raster is flipped horizontally (drawn East to West).</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -451,10 +471,10 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-180.000000000000000</double>
+          <double>-1000000000.000000000000000</double>
          </property>
          <property name="maximum">
-          <double>180.000000000000000</double>
+          <double>1000000000.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -473,10 +493,10 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-360.000000000000000</double>
+          <double>-1000000000.000000000000000</double>
          </property>
          <property name="maximum">
-          <double>360.000000000000000</double>
+          <double>1000000000.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -495,10 +515,10 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-360.000000000000000</double>
+          <double>-1000000000.000000000000000</double>
          </property>
          <property name="maximum">
-          <double>360.000000000000000</double>
+          <double>1000000000.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -539,10 +559,10 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-180.000000000000000</double>
+          <double>-1000000000.000000000000000</double>
          </property>
          <property name="maximum">
-          <double>180.000000000000000</double>
+          <double>1000000000.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -561,10 +581,10 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-180.000000000000000</double>
+          <double>-1000000000.000000000000000</double>
          </property>
          <property name="maximum">
-          <double>180.000000000000000</double>
+          <double>1000000000.000000000000000</double>
          </property>
         </widget>
        </item>

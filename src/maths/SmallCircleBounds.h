@@ -199,6 +199,9 @@ namespace GPlatesMaths
 
 		/**
 		 * Creates a bounding small circle extended by the specified angle.
+		 *
+		 * Returns a small circle with radius PI (ie, covering entire globe) if the sum of
+		 * the angle of 'this' bounding small circle and @a angular_extension exceeds PI.
 		 */
 		BoundingSmallCircle
 		extend(
@@ -211,7 +214,7 @@ namespace GPlatesMaths
 		/**
 		 * Creates a bounding small circle contracted by the specified angle.
 		 *
-		 * Returns a small circle of zero radius if the contract angle is larger then the angle
+		 * Returns a small circle of zero radius if @a angular_contraction is larger then the angle
 		 * of 'this' bounding small circle.
 		 */
 		BoundingSmallCircle

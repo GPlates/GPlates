@@ -71,7 +71,7 @@ POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
 
-#include "DeformationStrain.h"
+#include "DeformationStrainRate.h"
 #include "PlateVelocityUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
@@ -86,7 +86,6 @@ POP_MSVC_WARNINGS
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
-#include "utils/Earth.h"
 #include "utils/Profile.h"
 
 
@@ -108,14 +107,14 @@ namespace GPlatesAppLogic
 
 			explicit
 			DeformationInfo(
-					const DeformationStrain &strain_rate) :
+					const DeformationStrainRate &strain_rate) :
 				d_strain_rate(strain_rate)
 			{  }
 
 			/**
 			 * Returns the instantaneous strain rate.
 			 */
-			const DeformationStrain &
+			const DeformationStrainRate &
 			get_strain_rate() const
 			{
 				return d_strain_rate;
@@ -149,7 +148,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-			DeformationStrain d_strain_rate;
+			DeformationStrainRate d_strain_rate;
 		};
 
 
@@ -580,9 +579,6 @@ namespace GPlatesAppLogic
 			};
 
 
-			static const double INVERSE_EARTH_RADIUS_METRES;
-
-
 			// The extra info for the face
 			boost::optional<FaceInfo> d_face_info;
 
@@ -603,8 +599,30 @@ namespace GPlatesAppLogic
 			}
 		};
 
-		template <typename GT, typename Fb>
-		const double DelaunayFace_2<GT, Fb>::INVERSE_EARTH_RADIUS_METRES = 1.0 / (1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS);
+
+		/**
+		 * Put part of DelaunayFace_2<GT, Fb>::calculate_deformation_info() in the '.cc' file
+		 * to avoid lengthy recompile times each time it's modified.
+		 */
+		DeformationInfo
+		calculate_face_deformation_info(
+				const Delaunay_2 &delaunay_2,
+				const double &theta1,
+				const double &theta2,
+				const double &theta3,
+				const double &theta_centroid,
+				const double &phi1,
+				const double &phi2,
+				const double &phi3,
+				const double &phi_centroid,
+				const double &utheta1,
+				const double &utheta2,
+				const double &utheta3,
+				const double &utheta_centroid,
+				const double &uphi1,
+				const double &uphi2,
+				const double &uphi3,
+				const double &uphi_centroid);
 
 
 		/**
@@ -646,9 +664,11 @@ namespace GPlatesAppLogic
 
 			Delaunay_2(
 					const GPlatesMaths::AzimuthalEqualAreaProjection &projection,
-					const double &reconstruction_time) :
+					const double &reconstruction_time,
+					boost::optional<double> clamp_total_strain_rate = boost::none) :
 				d_projection(projection),
-				d_reconstruction_time(reconstruction_time)
+				d_reconstruction_time(reconstruction_time),
+				d_clamp_total_strain_rate(clamp_total_strain_rate)
 			{  }
 
 			/**
@@ -714,7 +734,7 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Returns the reconstruction time of this vertex's triangulation.
+			 * Returns the reconstruction time.
 			 */
 			const double &
 			get_reconstruction_time() const
@@ -722,10 +742,20 @@ namespace GPlatesAppLogic
 				return d_reconstruction_time;
 			}
 
+			/**
+			 * Returns the optional maximum total strain rate (2nd invariant).
+			 */
+			boost::optional<double>
+			get_clamp_total_strain_rate() const
+			{
+				return d_clamp_total_strain_rate;
+			}
+
 		private:
 
 			GPlatesMaths::AzimuthalEqualAreaProjection d_projection;
 			double d_reconstruction_time;
+			boost::optional<double> d_clamp_total_strain_rate;
 		};
 	}
 
@@ -805,17 +835,21 @@ namespace GPlatesAppLogic
 			{
 				// Ignore the infinite face - we're at the edge of the convex hull so one (or two?)
 				// adjacent face(s) will be the infinite face.
-				//
-				// Also note that we do *not* ignore faces that are outside the deforming region
-				// (outside network boundary or inside non-deforming interior rigid blocks).
-				// This is because it's possible for there to be extremely tiny faces in the
-				// delaunay triangulation (eg, if a topological section has adjacent vertices very close
-				// together) and the strain rate on these faces tends to be much larger than normal
-				// (presumably due to the accuracy of calculations) and including the larger faces
-				// outside the deforming region (which have zero strain rates)
-				// causes the face-area-average of strain rate to significantly reduce the
-				// contribution of the tiny face (with the much larger strain rate).
-				if (delaunay_2.is_infinite(incident_face_circulator))
+				if (delaunay_2.is_infinite(incident_face_circulator) ||
+					// Also ignore faces that are outside the deforming region
+					// (outside network boundary or inside non-deforming interior rigid blocks).
+					//
+					// Previously we did *not* ignore these faces because it's possible for there to be
+					// extremely tiny faces in the delaunay triangulation (eg, if a topological section
+					// has adjacent vertices very close together) and the strain rate on these faces tends
+					// to be much larger than normal (presumably due to the accuracy of calculations) and
+					// including the larger faces outside the deforming region (which have zero strain rates)
+					// causes the face-area-average of strain rate to significantly reduce the
+					// contribution of the tiny face (with the much larger strain rate).
+					//
+					// However the user now has optional strain rate clamping to deal with these artifacts
+					// so we return to ignoring faces outside deforming region as we should.
+					!incident_face_circulator->is_in_deforming_region())
 				{
 					continue;
 				}
@@ -854,6 +888,7 @@ namespace GPlatesAppLogic
 				// Not in the deforming region so return zero strain rates.
 				return DeformationInfo();
 			}
+			const Delaunay_2 &delaunay_2 = get_delaunay_2();
 
 			// NOTE: array indices 0,1,2 in CGAL code correspond to triangle vertex numbers 1,2,3 
 
@@ -864,7 +899,7 @@ namespace GPlatesAppLogic
 			Vertex_handle v3 = this->vertex(2);
 
 			// Position and velocity at vertex 1.
-            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			// NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
 			const GPlatesMaths::LatLonPoint &v1_llp = v1->get_lat_lon_point();
 			double phi1 = v1_llp.longitude();
 			double theta1 = 90.0 - v1_llp.latitude();
@@ -873,7 +908,7 @@ namespace GPlatesAppLogic
 			double utheta1 = u1.get_vector_colatitude().dval();
 
 			// Position and velocity at vertex 2.
-            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			// NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
 			const GPlatesMaths::LatLonPoint &v2_llp = v2->get_lat_lon_point();
 			double phi2 = v2_llp.longitude();
 			double theta2 = 90.0 - v2_llp.latitude();
@@ -882,7 +917,7 @@ namespace GPlatesAppLogic
 			double utheta2 = u2.get_vector_colatitude().dval();
 
 			// Position and velocity at vertex 3.
-            // NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
+			// NOTE: y velocities are colat, down from the pole, and have to have sign change for North South uses.
 			const GPlatesMaths::LatLonPoint &v3_llp = v3->get_lat_lon_point();
 			double phi3 = v3_llp.longitude();
 			double theta3 = 90.0 - v3_llp.latitude();
@@ -895,7 +930,7 @@ namespace GPlatesAppLogic
 			const double x_centroid = inv_3 * (v1->point().x() + v2->point().x() + v3->point().x());
 			const double y_centroid = inv_3 * (v1->point().y() + v2->point().y() + v3->point().y());
 
-			const GPlatesMaths::AzimuthalEqualAreaProjection &projection = get_delaunay_2().get_projection();
+			const GPlatesMaths::AzimuthalEqualAreaProjection &projection = delaunay_2.get_projection();
 
 			const GPlatesMaths::LatLonPoint centroid_llp =
 					projection.unproject_to_lat_lon(QPointF(x_centroid, y_centroid));
@@ -932,66 +967,12 @@ namespace GPlatesAppLogic
 			utheta2 = utheta2 * inv_velocity_scale;
 			utheta3 = utheta3 * inv_velocity_scale;
 
-			// Establish coefficients for spherical linear interpolation over the element
-			// determinatnt: det_A is 2*(area of triangle element)
-			// [ A ] = [ phi2-phi1 , phi3 - phi1, theta2 - theta1 , theta3 - theta1 ] 
-			const double det_A = (phi2 - phi1) * (theta3 - theta1) - (phi3 - phi1) * (theta2 - theta1);
-			if (std::fabs(det_A) > 0)
-			{
-				const double inv_A = 1.0 / det_A;
-
-				// Spherical coords.
-				const double duphi_dphi = (
-					(uphi2 - uphi1) * (theta3 - theta1)  +
-					(uphi3 - uphi1) * (theta1 - theta2)
-				) * inv_A;
-
-				const double dutheta_dtheta = (
-					(utheta2 - utheta1) * (phi1 - phi3)  +
-					(utheta3 - utheta1) * (phi2 - phi1)
-				) * inv_A;
-
-				const double duphi_dtheta = (
-					(uphi2 - uphi1) * (phi1 - phi3)  +
-					(uphi3 - uphi1) * (phi2 - phi1)
-				) * inv_A;
-
-				const double dutheta_dphi = (
-					(utheta2 - utheta1) * (theta3-theta1) +
-					(utheta3 - utheta1) * (theta1-theta2)
-				) * inv_A;
-
-				//
-				// Compute Strain Rates.
-				//
-
-				// Range of 'theta_centroid' is [0, PI] from North to South pole.
-				const double sin_theta_centroid = std::sin(theta_centroid);
-				if (sin_theta_centroid > 0)
-				{
-					const double inv_sin_theta_centroid = 1.0 / sin_theta_centroid;
-					const double inv_r_sin_theta_centroid = inv_sin_theta_centroid * INVERSE_EARTH_RADIUS_METRES;
-
-					const double cos_theta_centroid = std::cos(theta_centroid);
-					const double cot_theta_centroid = cos_theta_centroid * inv_sin_theta_centroid;
-
-					const double SR_theta_theta = dutheta_dtheta * INVERSE_EARTH_RADIUS_METRES;
-					const double SR_phi_phi = inv_r_sin_theta_centroid * (duphi_dphi + utheta_centroid * cos_theta_centroid);
-					const double SR_theta_phi = 0.5 * INVERSE_EARTH_RADIUS_METRES *
-						(
-							inv_sin_theta_centroid * dutheta_dphi +
-							duphi_dtheta -
-							uphi_centroid * cot_theta_centroid
-						);
-
-					return DeformationInfo(DeformationStrain(SR_theta_theta, SR_phi_phi, SR_theta_phi));
-				}
-				// else fall through...
-			}
-			// else fall through...
-
-			// Unable to calculate strain - use default values of zero.
-			return DeformationInfo();
+			return calculate_face_deformation_info(
+					delaunay_2,
+					theta1, theta2, theta3, theta_centroid,
+					phi1, phi2, phi3, phi_centroid,
+					utheta1, utheta2, utheta3, utheta_centroid,
+					uphi1, uphi2, uphi3, uphi_centroid);
 		}
 	}
 }

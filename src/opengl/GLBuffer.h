@@ -211,7 +211,14 @@ namespace GPlatesOpenGL
 				const std::vector<ElementType> &data,
 				usage_type usage)
 		{
-			gl_buffer_data(renderer, target, data.size() * sizeof(ElementType), &data[0], usage);
+			if (!data.empty())
+			{
+				gl_buffer_data(renderer, target, data.size() * sizeof(ElementType), &data[0], usage);
+			}
+			else
+			{
+				gl_buffer_data(renderer, target, 0, NULL, usage);
+			}
 		}
 
 
@@ -242,7 +249,14 @@ namespace GPlatesOpenGL
 				unsigned int offset,
 				const std::vector<ElementType> &data)
 		{
-			gl_buffer_sub_data(renderer, target, offset, data.size() * sizeof(ElementType), &data[0]);
+			if (!data.empty())
+			{
+				gl_buffer_sub_data(renderer, target, offset, data.size() * sizeof(ElementType), &data[0]);
+			}
+			else
+			{
+				gl_buffer_sub_data(renderer, target, offset, 0, NULL);
+			}
 		}
 
 

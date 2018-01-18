@@ -41,20 +41,6 @@
 #include <boost/type_traits/is_same.hpp>
 #include <QDateTime>
 
-#ifdef HAVE_CONFIG_H
-// Include config header so we know whether (and how) to include "gdal_version.h"
-// which contains the version of GDAL we're compiling against.
-#include "global/config.h"
-#ifdef HAVE_GDAL_VERSION_H
-#if defined(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
-#include <GDAL/gdal_version.h>
-#elif defined(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
-#include <gdal/gdal_version.h>
-#else
-#include <gdal_version.h>
-#endif
-#endif
-#endif
 #include <ogr_spatialref.h>
 
 #include "GdalRasterReader.h"
@@ -65,6 +51,7 @@
 #include "RasterFileCacheFormat.h"
 
 #include "global/AssertionFailureException.h"
+#include "global/GdalVersion.h"
 #include "global/GPlatesAssert.h"
 #include "global/LogException.h"
 
@@ -573,7 +560,7 @@ GPlatesFileIO::GDALRasterReader::GDALRasterReader(
 		ReadErrorAccumulation *read_errors) :
 	RasterReaderImpl(raster_reader),
 	d_source_raster_filename(filename),
-	d_dataset(GdalUtils::gdal_open(filename, read_errors)),
+	d_dataset(GdalUtils::open_raster(filename, false/*update*/, read_errors)),
 	d_flip(false),
 	d_source_width(0),
 	d_source_height(0)
@@ -731,7 +718,7 @@ GPlatesFileIO::GDALRasterReader::~GDALRasterReader()
 		if (d_dataset)
 		{
 			// Closes the dataset as well as all bands that were opened.
-			GDALClose(d_dataset);
+			GdalUtils::close_raster(d_dataset);
 		}
 	}
 	catch (...)
@@ -1546,14 +1533,23 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 		//
 		// ...where N is number of 'valid' raster samples (ie, samples that are not "no-data" values).
 		//
-		const double raster_mean = (num_valid_raster_samples > 0)
-				? (raster_sum / num_valid_raster_samples)
-				: 0;
-		const double raster_variance = (num_valid_raster_samples > 0)
-				? (raster_sum_squares / num_valid_raster_samples - raster_mean * raster_mean)
-				: 0;
-		// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
-		const double raster_std_dev = (raster_variance > 0) ? std::sqrt(raster_variance) : 0;
+		double raster_mean;
+		double raster_std_dev;
+		if (num_valid_raster_samples > 0)
+		{
+			raster_mean = raster_sum / num_valid_raster_samples;
+
+			const double raster_variance = raster_sum_squares / num_valid_raster_samples - raster_mean * raster_mean;
+			// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
+			raster_std_dev = (raster_variance > 0) ? std::sqrt(raster_variance) : 0;
+		}
+		else // All raster samples are no-data values (so we have no statistics)...
+		{
+			raster_min = 0.0;
+			raster_max = 0.0;
+			raster_mean = 0.0;
+			raster_std_dev = 0.0;
+		}
 
 		// Now that we've calculated the raster statistics we can go back and write it to the cache file.
 		const qint64 current_file_offset = cache_file.pos();

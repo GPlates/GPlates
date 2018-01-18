@@ -232,7 +232,7 @@ GPlatesOpenGL::GLRenderTargetImpl::GLRenderTargetImpl(
 	// That happens in 'begin_render()'.
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 

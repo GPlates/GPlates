@@ -78,7 +78,7 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 			: Qt::Unchecked);
 
 	// Topological networks.
-	export_resolved_polygons_checkbox->setCheckState(
+	export_resolved_networks_checkbox->setCheckState(
 			d_export_configuration.export_topological_networks
 			? Qt::Checked
 			: Qt::Unchecked);

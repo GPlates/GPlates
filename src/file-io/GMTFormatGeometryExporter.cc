@@ -217,7 +217,7 @@ GPlatesFileIO::GMTFormatGeometryExporter::write_polygon_ring(
 {
 	// Output all the points of the ring.
 	GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_vertex_iter = ring_vertex_begin;
-	for (++ring_vertex_iter; ring_vertex_iter != ring_vertex_end; ++ring_vertex_iter)
+	for ( ; ring_vertex_iter != ring_vertex_end; ++ring_vertex_iter)
 	{
 		print_gmt_coordinate_line(*d_stream_ptr, *ring_vertex_iter, d_reverse_coordinate_order);
 	}

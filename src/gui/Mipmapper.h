@@ -985,9 +985,9 @@ namespace GPlatesGui
 				boost::optional<const Mipmapper &> m11) :
 			base_type(
 					m00,
-					boost::optional<const base_type &>(m01),
-					boost::optional<const base_type &>(m10),
-					boost::optional<const base_type &>(m11))
+					m01 ? boost::optional<const base_type &>(m01.get()) : boost::optional<const base_type &>(),
+					m10 ? boost::optional<const base_type &>(m10.get()) : boost::optional<const base_type &>(),
+					m11 ? boost::optional<const base_type &>(m11.get()) : boost::optional<const base_type &>())
 		{
 		}
 	};

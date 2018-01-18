@@ -95,6 +95,7 @@ namespace GPlatesFileIO
 			InvalidPlatepolygonBoundaryFeature,
 
 			// The following apply to OGR-supported file format import.
+			ErrorReadingVectorFile,
 			NoLayersFoundInFile,
 			MultipleLayersInFile,
 			ErrorReadingOgrLayer,
@@ -203,7 +204,6 @@ namespace GPlatesFileIO
 			CptFileTypeNotDeduced,
 			UnrecognisedLabel,
 			PatternFillInLine,
-			MissingLabelSemiColon,
 
 			// The following are specific to Hellinger-fit-related file formats.
 			HellingerPickFormatError,

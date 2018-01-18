@@ -105,6 +105,11 @@ GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
 {
 	setupUi(this);
 
+	spinbox_plate_id_moving->setMinimum(0);
+	spinbox_plate_id_moving->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+	spinbox_plate_id_fixed->setMinimum(0);
+	spinbox_plate_id_fixed->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	//initial states
 	checkbox_stage_pole->setChecked(false);
         frame_stage_pole->setEnabled(false);

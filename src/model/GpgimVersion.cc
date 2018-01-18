@@ -150,7 +150,7 @@ GPlatesModel::GpgimVersion::GpgimVersion(
 
 
 QString
-GPlatesModel::GpgimVersion::version_string() const
+GPlatesModel::GpgimVersion::get_version_string() const
 {
 	QString version_string_;
 	QTextStream version_string_stream(&version_string_);
@@ -198,7 +198,7 @@ GPlatesModel::operator<<(
 		std::ostream &o,
 		const GpgimVersion &gpml_version)
 {
-	o << gpml_version.version_string().toLatin1().data();
+	o << gpml_version.get_version_string().toLatin1().data();
 
 	return o;
 }

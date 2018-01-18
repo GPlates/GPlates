@@ -242,7 +242,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 	const int time_slot_direction = (end_time_slot > start_time_slot) ? 1 : -1;
 
 	typedef std::vector< boost::optional<GPlatesMaths::PointOnSphere> > domain_point_seq_type;
-	typedef std::vector< boost::optional<DeformationStrain> > domain_strain_rate_seq_type;
+	typedef std::vector< boost::optional<DeformationStrainRate> > domain_strain_rate_seq_type;
 
 	// Get the domain strain rates (if any) for the first time slot in the loop (if evolving scalar values).
 	// Note that initially all geometry points should be active (as are all our initial scalar values).
@@ -378,7 +378,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::is_valid(
 		else // reconstruction time is outside the time range...
 		{
 			// If the scalar coverage has a time of appearance (time slot in the time range) and the reconstruction
-			// time is prior to the beginning of the time range then the v has not appeared yet.
+			// time is prior to the beginning of the time range then the scalar coverage has not appeared yet.
 			if (d_time_slot_of_appearance &&
 				reconstruction_time >= time_range.get_begin_time())
 			{

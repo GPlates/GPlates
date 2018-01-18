@@ -539,10 +539,8 @@ GPlatesGui::Dialogs::pop_up_generate_crustal_thickness_points_dialog()
 {
 	GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &dialog = generate_crustal_thickness_points_dialog();
 
-	if (dialog.initialise())
-	{
-		dialog.exec();
-	}
+	dialog.initialise();
+	dialog.exec();
 }
 
 

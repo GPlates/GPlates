@@ -43,15 +43,19 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLaye
 	VisualLayerParams(
 			layer_params,
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
-	d_colour_mode(COLOUR_DRAW_STYLE),
+	d_triangulation_colour_mode(TRIANGULATION_COLOUR_DRAW_STYLE),
+	// Display as mesh by default (instead of just a boundary) since it's a good visual indicator
+	// of where deforming regions are. The default colour mode is still by draw style (ie, flat coloured).
+	// This seemed like a good compromise between no mesh (ie, boundary - which is fastest) and
+	// blue/red strain rate (which is slowest).
+	d_triangulation_draw_mode(TRIANGULATION_DRAW_MESH),
 	d_min_abs_dilatation(1e-17),
-	d_max_abs_dilatation(1e-13),
+	d_max_abs_dilatation(3e-14),
 	d_dilatation_colour_palette_filename(QString()),
 	d_min_abs_second_invariant(1e-17),
-	d_max_abs_second_invariant(1e-13),
+	d_max_abs_second_invariant(3e-14),
 	d_second_invariant_colour_palette_filename(QString()),
 	d_show_segment_velocity(false),
-	d_fill_triangulation(false),
 	d_fill_rigid_blocks(false),
 	d_fill_opacity(1.0),
 	d_fill_intensity(1.0)
@@ -185,7 +189,7 @@ void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_dilatation_colour_palette()
 {
 	d_dilatation_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
-			GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
+			GPlatesGui::BuiltinColourPalettes::create_strain_rate_dilatation_colour_palette(
 					d_min_abs_dilatation,
 					d_max_abs_dilatation));
 }
@@ -195,7 +199,7 @@ void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_second_invariant_colour_palette()
 {
 	d_second_invariant_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
-			GPlatesGui::BuiltinColourPalettes::create_strain_colour_palette(
+			GPlatesGui::BuiltinColourPalettes::create_strain_rate_second_invariant_colour_palette(
 					d_min_abs_second_invariant,
 					d_max_abs_second_invariant));
 }
@@ -204,22 +208,46 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_second_inv
 GPlatesScribe::TranscribeResult
 GPlatesPresentation::transcribe(
 		GPlatesScribe::Scribe &scribe,
-		TopologyNetworkVisualLayerParams::ColourMode &colour_mode,
+		TopologyNetworkVisualLayerParams::TriangulationColourMode &triangulation_colour_mode,
 		bool transcribed_construct_data)
 {
 	// WARNING: Changing the string ids will break backward/forward compatibility.
 	//          So don't change the string ids even if the enum name changes.
 	static const GPlatesScribe::EnumValue enum_values[] =
 	{
-		GPlatesScribe::EnumValue("COLOUR_DRAW_STYLE", TopologyNetworkVisualLayerParams::COLOUR_DRAW_STYLE),
-		GPlatesScribe::EnumValue("COLOUR_DILATATION_STRAIN_RATE", TopologyNetworkVisualLayerParams::COLOUR_DILATATION_STRAIN_RATE),
-		GPlatesScribe::EnumValue("COLOUR_SECOND_INVARIANT_STRAIN_RATE", TopologyNetworkVisualLayerParams::COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+		GPlatesScribe::EnumValue("COLOUR_DRAW_STYLE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE),
+		GPlatesScribe::EnumValue("COLOUR_DILATATION_STRAIN_RATE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE),
+		GPlatesScribe::EnumValue("COLOUR_SECOND_INVARIANT_STRAIN_RATE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(
 			TRANSCRIBE_SOURCE,
 			scribe,
-			colour_mode,
+			triangulation_colour_mode,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPresentation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		TopologyNetworkVisualLayerParams::TriangulationDrawMode &triangulation_draw_mode,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("DRAW_BOUNDARY", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY),
+		GPlatesScribe::EnumValue("DRAW_MESH", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH),
+		GPlatesScribe::EnumValue("DRAW_FILL", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			triangulation_draw_mode,
 			enum_values,
 			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

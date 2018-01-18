@@ -2936,10 +2936,11 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_polygons_mask_
 				enable_surface_polygons_mask_button->setDisabled(true);
 
 				QMessageBox::warning(this, tr("Cannot enable surface polygons mask"),
-						tr("Graphics driver reports unsupported render-to-texture-array."
+						tr("Graphics hardware lacks support, or a problem was encountered."
 #ifndef Q_WS_MAC // Cannot actually update graphics driver explicitly on Mac OS X systems...
-							"\nUpgrading your graphics hardware driver may or may not help."
+							"\nMake sure you have the latest graphics hardware driver installed."
 #endif
+							"\nAlso try switching to the dedicated GPU if using a dual-GPU system."
 						),
 						QMessageBox::Ok);
 			}

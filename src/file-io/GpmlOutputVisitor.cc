@@ -621,7 +621,7 @@ GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 	// The version of the GPGIM built into the current GPlates.
 	const GPlatesModel::GpgimVersion &gpgim_version = GPlatesModel::Gpgim::instance().get_version();
 
-	writer.writeGpmlAttribute("version", gpgim_version.version_string());
+	writer.writeGpmlAttribute("version", gpgim_version.get_version_string());
 	writer.writeAttribute(
 			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
 			"schemaLocation",

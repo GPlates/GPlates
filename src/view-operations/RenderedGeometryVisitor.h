@@ -33,6 +33,9 @@ namespace GPlatesViewOperations
 	class RenderedArrowedPolyline;
 	class RenderedCircleSymbol;
 	class RenderedColouredEdgeSurfaceMesh;
+	class RenderedColouredMultiPointOnSphere;
+	class RenderedColouredPolygonOnSphere;
+	class RenderedColouredPolylineOnSphere;
 	class RenderedColouredTriangleSurfaceMesh;
 	class RenderedCrossSymbol;
 	class RenderedEllipse;
@@ -104,14 +107,32 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
+		visit_rendered_point_on_sphere(
+				const GPlatesViewOperations::RenderedPointOnSphere &)
+		{  }
+
+		virtual
+		void
 		visit_rendered_multi_point_on_sphere(
 				const RenderedMultiPointOnSphere &)
 		{  }
 
 		virtual
 		void
-		visit_rendered_point_on_sphere(
-				const GPlatesViewOperations::RenderedPointOnSphere &)
+		visit_rendered_coloured_multi_point_on_sphere(
+				const RenderedColouredMultiPointOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_polyline_on_sphere(
+				const RenderedPolylineOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_coloured_polyline_on_sphere(
+				const RenderedColouredPolylineOnSphere &)
 		{  }
 
 		virtual
@@ -122,8 +143,8 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		visit_rendered_polyline_on_sphere(
-				const RenderedPolylineOnSphere &)
+		visit_rendered_coloured_polygon_on_sphere(
+				const RenderedColouredPolygonOnSphere &)
 		{  }
 
 		virtual

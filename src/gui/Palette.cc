@@ -24,10 +24,17 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "Palette.h"
+
+#include <boost/foreach.hpp>
+
+#include "FeatureTypeColourPalette.h"
 #include "GMTColourNames.h"
+#include "Palette.h"
 
 #include "file-io/CptReader.h"
+
+#include "model/Gpgim.h"
+
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::RegularPalette::get_colour(const Key& k) const 
@@ -117,24 +124,32 @@ GPlatesGui::RegionalPlateIdPalette::build_map()
 		;
 }
 
+
 void
 GPlatesGui::FeatureTypePalette::build_map()
 {
-	d_color_map = boost::assign::map_list_of 
-		(Palette::Key("Coastline"), *(HTMLColourNames::instance().get_colour("saddlebrown")))
-		(Palette::Key("MeshNode"), Colour::get_yellow())
-		(Palette::Key("Flowline"), Colour::get_red())
-		(Palette::Key("Fault"), Colour::get_blue())
-		(Palette::Key("MidOceanRidge"), Colour::get_green())
-		(Palette::Key("FractureZone"), Colour::get_purple())
-		(Palette::Key("HotSpot"), *(HTMLColourNames::instance().get_colour("orange")))
-		(Palette::Key("Volcano"), *(HTMLColourNames::instance().get_colour("lightskyblue")))
-		(Palette::Key("Basin"), Colour::get_lime())
-		(Palette::Key("UnclassifiedFeature"), *(HTMLColourNames::instance().get_colour("lightsalmon")))
-		(Palette::Key("HeatFlow"), Colour::get_navy())
-		;
+	FeatureTypeColourPalette::non_null_ptr_type feature_type_colour_palette =
+			FeatureTypeColourPalette::create();
+
+	// Populate the colours map with FeatureTypes that we know about.
+	GPlatesModel::Gpgim::feature_type_seq_type all_feature_types =
+			GPlatesModel::Gpgim::instance().get_concrete_feature_types();
+	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, all_feature_types)
+	{
+		boost::optional<Colour> feature_type_colour = feature_type_colour_palette->get_colour(feature_type);
+		if (feature_type_colour)
+		{
+			d_color_map.insert(
+					std::make_pair(
+						Palette::Key(feature_type.get_name().qstring()),
+						feature_type_colour.get()));
+		}
+	}
+
+	// Any feature type not in the GPGIM uses the default colour.
 	d_default_color = Colour::get_navy();
 }
+
 
 const GPlatesGui::Palette*
 GPlatesGui::default_age_palette(

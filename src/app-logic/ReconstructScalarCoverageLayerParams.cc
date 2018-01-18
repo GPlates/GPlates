@@ -165,8 +165,10 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::get_scalar_statistics(
 	}
 
 	const double scalar_mean = scalar_sum / num_scalars;
-	const double scalar_standard_deviation =
-			std::sqrt((scalar_sum_squares / num_scalars) - (scalar_mean * scalar_mean));
+
+	const double scalar_variance = scalar_sum_squares / num_scalars - scalar_mean * scalar_mean;
+	// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
+	const double scalar_standard_deviation = (scalar_variance > 0) ? std::sqrt(scalar_variance) : 0;
 
 	return GPlatesPropertyValues::ScalarCoverageStatistics(
 			scalar_min,

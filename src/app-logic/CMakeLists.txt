@@ -27,7 +27,9 @@ set(srcs
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
+    DeformationStrain.cc
     DeformationStrain.h
+    DeformationStrainRate.h
     DependentTopologicalSectionLayers.cc
     DependentTopologicalSectionLayers.h
     ExtractRasterFeatureProperties.cc

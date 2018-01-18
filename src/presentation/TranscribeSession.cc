@@ -1661,8 +1661,6 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.show_segment_velocity(),
 						d_layer_params_tag("show_segment_velocity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
-						d_layer_params_tag("fill_triangulation"));
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_rigid_blocks(),
 						d_layer_params_tag("fill_rigid_blocks"));
 
@@ -1672,8 +1670,11 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(),
 						d_layer_params_tag("fill_intensity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_colour_mode(),
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_triangulation_colour_mode(),
 						d_layer_params_tag("colour_mode"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_triangulation_draw_mode(),
+						d_layer_params_tag("draw_mode"));
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_abs_dilatation(),
 						d_layer_params_tag("min_abs_dilatation"));
@@ -1687,8 +1688,14 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_second_invariant(),
 						d_layer_params_tag("max_abs_second_invariant"));
 
+				// Only used by GPlates 2.0 (removed in 2.1) ...
+				d_scribe.save(TRANSCRIBE_SOURCE,
+						bool(params.get_triangulation_draw_mode() == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL),
+						d_layer_params_tag("fill_triangulation"));
+
 				// Only used by GPlates internal versions after 1.5 but before 2.0 ...
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
+				d_scribe.save(TRANSCRIBE_SOURCE,
+						bool(params.get_triangulation_draw_mode() == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL),
 						d_layer_params_tag("show_fill"));
 				d_scribe.save(TRANSCRIBE_SOURCE, -std::log10(params.get_max_abs_dilatation()),
 						d_layer_params_tag("range1_min"));
@@ -2046,19 +2053,6 @@ namespace GPlatesPresentation
 					params.set_show_segment_velocity(show_segment_velocity);
 				}
 
-				bool fill_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
-						d_layer_params_tag("fill_triangulation")))
-				{
-					params.set_fill_triangulation(fill_triangulation);
-				}
-				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
-				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
-						d_layer_params_tag("show_fill")))
-				{
-					params.set_fill_triangulation(fill_triangulation);
-				}
-
 				bool fill_rigid_blocks;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_rigid_blocks,
 						d_layer_params_tag("fill_rigid_blocks")))
@@ -2136,11 +2130,40 @@ namespace GPlatesPresentation
 					params.set_min_abs_second_invariant(min_abs_second_invariant);
 				}
 
-				TopologyNetworkVisualLayerParams::ColourMode colour_mode;
+				TopologyNetworkVisualLayerParams::TriangulationColourMode colour_mode;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, colour_mode,
 						d_layer_params_tag("colour_mode")))
 				{
-					params.set_colour_mode(colour_mode);
+					params.set_triangulation_colour_mode(colour_mode);
+				}
+
+				TopologyNetworkVisualLayerParams::TriangulationDrawMode draw_mode;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, draw_mode, d_layer_params_tag("draw_mode")))
+				{
+					params.set_triangulation_draw_mode(draw_mode);
+				}
+				else
+				{
+					bool fill_triangulation;
+					// Saved by GPlates 2.0 (removed in 2.1) ...
+					if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation, d_layer_params_tag("fill_triangulation")) ||
+						// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+						d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation, d_layer_params_tag("show_fill")))
+					{
+						if (fill_triangulation)
+						{
+							params.set_triangulation_draw_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL);
+						}
+						else
+						{
+							// Unfilled triangulations were previously drawn as a boundary (when colouring by draw style) and
+							// as a mesh (when colouring by strain rate).
+							params.set_triangulation_draw_mode(
+									colour_mode == TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE
+									? TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY
+									: TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH);
+						}
+					}
 				}
 
 				//

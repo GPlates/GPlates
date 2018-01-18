@@ -54,7 +54,15 @@ namespace
 			*(HTMLColourNames::instance().get_colour("orange")),
 			*(HTMLColourNames::instance().get_colour("lightskyblue")),
 			Colour::get_lime(),
-			*(HTMLColourNames::instance().get_colour("lightsalmon"))
+			*(HTMLColourNames::instance().get_colour("lightsalmon")),
+			*(HTMLColourNames::instance().get_colour("fuchsia")),
+			*(HTMLColourNames::instance().get_colour("greenyellow")),
+			*(HTMLColourNames::instance().get_colour("darkslategray")),
+			*(HTMLColourNames::instance().get_colour("darkturquoise")),
+			*(HTMLColourNames::instance().get_colour("cadetblue")),
+			*(HTMLColourNames::instance().get_colour("beige")),
+			*(HTMLColourNames::instance().get_colour("lightcoral")),
+			*(HTMLColourNames::instance().get_colour("powderblue"))
 		};
 		static const size_t NUM_COLOURS = sizeof(COLOURS) / sizeof(Colour);
 
@@ -86,12 +94,15 @@ namespace
 
 
 	/**
-	 * Assign a colour to an unknown FeatureType.
+	 * Assign a colour to a FeatureType.
 	 */
 	Colour
 	create_colour(
 			const GPlatesModel::FeatureType &feature_type)
 	{
+		// Using a hash ensures that the colour associated with a feature type
+		// will not change when new feature types are added to GPGIM
+		// (previously the integer index of feature type in GPGIM was used)...
 		return map_to_colour(generate_hash(feature_type));
 	}
 }
@@ -107,19 +118,42 @@ GPlatesGui::FeatureTypeColourPalette::create()
 GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette()
 {
 	// Populate the colours map with FeatureTypes that we know about.
-
 	const GPlatesModel::Gpgim::feature_type_seq_type &feature_types =
 			GPlatesModel::Gpgim::instance().get_concrete_feature_types();
-
-	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, feature_types)
 	{
 		d_colours.insert(
 				std::make_pair(
 					feature_type,
-					map_to_colour(count)));
-		++count;
+					create_colour(feature_type)));
 	}
+
+	//
+	// Override some feature types with specific colours.
+	//
+
+	// These colours were changed from GPlates 1.2 to 1.3 so we'll just leave them as they are
+	// (for GPlates 1.3 onwards) - except for "UnclassifiedFeature".
+	d_colours[GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature")] = *(HTMLColourNames::instance().get_colour("dimgray"));
+	d_colours[GPlatesModel::FeatureType::create_gpml("Coastline")] = *(HTMLColourNames::instance().get_colour("saddlebrown"));
+	d_colours[GPlatesModel::FeatureType::create_gpml("MeshNode")] = Colour::get_yellow();
+	d_colours[GPlatesModel::FeatureType::create_gpml("Flowline")] = Colour::get_red();
+	d_colours[GPlatesModel::FeatureType::create_gpml("Fault")] = Colour::get_blue();
+	d_colours[GPlatesModel::FeatureType::create_gpml("MidOceanRidge")] = Colour::get_green();
+	d_colours[GPlatesModel::FeatureType::create_gpml("FractureZone")] = Colour::get_purple();
+	d_colours[GPlatesModel::FeatureType::create_gpml("HotSpot")] = *(HTMLColourNames::instance().get_colour("orange"));
+	d_colours[GPlatesModel::FeatureType::create_gpml("Volcano")] = *(HTMLColourNames::instance().get_colour("lightskyblue"));
+	d_colours[GPlatesModel::FeatureType::create_gpml("Basin")] = Colour::get_lime();
+	d_colours[GPlatesModel::FeatureType::create_gpml("HeatFlow")] = Colour::get_navy();
+
+	// Some new hard-wired colours below added in GPlates 2.1. In GPlates 2.0 they were all navy blue
+	// (default colour 'FeatureTypePalette::d_default_colour' in "Palette.cc") due to above change in GPlates 1.3.
+	// From now on, any colours not overridden here will get a random colour in 'map_to_colour()'
+	// based on the hash of the feature type (instead of default navy colour). So from now on it's probably best
+	// to only add new hard-wired colours here when two feature types should ideally be distinguishable
+	// but end up with the same hash number.
+	d_colours[GPlatesModel::FeatureType::create_gpml("TopologicalNetwork")] = *(HTMLColourNames::instance().get_colour("tan"));
+	d_colours[GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary")] = *(HTMLColourNames::instance().get_colour("plum"));
 }
 
 

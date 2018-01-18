@@ -29,7 +29,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "DeformationStrain.h"
+#include "DeformationStrainRate.h"
 #include "ScalarCoverageEvolution.h"
 #include "TimeSpanUtils.h"
 #include "TopologyReconstruct.h"

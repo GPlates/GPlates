@@ -199,6 +199,20 @@ namespace GPlatesOpenGL
 					const QPointF &vertex3,
 					GPlatesGui::rgba8_t rgba8_color);
 
+			/**
+			 * Adds a triangle with per-vertex colouring to the current filled triangle mesh drawable.
+			 *
+			 * This must be called between @a begin_filled_triangle_mesh and @a end_filled_triangle_mesh.
+			 */
+			void
+			add_filled_triangle_to_mesh(
+					const QPointF &vertex1,
+					const QPointF &vertex2,
+					const QPointF &vertex3,
+					GPlatesGui::rgba8_t rgba8_vertex_color1,
+					GPlatesGui::rgba8_t rgba8_vertex_color2,
+					GPlatesGui::rgba8_t rgba8_vertex_color3);
+
 		private:
 
 			/**

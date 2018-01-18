@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <functional>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QColor>
@@ -83,6 +85,26 @@ namespace
 	private:
 
 		boost::optional< GPlatesUtils::non_null_intrusive_ptr<T,H> > d_non_null_ptr;
+	};
+
+
+	/**
+	 * Used to sort GPGIM properties by the unqualified part of their property names.
+	 */
+	class SortByUnqualifiedPropertyName :
+			public std::binary_function<
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					bool>
+	{
+	public:
+		bool
+		operator()(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &lhs,
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &rhs) const
+		{
+			return lhs->get_property_name().get_name() < rhs->get_property_name().get_name();
+		}
 	};
 
 
@@ -354,6 +376,9 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::update_available_properties_table
 	// Get allowed properties for the feature type.
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties;
 	gpgim_feature_class.get()->get_feature_properties(gpgim_feature_properties);
+
+	// Sort GPGIM properties by the unqualified part of their property names.
+	std::sort(gpgim_feature_properties.begin(), gpgim_feature_properties.end(), SortByUnqualifiedPropertyName());
 
 	// Iterate over the allowed properties for the feature type.
 	BOOST_FOREACH(
