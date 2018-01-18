@@ -419,6 +419,7 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		}
 		break;
 	case GPlatesGui::VelocityLegendOverlaySettings::DYNAMIC_ARROW_LENGTH:
+	default:
 		velocity_scale = settings.get_arrow_scale();
 		arrow_length = two_cm_per_year / 2. * velocity_scale;
 		break;
