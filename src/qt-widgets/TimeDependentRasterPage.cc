@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
@@ -48,6 +49,9 @@
 #include "ProgressDialog.h"
 
 #include "file-io/RasterReader.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
@@ -779,7 +783,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 {
 	//
 	// Not all files will necessarily be raster files (especially when an entire directory was added).
-	// So we reduce the list to supported rasters - also makes the progress dialog more accurate
+	// So we reduce the list to supported rasters - also makes the progress dialog more accurate.
 	//
 	const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &raster_formats =
 			GPlatesFileIO::RasterReader::get_supported_formats();
@@ -802,6 +806,13 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 	{
 		return;
 	}
+
+	// Deduce the time for each file in sequence.
+	std::vector< boost::optional<double> > times;
+	deduce_times(times, file_infos);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			times.size() == file_infos.size(),
+			GPLATES_ASSERTION_SOURCE);
 
 	TimeDependentRasterSequence new_sequence;
 
@@ -854,7 +865,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 		if (raster_size.first != 0 && raster_size.second != 0)
 		{
 			new_sequence.push_back(
-					deduce_time(file_info),
+					times[file_index],
 					absolute_file_path,
 					file_info.fileName(),
 					band_types,
@@ -881,20 +892,36 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 }
 
 
-boost::optional<double>
-GPlatesQtWidgets::TimeDependentRasterPage::deduce_time(
-		const QFileInfo &file_info)
+void
+GPlatesQtWidgets::TimeDependentRasterPage::deduce_times(
+		std::vector< boost::optional<double> > &times,
+		const QFileInfoList &file_infos)
 {
-	QString base_name = file_info.completeBaseName();
-	QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+	const int num_files = file_infos.size();
 
-	if (tokens.count() < 2)
+	// Start off with all times set to boost::none.
+	times.resize(num_files);
+
+	if (num_files == 0)
 	{
-		return boost::none;
+		return;
 	}
 
-	try
+	int num_times_deduced = 0;
+
+	// First attempt to parse file base names ending with a '_' or '-' followed by the time (and optional "Ma").
+	// The user can guarantee no ambiguity in parsing of times by formating their filenames this way.
+	int file_index;
+	for (file_index = 0; file_index < num_files; ++file_index)
 	{
+		const QString base_name = file_infos[file_index].completeBaseName();
+		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+
+		if (tokens.count() < 2)
+		{
+			continue;
+		}
+
 		// If ends with 'Ma' then remove it.
 		// This is common with exported filenames.
 		QString last_token = tokens.last();
@@ -903,25 +930,233 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_time(
 			last_token = last_token.left(last_token.size() - 2);
 		}
 
-		GPlatesUtils::Parse<double> parse;
-		double value = parse(last_token);
+		double time;
+		try
+		{
+			GPlatesUtils::Parse<double> parse;
+			time = parse(last_token);
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			continue;
+		}
 
 		// Round to DECIMAL_PLACES.
-		value = round_to_dp(value);
+		time = round_to_dp(time);
 		
 		// Is value in an acceptable range?
-		if (MINIMUM_TIME <= value && value <= MAXIMUM_TIME)
+		if (time < MINIMUM_TIME ||
+			time > MAXIMUM_TIME)
 		{
-			return value;
+			continue;
 		}
-		else
-		{
-			return boost::none;
-		}
+
+		times[file_index] = time;
+		++num_times_deduced;
 	}
-	catch (const GPlatesUtils::ParseError &)
+
+	// Return if we've successfully parsed any time using the above approach.
+	// Unless they were *all* parsed successfully but *all* have the same time
+	// (in which case it could just be that, for example, '_10' happens to be at the end
+	// of every file base name but is not meant to be the time).
+	if (num_times_deduced > 0)
 	{
-		return boost::none;
+		if (num_times_deduced < num_files)
+		{
+			// Not all times deduced.
+			return;
+		}
+
+		if (num_files == 1)
+		{
+			// Only one file and its time has been deduced.
+			return;
+		}
+
+		// All times have been deduced, so compare to see if all are the same.
+		const GPlatesMaths::Real first_time = times[0].get();
+		for (file_index = 1; file_index < num_files; ++file_index)
+		{
+			if (first_time != times[file_index].get())
+			{
+				// All times are not the same.
+				return;
+			}
+		}
+
+		// ...all times have been deduced and they are all the same.
+		// So fall through and try the second approach to filename formating...
+	}
+
+	//
+	// Use a different approach to parsing times for any filenames not parsed using approach above.
+	// This approach tries to remove the common beginning and ending parts from all filenames,
+	// hopefully leaving only the time (which varies across the filenames).
+	//
+	// This approach can be a little loose/ambiguous with the parsing but conversely supports any
+	// format where only the time is different in each filename (regardless of where the time
+	// is located in the filenames).
+	//
+	// It can be ambiguous because we could, for example, have filenames...
+	// 
+	//   prefix_10.5.1_suffix.nc
+	//   prefix_10.6.1_suffix.nc
+	//   prefix_10.7.1_suffix.nc
+	// 
+	// ...where the times could be...
+	// 
+	//   10.5
+	//   10.6
+	//   10.7
+	// 
+	// ...or...
+	// 
+	//   5.1
+	//   6.1
+	//   7.1
+	// 
+	// ...or...
+	// 
+	//   5
+	//   6
+	//   7
+	//
+	// When the user does not get the result they want then they'll need to put the times at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+
+	// Reset all times to boost::none.
+	num_times_deduced = 0;
+	for (file_index = 0; file_index < num_files; ++file_index)
+	{
+		times[file_index] = boost::none;
+	}
+
+	// Attempt to find the common prefix and suffix parts of all file base names.
+	// We're hoping the remaining middle (uncommon) parts will be the times.
+	QString common_base_name_prefix = file_infos[0].completeBaseName();
+	QString common_base_name_suffix = file_infos[0].completeBaseName();
+	for (file_index = 1; file_index < num_files; ++file_index)
+	{
+		const QString base_name = file_infos[file_index].completeBaseName();
+		const int base_name_size = base_name.size();
+
+		// Find the common prefix part of current base name and previous prefix.
+		int common_base_name_prefix_size = common_base_name_prefix.size();
+		const int max_prefix_size = (std::min)(base_name_size, common_base_name_prefix_size);
+		int p;
+		for (p = 0; p < max_prefix_size; ++p)
+		{
+			if (base_name[p] != common_base_name_prefix[p])
+			{
+				break;
+			}
+		}
+		common_base_name_prefix = common_base_name_prefix.left(p);
+		common_base_name_prefix_size = common_base_name_prefix.size();
+
+		// Find the common suffix part of current base name and previous suffix.
+		int common_base_name_suffix_size = common_base_name_suffix.size();
+		const int max_suffix_size = (std::min)(base_name_size, common_base_name_suffix_size);
+		int s;
+		for (s = 0; s < max_suffix_size; ++s)
+		{
+			if (base_name[base_name_size - s - 1] != common_base_name_suffix[common_base_name_suffix_size - s - 1])
+			{
+				break;
+			}
+		}
+		common_base_name_suffix = common_base_name_suffix.right(s);
+		common_base_name_suffix_size = common_base_name_suffix.size();
+	}
+
+	//qDebug() << "common_base_name_prefix: " << common_base_name_prefix;
+	//qDebug() << "common_base_name_suffix: " << common_base_name_suffix;
+
+	// Remove any digits at the end of the common prefix.
+	// These are part of the times (eg, times might be '100', '110', '120' where the '1' is common).
+	//
+	// Note that we could have also removed a decimal point but that could cause the times to be unparseable.
+	// For example:
+	//
+	//   prefix_10.25.1_suffix.nc
+	//   prefix_10.26.2_suffix.nc
+	//   prefix_10.27.3_suffix.nc
+	//
+	// ...currently gives us 25.1, 26.2 and 27.3 but if we removed the first decimal point then
+	// we'd get 10.25.1, 10.26.2 and 10.27.3 which is unparseable.
+	// When the user does not get the result they want then they'll need to put the times at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+	while (!common_base_name_prefix.isEmpty() &&
+			common_base_name_prefix[common_base_name_prefix.size() - 1].isDigit())
+	{
+		common_base_name_prefix.chop(1);
+	}
+
+	// Remove any digits at the start of the common suffix.
+	// These are part of the times (eg, times might be '100', '110', '120' where the '0' is common).
+	//
+	// Note that we could have also removed a decimal point but that could cause the times to be unparseable.
+	// For example:
+	//
+	//   prefix_1.55.0_suffix.nc
+	//   prefix_2.65.0_suffix.nc
+	//   prefix_3.75.0_suffix.nc
+	//
+	// ...currently gives us 1.55, 2.65 and 3.75 but if we removed the first decimal point then
+	// we'd get 1.55.0, 2.65.0 and 3.75.0 which is unparseable.
+	// When the user does not get the result they want then they'll need to put the times at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+	while (!common_base_name_suffix.isEmpty() &&
+			common_base_name_suffix[0].isDigit())
+	{
+		common_base_name_suffix.remove(0, 1);
+	}
+
+	//qDebug() << "common_base_name_prefix: " << common_base_name_prefix;
+	//qDebug() << "common_base_name_suffix: " << common_base_name_suffix;
+
+	// See if the remaining middle (uncommon) parts can be parsed as floats.
+	const int num_common_prefix_chars = common_base_name_prefix.size();
+	const int num_common_suffix_chars = common_base_name_suffix.size();
+	for (file_index = 0; file_index < num_files; ++file_index)
+	{
+		const QString base_name = file_infos[file_index].completeBaseName();
+		const int base_name_size = base_name.size();
+
+		const int num_time_chars = base_name_size - num_common_prefix_chars - num_common_suffix_chars;
+		if (num_time_chars <= 0)
+		{
+			// It's possible that there's only one file in which case we cannot find the common parts
+			// (since need at least two filenames for that).
+			continue;
+		}
+
+		const QString time_string = base_name.mid(num_common_prefix_chars, num_time_chars);
+		//qDebug() << "time_string: " << time_string;
+
+		double time;
+		try
+		{
+			GPlatesUtils::Parse<double> parse;
+			time = parse(time_string);
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			continue;
+		}
+
+		// Round to DECIMAL_PLACES.
+		time = round_to_dp(time);
+		
+		// Is value in an acceptable range?
+		if (time < MINIMUM_TIME ||
+			time > MAXIMUM_TIME)
+		{
+			continue;
+		}
+
+		times[file_index] = time;
+		++num_times_deduced;
 	}
 }
 
