@@ -1550,7 +1550,9 @@ GPlatesFileIO::OgrReader::transform_and_check_coords(
 						location,
 						GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
-		qDebug() << "Invalid latitude: " << y;
+		// Increase precision to make sure numbers like 90.00000190700007 (an actual value in a Shapefile)
+		// don't get printed as 90.0.
+		qDebug() << "Invalid latitude: " << qSetRealNumberPrecision(16) << y;
 		return false;
 	}
 
@@ -1561,7 +1563,9 @@ GPlatesFileIO::OgrReader::transform_and_check_coords(
 						location,
 						GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
-		qDebug() << "Invalid longitude: " << x;
+		// Increase precision to make sure numbers very slightly less/greater than -360.0/360.0
+		// don't get printed -360.0/360.0.
+		qDebug() << "Invalid longitude: " << qSetRealNumberPrecision(16) << x;
 		return false;
 	}
 
