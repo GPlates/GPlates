@@ -401,27 +401,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::update_enable_state()
 void
 GPlatesGui::TopologyCanvasToolWorkflow::update_build_topology_tools()
 {
-	// The build topology tools are either all enabled or all disabled.
-	bool enable_build_topology_tools = false;
-	
-	// The build topology tools are enabled whenever one of them is the currently active (and enabled)
-	// tool regardless of whether a feature is focused or not - this is because the feature focus is
-	// used to add topology sections so it's always focusing, unfocusing, etc while the tool is being used.
-	if (is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY) ||
-		is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY) ||
-		is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY))
-	{
-		enable_build_topology_tools = true;
-	}
-	// If none of the build and edit topology tools are the currently active tool then
-	// the build tools are only enabled if a feature is *not* focused.
-	else if (!is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY))
-	{
-		if (!d_feature_focus.associated_reconstruction_geometry())
-		{
-			enable_build_topology_tools = true;
-		}
-	}
+	// The build topology tools are always enabled.
+	// If feature is focused when a build tool is activated then the build tool will temporarily
+	// unfocus the feature while it is active (and return original focus when deactivated).
+	// This includes when the edit topology tool is active (in which case the edit topology tool
+	// will re-focus the topology feature, that it was editing, on deactivation and the newly activated
+	// build tool will then save that focus temporarily, unfocus it and then re-focus on deactivation).
+	bool enable_build_topology_tools = true;
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, enable_build_topology_tools);
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, enable_build_topology_tools);

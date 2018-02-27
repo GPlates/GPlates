@@ -254,6 +254,9 @@ GPlatesGui::TopologyTools::activate_build_mode(
 	// A time period of boost::none implies distant past to distant future.
 	activate(topology_geometry_type, boost::none);
 
+	// unset focus 
+	unset_focus();
+
 	// synchronize the tools, container, widget, and table; default use the boundary
 	// note: will call handle_sections_combobox_index_changed() , which  will call update_and_redraw()
 	synchronize_seq_num( 0 );
