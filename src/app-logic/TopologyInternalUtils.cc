@@ -2054,32 +2054,32 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 	boost::optional<const ReconstructedFeatureGeometry *> rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 					const ReconstructedFeatureGeometry *>(recon_geom);
-	if (!rfg)
+	if (rfg)
 	{
-		return false;
+		// Filter out reconstructed geometries that have been reconstructed using topological boundaries/networks.
+		//
+		// These reconstructed geometries cannot supply topological sections because they were
+		// reconstructed using topological boundaries/networks thus creating a cyclic dependency
+		// (so the layer system excludes those reconstruct layers that reconstruct using topologies).
+		//
+		// Note that this still does not prevent the user from building a topology using an RFG and then
+		// subsequently connecting that RFG's layer to a topology layer (thus turning it into a DFG).
+		// In this situation the RFG would disappear from the topology's boundary (or interior) as soon as
+		// its layer was connected a topology layer.
+		// In this case it'll be up to the topology builder user to not use reconstructed geometries,
+		// that have been reconstructed using topological boundaries/networks, as topological sections.
+		boost::optional<const TopologyReconstructedFeatureGeometry *> trfg =
+				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const TopologyReconstructedFeatureGeometry *>(rfg.get());
+		if (trfg)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
-	// Filter out reconstructed geometries that have been reconstructed using topological boundaries/networks.
-	//
-	// These reconstructed geometries cannot supply topological sections because they were
-	// reconstructed using topological boundaries/networks thus creating a cyclic dependency
-	// (so the layer system excludes those reconstruct layers that reconstruct using topologies).
-	//
-	// Note that this still does not prevent the user from building a topology using an RFG and then
-	// subsequently connecting that RFG's layer to a topology layer (thus turning it into a DFG).
-	// In this situation the RFG would disappear from the topology's boundary (or interior) as soon as
-	// its layer was connected a topology layer.
-	// In this case it'll be up to the topology builder user to not use reconstructed geometries,
-	// that have been reconstructed using topological boundaries/networks, as topological sections.
-	boost::optional<const TopologyReconstructedFeatureGeometry *> trfg =
-			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const TopologyReconstructedFeatureGeometry *>(rfg.get());
-	if (trfg)
-	{
-		return false;
-	}
-
-	return true;
+	return false;
 }
 
 
@@ -2114,5 +2114,78 @@ bool
 GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_section(
 		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
-	return can_use_as_resolved_boundary_topological_section(recon_geom);
+	// Return true if the reconstruction geometry is a reconstructed feature geometry,
+	// but not reconstructed using topologies, and is reconstructed by plate ID.
+	boost::optional<const ReconstructedFeatureGeometry *> rfg =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const ReconstructedFeatureGeometry *>(recon_geom);
+	if (rfg)
+	{
+		// Filter out reconstructed geometries that have not been reconstructed by plate ID.
+		//
+		// The reason for requiring reconstruction by plate ID (instead of, eg, half-stage rotation)
+		// is because currently the deforming network code uses plate IDs to determine the motion
+		// of node points in the topology network.
+		if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID)
+		{
+			return false;
+		}
+
+		// Filter out reconstructed geometries that have been reconstructed using topological boundaries/networks.
+		//
+		// See 'can_use_as_resolved_line_topological_section()' for details.
+		boost::optional<const TopologyReconstructedFeatureGeometry *> trfg =
+				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const TopologyReconstructedFeatureGeometry *>(rfg.get());
+		if (trfg)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	// See if RTL.
+	boost::optional<const ResolvedTopologicalLine *> resolved_topological_line =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const ResolvedTopologicalLine *>(recon_geom);
+	if (resolved_topological_line)
+	{
+		// Iterate over the sub-segments of the resolved line and make sure that each one is an RFG
+		// that was reconstructed by plate ID.
+		const sub_segment_seq_type &sub_segments = resolved_topological_line.get()->get_sub_segment_sequence();
+		sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments.begin();
+		const sub_segment_seq_type::const_iterator sub_segments_end = sub_segments.end();
+		for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
+		{
+			const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
+
+			boost::optional<const ReconstructedFeatureGeometry *> rfg =
+					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							const ReconstructedFeatureGeometry *>(sub_segment.get_reconstruction_geometry());
+			if (!rfg)
+			{
+				return false;
+			}
+
+			// Filter out reconstructed geometries that have not been reconstructed by plate ID.
+			//
+			// The reason for requiring reconstruction by plate ID (instead of, eg, half-stage rotation)
+			// is because currently the deforming network code uses plate IDs to determine the motion
+			// of node points in the topology network.
+			if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID)
+			{
+				return false;
+			}
+
+			// NOTE: We don't need to check that the resolved line was not formed from
+			// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
+			// because the layer system prevents layers containing deformed RFGs from being searched
+			// for topological sections (hence the resolved lines won't find them).
+		}
+
+		return true;
+	}
+
+	return false;
 }
