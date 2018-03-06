@@ -135,24 +135,11 @@ namespace GPlatesFileIO
 				}
 
 				//
-				// Output plate id.
-				//
-
-				if (include_plate_id)
-				{
-					// Use a minimum width of 5 since 5-digit plate ids are currently in use.
-					static const unsigned PLATE_ID_FIELDWIDTH = 5;
-
-					const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
-							plate_id,
-							PLATE_ID_FIELDWIDTH);
-
-					gmt_line << "      " << plate_id_str;
-				}
-
-				//
 				// Output velocity.
 				//
+				// NOTE: The velocity vector should be immediately after the domain point (columns 1 and 2) since
+				// the GMT psxy '-Sv'/'-SV' options require vector angle/azimuth in column 3 and magnitude in column 4.
+				// 
 
 				// Output velocities as double precision.
 				static const unsigned VELOCITY_PRECISION = 16;
@@ -211,7 +198,7 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						// The GMT psxy '-Sv' option requires magnitude in column 3 and angle in column 4.
+						// The GMT psxy '-Sv' option requires angle in column 3 and magnitude in column 4.
 						gmt_line << "      " << velocity_angle_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
@@ -230,7 +217,7 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						// The GMT psxy '-SV' option requires magnitude in column 3 and azimuth in column 4.
+						// The GMT psxy '-SV' option requires azimuth in column 3 and magnitude in column 4.
 						gmt_line << "      " << velocity_azimuth_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
@@ -239,6 +226,22 @@ namespace GPlatesFileIO
 					// Shouldn't get here.
 					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 					break;
+				}
+
+				//
+				// Output plate id.
+				//
+
+				if (include_plate_id)
+				{
+					// Use a minimum width of 5 since 5-digit plate ids are currently in use.
+					static const unsigned PLATE_ID_FIELDWIDTH = 5;
+
+					const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
+							plate_id,
+							PLATE_ID_FIELDWIDTH);
+
+					gmt_line << "      " << plate_id_str;
 				}
 
 				//

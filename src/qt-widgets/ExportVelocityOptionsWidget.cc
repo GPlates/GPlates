@@ -649,11 +649,10 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				}
 			}
 
-			if (configuration.include_plate_id)
-			{
-				output_description += tr("  plate_id");
-			}
-
+			//
+			// NOTE: The velocity vector should be immediately after the domain point (columns 1 and 2) since
+			// the GMT psxy '-Sv'/'-SV' options require vector angle/azimuth in column 3 and magnitude in column 4.
+			// 
 			switch (configuration.velocity_vector_format)
 			{
 			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D:
@@ -665,12 +664,12 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				break;
 
 			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE:
-				// The GMT psxy '-Sv' option requires magnitude in column 3 and angle in column 4.
+				// The GMT psxy '-Sv' option requires angle in column 3 and magnitude in column 4.
 				output_description += tr("  velocity_angle  velocity_magnitude");
 				break;
 
 			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE:
-				// The GMT psxy '-SV' option requires magnitude in column 3 and azimuth in column 4.
+				// The GMT psxy '-SV' option requires azimuth in column 3 and magnitude in column 4.
 				output_description += tr("  velocity_azimuth  velocity_magnitude");
 				break;
 
@@ -678,6 +677,11 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				// Shouldn't get here.
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
+			}
+
+			if (configuration.include_plate_id)
+			{
+				output_description += tr("  plate_id");
 			}
 
 			output_description += "\n";

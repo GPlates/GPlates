@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 *
-		 *    [domain_point] [plate_id] velocity
+		 *    [domain_point] velocity [plate_id]
 		 *
 		 * ...where 'domain_point' is position at which the velocity was calculated and 'plate_id'
 		 * is the plate id used to calculate the velocity (for topological networks the plate id
