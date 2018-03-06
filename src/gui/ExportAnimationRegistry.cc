@@ -489,7 +489,7 @@ namespace GPlatesGui
 									add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GMT),
 									default_velocity_calculation_export_options,
 									default_velocity_file_export_options,
-									GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
+									GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D,
 									1.0/*velocity_scale*/,
 									1/*velocity_stride*/,
 									// Lon/lat is the default GMT ordering...

@@ -84,7 +84,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+				MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 				double velocity_scale,
 				unsigned int velocity_stride,
 				bool domain_point_lon_lat_format,

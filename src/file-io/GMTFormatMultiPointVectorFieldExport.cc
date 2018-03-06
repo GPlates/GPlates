@@ -90,7 +90,7 @@ namespace GPlatesFileIO
 					const GPlatesMaths::PointOnSphere &domain_point,
 					const GPlatesMaths::Vector3D &velocity_vector,
 					GPlatesModel::integer_plate_id_type plate_id,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 					bool domain_point_lon_lat_format,
 					bool include_plate_id,
 					bool include_domain_point)
@@ -160,7 +160,7 @@ namespace GPlatesFileIO
 
 				switch (velocity_vector_format)
 				{
-				case MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D:
 					{
 						const std::string velocity_x_str = GPlatesUtils::formatted_double_to_string(
 								velocity_vector.x().dval(),
@@ -179,7 +179,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON:
 					{
 						GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
 								GPlatesMaths::convert_vector_from_xyz_to_colat_lon(domain_point, velocity_vector);
@@ -197,7 +197,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_angle =
 								GPlatesMaths::calculate_vector_components_magnitude_angle(domain_point, velocity_vector);
@@ -211,11 +211,12 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						gmt_line << "      " << velocity_magnitude_str << "      " << velocity_angle_degrees_str;
+						// The GMT psxy '-Sv' option requires magnitude in column 3 and angle in column 4.
+						gmt_line << "      " << velocity_angle_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
 
-				case MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_azimuth =
 								GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(domain_point, velocity_vector);
@@ -229,7 +230,8 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						gmt_line << "      " << velocity_magnitude_str << "      " << velocity_azimuth_degrees_str;
+						// The GMT psxy '-SV' option requires magnitude in column 3 and azimuth in column 4.
+						gmt_line << "      " << velocity_azimuth_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
 
@@ -255,7 +257,7 @@ namespace GPlatesFileIO
 			print_gmt_velocity_vector_field(
 					QTextStream &output_stream,
 					const GPlatesAppLogic::MultiPointVectorField &velocity_vector_field,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 					double velocity_scale,
 					unsigned int &velocity_vector_index,
 					unsigned int velocity_stride,
@@ -318,7 +320,7 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
-		MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+		MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 		double velocity_scale,
 		unsigned int velocity_stride,
 		bool domain_point_lon_lat_format,

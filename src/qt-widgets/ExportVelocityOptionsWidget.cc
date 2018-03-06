@@ -110,21 +110,21 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
 						*d_export_configuration);
 
-		if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)
+		if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D)
 		{
 			velocity_vector_3D_radio_button->setChecked(true);
 		}
-		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON)
 		{
 			velocity_vector_colat_lon_radio_button->setChecked(true);
 		}
-		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE)
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE)
 		{
-			velocity_vector_magnitude_angle_radio_button->setChecked(true);
+			velocity_vector_angle_magnitude_radio_button->setChecked(true);
 		}
 		else
 		{
-			velocity_vector_magnitude_azimuth_radio_button->setChecked(true);
+			velocity_vector_azimuth_magnitude_radio_button->setChecked(true);
 		}
 
 		velocity_scale_spin_box->setValue(configuration.velocity_scale);
@@ -276,12 +276,12 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
-			velocity_vector_magnitude_angle_radio_button,
+			velocity_vector_angle_magnitude_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
-			velocity_vector_magnitude_azimuth_radio_button,
+			velocity_vector_azimuth_magnitude_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
@@ -370,19 +370,19 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_vector_format_
 	// Determine the file format.
 	if (velocity_vector_3D_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D;
 	}
 	else if (velocity_vector_colat_lon_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON;
 	}
-	else if (velocity_vector_magnitude_angle_radio_button->isChecked())
+	else if (velocity_vector_angle_magnitude_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE;
 	}
 	else
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE;
 	}
 
 	update_output_description_label();
@@ -656,20 +656,22 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 
 			switch (configuration.velocity_vector_format)
 			{
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D:
 				output_description += tr("  velocity_x  velocity_y  velocity_z");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON:
 				output_description += tr("  velocity_colat  velocity_lon");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
-				output_description += tr("  velocity_magnitude  velocity_angle");
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE:
+				// The GMT psxy '-Sv' option requires magnitude in column 3 and angle in column 4.
+				output_description += tr("  velocity_angle  velocity_magnitude");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
-				output_description += tr("  velocity_magnitude  velocity_azimuth");
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE:
+				// The GMT psxy '-SV' option requires magnitude in column 3 and azimuth in column 4.
+				output_description += tr("  velocity_azimuth  velocity_magnitude");
 				break;
 
 			default:

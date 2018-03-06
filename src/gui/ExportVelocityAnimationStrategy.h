@@ -163,7 +163,7 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
+					GPlatesFileIO::MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format_,
 					double velocity_scale_,
 					unsigned int velocity_stride_,
 					DomainPointFormatType domain_point_format_,
@@ -189,7 +189,7 @@ namespace GPlatesGui
 			}
 
 			ExportOptionsUtils::ExportFileOptions file_options;
-			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
+			GPlatesFileIO::MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format;
 			double velocity_scale;
 			unsigned int velocity_stride;
 			DomainPointFormatType domain_point_format;
