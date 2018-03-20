@@ -1014,6 +1014,7 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_metadata(
 	gpml_metadata.get_data().serialize(buf);
 	d_output->seekp(0);
 	
+	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	std::ifstream ifs(d_file_ref.get_file_info().get_qfileinfo().filePath().toStdString().c_str());
 	std::string str(
 			(std::istreambuf_iterator<char>(ifs)),
