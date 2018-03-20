@@ -325,7 +325,14 @@ namespace{
 			}
 
 			ogr_layer.reset(ogr_data_source_ptr->CreateLayer(
-				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
+				// FIXME: Layer name should probably be UTF-8 (ie, "layer_name.toUtf8().constData()")
+				// instead of Latin-1 since the latter does not support all character sets.
+				// Although it probably doesn't matter currently because the layer name is not
+				// really used anyway (it only needs to be unique with the data source)...
+				layer_name.toStdString().c_str(),
+				&spatial_reference,
+				wkb_type,
+				0));
 			if (*ogr_layer == NULL)
 			{
 				// Set to none to avoid NULL pointer dereference if try to write another feature
@@ -350,7 +357,7 @@ namespace{
 		QString &data_source_name)
 	{
 		data_source_name = QDir::toNativeSeparators(data_source_name);
-		data_source_ptr = GPlatesFileIO::GdalUtils::create_data_source(ogr_driver, data_source_name.toStdString().c_str(), NULL);
+		data_source_ptr = GPlatesFileIO::GdalUtils::create_data_source(ogr_driver, data_source_name, NULL);
 
 		if (data_source_ptr == NULL)
 		{

@@ -50,10 +50,10 @@
 					unsigned int open_flags, // GDAL_OF_RASTER or GDAL_OF_VECTOR (and GDAL_OF_READONLY or GDAL_OF_UPDATE).
 					ReadErrorAccumulation *read_errors)
 			{
-				const std::string filename_std_string = filename.toStdString();
 				GDALDataset *result = static_cast<GDALDataset *>(
 						GDALOpenEx(
-								filename_std_string.c_str(),
+								// GDAL filenames should be UTF-8 encoded...
+								filename.toUtf8().constData(),
 								open_flags,
 								NULL,
 								NULL,
@@ -110,10 +110,10 @@
 					int bUpdate,
 					ReadErrorAccumulation *read_errors)
 			{
-				const std::string file_name_string = filename.toStdString();
-				
-				GdalUtils::vector_data_source_type *result =
-						OGRSFDriverRegistrar::Open(file_name_string.c_str(), bUpdate);
+				GdalUtils::vector_data_source_type *result = OGRSFDriverRegistrar::Open(
+						// GDAL filenames should be UTF-8 encoded...
+						filename.toUtf8().constData(),
+						bUpdate);
 
 				// Add errors as necessary.
 				if (!result)
@@ -148,9 +148,11 @@
 						const QString &filename,
 						GPlatesFileIO::ReadErrorAccumulation *read_errors)
 				{
-					const std::string filename_std_string = filename.toStdString();
 					GDALDataset *result = static_cast<GDALDataset *>(
-							GDALOpen(filename_std_string.c_str(), GA_ReadOnly));
+							GDALOpen(
+									// GDAL filenames should be UTF-8 encoded...
+									filename.toUtf8().constData(),
+									GA_ReadOnly));
 
 					// Add errors as necessary.
 					if (!result)
@@ -220,8 +222,11 @@
 					{
 						// The first time setjmp() is called, it returns 0. If GDALOpen() segfaults,
 						// we longjmp back to the if statement, but with a non-zero value.
-						const std::string filename_std_string = filename.toStdString();
-						result = static_cast<GDALDataset *>(GDALOpen(filename_std_string.c_str(), GA_ReadOnly));
+						result = static_cast<GDALDataset *>(
+								GDALOpen(
+										// GDAL filenames should be UTF-8 encoded...
+										filename.toUtf8().constData(),
+										GA_ReadOnly));
 						segfaulted = false;
 					}
 
@@ -345,7 +350,7 @@ GPlatesFileIO::GdalUtils::get_vector_driver_manager()
 GPlatesFileIO::GdalUtils::vector_data_source_type *
 GPlatesFileIO::GdalUtils::create_data_source(
 		vector_data_driver_type *vector_data_driver,
-		const char *pszName,
+		const QString &pszName,
         char **papszOptions)
 {
 	//
@@ -353,10 +358,11 @@ GPlatesFileIO::GdalUtils::create_data_source(
 	//
 	// See http://www.gdal.org/ogr_apitut.html
 	//
+	// Note: Data source names should be UTF-8 encoded.
 #if defined(GDAL_VERSION_MAJOR) && GDAL_VERSION_MAJOR >= 2
-	return vector_data_driver->Create(pszName, 0/*nXSize*/, 0/*nYSize*/, 0/*nBands*/, GDT_Unknown/*eType*/, papszOptions);
+	return vector_data_driver->Create(pszName.toUtf8().constData(), 0/*nXSize*/, 0/*nYSize*/, 0/*nBands*/, GDT_Unknown/*eType*/, papszOptions);
 #else
-	return vector_data_driver->CreateDataSource(pszName, papszOptions);
+	return vector_data_driver->CreateDataSource(pszName.toUtf8().constData(), papszOptions);
 #endif
 }
 

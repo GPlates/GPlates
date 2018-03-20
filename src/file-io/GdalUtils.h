@@ -152,7 +152,7 @@ namespace GPlatesFileIO
 		vector_data_source_type *
 		create_data_source(
 				vector_data_driver_type *vector_data_driver,
-				const char *pszName,
+				const QString &pszName,
                 char **papszOptions = NULL);
 
 
