@@ -864,8 +864,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					delaunay_points);
 		}
 
-		// Add the boundary polygon (constrained) points.
-		add_boundary_points(boundary_section, boundary_points);
+		// Add the points of this boundary section to the final list of boundary points (for boundary polygon).
+		GeometryUtils::get_geometry_exterior_points(
+				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
+				boundary_points,
+				boundary_section.d_use_reverse);
 
 		// Create a subsegment structure that'll get used when
 		// creating the boundary of the resolved topological network.
@@ -1325,72 +1328,6 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 				boundary_section_rtl->get_reconstruction_tree_creator());
 		delaunay_points.push_back(delaunay_point);
 	}
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
-		const ResolvedNetwork::BoundarySection &boundary_section,
-		std::vector<GPlatesMaths::PointOnSphere> &boundary_points)
-{
-	//
-	// Determine the subsegments original geometry type 
-	//
-	// FIXME: Should this be the section geometry before or after intersection-clipping?
-	const GPlatesMaths::GeometryType::Value section_geometry_type =
-			GeometryUtils::get_geometry_type(*boundary_section.d_source_geometry);
-
-	// Check for single point
-	if (section_geometry_type == GPlatesMaths::GeometryType::POINT)
-	{
-		// this is probably one of a collection of points; 
-		// save and add to constrained triangulation later
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check multipoint 
-	if (section_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)
-	{
-		// Get the points for this geom
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check for polyline geometry
-	if (section_geometry_type == GPlatesMaths::GeometryType::POLYLINE)
-	{
-		// this is a single line feature, possibly clipped by intersections
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check for polygon geometry
-	if (section_geometry_type == GPlatesMaths::GeometryType::POLYGON)
-	{
-		// this is a single polygon feature
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Shouldn't be able to get here.
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 }
 
 
