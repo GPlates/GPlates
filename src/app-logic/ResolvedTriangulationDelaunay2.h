@@ -75,6 +75,8 @@ POP_MSVC_WARNINGS
 
 #include "DeformationStrainRate.h"
 #include "PlateVelocityUtils.h"
+#include "ReconstructionGeometry.h"
+#include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "VelocityDeltaTime.h"
@@ -200,21 +202,20 @@ namespace GPlatesAppLogic
 			static
 			const non_null_ptr_type
 			create(
-					GPlatesModel::integer_plate_id_type plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator)
+					const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_properties)
 			{
-				return non_null_ptr_type(new VertexSharedReconstructInfo(plate_id, reconstruction_tree_creator));
+				return non_null_ptr_type(new VertexSharedReconstructInfo(reconstruction_properties));
 			}
 
 			/**
-			 * Calculate the stage rotation for the specified reconstruction time and velocity delta time.
+			 * Get the stage rotation for the specified reconstruction time and velocity delta time.
 			 *
 			 * The result is cached in case the next vertex calls this method with the same parameters.
 			 * It's likely that multiple Delaunay vertices sharing us will all request the same stage rotation
 			 * at the same time.
 			 */
 			GPlatesMaths::FiniteRotation
-			calc_stage_rotation(
+			get_stage_rotation(
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type) const
@@ -227,15 +228,10 @@ namespace GPlatesAppLogic
 				if (!d_cached_stage_rotation ||
 					stage_rotation_key != d_cached_stage_rotation->first)
 				{
-					// Calculate the stage rotation for this plate ID.
+					// Calculate the stage rotation.
 					d_cached_stage_rotation = std::make_pair(
 							stage_rotation_key,
-							PlateVelocityUtils::calculate_stage_rotation(
-									d_plate_id,
-									d_reconstruction_tree_creator,
-									reconstruction_time,
-									velocity_delta_time,
-									velocity_delta_time_type));
+							calc_stage_rotation(reconstruction_time, velocity_delta_time, velocity_delta_time_type));
 				}
 
 				return d_cached_stage_rotation->second;
@@ -257,7 +253,7 @@ namespace GPlatesAppLogic
 			should_overwrite_vertex(
 					const VertexSharedReconstructInfo &other) const
 			{
-				if (d_plate_id < other.d_plate_id)
+				if (get_reconstruct_info().plate_id < other.get_reconstruct_info().plate_id)
 				{
 					return true;
 				}
@@ -266,16 +262,35 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-			GPlatesModel::integer_plate_id_type d_plate_id;
+			/**
+			 * The properties used to reconstruct are obtained from this reconstruction geometry.
+			 */
+			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_properties;
 
 			/**
-			 * The rotation tree generator used to create reconstruction trees for the
-			 * ReconstructedFeatureGeometry associated with the Delaunay vertex.
-			 *
-			 * This (shared) reconstruction tree creator is stored instead of the
-			 * ReconstructedFeatureGeometry itself in order to save memory.
+			 * Reconstruction information extracted from reconstruction properties.
 			 */
-			ReconstructionTreeCreator d_reconstruction_tree_creator;
+			struct ReconstructInfo
+			{
+				ReconstructInfo(
+						GPlatesModel::integer_plate_id_type plate_id_,
+						ReconstructionTreeCreator reconstruction_tree_creator_) :
+					plate_id(plate_id_),
+					reconstruction_tree_creator(reconstruction_tree_creator_)
+				{  }
+
+				GPlatesModel::integer_plate_id_type plate_id;
+
+				/**
+				 * The rotation tree generator used to create reconstruction trees for the
+				 * ReconstructedFeatureGeometry associated with the Delaunay vertex.
+				 *
+				 * This (shared) reconstruction tree creator is stored instead of the
+				 * ReconstructedFeatureGeometry itself in order to save memory.
+				 */
+				ReconstructionTreeCreator reconstruction_tree_creator;
+			};
+			mutable boost::optional<ReconstructInfo> d_reconstruct_info;
 
 			//
 			// Cache the stage rotation for a specific reconstruction time and velocity delta time.
@@ -299,12 +314,62 @@ namespace GPlatesAppLogic
 							GPlatesMaths::FiniteRotation> > d_cached_stage_rotation;
 
 
+			explicit
 			VertexSharedReconstructInfo(
-					GPlatesModel::integer_plate_id_type plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator) :
-				d_plate_id(plate_id),
-				d_reconstruction_tree_creator(reconstruction_tree_creator)
+					const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_properties) :
+				d_reconstruction_properties(reconstruction_properties)
 			{  }
+
+			/**
+			 * Get the reconstruct information (and obtain from reconstruction properties one first call).
+			 */
+			const ReconstructInfo &
+			get_reconstruct_info() const
+			{
+				if (!d_reconstruct_info)
+				{
+					// Get the reconstruction plate ID.
+					boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
+							ReconstructionGeometryUtils::get_plate_id(d_reconstruction_properties);
+					if (!plate_id)
+					{
+						plate_id = 0;
+					}
+
+					// The creator of reconstruction trees used when reconstructing the recon geometry.
+					boost::optional<ReconstructionTreeCreator> reconstruction_tree_creator =
+						ReconstructionGeometryUtils::get_reconstruction_tree_creator(d_reconstruction_properties);
+
+					// Sub-segments are either reconstructed feature geometries or resolved topological geometries
+					// and both have reconstruction tree creators so this should always succeed.
+					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+							reconstruction_tree_creator,
+							GPLATES_ASSERTION_SOURCE);
+
+					d_reconstruct_info = ReconstructInfo(plate_id.get(), reconstruction_tree_creator.get());
+				}
+
+				return d_reconstruct_info.get();
+			}
+
+			/**
+			 * Calculate the stage rotation for the specified reconstruction time and velocity delta time.
+			 */
+			GPlatesMaths::FiniteRotation
+			calc_stage_rotation(
+					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const
+			{
+				const ReconstructInfo &reconstruct_info = get_reconstruct_info();
+
+				return PlateVelocityUtils::calculate_stage_rotation(
+						reconstruct_info.plate_id,
+						reconstruct_info.reconstruction_tree_creator,
+						reconstruction_time,
+						velocity_delta_time,
+						velocity_delta_time_type);
+			}
 		};
 
 		/**
@@ -454,7 +519,7 @@ namespace GPlatesAppLogic
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
 			{
-				return get_shared_reconstruct_info().calc_stage_rotation(
+				return get_shared_reconstruct_info().get_stage_rotation(
 						get_reconstruction_time(),
 						velocity_delta_time,
 						velocity_delta_time_type);
