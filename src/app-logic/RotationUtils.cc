@@ -247,33 +247,57 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 	//
 
 	// For t1, get the rotation for plate M w.r.t. anchor	
-	GPlatesMaths::FiniteRotation rot_0_to_t1_M = 
-		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t1_M = reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id);
+	if (rot_0_to_t1_M.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		// Unable to calculate stage rotation - return identity rotation.
+		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	}
+	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t1_M = rot_0_to_t1_M.first;
 
 	// For t1, get the rotation for plate F w.r.t. anchor	
-	GPlatesMaths::FiniteRotation rot_0_to_t1_F = 
-		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t1_F = reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id);
+	if (rot_0_to_t1_F.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		// Unable to calculate stage rotation - return identity rotation.
+		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	}
+	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t1_F = rot_0_to_t1_F.first;
 
 
 	// For t2, get the rotation for plate M w.r.t. anchor	
-	GPlatesMaths::FiniteRotation rot_0_to_t2_M = 
-		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first;
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t2_M = reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id);
+	if (rot_0_to_t2_M.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		// Unable to calculate stage rotation - return identity rotation.
+		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	}
+	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t2_M = rot_0_to_t2_M.first;
 
 	// For t2, get the rotation for plate F w.r.t. anchor	
-	GPlatesMaths::FiniteRotation rot_0_to_t2_F = 
-		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;
+	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t2_F = reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id);
+	if (rot_0_to_t2_F.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		// Unable to calculate stage rotation - return identity rotation.
+		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	}
+	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t2_F = rot_0_to_t2_F.first;
 
 	// Compose these rotations so that we get
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
 
-	GPlatesMaths::FiniteRotation rot_t1 = 
-		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t1_F), rot_0_to_t1_M);
+	GPlatesMaths::FiniteRotation finite_rot_t1 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(finite_rot_0_to_t1_F), finite_rot_0_to_t1_M);
 
-	GPlatesMaths::FiniteRotation rot_t2 = 
-		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t2_F), rot_0_to_t2_M);	
+	GPlatesMaths::FiniteRotation finite_rot_t2 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(finite_rot_0_to_t2_F), finite_rot_0_to_t2_M);	
 
 	GPlatesMaths::FiniteRotation stage_pole = 
-		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
+		GPlatesMaths::compose(finite_rot_t2,GPlatesMaths::get_reverse(finite_rot_t1));	
 
 	return stage_pole;	
 }
