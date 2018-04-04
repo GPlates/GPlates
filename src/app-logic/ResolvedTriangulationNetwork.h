@@ -132,27 +132,16 @@ namespace GPlatesAppLogic
 
 				DelaunayPoint(
 						const GPlatesMaths::PointOnSphere &point_,
-						GPlatesModel::integer_plate_id_type plate_id_,
-						const ReconstructionTreeCreator &reconstruction_tree_creator_) :
+						const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruct_info_) :
 					point(point_),
-					plate_id(plate_id_),
-					reconstruction_tree_creator(reconstruction_tree_creator_)
+					shared_reconstruct_info(shared_reconstruct_info_)
 				{  }
 
 				//! The reconstructed point-on-sphere associated with the delaunay vertex.
 				GPlatesMaths::PointOnSphere point;
 
-				//! The plate id associated with the delaunay vertex.
-				GPlatesModel::integer_plate_id_type plate_id;
-
-				/**
-				 * The rotation tree generator used to create reconstruction trees for the
-				 * ReconstructedFeatureGeometry associated with the delaunay vertex.
-				 *
-				 * This (shared) reconstruction tree creator is stored instead of the
-				 * ReconstructedFeatureGeometry itself in order to save memory.
-				 */
-				ReconstructionTreeCreator reconstruction_tree_creator;
+				// Shared information used to reconstruct geometry that this point came from.
+				VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruct_info;
 			};
 
 

@@ -33,6 +33,8 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include "boost/tuple/tuple_comparison.hpp"
 #include <boost/utility/in_place_factory.hpp>
 
 #include <QDebug>
@@ -85,8 +87,10 @@ POP_MSVC_WARNINGS
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
+#include "maths/Real.h"
 
 #include "utils/Profile.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
@@ -179,6 +183,130 @@ namespace GPlatesAppLogic
 		// Forward declaration.
 		class Delaunay_2;
 
+
+		/**
+		 * Information, shared by all vertices of a geometry, that is used to reconstruct that geometry.
+		 *
+		 * This saves memory by avoiding duplication across all vertices.
+		 */
+		class VertexSharedReconstructInfo :
+				public GPlatesUtils::ReferenceCount<VertexSharedReconstructInfo>
+		{
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<VertexSharedReconstructInfo> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const VertexSharedReconstructInfo> non_null_ptr_to_const_type;
+
+
+			static
+			const non_null_ptr_type
+			create(
+					GPlatesModel::integer_plate_id_type plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator)
+			{
+				return non_null_ptr_type(new VertexSharedReconstructInfo(plate_id, reconstruction_tree_creator));
+			}
+
+			/**
+			 * Calculate the stage rotation for the specified reconstruction time and velocity delta time.
+			 *
+			 * The result is cached in case the next vertex calls this method with the same parameters.
+			 * It's likely that multiple Delaunay vertices sharing us will all request the same stage rotation
+			 * at the same time.
+			 */
+			GPlatesMaths::FiniteRotation
+			calc_stage_rotation(
+					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const
+			{
+				const stage_rotation_key_type stage_rotation_key = stage_rotation_key_type(
+						reconstruction_time,
+						velocity_delta_time,
+						velocity_delta_time_type);
+				// If first time called or key does not match then calculate and cache a new stage rotation.
+				if (!d_cached_stage_rotation ||
+					stage_rotation_key != d_cached_stage_rotation->first)
+				{
+					// Calculate the stage rotation for this plate ID.
+					d_cached_stage_rotation = std::make_pair(
+							stage_rotation_key,
+							PlateVelocityUtils::calculate_stage_rotation(
+									d_plate_id,
+									d_reconstruction_tree_creator,
+									reconstruction_time,
+									velocity_delta_time,
+									velocity_delta_time_type));
+				}
+
+				return d_cached_stage_rotation->second;
+			}
+
+			/**
+			 * Returns true if a vertex using 'this' shared reconstruct info should overwrite an
+			 * existing vertex, that uses 'other' shared reconstruct info, at the same position.
+			 *
+			 * We give preference to higher plate IDs in order to provide a consistent insert order.
+			 * This is needed because 'CGAL::spatial_sort()' can change the order of vertex insertion
+			 * along the topological sub-segments of the network boundary for example - which can result
+			 * in vertices at the intersection between two adjacent sub-segments switching order of
+			 * insertion from one reconstruction time to the next (since both sub-segments have the
+			 * same end point position) - and this can manifest as randomly switching end point velocities
+			 * (from one sub-segment plate ID to the other).
+			 */
+			bool
+			should_overwrite_vertex(
+					const VertexSharedReconstructInfo &other) const
+			{
+				if (d_plate_id < other.d_plate_id)
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+		private:
+			GPlatesModel::integer_plate_id_type d_plate_id;
+
+			/**
+			 * The rotation tree generator used to create reconstruction trees for the
+			 * ReconstructedFeatureGeometry associated with the Delaunay vertex.
+			 *
+			 * This (shared) reconstruction tree creator is stored instead of the
+			 * ReconstructedFeatureGeometry itself in order to save memory.
+			 */
+			ReconstructionTreeCreator d_reconstruction_tree_creator;
+
+			//
+			// Cache the stage rotation for a specific reconstruction time and velocity delta time.
+			// It's likely that multiple Delaunay vertices sharing us will all request the same stage rotation
+			// at the same time.
+			//
+			typedef boost::tuple<
+					GPlatesMaths::Real/*reconstruction_time*/,
+					GPlatesMaths::Real/*velocity_delta_time*/,
+					VelocityDeltaTime::Type>
+							stage_rotation_key_type;
+
+			/**
+			 * Stage rotation key (input parameters) and value (stage rotation).
+			 *
+			 * Initially is none.
+			 */
+			mutable boost::optional<
+					std::pair<
+							stage_rotation_key_type,
+							GPlatesMaths::FiniteRotation> > d_cached_stage_rotation;
+
+
+			VertexSharedReconstructInfo(
+					GPlatesModel::integer_plate_id_type plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator) :
+				d_plate_id(plate_id),
+				d_reconstruction_tree_creator(reconstruction_tree_creator)
+			{  }
+		};
+
 		/**
 		 * This class holds the extra info for each delaunay triangulation vertex.
 		 *
@@ -256,8 +384,7 @@ namespace GPlatesAppLogic
 					unsigned int vertex_index,
 					const GPlatesMaths::PointOnSphere &point_on_sphere,
 					const GPlatesMaths::LatLonPoint &lat_lon_point,
-					GPlatesModel::integer_plate_id_type plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator)
+					const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruct_info)
 			{
 				// NOTE: Can get initialised twice if an inserted vertex happens to be at the
 				// same position as an existing vertex - so we don't enforce only one initialisation.
@@ -267,8 +394,7 @@ namespace GPlatesAppLogic
 						vertex_index,
 						point_on_sphere,
 						lat_lon_point,
-						plate_id,
-						reconstruction_tree_creator);
+						shared_reconstruct_info);
 			}
 
 			//! Returns index of this vertex within all vertices in the delaunay triangulation.
@@ -301,16 +427,6 @@ namespace GPlatesAppLogic
 				return d_vertex_info->lat_lon_point;
 			}
 
-			//! Returns plate id associated with this vertex.
-			GPlatesModel::integer_plate_id_type
-			get_plate_id() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->plate_id;
-			}
-
 			/**
 			 * Returns the reconstruction time of this vertex's triangulation.
 			 */
@@ -321,28 +437,41 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Returns the ReconstructionTreeCreator associated with this vertex.
+			 * Returns the shared vertex reconstruct info.
 			 */
-			ReconstructionTreeCreator
-			get_reconstruction_tree_creator() const
+			const VertexSharedReconstructInfo &
+			get_shared_reconstruct_info() const
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						d_vertex_info,
 						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->reconstruction_tree_creator;
+				return *d_vertex_info->shared_reconstruction_info;
 			}
 
 			//! Calculates the stage rotation of this vertex.
 			GPlatesMaths::FiniteRotation
 			calc_stage_rotation(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+			{
+				return get_shared_reconstruct_info().calc_stage_rotation(
+						get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type);
+			}
 
 			//! Calculates the velocity vector of this vertex.
 			GPlatesMaths::Vector3D
 			calc_velocity_vector(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+			{
+				// Calculate the velocity from the stage rotation.
+				return GPlatesMaths::calculate_velocity_vector(
+						get_point_on_sphere(),
+						calc_stage_rotation(velocity_delta_time, velocity_delta_time_type),
+						velocity_delta_time);
+			}
 
 			//! Calculates the velocity colat/lon of this vertex.
 			GPlatesMaths::VectorColatitudeLongitude
@@ -384,22 +513,19 @@ namespace GPlatesAppLogic
 						unsigned int vertex_index_,
 						const GPlatesMaths::PointOnSphere &point_on_sphere_,
 						const GPlatesMaths::LatLonPoint &lat_lon_point_,
-						GPlatesModel::integer_plate_id_type plate_id_,
-						const ReconstructionTreeCreator &reconstruction_tree_creator_) :
+						const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruction_info_) :
 					delaunay_2(delaunay_2_),
 					vertex_index(vertex_index_),
 					point_on_sphere(point_on_sphere_),
 					lat_lon_point(lat_lon_point_),
-					plate_id(plate_id_),
-					reconstruction_tree_creator(reconstruction_tree_creator_)
+					shared_reconstruction_info(shared_reconstruction_info_)
 				{  }
 
 				const Delaunay_2 &delaunay_2;
 				unsigned int vertex_index;
 				GPlatesMaths::PointOnSphere point_on_sphere;
 				GPlatesMaths::LatLonPoint lat_lon_point;
-				GPlatesModel::integer_plate_id_type plate_id;
-				ReconstructionTreeCreator reconstruction_tree_creator;
+				VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruction_info;
 			};
 
 			boost::optional<VertexInfo> d_vertex_info;
@@ -770,53 +896,6 @@ namespace GPlatesAppLogic
 		//
 		// Vertex Implementation
 		//
-
-		template < typename GT, typename Vb >
-		GPlatesMaths::FiniteRotation
-		DelaunayVertex_2<GT, Vb>::calc_stage_rotation(
-				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type) const
-		{
-			//
-			// Currently we assume the geometry was reconstructed by plate id which precludes,
-			// for example, half-stage rotations (eg, MOR). This is currently OK since we only use
-			// this for calculating velocities at topological *network* boundaries/interiors where
-			// we don't expect a MOR (mid-ocean ridge) to form part of the boundary of a network.
-			//
-
-			// Calculate the stage rotation for this plate id.
-			return PlateVelocityUtils::calculate_stage_rotation(
-					get_plate_id(),
-					get_reconstruction_tree_creator(),
-					get_reconstruction_time(),
-					velocity_delta_time,
-					velocity_delta_time_type);
-		}
-
-
-		template < typename GT, typename Vb >
-		GPlatesMaths::Vector3D
-		DelaunayVertex_2<GT, Vb>::calc_velocity_vector(
-				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type) const
-		{
-			//
-			// Currently we assume the geometry was reconstructed by plate id which precludes,
-			// for example, half-stage rotations (eg, MOR). This is currently OK since we only use
-			// this for calculating velocities at topological *network* boundaries/interiors where
-			// we don't expect a MOR (mid-ocean ridge) to form part of the boundary of a network.
-			//
-
-			// Calculate the velocity for this plate id.
-			return PlateVelocityUtils::calculate_velocity_vector(
-					get_point_on_sphere(),
-					get_plate_id(),
-					get_reconstruction_tree_creator(),
-					get_reconstruction_time(),
-					velocity_delta_time,
-					velocity_delta_time_type);
-		}
-
 
 		template < typename GT, typename Vb >
 		DeformationInfo

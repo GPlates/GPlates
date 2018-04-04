@@ -1036,8 +1036,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_index,
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.plate_id,
-					delaunay_point.reconstruction_tree_creator);
+					delaunay_point.shared_reconstruct_info);
 
 			// Increment vertex index since vertex handle does not refer to an existing vertex position.
 			++vertex_index;
@@ -1051,7 +1050,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 		// sub-segments switching order of insertion from one reconstruction time to the next
 		// (since both sub-segments have the same end point position) - and this can manifest
 		// as randomly switching end point velocities (from one sub-segment plate id to the other).
-		else if (vertex_handle->get_plate_id() < delaunay_point.plate_id)
+		else if (vertex_handle->get_shared_reconstruct_info().should_overwrite_vertex(
+				*delaunay_point.shared_reconstruct_info))
 		{
 			// Reset the extra info for this vertex.
 			vertex_handle->initialise(
@@ -1060,8 +1060,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_handle->get_vertex_index(),
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.plate_id,
-					delaunay_point.reconstruction_tree_creator);
+					delaunay_point.shared_reconstruct_info);
 		}
 
 		// The next insert vertex will start searching at the face of the last inserted vertex.
