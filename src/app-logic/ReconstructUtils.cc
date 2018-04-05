@@ -35,6 +35,7 @@
 #include "AppLogicUtils.h"
 #include "ReconstructContext.h"
 #include "ReconstructionTreePopulator.h"
+#include "RotationUtils.h"
 #include "SmallCircleGeometryPopulator.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -636,6 +637,32 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 			reconstruction_plate_id, reconstruction_tree, reverse_reconstruct);
 
 	return reconstruct_geom_on_sphere_by_plate_id.reconstruct(geometry);
+}
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const double &reconstruction_time,
+		const ReconstructionFeatureProperties &reconstruction_params,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		bool reverse_reconstruct)
+{
+	// Get the composed absolute rotation needed to bring a thing on that plate
+	// in the present day to this time.
+	GPlatesMaths::FiniteRotation rotation =
+			RotationUtils::get_half_stage_rotation(
+					reconstruction_time,
+					reconstruction_params,
+					reconstruction_tree_creator);
+
+	// Are we reversing reconstruction back to present day ?
+	if (reverse_reconstruct)
+	{
+		rotation = GPlatesMaths::get_reverse(rotation);
+	}
+
+	// Apply the rotation.
+	return rotation * geometry;
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type

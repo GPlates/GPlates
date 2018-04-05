@@ -361,6 +361,24 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Reconstruct a present day @a geometry to the specified reconstruction time
+		 * using the specified reconstruction properties.
+		 *
+		 * Also selects appropriate version of half-stage rotation calculation to use:
+		 *
+		 *   version 1: a single time interval, symmetric spreading that starts at present day.
+		 *   version 2: introduced multiple time intervals (10my each) and spreading asymmetry.
+		 *   version 3: introduced spreading start time (which is the geometry import time).
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_as_half_stage(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const double &reconstruction_time,
+				const ReconstructionFeatureProperties &reconstruction_params,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				bool reverse_reconstruct);
+
+		/**
 		 * Reconstructs a present day @a geometry using @a reconstruction_tree
 		 * that rotates from present day to the reconstruction time for which
 		 * @a reconstruction_tree was generated, using the half-stage rotation 
