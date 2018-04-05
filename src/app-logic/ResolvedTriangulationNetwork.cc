@@ -1050,7 +1050,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 		// sub-segments switching order of insertion from one reconstruction time to the next
 		// (since both sub-segments have the same end point position) - and this can manifest
 		// as randomly switching end point velocities (from one sub-segment plate id to the other).
-		else if (vertex_handle->get_shared_reconstruct_info().should_overwrite_vertex(
+		else if (vertex_handle->get_shared_reconstruct_info().is_lower_preference_than(
 				*delaunay_point.shared_reconstruct_info))
 		{
 			// Reset the extra info for this vertex.

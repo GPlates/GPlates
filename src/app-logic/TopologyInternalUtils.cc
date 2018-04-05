@@ -2121,12 +2121,10 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 					const ReconstructedFeatureGeometry *>(recon_geom);
 	if (rfg)
 	{
-		// Filter out reconstructed geometries that have not been reconstructed by plate ID.
-		//
-		// The reason for requiring reconstruction by plate ID (instead of, eg, half-stage rotation)
-		// is because currently the deforming network code uses plate IDs to determine the motion
-		// of node points in the topology network.
-		if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID)
+		// Filter out reconstructed geometries that have not been reconstructed by plate ID or half-stage rotation.
+		// These are the only supported types inside the deforming network code (in Delaunay vertices).
+		if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID &&
+			rfg.get()->get_reconstruct_method_type() != ReconstructMethod::HALF_STAGE_ROTATION)
 		{
 			return false;
 		}
@@ -2168,12 +2166,10 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 				return false;
 			}
 
-			// Filter out reconstructed geometries that have not been reconstructed by plate ID.
-			//
-			// The reason for requiring reconstruction by plate ID (instead of, eg, half-stage rotation)
-			// is because currently the deforming network code uses plate IDs to determine the motion
-			// of node points in the topology network.
-			if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID)
+			// Filter out reconstructed geometries that have not been reconstructed by plate ID or half-stage rotation.
+			// These are the only supported types inside the deforming network code (in Delaunay vertices).
+			if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID &&
+				rfg.get()->get_reconstruct_method_type() != ReconstructMethod::HALF_STAGE_ROTATION)
 			{
 				return false;
 			}

@@ -36,6 +36,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_comparison.hpp"
 #include <boost/utility/in_place_factory.hpp>
+#include <boost/variant.hpp>
 
 #include <QDebug>
 
@@ -75,10 +76,12 @@ POP_MSVC_WARNINGS
 
 #include "DeformationStrainRate.h"
 #include "PlateVelocityUtils.h"
+#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
+#include "RotationUtils.h"
 #include "VelocityDeltaTime.h"
 
 #include "model/types.h"
@@ -238,8 +241,8 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Returns true if a vertex using 'this' shared reconstruct info should overwrite an
-			 * existing vertex, that uses 'other' shared reconstruct info, at the same position.
+			 * Returns true if a vertex using 'other' shared reconstruct info has a higher preference
+			 * than the vertex, at the same position, that is using 'this' shared reconstruct info.
 			 *
 			 * We give preference to higher plate IDs in order to provide a consistent insert order.
 			 * This is needed because 'CGAL::spatial_sort()' can change the order of vertex insertion
@@ -250,15 +253,60 @@ namespace GPlatesAppLogic
 			 * (from one sub-segment plate ID to the other).
 			 */
 			bool
-			should_overwrite_vertex(
+			is_lower_preference_than(
 					const VertexSharedReconstructInfo &other) const
 			{
-				if (get_reconstruct_info().plate_id < other.get_reconstruct_info().plate_id)
-				{
-					return true;
-				}
+				const ReconstructInfo &reconstruct_info = get_reconstruct_info();
+				const ReconstructInfo &other_reconstruct_info = other.get_reconstruct_info();
 
-				return false;
+				// See if 'this' and 'other' geometries reconstructed by plate ID or half stage rotation.
+				const ReconstructInfo::ByPlateIdProperties *by_plate_id_properties =
+						boost::get<ReconstructInfo::ByPlateIdProperties>(&reconstruct_info.properties);
+				const ReconstructInfo::ByPlateIdProperties *other_by_plate_id_properties =
+						boost::get<ReconstructInfo::ByPlateIdProperties>(&other_reconstruct_info.properties);
+				if (by_plate_id_properties)
+				{
+					if (other_by_plate_id_properties)
+					{
+						// Both by plate ID, so compare plate IDs.
+						return by_plate_id_properties->plate_id < other_by_plate_id_properties->plate_id;
+					}
+					else
+					{
+						// 'this' by plate ID preferred over 'other' half stage rotation.
+						return false;
+					}
+				}
+				else
+				{
+					if (other_by_plate_id_properties)
+					{
+						// 'other' by plate ID preferred over 'this' half stage rotation.
+						return true;
+					}
+					else
+					{
+						// Both by half stage rotation, so compare half stage properties.
+						const ReconstructInfo::HalfStageRotationProperties &half_stage_rotation_properties =
+								boost::get<ReconstructInfo::HalfStageRotationProperties>(reconstruct_info.properties);
+						const ReconstructInfo::HalfStageRotationProperties &other_half_stage_rotation_properties =
+								boost::get<ReconstructInfo::HalfStageRotationProperties>(other_reconstruct_info.properties);
+
+						if (half_stage_rotation_properties.reconstruction_params.get_left_plate_id() <
+							other_half_stage_rotation_properties.reconstruction_params.get_left_plate_id())
+						{
+							return true;
+						}
+						if (half_stage_rotation_properties.reconstruction_params.get_left_plate_id() >
+							other_half_stage_rotation_properties.reconstruction_params.get_left_plate_id())
+						{
+							return false;
+						}
+
+						return half_stage_rotation_properties.reconstruction_params.get_right_plate_id() <
+								other_half_stage_rotation_properties.reconstruction_params.get_right_plate_id();
+					}
+				}
 			}
 
 		private:
@@ -272,23 +320,50 @@ namespace GPlatesAppLogic
 			 */
 			struct ReconstructInfo
 			{
+				//! Geometry was reconstructed by plate ID.
 				ReconstructInfo(
-						GPlatesModel::integer_plate_id_type plate_id_,
-						ReconstructionTreeCreator reconstruction_tree_creator_) :
-					plate_id(plate_id_),
-					reconstruction_tree_creator(reconstruction_tree_creator_)
+						const ReconstructionTreeCreator &reconstruction_tree_creator_,
+						GPlatesModel::integer_plate_id_type plate_id_) :
+					reconstruction_tree_creator(reconstruction_tree_creator_),
+					properties(ByPlateIdProperties(plate_id_))
 				{  }
 
-				GPlatesModel::integer_plate_id_type plate_id;
+				//! Geometry was reconstructed by half stage rotation.
+				ReconstructInfo(
+						const ReconstructionTreeCreator &reconstruction_tree_creator_,
+						const ReconstructionFeatureProperties &reconstruction_params_) :
+					reconstruction_tree_creator(reconstruction_tree_creator_),
+					properties(HalfStageRotationProperties(reconstruction_params_))
+				{  }
 
 				/**
 				 * The rotation tree generator used to create reconstruction trees for the
 				 * ReconstructedFeatureGeometry associated with the Delaunay vertex.
-				 *
-				 * This (shared) reconstruction tree creator is stored instead of the
-				 * ReconstructedFeatureGeometry itself in order to save memory.
 				 */
 				ReconstructionTreeCreator reconstruction_tree_creator;
+
+				//
+				// Geometry was either reconstructed by plate ID or by half stage rotation.
+				//
+				struct ByPlateIdProperties
+				{
+					ByPlateIdProperties(
+							GPlatesModel::integer_plate_id_type plate_id_) :
+						plate_id(plate_id_)
+					{  }
+					GPlatesModel::integer_plate_id_type plate_id;
+				};
+				struct HalfStageRotationProperties
+				{
+					HalfStageRotationProperties(
+							const ReconstructionFeatureProperties &reconstruction_params_) :
+						reconstruction_params(reconstruction_params_)
+					{  }
+					ReconstructionFeatureProperties reconstruction_params;
+				};
+				typedef boost::variant<ByPlateIdProperties, HalfStageRotationProperties> properties_type;
+
+				properties_type properties;
 			};
 			mutable boost::optional<ReconstructInfo> d_reconstruct_info;
 
@@ -328,25 +403,59 @@ namespace GPlatesAppLogic
 			{
 				if (!d_reconstruct_info)
 				{
-					// Get the reconstruction plate ID.
-					boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
-							ReconstructionGeometryUtils::get_plate_id(d_reconstruction_properties);
-					if (!plate_id)
-					{
-						plate_id = 0;
-					}
-
-					// The creator of reconstruction trees used when reconstructing the recon geometry.
+					// The creator of reconstruction trees, and feature, used when reconstructing the recon geometry.
 					boost::optional<ReconstructionTreeCreator> reconstruction_tree_creator =
-						ReconstructionGeometryUtils::get_reconstruction_tree_creator(d_reconstruction_properties);
-
+							ReconstructionGeometryUtils::get_reconstruction_tree_creator(d_reconstruction_properties);
 					// Sub-segments are either reconstructed feature geometries or resolved topological geometries
 					// and both have reconstruction tree creators so this should always succeed.
 					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 							reconstruction_tree_creator,
 							GPLATES_ASSERTION_SOURCE);
 
-					d_reconstruct_info = ReconstructInfo(plate_id.get(), reconstruction_tree_creator.get());
+					// Everything reconstructs by plate ID except if the reconstruction geometry is an RFG *and*
+					// it reconstructs using half stage rotations.
+					//
+					// This means resolved topological lines and any RFGs reconstructed other than half-stage-rotations are
+					// reconstructed by plate ID.
+					// Resolved topological lines are only involved if their sub-segment RFGs cannot be matched to clipped resolved line
+					// - see 'TopologyNetworkResolver::add_boundary_delaunay_points_from_resolved_topological_line()'
+					// - and, as noted in the function, this will more than likely give incorrect results.
+					// And the topology builder tools should not allow RFGs other than by-plate-id and half-stage-rotation,
+					// so these shouldn't occur in practice (but could if constructed outside GPlates somehow).
+					boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> rfg_properties =
+							ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+									ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(d_reconstruction_properties);
+					if (rfg_properties &&
+						rfg_properties.get()->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION)
+					{
+						//
+						// Reconstruct using half-stage rotations.
+						//
+
+						// Get the left/right plate IDs, etc.
+						ReconstructionFeatureProperties reconstruction_feature_properties;
+						reconstruction_feature_properties.visit_feature(rfg_properties.get()->get_feature_ref());
+
+						d_reconstruct_info = boost::in_place(
+								reconstruction_tree_creator.get(),
+								reconstruction_feature_properties);
+					}
+					else
+					{
+						//
+						// Reconstruct by plate ID.
+						//
+
+						// Get the reconstruction plate ID.
+						boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
+								ReconstructionGeometryUtils::get_plate_id(d_reconstruction_properties);
+						if (!plate_id)
+						{
+							plate_id = 0;
+						}
+
+						d_reconstruct_info = boost::in_place(reconstruction_tree_creator.get(), plate_id.get());
+					}
 				}
 
 				return d_reconstruct_info.get();
@@ -363,14 +472,43 @@ namespace GPlatesAppLogic
 			{
 				const ReconstructInfo &reconstruct_info = get_reconstruct_info();
 
-				return PlateVelocityUtils::calculate_stage_rotation(
-						reconstruct_info.plate_id,
-						reconstruct_info.reconstruction_tree_creator,
-						reconstruction_time,
-						velocity_delta_time,
-						velocity_delta_time_type);
+				//
+				// See if geometry was reconstructed by plate ID.
+				//
+				const ReconstructInfo::ByPlateIdProperties *by_plate_id_properties =
+						boost::get<ReconstructInfo::ByPlateIdProperties>(&reconstruct_info.properties);
+				if (by_plate_id_properties)
+				{
+					return PlateVelocityUtils::calculate_stage_rotation(
+							by_plate_id_properties->plate_id,
+							reconstruct_info.reconstruction_tree_creator,
+							reconstruction_time,
+							velocity_delta_time,
+							velocity_delta_time_type);
+				}
+
+				//
+				// Geometry must have been reconstructed by half stage rotation.
+				//
+				const ReconstructInfo::HalfStageRotationProperties &half_stage_rotation_properties =
+						boost::get<ReconstructInfo::HalfStageRotationProperties>(reconstruct_info.properties);
+
+				const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+						velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+
+				// Calculate the stage rotation.
+				return GPlatesMaths::calculate_stage_rotation(
+						RotationUtils::get_half_stage_rotation(
+								time_range.second/*young*/,
+								half_stage_rotation_properties.reconstruction_params,
+								reconstruct_info.reconstruction_tree_creator),
+						RotationUtils::get_half_stage_rotation(
+								time_range.first/*old*/,
+								half_stage_rotation_properties.reconstruction_params,
+								reconstruct_info.reconstruction_tree_creator));
 			}
 		};
+
 
 		/**
 		 * This class holds the extra info for each delaunay triangulation vertex.
