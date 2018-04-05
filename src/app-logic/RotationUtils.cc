@@ -25,11 +25,14 @@
 
 #include "RotationUtils.h"
 
+#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+#include "property-values/Enumeration.h"
 
 
 GPlatesMaths::FiniteRotation
@@ -163,6 +166,86 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 			->get_composed_absolute_rotation(left_plate_id).first;
 
 	return compose(left_rotation, spreading_rotation);
+}
+
+
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
+		const double &reconstruction_time,
+		const ReconstructionFeatureProperties &reconstruction_params,
+		const ReconstructionTreeCreator &reconstruction_tree_creator)
+{
+	// Default values for half-stage parameters.
+	//
+	// If we can't get left/right plate IDs then we'll just use plate id zero (spin axis)
+	// which can still give a non-identity rotation if the anchor plate id is non-zero.
+	GPlatesModel::integer_plate_id_type left_plate_id = 0;
+	GPlatesModel::integer_plate_id_type right_plate_id = 0;
+	double spreading_asymmetry = 0.0;
+	double spreading_start_time = 0.0;
+	// Half-stage version 1 only has a single time interval (from present day to the reconstruction time).
+	double half_stage_rotation_interval = reconstruction_time;
+
+	if (reconstruction_params.get_left_plate_id())
+	{
+		left_plate_id = reconstruction_params.get_left_plate_id().get();
+	}
+	if (reconstruction_params.get_right_plate_id())
+	{
+		right_plate_id = reconstruction_params.get_right_plate_id().get();
+	}
+
+	static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
+			GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
+	static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
+			GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
+
+	const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+			reconstruction_params.get_reconstruction_method();
+
+	// Get the half-stage rotation.
+	if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
+		reconstruction_method == enumeration_half_stage_rotation_version_2)
+	{
+		/**
+		 * The time interval used by version 2 and 3 is 10my.
+		 *
+		 * NOTE: This value should not be modified otherwise it will cause reconstructions of
+		 * half-stage features to be positioned incorrectly (this is because their present day
+		 * geometries have been reverse-reconstructed using this value).
+		 * If it needs to be modified then a new version should be implemented and associated with
+		 * a new enumeration in the 'gpml:ReconstructionMethod' property.
+		 */
+		half_stage_rotation_interval = 10.0;
+
+		// Version 2 introduced spreading asymmetry.
+		if (reconstruction_params.get_spreading_asymmetry())
+		{
+			spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
+		}
+
+		if (reconstruction_method == enumeration_half_stage_rotation_version_3)
+		{
+			// Version 3 introduced spreading start time (geometry import time).
+			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
+					reconstruction_params.get_geometry_import_time();
+
+			if (geometry_import_time &&
+				geometry_import_time->is_real())
+			{
+				spreading_start_time = geometry_import_time->value();
+			}
+		}
+	}
+
+	return get_half_stage_rotation(
+			reconstruction_tree_creator,
+			reconstruction_time,
+			left_plate_id,
+			right_plate_id,
+			spreading_asymmetry,
+			spreading_start_time,
+			half_stage_rotation_interval);
 }
 
 
