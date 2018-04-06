@@ -46,7 +46,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 		const double &half_stage_rotation_interval)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			reconstruction_time >=0 && half_stage_rotation_interval > 0,
+			half_stage_rotation_interval > 0,
 			GPLATES_ASSERTION_SOURCE);
 
 	//
@@ -100,7 +100,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 
 	bool backward_in_time;
 	double time_interval;
-	if (reconstruction_time > spreading_start_time)
+	if (reconstruction_time >= spreading_start_time)
 	{
 		backward_in_time = true;
 		time_interval = half_stage_rotation_interval;
@@ -184,7 +184,19 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 	double spreading_asymmetry = 0.0;
 	double spreading_start_time = 0.0;
 	// Half-stage version 1 only has a single time interval (from present day to the reconstruction time).
-	double half_stage_rotation_interval = reconstruction_time;
+	double half_stage_rotation_interval;
+	if (reconstruction_time > 0)
+	{
+		half_stage_rotation_interval = reconstruction_time;
+	}
+	else if (reconstruction_time < 0)
+	{
+		half_stage_rotation_interval = -reconstruction_time;
+	}
+	else // interval must be non-zero...
+	{
+		half_stage_rotation_interval = DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION;
+	}
 
 	if (reconstruction_params.get_left_plate_id())
 	{

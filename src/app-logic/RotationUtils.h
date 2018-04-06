@@ -79,8 +79,7 @@ namespace GPlatesAppLogic
 		 * then it will be divided into multiple half-stage intervals of this size (except for
 		 * the last interval that passes over the reconstruction time).
 		 *
-		 * @throws PreconditionViolationError if @a reconstruction_time is negative or
-		 * if @a half_stage_rotation_interval is not greater than zero.
+		 * @throws PreconditionViolationError if @a half_stage_rotation_interval is not greater than zero.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_half_stage_rotation(
