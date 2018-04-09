@@ -2115,7 +2115,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
 	// Return true if the reconstruction geometry is a reconstructed feature geometry,
-	// but not reconstructed using topologies, and is reconstructed by plate ID.
+	// but not reconstructed using topologies, and is reconstructed by plate ID or half-stage rotation.
 	boost::optional<const ReconstructedFeatureGeometry *> rfg =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 					const ReconstructedFeatureGeometry *>(recon_geom);
@@ -2150,7 +2150,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 	if (resolved_topological_line)
 	{
 		// Iterate over the sub-segments of the resolved line and make sure that each one is an RFG
-		// that was reconstructed by plate ID.
+		// that was reconstructed by plate ID or half-stage rotation.
 		const sub_segment_seq_type &sub_segments = resolved_topological_line.get()->get_sub_segment_sequence();
 		sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments.begin();
 		const sub_segment_seq_type::const_iterator sub_segments_end = sub_segments.end();

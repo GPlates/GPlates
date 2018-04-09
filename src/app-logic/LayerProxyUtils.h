@@ -114,11 +114,18 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries from all active reconstruct layers
 		 * in the specified reconstruction.
 		 *
+		 * This is useful for topological features that reference other features as topological
+		 * sections - the other features could be in any layer so all layers are reconstructed.
+		 *
 		 * The reconstruct handles associated with the reconstructed feature geometries are
 		 * appended to @a reconstruct_handles.
 		 *
-		 * This is useful for topological features that reference other features as topological
-		 * sections - the other features could be in any layer so all layers are reconstructed.
+		 * If @a include_topology_reconstructed_feature_geometries is true then reconstructed
+		 * feature geometries that have been topologically reconstructed as also included.
+		 * Otherwise only those reconstructed using the regular method
+		 * (eg, by plate ID, half-stage rotation, etc) are returned.
+		 * Note that turning off topology reconstructed feature geometries when not needed
+		 * can result in a significant performance boost.
 		 *
 		 * NOTE: Typically each layer will keep a cache of its reconstructed feature geometries
 		 * for the reconstruction time - so unless the reconstruction time has changed since
@@ -128,18 +135,19 @@ namespace GPlatesAppLogic
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
-				const Reconstruction &reconstruction);
+				const Reconstruction &reconstruction,
+				bool include_topology_reconstructed_feature_geometries = true);
 
 
 		/**
 		 * Returns the resolved topological lines from all active topological geometry layers
 		 * in the specified reconstruction.
 		 *
-		 * The reconstruct handles associated with the resolved topological lines are
-		 * appended to @a reconstruct_handles.
-		 *
 		 * This is useful for topological features that reference topological lines as their topological
 		 * sections - these features could be in any layer so all layers are resolved.
+		 *
+		 * The reconstruct handles associated with the resolved topological lines are
+		 * appended to @a reconstruct_handles.
 		 *
 		 * NOTE: Typically each layer will keep a cache of its resolved topological lines
 		 * for the reconstruction time - so unless the reconstruction time has changed since
