@@ -384,46 +384,61 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 	// rotation file) may want to take the longest path.
 	//
 
-	// For t1, get the rotation for plate M w.r.t. anchor	
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+	//
+	// In the code below, if no plate ID is found for either time (t1 or t2) for a specific plate (fixed or moving)
+	// then we set both rotations to the identity rotation (eg, use identity for fixed plate, wrt anchor, at t1 *and* t2).
+	//
+	// We could just return the identity rotation if any plate ID is not found at any time, however
+	// there are a few cases in existing rotation files where either the fixed or moving plate ID does not
+	// exist and, for example, topologies seem to rely on this (so that boundary lines intersect) even
+	// though the user building topologies might not realize this. Previously we didn't enforce identity
+	// rotations for both times (t1 and t2) for a specific plate (fixed or moving), that is if a rotation
+	// is not found for either time (t1 or t2). However we do that here just in case we are near the
+	// end of a finite rotation sequence for a specific plate such that a rotation exists for t1
+	// but not t2, otherwise the stage rotation from t1 to t2 would be missing the t2 contribution.
+	// In this case it should be as if that plate doesn't exist (or is essentially equivalent to the anchor plate),
+	// and then the stage rotation essentially becomes the other plate relative to the anchor plate.
+	// Another way of saying this is the 'relative stage' rotation becomes an 'equivalent stage' rotation
+	// where 'equivalent' means relative to the anchor plate.
+	//
+
+	// For plate M, get the rotations w.r.t. anchor	for times t1 and t2.
+	std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
 			rot_0_to_t1_M = reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id);
+	std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t2_M = reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id);
+	// If no plate ID found for either then set both to the identity rotation.
 	if (rot_0_to_t1_M.second == ReconstructionTree::NoPlateIdMatchesFound)
 	{
-		// Unable to calculate stage rotation - return identity rotation.
-		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+		rot_0_to_t2_M = rot_0_to_t1_M; // Copy identity rotation.
 	}
+	else if (rot_0_to_t2_M.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		rot_0_to_t1_M = rot_0_to_t2_M; // Copy identity rotation.
+	}
+	// Reference to rotation inside std::pair.
 	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t1_M = rot_0_to_t1_M.first;
-
-	// For t1, get the rotation for plate F w.r.t. anchor	
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
-			rot_0_to_t1_F = reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id);
-	if (rot_0_to_t1_F.second == ReconstructionTree::NoPlateIdMatchesFound)
-	{
-		// Unable to calculate stage rotation - return identity rotation.
-		return GPlatesMaths::FiniteRotation::create_identity_rotation();
-	}
-	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t1_F = rot_0_to_t1_F.first;
-
-
-	// For t2, get the rotation for plate M w.r.t. anchor	
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
-			rot_0_to_t2_M = reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id);
-	if (rot_0_to_t2_M.second == ReconstructionTree::NoPlateIdMatchesFound)
-	{
-		// Unable to calculate stage rotation - return identity rotation.
-		return GPlatesMaths::FiniteRotation::create_identity_rotation();
-	}
 	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t2_M = rot_0_to_t2_M.first;
 
-	// For t2, get the rotation for plate F w.r.t. anchor	
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+
+	// For plate F, get the rotations w.r.t. anchor	for times t1 and t2.
+	std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
+			rot_0_to_t1_F = reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id);
+	std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance>
 			rot_0_to_t2_F = reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id);
-	if (rot_0_to_t2_F.second == ReconstructionTree::NoPlateIdMatchesFound)
+	// If no plate ID found for either then set both to the identity rotation.
+	if (rot_0_to_t1_F.second == ReconstructionTree::NoPlateIdMatchesFound)
 	{
-		// Unable to calculate stage rotation - return identity rotation.
-		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+		rot_0_to_t2_F = rot_0_to_t1_F; // Copy identity rotation.
 	}
+	else if (rot_0_to_t2_F.second == ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		rot_0_to_t1_F = rot_0_to_t2_F; // Copy identity rotation.
+	}
+	// Reference to rotation inside std::pair.
+	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t1_F = rot_0_to_t1_F.first;
 	const GPlatesMaths::FiniteRotation &finite_rot_0_to_t2_F = rot_0_to_t2_F.first;
+
 
 	// Compose these rotations so that we get
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
