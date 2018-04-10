@@ -50,7 +50,7 @@ namespace GPlatesAppLogic
 		/**
 		 * A time range consisting of time slots where the following constraints hold:
 		 *
-		 *   begin_time = end_time + num_time_slots * time_increment
+		 *   begin_time = end_time + (num_time_slots - 1) * time_increment
 		 *   num_time_slots >= 2
 		 */
 		class TimeRange
@@ -60,7 +60,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Whether to adjust begin time, end time or time increment such that the constraints hold:
 			 *
-			 *   begin_time = end_time + num_time_slots * time_increment
+			 *   begin_time = end_time + (num_time_slots - 1) * time_increment
 			 *   num_time_slots >= 2
 			 */
 			enum Adjust
@@ -87,7 +87,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Create a time range where the time increment is:
 			 *
-			 *   time_increment = (begin_time - end_time) / num_time_slots
+			 *   time_increment = (begin_time - end_time) / (num_time_slots - 1)
 			 *
 			 * Throws exception if @a num_time_slots is less than two, or if
 			 * @a end_time is less than or equal to @a begin_time.
