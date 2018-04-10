@@ -42,9 +42,7 @@ GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
 		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
 	VisualLayerParams(layer_params),
 	d_colour_palette_parameters_initialised_from_raster(false),
-	d_colour_palette_parameters(
-			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette())),
+	d_colour_palette_parameters(create_default_colour_palette_parameters()),
 	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN),
 	d_opacity(1.0),
 	d_intensity(1.0),
@@ -99,6 +97,15 @@ GPlatesPresentation::RasterVisualLayerParams::handle_layer_modified(
 	// ...else there's no raster feature...
 
 	emit_modified();
+}
+
+
+GPlatesPresentation::RemappedColourPaletteParameters
+GPlatesPresentation::RasterVisualLayerParams::create_default_colour_palette_parameters()
+{
+	return RemappedColourPaletteParameters(
+			GPlatesGui::RasterColourPalette::create<double>(
+					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette()));
 }
 
 

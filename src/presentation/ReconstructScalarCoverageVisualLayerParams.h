@@ -27,7 +27,6 @@
 #define GPLATES_PRESENTATION_RECONSTRUCTSCALARCOVERAGEVISUALLAYERPARAMS_H
 
 #include <map>
-#include <boost/optional.hpp>
 
 #include "RemappedColourPaletteParameters.h"
 #include "VisualLayerParams.h"
@@ -55,7 +54,7 @@ namespace GPlatesPresentation
 
 
 		/**
-		 * Returns the current colour palette (associated with the current scalar type).
+		 * Gets, and creates if necessary, the current colour palette (associated with the current scalar type).
 		 */
 		const RemappedColourPaletteParameters &
 		get_current_colour_palette_parameters() const;
@@ -69,9 +68,16 @@ namespace GPlatesPresentation
 
 
 		/**
-		 * Returns the colour palette associated with the specified scalar type.
+		 * The default colour palette parameters.
 		 */
-		boost::optional<const RemappedColourPaletteParameters &>
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_colour_palette_parameters();
+
+		/**
+		 * Gets, and creates if necessary, the colour palette associated with the specified scalar type.
+		 */
+		const RemappedColourPaletteParameters &
 		get_colour_palette_parameters(
 				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
 
@@ -148,12 +154,8 @@ namespace GPlatesPresentation
 		mutable colour_palette_parameters_map_type d_colour_palette_parameters_map;
 
 
-		const RemappedColourPaletteParameters &
+		RemappedColourPaletteParameters
 		create_colour_palette_parameters(
-				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
-
-		const RemappedColourPaletteParameters &
-		get_or_create_colour_palette_parameters(
 				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
 	};
 }

@@ -311,6 +311,14 @@ namespace GPlatesViewOperations
 			d_cross_section_colour_mode = cross_section_colour_mode;
 		}
 
+
+		/**
+		 * The default scalar colour palette parameters.
+		 */
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_scalar_colour_palette_parameters();
+
 		/**
 		 * The colour palette used to colour by scalar value.
 		 */
@@ -327,6 +335,14 @@ namespace GPlatesViewOperations
 			d_scalar_colour_palette_parameters = scalar_colour_palette_parameters;
 		}
 
+
+		/**
+		 * The default gradient colour palette parameters.
+		 */
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_gradient_colour_palette_parameters();
+
 		/**
 		 * The colour palette used to colour by gradient magnitude.
 		 */
@@ -342,6 +358,7 @@ namespace GPlatesViewOperations
 		{
 			d_gradient_colour_palette_parameters = gradient_colour_palette_parameters;
 		}
+
 
 		const IsovalueParameters &
 		get_isovalue_parameters() const

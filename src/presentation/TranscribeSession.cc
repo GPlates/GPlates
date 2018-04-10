@@ -1519,22 +1519,20 @@ namespace GPlatesPresentation
 				{
 					const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_types[s];
 
-					boost::optional<const RemappedColourPaletteParameters &> colour_palette_params =
+					const RemappedColourPaletteParameters &colour_palette_params =
 							params.get_colour_palette_parameters(scalar_type);
-					if (colour_palette_params)
-					{
-						// Save map key.
-						d_scribe.save(TRANSCRIBE_SOURCE, scalar_type,
-								colour_palette_params_tag.map_item_key(num_colour_palettes_saved));
 
-						// Save map value.
-						save_remapped_colour_palette_parameters(
-								colour_palette_params_tag.map_item_value(num_colour_palettes_saved),
-								d_scribe,
-								colour_palette_params.get());
+					// Save map key.
+					d_scribe.save(TRANSCRIBE_SOURCE, scalar_type,
+							colour_palette_params_tag.map_item_key(num_colour_palettes_saved));
 
-						++num_colour_palettes_saved;
-					}
+					// Save map value.
+					save_remapped_colour_palette_parameters(
+							colour_palette_params_tag.map_item_value(num_colour_palettes_saved),
+							d_scribe,
+							colour_palette_params);
+
+					++num_colour_palettes_saved;
 				}
 
 				// Save map size.
@@ -1752,10 +1750,8 @@ namespace GPlatesPresentation
 			visit_raster_visual_layer_params(
 					raster_visual_layer_params_type &params)
 			{
-				// Get the current colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters colour_palette_params = params.get_colour_palette_parameters();
+				RemappedColourPaletteParameters colour_palette_params =
+						raster_visual_layer_params_type::create_default_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("colour_palette_params"),
 						d_scribe,
@@ -1817,23 +1813,9 @@ namespace GPlatesPresentation
 						continue;
 					}
 
-					// Get the existing colour palette parameters (associated with scalar type)
-					// in the layer params because it will have the appropriate default color palette
-					// already setup which means we don't have to load it.
-					boost::optional<const RemappedColourPaletteParameters &> colour_palette_params_opt =
-							params.get_colour_palette_parameters(scalar_type);
-
-					// Note that the scalar coverage features should have already been connected
-					// to the layer and populated a colour palette for each scalar type in the features.
-					// So this should only fail if the current saved scalar type does not exist in
-					// the loaded features (eg, due to features changing between when saved and loaded).
-					if (!colour_palette_params_opt)
-					{
-						continue;
-					}
-					RemappedColourPaletteParameters colour_palette_params = colour_palette_params_opt.get();
-
 					// Load map value.
+					RemappedColourPaletteParameters colour_palette_params =
+							reconstruct_scalar_coverage_visual_layer_params_type::create_default_colour_palette_parameters();
 					load_remapped_colour_palette_parameters(
 							colour_palette_params_tag.map_item_value(c),
 							d_scribe,
@@ -1915,10 +1897,8 @@ namespace GPlatesPresentation
 			visit_scalar_field_3d_visual_layer_params(
 					scalar_field_3d_visual_layer_params_type &params)
 			{
-				// Get the scalar colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters scalar_colour_palette_params = params.get_scalar_colour_palette_parameters();
+				RemappedColourPaletteParameters scalar_colour_palette_params =
+						scalar_field_3d_visual_layer_params_type::create_default_scalar_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("scalar_colour_palette_params"),
 						d_scribe,
@@ -1926,10 +1906,8 @@ namespace GPlatesPresentation
 						d_read_errors);
 				params.set_scalar_colour_palette_parameters(scalar_colour_palette_params);
 
-				// Get the gradient colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters gradient_colour_palette_params = params.get_gradient_colour_palette_parameters();
+				RemappedColourPaletteParameters gradient_colour_palette_params =
+						scalar_field_3d_visual_layer_params_type::create_default_gradient_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("gradient_colour_palette_params"),
 						d_scribe,
