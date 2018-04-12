@@ -69,6 +69,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 		const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
 		const std::vector<double> &scalar_values,
 		boost::optional<scalar_evolution_function_type> scalar_evolution_function) :
+	d_geometry_time_span(geometry_time_span),
 	d_scalar_values_time_span(
 			scalar_values_time_span_type::create(
 					geometry_time_span->get_time_range(),
