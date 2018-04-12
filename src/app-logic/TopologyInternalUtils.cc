@@ -2158,18 +2158,18 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 		{
 			const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
 
-			boost::optional<const ReconstructedFeatureGeometry *> rfg =
+			boost::optional<const ReconstructedFeatureGeometry *> sub_segment_rfg =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 							const ReconstructedFeatureGeometry *>(sub_segment.get_reconstruction_geometry());
-			if (!rfg)
+			if (!sub_segment_rfg)
 			{
 				return false;
 			}
 
 			// Filter out reconstructed geometries that have not been reconstructed by plate ID or half-stage rotation.
 			// These are the only supported types inside the deforming network code (in Delaunay vertices).
-			if (rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID &&
-				rfg.get()->get_reconstruct_method_type() != ReconstructMethod::HALF_STAGE_ROTATION)
+			if (sub_segment_rfg.get()->get_reconstruct_method_type() != ReconstructMethod::BY_PLATE_ID &&
+				sub_segment_rfg.get()->get_reconstruct_method_type() != ReconstructMethod::HALF_STAGE_ROTATION)
 			{
 				return false;
 			}

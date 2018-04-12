@@ -27,6 +27,7 @@
 #include <limits>
 #include <boost/foreach.hpp>
 
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <QBuffer>

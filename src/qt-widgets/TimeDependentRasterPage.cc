@@ -25,8 +25,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef> // For std::size_t
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
 #include <QItemDelegate>
@@ -811,7 +813,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 	std::vector< boost::optional<double> > times;
 	deduce_times(times, file_infos);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			times.size() == file_infos.size(),
+			times.size() == boost::numeric_cast<std::size_t>(file_infos.size()),
 			GPLATES_ASSERTION_SOURCE);
 
 	TimeDependentRasterSequence new_sequence;
