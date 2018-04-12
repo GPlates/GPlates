@@ -99,19 +99,21 @@ namespace GPlatesAppLogic
 		get_scalar_type() const;
 
 		//! Returns the list of scalar types available in the scalar coverage features.
-		const std::vector<GPlatesPropertyValues::ValueObjectType> &
-		get_scalar_types() const
+		void
+		get_scalar_types(
+				std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types) const
 		{
-			return d_layer_proxy->get_scalar_types();
+			d_layer_proxy->get_scalar_types(scalar_types);
 		}
 
 		/**
 		 * Gets all scalar coverages available across the scalar coverage features.
 		 */
-		const std::vector<ScalarCoverageFeatureProperties::Coverage> &
-		get_scalar_coverages() const
+		void
+		get_scalar_coverages(
+				std::vector<ScalarCoverageFeatureProperties::Coverage> &scalar_coverages) const
 		{
-			return d_layer_proxy->get_scalar_coverages();
+			d_layer_proxy->get_scalar_coverages(scalar_coverages);
 		}
 
 		/**

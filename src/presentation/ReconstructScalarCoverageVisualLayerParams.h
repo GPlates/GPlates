@@ -103,8 +103,9 @@ namespace GPlatesPresentation
 		 *
 		 * Delegates to app-logic ReconstructScalarCoverageLayerParams::get_scalar_types().
 		 */
-		const std::vector<GPlatesPropertyValues::ValueObjectType> &
-		get_scalar_types() const;
+		void
+		get_scalar_types(
+				std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types) const;
 
 
 		virtual

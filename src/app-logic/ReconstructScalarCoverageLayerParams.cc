@@ -54,7 +54,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::set_scalar_type(
 	// If not, then change the scalar type to be the first of the available scalar types.
 	// This can happen if the scalar coverage features are reloaded from file and no longer contain
 	// the currently selected scalar type.
-	const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types = d_layer_proxy->get_scalar_types();
+	std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+	d_layer_proxy->get_scalar_types(scalar_types);
 	if (!scalar_types.empty() &&
 		std::find(scalar_types.begin(), scalar_types.end(), scalar_type) == scalar_types.end())
 	{
@@ -279,8 +280,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::update()
 	// If not, then change the scalar type to be the first of the available scalar types.
 	// This can happen if the scalar coverage features are reloaded from file and no longer contain
 	// the currently selected scalar type.
+	std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+	d_layer_proxy->get_scalar_types(scalar_types);
 	const GPlatesPropertyValues::ValueObjectType &current_scalar_type = d_layer_proxy->get_current_scalar_type();
-	const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types = d_layer_proxy->get_scalar_types();
 	if (!scalar_types.empty() &&
 		std::find(scalar_types.begin(), scalar_types.end(), current_scalar_type) == scalar_types.end())
 	{

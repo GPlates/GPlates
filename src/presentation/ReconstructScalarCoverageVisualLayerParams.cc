@@ -167,8 +167,9 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_current_sca
 }
 
 
-const std::vector<GPlatesPropertyValues::ValueObjectType> &
-GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_scalar_types() const
+void
+GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_scalar_types(
+		std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types) const
 {
 	GPlatesAppLogic::ReconstructScalarCoverageLayerParams *layer_params =
 		dynamic_cast<GPlatesAppLogic::ReconstructScalarCoverageLayerParams *>(
@@ -178,8 +179,7 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::get_scalar_type
 			layer_params,
 			GPLATES_ASSERTION_SOURCE);
 
-	return layer_params->get_scalar_types();
-
+	layer_params->get_scalar_types(scalar_types);
 }
 
 

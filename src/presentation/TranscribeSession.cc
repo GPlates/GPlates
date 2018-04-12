@@ -1513,7 +1513,9 @@ namespace GPlatesPresentation
 
 				const GPlatesScribe::ObjectTag colour_palette_params_tag = d_layer_params_tag("colour_palette_params");
 
-				const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types = params.get_scalar_types();
+				std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+				params.get_scalar_types(scalar_types);
+
 				unsigned int num_colour_palettes_saved = 0;
 				for (unsigned int s = 0; s < scalar_types.size(); ++s)
 				{

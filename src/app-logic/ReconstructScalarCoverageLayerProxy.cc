@@ -199,8 +199,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_c
 }
 
 
-const std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> &
-GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_coverages()
+void
+GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_coverages(
+		std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> &scalar_coverages)
 {
 	// See if any input layer proxies have changed.
 	//
@@ -213,12 +214,16 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_coverages()
 		cache_scalar_coverages();
 	}
 
-	return d_cached_scalar_coverages.get();
+	scalar_coverages.insert(
+			scalar_coverages.end(),
+			d_cached_scalar_coverages->begin(),
+			d_cached_scalar_coverages->end());
 }
 
 
-const std::vector<GPlatesPropertyValues::ValueObjectType> &
-GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_types()
+void
+GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_types(
+		std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types)
 {
 	// See if any input layer proxies have changed.
 	//
@@ -231,7 +236,10 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_types()
 		cache_scalar_types();
 	}
 
-	return d_cached_scalar_types.get();
+	scalar_types.insert(
+			scalar_types.end(),
+			d_cached_scalar_types->begin(),
+			d_cached_scalar_types->end());
 }
 
 
@@ -429,8 +437,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 	// Create an empty vector.
 	d_cached_scalar_types = std::vector<GPlatesPropertyValues::ValueObjectType>();
 
-	const std::vector<ScalarCoverageFeatureProperties::Coverage> &scalar_coverages =
-			get_scalar_coverages();
+	std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
+	get_scalar_coverages(scalar_coverages);
 
 	// Iterate over the coverages to find the set of unique scalar types.
 	std::set<GPlatesPropertyValues::ValueObjectType> unique_scalar_types;
