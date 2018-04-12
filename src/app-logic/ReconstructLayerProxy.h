@@ -490,7 +490,7 @@ namespace GPlatesAppLogic
 		get_topology_reconstructed_feature_time_spans(
 				std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans)
 		{
-			return get_topology_reconstructed_feature_time_spans(
+			get_topology_reconstructed_feature_time_spans(
 					topology_reconstructed_feature_time_spans, d_current_reconstruct_params);
 		}
 
