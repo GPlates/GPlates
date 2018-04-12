@@ -149,9 +149,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::get_scalar_statistics(
 						scalar_coverage_time_span.get_scalar_coverage_time_span()->get_num_all_scalar_values();
 
 				// Some points/scalars may get deactivated sooner than others so track statistics of individual points.
-				std::vector<unsigned int> num_scalars(0, num_scalar_values);
-				std::vector<double> scalar_sums(0.0, num_scalar_values);
-				std::vector<double> scalar_sum_squares(0.0, num_scalar_values);
+				std::vector<unsigned int> num_scalars(num_scalar_values, 0);
+				std::vector<double> scalar_sums(num_scalar_values, 0.0);
+				std::vector<double> scalar_sum_squares(num_scalar_values, 0.0);
 
 				// Iterate over the time history of scalar values.
 				const unsigned int num_time_slots = time_range.get_num_time_slots();
