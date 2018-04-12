@@ -106,75 +106,157 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::get_scalar_statistics(
 	//
 	// ...where N is total number of scalar samples.
 	//
-	unsigned int num_scalars = 0;
-	double scalar_min = (std::numeric_limits<double>::max)();
-	double scalar_max = (std::numeric_limits<double>::min)();
-	double scalar_sum = 0;
-	double scalar_sum_squares = 0;
+	unsigned int total_num_scalars = 0;
+	double total_scalar_min = (std::numeric_limits<double>::max)();
+	double total_scalar_max = (std::numeric_limits<double>::min)();
+	double total_scalar_sum = 0;
+	double total_scalar_sum_squares = 0;
 
-	// Iterate over the coverages to find the set of unique scalar types.
-	const std::vector<ScalarCoverageFeatureProperties::Coverage> &scalar_coverages = get_scalar_coverages();
-	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator coverages_iter = scalar_coverages.begin();
-	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator coverages_end = scalar_coverages.end();
-	for ( ; coverages_iter != coverages_end; ++coverages_iter)
+	// Get the time history of scalar values for the specified scalar type.
+	// We don't want to calculate statistics just on the original scalar values because they might
+	// be constant (such as initial crustal thickness at geometry import time).
+	typedef ReconstructScalarCoverageLayerProxy::ReconstructedScalarCoverageTimeSpan time_span_type;
+	std::vector<time_span_type> time_spans;
+	d_layer_proxy->get_reconstructed_scalar_coverage_time_spans(time_spans, scalar_type);
+
+	std::vector<time_span_type>::const_iterator time_spans_iter = time_spans.begin();
+	std::vector<time_span_type>::const_iterator time_spans_end = time_spans.end();
+	for ( ; time_spans_iter != time_spans_end; ++time_spans_iter)
 	{
-		const ScalarCoverageFeatureProperties::Coverage &coverage = *coverages_iter;
+		const time_span_type &time_span = *time_spans_iter;
 
-		// See if any scalar types in the current coverage match.
-		const unsigned int num_scalar_types = coverage.range.size();
-		for (unsigned int scalar_type_index = 0; scalar_type_index < num_scalar_types; ++scalar_type_index)
+		const time_span_type::scalar_coverage_time_span_seq_type &scalar_coverage_time_spans =
+				time_span.get_scalar_coverage_time_spans();
+		time_span_type::scalar_coverage_time_span_seq_type::const_iterator scalar_coverage_time_spans_iter =
+				scalar_coverage_time_spans.begin();
+		time_span_type::scalar_coverage_time_span_seq_type::const_iterator scalar_coverage_time_spans_end =
+				scalar_coverage_time_spans.end();
+		for ( ; scalar_coverage_time_spans_iter != scalar_coverage_time_spans_end; ++scalar_coverage_time_spans_iter)
 		{
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type
-					coverage_range = coverage.range[scalar_type_index];
-			if (coverage_range->value_object_type() != scalar_type)
+			const time_span_type::ScalarCoverageTimeSpan &scalar_coverage_time_span = *scalar_coverage_time_spans_iter;
+
+			// See if we need to look at a history of scalar values or just present day.
+			if (scalar_coverage_time_span.get_geometry_time_span())
 			{
-				continue;
+				// Look at scalar values throughout the history of reconstructed scalar values since
+				// topologically reconstructed (hence scalars potentially evolved due to deformation).
+				const TimeSpanUtils::TimeRange time_range =
+						scalar_coverage_time_span.get_scalar_coverage_time_span()->get_time_range();
+
+				// The number of *active* and *inactive* scalar points is always constant.
+				const unsigned int num_scalar_values =
+						scalar_coverage_time_span.get_scalar_coverage_time_span()->get_num_all_scalar_values();
+
+				// Some points/scalars may get deactivated sooner than others so track statistics of individual points.
+				std::vector<unsigned int> num_scalars(0, num_scalar_values);
+				std::vector<double> scalar_sums(0.0, num_scalar_values);
+				std::vector<double> scalar_sum_squares(0.0, num_scalar_values);
+
+				// Iterate over the time history of scalar values.
+				const unsigned int num_time_slots = time_range.get_num_time_slots();
+				for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
+				{
+					const double time = time_range.get_time(time_slot);
+
+					// Get *active* and *inactive* points/scalars.
+					std::vector< boost::optional<double> > all_scalar_values;
+					if (scalar_coverage_time_span.get_scalar_coverage_time_span()->get_all_scalar_values(time, all_scalar_values))
+					{
+						for (unsigned int scalar_value_index = 0; scalar_value_index < num_scalar_values; ++scalar_value_index)
+						{
+							const boost::optional<double> &scalar_opt = all_scalar_values[scalar_value_index];
+							if (scalar_opt)
+							{
+								const double scalar = scalar_opt.get();
+
+								scalar_sums[scalar_value_index] += scalar;
+								scalar_sum_squares[scalar_value_index] += scalar * scalar;
+								++num_scalars[scalar_value_index];
+
+								if (scalar < total_scalar_min)
+								{
+									total_scalar_min = scalar;
+								}
+								if (scalar > total_scalar_max)
+								{
+									total_scalar_max = scalar;
+								}
+							}
+						}
+					}
+				}
+
+				for (unsigned int scalar_value_index = 0; scalar_value_index < num_scalar_values; ++scalar_value_index)
+				{
+					// There should be at least one active scalar value for each point in the entire time span history.
+					// But we'll still check just in case.
+					const unsigned int num_current_scalars = num_scalars[scalar_value_index];
+					if (num_current_scalars != 0)
+					{
+						const double inv_num_current_scalars = 1.0 / num_current_scalars;
+
+						// Scale back the statistic sums such that the current point only counts as one scalar value
+						// instead of 'num_current_scalars'. This way all points are treated equally - just because
+						// one point gets deactivated sooner than another doesn't mean it contributes less to the
+						// total mean and standard deviation.
+						total_scalar_sum += inv_num_current_scalars * scalar_sums[scalar_value_index];
+						total_scalar_sum_squares += inv_num_current_scalars * scalar_sum_squares[scalar_value_index];
+						++total_num_scalars;
+					}
+				}
 			}
-
-			num_scalars += coverage_range->coordinates_len();
-
-			// Update the scalar statistics from the scalar values.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinate_list_type::const_iterator
-					coordinates_iter = coverage_range->coordinates_begin();
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinate_list_type::const_iterator
-					coordinates_end = coverage_range->coordinates_end();
-			for ( ; coordinates_iter != coordinates_end; ++coordinates_iter)
+			else // not topologically reconstructed (hence scalars not evolved due to deformation)...
 			{
-				const double scalar = *coordinates_iter;
-				scalar_sum += scalar;
-				scalar_sum_squares += scalar * scalar;
+				// Just need to look at scalar values at present day.
+				// The scalar values don't change with time so it actually doesn't matter which time we choose.
+				std::vector<double> scalar_values;
+				if (scalar_coverage_time_span.get_scalar_coverage_time_span()->
+						get_scalar_values(0.0/*reconstruction_time*/, scalar_values))
+				{ // Should always return true since no point deactivation because not topological reconstructed.
+					total_num_scalars += scalar_values.size();
 
-				if (scalar < scalar_min)
-				{
-					scalar_min = scalar;
-				}
-				if (scalar > scalar_max)
-				{
-					scalar_max = scalar;
+					std::vector<double>::const_iterator scalar_values_iter = scalar_values.begin();
+					std::vector<double>::const_iterator scalar_values_end = scalar_values.end();
+					for ( ; scalar_values_iter != scalar_values_end; ++scalar_values_iter)
+					{
+						const double scalar = *scalar_values_iter;
+						total_scalar_sum += scalar;
+						total_scalar_sum_squares += scalar * scalar;
+
+						if (scalar < total_scalar_min)
+						{
+							total_scalar_min = scalar;
+						}
+						if (scalar > total_scalar_max)
+						{
+							total_scalar_max = scalar;
+						}
+					}
 				}
 			}
-
-			break;
 		}
 	}
 
-	if (num_scalars == 0)
+	if (total_num_scalars == 0)
 	{
 		// There were no scalar coverages of the requested scalar type.
 		return boost::none;
 	}
 
-	const double scalar_mean = scalar_sum / num_scalars;
+	const double total_scalar_mean = total_scalar_sum / total_num_scalars;
 
-	const double scalar_variance = scalar_sum_squares / num_scalars - scalar_mean * scalar_mean;
+	const double total_scalar_variance = total_scalar_sum_squares / total_num_scalars -
+			total_scalar_mean * total_scalar_mean;
 	// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
-	const double scalar_standard_deviation = (scalar_variance > 0) ? std::sqrt(scalar_variance) : 0;
+	const double total_scalar_standard_deviation = (total_scalar_variance > 0)
+			? std::sqrt(total_scalar_variance)
+			: 0;
 
 	return GPlatesPropertyValues::ScalarCoverageStatistics(
-			scalar_min,
-			scalar_max,
-			scalar_mean,
-			scalar_standard_deviation);
+			total_scalar_min,
+			total_scalar_max,
+			total_scalar_mean,
+			total_scalar_standard_deviation);
 }
 
 

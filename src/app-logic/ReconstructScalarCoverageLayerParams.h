@@ -118,7 +118,7 @@ namespace GPlatesAppLogic
 		 * Returns the scalar statistics across all scalar coverages of the specified scalar type,
 		 * or none if no coverages.
 		 *
-		 * NOTE: This is a statistic of the scalar coverages at present day.
+		 * Note: This statistic includes the time history of evolved scalar values (where applicable).
 		 */
 		boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
 		get_scalar_statistics(
