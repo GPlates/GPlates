@@ -35,7 +35,7 @@
 #include <QVariant>
 
 
-#include "gdal.h"
+#include "Gdal.h"
 #include "GdalUtils.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "Ogr.h"
@@ -44,6 +44,8 @@
 #include "OgrWriter.h"
 
 #include "feature-visitors/ToQvariantConverter.h"
+
+#include "global/GdalVersion.h" // For GDAL_VERSION_MAJOR
 
 #include "maths/LatLonPoint.h"
 
@@ -102,7 +104,14 @@ namespace{
 		map["shp"] = shp_driver;
 
 		QStringList gmt_driver;
+#if defined(GDAL_VERSION_MAJOR) && GDAL_VERSION_MAJOR >= 2
+		// GDAL2 changed the driver name from "GMT" to "OGR_GMT".
+		// This was done when the GDAL/OGR drivers were unified,
+		// see https://trac.osgeo.org/gdal/changeset?reponame=&old=27384%40trunk%2Fgdal%2Fogr%2Fogrsf_frmts%2Fgmt%2Fogrgmtdriver.cpp&new=27384%40trunk%2Fgdal%2Fogr%2Fogrsf_frmts%2Fgmt%2Fogrgmtdriver.cpp
+		gmt_driver << "OGR_GMT" << "OGR_GMT";
+#else
 		gmt_driver << "GMT" << "GMT";
+#endif
 		map["gmt"] = gmt_driver;
 
 		QStringList geojson_driver;
