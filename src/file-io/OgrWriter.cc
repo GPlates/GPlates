@@ -35,7 +35,10 @@
 #include <QVariant>
 
 
+#include "gdal.h"
+#include "GdalUtils.h"
 #include "ErrorOpeningFileForWritingException.h"
+#include "Ogr.h"
 #include "OgrException.h"
 #include "OgrUtils.h"
 #include "OgrWriter.h"
@@ -291,12 +294,12 @@ namespace{
 	}
 
 	/**
-	 * Creates an OGRLayer of type wkb_type and adds it to the OGRDataSource.
+	 * Creates an OGRLayer of type wkb_type and adds it to the GdalUtils::vector_data_source_type.
 	 * Adds any attribute field names provided in key_value_dictionary. 
 	 */
 	void
 	setup_layer(
-		OGRDataSource *&ogr_data_source_ptr,
+		GPlatesFileIO::GdalUtils::vector_data_source_type *&ogr_data_source_ptr,
 		boost::optional<OGRLayer*>& ogr_layer,
 		OGRwkbGeometryType wkb_type,
 		const QString &layer_name,
@@ -323,7 +326,14 @@ namespace{
 			}
 
 			ogr_layer.reset(ogr_data_source_ptr->CreateLayer(
-				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
+				// FIXME: Layer name should probably be UTF-8 (ie, "layer_name.toUtf8().constData()")
+				// instead of Latin-1 since the latter does not support all character sets.
+				// Although it probably doesn't matter currently because the layer name is not
+				// really used anyway (it only needs to be unique with the data source)...
+				layer_name.toStdString().c_str(),
+				&spatial_reference,
+				wkb_type,
+				0));
 			if (*ogr_layer == NULL)
 			{
 				// Set to none to avoid NULL pointer dereference if try to write another feature
@@ -343,12 +353,12 @@ namespace{
 	 */
 	void
 	create_data_source(
-		OGRSFDriver *&ogr_driver,
-		OGRDataSource *&data_source_ptr,
+		GPlatesFileIO::GdalUtils::vector_data_driver_type *&ogr_driver,
+		GPlatesFileIO::GdalUtils::vector_data_source_type *&data_source_ptr,
 		QString &data_source_name)
 	{
 		data_source_name = QDir::toNativeSeparators(data_source_name);
-		data_source_ptr = ogr_driver->CreateDataSource(data_source_name.toStdString().c_str(), NULL );
+		data_source_ptr = GPlatesFileIO::GdalUtils::create_data_source(ogr_driver, data_source_name, NULL);
 
 		if (data_source_ptr == NULL)
 		{
@@ -358,11 +368,12 @@ namespace{
 
 	void
 	remove_OGR_layers(
-		OGRSFDriver *&ogr_driver,
+		GPlatesFileIO::GdalUtils::vector_data_driver_type *&ogr_driver,
 		const QString &filename)
 	{
 
-		OGRDataSource *ogr_data_source_ptr = ogr_driver->Open(filename.toStdString().c_str(),true /* true to allow updates */);
+		GPlatesFileIO::GdalUtils::vector_data_source_type *ogr_data_source_ptr =
+				GPlatesFileIO::GdalUtils::open_vector(filename, true/*true to allow updates*/);
 
 		if (ogr_data_source_ptr == NULL)
 		{
@@ -400,7 +411,7 @@ namespace{
 	 */
 	void
 	remove_multiple_geometry_type_files(
-			OGRSFDriver *driver,
+			GPlatesFileIO::GdalUtils::vector_data_driver_type *driver,
 			const QString &folder_name,
 			const QString &basename,
 			const QString &extension)
@@ -437,15 +448,16 @@ namespace{
 
 	void
 	destroy_ogr_data_source(
-		OGRDataSource *&ogr_data_source)
+			GPlatesFileIO::GdalUtils::vector_data_source_type *&ogr_data_source)
 	{
 		if (ogr_data_source)
 		{
-			try{
-				OGRDataSource::DestroyDataSource(ogr_data_source);
+			try
+			{
+				GPlatesFileIO::GdalUtils::close_vector(ogr_data_source);
 			}
 			catch(...)
-			{}
+			{ }
 		}
 	}
 
@@ -848,7 +860,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_srs_write_behaviour(behaviour),
 	d_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
-    OGRRegisterAll();
+	GdalUtils::register_all_drivers();
 
 	QFileInfo q_file_info_original(d_filename);
 	d_extension = q_file_info_original.suffix();
@@ -856,7 +868,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 	QString driver_name = get_driver_name_from_file_extension(d_extension);
 
-	d_ogr_driver_ptr = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(driver_name.toStdString().c_str());
+	d_ogr_driver_ptr = GdalUtils::get_vector_driver_manager()->GetDriverByName(driver_name.toStdString().c_str());
 	if (d_ogr_driver_ptr == NULL)
 	{
 		throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR driver not available.");

@@ -254,6 +254,9 @@ GPlatesGui::TopologyTools::activate_build_mode(
 	// A time period of boost::none implies distant past to distant future.
 	activate(topology_geometry_type, boost::none);
 
+	// unset focus 
+	unset_focus();
+
 	// synchronize the tools, container, widget, and table; default use the boundary
 	// note: will call handle_sections_combobox_index_changed() , which  will call update_and_redraw()
 	synchronize_seq_num( 0 );
@@ -2334,7 +2337,11 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries,
 			topological_section_reconstruct_handles,
-			d_application_state_ptr->get_current_reconstruction());
+			d_application_state_ptr->get_current_reconstruction(),
+			// Filter out 'topology' reconstructed feature geometries. These cannot supply topological
+			// sections because they use topology layers thus creating a cyclic dependency. This also
+			// increases performance by avoiding lengthy reconstructions of features using topologies...
+			false/*include_topology_reconstructed_feature_geometries*/);
 
 	// Also, if building a resolved topological boundary or network, then generate the
 	// resolved topological lines since they can be used as topological sections.
@@ -2394,7 +2401,11 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries,
 			reconstruct_handles,
-			d_application_state_ptr->get_current_reconstruction());
+			d_application_state_ptr->get_current_reconstruction(),
+			// Filter out 'topology' reconstructed feature geometries. These cannot supply topological
+			// sections because they use topology layers thus creating a cyclic dependency. This also
+			// increases performance by avoiding lengthy reconstructions of features using topologies...
+			false/*include_topology_reconstructed_feature_geometries*/);
 
 	const section_info_seq_type::size_type num_sections = d_interior_section_info_seq.size();
 

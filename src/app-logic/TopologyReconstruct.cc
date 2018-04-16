@@ -1508,7 +1508,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_delta_velocity_small_
 	// The delta velocity threshold only allows those points that are close enough to the boundary to reach
 	// it given their current relative velocity.
 	// The minimum distance threshold accounts for sudden changes in the shape of a plate/network boundary
-	// which are no supposed to represent a new or shifted boundary but are just a result of the topology
+	// which are not supposed to represent a new or shifted boundary but are just a result of the topology
 	// builder/user digitising a new boundary line that differs noticeably from that of the previous time period.
 	const GPlatesMaths::AngularExtent distance_threshold_radians = min_distance_threshold_radians + delta_velocity_threshold;
 
@@ -1829,12 +1829,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 
 		if (!current_geometry_sample)
 		{
-			// The current geometry sample was not reconstructed using topologies, so skip it.
-			// We're only accumulating strain in deformation regions because it doesn't accumulate in
-			// rigid regions (since strain rates are zero there). This also saves memory.
-			//
-			// Later on, the strains will be obtained from the beginning of the next younger time window
-			// (or present day if no younger time windows).
+			most_recent_geometry_sample = current_geometry_sample.get();
+			// Skip the current geometry sample - all its points are inactive.
 			continue;
 		}
 
@@ -1866,31 +1862,46 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 
 				const GeometryPoint *most_recent_geometry_point = most_recent_geometry_points[point_index];
 
-				if (current_geometry_point->strain_rate)
+				if (current_geometry_point->strain_rate ||
+					(most_recent_geometry_point && most_recent_geometry_point->strain_rate))
 				{
-					const DeformationStrain &current_strain_rate = *current_geometry_point->strain_rate;
+					DeformationStrain most_recent_strain; // Default to identity strain.
+					DeformationStrainRate most_recent_strain_rate; // Default to zero strain rate.
+					DeformationStrainRate current_strain_rate; // Default to zero strain rate.
 
-					// If most recent point is active and has a non-zero strain...
-					if (most_recent_geometry_point &&
-						most_recent_geometry_point->strain)
+					// If most recent point is active and has a non-zero strain or strain rate...
+					if (most_recent_geometry_point)
 					{
-						const DeformationStrain &most_recent_strain = *most_recent_geometry_point->strain;
+						if (most_recent_geometry_point->strain)
+						{
+							most_recent_strain = *most_recent_geometry_point->strain;
+						}
+						if (most_recent_geometry_point->strain_rate)
+						{
+							most_recent_strain_rate = *most_recent_geometry_point->strain_rate;
+						}
+					}
 
-						// Compute new strain for the current geometry point using the strain at the
-						// most recent point and the strain rate at the current sample.
-						const DeformationStrain current_strain = most_recent_strain + time_increment_in_seconds * current_strain_rate;
-						current_geometry_point->strain = d_pool_allocator->deformation_strain_pool.construct(current_strain);
-					}
-					else
+					// If current point has a non-zero strain rate...
+					if (current_geometry_point->strain_rate)
 					{
-						// Compute new strain for the current geometry sample assuming zero strain for most recent sample.
-						const DeformationStrain current_strain = time_increment_in_seconds * current_strain_rate;
-						current_geometry_point->strain = d_pool_allocator->deformation_strain_pool.construct(current_strain);
+						current_strain_rate = *current_geometry_point->strain_rate;
 					}
+
+					// Compute new strain for the current geometry point using the strain at the
+					// most recent point and the strain rate at the current sample.
+					const DeformationStrain current_strain = accumulate_strain(
+							most_recent_strain,
+							most_recent_strain_rate,
+							current_strain_rate,
+							time_increment_in_seconds);
+					current_geometry_point->strain = d_pool_allocator->deformation_strain_pool.construct(current_strain);
 				}
 				else
 				{
-					// The current strain rate is zero, so the current strain is equal to the most recent strain.
+					// Both the most recent and current strain rates are zero so the current strain
+					// remains the same as the most recent strain.
+					//
 					// We can share the strain object since all geometry samples in the time span used the same pool allocator.
 					if (most_recent_geometry_point)
 					{
@@ -1902,7 +1913,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 		}
 		else
 		{
-			// There is no most recent geometry sample which means the most recent strains are zero.
+			// There is no most recent geometry sample which means the most recent strains and strain rates are zero.
 
 			// Iterate over the current geometry sample points.
 			for (unsigned int point_index = 0; point_index < num_geometry_points; ++point_index)
@@ -1919,10 +1930,14 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 				// Otherwise update the current strain.
 				if (current_geometry_point->strain_rate)
 				{
-					const DeformationStrain &current_strain_rate = *current_geometry_point->strain_rate;
+					const DeformationStrainRate &current_strain_rate = *current_geometry_point->strain_rate;
 
-					// Compute new strain for the current geometry sample assuming zero strain for most recent sample.
-					const DeformationStrain current_strain = time_increment_in_seconds * current_strain_rate;
+					// Compute new strain for the current geometry sample assuming zero strain and strain rate for most recent sample.
+					const DeformationStrain current_strain = accumulate_strain(
+							DeformationStrain()/*most_recent_strain*/,
+							DeformationStrainRate()/*most_recent_strain_rate*/,
+							current_strain_rate,
+							time_increment_in_seconds);
 					current_geometry_point->strain = d_pool_allocator->deformation_strain_pool.construct(current_strain);
 				}
 				// ...else leave current strain as NULL.
@@ -2092,7 +2107,7 @@ bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry_data(
 		const double &reconstruction_time,
 		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> points,
-		boost::optional< std::vector<DeformationStrain> &> strain_rates,
+		boost::optional< std::vector<DeformationStrainRate> &> strain_rates,
 		boost::optional< std::vector<DeformationStrain> &> strains) const
 {
 	// If we'll be accessing strain rates.
@@ -2158,7 +2173,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry_data(
 			else
 			{
 				// Strain rate is zero.
-				strain_rates->push_back(DeformationStrain());
+				strain_rates->push_back(DeformationStrainRate());
 			}
 		}
 
@@ -2184,7 +2199,7 @@ bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 		const double &reconstruction_time,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points,
-		boost::optional< std::vector< boost::optional<DeformationStrain> > &> strain_rates,
+		boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates,
 		boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains) const
 {
 	// If we'll be accessing strain rates.
@@ -2246,7 +2261,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 				else
 				{
 					// Strain rate is zero.
-					strain_rates->push_back(DeformationStrain());
+					strain_rates->push_back(DeformationStrainRate());
 				}
 			}
 
@@ -2716,7 +2731,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 		if (interpolated_geometry_point == NULL)
 		{
 			//
-			// The initial geometry point is outside the network so test if it's inside a resolved boundary.
+			// The initial geometry point is outside all networks so test if it's inside a resolved boundary.
 			//
 
 			// Get the resolved boundary point location that the initial point lies within (if any).
@@ -2749,7 +2764,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 		if (interpolated_geometry_point == NULL)
 		{
 			//
-			// The initial geometry point is outside the network so rigidly rotate it instead.
+			// The initial geometry point is outside all networks and resolved boundaries so rigidly rotate it instead.
 			//
 
 			if (!interpolate_rigid_stage_rotation)
@@ -2783,23 +2798,23 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 					if (initial_geometry_point->strain_rate &&
 						final_geometry_point->strain_rate)
 					{
-						const DeformationStrain interpolated_strain_rate =
+						const DeformationStrainRate interpolated_strain_rate =
 								(1 - interpolate_initial_to_final_position) * *initial_geometry_point->strain_rate +
 									interpolate_initial_to_final_position * *final_geometry_point->strain_rate;
 
-						interpolated_geometry_point->strain_rate = pool_allocator->deformation_strain_pool.construct(interpolated_strain_rate);
+						interpolated_geometry_point->strain_rate = pool_allocator->deformation_strain_rate_pool.construct(interpolated_strain_rate);
 					}
 					else if (initial_geometry_point->strain_rate)
 					{
 						// Copy into a new strain object since we can't share the same object (because using our own allocator).
 						interpolated_geometry_point->strain_rate =
-								pool_allocator->deformation_strain_pool.construct(*initial_geometry_point->strain_rate);
+								pool_allocator->deformation_strain_rate_pool.construct(*initial_geometry_point->strain_rate);
 					}
 					else if (final_geometry_point->strain_rate)
 					{
 						// Copy into a new strain object since we can't share the same object (because using our own allocator).
 						interpolated_geometry_point->strain_rate =
-								pool_allocator->deformation_strain_pool.construct(*final_geometry_point->strain_rate);
+								pool_allocator->deformation_strain_rate_pool.construct(*final_geometry_point->strain_rate);
 					}
 					// ...else leave as NULL.
 				}
@@ -2810,8 +2825,10 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 						final_geometry_point->strain)
 					{
 						const DeformationStrain interpolated_strain =
-								(1 - interpolate_initial_to_final_position) * *initial_geometry_point->strain +
-									interpolate_initial_to_final_position * *final_geometry_point->strain;
+								interpolate_strain(
+										*initial_geometry_point->strain,
+										*final_geometry_point->strain,
+										interpolate_initial_to_final_position);
 
 						interpolated_geometry_point->strain = pool_allocator->deformation_strain_pool.construct(interpolated_strain);
 					}
@@ -2838,7 +2855,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 					{
 						// Copy into a new strain object since we can't share the same object (because using our own allocator).
 						interpolated_geometry_point->strain_rate =
-								pool_allocator->deformation_strain_pool.construct(*initial_geometry_point->strain_rate);
+								pool_allocator->deformation_strain_rate_pool.construct(*initial_geometry_point->strain_rate);
 					}
 				}
 				// ...else leave as NULL.
@@ -3028,7 +3045,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 			{
 				// Set the instantaneous strain rate.
 				// The accumulated strain will subsequently depend on the instantaneous strain rate.
-				geometry_point->strain_rate = d_pool_allocator->deformation_strain_pool.construct(
+				geometry_point->strain_rate = d_pool_allocator->deformation_strain_rate_pool.construct(
 						face_deformation_info->get_strain_rate());
 			}
 		}

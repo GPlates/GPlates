@@ -39,7 +39,7 @@ GPlatesAppLogic::TimeSpanUtils::TimeRange::TimeRange(
 {
 	// Modify begin, end time or time increment to satisfy the constraints:
 	//
-	//   begin_time = end_time + num_time_slots * time_increment
+	//   begin_time = end_time + (num_time_slots - 1) * time_increment
 	//   num_time_slots >= 2
 	//
 	// Hence, for example, the begin time can be earlier in the past (or the end time later)

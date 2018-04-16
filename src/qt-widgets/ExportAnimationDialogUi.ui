@@ -75,7 +75,7 @@
             <item row="0" column="1">
              <widget class="QLabel" name="label_1">
               <property name="text">
-               <string>Animate &amp;from:</string>
+               <string>Export &amp;from:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -232,7 +232,7 @@
             <item>
              <widget class="QPushButton" name="button_Reverse_the_Animation">
               <property name="text">
-               <string>Re&amp;verse the Animation</string>
+               <string>Re&amp;verse the Export</string>
               </property>
              </widget>
             </item>
@@ -434,7 +434,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Animation Options</string>
+          <string>Export Options</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>

@@ -329,6 +329,9 @@ namespace
 				QT_TR_NOOP("The number of value components in range parameters does not match the number of lists in tuple.") },
 
 		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
+		{ GPlatesFileIO::ReadErrors::ErrorReadingVectorFile,
+				QT_TR_NOOP("Error reading vector file."),
+				QT_TR_NOOP("An error was encountered while opening a vector file for reading.") },
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
 				QT_TR_NOOP("No layers were found in the shapefile.") },
@@ -482,9 +485,6 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
-		{ GPlatesFileIO::ReadErrors::MissingLabelSemiColon,
-				QT_TR_NOOP("No semi-colon before label."),
-				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
 
 		//Errors relating to Hellinger-fit files.
 		{ GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat,

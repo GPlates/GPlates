@@ -765,7 +765,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2364,7 +2364,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 	// same position (-90 or 90 degrees). However we are rendering in cartesian (x,y,z) space and not
 	// lat/lon space so we need to clamp latitudes to the poles. This introduces a slight error in
 	// positioning (georeferencing) of raster data but only for raster pixels between the pole and
-	// the nearest vertex in the raster mesh.
+	// the nearest vertex in the raster mesh (which is up to 5 degrees away). The error manifests
+	// as squishing of the pixels across the mesh quad by up to half a pixel.
 	if (y_geo < -90)
 	{
 		y_geo = -90;

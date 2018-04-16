@@ -108,6 +108,7 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 							default_reconstruction_tree->get_reconstruction_features(),
 							default_reconstruction_tree->get_anchor_plate_id(),
+							1, /* cache size 1 is enough - only accessing each flowline time once */
 							// We're not going to modify the reconstruction features so no need to clone...
 							false/*clone_reconstruction_features*/);
 

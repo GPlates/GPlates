@@ -41,6 +41,7 @@
 #include "model/GpgimStructuralType.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyValue.h"
+#include "model/TopLevelProperty.h"
 #include "model/XmlNodeUtils.h"
 
 #include "property-values/GpmlConstantValue.h"
@@ -770,4 +771,186 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	}
 
 	return feature;
+}
+
+
+GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::read_feature(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+		xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+		GpmlReaderUtils::ReaderParams &reader_params) const
+{
+	// Read the feature.
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+			d_feature_reader->read_feature(
+					feature_xml_element,
+					unprocessed_feature_property_xml_nodes,
+					reader_params);
+
+	// Convert any crustal thinning factors in the feature.
+	if (convert_crustal_thinning_factor_properties(feature))
+	{
+		// The file we read from still contains the old crustal thinning factors.
+		reader_params.contains_unsaved_changes = true;
+	}
+
+	return feature;
+}
+
+
+bool
+GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::convert_crustal_thinning_factor_properties(
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature) const
+{
+	bool updated_crustal_thinning_factors = false;
+
+	// Iterate over feature properties looking for 'gpml:rangeSet' property name.
+	GPlatesModel::FeatureHandle::iterator property_iter = feature->begin();
+	GPlatesModel::FeatureHandle::iterator property_end = feature->end();
+	for ( ; property_iter != property_end; ++property_iter)
+	{
+		static const GPlatesModel::PropertyName RANGE_SET_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("rangeSet");
+
+		const GPlatesModel::TopLevelProperty &top_level_property = **property_iter;
+		const GPlatesModel::PropertyName &property_name = top_level_property.get_property_name();
+		if (property_name == RANGE_SET_PROPERTY_NAME)
+		{
+			// Get the range property value from the range property iterator.
+			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> range_property_value_base =
+					GPlatesModel::ModelUtils::get_property_value(top_level_property);
+			if (range_property_value_base)
+			{
+				boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type> range_property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
+				if (range_property_value)
+				{
+					// See if contains crustal thinning factors, and if so then return converted values.
+					boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>
+							converted_range = convert_crustal_thinning_factors(range_property_value.get());
+					if (converted_range)
+					{
+						// Wrap converted property value in a new top level property.
+						boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> converted_top_level_property =
+								GPlatesModel::ModelUtils::create_top_level_property(
+										property_name,
+										converted_range.get(),
+										boost::none/*feature_type*/,
+										false/*check_property_value_type*/);
+						if (converted_top_level_property)
+						{
+							// Reset the property iterator to the converted property.
+							*property_iter = converted_top_level_property.get();
+
+							updated_crustal_thinning_factors = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return updated_crustal_thinning_factors;
+}
+
+
+boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>
+GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::convert_crustal_thinning_factors(
+		const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type &range) const
+{
+	// Iterate over the scalar types until we find a matching one.
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+			range_tuple_list = range->tuple_list();
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+			range_iter = range_tuple_list.begin(),
+			range_end = range_tuple_list.end();
+	for ( ; range_iter != range_end; ++range_iter)
+	{
+		static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR_PROPERTY_NAME =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data = range_iter->get();
+		if (scalar_data->get_value_object_type() == CRUSTAL_THINNING_FACTOR_PROPERTY_NAME)
+		{
+			// Extract/copy the thinning factors.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type
+					crustal_thinning_factors = scalar_data->get_coordinates();
+
+			const unsigned int num_crustal_thinning_factors = crustal_thinning_factors.size();
+
+			// If all crustal thicknesses are 0.0 then probably created by a version of GPlates between
+			// 2.0 and 2.1 (ie, prior to GPGIM version 1.6.338 but after crustal thinning factor fixed).
+			// In which case the crustal thinning factor '1 - T/Ti' is 0.0 because T=Ti at initial/import time.
+			// If GPML was created by GPlates 2.0 then crustal thinning factor would be 'T/Ti' which is 1.0.
+			unsigned int n;
+			for (n = 0; n < num_crustal_thinning_factors; ++n)
+			{
+				if (crustal_thinning_factors[n] > 0.0 ||
+					crustal_thinning_factors[n] < 0.0)
+				{
+					break;
+				}
+			}
+			if (n == num_crustal_thinning_factors)
+			{
+				// All crustal thinning factors were zero.
+				return boost::none; // No conversion.
+			}
+
+			// Convert the thinning factors.
+			// The crustal thinning factors were incorrect in GPlates 2.0 (fixed in 2.1).
+			//
+			// Convert 'T/Ti' (GPlates 2.0) to '1 - T/Ti' (GPlates 2.1) where 'Ti' is initial thickness.
+			// Typically these values are already initial thickness in which case T=Ti and
+			// we're converting 1 (GPlates 2.0) to 0 (GPlates 2.1).
+			for (n = 0; n < num_crustal_thinning_factors; ++n)
+			{
+				crustal_thinning_factors[n] = 1.0 - crustal_thinning_factors[n];
+			}
+
+			// The converted range property tuple list.
+			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> converted_range_tuple_list;
+
+			// Copy previous coordinates lists into new converted property.
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+					original_range_iter = range_tuple_list.begin();
+			for ( ; original_range_iter != range_iter; ++original_range_iter)
+			{
+				converted_range_tuple_list.push_back(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+								original_range_iter->get()->get_value_object_type(),
+								original_range_iter->get()->get_value_object_xml_attributes(),
+								original_range_iter->get()->get_coordinates()));
+			}
+
+			// Add converted crustal thinning factors.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type converted_crustal_thinning_factor_range =
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+							CRUSTAL_THINNING_FACTOR_PROPERTY_NAME,
+							scalar_data->get_value_object_xml_attributes(),
+							crustal_thinning_factors.begin(),
+							crustal_thinning_factors.end());
+			converted_range_tuple_list.push_back(converted_crustal_thinning_factor_range);
+
+			// Copy subsequent coordinates lists into new converted property.
+			original_range_iter = range_iter;
+			for (++original_range_iter; original_range_iter != range_end; ++original_range_iter)
+			{
+				converted_range_tuple_list.push_back(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+								original_range_iter->get()->get_value_object_type(),
+								original_range_iter->get()->get_value_object_xml_attributes(),
+								original_range_iter->get()->get_coordinates()));
+			}
+
+			// The converted range property.
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type converted_range =
+					GPlatesPropertyValues::GmlDataBlock::create(converted_range_tuple_list);
+
+			return converted_range;
+		}
+	}
+
+	return boost::none; // No conversion.
 }

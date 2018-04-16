@@ -542,6 +542,11 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstruction
 {
 	setupUi(this);
 
+	spinbox_moving->setMinimum(0);
+	spinbox_moving->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+	spinbox_fixed->setMinimum(0);
+	spinbox_fixed->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	// For setting minimum sizes.
 	EditPoleActionWidget dummy(this);
 	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::COMMENT,QHeaderView::Stretch);

@@ -69,11 +69,11 @@ namespace GPlatesOpenGL
 }
 
 void
-GPlatesOpenGL::GLUtils::assert_no_gl_errors(
+GPlatesOpenGL::GLUtils::check_gl_errors(
 		const GPlatesUtils::CallStack::Trace &assert_location)
 {
-	const GLenum error = glGetError();
-	if (error != GL_NO_ERROR)
+	GLenum error;
+	while ((error = glGetError()) != GL_NO_ERROR)
 	{
 		const char *gl_error_string = reinterpret_cast<const char *>(gluErrorString(error));
 
@@ -81,8 +81,6 @@ GPlatesOpenGL::GLUtils::assert_no_gl_errors(
 
 #ifdef GPLATES_DEBUG
 		GPlatesGlobal::Abort(assert_location);
-#else
-		throw OpenGLException(assert_location, gl_error_string);
 #endif
 	}
 }

@@ -1215,6 +1215,11 @@ GPlatesMaths::PolygonMesh::initialise(
 	}
 
 	// Create a mesh refinement from the constrained delaunay triangulation.
+	//
+	// Note that regions outside the polygon are not meshed.
+	// This means interior rings are not meshed (unless they intersect the exterior ring in which
+	// case part of interior ring is considered inside and part outside the polygon - basically the
+	// centroid of each triangle in mesh must pass the point-in-polygon test).
 	PolygonMeshRefinement polygon_mesh_refinement(polygon, cdt, gnomonic_projection);
 
 	// Refine the mesh by splitting edges until all edge lengths are below the specified threshold.

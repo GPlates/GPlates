@@ -60,7 +60,7 @@ GPlatesMaths::GnomonicProjection::TangentPlaneFrame
 GPlatesMaths::GnomonicProjection::get_tangent_plane_frame(
 		const UnitVector3D &tangent_plane_normal)
 {
-	// First try starting with the global x axix.
+	// First try starting with the global x axis.
 	// If it's too close to the tangent plane normal then choose the global y axis.
 	UnitVector3D tangent_plane_x_axis_test_point(0, 0, 1); // global x-axis
 	if (abs(dot(tangent_plane_x_axis_test_point, tangent_plane_normal)) > 1 - 1e-2)

@@ -146,7 +146,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 		const std::vector<const File::Reference *> &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
-		VelocityVectorFormatType velocity_vector_format,
+		GMTVelocityVectorFormatType velocity_vector_format,
 		double velocity_scale,
 		unsigned int velocity_stride,
 		bool domain_point_lon_lat_format,

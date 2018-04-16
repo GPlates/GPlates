@@ -878,8 +878,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					delaunay_points);
 		}
 
-		// Add the boundary polygon (constrained) points.
-		add_boundary_points(boundary_section, boundary_points);
+		// Add the points of this boundary section to the final list of boundary points (for boundary polygon).
+		GeometryUtils::get_geometry_exterior_points(
+				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
+				boundary_points,
+				boundary_section.d_use_reverse);
 
 		// Create a subsegment structure that'll get used when
 		// creating the boundary of the resolved topological network.
@@ -1028,16 +1031,9 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reco
 		const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
 		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points)
 {
-	// Get the reconstruction plate id.
-	GPlatesModel::integer_plate_id_type boundary_section_plate_id = 0;
-	if (boundary_section_rfg->reconstruction_plate_id())
-	{
-		boundary_section_plate_id = boundary_section_rfg->reconstruction_plate_id().get();
-	}
-
-	// The creator of reconstruction trees used when reconstructing the boundary section.
-	const ReconstructionTreeCreator boundary_section_reconstruction_tree_creator =
-			boundary_section_rfg->get_reconstruction_tree_creator();
+	// Reconstruct information shared by all the Delaunay points we're adding here.
+	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruct_info =
+			ResolvedTriangulation::VertexSharedReconstructInfo::create(boundary_section_rfg);
 
 	// Get the points for this boundary section.
 	// The section reversal order doesn't matter here - we're just adding independent points.
@@ -1053,8 +1049,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reco
 	{
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				*boundary_section_points_iter,
-				boundary_section_plate_id,
-				boundary_section_reconstruction_tree_creator);
+				shared_reconstruct_info);
 		delaunay_points.push_back(delaunay_point);
 	}
 }
@@ -1103,23 +1098,10 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		ReconstructionGeometry::non_null_ptr_to_const_type sub_segment_rg =
 				sub_segment.get_reconstruction_geometry();
 
-		// Get the sub-segment reconstruction plate id.
-		boost::optional<GPlatesModel::integer_plate_id_type> sub_segment_plate_id =
-				ReconstructionGeometryUtils::get_plate_id(sub_segment_rg);
-		if (!sub_segment_plate_id)
-		{
-			sub_segment_plate_id = 0;
-		}
-
-		// The creator of reconstruction trees used when reconstructing the sub-segment recon geometry.
-		boost::optional<ReconstructionTreeCreator> sub_segment_reconstruction_tree_creator =
-				ReconstructionGeometryUtils::get_reconstruction_tree_creator(sub_segment_rg);
-
-		// Sub-segments are either reconstructed feature geometries or resolved topological geometries
-		// and both have reconstruction tree creators so this should always succeed.
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				sub_segment_reconstruction_tree_creator,
-				GPLATES_ASSERTION_SOURCE);
+		// Reconstruct information shared by all the Delaunay points of the current sub-segment.
+		const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
+				sub_segment_shared_reconstruct_info =
+						ResolvedTriangulation::VertexSharedReconstructInfo::create(sub_segment_rg);
 
 		// Get the points for this sub-segment.
 		// Note that we *do* take into account sub-segment reversal to keep the order of points
@@ -1157,8 +1139,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 					// Output the single delaunay point.
 					const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 							boundary_section_points.front()/*first point*/,
-							sub_segment_plate_id.get(),
-							sub_segment_reconstruction_tree_creator.get());
+							sub_segment_shared_reconstruct_info);
 					delaunay_points.push_back(delaunay_point);
 
 					return;
@@ -1192,8 +1173,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 			{
 				const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 						boundary_section_points.front()/*first point*/,
-						sub_segment_plate_id.get(),
-						sub_segment_reconstruction_tree_creator.get());
+						sub_segment_shared_reconstruct_info);
 				delaunay_points.push_back(delaunay_point);
 			}
 
@@ -1225,8 +1205,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		{
 			const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 					*boundary_section_points_iter,
-					sub_segment_plate_id.get(),
-					sub_segment_reconstruction_tree_creator.get());
+					sub_segment_shared_reconstruct_info);
 			delaunay_points.push_back(delaunay_point);
 
 			++boundary_section_points_iter;
@@ -1273,8 +1252,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 			{
 				const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 						boundary_section_points.back()/*last point*/,
-						sub_segment_plate_id.get(),
-						sub_segment_reconstruction_tree_creator.get());
+						sub_segment_shared_reconstruct_info);
 				delaunay_points.push_back(delaunay_point);
 
 				return;
@@ -1292,8 +1270,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 				{
 					const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 							*boundary_section_points_iter,
-							sub_segment_plate_id.get(),
-							sub_segment_reconstruction_tree_creator.get());
+							sub_segment_shared_reconstruct_info);
 					delaunay_points.push_back(delaunay_point);
 				}
 
@@ -1309,20 +1286,17 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 	// Resort to using the plate id and reconstruction trees of the boundary section itself
 	// rather than its sub-segments. This will probably give incorrect velocities at these points.
 
-	// Get the boundary section plate id.
-	GPlatesModel::integer_plate_id_type boundary_section_plate_id = 0;
-	if (boundary_section_rtl->plate_id())
-	{
-		boundary_section_plate_id = boundary_section_rtl->plate_id().get();
-	}
+	// Reconstruct information shared by all the Delaunay points of the current sub-segment.
+	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
+			boundary_section_shared_reconstruct_info =
+					ResolvedTriangulation::VertexSharedReconstructInfo::create(boundary_section_rtl);
 
 	// It's possible we didn't even find a point matching the first boundary section point.
 	if (!initialised_start_of_boundary_section)
 	{
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				boundary_section_points.front()/*first point*/,
-				boundary_section_plate_id,
-				boundary_section_rtl->get_reconstruction_tree_creator());
+				boundary_section_shared_reconstruct_info);
 		delaunay_points.push_back(delaunay_point);
 
 		initialised_start_of_boundary_section = true;
@@ -1330,81 +1304,14 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		// 'boundary_section_points_iter' points at the second boundary section point.
 	}
 
-	// Add the remaining boundary section points using the current sub-segment parameters.
+	// Add the remaining boundary section points.
 	for ( ; boundary_section_points_iter != boundary_section_points_end; ++boundary_section_points_iter)
 	{
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				*boundary_section_points_iter,
-				boundary_section_plate_id,
-				boundary_section_rtl->get_reconstruction_tree_creator());
+				boundary_section_shared_reconstruct_info);
 		delaunay_points.push_back(delaunay_point);
 	}
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_boundary_points(
-		const ResolvedNetwork::BoundarySection &boundary_section,
-		std::vector<GPlatesMaths::PointOnSphere> &boundary_points)
-{
-	//
-	// Determine the subsegments original geometry type 
-	//
-	// FIXME: Should this be the section geometry before or after intersection-clipping?
-	const GPlatesMaths::GeometryType::Value section_geometry_type =
-			GeometryUtils::get_geometry_type(*boundary_section.d_source_geometry);
-
-	// Check for single point
-	if (section_geometry_type == GPlatesMaths::GeometryType::POINT)
-	{
-		// this is probably one of a collection of points; 
-		// save and add to constrained triangulation later
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check multipoint 
-	if (section_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)
-	{
-		// Get the points for this geom
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check for polyline geometry
-	if (section_geometry_type == GPlatesMaths::GeometryType::POLYLINE)
-	{
-		// this is a single line feature, possibly clipped by intersections
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Check for polygon geometry
-	if (section_geometry_type == GPlatesMaths::GeometryType::POLYGON)
-	{
-		// this is a single polygon feature
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		return;
-	}
-
-	// Shouldn't be able to get here.
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -1431,16 +1338,10 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reco
 				ResolvedTriangulation::Network::RigidBlock(interior_rfg));
 	}
 
-	// Get the reconstruction plate id.
-	GPlatesModel::integer_plate_id_type interior_geometry_plate_id = 0;
-	if (interior_rfg->reconstruction_plate_id())
-	{
-		interior_geometry_plate_id = interior_rfg->reconstruction_plate_id().get();
-	}
-
-	// The creator of reconstruction trees used when reconstructing the interior geometry.
-	const ReconstructionTreeCreator interior_geometry_reconstruction_tree_creator =
-			interior_rfg->get_reconstruction_tree_creator();
+	// Reconstruct information shared by all the Delaunay points we're adding here.
+	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
+			interior_geometry_shared_reconstruct_info =
+					ResolvedTriangulation::VertexSharedReconstructInfo::create(interior_rfg);
 
 	// Get the points for this interior geometry.
 	std::vector<GPlatesMaths::PointOnSphere> interior_geometry_points;
@@ -1455,8 +1356,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reco
 	{
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				*interior_geometry_points_iter,
-				interior_geometry_plate_id,
-				interior_geometry_reconstruction_tree_creator);
+				interior_geometry_shared_reconstruct_info);
 		delaunay_points.push_back(delaunay_point);
 	}
 }
@@ -1480,23 +1380,10 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reso
 		ReconstructionGeometry::non_null_ptr_to_const_type sub_segment_rg =
 				sub_segment.get_reconstruction_geometry();
 
-		// Get the sub-segment reconstruction plate id.
-		boost::optional<GPlatesModel::integer_plate_id_type> sub_segment_plate_id =
-				ReconstructionGeometryUtils::get_plate_id(sub_segment_rg);
-		if (!sub_segment_plate_id)
-		{
-			sub_segment_plate_id = 0;
-		}
-
-		// The creator of reconstruction trees used when reconstructing the sub-segment recon geometry.
-		boost::optional<ReconstructionTreeCreator> sub_segment_reconstruction_tree_creator =
-			ReconstructionGeometryUtils::get_reconstruction_tree_creator(sub_segment_rg);
-
-		// Sub-segments are either reconstructed feature geometries or resolved topological geometries
-		// and both have reconstruction tree creators so this should always succeed.
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				sub_segment_reconstruction_tree_creator,
-				GPLATES_ASSERTION_SOURCE);
+		// Gather the reconstruct information shared by all the Delaunay points of the current sub-segment.
+		const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
+				sub_segment_shared_reconstruct_info =
+						ResolvedTriangulation::VertexSharedReconstructInfo::create(sub_segment_rg);
 
 		// Get the points for this sub-segment.
 		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
@@ -1511,8 +1398,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reso
 		{
 			const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 					*sub_segment_points_iter,
-					sub_segment_plate_id.get(),
-					sub_segment_reconstruction_tree_creator.get());
+					sub_segment_shared_reconstruct_info);
 			delaunay_points.push_back(delaunay_point);
 		}
 	}

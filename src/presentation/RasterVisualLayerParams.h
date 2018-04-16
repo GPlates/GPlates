@@ -86,6 +86,14 @@ namespace GPlatesPresentation
 		handle_layer_modified(
 				const GPlatesAppLogic::Layer &layer);
 
+
+		/**
+		 * The default colour palette parameters.
+		 */
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_colour_palette_parameters();
+
 		/**
 		 * Returns the current colour palette.
 		 */
@@ -101,6 +109,7 @@ namespace GPlatesPresentation
 		void
 		set_colour_palette_parameters(
 				const GPlatesPresentation::RemappedColourPaletteParameters &colour_palette_parameters);
+
 
 		/**
 		 * Returns the type of the raster as an enumeration.

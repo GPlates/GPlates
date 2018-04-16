@@ -168,6 +168,10 @@ void main()
 		// We do not have a separate mapping of -||gradient|| to colour as is the case for isosurface rendering
 		// because we cannot easily determine front and back of isosurface when rendering cross-sections.
 		// So we only look up *positive* gradient (magnitude) - ie, we never negate the magnitude.
+		// UPDATE: Actually it would be possible to determine front and back of isosurface from the sign of
+		// dot(view_direction, gradient)... we just need view_direction which, in orthographic view, is
+		// constant and, in perspective view, is difference of world_position and eye position.
+		// However it could be confusing to view this across a flat cross section.
 		colour = look_up_table_1D(
 				colour_palette_sampler,
 				colour_palette_resolution,
@@ -234,9 +238,11 @@ void main()
 	// Note that we're not writing to 'gl_FragDepth'.
 	// This means the fixed-function depth will get written to the hardware depth buffer
 	// which is what we want for non-ray-traced geometries.
-	// Also note that we don't need to read a depth texture like the iso-surface shader does
+	//
+	// Also note that we don't need to read a depth texture for efficiency like the iso-surface shader does
 	// because the hardware depth buffer should be relatively efficient at fragment culling
-	// (since we're not outputing fragment depth in the shader).
+	// (since we're not outputting fragment depth in the shader which reduces hardware depth buffer efficiency).
+	// 
 
 	//
 	// Using multiple render targets here.

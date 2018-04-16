@@ -84,11 +84,22 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 void
 GPlatesCanvasTools::BuildTopology::handle_activation()
 {
-	// ONLY allow this tool to active with no focus
-	if ( d_feature_focus_ptr->is_valid() )
+	// Save the focused feature (if one is currently focused) so we can restore it when this tool is deactivated.
+	// The focused feature is restored once topology building has finished because, firstly, it leaves
+	// things almost the way they were (doesn't restore full clicked feature sequence though) and,
+	// secondly, it allows the build topology tools to be active even if a feature is currently focused
+	// (previously there had to be no feature in focus to use the build tools and this could be confusing
+	// if the Choose Feature tool is not currently selected and hence the focused feature wasn't visible
+	// and hence it wasn't obvious to the user what was blocking the build tools from being active).
+	if (d_feature_focus_ptr->is_valid())
 	{
-		// unset the focus
-		d_feature_focus_ptr->unset_focus();
+		d_save_restore_focused_feature = d_feature_focus_ptr->focused_feature();
+		d_save_restore_focused_feature_geometry_property = d_feature_focus_ptr->associated_geometry_property();
+	}
+	else
+	{
+		d_save_restore_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
+		d_save_restore_focused_feature_geometry_property = GPlatesModel::FeatureHandle::iterator();
 	}
 
 	// Set up the topology sections filter based on the topology geometry type.
@@ -129,6 +140,45 @@ GPlatesCanvasTools::BuildTopology::handle_deactivation()
 	d_topology_tools_widget_ptr->deactivate();
 
 	d_topology_sections_filter = GPlatesGui::filter_reconstruction_geometry_predicate_type();
+
+	// Restore the focused feature, if any (saved when this tool was activated).
+	if (d_save_restore_focused_feature.is_valid())
+	{
+		if (d_save_restore_focused_feature_geometry_property.is_still_valid())
+		{
+			d_feature_focus_ptr->set_focus(
+					d_save_restore_focused_feature,
+					d_save_restore_focused_feature_geometry_property);
+		}
+		else // Focused feature but geometry property no longer valid...
+		{
+			// Set focus to first geometry found within the feature.
+			d_feature_focus_ptr->set_focus(d_save_restore_focused_feature);
+		}
+	}
+	else // No focused feature...
+	{
+		d_feature_focus_ptr->unset_focus();
+	}
+
+	// Populate the feature table so that the Clicked (Geometries) GUI table shows the focused feature.
+	// NOTE: We do this *after* focusing the feature so that it can be found in the updated clicked feature table.
+	if (d_feature_focus_ptr->associated_reconstruction_geometry())
+	{
+		GPlatesGui::add_clicked_geometries_to_feature_table(
+				std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>(
+						1,
+						d_feature_focus_ptr->associated_reconstruction_geometry().get()),
+				*d_viewport_window_ptr,
+				*d_clicked_table_model_ptr,
+				*d_feature_focus_ptr,
+				d_reconstruct_graph,
+				false/*highlight_first_clicked_feature_in_table*/);
+	}
+	else
+	{
+		d_clicked_table_model_ptr->clear();
+	}
 }
 
 

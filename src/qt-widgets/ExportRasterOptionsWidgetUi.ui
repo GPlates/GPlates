@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>533</width>
-    <height>331</height>
+    <height>353</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -153,7 +153,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Top (lat):</string>
+           <string>Start latitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -201,7 +201,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Bottom (lat):</string>
+           <string>End latitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -249,7 +249,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Left (lon):</string>
+           <string>Start longitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -297,7 +297,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Right (lon):</string>
+           <string>End longitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -337,6 +337,26 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="lat_extents_label">
+        <property name="text">
+         <string>If start latitude is less than end latitude then raster is flipped vertically.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lon_extents_label">
+        <property name="text">
+         <string>If end longitude is less than start longitude then raster is flipped horizontally (drawn East to West).</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">

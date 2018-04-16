@@ -71,7 +71,7 @@ GLEW            libglew-dev
 Python          python-dev
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
-GDAL            libgdal1-dev
+GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev
 PROJ.4          libproj-dev
 Qwt		libqwt-dev
@@ -180,7 +180,10 @@ inbuilt spatial reference system (eg, a projection) is loaded.
 You'll also need to ensure that the NetCDF library is installed and that GDAL is
 configured to use it - this is necessary for GPlates to be able to load gridded rasters.
 Here are the relevant options for the GDAL 'configure' script:
-   configure --with-netcdf=/path/to/netcdf --with-static-proj4=/path/to/proj4
+   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-static-proj4=/path/to/proj4
+
+...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5'
+according to https://trac.osgeo.org/gdal/wiki/NetCDF
 
 Fedora 13 packages
 

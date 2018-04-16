@@ -226,7 +226,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_static(
 	// If there was an error during mapping then report it and throw exception.
 	if (mapped_data == NULL)
 	{
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		// We shouldn't get there since a mapped data pointer of NULL should generate an OpenGL error.
 		// But if we do then throw an exception since we promised the caller they wouldn't have to check for NULL.
@@ -321,7 +321,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_dynamic(
 	// If there was an error during mapping then report it and throw exception.
 	if (mapped_data == NULL)
 	{
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		// We shouldn't get there since a mapped data pointer of NULL should generate an OpenGL error.
 		// But if we do then throw an exception since we promised the caller they wouldn't have to check for NULL.
@@ -582,7 +582,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 	// If there was an error during mapping then report it and throw exception.
 	if (mapped_data == NULL)
 	{
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		// We shouldn't get there since a mapped data pointer of NULL should generate an OpenGL error.
 		// But if we do then throw an exception since we promised the caller they wouldn't have to check for NULL.
@@ -705,7 +705,7 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 	if (!unmap_result)
 	{
 		// Check OpenGL errors in case glUnmapBuffer used incorrectly - this will throw exception if so.
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted.
 		qWarning() << "GLBufferObject::gl_unmap_buffer: "

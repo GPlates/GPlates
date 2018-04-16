@@ -34,6 +34,7 @@
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/equal_to.hpp>
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/greater.hpp>
@@ -3010,7 +3011,7 @@ namespace GPlatesScribe
 		transcribe_pointed_to_class_name_if_polymorphic(
 				ObjectType *object_ptr,
 				boost::optional<
-					boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &>
+					boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &>
 							owns = boost::none);
 
 		template <typename ObjectType>
@@ -3018,7 +3019,7 @@ namespace GPlatesScribe
 		transcribe_pointed_to_class_name_if_polymorphic(
 				ObjectType *object_ptr,
 				boost::optional<
-					boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &> owns,
+					boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &> owns,
 				boost::mpl::true_/*'ObjectType' is polymorphic*/);
 
 		template <typename ObjectType>
@@ -3026,7 +3027,7 @@ namespace GPlatesScribe
 		transcribe_pointed_to_class_name_if_polymorphic(
 				ObjectType *object_ptr,
 				boost::optional<
-					boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &> owns,
+					boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &> owns,
 				boost::mpl::false_/*'ObjectType' is *not* polymorphic*/);
 
 		/**
@@ -4510,7 +4511,7 @@ namespace GPlatesScribe
 		}
 
 		// Find out how to transcribe the actual pointed-to object.
-		boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> transcribe_owning_pointer;
+		boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> transcribe_owning_pointer;
 		if (!transcribe_pointed_to_class_name_if_polymorphic(object_ptr, transcribe_owning_pointer))
 		{
 			// The pointed-to object type does not match anything we've export registered - which means either:
@@ -5051,7 +5052,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_pointed_to_class_name_if_polymorphic(
 			ObjectType *object_ptr,
 			boost::optional<
-				boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &> owns)
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &> owns)
 	{
 		// Transcribe differently depending of whether 'ObjectType' is polymorphic and hence
 		// the actual (polymorphic) pointed-to type could differ from 'ObjectType'
@@ -5073,7 +5074,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_pointed_to_class_name_if_polymorphic(
 			ObjectType *object_ptr,
 			boost::optional<
-				boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &> owns,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &> owns,
 			boost::mpl::true_/*'ObjectType' is polymorphic*/)
 	{
 		if (is_saving())
@@ -5103,7 +5104,7 @@ namespace GPlatesScribe
 			// Return the ability to transcribe pointed-to object if pointer owns it.
 			if (owns)
 			{
-				owns.get() = export_class_type->transcribe_owning_pointer;
+				owns.get() = export_class_type->transcribe_owning_pointer.get();
 			}
 		}
 
@@ -5121,7 +5122,7 @@ namespace GPlatesScribe
 				// Return the ability to transcribe pointed-to object if pointer owns it.
 				if (owns)
 				{
-					owns.get() = export_class_type->transcribe_owning_pointer;
+					owns.get() = export_class_type->transcribe_owning_pointer.get();
 				}
 			}
 			else
@@ -5177,7 +5178,7 @@ namespace GPlatesScribe
 							return false;
 						}
 
-						owns.get() = export_class_type->transcribe_owning_pointer;
+						owns.get() = export_class_type->transcribe_owning_pointer.get();
 					}
 				}
 			}
@@ -5192,7 +5193,7 @@ namespace GPlatesScribe
 	Scribe::transcribe_pointed_to_class_name_if_polymorphic(
 			ObjectType *object_ptr,
 			boost::optional<
-				boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type> &> owns,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &> owns,
 			boost::mpl::false_/*'ObjectType' is *not* polymorphic*/)
 	{
 		if (is_saving())
@@ -5211,7 +5212,12 @@ namespace GPlatesScribe
 				// the base class sub-object).
 				const class_id_type class_id = register_object_type<ObjectType>();
 
-				owns.get() = get_class_info(class_id).transcribe_owning_pointer;
+				boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type>
+						transcribe_owning_pointer = get_class_info(class_id).transcribe_owning_pointer;
+				if (transcribe_owning_pointer)
+				{
+					owns.get() = transcribe_owning_pointer->get();
+				}
 
 				// We know that 'ObjectType' cannot be an abstract class because if it was abstract
 				// then it would have run-time type information (RTTI) since it would have (pure)
@@ -5246,7 +5252,12 @@ namespace GPlatesScribe
 				// load paths then loading will only succeed if they are transcription-compatible.
 				const class_id_type class_id = register_object_type<ObjectType>();
 
-				owns.get() = get_class_info(class_id).transcribe_owning_pointer;
+				boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type>
+						transcribe_owning_pointer = get_class_info(class_id).transcribe_owning_pointer;
+				if (transcribe_owning_pointer)
+				{
+					owns.get() = transcribe_owning_pointer->get();
+				}
 
 				// We know that 'ObjectType' cannot be an abstract class because if it was abstract
 				// then it would have run-time type information (RTTI) since it would have (pure)

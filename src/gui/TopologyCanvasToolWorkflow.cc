@@ -401,27 +401,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::update_enable_state()
 void
 GPlatesGui::TopologyCanvasToolWorkflow::update_build_topology_tools()
 {
-	// The build topology tools are either all enabled or all disabled.
-	bool enable_build_topology_tools = false;
-	
-	// The build topology tools are enabled whenever one of them is the currently active (and enabled)
-	// tool regardless of whether a feature is focused or not - this is because the feature focus is
-	// used to add topology sections so it's always focusing, unfocusing, etc while the tool is being used.
-	if (is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY) ||
-		is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY) ||
-		is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY))
-	{
-		enable_build_topology_tools = true;
-	}
-	// If none of the build and edit topology tools are the currently active tool then
-	// the build tools are only enabled if a feature is *not* focused.
-	else if (!is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY))
-	{
-		if (!d_feature_focus.associated_reconstruction_geometry())
-		{
-			enable_build_topology_tools = true;
-		}
-	}
+	// The build topology tools are always enabled.
+	// If feature is focused when a build tool is activated then the build tool will temporarily
+	// unfocus the feature while it is active (and return original focus when deactivated).
+	// This includes when the edit topology tool is active (in which case the edit topology tool
+	// will re-focus the topology feature, that it was editing, on deactivation and the newly activated
+	// build tool will then save that focus temporarily, unfocus it and then re-focus on deactivation).
+	bool enable_build_topology_tools = true;
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, enable_build_topology_tools);
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, enable_build_topology_tools);
@@ -441,15 +427,23 @@ GPlatesGui::TopologyCanvasToolWorkflow::update_edit_topology_tool()
 	{
 		enable_edit_topology_tool = true;
 	}
-	// If the edit topology tool is not the current tool then it is only
-	// enabled if a feature is focused and that feature is a topological feature.
-	else if (d_feature_focus.associated_reconstruction_geometry())
+	// If the edit topology tool is not the current tool then it is only enabled if:
+	// (1) no build topology tools are the current tool, *and*
+	// (2) a feature is focused and that feature is a topological feature.
+	// The reason for (1) is the build boundary or network tool could be currently adding a line topology
+	// as a boundary section and this would have enabled the edit topology tool.
+	else if (!is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY) &&
+			!is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY) &&
+			!is_active_and_enabled_tool(d_canvas_tool_workflows, get_workflow(), CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY))
 	{
-		const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus.focused_feature();
-
-		if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+		if (d_feature_focus.associated_reconstruction_geometry())
 		{
-			enable_edit_topology_tool = true;
+			const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus.focused_feature();
+
+			if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+			{
+				enable_edit_topology_tool = true;
+			}
 		}
 	}
 

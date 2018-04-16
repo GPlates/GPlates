@@ -106,6 +106,15 @@ namespace GPlatesUtils
 namespace GPlatesGui
 {
 	/**
+	 * Colour model as specified in CPT file.
+	 */
+	namespace ColourModel
+	{
+		enum Type { RGB, HSV, CMYK };
+	};
+
+
+	/**
 	 * A colour slice specifies a gradient of colour between two real values.
 	 *
 	 * These are used to store entries from regular CPT files.
@@ -633,25 +642,25 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * For regular CPT files, this sets whether colours with three components are
-		 * interpreted as RGB or HSV, for both colour slices and FBN lines.
+		 * For regular CPT files, this sets whether space-separated colour components are
+		 * interpreted as RGB, HSV or CMTK (for both colour slices and FBN lines).
 		 *
 		 * For categorical CPT files, this setting is only used for FBN lines.
 		 */
 		void
-		set_rgb_colour_model(
-				bool rgb_colour_model)
+		set_colour_model(
+				ColourModel::Type colour_model)
 		{
-			d_rgb_colour_model = rgb_colour_model;
+			d_colour_model = colour_model;
 		}
 
 		/**
-		 * @see set_rgb_colour_model().
+		 * @see set_colour_model().
 		 */
-		bool
-		is_rgb_colour_model() const
+		ColourModel::Type
+		get_colour_model() const
 		{
-			return d_rgb_colour_model;
+			return d_colour_model;
 		}
 
 		/**
@@ -720,7 +729,7 @@ namespace GPlatesGui
 	protected:
 
 		CptColourPalette() :
-			d_rgb_colour_model(true)
+			 d_colour_model(ColourModel::RGB)
 		{  }
 
 		virtual
@@ -742,10 +751,10 @@ namespace GPlatesGui
 		boost::optional<Colour> d_nan_colour;
 
 		/**
-		 * True if the colour model in this CPT file is RGB.
-		 * If false, the colour model is HSV.
+		 * Colour model as specified in CPT file.
+		 * The default is ColourModel::RGB.
 		 */
-		bool d_rgb_colour_model;
+		ColourModel::Type d_colour_model;
 	};
 
 

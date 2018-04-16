@@ -2133,7 +2133,6 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 
-	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	// Open the file for reading.
 	QFile input(filename);
 	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))

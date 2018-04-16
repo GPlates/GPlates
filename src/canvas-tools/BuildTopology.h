@@ -36,6 +36,8 @@
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
 
+#include "model/FeatureHandle.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -143,6 +145,16 @@ namespace GPlatesCanvasTools
 		 * the test point hits one or more geometries.
 		 */
 		GPlatesGui::FeatureTableModel *d_clicked_table_model_ptr;
+
+		/**
+		 * The focused feature (if any) to restore upon deactivation.
+		 */
+		GPlatesModel::FeatureHandle::weak_ref d_save_restore_focused_feature;
+
+		/**
+		 * The focused feature geometry property (if any) to restore upon deactivation.
+		 */
+		GPlatesModel::FeatureHandle::iterator d_save_restore_focused_feature_geometry_property;
 
 		/**
 		 * This is the external table of selected features for the closed boundary

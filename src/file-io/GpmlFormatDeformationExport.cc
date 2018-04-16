@@ -133,7 +133,7 @@ namespace
 			dilatation_rates.reserve(deformation_strain_rates.size());
 			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
 			{
-				dilatation_rates.push_back(deformation_strain_rates[d].get_dilatation());
+				dilatation_rates.push_back(deformation_strain_rates[d].get_strain_rate_dilatation());
 			}
 
 			GPlatesPropertyValues::ValueObjectType dilatation_rate_type =
@@ -161,7 +161,7 @@ namespace
 			dilatations.reserve(deformation_strains.size());
 			for (unsigned int d = 0; d < deformation_strains.size(); ++d)
 			{
-				dilatations.push_back(deformation_strains[d].get_dilatation());
+				dilatations.push_back(deformation_strains[d].get_strain_dilatation());
 			}
 
 			GPlatesPropertyValues::ValueObjectType dilatation_type =

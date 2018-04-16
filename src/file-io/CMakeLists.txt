@@ -146,6 +146,7 @@ set(srcs
     MipmappedRasterFormatWriter.h
     MultiPointVectorFieldExport.cc
     MultiPointVectorFieldExport.h
+    Ogr.h
     OgrException.h
     OgrFeatureCollectionWriter.cc
     OgrFeatureCollectionWriter.h

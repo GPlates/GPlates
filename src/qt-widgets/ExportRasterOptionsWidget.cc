@@ -95,10 +95,10 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
 	right_extents_spinbox->setValue(export_configuration->lat_lon_extents.right);
 
 	// Set the min/max longitude values.
-	left_extents_spinbox->setMinimum(export_configuration->lat_lon_extents.right - 360);
-	left_extents_spinbox->setMaximum(export_configuration->lat_lon_extents.right + 360);
-	right_extents_spinbox->setMinimum(export_configuration->lat_lon_extents.left - 360);
-	left_extents_spinbox->setMaximum(export_configuration->lat_lon_extents.left + 360);
+	left_extents_spinbox->setMinimum(-360);
+	left_extents_spinbox->setMaximum(360);
+	right_extents_spinbox->setMinimum(-360);
+	left_extents_spinbox->setMaximum(360);
 
 	// If raster compression is an option then initialise it, otherwise hide it.
 	if (d_export_configuration.compress)
@@ -227,8 +227,32 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_left_extents_spin_box_value_c
 	d_export_configuration.lat_lon_extents.left = value;
 
 	// Make sure longitude extent cannot exceed 360 degrees (either direction).
-	right_extents_spinbox->setMinimum(d_export_configuration.lat_lon_extents.left - 360);
-	right_extents_spinbox->setMaximum(d_export_configuration.lat_lon_extents.left + 360);
+	if (d_export_configuration.lat_lon_extents.right > d_export_configuration.lat_lon_extents.left + 360)
+	{
+		QObject::disconnect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_right_extents_spin_box_value_changed(double)));
+
+		d_export_configuration.lat_lon_extents.right = d_export_configuration.lat_lon_extents.left + 360;
+		right_extents_spinbox->setValue(d_export_configuration.lat_lon_extents.right);
+
+		QObject::connect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_right_extents_spin_box_value_changed(double)));
+	}
+	else if (d_export_configuration.lat_lon_extents.right < d_export_configuration.lat_lon_extents.left - 360)
+	{
+		QObject::disconnect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_right_extents_spin_box_value_changed(double)));
+
+		d_export_configuration.lat_lon_extents.right = d_export_configuration.lat_lon_extents.left - 360;
+		right_extents_spinbox->setValue(d_export_configuration.lat_lon_extents.right);
+
+		QObject::connect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_right_extents_spin_box_value_changed(double)));
+	}
 
 	update_raster_dimensions();
 }
@@ -241,8 +265,32 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_right_extents_spin_box_value_
 	d_export_configuration.lat_lon_extents.right = value;
 
 	// Make sure longitude extent cannot exceed 360 degrees (either direction).
-	left_extents_spinbox->setMinimum(d_export_configuration.lat_lon_extents.right - 360);
-	left_extents_spinbox->setMaximum(d_export_configuration.lat_lon_extents.right + 360);
+	if (d_export_configuration.lat_lon_extents.left > d_export_configuration.lat_lon_extents.right + 360)
+	{
+		QObject::disconnect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_left_extents_spin_box_value_changed(double)));
+
+		d_export_configuration.lat_lon_extents.left = d_export_configuration.lat_lon_extents.right + 360;
+		left_extents_spinbox->setValue(d_export_configuration.lat_lon_extents.left);
+
+		QObject::connect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_left_extents_spin_box_value_changed(double)));
+	}
+	else if (d_export_configuration.lat_lon_extents.left < d_export_configuration.lat_lon_extents.right - 360)
+	{
+		QObject::disconnect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_left_extents_spin_box_value_changed(double)));
+
+		d_export_configuration.lat_lon_extents.left = d_export_configuration.lat_lon_extents.right - 360;
+		left_extents_spinbox->setValue(d_export_configuration.lat_lon_extents.left);
+
+		QObject::connect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(react_left_extents_spin_box_value_changed(double)));
+	}
 
 	update_raster_dimensions();
 }
@@ -253,12 +301,6 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_use_global_extents_button_cli
 {
 	const double left = -180;
 	const double right = 180;
-
-	// Reset the min/max longitude values.
-	left_extents_spinbox->setMinimum(right - 360);
-	left_extents_spinbox->setMaximum(right + 360);
-	right_extents_spinbox->setMinimum(left - 360);
-	left_extents_spinbox->setMaximum(left + 360);
 
 	top_extents_spinbox->setValue(90);
 	bottom_extents_spinbox->setValue(-90);

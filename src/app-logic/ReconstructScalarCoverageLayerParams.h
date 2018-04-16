@@ -99,26 +99,28 @@ namespace GPlatesAppLogic
 		get_scalar_type() const;
 
 		//! Returns the list of scalar types available in the scalar coverage features.
-		const std::vector<GPlatesPropertyValues::ValueObjectType> &
-		get_scalar_types() const
+		void
+		get_scalar_types(
+				std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types) const
 		{
-			return d_layer_proxy->get_scalar_types();
+			d_layer_proxy->get_scalar_types(scalar_types);
 		}
 
 		/**
 		 * Gets all scalar coverages available across the scalar coverage features.
 		 */
-		const std::vector<ScalarCoverageFeatureProperties::Coverage> &
-		get_scalar_coverages() const
+		void
+		get_scalar_coverages(
+				std::vector<ScalarCoverageFeatureProperties::Coverage> &scalar_coverages) const
 		{
-			return d_layer_proxy->get_scalar_coverages();
+			d_layer_proxy->get_scalar_coverages(scalar_coverages);
 		}
 
 		/**
 		 * Returns the scalar statistics across all scalar coverages of the specified scalar type,
 		 * or none if no coverages.
 		 *
-		 * NOTE: This is a statistic of the scalar coverages at present day.
+		 * Note: This statistic includes the time history of evolved scalar values (where applicable).
 		 */
 		boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
 		get_scalar_statistics(

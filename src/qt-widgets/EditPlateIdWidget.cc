@@ -36,6 +36,10 @@ GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
 	d_null_value_permitted(false)
 {
 	setupUi(this);
+
+	spinbox_plate_id->setMinimum(0);
+	spinbox_plate_id->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	reset_widget_to_default_values();
 	
 	QObject::connect(spinbox_plate_id, SIGNAL(valueChanged(int)),

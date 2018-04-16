@@ -80,6 +80,7 @@ namespace GPlatesQtWidgets
 		enum StackedWidgetPage
 		{
 			GENERATE_POINTS_PAGE,
+			PROPERTIES_PAGE,
 			COLLECTION_PAGE
 		};	
 
@@ -90,9 +91,10 @@ namespace GPlatesQtWidgets
 		/**
 		 * Reset the state of the dialog for a new creation process.
 		 *
-		 * Returns false if there is no focused feature geometry that is a polygon boundary.
+		 * If there is no focused feature geometry that is a polygon boundary then the user can still
+		 * choose a lat/lon extent.
 		 */	
-		bool
+		void
 		initialise();
 
 	Q_SIGNALS:
@@ -116,8 +118,19 @@ namespace GPlatesQtWidgets
 		handle_next();
 
 		void
-		handle_crustal_scalar_type_combobox_activated(
-				const QString &text);
+		handle_points_region_mode_button(
+				bool checked);
+
+		void
+		handle_left_extents_spin_box_value_changed(
+				double value);
+
+		void
+		handle_right_extents_spin_box_value_changed(
+				double value);
+
+		void
+		handle_use_global_extents_button_clicked();
 
 		void
 		handle_point_density_spin_box_value_changed(
@@ -126,10 +139,16 @@ namespace GPlatesQtWidgets
 	private:
 
 		void
+		initialise_widgets();
+
+		void
 		setup_pages();
 
 		void
 		make_generate_points_page_current();
+
+		void
+		make_properties_page_current();
 
 		void
 		make_feature_collection_page_current();
@@ -144,8 +163,9 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
-		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR;
 		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS;
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR;
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR;
 
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
@@ -173,16 +193,12 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
 
 		/**
-		 * Either 'gpml:CrustalThinningFactor' or 'gpml:CrustalThickness'.
-		 */
-		GPlatesPropertyValues::ValueObjectType d_crustal_scalar_type;
-
-		/**
 		 * The polygon geometry of the focused feature (topological plate/network or static polygon).
 		 */
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_focused_boundary_polygon;
 
 		GPlatesQtWidgets::InformationDialog *d_help_scalar_type_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_point_region_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_point_distribution_dialog;
 	};
 }

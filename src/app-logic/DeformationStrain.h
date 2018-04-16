@@ -29,37 +29,69 @@
 #include <cfloat>
 #include <cmath>
 
-#ifdef _MSC_VER
-#ifndef copysign
-#define copysign _copysign
-#endif
-#endif
+#include "DeformationStrainRate.h"
 
 
 namespace GPlatesAppLogic
 {
 	/**
-	 * Can be used to store either:
-	 * - instantaneous strain (also known as strain rate), or
-	 * - accumulated strain (also known as total strain or just strain).
+	 * Stores the deformation gradient tensor which can be used to get the strain tensor
+	 * (also known as total strain or just strain) and its principal components.
+	 *
+	 * In chapter 4 of "Introduction to the mechanics of a continuous medium" by Malvern:
+	 * The deformation gradient tensor is F in the case of finite strain.
+	 * The strain tensor E = 0.5 * (F_transpose * F - I).
 	 */
 	class DeformationStrain
 	{
 	public:
 
+		/**
+		 * The deformation gradient tensor F.
+		 */
+		struct DeformationGradient
+		{
+			//! Identity deformation gradient (non-deforming).
+			DeformationGradient() :
+				theta_theta(1),
+				theta_phi(0),
+				phi_theta(0),
+				phi_phi(1)
+			{  }
+
+			DeformationGradient(
+					const double &theta_theta_,
+					const double &theta_phi_,
+					const double &phi_theta_,
+					const double &phi_phi_) :
+				theta_theta(theta_theta_),
+				theta_phi(theta_phi_),
+				phi_theta(phi_theta_),
+				phi_phi(phi_phi_)
+			{  }
+
+			double theta_theta;
+			double theta_phi;
+			double phi_theta;
+			double phi_phi;
+		};
+
+
 		struct StrainPrincipal
 		{
 			StrainPrincipal(
-					double principal1_,
-					double principal2_) :
+					const double &principal1_,
+					const double &principal2_,
+					const double &angle_) :
 				principal1(principal1_),
-				principal2(principal2_)
+				principal2(principal2_),
+				angle(angle_)
 			{  }
 
 			/**
 			 * The larger principle strain.
 			 *
-			 * If @a get_strain_principal_angle returns zero then this is aligned with co-latitude
+			 * If @a angle is zero then this is aligned with co-latitude
 			 * (ie, the direction from North to South).
 			 */
 			double principal1;
@@ -67,135 +99,83 @@ namespace GPlatesAppLogic
 			/**
 			 * The smaller principle strain.
 			 *
-			 * If @a get_strain_principal_angle returns zero then this is aligned with longitude
+			 * If @a angle is zero then this is aligned with longitude
 			 * (ie, the direction from West to East).
 			 */
 			double principal2;
+
+			/**
+			 * The angle to rotate the principle strain directions.
+			 *
+			 * This is a counter-clockwise rotation (for positive angles) when viewed from above the globe.
+			 */
+			double angle;
 		};
 
 
-		//! Zero strain (non-deforming).
-		DeformationStrain() :
-			d_strain_theta_theta(0),
-			d_strain_phi_phi(0),
-			d_strain_theta_phi(0)
+		//! Identity strain.
+		DeformationStrain()
 		{  }
 
+		explicit
 		DeformationStrain(
-				const double &strain_theta_theta,
-				const double &strain_phi_phi,
-				const double &strain_theta_phi) :
-			d_strain_theta_theta(strain_theta_theta),
-			d_strain_phi_phi(strain_phi_phi),
-			d_strain_theta_phi(strain_theta_phi)
+				const DeformationGradient &deformation_gradient) :
+			d_deformation_gradient(deformation_gradient)
 		{  }
 
-		double
-		get_strain_theta_theta() const
+
+		/**
+		 * Return the deformation gradient tensor F.
+		 */
+		const DeformationGradient &
+		get_deformation_gradient() const
 		{
-			return d_strain_theta_theta;
+			return d_deformation_gradient;
 		}
 
-		double
-		get_strain_phi_phi() const
-		{
-			return d_strain_phi_phi;
-		}
-
-		double
-		get_strain_theta_phi() const
-		{
-			return d_strain_theta_phi;
-		}
-
-		double
-		get_dilatation() const
-		{
-			return d_strain_theta_theta + d_strain_phi_phi;
-		}
-
-		double
-		get_second_invariant() const
-		{
-			const double second_invariant_squared = d_strain_theta_theta * d_strain_phi_phi -
-					d_strain_theta_phi * d_strain_theta_phi;
-			return copysign(
-					std::sqrt(std::abs(second_invariant_squared)),
-					second_invariant_squared);
-		}
 
 		/**
 		 * Return the principle strain.
-		 *
-		 * If @a get_strain_principal_angle returns zero then this is aligned with co-latitude
-		 * (ie, the direction from North to South).
 		 */
 		const StrainPrincipal
-		get_strain_principal() const
-		{
-			const double SR_variation = std::sqrt(
-					d_strain_theta_phi * d_strain_theta_phi +
-					0.25 * (d_strain_theta_theta - d_strain_phi_phi) *
-						(d_strain_theta_theta - d_strain_phi_phi));
-			const double SR1 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) + SR_variation;
-			const double SR2 = 0.5 * (d_strain_theta_theta + d_strain_phi_phi) - SR_variation;
+		get_strain_principal() const;
 
-			return StrainPrincipal(SR1, SR2);
-		}
-
-		/**
-		 * Return the angle to rotate the principle strain directions.
-		 *
-		 * This is a counter-clockwise rotation (for positive angles) when viewed from above the globe.
-		 */
 		double
-		get_strain_principal_angle() const
+		get_strain_dilatation() const
 		{
-			return 0.5 * std::atan2(
-					2.0 * d_strain_theta_phi,
-					d_strain_theta_theta - d_strain_phi_phi);
-		}
-
-
-		friend
-		DeformationStrain
-		operator+(
-				const DeformationStrain &lhs,
-				const DeformationStrain &rhs)
-		{
-			return DeformationStrain(
-					lhs.d_strain_theta_theta + rhs.d_strain_theta_theta,
-					lhs.d_strain_phi_phi + rhs.d_strain_phi_phi,
-					lhs.d_strain_theta_phi + rhs.d_strain_theta_phi);
-		}
-
-		friend
-		DeformationStrain
-		operator*(
-				double scale,
-				const DeformationStrain &di)
-		{
-			return DeformationStrain(
-					scale * di.d_strain_theta_theta,
-					scale * di.d_strain_phi_phi,
-					scale * di.d_strain_theta_phi);
-		}
-
-		friend
-		DeformationStrain
-		operator*(
-				const DeformationStrain &di,
-				double scale)
-		{
-			return scale * di;
+			return 0;
 		}
 
 	private:
 
-		double d_strain_theta_theta;
-		double d_strain_phi_phi;
-		double d_strain_theta_phi;
+		DeformationGradient d_deformation_gradient;
 	};
+
+
+	/**
+	 * Accumulate the previous strain using both the previous and current strain rates (units in 1/second)
+	 * over a time increment (units in seconds).
+	 */
+	const DeformationStrain
+	accumulate_strain(
+			const DeformationStrain &previous_strain,
+			const DeformationStrainRate &previous_strain_rate,
+			const DeformationStrainRate &current_strain_rate,
+			const double &time_increment);
+
+
+	/**
+	 * Linearly interpolate between two strains.
+	 *
+	 * @param position A value between 0.0 and 1.0 (inclusive), which can be
+	 * interpreted as where the returned strain lies in the range between the
+	 * first strain and the second strain.
+	 */
+	const DeformationStrain
+	interpolate_strain(
+			const DeformationStrain &first_strain,
+			const DeformationStrain &second_strain,
+			const double &position);
 }
 
 #endif // GPLATES_APP_LOGIC_DEFORMATION_STRAIN_H

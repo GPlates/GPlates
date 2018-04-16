@@ -235,6 +235,9 @@ GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 {
 	setupUi(this);
 
+	spinbox_plate_id->setMinimum(0);
+	spinbox_plate_id->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
 			d_choose_feature_collection_widget,
 			widget_choose_feature_collection_placeholder);

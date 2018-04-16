@@ -42,6 +42,9 @@
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
 
+#include "property-values/GmlDataBlock.h"
+#include "property-values/GmlDataBlockCoordinateList.h"
+
 
 namespace GPlatesFileIO
 {
@@ -276,6 +279,66 @@ namespace GPlatesFileIO
 				d_network_property_name(network_property_name)
 			{  }
 
+		};
+
+
+		/**
+		 * A feature reader that updates any crustal thinning factors in scalar coverage.
+		 *
+		 * The crustal thinning factors were incorrect in GPlates 2.0 (fixed in 2.1).
+		 */
+		class CrustalThinningFactorUpgrade_1_6_338 :
+				public GpmlFeatureReaderImpl
+		{
+		public:
+
+			//! A convenience typedef for a shared pointer to a non-const @a ChangeFeatureTypeFeatureReaderImpl.
+			typedef GPlatesUtils::non_null_intrusive_ptr<CrustalThinningFactorUpgrade_1_6_338> non_null_ptr_type;
+
+			//! A convenience typedef for a shared pointer to a const @a ChangeFeatureTypeFeatureReaderImpl.
+			typedef GPlatesUtils::non_null_intrusive_ptr<const CrustalThinningFactorUpgrade_1_6_338> non_null_ptr_to_const_type;
+
+
+			/**
+			 * Creates a @a ChangeFeatureTypeFeatureReaderImpl.
+			 */
+			static
+			non_null_ptr_type
+			create(
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader)
+			{
+				return non_null_ptr_type(new CrustalThinningFactorUpgrade_1_6_338(feature_reader));
+			}
+
+
+			virtual
+			GPlatesModel::FeatureHandle::non_null_ptr_type
+			read_feature(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+					xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+					GpmlReaderUtils::ReaderParams &reader_params) const;
+
+		private:
+
+			/**
+			 * The feature reader that we delegate all property reading to.
+			 */
+			GpmlFeatureReaderImpl::non_null_ptr_to_const_type d_feature_reader;
+
+
+			explicit
+			CrustalThinningFactorUpgrade_1_6_338(
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader) :
+				d_feature_reader(feature_reader)
+			{  }
+
+			bool
+			convert_crustal_thinning_factor_properties(
+					GPlatesModel::FeatureHandle::non_null_ptr_type feature) const;
+
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>
+			convert_crustal_thinning_factors(
+					const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type &range) const;
 		};
 	}
 }

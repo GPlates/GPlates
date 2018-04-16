@@ -249,13 +249,55 @@ namespace
 
 
 	/**
-	 * Query the GPGIM to determine whether we should present the user
-	 * with a conjugatePlateId property value edit widget.
-	 * This is based on FeatureType.
+	 * Returns whether or not we should offer a reconstruction plate ID property.
+	 *
+	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 */
+	bool
+	should_offer_reconstruction_plate_id_prop(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type,
+			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_type)
+	{
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+		// See if the feature type supports a reconstruction plate id property (most feature types do).
+		if (!GPlatesModel::Gpgim::instance().get_feature_property(feature_type.get(), RECONSTRUCTION_PLATE_ID_PROPERTY_NAME))
+		{
+			return false;
+		}
+
+		// Geometry must not be a topological network or topological line since plate IDs are not meaningful for these.
+		// Velocities in topological networks are determined by deformation (which is in turn determined by the
+		// velocities/plate-IDs of a networks boundary/interior sections).
+		// Velocities along a topological line are determined by the plate IDs of the line sections in its topology.
+		// However topological polygons require a plate ID since velocities inside these non-deforming plates use it.
+		if (geometry_property_type)
+		{
+			if (is_topological_network(geometry_property_type.get()) ||
+				is_topological_line(geometry_property_type.get()))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Returns whether or not we should offer a conjugate plate ID property.
+	 *
+	 * Note: Returns false if geometry is topological (regardless of feature type).
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(
-			const boost::optional<GPlatesModel::FeatureType> &feature_type)
+			const boost::optional<GPlatesModel::FeatureType> &feature_type,
+			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_type)
 	{
 		if (!feature_type)
 		{
@@ -266,9 +308,24 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 		// See if the feature type supports a conjugate plate id property.
-		return GPlatesModel::Gpgim::instance().get_feature_property(
-				feature_type.get(),
-				CONJUGATE_PLATE_ID_PROPERTY_NAME);
+		if (!GPlatesModel::Gpgim::instance().get_feature_property(feature_type.get(), CONJUGATE_PLATE_ID_PROPERTY_NAME))
+		{
+			return false;
+		}
+
+		// Mirror behaviour in 'should_offer_reconstruction_plate_id_prop()'.
+		// If we're not offering a reconstruction plate ID for topological networks/lines then
+		// don't offer a conjugate plate ID either.
+		if (geometry_property_type)
+		{
+			if (is_topological_network(geometry_property_type.get()) ||
+				is_topological_line(geometry_property_type.get()))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -301,13 +358,13 @@ namespace
 	bool
 	should_offer_create_conjugate_feature_checkbox(
 			const boost::optional<GPlatesModel::FeatureType> &feature_type,
-			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_value)
+			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_type)
 	{
 		// Currently only allow user to select if there's a non-topological geometry because creating
 		// conjugate requires reverse reconstructing using non-topological reconstruction...
-		return geometry_property_value &&
-		       is_non_topological_geometry(geometry_property_value.get()) &&
-		       should_offer_conjugate_plate_id_prop(feature_type);
+		return geometry_property_type &&
+		       is_non_topological_geometry(geometry_property_type.get()) &&
+		       should_offer_conjugate_plate_id_prop(feature_type, geometry_property_type);
 	}	
 
 	/**
@@ -325,13 +382,13 @@ namespace
 	bool
 	should_offer_conjugate_properties_page(
 			const boost::optional<GPlatesModel::FeatureType> &feature_type,
-			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_value,
+			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_type,
 			const QCheckBox &create_conjugate_checkbox)
 	{
 		// Currently only allow user to select if there's a non-topological geometry because creating
 		// conjugate requires reverse reconstructing using non-topological reconstruction...
 		return create_conjugate_checkbox.isEnabled() && create_conjugate_checkbox.isChecked() &&
-		       should_offer_create_conjugate_feature_checkbox(feature_type, geometry_property_value);
+		       should_offer_create_conjugate_feature_checkbox(feature_type, geometry_property_type);
 	}	
 
 	/**
@@ -366,6 +423,39 @@ namespace
 		return GPlatesModel::Gpgim::instance().get_feature_property(
 				feature_type.get(),
 				RELATIVE_PLATE_PROPERTY_NAME);
+	}
+
+	/**
+	 * Returns whether or not we should offer a reconstruction method.
+	 *
+	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 */
+	bool
+	should_offer_reconstruct_method_prop(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type,
+			const boost::optional<GPlatesPropertyValues::StructuralType> &geometry_property_type)
+	{
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		// Feature type must support the property.
+		static const GPlatesModel::PropertyName RECONSTRUCT_METHOD_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
+		if (!GPlatesModel::Gpgim::instance().get_feature_property(feature_type.get(), RECONSTRUCT_METHOD_PROPERTY_NAME))
+		{
+			return false;
+		}
+
+		// Geometry must be non-topological.
+		if (geometry_property_type &&
+			is_topological_geometry(geometry_property_type.get()))
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
@@ -871,54 +961,56 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 		d_time_period_widget->reset_widget_to_default_values();
 	}
 
-	// Force flowline feature type to be reconstructed as HALF_STAGE_ROTATION.
-	if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("Flowline"))
+	if (should_offer_reconstruct_method_prop(d_feature_type, d_geometry_property_type))
 	{
-		d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
-		d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
-	}
-	// Force motion path feature type to be reconstructed as BY_PLATE_ID.
-	// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
-	// won't currently handle this correctly, so disable this option until we do handle it).
-	else if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("MotionPath"))
-	{
-		d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
-		d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
-	}
-	else
-	{
-		// See if the feature type supports a reconstruction method property.
-		if (GPlatesModel::Gpgim::instance().get_feature_property(
-				d_feature_type.get(),
-				GPlatesModel::PropertyName::create_gpml("reconstructionMethod")))
+		// Force flowline feature type to be reconstructed as HALF_STAGE_ROTATION.
+		if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("Flowline"))
 		{
-			d_recon_method_combobox->setEnabled(true);
+			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
+			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+		}
+		// Force motion path feature type to be reconstructed as BY_PLATE_ID.
+		// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
+		// won't currently handle this correctly, so disable this option until we do handle it).
+		else if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("MotionPath"))
+		{
+			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
+			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 		}
 		else
 		{
-			d_recon_method_combobox->setEnabled(false);
-		}
+			d_recon_method_combobox->setEnabled(true);
 
-		// Copy gpml:reconstructionMethod property into widget.
-		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_type> reconstruction_method_property =
-				find_property_value<GPlatesPropertyValues::Enumeration>(
-						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
-						d_feature_properties);
-		if (reconstruction_method_property)
-		{
-			if (reconstruction_method_property.get()->get_value().get() == "ByPlateId")
+			// Copy gpml:reconstructionMethod property (if any) into widget.
+			boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_type> reconstruction_method_property =
+					find_property_value<GPlatesPropertyValues::Enumeration>(
+							GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+							d_feature_properties);
+			if (reconstruction_method_property)
 			{
-				d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+				if (reconstruction_method_property.get()->get_value().get() == "ByPlateId")
+				{
+					d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+				}
+				else
+				{
+					d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+				}
 			}
 			else
 			{
-				d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+				d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 			}
 		}
-		else
-		{
-			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
-		}
+
+		d_recon_method_widget->setVisible(true);
+	}
+	else
+	{
+		// Reconstruct method is not being used.
+		d_recon_method_widget->setVisible(false);
+		// Set to by-plate-id as default so we don't enable left/right plate id widgets, etc.
+		d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	}
 
 	// Copy gpml:leftPlate property into widget.
@@ -974,21 +1066,31 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	}
 
 	// Copy gpml:reconstructionPlateId property into widget.
-	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> plate_id_property =
-			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					d_feature_properties);
-	if (plate_id_property)
+	if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
 	{
-		d_plate_id_widget->update_widget_from_plate_id(*plate_id_property.get());
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> plate_id_property =
+				find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						d_feature_properties);
+		if (plate_id_property)
+		{
+			d_plate_id_widget->update_widget_from_plate_id(*plate_id_property.get());
+		}
+		else
+		{
+			d_plate_id_widget->reset_widget_to_default_values();
+		}
+
+		d_plate_id_widget->setVisible(
+				d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	}
 	else
 	{
-		d_plate_id_widget->reset_widget_to_default_values();
+		d_plate_id_widget->setVisible(false);
 	}
 
 	// Copy gpml:conjugatePlateId property into widget.
-	if (should_offer_conjugate_plate_id_prop(d_feature_type))
+	if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
 	{
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> conjugate_plate_id_property =
 				find_property_value<GPlatesPropertyValues::GpmlPlateId>(
@@ -1063,13 +1165,46 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	}
 	else // GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID...
 	{
-		d_plate_id_widget->setFocus();
-
 		// The various Edit widgets need pass focus along the chain if Enter is pressed.
-		if (should_offer_conjugate_plate_id_prop(d_feature_type))
+		if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
 		{
-			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-					d_conjugate_plate_id_widget, SLOT(setFocus()));
+			d_plate_id_widget->setFocus();
+
+			if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
+			{
+				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+						d_conjugate_plate_id_widget, SLOT(setFocus()));
+
+				if (should_offer_relative_plate_id_prop(d_feature_type))
+				{
+					QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+							d_relative_plate_id_widget, SLOT(setFocus()));
+					QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+							d_time_period_widget, SLOT(setFocus()));
+				}
+				else
+				{
+					QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+							d_time_period_widget, SLOT(setFocus()));
+				}
+			}
+			else if (should_offer_relative_plate_id_prop(d_feature_type))
+			{
+				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+						d_relative_plate_id_widget, SLOT(setFocus()));
+				QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+			else
+			{
+				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+		}
+		else if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
+		{
+			d_conjugate_plate_id_widget->setFocus();
+
 			if (should_offer_relative_plate_id_prop(d_feature_type))
 			{
 				QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
@@ -1085,15 +1220,14 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 		}
 		else if (should_offer_relative_plate_id_prop(d_feature_type))
 		{
-			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-					d_relative_plate_id_widget, SLOT(setFocus()));
+			d_relative_plate_id_widget->setFocus();
+
 			QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
 					d_time_period_widget, SLOT(setFocus()));
 		}
 		else
 		{
-			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-					d_time_period_widget, SLOT(setFocus()));
+			d_time_period_widget->setFocus();
 		}
 	}
 }
@@ -1263,17 +1397,30 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 							GPlatesPropertyValues::GeoTimeInstant(
 									d_application_state_ptr->get_current_reconstruction_time())));
 		}
+		else
+		{
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"));
+		}
 
 		// If we are using half stage rotation.
 		// Note that the 'if' and 'else' parts do the reverse of each other.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
 		{
 			// Add a gpml:reconstructionMethod property.
-			copy_common_property_into_all_properties(
-					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
-					GPlatesPropertyValues::Enumeration::create(
-							GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
-							"HalfStageRotationVersion3"));
+			if (should_offer_reconstruct_method_prop(d_feature_type, d_geometry_property_type))
+			{
+				copy_common_property_into_all_properties(
+						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+						GPlatesPropertyValues::Enumeration::create(
+								GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
+								"HalfStageRotationVersion3"));
+			}
+			else
+			{
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"));
+			}
 
 			// Add gpml:leftPlate and gpml:rightPlate properties.
 			copy_common_property_into_all_properties(
@@ -1284,22 +1431,16 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 					d_right_plate_id->create_property_value_from_widget());
 
 			// Remove gpml:relativePlate Property.
-			if (should_offer_relative_plate_id_prop(d_feature_type))
-			{
-				remove_common_property_from_all_properties(
-						GPlatesModel::PropertyName::create_gpml("relativePlate"));
-			}
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("relativePlate"));
 
 			// Remove gpml:reconstructionPlateId Property.
 			remove_common_property_from_all_properties(
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
 
 			// Remove gpml:conjugatePlateId Property.
-			if (should_offer_conjugate_plate_id_prop(d_feature_type))
-			{
-				remove_common_property_from_all_properties(
-						GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
-			}
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
 		}
 		else // Not using a half-stage rotation...
 		{
@@ -1320,27 +1461,39 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 						GPlatesModel::PropertyName::create_gpml("relativePlate"),
 						d_relative_plate_id_widget->create_property_value_from_widget());
 			}
+			else
+			{
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("relativePlate"));
+			}
 
 			// Add a gpml:reconstructionPlateId Property.
-			copy_common_property_into_all_properties(
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					d_plate_id_widget->create_property_value_from_widget());
-
-			if (should_offer_conjugate_plate_id_prop(d_feature_type))
+			if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
 			{
-				if (d_conjugate_plate_id_widget->is_null())
-				{
-					// Remove gpml:conjugatePlateId Property.
-					remove_common_property_from_all_properties(
-							GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
-				}
-				else
-				{
-					// Add a gpml:conjugatePlateId Property.
-					copy_common_property_into_all_properties(
-							GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-							d_conjugate_plate_id_widget->create_property_value_from_widget());
-				}
+				copy_common_property_into_all_properties(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						d_plate_id_widget->create_property_value_from_widget());
+			}
+			else
+			{
+				// Remove gpml:reconstructionPlateId Property.
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+			}
+
+			if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type) &&
+				!d_conjugate_plate_id_widget->is_null())
+			{
+				// Add a gpml:conjugatePlateId Property.
+				copy_common_property_into_all_properties(
+						GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+						d_conjugate_plate_id_widget->create_property_value_from_widget());
+			}
+			else
+			{
+				// Remove gpml:conjugatePlateId Property.
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
 			}
 		}
 	}
@@ -1686,7 +1839,7 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	//
 	// If the user aborted then we also keep the feature properties for next time, but the user
 	// could have aborted while on any page, so we might need to update the feature properties
-	// from the corresonding page widgets.
+	// from the corresponding page widgets.
 	if (dialog_result != QDialog::Accepted)
 	{
 		if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
@@ -2108,9 +2261,10 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 		case GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID:
 			d_right_plate_id->setVisible(false);
 			d_left_plate_id->setVisible(false);
-			d_plate_id_widget->setVisible(true);
+			d_plate_id_widget->setVisible(
+					should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type));
 			d_conjugate_plate_id_widget->setVisible(
-					should_offer_conjugate_plate_id_prop(d_feature_type));
+					should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type));
 			d_relative_plate_id_widget->setVisible(
 					should_offer_relative_plate_id_prop(d_feature_type));
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;

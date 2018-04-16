@@ -100,6 +100,9 @@ namespace GPlatesMaths
 		//! Typedef for a sequence of partitioned polylines.
 		typedef std::list<PolylineOnSphere::non_null_ptr_to_const_type> partitioned_polyline_seq_type;
 
+		//! Typedef for a sequence of partitioned points.
+		typedef std::vector<PointOnSphere> partitioned_point_seq_type;
+
 
 		/**
 		 * Returns the partitioning polygon (passed into constructor).
@@ -177,17 +180,17 @@ namespace GPlatesMaths
 		 * of the partitioning polygon or if points were partitioned both inside and outside.
 		 *
 		 * Example usage:
-		 *   boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> partitioned_multipoint_inside;
-		 *   boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> partitioned_multipoint_outside;
+		 *   partitioned_point_seq_type partitioned_points_inside;
+		 *   partitioned_point_seq_type partitioned_points_outside;
 		 *   PolygonIntersections::Result result = polygon_intersections.partition_multipoint(
 		 *	      multipoint,
-		 *	      partitioned_multipoint_inside,
-		 *	      partitioned_multipoint_outside);
-		 *	 if (partitioned_multipoint_inside)
+		 *	      partitioned_points_inside,
+		 *	      partitioned_points_outside);
+		 *	 if (!partitioned_points_inside.empty())
 		 *	 {
 		 *	      // Some of 'multipoint's points are inside the polygon.
 		 *	 }
-		 *	 if (partitioned_multipoint_outside)
+		 *	 if (!partitioned_points_outside.empty())
 		 *	 {
 		 *	      // Some of 'multipoint's points are outside the polygon.
 		 *	 }
@@ -195,8 +198,8 @@ namespace GPlatesMaths
 		Result
 		partition_multipoint(
 				const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
-				boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_inside = boost::none,
-				boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_outside = boost::none) const;
+				boost::optional<partitioned_point_seq_type &> partitioned_points_inside = boost::none,
+				boost::optional<partitioned_point_seq_type &> partitioned_points_outside = boost::none) const;
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;

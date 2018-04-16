@@ -204,6 +204,11 @@ namespace GPlatesFileIO
 		create_upgrade_1_6_320_feature_reader_impl(
 				const GPlatesModel::FeatureType &feature_type) const;
 
+		//! Creates a feature reader that handles changes made in the GPGIM version (in the method's name).
+		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
+		create_upgrade_1_6_338_feature_reader_impl(
+				const GPlatesModel::FeatureType &feature_type) const;
+
 
 		//! Creates a feature reader that renames a single property.
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>

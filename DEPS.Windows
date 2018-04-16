@@ -135,7 +135,7 @@ Boost
 
 Proj4
 
-  1. Get Proj4 source code from http://trac.osgeo.org/proj/.
+  1. Get Proj4 source code from http://trac.osgeo.org/proj/
   2. Read the README file and build Proj4.
      o This typically includes editing the INSTDIR variable in the "nmake.opt" file in Proj4 source code
        to point to the install location,
@@ -161,7 +161,7 @@ NetCDF
 
 GDAL
 
-    1. Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
+    1. Get GDAL 2.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
     2. Extract to a location on your hard drive (eg, "").
     3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
        o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
@@ -170,7 +170,11 @@ GDAL
          NETCDF_SETTING=yes
          NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
          NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
-    4. Edit the "nmake.opt" file under the section labelled "# Uncomment the following lines to link PROJ.4 library statically.",
+    4. Edit the "nmake.opt" by uncommenting '#NETCDF_HAS_NC4 = yes':
+       o This enables NetCDF version 4 support (which uses HDF5).
+       o For example, after editing, you should have:
+         NETCDF_HAS_NC4 = yes
+    5. Edit the "nmake.opt" file under the section labelled "# Uncomment the following lines to link PROJ.4 library statically.",
        o Uncomment the following three lines and specify the location of the PROJ4 library (see PROJ4 above).
        o For example, after editing, you might have something like:
          PROJ_FLAGS = -DPROJ_STATIC
@@ -180,27 +184,34 @@ GDAL
          a raster with an inbuilt spatial reference system (eg, a projection) is loaded into GPlates.
        o Also note that 'proj.lib' (static lib) should be specified and not 'proj_i.lib' (DLL interface lib).
     5. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
-    6. Generate a new Visual Studio solution file,
-       o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
-       o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
+    6. Generate a new Visual Studio solution file by following instructions at https://trac.osgeo.org/gdal/wiki/GeneratingVisualStudioProject
+       o For example, run "generate_vcxproj.bat 14.0 32 gdal_vs2015" if you are using Visual Studio 2015.
     7. Use Visual Studio to build GDAL.
-       o For example, by opening the 'makegdal80.vcproj' project file with Visual Studio 2005.
+       o For example, by opening the 'gdal_vs2015.vcxproj' project file with Visual Studio 2015.
        o Selecting 'Release' as the build type.
-	   o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
-	     Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
-	8. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
-	     nmake /f makefile.vc MSVC_VER=1500
-	   o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1500 (Visual Studio 2008).
-	   o If you want a debug build then add 'DEBUG=1'.
-    9. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
-    10. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+       o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
+         Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
+    8. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
+         nmake /f makefile.vc MSVC_VER=1500
+       o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1500 (Visual Studio 2008).
+       o If you want a debug build then add 'DEBUG=1'.
+    9. If compiling with Visual Studio 2005 (and maybe other oldish versions) then you may need to add the following in "port/cpl_vsil_win32.cpp":
+         #ifndef _WIN32_WINNT
+         #define _WIN32_WINNT 0x0500
+         #endif
+       ...just before...
+         #include <windows.h>
+         #include <winioctl.h> // for FSCTL_SET_SPARSE
+       ...to avoid a compile error stating that FSCTL_SET_SPARSE is an undeclared identifier.
+    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-2.2.1").
+    11. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
   
 CGAL
 
-  1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
+  1. Get and install the CGAL 3.8 source code from http://www.cgal.org/
      * Download and run 'CGAL-3.8-Setup.exe'.
      * Under 'Choose Components' untick everything except:
-	     * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
+         * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.

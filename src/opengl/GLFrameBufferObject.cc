@@ -674,17 +674,22 @@ GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 		return false;
 
 	default:
-		break;
+		// If the status is neither 'GL_FRAMEBUFFER_COMPLETE_EXT' nor 'GL_FRAMEBUFFER_UNSUPPORTED_EXT'
+		// then an assertion/exception is triggered as this represents a programming error.
+		//
+		// UPDATE: This virtually never happens but it did on one user's system described as:
+		//
+		//   - Windows server 2016 Datacenter virtual machine.
+		//   - 2 gb GPU with 1.0.6.1371 OpenGL Library and 1.0.0.69 OpenGL Redirector.
+		//
+		// ...although they did have a screenshot of a loaded scalar field so must have at least OpenGL 3.
+		//
+		// In order to avoid aborting GPlates we'll log the framebuffer status and return false.
+		qWarning() << "glCheckFramebufferStatusEXT returned status other than "
+				"'GL_FRAMEBUFFER_COMPLETE_EXT' or 'GL_FRAMEBUFFER_UNSUPPORTED_EXT': "
+				<< status;
+		return false;
 	}
-
-	// If the status is neither 'GL_FRAMEBUFFER_COMPLETE_EXT' nor 'GL_FRAMEBUFFER_UNSUPPORTED_EXT'
-	// then an assertion/exception is triggered as this represents a programming error.
-	qWarning() << "glCheckFramebufferStatusEXT returned status other than 'GL_FRAMEBUFFER_COMPLETE_EXT'"
-			" or 'GL_FRAMEBUFFER_UNSUPPORTED_EXT'";
-	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-
-	// Keep compiler happy - we can't get here due to above 'Abort'.
-	return false;
 }
 
 

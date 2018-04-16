@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -484,6 +485,23 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 
 	// Enable the move vertex tool if there's at least one vertex regardless of the geometry type.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, num_vertices > 0);
+
+	// If the focused feature has per-point scalar values then disable all tools that change the
+	// number of points since this loses the mapping between the feature's domain points and the
+	// feature's scalar values. The only tool that doesn't do this is the move vertex tool.
+	//
+	// TODO: Implement the ability for the user to:
+	//   (1) insert a new scalar values when inserting a new vertex,
+	//   (2) delete the appropriate scalar value when deleting a vertex,
+	//   (3) divide the scalar values between features when splitting a feature.
+	if (GPlatesAppLogic::ScalarCoverageFeatureProperties::is_scalar_coverage_feature(focused_feature))
+	{
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SPLIT_FEATURE, false);
+
+		return;
+	}
 
 	// Enable the insert vertex tool if inserting a vertex won't change the type of
 	// geometry. In other words disable in the following situations:

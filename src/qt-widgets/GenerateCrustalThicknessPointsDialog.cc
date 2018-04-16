@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -51,6 +52,7 @@
 #include "gui/FeatureFocus.h"
 
 #include "maths/GeneratePoints.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -78,20 +80,37 @@ namespace
 			QObject::tr("Crustal scalar types");
 	const QString HELP_SCALAR_TYPE_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<p>Two types of crustal scalar values are possible:</p>"
+			"<p>Three related types of crustal scalar values are generated:</p>"
 			"<ul>"
-			"<li><i>crustal thinning factor</i>: Represents the amount of stretching/thinning. "
-			"Typically starts with an initial value of 1.0 and has no units.</li>"
-			"<li><i>crustal thickness</i>: Represents the thickness in kms.</li>"
+			"<li><i>crustal thickness</i>: Represents the actual crustal thickness in kms.</li>"
+			"<li><i>crustal stretching (beta) factor</i>: Represents changing crustal thickness 'T' "
+			"according to 'beta = Ti/T' where 'Ti' is initial thickness. "
+			"Values greater than 1 represent extensional regions and values between 0 and 1 "
+			"represent compressional regions. "
+			"Starts with an initial value of 1.0 and has no units.</li>"
+			"<li><i>crustal thinning (gamma) factor</i>: Represents changing crustal thickness 'T' "
+			"according to 'gamma = (1 - T/Ti)' where 'Ti' is initial thickness. "
+			"Values between 0 and 1 represent extensional regions and negative values "
+			"represent compressional regions. "
+			"Starts with an initial value of 0.0 and has no units.</li>"
 			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_POINT_REGION_DIALOG_TITLE =
+			QObject::tr("Region of points");
+	const QString HELP_POINT_REGION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>The distribution of points fill a region defined either by a polygon boundary or a latitude/longitude extent.</p>"
+			"<p>To fill a polygon boundary first use the Choose Feature tool to select a topological plate, "
+			"a topological network or a static polygon.</p>"
 			"</body></html>\n");
 
 	const QString HELP_POINT_DISTRIBUTION_DIALOG_TITLE =
 			QObject::tr("Distribution of points");
 	const QString HELP_POINT_DISTRIBUTION_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<p>The initial crustal point positions are uniformly distributed within the polygon boundary "
-			"of the currently focused feature. Also a random offset can be applied to each position.</p>"
+			"<p>The initial crustal point positions are uniformly distributed within the points region. "
+			"Also a random offset can be applied to each position.</p>"
 			"<p><i>Density level</i>: Points at level zero are spaced roughly 20 degrees apart. "
 			"Each increment of the density level halves the spacing between points.</p>"
 			"<p><i>Random offset</i>: The amount of random offset can vary between 0 and 100%. "
@@ -101,12 +120,16 @@ namespace
 
 
 const GPlatesPropertyValues::ValueObjectType
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THINNING_FACTOR =
-		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
-
-const GPlatesPropertyValues::ValueObjectType
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THICKNESS =
 		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
+
+const GPlatesPropertyValues::ValueObjectType
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_STRETCHING_FACTOR =
+		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+
+const GPlatesPropertyValues::ValueObjectType
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THINNING_FACTOR =
+		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
 
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThicknessPointsDialog(
@@ -129,11 +152,15 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 					d_application_state.get_feature_collection_file_state(),
 					d_application_state.get_feature_collection_file_io(),
 					this)),
-	d_crustal_scalar_type(GPML_CRUSTAL_THINNING_FACTOR),
 	d_help_scalar_type_dialog(
 			new InformationDialog(
 					HELP_SCALAR_TYPE_DIALOG_TEXT,
 					HELP_SCALAR_TYPE_DIALOG_TITLE,
+					this)),
+	d_help_point_region_dialog(
+			new InformationDialog(
+					HELP_POINT_REGION_DIALOG_TEXT,
+					HELP_POINT_REGION_DIALOG_TITLE,
 					this)),
 	d_help_point_distribution_dialog(
 			new InformationDialog(
@@ -149,62 +176,65 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 
 	// Set these to false to prevent buttons from stealing Enter events from the spinboxes in the enclosed widget.
 	button_create->setAutoDefault(false);
-	button_cancel->setAutoDefault(false);
 	button_create->setDefault(false);
+	button_cancel->setAutoDefault(false);
 	button_cancel->setDefault(false);
+	push_button_help_point_distribution->setAutoDefault(false);
+	push_button_help_point_distribution->setDefault(false);
+	push_button_help_scalar_type->setAutoDefault(false);
+	push_button_help_scalar_type->setDefault(false);
 
 	setup_pages();
 }
 
 
-bool
+void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise()
 {
 	d_focused_boundary_polygon = boost::none;
 
 	make_generate_points_page_current();
 
-	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry;
-	if (!d_feature_focus.is_valid() ||
-		!(focused_geometry = d_feature_focus.associated_reconstruction_geometry()))
+	if (d_feature_focus.associated_reconstruction_geometry())
 	{
-		QMessageBox::critical(this,
-				tr("No focused feature selected"),
-				tr("Please use the Choose Feature tool to select a topological plate, "
-					"a topological network or a static polygon."));
-		return false;
+		// Get the boundary polygon of the focused feature (topological plate/network or static polygon). 
+		// If there's a focused feature but it has a line geometry (instead of polygon) then the user
+		// can still specify a lat/lon extent.
+		d_focused_boundary_polygon =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
+						d_feature_focus.associated_reconstruction_geometry());
 	}
 
-	// Get the boundary polygon of the focused feature (topological plate/network or static polygon). 
-	d_focused_boundary_polygon = GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(focused_geometry);
-	if (!d_focused_boundary_polygon)
-	{
-		QMessageBox::critical(this,
-				tr("Focused feature does not have a polygon boundary"),
-				tr("Please use the Choose Feature tool to select a topological plate, "
-					"a topological network or a static polygon."));
-		return false;
-	}
+	initialise_widgets();
+}
 
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise_widgets()
+{
 	// Default to plate ID zero.
 	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
 
-	// If the focused feature is *not* a topological network then initialise using its plate ID,
-	// otherwise set to zero (because plate IDs for topological networks currently don't have a
-	// well-defined meaning since they are not used for anything, eg, velocity calculations).
-	const bool is_resolved_topological_network =
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalNetwork *>(focused_geometry);
-	if (!is_resolved_topological_network)
+	if (d_focused_boundary_polygon)
 	{
-		// Get the reconstruction plate ID of the focused feature.
-		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_reconstruction_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
-						d_feature_focus.focused_feature(),
-						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
-		if (gpml_reconstruction_plate_id)
+		// If the focused feature is *not* a topological network then initialise using its plate ID,
+		// otherwise set to zero (because plate IDs for topological networks currently don't have a
+		// well-defined meaning since they are not used for anything, eg, velocity calculations).
+		const bool is_resolved_topological_network =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const GPlatesAppLogic::ResolvedTopologicalNetwork *>(
+								d_feature_focus.associated_reconstruction_geometry());
+		if (!is_resolved_topological_network)
 		{
-			reconstruction_plate_id = gpml_reconstruction_plate_id.get()->get_value();
+			// Get the reconstruction plate ID of the focused feature.
+			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_reconstruction_plate_id =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+							d_feature_focus.focused_feature(),
+							GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+			if (gpml_reconstruction_plate_id)
+			{
+				reconstruction_plate_id = gpml_reconstruction_plate_id.get()->get_value();
+			}
 		}
 	}
 
@@ -220,22 +250,45 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise()
 					GPlatesPropertyValues::GeoTimeInstant(0.0));
 	d_time_period_widget->update_widget_from_time_period(*gml_valid_time);
 
-	// Set the name of the focused feature in the edit widget.
-	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> gml_name =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
-					d_feature_focus.focused_feature(),
-					GPlatesModel::PropertyName::create_gml("name"));
-	if (gml_name)
+	if (d_focused_boundary_polygon)
 	{
-		GPlatesPropertyValues::XsString::non_null_ptr_type gml_name_clone = gml_name.get()->clone();
-		d_name_widget->update_widget_from_string(*gml_name_clone);
+		// Set the name of the focused feature in the edit widget.
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> gml_name =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						d_feature_focus.focused_feature(),
+						GPlatesModel::PropertyName::create_gml("name"));
+		if (gml_name)
+		{
+			GPlatesPropertyValues::XsString::non_null_ptr_type gml_name_clone = gml_name.get()->clone();
+			d_name_widget->update_widget_from_string(*gml_name_clone);
+		}
+		else
+		{
+			d_name_widget->reset_widget_to_default_values();
+		}
 	}
 	else
 	{
 		d_name_widget->reset_widget_to_default_values();
 	}
 
-	return true;
+	// Set the read-only geometry import time string to the current reconstruction time.
+	const double geometry_import_time = d_application_state.get_current_reconstruction_time();
+	QString geometry_import_time_string;
+	geometry_import_time_string.setNum(geometry_import_time, 'f', 2);
+	geometry_import_time_line_edit->setText(geometry_import_time_string);
+
+	// If there is a focused boundary polygon then default to it, otherwise choose lat/lon extent.
+	if (d_focused_boundary_polygon)
+	{
+		focused_feature_radio_button->setChecked(true);
+		focused_feature_radio_button->setEnabled(true);
+	}
+	else
+	{
+		lat_lon_extent_radio_button->setChecked(true);
+		focused_feature_radio_button->setEnabled(false);
+	}
 }
 
 
@@ -261,28 +314,60 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 						GPlatesModel::FeatureType::create_gpml("ScalarCoverage"));
 		const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature->reference();
 
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_focused_boundary_polygon,
-				GPLATES_ASSERTION_SOURCE);
-
 		// The density of points and random offset (converted from percentage to [0,1]).
 		const unsigned int point_density_level = point_density_spin_box->value();
 		const double point_random_offset = 0.01 * random_offset_spin_box->value();
 
 		// Generate a uniform distribution of points (with some amount random offset).
 		std::vector<GPlatesMaths::PointOnSphere> domain_points;
-		GPlatesMaths::GeneratePoints::create_uniform_points_in_polygon(
-					domain_points,
-					*d_focused_boundary_polygon.get(),
-					point_density_level,
-					point_random_offset);
+		if (focused_feature_radio_button->isChecked())
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_focused_boundary_polygon,
+					GPLATES_ASSERTION_SOURCE);
+
+			GPlatesMaths::GeneratePoints::create_uniform_points_in_polygon(
+						domain_points,
+						point_density_level,
+						point_random_offset,
+						*d_focused_boundary_polygon.get());
+		}
+		else // points in lat/lon extent ...
+		{
+			const double top = top_extents_spinbox->value();
+			const double bottom = bottom_extents_spinbox->value();
+			const double left = left_extents_spinbox->value();
+			const double right = right_extents_spinbox->value();
+
+			// Check for global extent.
+			if (GPlatesMaths::are_almost_exactly_equal(std::fabs(top - bottom), 180.0) &&
+				GPlatesMaths::are_almost_exactly_equal(std::fabs(right - left), 360.0))
+			{
+				GPlatesMaths::GeneratePoints::create_global_uniform_points(
+						domain_points,
+						point_density_level,
+						point_random_offset);
+			}
+			else
+			{
+				GPlatesMaths::GeneratePoints::create_uniform_points_in_lat_lon_extent(
+						domain_points,
+						point_density_level,
+						point_random_offset,
+						top,
+						bottom,
+						left,
+						right);
+			}
+		}
 
 		const unsigned int num_domain_points = domain_points.size();
 		if (num_domain_points == 0)
 		{
 			QMessageBox::critical(this,
-					tr("Polygon boundary, of focused feature, was too small to contain points"),
-					tr("Please either select a different focused feature or try increasing the density of points."));
+					tr("Region was too small to contain points"),
+					tr("Please either select a different focused feature (polygon boundary), or a larger lat/lon extent, "
+						"or try increasing the density of points."));
 			return;
 		}
 
@@ -294,34 +379,51 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
 				reverse_reconstruct_geometry(multi_point, reconstruction_time, collection);
 
-		// Get the initial crustal scalar value.
-		double initial_crustal_scalar_value = 1.0;
-		if (d_crustal_scalar_type == GPML_CRUSTAL_THINNING_FACTOR)
-		{
-			initial_crustal_scalar_value = crustal_thinning_factor_spin_box->value();
-		}
-		if (d_crustal_scalar_type == GPML_CRUSTAL_THICKNESS)
-		{
-			initial_crustal_scalar_value = crustal_thickness_spin_box->value();
-		}
+		// Get the initial crustal thickness.
+		const double initial_crustal_thickness = crustal_thickness_spin_box->value();
+		const std::vector<double> initial_crustal_thicknesses(num_domain_points, initial_crustal_thickness);
 
-		std::vector<double> initial_crustal_scalar_values;
-		initial_crustal_scalar_values.resize(num_domain_points, initial_crustal_scalar_value);
+		// Initial crustal thinning factor starts out at 0.0.
+		const std::vector<double> initial_crustal_thinning_factors(num_domain_points, 0.0);
+		// Initial crustal stretching factor starts out at 1.0.
+		const std::vector<double> initial_crustal_stretching_factors(num_domain_points, 1.0);
 
 		// The domain (geometry) property.
 		const GPlatesModel::PropertyValue::non_null_ptr_type domain_property =
 				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(present_day_geometry);
 
-		// The range (scalars) property.
+		// The range (scalars) property tuple list.
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> range_property_tuple_list;
+
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type crustal_scalar_xml_attrs;
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_scalar_range =
+		// Crustal thickness scalars.
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_thickness_range =
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
-						d_crustal_scalar_type,
+						GPML_CRUSTAL_THICKNESS,
 						crustal_scalar_xml_attrs,
-						initial_crustal_scalar_values.begin(),
-						initial_crustal_scalar_values.end());
+						initial_crustal_thicknesses.begin(),
+						initial_crustal_thicknesses.end());
+		range_property_tuple_list.push_back(crustal_thickness_range);
+		// Crustal thinning factor scalars.
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_thinning_factor_range =
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+						GPML_CRUSTAL_THINNING_FACTOR,
+						crustal_scalar_xml_attrs,
+						initial_crustal_thinning_factors.begin(),
+						initial_crustal_thinning_factors.end());
+		range_property_tuple_list.push_back(crustal_thinning_factor_range);
+		// Crustal stretching factor scalars.
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_stretching_factor_range =
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+						GPML_CRUSTAL_STRETCHING_FACTOR,
+						crustal_scalar_xml_attrs,
+						initial_crustal_stretching_factors.begin(),
+						initial_crustal_stretching_factors.end());
+		range_property_tuple_list.push_back(crustal_stretching_factor_range);
+
+		// The range (scalars) property.
 		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type range_property =
-				GPlatesPropertyValues::GmlDataBlock::create(crustal_scalar_range);
+				GPlatesPropertyValues::GmlDataBlock::create(range_property_tuple_list);
 
 		// The domain/range property names.
 		const std::pair<GPlatesModel::PropertyName/*domain*/, GPlatesModel::PropertyName/*range*/> domain_range_property_names =
@@ -401,6 +503,35 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_cancel()
 void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 {
+	// Radio buttons to select focus feature boundary or lat/lon extent.
+	focused_feature_radio_button->setEnabled(false);
+	lat_lon_extent_radio_button->setChecked(true);
+	points_region_lat_lon_group_box->setEnabled(true);
+	QObject::connect(
+			focused_feature_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_points_region_mode_button(bool)));
+	QObject::connect(
+			lat_lon_extent_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_points_region_mode_button(bool)));
+
+	//
+	// Lat/lon extent.
+	//
+	// Initial values have global coverage.
+	top_extents_spinbox->setValue(90.0);
+	bottom_extents_spinbox->setValue(-90.0);
+	left_extents_spinbox->setValue(-180.0);
+	right_extents_spinbox->setValue(180.0);
+	QObject::connect(
+			left_extents_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_left_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			right_extents_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_right_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			use_global_extents_button, SIGNAL(clicked()),
+			this, SLOT(handle_use_global_extents_button_clicked()));
+
 	// Limit values - if too large then generates too high a point density making GPlates very sluggish.
 	point_density_spin_box->setMinimum(1);
 	point_density_spin_box->setMaximum(10);
@@ -415,36 +546,11 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 	random_offset_spin_box->setMaximum(100.0);
 	random_offset_spin_box->setValue(0.0); // default value
 
-	// Populate the crustal scalar type combobox.
-	crustal_scalar_type_combobox->clear();
-	crustal_scalar_type_combobox->addItem(convert_qualified_xml_name_to_qstring(GPML_CRUSTAL_THINNING_FACTOR));
-	crustal_scalar_type_combobox->addItem(convert_qualified_xml_name_to_qstring(GPML_CRUSTAL_THICKNESS));
-	if (d_crustal_scalar_type == GPML_CRUSTAL_THINNING_FACTOR)
-	{
-		crustal_scalar_type_combobox->setCurrentIndex(0);
-		crustal_thinning_factor_widget->show();
-		crustal_thickness_widget->hide();
-	}
-	if (d_crustal_scalar_type == GPML_CRUSTAL_THICKNESS)
-	{
-		crustal_scalar_type_combobox->setCurrentIndex(1);
-		crustal_thickness_widget->show();
-		crustal_thinning_factor_widget->hide();
-	}
-
-	// Crustal thinning factor spinboxes.
-	crustal_thinning_factor_spin_box->setMinimum(0.001);
-	crustal_thinning_factor_spin_box->setMaximum(1000.0);
-	crustal_thinning_factor_spin_box->setValue(1.0); // default value
 	// Crustal thickness spinboxes.
 	crustal_thickness_spin_box->setMinimum(0.01);
 	crustal_thickness_spin_box->setMaximum(1000.0);
+	crustal_thickness_spin_box->setSingleStep(1.0);
 	crustal_thickness_spin_box->setValue(40.0); // default value (kms)
-
-	// The crustal scalar type combobox.
-	QObject::connect(
-			crustal_scalar_type_combobox, SIGNAL(activated(const QString &)),
-			this, SLOT(handle_crustal_scalar_type_combobox_activated(const QString &)));
 
 	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(
@@ -499,6 +605,9 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 			push_button_help_scalar_type, SIGNAL(clicked()),
 			d_help_scalar_type_dialog, SLOT(show()));
 	QObject::connect(
+			push_button_help_points_region, SIGNAL(clicked()),
+			d_help_point_region_dialog, SLOT(show()));
+	QObject::connect(
 			push_button_help_point_distribution, SIGNAL(clicked()),
 			d_help_point_distribution_dialog, SLOT(show()));
 }
@@ -508,6 +617,10 @@ void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_previous()
 {
 	if (stacked_widget->currentIndex() == COLLECTION_PAGE)
+	{
+		make_properties_page_current();
+	}
+	else if (stacked_widget->currentIndex() == PROPERTIES_PAGE)
 	{
 		make_generate_points_page_current();
 	}
@@ -519,34 +632,98 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_next()
 {
 	if (stacked_widget->currentIndex() == GENERATE_POINTS_PAGE)
 	{
+		make_properties_page_current();
+	}
+	else if (stacked_widget->currentIndex() == PROPERTIES_PAGE)
+	{
 		make_feature_collection_page_current();
 	}
 }
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_crustal_scalar_type_combobox_activated(
-		const QString &text)
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_points_region_mode_button(
+		bool checked)
 {
-	boost::optional<GPlatesPropertyValues::ValueObjectType> crustal_scalar_type =
-			GPlatesModel::convert_qstring_to_qualified_xml_name<
-					GPlatesPropertyValues::ValueObjectType>(text);
-	if (crustal_scalar_type)
-	{
-		d_crustal_scalar_type = crustal_scalar_type.get();
+	// Enable focused feature button only if a focused feature (with a polygon) is selected.
+	focused_feature_radio_button->setEnabled(d_focused_boundary_polygon);
 
-		// Show/hide options for thickness / thinning factor.
-		if (d_crustal_scalar_type == GPML_CRUSTAL_THINNING_FACTOR)
-		{
-			crustal_thinning_factor_widget->show();
-			crustal_thickness_widget->hide();
-		}
-		if (d_crustal_scalar_type == GPML_CRUSTAL_THICKNESS)
-		{
-			crustal_thickness_widget->show();
-			crustal_thinning_factor_widget->hide();
-		}
+	// Lat/lon extents only enabled when lat/lon extent button checked.
+	points_region_lat_lon_group_box->setEnabled(
+			lat_lon_extent_radio_button->isChecked());
+}
+
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_left_extents_spin_box_value_changed(
+		double value)
+{
+	const double left = value;
+	const double right = right_extents_spinbox->value();
+
+	// Make sure longitude extent cannot exceed 360 degrees (either direction).
+	if (right > left + 360)
+	{
+		QObject::disconnect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_right_extents_spin_box_value_changed(double)));
+		right_extents_spinbox->setValue(left + 360);
+		QObject::connect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_right_extents_spin_box_value_changed(double)));
 	}
+	else if (right < left - 360)
+	{
+		QObject::disconnect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_right_extents_spin_box_value_changed(double)));
+		right_extents_spinbox->setValue(left - 360);
+		QObject::connect(
+				right_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_right_extents_spin_box_value_changed(double)));
+	}
+}
+
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_right_extents_spin_box_value_changed(
+		double value)
+{
+	const double right = value;
+	const double left = left_extents_spinbox->value();
+
+	// Make sure longitude extent cannot exceed 360 degrees (either direction).
+	if (left > right + 360)
+	{
+		QObject::disconnect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_left_extents_spin_box_value_changed(double)));
+		left_extents_spinbox->setValue(right + 360);
+		QObject::connect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_left_extents_spin_box_value_changed(double)));
+	}
+	else if (left < right - 360)
+	{
+		QObject::disconnect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_left_extents_spin_box_value_changed(double)));
+		left_extents_spinbox->setValue(right - 360);
+		QObject::connect(
+				left_extents_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_left_extents_spin_box_value_changed(double)));
+	}
+}
+
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_use_global_extents_button_clicked()
+{
+	// Global coverage.
+	top_extents_spinbox->setValue(90.0);
+	bottom_extents_spinbox->setValue(-90.0);
+	left_extents_spinbox->setValue(-180.0);
+	right_extents_spinbox->setValue(180.0);
 }
 
 
@@ -565,6 +742,20 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_generate_points_pag
 	button_next->setEnabled(true);
 	button_create->setEnabled(false);
 	stacked_widget->setCurrentIndex(GENERATE_POINTS_PAGE);
+
+	points_region_group_box->setFocus();
+}
+
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_properties_page_current()
+{
+	button_previous->setEnabled(true);
+	button_next->setEnabled(true);
+	button_create->setEnabled(false);
+	stacked_widget->setCurrentIndex(PROPERTIES_PAGE);
+
+	crustal_thickness_group_box->setFocus();
 }
 
 

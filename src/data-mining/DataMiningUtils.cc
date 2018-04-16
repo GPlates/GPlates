@@ -232,6 +232,7 @@ GPlatesDataMining::DataMiningUtils::load_cfg(
 {
 	std::string str;
 	std::vector<QString> ret;
+	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	std::ifstream ifs ( cfg_filename.toStdString().c_str() , std::ifstream::in );
 
 	while (ifs.good()) // go to the line starting with section_name.

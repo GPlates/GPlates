@@ -55,6 +55,7 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
+#include "gui/VelocityLegendOverlay.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -75,18 +76,17 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
+/**
+ * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
+ * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
+ * accordingly.
+ *
+ * The value of this constant is purely cosmetic.
+ */
+const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
 namespace 
 {
-	/**
-	 * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
-	 * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
-	 * accordingly.
-	 *
-	 * The value of this constant is purely cosmetic.
-	 */
-	static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
-
 	/**
 	 * The view is initially oriented such that the global x-axis points out of the screen.
 	 * So set our viewpoint to be along the positive x-axis (looking at the origin).
@@ -251,7 +251,7 @@ namespace
 		
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
 		// smaller dimension.
-		GLdouble smaller_dim_clipping = FRAMING_RATIO / zoom_factor;
+		GLdouble smaller_dim_clipping = GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO / zoom_factor;
 
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
 		// larger dimension.
@@ -348,7 +348,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			colour_scheme),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				view_state.get_application_state()))
+				view_state.get_application_state())),
+	d_velocity_legend_overlay(
+			new GPlatesGui::VelocityLegendOverlay())
 {
 	init();
 }
@@ -395,7 +397,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			colour_scheme_),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				d_view_state.get_application_state()))
+				d_view_state.get_application_state())),
+	d_velocity_legend_overlay(
+			new GPlatesGui::VelocityLegendOverlay())
 {
 	if (!isSharing())
 	{
@@ -1061,6 +1065,14 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	d_text_overlay->paint(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
+			paint_device_width,
+			paint_device_height,
+			scale);
+
+	// Paint the velocity legend overlay
+	d_velocity_legend_overlay->paint(
+			renderer,
+			d_view_state.get_velocity_legend_overlay_settings(),
 			paint_device_width,
 			paint_device_height,
 			scale);

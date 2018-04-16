@@ -219,6 +219,17 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
+
+		/**
+		 * The default scalar colour palette parameters.
+		 */
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_scalar_colour_palette_parameters()
+		{
+			return GPlatesViewOperations::ScalarField3DRenderParameters::create_default_scalar_colour_palette_parameters();
+		}
+
 		/**
 		 * Returns the current scalar colour palette.
 		 */
@@ -239,6 +250,17 @@ namespace GPlatesPresentation
 
 			d_scalar_field_3d_render_parameters.set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 			emit_modified();
+		}
+
+
+		/**
+		 * The default gradient colour palette parameters.
+		 */
+		static
+		GPlatesPresentation::RemappedColourPaletteParameters
+		create_default_gradient_colour_palette_parameters()
+		{
+			return GPlatesViewOperations::ScalarField3DRenderParameters::create_default_gradient_colour_palette_parameters();
 		}
 
 		/**
@@ -262,6 +284,7 @@ namespace GPlatesPresentation
 			d_scalar_field_3d_render_parameters.set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 			emit_modified();
 		}
+
 
 		/**
 		 * Returns the current isovalue parameters.

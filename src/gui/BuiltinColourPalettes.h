@@ -221,18 +221,34 @@ namespace GPlatesGui
 
 
 		/**
-		 * A multi-colour colour palette used to colour strain (dilatation or second invariant) in deformation networks.
+		 * A multi-colour colour palette used to colour strain rate dilatation in deformation networks.
 		 *
-		 * The blending of colours is linear in strain log space with a sample spacing of
+		 * The blending of colours is linear in strain rate log space with a sample spacing of
 		 * no more than @a max_log_spacing.
 		 *
 		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
 		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
 		 */
 		ColourPalette<double>::non_null_ptr_type
-		create_strain_colour_palette(
-				double min_abs_strain,
-				double max_abs_strain,
+		create_strain_rate_dilatation_colour_palette(
+				double min_abs_strain_rate,
+				double max_abs_strain_rate,
+				const double &max_log_spacing = 0.3);
+
+
+		/**
+		 * A multi-colour colour palette used to colour second invariant of strain rate in deformation networks.
+		 *
+		 * The blending of colours is linear in strain rate log space with a sample spacing of
+		 * no more than @a max_log_spacing.
+		 *
+		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+		 */
+		ColourPalette<double>::non_null_ptr_type
+		create_strain_rate_second_invariant_colour_palette(
+				double min_abs_strain_rate,
+				double max_abs_strain_rate,
 				const double &max_log_spacing = 0.3);
 
 

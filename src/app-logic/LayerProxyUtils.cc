@@ -39,7 +39,8 @@ void
 GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		std::vector<ReconstructHandle::type> &reconstruct_handles,
-		const Reconstruction &reconstruction)
+		const Reconstruction &reconstruction,
+		bool include_topology_reconstructed_feature_geometries)
 {
 	// Get the reconstruct layer outputs.
 	std::vector<ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_proxies;
@@ -49,6 +50,13 @@ GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 			const ReconstructLayerProxy::non_null_ptr_type &reconstruct_layer_proxy,
 			reconstruct_layer_proxies)
 	{
+		// Skip topology reconstructed feature geometries if requested.
+		if (!include_topology_reconstructed_feature_geometries &&
+			reconstruct_layer_proxy->using_topologies_to_reconstruct())
+		{
+			continue;
+		}
+
 		// Get the reconstructed feature geometries from the current layer for the
 		// current reconstruction time and anchor plate id.
 		const ReconstructHandle::type reconstruct_handle =

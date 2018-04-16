@@ -62,6 +62,7 @@ namespace GPlatesQtWidgets
 	class ConfigureCanvasToolGeometryRenderParametersDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
+	class ConfigureVelocityLegendOverlayDialog;
 	class ConnectWFSDialog;
 	class CreateVGPDialog;
 	class DrawStyleDialog;
@@ -163,6 +164,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::ConfigureTextOverlayDialog &
 		configure_text_overlay_dialog();
+
+		GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog &
+		configure_velocity_legend_overlay_dialog();
 
 		GPlatesQtWidgets::ConnectWFSDialog &
 		connect_wfs_dialog();
@@ -290,6 +294,9 @@ namespace GPlatesGui
 		pop_up_configure_text_overlay_dialog();
 
 		void
+		pop_up_configure_velocity_legend_overlay_dialog();
+
+		void
 		pop_up_connect_wfs_dialog();
 
 		void
@@ -397,6 +404,7 @@ namespace GPlatesGui
 			DIALOG_CONFIGURE_CANVAS_TOOL_GEOMETRY_RENDER_PARAMETERS,
 			DIALOG_CONFIGURE_GRATICULES,
 			DIALOG_CONFIGURE_TEXT_OVERLAY,
+			DIALOG_CONFIGURE_VELOCITY_LEGEND_OVERLAY,
 			DIALOG_CONNECT_WFS,
 			DIALOG_CREATE_VGP,
 			DIALOG_DRAW_STYLE,

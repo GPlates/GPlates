@@ -1513,28 +1513,28 @@ namespace GPlatesPresentation
 
 				const GPlatesScribe::ObjectTag colour_palette_params_tag = d_layer_params_tag("colour_palette_params");
 
-				const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types = params.get_scalar_types();
+				std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+				params.get_scalar_types(scalar_types);
+
 				unsigned int num_colour_palettes_saved = 0;
 				for (unsigned int s = 0; s < scalar_types.size(); ++s)
 				{
 					const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_types[s];
 
-					boost::optional<const RemappedColourPaletteParameters &> colour_palette_params =
+					const RemappedColourPaletteParameters &colour_palette_params =
 							params.get_colour_palette_parameters(scalar_type);
-					if (colour_palette_params)
-					{
-						// Save map key.
-						d_scribe.save(TRANSCRIBE_SOURCE, scalar_type,
-								colour_palette_params_tag.map_item_key(num_colour_palettes_saved));
 
-						// Save map value.
-						save_remapped_colour_palette_parameters(
-								colour_palette_params_tag.map_item_value(num_colour_palettes_saved),
-								d_scribe,
-								colour_palette_params.get());
+					// Save map key.
+					d_scribe.save(TRANSCRIBE_SOURCE, scalar_type,
+							colour_palette_params_tag.map_item_key(num_colour_palettes_saved));
 
-						++num_colour_palettes_saved;
-					}
+					// Save map value.
+					save_remapped_colour_palette_parameters(
+							colour_palette_params_tag.map_item_value(num_colour_palettes_saved),
+							d_scribe,
+							colour_palette_params);
+
+					++num_colour_palettes_saved;
 				}
 
 				// Save map size.
@@ -1661,8 +1661,6 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.show_segment_velocity(),
 						d_layer_params_tag("show_segment_velocity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
-						d_layer_params_tag("fill_triangulation"));
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_rigid_blocks(),
 						d_layer_params_tag("fill_rigid_blocks"));
 
@@ -1672,8 +1670,11 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(),
 						d_layer_params_tag("fill_intensity"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_colour_mode(),
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_triangulation_colour_mode(),
 						d_layer_params_tag("colour_mode"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_triangulation_draw_mode(),
+						d_layer_params_tag("draw_mode"));
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_abs_dilatation(),
 						d_layer_params_tag("min_abs_dilatation"));
@@ -1687,8 +1688,14 @@ namespace GPlatesPresentation
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_second_invariant(),
 						d_layer_params_tag("max_abs_second_invariant"));
 
+				// Only used by GPlates 2.0 (removed in 2.1) ...
+				d_scribe.save(TRANSCRIBE_SOURCE,
+						bool(params.get_triangulation_draw_mode() == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL),
+						d_layer_params_tag("fill_triangulation"));
+
 				// Only used by GPlates internal versions after 1.5 but before 2.0 ...
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_triangulation(),
+				d_scribe.save(TRANSCRIBE_SOURCE,
+						bool(params.get_triangulation_draw_mode() == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL),
 						d_layer_params_tag("show_fill"));
 				d_scribe.save(TRANSCRIBE_SOURCE, -std::log10(params.get_max_abs_dilatation()),
 						d_layer_params_tag("range1_min"));
@@ -1745,10 +1752,8 @@ namespace GPlatesPresentation
 			visit_raster_visual_layer_params(
 					raster_visual_layer_params_type &params)
 			{
-				// Get the current colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters colour_palette_params = params.get_colour_palette_parameters();
+				RemappedColourPaletteParameters colour_palette_params =
+						raster_visual_layer_params_type::create_default_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("colour_palette_params"),
 						d_scribe,
@@ -1810,23 +1815,9 @@ namespace GPlatesPresentation
 						continue;
 					}
 
-					// Get the existing colour palette parameters (associated with scalar type)
-					// in the layer params because it will have the appropriate default color palette
-					// already setup which means we don't have to load it.
-					boost::optional<const RemappedColourPaletteParameters &> colour_palette_params_opt =
-							params.get_colour_palette_parameters(scalar_type);
-
-					// Note that the scalar coverage features should have already been connected
-					// to the layer and populated a colour palette for each scalar type in the features.
-					// So this should only fail if the current saved scalar type does not exist in
-					// the loaded features (eg, due to features changing between when saved and loaded).
-					if (!colour_palette_params_opt)
-					{
-						continue;
-					}
-					RemappedColourPaletteParameters colour_palette_params = colour_palette_params_opt.get();
-
 					// Load map value.
+					RemappedColourPaletteParameters colour_palette_params =
+							reconstruct_scalar_coverage_visual_layer_params_type::create_default_colour_palette_parameters();
 					load_remapped_colour_palette_parameters(
 							colour_palette_params_tag.map_item_value(c),
 							d_scribe,
@@ -1908,10 +1899,8 @@ namespace GPlatesPresentation
 			visit_scalar_field_3d_visual_layer_params(
 					scalar_field_3d_visual_layer_params_type &params)
 			{
-				// Get the scalar colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters scalar_colour_palette_params = params.get_scalar_colour_palette_parameters();
+				RemappedColourPaletteParameters scalar_colour_palette_params =
+						scalar_field_3d_visual_layer_params_type::create_default_scalar_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("scalar_colour_palette_params"),
 						d_scribe,
@@ -1919,10 +1908,8 @@ namespace GPlatesPresentation
 						d_read_errors);
 				params.set_scalar_colour_palette_parameters(scalar_colour_palette_params);
 
-				// Get the gradient colour palette parameters in the layer params because
-				// it will have the appropriate default color palette already setup which
-				// means we don't have to load it.
-				RemappedColourPaletteParameters gradient_colour_palette_params = params.get_gradient_colour_palette_parameters();
+				RemappedColourPaletteParameters gradient_colour_palette_params =
+						scalar_field_3d_visual_layer_params_type::create_default_gradient_colour_palette_parameters();
 				load_remapped_colour_palette_parameters(
 						d_layer_params_tag("gradient_colour_palette_params"),
 						d_scribe,
@@ -2046,19 +2033,6 @@ namespace GPlatesPresentation
 					params.set_show_segment_velocity(show_segment_velocity);
 				}
 
-				bool fill_triangulation;
-				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
-						d_layer_params_tag("fill_triangulation")))
-				{
-					params.set_fill_triangulation(fill_triangulation);
-				}
-				// Saved by GPlates internal versions after 1.5 but before 2.0 ...
-				else if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation,
-						d_layer_params_tag("show_fill")))
-				{
-					params.set_fill_triangulation(fill_triangulation);
-				}
-
 				bool fill_rigid_blocks;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_rigid_blocks,
 						d_layer_params_tag("fill_rigid_blocks")))
@@ -2136,11 +2110,40 @@ namespace GPlatesPresentation
 					params.set_min_abs_second_invariant(min_abs_second_invariant);
 				}
 
-				TopologyNetworkVisualLayerParams::ColourMode colour_mode;
+				TopologyNetworkVisualLayerParams::TriangulationColourMode colour_mode;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, colour_mode,
 						d_layer_params_tag("colour_mode")))
 				{
-					params.set_colour_mode(colour_mode);
+					params.set_triangulation_colour_mode(colour_mode);
+				}
+
+				TopologyNetworkVisualLayerParams::TriangulationDrawMode draw_mode;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, draw_mode, d_layer_params_tag("draw_mode")))
+				{
+					params.set_triangulation_draw_mode(draw_mode);
+				}
+				else
+				{
+					bool fill_triangulation;
+					// Saved by GPlates 2.0 (removed in 2.1) ...
+					if (d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation, d_layer_params_tag("fill_triangulation")) ||
+						// Saved by GPlates internal versions after 1.5 but before 2.0 ...
+						d_scribe.transcribe(TRANSCRIBE_SOURCE, fill_triangulation, d_layer_params_tag("show_fill")))
+					{
+						if (fill_triangulation)
+						{
+							params.set_triangulation_draw_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL);
+						}
+						else
+						{
+							// Unfilled triangulations were previously drawn as a boundary (when colouring by draw style) and
+							// as a mesh (when colouring by strain rate).
+							params.set_triangulation_draw_mode(
+									colour_mode == TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE
+									? TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY
+									: TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH);
+						}
+					}
 				}
 
 				//

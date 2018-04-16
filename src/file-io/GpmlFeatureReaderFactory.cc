@@ -146,9 +146,9 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_feature_reader_impl(
 			qWarning() << "GpmlFeatureReaderFactory: feature type '"
 				<< convert_qualified_xml_name_to_qstring(feature_type)
 				<< "' read from GPML file version '"
-				<< d_gpml_version.version_string()
+				<< d_gpml_version.get_version_string()
 				<< "' is not recognised by the current GPGIM '"
-				<< GPlatesModel::Gpgim::instance().get_version().version_string()
+				<< GPlatesModel::Gpgim::instance().get_version().get_version_string()
 				<< "':";
 			qWarning() << "...might need to implement an upgrade handler to change feature type.";
 		}
@@ -289,6 +289,18 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_feature_reader_impl(
 	{
 		boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type> feature_reader_impl =
 				create_upgrade_1_6_320_feature_reader_impl(feature_type);
+		if (feature_reader_impl)
+		{
+			return feature_reader_impl.get();
+		}
+		// Fall through to check for a more recent GPML file...
+	}
+
+	static const GPlatesModel::GpgimVersion GPGIM_VERSION_1_6_338(1, 6, 338);
+	if (d_gpml_version < GPGIM_VERSION_1_6_338)
+	{
+		boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type> feature_reader_impl =
+				create_upgrade_1_6_338_feature_reader_impl(feature_type);
 		if (feature_reader_impl)
 		{
 			return feature_reader_impl.get();
@@ -460,6 +472,37 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_320_feature_reader_i
 				GpmlUpgradeReaderUtils::ChangeFeatureTypeFeatureReaderImpl::create(
 						UNCLASSIFIED_FEATURE_TYPE,
 						unclassified_feature_reader_impl.get()));
+	}
+
+	return boost::none;
+}
+
+
+boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
+GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_338_feature_reader_impl(
+		const GPlatesModel::FeatureType &feature_type) const
+{
+	//
+	// This upgrade handles changes made in GPGIM version 1.6.338
+	//
+
+	static const GPlatesModel::FeatureType SCALAR_COVERAGE_FEATURE_TYPE =
+			GPlatesModel::FeatureType::create_gpml("ScalarCoverage");
+	if (feature_type == SCALAR_COVERAGE_FEATURE_TYPE)
+	{
+		// Create a feature reader implementation that reads scalar coverage feature types.
+		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type> feature_reader_impl =
+				create_feature_reader_impl(SCALAR_COVERAGE_FEATURE_TYPE);
+		if (!feature_reader_impl)
+		{
+			return boost::none;
+		}
+
+		// Create a feature reader that updates any crustal thinning factors in scalar coverage.
+		// The crustal thinning factors were incorrect in GPlates 2.0 (fixed in 2.1).
+		return GpmlFeatureReaderImpl::non_null_ptr_type(
+				GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::create(
+						feature_reader_impl.get()));
 	}
 
 	return boost::none;

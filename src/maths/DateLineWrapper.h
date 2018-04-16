@@ -26,6 +26,7 @@
 #ifndef GPLATES_MATHS_DATELINEWRAPPER_H
 #define GPLATES_MATHS_DATELINEWRAPPER_H
 
+#include <bitset>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -145,6 +146,27 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Each point has various properties.
+			 *
+			 * Note: A point can be tessellated along the dateline and not be on an original segment.
+			 */
+			enum PointType
+			{
+				ORIGINAL_POINT,      // Point exists in the original polyline.
+				TESSELLATED_POINT,   // A new tessellated point (not an original point or dateline intersection point).
+				ON_DATELINE,         // Point lies on the dateline.
+				ON_ORIGINAL_SEGMENT, // Point lies on a segment of original polyline.
+
+				NUM_POINT_TYPES // Must be the last enum.
+			};
+
+			/**
+			 * A std::bitset for specifying which point properties to assign.
+			 */
+			typedef std::bitset<NUM_POINT_TYPES> point_flags_type;
+
+
+			/**
 			 * The points in the exterior ring of the dateline wrapped (and optionally tessellated) polygon.
 			 *
 			 * This is the original (unwrapped) points plus new points added due to intersection
@@ -160,26 +182,22 @@ namespace GPlatesMaths
 			get_exterior_ring_points() const;
 
 			/**
-			 * Boolean flags to indicate whether a point in @a get_exterior_ring_points (at same index)
-			 * is a point in the original (unwrapped and untessellated) polygon.
-			 *
-			 * Note: Points in @a get_exterior_ring_points can be points from the original polygon's
-			 * exterior and interior rings because a single clipped/dateline-wrapped polygon can
-			 * follow part of an original exterior ring and part of an original interior ring.
+			 * Boolean flags to indicate various properties of each point in @a get_exterior_ring_points (at same index).
 			 *
 			 * Note: The indices into the returned array match indices into @a get_exterior_ring_points
 			 * and not the original points in the exterior ring of the original polygon.
 			 */
-			const std::vector<bool> &
-			get_is_exterior_ring_point_in_original_polygon_flags() const;
+			void
+			get_exterior_ring_point_flags(
+					std::vector<point_flags_type> &exterior_ring_point_flags) const;
 
 			/**
 			 * Information on the interpolation of points in the wrapped exterior ring from the
 			 * original segments in the (unwrapped and untessellated) polygon.
 			 *
-			 * Entries that are 'boost::none' correspond to points in @a get_exterior_ring_points
-			 * that are not on any original ring segments (instead they are tessellated points along
-			 * the dateline).
+			 * Valid entries only apply to points with the @a ON_ORIGINAL_SEGMENT flag set.
+			 * Entries that are 'boost::none' correspond to points in @a get_exterior_ring_points that are
+			 * not on any original ring segments (instead they are tessellated points along the dateline).
 			 *
 			 * This is useful when client needs to, for example, interpolate scalars values defined at
 			 * the original points onto the new (wrapped and tessellated) points.
@@ -207,9 +225,8 @@ namespace GPlatesMaths
 					unsigned int interior_ring_index) const;
 
 			/**
-			 * Boolean flags to indicate whether a point in @a get_interior_ring_points (at the same
-			 * interior ring index and same point index within that ring) is a point in the original
-			 * (unwrapped and untessellated) polygon.
+			 * Boolean flags to indicate various properties of each point in @a get_interior_ring_points
+			 * (at the same interior ring index and same point index within that ring).
 			 *
 			 * Note: Points in @a get_interior_ring_points can be points from the original polygon's
 			 * exterior and interior rings because a single clipped/dateline-wrapped polygon can
@@ -218,17 +235,18 @@ namespace GPlatesMaths
 			 * Note: The indices into the returned array match indices into @a get_interior_ring_points
 			 * and not the original points in associated interior ring of the original polygon.
 			 */
-			const std::vector<bool> &
-			get_is_interior_ring_point_in_original_polygon_flags(
+			void
+			get_interior_ring_point_flags(
+					std::vector<point_flags_type> &interior_ring_point_flags,
 					unsigned int interior_ring_index) const;
 
 			/**
 			 * Information on the interpolation of points in the wrapped interior ring from the
 			 * original segments in the (unwrapped and untessellated) polygon.
 			 *
-			 * Entries that are 'boost::none' correspond to points in @a get_interior_ring_points
-			 * that are not on any original ring segments (instead they are tessellated points along
-			 * the dateline).
+			 * Valid entries only apply to points with the @a ON_ORIGINAL_SEGMENT flag set.
+			 * Entries that are 'boost::none' correspond to points in @a get_interior_ring_points that are
+			 * not on any original ring segments (instead they are tessellated points along the dateline).
 			 *
 			 * This is useful when client needs to, for example, interpolate scalars values defined at
 			 * the original points onto the new (wrapped and tessellated) points.
@@ -293,6 +311,24 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Each point has various properties.
+			 */
+			enum PointType
+			{
+				ORIGINAL_POINT,    // Point exists in the original polyline.
+				TESSELLATED_POINT, // A new tessellated point (not an original point or dateline intersection point).
+				ON_DATELINE,       // Point lies on the dateline.
+
+				NUM_POINT_TYPES // Must be the last enum.
+			};
+
+			/**
+			 * A std::bitset for specifying which point properties to assign.
+			 */
+			typedef std::bitset<NUM_POINT_TYPES> point_flags_type;
+
+
+			/**
 			 * The dateline wrapped (and optionally tessellated) points.
 			 *
 			 * This is the original (unwrapped) points plus new points added due to intersection
@@ -302,11 +338,11 @@ namespace GPlatesMaths
 			get_points() const;
 
 			/**
-			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
-			 * original (unwrapped and untessellated) point.
+			 * Boolean flags to indicate various properties of each point in @a get_points (at same index).
 			 */
-			const std::vector<bool> &
-			get_is_original_point_flags() const;
+			void
+			get_point_flags(
+					std::vector<point_flags_type> &point_flags) const;
 
 			/**
 			 * Information on the interpolation of points in the wrapped polyline from the
@@ -553,7 +589,7 @@ namespace GPlatesMaths
 
 				double interpolate_ratio;
 				unsigned int original_segment_index;
-				unsigned int original_geometry_part_index;
+				unsigned int original_geometry_part_index; //!< Only applies to polygons (and is the ring index).
 			};
 
 			/**
@@ -568,12 +604,30 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Each point has various properties.
+			 *
+			 * Note: For polygon rings, a point can be tessellated along the dateline and not be on an original segment.
+			 */
+			enum PointType
+			{
+				ORIGINAL_POINT,      // Point exists in the original polyline/polygon.
+				TESSELLATED_POINT,   // A new tessellated point (not an original point or dateline intersection point).
+				ON_DATELINE,         // Point lies on the dateline.
+				ON_ORIGINAL_SEGMENT, // Point lies on a segment of original polygon (note: always true for polylines).
+
+				NUM_POINT_TYPES // Must be the last enum.
+			};
+
+			/**
+			 * A std::bitset for specifying which point properties to assign.
+			 */
+			typedef std::bitset<NUM_POINT_TYPES> point_flags_type;
+
+
+			/**
 			 * Add a point to this line geometry (polyline/polygon).
 			 *
 			 * It will also tessellate arcs if requested.
-			 *
-			 * The default arguments apply when the geometry is a polyline since a polyline
-			 * has only one geometry part and never follows along the dateline.
 			 */
 			void
 			add_point(
@@ -582,10 +636,9 @@ namespace GPlatesMaths
 					const double &central_meridian_longitude,
 					const boost::optional<AngularExtent> &tessellate_threshold,
 					bool is_unwrapped_point,
-					const double &segment_interpolation_ratio,
-					unsigned int segment_index,
-					unsigned int geometry_part_index = 0,
-					bool is_dateline_segment = false);
+					bool on_dateline,
+					boost::optional<InterpolateOriginalSegment> interpolate_original_segment,
+					bool is_end_of_dateline_segment = false);
 
 			/**
 			 * Call once finished adding points, if this line geometry is a *polygon ring* and it's being tessellated.
@@ -611,13 +664,12 @@ namespace GPlatesMaths
 			}
 
 			/**
-			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
-			 * original (unwrapped and untessellated) point.
+			 * Boolean flags to indicate various properties of each point in @a get_points (at same index).
 			 */
-			const std::vector<bool> &
-			get_is_unwrapped_untessellated_point_flags() const
+			const std::vector<point_flags_type> &
+			get_point_flags() const
 			{
-				return d_is_unwrapped_untessellated_point_flags;
+				return d_point_flags;
 			}
 
 			/**
@@ -649,26 +701,23 @@ namespace GPlatesMaths
 						const LatLonPoint &lat_lon_point_,
 						const PointOnSphere &point_,
 						bool is_unwrapped_point_,
-						const double &segment_interpolation_ratio_,
-						unsigned int segment_index_,
-						unsigned int geometry_part_index_,
-						bool is_dateline_segment_) :
+						bool on_dateline_,
+						boost::optional<InterpolateOriginalSegment> interpolate_original_segment_,
+						bool is_end_of_dateline_segment_) :
 					lat_lon_point(lat_lon_point_),
 					point(point_),
 					is_unwrapped_point(is_unwrapped_point_),
-					segment_interpolation_ratio(segment_interpolation_ratio_),
-					segment_index(segment_index_),
-					geometry_part_index(geometry_part_index_),
-					is_dateline_segment(is_dateline_segment_)
+					on_dateline(on_dateline_),
+					interpolate_original_segment(interpolate_original_segment_),
+					is_end_of_dateline_segment(is_end_of_dateline_segment_)
 				{  }
 
 				LatLonPoint lat_lon_point;
 				PointOnSphere point;
 				bool is_unwrapped_point;
-				double segment_interpolation_ratio;
-				unsigned int segment_index;
-				unsigned int geometry_part_index;
-				bool is_dateline_segment;
+				bool on_dateline;
+				boost::optional<InterpolateOriginalSegment> interpolate_original_segment;
+				bool is_end_of_dateline_segment;
 			};
 
 
@@ -676,7 +725,7 @@ namespace GPlatesMaths
 			 * All the lat/lon points (tessellated and untessellated).
 			 */
 			lat_lon_points_seq_type d_lat_lon_points;
-			std::vector<bool> d_is_unwrapped_untessellated_point_flags;
+			std::vector<point_flags_type> d_point_flags;
 			interpolate_original_segment_seq_type d_points_interpolate_original_segments;
 
 			/**
@@ -706,6 +755,7 @@ namespace GPlatesMaths
 			void
 			add_tessellated_point(
 					const LatLonPoint &lat_lon_point,
+					bool on_dateline,
 					const boost::optional<InterpolateOriginalSegment> &interpolate_original_segment);
 		};
 
@@ -761,9 +811,7 @@ namespace GPlatesMaths
 					// Specifying 'none' just requests the point be created from 'lat_lon_point_'...
 					boost::optional<const PointOnSphere &> point_ = boost::none,
 					bool is_unwrapped_point_ = false,
-					const double &segment_interpolation_ratio_ = 0.0,
-					unsigned int segment_index_ = 0,
-					unsigned int geometry_part_index_ = 0,
+					boost::optional<LatLonLineGeometry::InterpolateOriginalSegment> interpolate_original_segment_ = boost::none,
 					bool is_intersection_ = false,
 					bool exits_other_polygon_ = false) :
 				lat_lon_point(lat_lon_point_),
@@ -771,9 +819,7 @@ namespace GPlatesMaths
 				intersection_neighbour(NULL),
 				intersection_neighbour_list(NULL),
 				is_unwrapped_point(is_unwrapped_point_),
-				segment_interpolation_ratio(segment_interpolation_ratio_),
-				segment_index(segment_index_),
-				geometry_part_index(geometry_part_index_),
+				interpolate_original_segment(interpolate_original_segment_),
 				is_intersection(is_intersection_),
 				exits_other_polygon(exits_other_polygon_),
 				used_to_output_polygon(false)
@@ -803,10 +849,10 @@ namespace GPlatesMaths
 			/*
 			 * This vertex can be considered an interpolation of a segment's (GreatCircleArc) start and
 			 * end points by an interpolation ratio.
+			 *
+			 * Is none if vertex is not on a segment of the original geometry.
 			 */
-			double segment_interpolation_ratio;
-			unsigned int segment_index;
-			unsigned int geometry_part_index; //!< Only applies to polygons (and is the ring index).
+			boost::optional<LatLonLineGeometry::InterpolateOriginalSegment> interpolate_original_segment;
 
 			/**
 			 * Is true if this vertex represents an intersection of geometry with the dateline.
@@ -1254,13 +1300,6 @@ namespace GPlatesMaths
 	}
 
 	inline
-	const std::vector<bool> &
-	DateLineWrapper::LatLonPolygon::get_is_exterior_ring_point_in_original_polygon_flags() const
-	{
-		return d_exterior_ring_line_geometry->get_is_unwrapped_untessellated_point_flags();
-	}
-
-	inline
 	unsigned int
 	DateLineWrapper::LatLonPolygon::get_num_interior_rings() const
 	{
@@ -1280,18 +1319,6 @@ namespace GPlatesMaths
 	}
 
 	inline
-	const std::vector<bool> &
-	DateLineWrapper::LatLonPolygon::get_is_interior_ring_point_in_original_polygon_flags(
-			unsigned int interior_ring_index) const
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				interior_ring_index < d_interior_ring_line_geometries.size(),
-				GPLATES_ASSERTION_SOURCE);
-
-		return d_interior_ring_line_geometries[interior_ring_index]->get_is_unwrapped_untessellated_point_flags();
-	}
-
-	inline
 	DateLineWrapper::LatLonPolygon::LatLonPolygon() :
 		d_exterior_ring_line_geometry(new LatLonLineGeometry())
 	{  }
@@ -1302,13 +1329,6 @@ namespace GPlatesMaths
 	DateLineWrapper::LatLonPolyline::get_points() const
 	{
 		return d_line_geometry->get_points();
-	}
-
-	inline
-	const std::vector<bool> &
-	DateLineWrapper::LatLonPolyline::get_is_original_point_flags() const
-	{
-		return d_line_geometry->get_is_unwrapped_untessellated_point_flags();
 	}
 
 	inline

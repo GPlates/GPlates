@@ -35,6 +35,7 @@
 
 namespace GPlatesAppLogic
 {
+	class ReconstructionFeatureProperties;
 	class ReconstructionTree;
 	class ReconstructionTreeCreator;
 
@@ -78,8 +79,7 @@ namespace GPlatesAppLogic
 		 * then it will be divided into multiple half-stage intervals of this size (except for
 		 * the last interval that passes over the reconstruction time).
 		 *
-		 * @throws PreconditionViolationError if @a reconstruction_time is negative or
-		 * if @a half_stage_rotation_interval is not greater than zero.
+		 * @throws PreconditionViolationError if @a half_stage_rotation_interval is not greater than zero.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_half_stage_rotation(
@@ -90,6 +90,22 @@ namespace GPlatesAppLogic
 				const double &spreading_asymmetry = 0.0,
 				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION);
+
+
+		/**
+		 * Calculate the half-stage rotation at the specified time using the specified reconstruction properties.
+		 *
+		 * Also selects appropriate version of half-stage rotation calculation to use:
+		 *
+		 *   version 1: a single time interval, symmetric spreading that starts at present day.
+		 *   version 2: introduced multiple time intervals (10my each) and spreading asymmetry.
+		 *   version 3: introduced spreading start time (which is the geometry import time).
+		 */
+		GPlatesMaths::FiniteRotation
+		get_half_stage_rotation(
+				const double &reconstruction_time,
+				const ReconstructionFeatureProperties &reconstruction_params,
+				const ReconstructionTreeCreator &reconstruction_tree_creator);
 
 
 		/**
