@@ -50,22 +50,42 @@ GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::handle_layer_mo
 	bool modified_params = false;
 
 	//
-	// Assume that the scalar types, and also the coverage data (and associated statistics), have changed.
-	// So just remove any previously created colour palettes. They'll get rebuilt if/when the client asks for them.
+	// Assume that the scalar types have changed (ie, new types introduced or old types no longer exist).
+	// Note that it doesn't matter if the coverage data (and associated statistics) have changed because the
+	// colour palette parameters will only get changed if the user explicitly does so (eg, click min/max mapping button).
 	//
-	// We could instead have replaced any existing colour palettes (associated with scalar types that still exist)
-	// with new ones but we'd prefer to delay creation as long as possible. Basically colour palettes are only created
-	// when the client asks for them. This delays creation until its actually needed since it can be very expensive
+	// We only remove any previously created colour palette parameters (associated with scalar types that no longer exist).
+	// We don't also create any colour palette parameters that don't yet exist (for any scalar types).
+	// This is because we'd prefer to delay creation as long as possible. Basically colour palette parameters are only
+	// created when the client asks for them. This delays creation until its actually needed since it can be very expensive
 	// (eg, when the full reconstructed history of a scalar coverage is needed to gather the statistics used to generate
-	// the colour palette). An example of delaying: Initially the layer might be invisible and layer options not expanded.
-	// The creation is then delayed either to when layer is made visible or to when layer options expanded.
+	// the colour palette). An example of delaying: Initially the layer might be invisible and layer options not expanded,
+	// and so the colour palette does not need to be generated yet. The creation is then delayed either to when the layer
+	// is made visible or to when the layer options are expanded.
 	//
 
-	// Clear any previously created colour palettes.
-	if (!d_colour_palette_parameters_map.empty())
+	std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+	get_scalar_types(scalar_types);
+
+	// Remove any colour palettes associated with scalar types that don't exist anymore.
+	colour_palette_parameters_map_type::iterator colour_palette_parameters_iter = d_colour_palette_parameters_map.begin();
+	while (colour_palette_parameters_iter != d_colour_palette_parameters_map.end())
 	{
-		d_colour_palette_parameters_map.clear();
-		modified_params = true;
+		const GPlatesPropertyValues::ValueObjectType &scalar_type = colour_palette_parameters_iter->first;
+
+		if (std::find(scalar_types.begin(), scalar_types.end(), scalar_type) == scalar_types.end())
+		{
+			// Increment iterator before erasing.
+			colour_palette_parameters_map_type::iterator erase_iter = colour_palette_parameters_iter;
+			++colour_palette_parameters_iter;
+
+			d_colour_palette_parameters_map.erase(erase_iter);
+			modified_params = true;
+		}
+		else
+		{
+			++colour_palette_parameters_iter;
+		}
 	}
 
 	if (modified_params)
