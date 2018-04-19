@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTSCALARCOVERAGELAYERPARAMS_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTSCALARCOVERAGELAYERPARAMS_H
 
+#include <map>
 #include <vector>
 #include <boost/optional.hpp>
 #include <QObject>
@@ -172,9 +173,19 @@ namespace GPlatesAppLogic
 
 	private:
 
+		//! Typedef for scalar types to scalar statistics.
+		typedef std::map<
+				GPlatesPropertyValues::ValueObjectType,
+				// Statistics are only none if there are no scalars...
+				boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics> >
+						scalar_statistics_map_type;
+
+
 		ReconstructScalarCoverageParams d_reconstruct_scalar_coverage_params;
 
 		ReconstructScalarCoverageLayerProxy::non_null_ptr_type d_layer_proxy;
+
+		mutable scalar_statistics_map_type d_cached_scalar_statistics;
 
 		/**
 		 * Detect any changes in the layer proxy (due to changes in its dependencies).
@@ -192,6 +203,17 @@ namespace GPlatesAppLogic
 				const ReconstructScalarCoverageLayerProxy::non_null_ptr_type &layer_proxy) :
 			d_layer_proxy(layer_proxy)
 		{  }
+
+
+		/**
+		 * Creates the scalar statistics across all scalar coverages of the specified scalar type,
+		 * or returns none if no coverages.
+		 *
+		 * Note: This statistic includes the time history of evolved scalar values (where applicable).
+		 */
+		boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
+		create_scalar_statistics(
+				const GPlatesPropertyValues::ValueObjectType &scalar_type) const;
 	};
 }
 
