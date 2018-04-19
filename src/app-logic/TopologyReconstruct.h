@@ -109,13 +109,16 @@ namespace GPlatesAppLogic
 		{
 			ActivePointParameters(
 					const double &threshold_velocity_delta_,
-					const double &threshold_distance_to_boundary_in_kms_per_my_) :
+					const double &threshold_distance_to_boundary_in_kms_per_my_,
+					bool deactivate_points_that_fall_outside_a_network_) :
 				threshold_velocity_delta(threshold_velocity_delta_),
-				threshold_distance_to_boundary_in_kms_per_my(threshold_distance_to_boundary_in_kms_per_my_)
+				threshold_distance_to_boundary_in_kms_per_my(threshold_distance_to_boundary_in_kms_per_my_),
+				deactivate_points_that_fall_outside_a_network(deactivate_points_that_fall_outside_a_network_)
 			{  }
 
 			double threshold_velocity_delta; // cms/yr
 			double threshold_distance_to_boundary_in_kms_per_my; // kms/my
+			bool deactivate_points_that_fall_outside_a_network;
 		};
 
 		static const ActivePointParameters DEFAULT_ACTIVE_POINT_PARAMETERS;
@@ -819,6 +822,7 @@ namespace GPlatesAppLogic
 					const double &time_increment,
 					bool reverse_reconstruct,
 					const GPlatesMaths::AngularExtent &min_distance_threshold_radians,
+					bool deactivate_points_that_fall_outside_a_network,
 					plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map) const;
 
 			/**

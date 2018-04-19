@@ -310,19 +310,6 @@
           <property name="spacing">
            <number>3</number>
           </property>
-          <item row="4" column="3">
-           <spacer name="horizontalSpacer_9">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="4" column="1">
            <widget class="QDoubleSpinBox" name="detect_lifetime_threshold_distance_to_boundary_spin_box">
             <property name="decimals">
@@ -336,15 +323,8 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="2">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>kms/my</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <spacer name="horizontalSpacer_10">
+          <item row="4" column="3">
+           <spacer name="horizontalSpacer_9">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -363,13 +343,6 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Threshold distance to boundary:</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="detect_lifetime_threshold_velocity_delta_spin_box">
             <property name="maximum">
@@ -380,12 +353,66 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="3">
+           <spacer name="horizontalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Threshold distance to boundary:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>kms/my</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="2">
            <widget class="QLabel" name="label_6">
             <property name="text">
              <string>cms/yr</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_14">
+          <property name="spacing">
+           <number>3</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="deactivate_points_that_fall_outside_a_network_checkbox">
+            <property name="text">
+             <string>Deactivate points that fall outside a network</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_17">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>

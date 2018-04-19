@@ -79,6 +79,14 @@ namespace
 			"that change shape significantly from one time step to the next (note that some boundaries are meant to do this and "
 			"others are a result of digitisation).</li>"
 			"</ul>"
+			"<p>Furthermore, there is the option to have points inside a deforming network disappear as soon as they "
+			"fall outside all deforming networks. This option is enabled by checking the "
+			"<b>Deactivate points that fall outside a network</b> check box. This is useful for initial crustal thickness points that have "
+			"been generated inside a deforming network and where subsequently deformed points should be limited to the deformed network regions. "
+			"In this case sudden large changes to the deforming network boundary can progressively exclude points over time. "
+			"However in the case where the topologies (deforming networks and rigid plates) have global coverage this option should "
+			"generally be left disabled so that points falling outside deforming networks can then be reconstructed using rigid plates. "
+			"And these rigidly reconstructed points may even re-enter a subsequent deforming network.</p>"
 			"</body></html>\n");
 
 	const QString HELP_TESSELLATE_LINES_DIALOG_TITLE =
@@ -234,6 +242,8 @@ GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::populate(
 				reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta());
 		detect_lifetime_threshold_distance_to_boundary_spin_box->setValue(
 				reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary());
+		deactivate_points_that_fall_outside_a_network_checkbox->setChecked(
+				reconstruct_params.get_topology_reconstruction_deactivate_points_that_fall_outside_a_network());
 		detect_lifetime_widget->setVisible(
 				reconstruct_params.get_topology_reconstruction_enable_lifetime_detection());
 
@@ -427,6 +437,8 @@ GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::handle_apply()
 					detect_lifetime_threshold_velocity_delta_spin_box->value());
 			reconstruct_params.set_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
 					detect_lifetime_threshold_distance_to_boundary_spin_box->value());
+			reconstruct_params.set_topology_reconstruction_deactivate_points_that_fall_outside_a_network(
+					deactivate_points_that_fall_outside_a_network_checkbox->isChecked());
 
 			layer_params->set_reconstruct_params(reconstruct_params);
 

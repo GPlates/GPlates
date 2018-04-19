@@ -309,6 +309,19 @@ namespace GPlatesAppLogic
 			d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary = lifetime_detection_threshold_distance_to_boundary;
 		}
 
+		bool
+		get_topology_reconstruction_deactivate_points_that_fall_outside_a_network() const
+		{
+			return d_topology_reconstruction_deactivate_points_that_fall_outside_a_network;
+		}
+
+		void
+		set_topology_reconstruction_deactivate_points_that_fall_outside_a_network(
+				bool deactivate_points_that_fall_outside_a_network)
+		{
+			d_topology_reconstruction_deactivate_points_that_fall_outside_a_network = deactivate_points_that_fall_outside_a_network;
+		}
+
 
 		//! Equality comparison operator.
 		bool
@@ -376,6 +389,7 @@ namespace GPlatesAppLogic
 		bool d_topology_reconstruction_enable_lifetime_detection;
 		GPlatesMaths::real_t d_topology_reconstruction_lifetime_detection_threshold_velocity_delta;
 		GPlatesMaths::real_t d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary;
+		bool d_topology_reconstruction_deactivate_points_that_fall_outside_a_network;
 
 	private: // Transcribe for sessions/projects...
 

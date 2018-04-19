@@ -194,7 +194,8 @@ namespace GPlatesAppLogic
 const GPlatesAppLogic::TopologyReconstruct::ActivePointParameters
 GPlatesAppLogic::TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS(
 		0.7, // cms/yr
-		10.0); // kms/my
+		10.0, // kms/my
+		false/*deactivate_points_that_fall_outside_a_network*/);
 
 
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type
@@ -730,14 +731,21 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 	plate_id_to_stage_rotation_map_type resolved_boundary_reconstruct_stage_rotation_map;
 	plate_id_to_stage_rotation_map_type resolved_boundary_velocity_stage_rotation_map;
 
+	//
+	// Parameters only used if can deactivate points.
+	//
 	// The minimum distance threshold used to determine when to deactivate geometry points.
 	GPlatesMaths::AngularExtent min_distance_threshold_radians = GPlatesMaths::AngularExtent::ZERO;
+	// Whether to remove points when/if they fall outside a deforming network.
+	bool deactivate_points_that_fall_outside_a_network = false;
 	if (d_active_point_parameters)
 	{
 		min_distance_threshold_radians = GPlatesMaths::AngularExtent::create_from_angle(
 					d_active_point_parameters->threshold_distance_to_boundary_in_kms_per_my *
 							// Need to convert kms/my to kms using time increment...
 							time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS);
+		deactivate_points_that_fall_outside_a_network =
+				d_active_point_parameters->deactivate_points_that_fall_outside_a_network;
 	}
 
 	// Keep track of number of topology reconstructed geometry points for the current time.
@@ -805,6 +813,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 						time_increment,
 						reverse_reconstruct,
 						min_distance_threshold_radians,
+						deactivate_points_that_fall_outside_a_network,
 						resolved_boundary_velocity_stage_rotation_map))
 			{
 				// De-activate the current point.
@@ -927,14 +936,21 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_last_time_st
 	// since many points will be inside the same resolved boundary.
 	plate_id_to_stage_rotation_map_type resolved_boundary_velocity_stage_rotation_map;
 
+	//
+	// Parameters only used if can deactivate points.
+	//
 	// The minimum distance threshold used to determine when to deactivate geometry points.
 	GPlatesMaths::AngularExtent min_distance_threshold_radians = GPlatesMaths::AngularExtent::ZERO;
+	// Whether to remove points when/if they fall outside a deforming network.
+	bool deactivate_points_that_fall_outside_a_network = false;
 	if (d_active_point_parameters)
 	{
 		min_distance_threshold_radians = GPlatesMaths::AngularExtent::create_from_angle(
 					d_active_point_parameters->threshold_distance_to_boundary_in_kms_per_my *
 							// Need to convert kms/my to kms using time increment...
 							time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS);
+		deactivate_points_that_fall_outside_a_network =
+				d_active_point_parameters->deactivate_points_that_fall_outside_a_network;
 	}
 
 	// Keep track of number of active geometry points for the current time.
@@ -996,6 +1012,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_last_time_st
 							time_increment,
 							reverse_reconstruct,
 							min_distance_threshold_radians,
+							deactivate_points_that_fall_outside_a_network,
 							resolved_boundary_velocity_stage_rotation_map))
 				{
 					// De-activate the current point.
@@ -1217,10 +1234,13 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 		const double &time_increment,
 		bool reverse_reconstruct,
 		const GPlatesMaths::AngularExtent &min_distance_threshold_radians,
+		bool deactivate_points_that_fall_outside_a_network,
 		plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map) const
 {
 	//
-	// If transitioning:
+	// First, if we're deactivating points that fall outside a network (from inside a network) then do so to any such points.
+	//
+	// Second, if transitioning:
 	//   (1) from a deforming network to a rigid plate, or
 	//   (2) from a rigid plate to a deforming network, or
 	//   (3) from a rigid plate to a rigid plate with a different plate ID
@@ -1266,8 +1286,15 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 				prev_location.located_in_resolved_boundary();
 		if (!prev_boundary)
 		{
+			// Previously not in a rigid plate but currently in a network, so cannot be a transition from
+			// a rigid plate to a deforming network, so point remains active.
+			// This includes case where point was previously outside all rigid plates and deforming networks.
 			return true;
 		}
+
+		//
+		// Point currently in a deforming network and previously in a rigid plate...
+		//
 
 		const ResolvedTopologicalNetwork::non_null_ptr_type &current_resolved_network = current_network_location->first;
 
@@ -1326,21 +1353,44 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 				min_distance_threshold_radians);
 	}
 
+	//
+	// Point not currently in a network...
+	//
+
+	if (deactivate_points_that_fall_outside_a_network &&
+		prev_location.located_in_resolved_network())
+	{
+		// Point fell outside network (was previously in one but not currently), so no longer active.
+		return false;
+	}
+
 	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> current_boundary =
 			current_location.located_in_resolved_boundary();
 	if (!current_boundary)
 	{
+		// Currently not in a rigid plate or deforming network, so cannot be a transition from
+		// a rigid plate to a deforming network (or vice versa) or rigid plate to rigid plate,
+		// so point remains active.
 		return true;
 	}
+
+	//
+	// Point currently in a rigid plate...
+	//
 
 	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> prev_boundary =
 			prev_location.located_in_resolved_boundary();
 	if (prev_boundary)
 	{
+		//
+		// Point currently in a rigid plate and previously in a rigid plate...
+		//
+
 		const boost::optional<GPlatesModel::integer_plate_id_type> current_boundary_plate_id = current_boundary.get()->plate_id();
 		const boost::optional<GPlatesModel::integer_plate_id_type> prev_boundary_plate_id = prev_boundary.get()->plate_id();
 		if (current_boundary_plate_id == prev_boundary_plate_id)
 		{
+			// Transition from rigid plate to rigid plate but plate ID does not change, so point remains active.
 			return true;
 		}
 
@@ -1401,12 +1451,23 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 				min_distance_threshold_radians);
 	}
 
+	//
+	// Point currently in a rigid plate, but not previously...
+	//
+
 	const boost::optional<TopologyPointLocation::network_location_type> prev_network_location =
 			prev_location.located_in_resolved_network();
 	if (!prev_network_location)
 	{
+		// Previously not in a deforming network or a rigid plate but currently in a rigid plate,
+		// so cannot be a transition from a deforming network (or rigid plate) to a rigid plate,
+		// so point remains active.
 		return true;
 	}
+
+	//
+	// Point currently in a rigid plate and previously in a deforming network...
+	//
 
 	// Calculate the velocity of the *previous* point using the current resolved boundary plate ID.
 	const boost::optional<GPlatesModel::integer_plate_id_type> current_boundary_plate_id = current_boundary.get()->plate_id();
