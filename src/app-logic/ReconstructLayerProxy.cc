@@ -341,11 +341,26 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_time_spans(
 		const TimeSpanUtils::TimeRange &time_range,
 		const ReconstructParams &reconstruct_params)
 {
-	// We're not going to cache the results so we don't need to check the input proxies.
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
 
+	// Use a trick to keep the context state cached after we return from the current function.
+	// TODO: Implement a cache specifically for time spans.
+#if 0
 	// Find an existing context state or create a new one.
 	const ReconstructContext::context_state_reference_type context_state_ref =
 			get_or_create_reconstruct_context(reconstruct_params);
+#else
+	// Similar to calling 'get_or_create_reconstruct_context()' but also caches the context state
+	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
+	// re-used (rather than just having it get destroyed as soon as we leave the current function.
+	//
+	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			d_cached_reconstructions.get_value(
+					reconstruction_cache_key_type(0.0/*reconstruction_time*/, reconstruct_params))
+							.context_state;
+#endif
 
 	return d_reconstruct_context.get_reconstructed_feature_time_spans(
 			reconstructed_feature_time_spans,
@@ -359,11 +374,26 @@ GPlatesAppLogic::ReconstructLayerProxy::get_topology_reconstructed_feature_time_
 		std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
 		const ReconstructParams &reconstruct_params)
 {
-	// We're not going to cache the results so we don't need to check the input proxies.
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
 
+	// Use a trick to keep the context state cached after we return from the current function.
+	// TODO: Implement a cache specifically for time spans.
+#if 0
 	// Find an existing context state or create a new one.
 	const ReconstructContext::context_state_reference_type context_state_ref =
 			get_or_create_reconstruct_context(reconstruct_params);
+#else
+	// Similar to calling 'get_or_create_reconstruct_context()' but also caches the context state
+	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
+	// re-used (rather than just having it get destroyed as soon as we leave the current function.
+	//
+	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			d_cached_reconstructions.get_value(
+					reconstruction_cache_key_type(0.0/*reconstruction_time*/, reconstruct_params))
+							.context_state;
+#endif
 
 	return d_reconstruct_context.get_topology_reconstructed_feature_time_spans(
 				topology_reconstructed_feature_time_spans,
