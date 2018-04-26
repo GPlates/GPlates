@@ -335,13 +335,12 @@ namespace GPlatesAppLogic
 
 					// Get a reference to the entry just inserted (or existing entry).
 					PartitionedFeature::GeometryProperty &geometry_property = inserted.first->second;
-					if (inserted.second)
-					{
-						geometry_property.property_clones.push_back(
-								PartitionedFeature::GeometryPropertyClone(
-										geometry_domain_property_clone,
-										geometry_range_property_clone));
-					}
+
+					// Add the current geometry property clone.
+					geometry_property.property_clones.push_back(
+							PartitionedFeature::GeometryPropertyClone(
+									geometry_domain_property_clone,
+									geometry_range_property_clone));
 
 					// If there's a range for the current domain then add the range property name.
 					//
