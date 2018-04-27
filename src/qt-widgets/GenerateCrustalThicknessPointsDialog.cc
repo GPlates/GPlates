@@ -36,10 +36,13 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
+#include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructLayerProxy.h"
+#include "app-logic/ReconstructParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
@@ -61,6 +64,8 @@
 #include "model/NotificationGuard.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayer.h"
+#include "presentation/VisualLayers.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlDataBlock.h"
@@ -72,6 +77,7 @@
 #include "qt-widgets/EditStringWidget.h"
 #include "qt-widgets/EditTimePeriodWidget.h"
 #include "qt-widgets/QtWidgetUtils.h"
+#include "qt-widgets/SetTopologyReconstructionParametersDialog.h"
 
 
 namespace
@@ -142,6 +148,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 			Qt::WindowSystemMenuHint |
 			Qt::MSWindowsFixedSizeDialogHint),
 	d_application_state(view_state.get_application_state()),
+	d_view_state(view_state),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
@@ -152,6 +159,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 					d_application_state.get_feature_collection_file_state(),
 					d_application_state.get_feature_collection_file_io(),
 					this)),
+	d_set_topology_reconstruction_parameters_dialog(NULL),
 	d_help_scalar_type_dialog(
 			new InformationDialog(
 					HELP_SCALAR_TYPE_DIALOG_TEXT,
@@ -465,6 +473,17 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 		// Add the feature to the collection.
 		collection->add(feature);
 		
+		// When the feature is added to the feature collection it will trigger creation of a new layer.
+		// Prior to adding the feature the feature collection will be empty and hence no layers will
+		// get created for it (because layer creation is based on what type of features are present).
+		// Note that this triggering happens the model notification guard is released, so we wrap
+		// our slot connect/disconnect around that.
+		QObject::connect(
+				&d_view_state.get_visual_layers(),
+				SIGNAL(layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+				this,
+				SLOT(handle_visual_layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+
 		// Release the model notification guard now that we've finished modifying the feature.
 		// Provided there are no nested guards this should notify model observers.
 		// We want any observers to see the changes before we emit signals because we don't
@@ -473,9 +492,16 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 		// Also this should be done before getting the application state reconstructs which
 		// happens when the guard is released (because we modified the model).
 		model_notification_guard.release_guard();
+		
+		// Layer creation has just happened (at release of model notification guard) so we can disconnect now.
+		QObject::disconnect(
+				&d_view_state.get_visual_layers(),
+				SIGNAL(layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+				this,
+				SLOT(handle_visual_layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
 
 		Q_EMIT feature_created(feature->reference());
-	
+
 		accept();
 	}
 	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)
@@ -731,6 +757,20 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_point_density_spi
 
 
 void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_visual_layer_added(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		if (locked_visual_layer->get_layer_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+		{
+			open_topology_reconstruction_parameters_dialog(visual_layer);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_generate_points_page_current()
 {
 	button_previous->setEnabled(false);
@@ -819,4 +859,54 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geom
 				reconstruction_plate_id,
 				*reconstruction_tree,
 				true/*reverse_reconstruct*/);
+}
+
+
+void
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::open_topology_reconstruction_parameters_dialog(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> reconstruct_visual_layer)
+{
+	if (!d_set_topology_reconstruction_parameters_dialog)
+	{
+		d_set_topology_reconstruction_parameters_dialog = new SetTopologyReconstructionParametersDialog(
+				d_application_state,
+				true/*only_ok_button*/,
+				this);
+	}
+
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = reconstruct_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerParams *>(
+					layer.get_layer_params().get());
+		if (layer_params)
+		{
+			// Set the default time range to be from the current reconstruction time (ie, initial time)
+			// to present day in 1My increments. The user can change these in the dialog below.
+			GPlatesAppLogic::ReconstructParams reconstruct_params = layer_params->get_reconstruct_params();
+			reconstruct_params.set_topology_reconstruction_end_time(0.0);
+			reconstruct_params.set_topology_reconstruction_begin_time(d_application_state.get_current_reconstruction_time());
+			reconstruct_params.set_topology_reconstruction_time_increment(1.0);
+			layer_params->set_reconstruct_params(reconstruct_params);
+
+			d_set_topology_reconstruction_parameters_dialog->populate(reconstruct_visual_layer);
+
+			// This dialog is shown modally.
+			// Note that the user may change various layer parameters here.
+			d_set_topology_reconstruction_parameters_dialog->exec();
+
+			//
+			// Note that user only has option to accept dialog.
+			// So we'll go ahead and turn on "reconstruct using topologies" (it starts out turned off by default).
+			// This will then trigger the lengthy generation of the history of topologically-reconstructed crustal thicknesses
+			// using the parameters configured above by the user.
+			//
+			// Switch to using topologies.
+			// Note that we reload the reconstruct parameters since user may have modified them.
+			reconstruct_params = layer_params->get_reconstruct_params();
+			reconstruct_params.set_reconstruct_using_topologies(true);
+			layer_params->set_reconstruct_params(reconstruct_params);
+		}
+	}
 }

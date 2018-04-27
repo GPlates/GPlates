@@ -126,6 +126,7 @@ namespace
 
 GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::SetTopologyReconstructionParametersDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
+		bool only_ok_button,
 		QWidget *parent_) :
 	QDialog(parent_),
 	d_application_state(application_state),
@@ -156,6 +157,11 @@ GPlatesQtWidgets::SetTopologyReconstructionParametersDialog::SetTopologyReconstr
 					this))
 {
 	setupUi(this);
+
+	if (only_ok_button)
+	{
+        main_buttonbox->setStandardButtons(QDialogButtonBox::Ok);
+	}
 
 	// Show/hide line tessellation controls if enabling/disabling tessellation.
 	detect_lifetime_widget->setVisible(

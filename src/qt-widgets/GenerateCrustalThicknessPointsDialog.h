@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_GENERATECRUSTALTHICKNESSPOINTSDIALOG_H
 
 #include <boost/optional.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QDialog>
 #include <QString>
 
@@ -57,6 +58,7 @@ namespace GPlatesGui
 namespace GPlatesPresentation
 {
 	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesQtWidgets
@@ -65,6 +67,7 @@ namespace GPlatesQtWidgets
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
+	class SetTopologyReconstructionParametersDialog;
 
 	/**
 	 * This dialog generates a distribution of points with initial crustal thicknesses at a past geological time.
@@ -136,6 +139,10 @@ namespace GPlatesQtWidgets
 		handle_point_density_spin_box_value_changed(
 				int value);
 
+		void
+		handle_visual_layer_added(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer>);
+
 	private:
 
 		void
@@ -162,6 +169,10 @@ namespace GPlatesQtWidgets
 				const double &reconstruction_time,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
+		void
+		open_topology_reconstruction_parameters_dialog(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> reconstruct_visual_layer);
+
 
 		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS;
 		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR;
@@ -169,6 +180,7 @@ namespace GPlatesQtWidgets
 
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 		GPlatesGui::FeatureFocus &d_feature_focus;
 		
 		/**
@@ -191,6 +203,11 @@ namespace GPlatesQtWidgets
 		 * The widget for choosing the feature collection.
 		 */
 		GPlatesQtWidgets::ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
+
+		/**
+		 * Used to initialise topological reconstruction for newly created reconstruct layers.
+		 */
+		SetTopologyReconstructionParametersDialog *d_set_topology_reconstruction_parameters_dialog;
 
 		/**
 		 * The polygon geometry of the focused feature (topological plate/network or static polygon).
