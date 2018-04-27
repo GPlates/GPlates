@@ -129,7 +129,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			this, SLOT(handle_use_topologies_button(bool)));
 	use_topologies_radio_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
-			dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+			use_topologies_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_use_topologies_button(bool)));
 
 	prompt_set_topology_reconstruction_parameters_check_box->setCursor(QCursor(Qt::ArrowCursor));
@@ -225,7 +225,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::set_data(
 					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_use_topologies_button(bool)));
 			QObject::disconnect(
-					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					use_topologies_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_use_topologies_button(bool)));
 			if (reconstruct_params.get_reconstruct_using_topologies())
 			{
@@ -245,7 +245,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::set_data(
 					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_use_topologies_button(bool)));
 			QObject::connect(
-					dont_use_topologies_radio_button, SIGNAL(toggled(bool)),
+					use_topologies_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_use_topologies_button(bool)));
 		}
 
