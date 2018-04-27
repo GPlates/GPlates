@@ -145,6 +145,29 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		/**
+		 * RAII class keeps track of whether currently creating a feature or not.
+		 */
+		class CurrentlyCreatingFeatureGuard
+		{
+		public:
+			CurrentlyCreatingFeatureGuard(
+					GenerateCrustalThicknessPointsDialog &dialog) :
+				d_dialog(dialog)
+			{
+				d_dialog.d_currently_creating_feature = true;
+			}
+
+			~CurrentlyCreatingFeatureGuard()
+			{
+				d_dialog.d_currently_creating_feature = false;
+			}
+
+		private:
+			GenerateCrustalThicknessPointsDialog &d_dialog;
+		};
+
+
 		void
 		initialise_widgets();
 
@@ -213,6 +236,11 @@ namespace GPlatesQtWidgets
 		 * The polygon geometry of the focused feature (topological plate/network or static polygon).
 		 */
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_focused_boundary_polygon;
+
+		/**
+		 * Is true when inside @a handle_create, so we know when a new layer is created as a result of creating a new feature.
+		 */
+		bool d_currently_creating_feature;
 
 		GPlatesQtWidgets::InformationDialog *d_help_scalar_type_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_point_region_dialog;

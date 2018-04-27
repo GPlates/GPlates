@@ -160,6 +160,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 					d_application_state.get_feature_collection_file_io(),
 					this)),
 	d_set_topology_reconstruction_parameters_dialog(NULL),
+	d_currently_creating_feature(false),
 	d_help_scalar_type_dialog(
 			new InformationDialog(
 					HELP_SCALAR_TYPE_DIALOG_TEXT,
@@ -303,6 +304,11 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise_widgets()
 void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 {
+	// When a new crustal thickness feature is added to a new feature collection it will trigger the
+	// creation of a new layer. However a new layer could be created from anywhere, so we only look
+	// at new layers within the scope of the current method.
+	CurrentlyCreatingFeatureGuard currently_creating_feature_guard(*this);
+
 	try
 	{
 		// We want to merge model events across this scope so that only one model event
@@ -472,17 +478,6 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 
 		// Add the feature to the collection.
 		collection->add(feature);
-		
-		// When the feature is added to the feature collection it will trigger creation of a new layer.
-		// Prior to adding the feature the feature collection will be empty and hence no layers will
-		// get created for it (because layer creation is based on what type of features are present).
-		// Note that this triggering happens the model notification guard is released, so we wrap
-		// our slot connect/disconnect around that.
-		QObject::connect(
-				&d_view_state.get_visual_layers(),
-				SIGNAL(layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-				this,
-				SLOT(handle_visual_layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
 
 		// Release the model notification guard now that we've finished modifying the feature.
 		// Provided there are no nested guards this should notify model observers.
@@ -492,13 +487,6 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 		// Also this should be done before getting the application state reconstructs which
 		// happens when the guard is released (because we modified the model).
 		model_notification_guard.release_guard();
-		
-		// Layer creation has just happened (at release of model notification guard) so we can disconnect now.
-		QObject::disconnect(
-				&d_view_state.get_visual_layers(),
-				SIGNAL(layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-				this,
-				SLOT(handle_visual_layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
 
 		Q_EMIT feature_created(feature->reference());
 
@@ -616,6 +604,15 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 	QObject::connect(
 			button_next, SIGNAL(clicked()),
 			this, SLOT(handle_next()));
+		
+	// When a new crustal thickness feature is added to a new feature collection it will trigger creation of a new layer.
+	// Prior to adding the new feature, the new feature collection will be empty and hence no layers will
+	// get created for it (because layer creation is based on what type of features are present).
+	QObject::connect(
+			&d_view_state.get_visual_layers(),
+			SIGNAL(layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_visual_layer_added(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
 
 	// Pushing Enter or double-clicking should cause the create button to focus.
 	QObject::connect(
@@ -760,11 +757,15 @@ void
 GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_visual_layer_added(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	// Only interested in new layers created as a result of us.
+	if (d_currently_creating_feature)
 	{
-		if (locked_visual_layer->get_layer_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
 		{
-			open_topology_reconstruction_parameters_dialog(visual_layer);
+			if (locked_visual_layer->get_layer_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+			{
+				open_topology_reconstruction_parameters_dialog(visual_layer);
+			}
 		}
 	}
 }
