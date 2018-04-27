@@ -148,7 +148,7 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
-		react_feature_properties_options_radio_button(
+		react_feature_properties_options_checkbox(
 				bool checked);
 
 	private:

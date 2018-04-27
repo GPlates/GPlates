@@ -362,6 +362,17 @@ void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_vector_format_radio_button_toggled(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
 			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
@@ -419,6 +430,17 @@ void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_domain_point_format_radio_button_toggled(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
 			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(

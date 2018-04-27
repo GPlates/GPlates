@@ -341,6 +341,20 @@ void
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_use_topologies_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	//
+	// Don't want to open topology reconstruction parameters dialog twice
+	// (once when "No" toggled off and once when "Yes" toggled on; both happen when user selects "Yes").
+	if (!checked)
+	{
+		return;
+	}
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
