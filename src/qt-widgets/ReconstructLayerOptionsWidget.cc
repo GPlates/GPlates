@@ -307,20 +307,24 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 }
 
 
-void
+bool
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_topology_reconstruction_parameters_dialog()
 {
 	if (!d_set_topology_reconstruction_parameters_dialog)
 	{
 		d_set_topology_reconstruction_parameters_dialog = new SetTopologyReconstructionParametersDialog(
 				d_application_state,
+				false/*only_ok_button*/,
 				&d_viewport_window->dialogs().visual_layers_dialog());
 	}
 
-	d_set_topology_reconstruction_parameters_dialog->populate(d_current_visual_layer);
+	if (!d_set_topology_reconstruction_parameters_dialog->populate(d_current_visual_layer))
+	{
+		return false;
+	}
 
 	// This dialog is shown modally.
-	d_set_topology_reconstruction_parameters_dialog->exec();
+	return d_set_topology_reconstruction_parameters_dialog->exec() == QDialog::Accepted;
 }
 
 
@@ -362,7 +366,13 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_use_topologies_button(
 					// Ask the user to modify the reconstruct params *before* we switch to using topologies
 					// so that we don't get hit by a long topology reconstruction initialisation twice
 					// (once when switching it on and again when user changes parameters).
-					open_topology_reconstruction_parameters_dialog();
+					if (!open_topology_reconstruction_parameters_dialog())
+					{
+						// The user canceled the dialog so restore back to "don't reconstruct using topologies".
+						// Note: This will trigger a signal and reenter this function, so return immediately afterward.
+						dont_use_topologies_radio_button->setChecked(true);
+						return;
+					}
 				}
 
 				// Switch to using topologies.

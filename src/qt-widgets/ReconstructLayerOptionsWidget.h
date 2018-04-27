@@ -86,7 +86,7 @@ namespace GPlatesQtWidgets
 		void
 		open_vgp_visibility_dialog();
 
-		void
+		bool
 		open_topology_reconstruction_parameters_dialog();
 
 		void
