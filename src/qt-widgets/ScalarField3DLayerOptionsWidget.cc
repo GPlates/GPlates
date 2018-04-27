@@ -504,12 +504,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					isosurface_render_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_render_mode_button(bool)));
-			QObject::connect(
-					cross_sections_render_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_render_mode_button(bool)));
 
 			QObject::connect(
 					isosurface_render_mode_button, SIGNAL(toggled(bool)),
@@ -547,16 +541,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					isosurface_depth_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)));
-			QObject::connect(
-					isosurface_scalar_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)),
-					Qt::UniqueConnection);
-			QObject::connect(
-					isosurface_gradient_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)));
 
 			QObject::connect(
 					isosurface_depth_colour_mode_button, SIGNAL(toggled(bool)),
@@ -591,12 +575,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					cross_sections_scalar_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_cross_sections_colour_mode_button(bool)));
-			QObject::connect(
-					cross_sections_gradient_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_cross_sections_colour_mode_button(bool)));
 
 			QObject::connect(
 					cross_sections_scalar_colour_mode_button, SIGNAL(toggled(bool)),
@@ -633,15 +611,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 
-			QObject::disconnect(
-					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::disconnect(
-					single_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::disconnect(
-					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 			switch (visual_layer_params->get_isosurface_deviation_window_mode())
 			{
 			case GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_DEVIATION_WINDOW_MODE_NONE:
@@ -657,15 +626,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::connect(
-					single_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::connect(
-					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 
 			QObject::connect(
 					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
