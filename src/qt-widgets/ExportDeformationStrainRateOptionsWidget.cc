@@ -25,7 +25,7 @@
 
 #include <QMessageBox>
 
-#include "ExportDeformationOptionsWidget.h"
+#include "ExportDeformationStrainRateOptionsWidget.h"
 
 #include "ExportFileOptionsWidget.h"
 #include "QtWidgetUtils.h"
@@ -36,13 +36,13 @@
 #include "global/GPlatesAssert.h"
 
 
-GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget(
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::ExportDeformationStrainRateOptionsWidget(
 		QWidget *parent_,
-		const GPlatesGui::ExportDeformationAnimationStrategy::const_configuration_ptr &export_configuration) :
+		const GPlatesGui::ExportDeformationStrainRateAnimationStrategy::const_configuration_ptr &export_configuration) :
 	ExportOptionsWidget(parent_),
 	d_export_configuration(
 			boost::dynamic_pointer_cast<
-					GPlatesGui::ExportDeformationAnimationStrategy::Configuration>(
+					GPlatesGui::ExportDeformationStrainRateAnimationStrategy::Configuration>(
 							export_configuration->clone())),
 	d_export_file_options_widget(ExportFileOptionsWidget::create(parent_, export_configuration->file_options))
 {
@@ -59,7 +59,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
-	include_dilatation_rate_check_box->setChecked(d_export_configuration->include_dilatation_rate);
+	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
 	include_dilatation_check_box->setChecked(d_export_configuration->include_dilatation);
 
 #if 1
@@ -69,15 +69,15 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 	d_export_configuration->include_dilatation = false;
 #endif
 
-	if (d_export_configuration->file_format == GPlatesGui::ExportDeformationAnimationStrategy::Configuration::GMT)
+	if (d_export_configuration->file_format == GPlatesGui::ExportDeformationStrainRateAnimationStrategy::Configuration::GMT)
 	{
 		// Throws bad_cast if fails.
-		const GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &configuration =
-				dynamic_cast<const GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &>(
+		const GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &>(
 						*d_export_configuration);
 
 		if (configuration.domain_point_format ==
-			GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT)
+			GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration::LON_LAT)
 		{
 			gmt_lon_lat_radio_button->setChecked(true);
 		}
@@ -97,7 +97,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 
 
 GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
-GPlatesQtWidgets::ExportDeformationOptionsWidget::create_export_animation_strategy_configuration(
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
 	// Get the export file options from the export file options widget.
@@ -110,13 +110,13 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::create_export_animation_strate
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::make_signal_slot_connections()
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
-			include_dilatation_rate_check_box,
+			include_dilatation_strain_rate_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_dilatation_rate_check_box_clicked()));
+			SLOT(react_include_dilatation_strain_rate_check_box_clicked()));
 	QObject::connect(
 			include_dilatation_check_box,
 			SIGNAL(stateChanged(int)),
@@ -146,7 +146,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::make_signal_slot_connections()
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::react_gmt_domain_point_format_radio_button_toggled(
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_gmt_domain_point_format_radio_button_toggled(
 		bool checked)
 {
 	// All radio buttons in the group are connected to the same slot (this method).
@@ -161,18 +161,18 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_gmt_domain_point_format_
 	}
 
 	// Throws bad_cast if fails.
-	GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &>(
+	GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &>(
 					*d_export_configuration);
 
 	// Determine the domain point format.
 	if (gmt_lon_lat_radio_button->isChecked())
 	{
-		configuration.domain_point_format = GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT;
+		configuration.domain_point_format = GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration::LON_LAT;
 	}
 	else
 	{
-		configuration.domain_point_format = GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration::LAT_LON;
+		configuration.domain_point_format = GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration::LAT_LON;
 	}
 
 	update_output_description_label();
@@ -180,16 +180,16 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_gmt_domain_point_format_
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_dilatation_rate_check_box_clicked()
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_include_dilatation_strain_rate_check_box_clicked()
 {
-	d_export_configuration->include_dilatation_rate = include_dilatation_rate_check_box->isChecked();
+	d_export_configuration->include_dilatation_strain_rate = include_dilatation_strain_rate_check_box->isChecked();
 
 	update_output_description_label();
 }
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_dilatation_check_box_clicked()
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_include_dilatation_check_box_clicked()
 {
 	d_export_configuration->include_dilatation  = include_dilatation_check_box->isChecked();
 
@@ -198,28 +198,28 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_dilatation_check
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_label()
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::update_output_description_label()
 {
 	QString output_description;
 
 	// Write a description depending on the file format and associated options.
 	switch (d_export_configuration->file_format)
 	{
-	case GPlatesGui::ExportDeformationAnimationStrategy::Configuration::GPML:
+	case GPlatesGui::ExportDeformationStrainRateAnimationStrategy::Configuration::GPML:
 		{
 			// Throws bad_cast if fails.
-			GPlatesGui::ExportDeformationAnimationStrategy::GpmlConfiguration &configuration =
-					dynamic_cast<GPlatesGui::ExportDeformationAnimationStrategy::GpmlConfiguration &>(
+			GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GpmlConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GpmlConfiguration &>(
 							*d_export_configuration);
 
-			if (configuration.include_dilatation_rate ||
+			if (configuration.include_dilatation_strain_rate ||
 				configuration.include_dilatation)
 			{
 				output_description = tr("Deformation will be exported as scalar coverages containing:\n");
 
-				if (configuration.include_dilatation_rate)
+				if (configuration.include_dilatation_strain_rate)
 				{
-					output_description += tr("  DilatationRate\n");
+					output_description += tr("  DilatationStrainRate\n");
 				}
 
 				if (configuration.include_dilatation)
@@ -230,17 +230,17 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 		}
 		break;
 
-	case GPlatesGui::ExportDeformationAnimationStrategy::Configuration::GMT:
+	case GPlatesGui::ExportDeformationStrainRateAnimationStrategy::Configuration::GMT:
 		{
 			// Throws bad_cast if fails.
-			GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &configuration =
-					dynamic_cast<GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration &>(
+			GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration &>(
 							*d_export_configuration);
 
 			output_description = tr("Deformation will be exported as:\n");
 
 			if (configuration.domain_point_format ==
-				GPlatesGui::ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT)
+				GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GMTConfiguration::LON_LAT)
 			{
 				output_description += tr("  longitude  latitude");
 			}
@@ -249,9 +249,9 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 				output_description += tr("  latitude  longitude");
 			}
 
-			if (configuration.include_dilatation_rate)
+			if (configuration.include_dilatation_strain_rate)
 			{
-				output_description += tr("  dilatation_rate");
+				output_description += tr("  dilatation_strain_rate");
 			}
 
 			if (configuration.include_dilatation)

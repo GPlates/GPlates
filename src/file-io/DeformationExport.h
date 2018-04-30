@@ -57,8 +57,8 @@ namespace GPlatesFileIO
 		/**
 		 * Exports @a TopologyReconstructedFeatureGeometry objects containing dilatation strain rates to the GPML file format.
 		 *
-		 * If @a include_dilatation_rate is true then an extra set of per-point scalars,
-		 * under 'gpml:DilatationRate', is exported as per-point dilatation rates (in units of 1/second).
+		 * If @a include_dilatation_strain_rate is true then an extra set of per-point scalars,
+		 * under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain rates (in units of 1/second).
 		 *
 		 * If @a include_dilatation  is true then an extra set of per-point scalars,
 		 * under 'gpml:Dilatation', is exported as per-point accumulated dilatation (unit-less).
@@ -76,12 +76,12 @@ namespace GPlatesFileIO
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
-		export_deformation_to_gpml_format(
+		export_deformation_strain_rate_to_gpml_format(
 				const QString &filename,
 				const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 				GPlatesModel::ModelInterface &model,
 				const std::vector<const File::Reference *> &active_files,
-				bool include_dilatation_rate,
+				bool include_dilatation_strain_rate,
 				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,
@@ -95,10 +95,10 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    domain_point [dilatation_rate] [dilatation]
+		 *    domain_point [dilatation_strain_rate] [dilatation]
 		 * 
-		 * ...where 'domain_point' is position associated with the dilatation rate.
-		 * If @a include_dilatation_rate is true then dilatation rate is output (in units of 1/second).
+		 * ...where 'domain_point' is position associated with the dilatation strain rate.
+		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
 		 * If @a include_dilatation is true then accumulated dilatation is output (unit-less).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
@@ -117,14 +117,14 @@ namespace GPlatesFileIO
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
-		export_deformation_to_gmt_format(
+		export_deformation_strain_rate_to_gmt_format(
 				const QString &filename,
 				const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 				const std::vector<const File::Reference *> &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
-				bool include_dilatation_rate,
+				bool include_dilatation_strain_rate,
 				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,

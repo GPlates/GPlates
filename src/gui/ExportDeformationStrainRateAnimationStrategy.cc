@@ -35,7 +35,7 @@
 #include <QDebug>
 #include <QFileInfo>
 
-#include "ExportDeformationAnimationStrategy.h"
+#include "ExportDeformationStrainRateAnimationStrategy.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
@@ -149,7 +149,7 @@ namespace
 }
 
 
-GPlatesGui::ExportDeformationAnimationStrategy::ExportDeformationAnimationStrategy(
+GPlatesGui::ExportDeformationStrainRateAnimationStrategy::ExportDeformationStrainRateAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &configuration):
 	ExportAnimationStrategy(export_animation_context),
@@ -175,7 +175,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::ExportDeformationAnimationStrate
 
 
 void
-GPlatesGui::ExportDeformationAnimationStrategy::set_template_filename(
+GPlatesGui::ExportDeformationStrainRateAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
 	ExportAnimationStrategy::set_template_filename(filename);
@@ -183,7 +183,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::set_template_filename(
 
 
 bool
-GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
+GPlatesGui::ExportDeformationStrainRateAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
@@ -216,12 +216,12 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 						deformed_feature_geometry_seq,
 						d_export_animation_context_ptr->view_state());
 
-				GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
+				GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 					full_filename,
 					deformed_feature_geometry_seq,
 					d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
 					d_loaded_files,
-					configuration.include_dilatation_rate,
+					configuration.include_dilatation_strain_rate,
 					configuration.include_dilatation,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
@@ -240,14 +240,14 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 						deformed_feature_geometry_seq,
 						d_export_animation_context_ptr->view_state());
 
-				GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
+				GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 					full_filename,
 					deformed_feature_geometry_seq,
 					d_loaded_files,
 					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 					d_export_animation_context_ptr->view_time(),
 					(configuration.domain_point_format == GMTConfiguration::LON_LAT),
-					configuration.include_dilatation_rate,
+					configuration.include_dilatation_strain_rate,
 					configuration.include_dilatation,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
@@ -264,7 +264,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 	catch (std::exception &exc)
 	{
 		d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Error writing deformation file \"%1\": %2")
+			QObject::tr("Error writing deformation strain rate file \"%1\": %2")
 					.arg(full_filename)
 					.arg(exc.what()));
 		return false;
@@ -273,7 +273,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 	{
 		// FIXME: Catch all proper exceptions we might get here.
 		d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Error writing deformation file \"%1\": unknown error!").arg(full_filename));
+			QObject::tr("Error writing deformation strain rate file \"%1\": unknown error!").arg(full_filename));
 		return false;
 	}
 	
@@ -283,7 +283,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 
 
 void
-GPlatesGui::ExportDeformationAnimationStrategy::wrap_up(
+GPlatesGui::ExportDeformationStrainRateAnimationStrategy::wrap_up(
 		bool export_successful)
 {
 	// If we need to do anything after writing a whole batch of velocity files,

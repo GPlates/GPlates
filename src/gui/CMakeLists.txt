@@ -91,8 +91,8 @@ set(srcs
     ExportCitcomsResolvedTopologyAnimationStrategy.h
     ExportCoRegistrationAnimationStrategy.cc
     ExportCoRegistrationAnimationStrategy.h
-    ExportDeformationAnimationStrategy.cc
-    ExportDeformationAnimationStrategy.h
+    ExportDeformationStrainRateAnimationStrategy.cc
+    ExportDeformationStrainRateAnimationStrategy.h
     ExportFileNameTemplateValidationUtils.cc
     ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc

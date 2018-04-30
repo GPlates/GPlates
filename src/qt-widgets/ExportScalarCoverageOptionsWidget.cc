@@ -59,7 +59,7 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::ExportScalarCoverageOptions
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
-	include_dilatation_rate_check_box->setChecked(d_export_configuration->include_dilatation_rate);
+	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
 	include_dilatation_check_box->setChecked(d_export_configuration->include_dilatation);
 
 #if 1
@@ -113,10 +113,10 @@ void
 GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
-			include_dilatation_rate_check_box,
+			include_dilatation_strain_rate_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_dilatation_rate_check_box_clicked()));
+			SLOT(react_include_dilatation_strain_rate_check_box_clicked()));
 	QObject::connect(
 			include_dilatation_check_box,
 			SIGNAL(stateChanged(int)),
@@ -180,9 +180,9 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_domain_point_form
 
 
 void
-GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_rate_check_box_clicked()
+GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_strain_rate_check_box_clicked()
 {
-	d_export_configuration->include_dilatation_rate = include_dilatation_rate_check_box->isChecked();
+	d_export_configuration->include_dilatation_strain_rate = include_dilatation_strain_rate_check_box->isChecked();
 
 	update_output_description_label();
 }
@@ -212,14 +212,14 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 					dynamic_cast<GPlatesGui::ExportScalarCoverageAnimationStrategy::GpmlConfiguration &>(
 							*d_export_configuration);
 
-			if (configuration.include_dilatation_rate ||
+			if (configuration.include_dilatation_strain_rate ||
 				configuration.include_dilatation)
 			{
 				output_description = tr("Deformation will be exported as scalar coverages containing:\n");
 
-				if (configuration.include_dilatation_rate)
+				if (configuration.include_dilatation_strain_rate)
 				{
-					output_description += tr("  DilatationRate\n");
+					output_description += tr("  DilatationStrainRate\n");
 				}
 
 				if (configuration.include_dilatation)
@@ -249,9 +249,9 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 				output_description += tr("  latitude  longitude");
 			}
 
-			if (configuration.include_dilatation_rate)
+			if (configuration.include_dilatation_strain_rate)
 			{
-				output_description += tr("  dilatation_rate");
+				output_description += tr("  dilatation_strain_rate");
 			}
 
 			if (configuration.include_dilatation)

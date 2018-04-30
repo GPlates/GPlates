@@ -83,9 +83,9 @@
        <number>1</number>
       </property>
       <item>
-       <widget class="QCheckBox" name="include_dilatation_rate_check_box">
+       <widget class="QCheckBox" name="include_dilatation_strain_rate_check_box">
         <property name="text">
-         <string>Include dilatation rate</string>
+         <string>Include dilatation strain rate</string>
         </property>
        </widget>
       </item>

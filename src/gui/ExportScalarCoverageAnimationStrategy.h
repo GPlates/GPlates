@@ -84,12 +84,12 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
-				include_dilatation_rate(include_dilatation_rate_),
+				include_dilatation_strain_rate(include_dilatation_strain_rate_),
 				include_dilatation(include_dilatation_)
 			{  }
 
@@ -102,7 +102,7 @@ namespace GPlatesGui
 
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
-			bool include_dilatation_rate;
+			bool include_dilatation_strain_rate;
 			bool include_dilatation;
 		};
 
@@ -124,9 +124,9 @@ namespace GPlatesGui
 			GpmlConfiguration(
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
-				Configuration(filename_template_, GPML, file_options_, include_dilatation_rate_, include_dilatation_)
+				Configuration(filename_template_, GPML, file_options_, include_dilatation_strain_rate_, include_dilatation_)
 			{  }
 
 			virtual
@@ -157,9 +157,9 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					DomainPointFormatType domain_point_format_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
-				Configuration(filename_template_, GMT, file_options_, include_dilatation_rate_, include_dilatation_),
+				Configuration(filename_template_, GMT, file_options_, include_dilatation_strain_rate_, include_dilatation_),
 				domain_point_format(domain_point_format_)
 			{  }
 

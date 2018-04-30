@@ -57,8 +57,8 @@ namespace GPlatesFileIO
 		/**
 		 * Exports @a ReconstructedScalarCoverage objects containing *scalar coverages* to the GPML file format.
 		 *
-		 * If @a include_dilatation_rate is true then an extra set of per-point scalars,
-		 * under 'gpml:DilatationRate', is exported as per-point dilatation rates (in units of 1/second).
+		 * If @a include_dilatation_strain_rate is true then an extra set of per-point scalars,
+		 * under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain rates (in units of 1/second).
 		 *
 		 * If @a include_dilatation  is true then an extra set of per-point scalars,
 		 * under 'gpml:Dilatation', is exported as per-point accumulated dilatation (unit-less).
@@ -69,8 +69,8 @@ namespace GPlatesFileIO
 		 * @param export_separate_output_directory_per_input_file
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
-		 * @param include_dilatation_rate if true then an extra set of per-point scalars,
-		 *        under 'gpml:DilatationRate', is exported as per-point dilatation rates (in units of 1/second).
+		 * @param include_dilatation_strain_rate if true then an extra set of per-point scalars,
+		 *        under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain rates (in units of 1/second).
 		 *
 		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
 		 * in which case both a single output file is exported as well as grouped output files.
@@ -83,7 +83,7 @@ namespace GPlatesFileIO
 				const std::vector<const GPlatesAppLogic::ReconstructedScalarCoverage *> &reconstructed_scalar_coverage_seq,
 				GPlatesModel::ModelInterface &model,
 				const std::vector<const File::Reference *> &active_files,
-				bool include_dilatation_rate,
+				bool include_dilatation_strain_rate,
 				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,
@@ -97,10 +97,10 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    domain_point [dilatation_rate] [dilatation] scalar
+		 *    domain_point [dilatation_strain_rate] [dilatation] scalar
 		 * 
-		 * ...where 'domain_point' is position associated with the dilatation rate.
-		 * If @a include_dilatation_rate is true then dilatation rate is output (in units of 1/second).
+		 * ...where 'domain_point' is position associated with the dilatation strain rate.
+		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
 		 * If @a include_dilatation is true then accumulated dilatation is output (unit-less).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
@@ -126,7 +126,7 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
-				bool include_dilatation_rate,
+				bool include_dilatation_strain_rate,
 				bool include_dilatation,
 				bool export_single_output_file,
 				bool export_per_input_file,

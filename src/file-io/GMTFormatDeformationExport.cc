@@ -73,7 +73,7 @@ namespace GPlatesFileIO
 					QTextStream &output_stream,
 					const GPlatesMaths::PointOnSphere &domain_point,
 					bool domain_point_lon_lat_format,
-					boost::optional<const double &> dilatation_rate,
+					boost::optional<const double &> dilatation_strain_rate,
 					boost::optional<const double &> dilatation)
 			{
 				/*
@@ -117,15 +117,15 @@ namespace GPlatesFileIO
 				static const unsigned SCALAR_FIELDWIDTH = SCALAR_PRECISION + 3;
 
 				//
-				// Output dilatation rate.
+				// Output dilatation strain rate.
 				//
 
-				if (dilatation_rate)
+				if (dilatation_strain_rate)
 				{
 					// Don't format as fixed notation.
 					gmt_line << " "
 							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
-							<< dilatation_rate.get();
+							<< dilatation_strain_rate.get();
 				}
 
 				//
@@ -157,7 +157,7 @@ namespace GPlatesFileIO
 					QTextStream &output_stream,
 					const GPlatesAppLogic::TopologyReconstructedFeatureGeometry &deformed_feature_geometry,
 					bool domain_point_lon_lat_format,
-					bool include_dilatation_rate,
+					bool include_dilatation_strain_rate,
 					bool include_dilatation)
 			{
 				//
@@ -265,7 +265,7 @@ namespace GPlatesFileIO
 				// Only retrieve strain rates and total strains if needed.
 				boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
 				boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-				if (include_dilatation_rate)
+				if (include_dilatation_strain_rate)
 				{
 					deformation_strain_rates_option = deformation_strain_rates;
 				}
@@ -280,20 +280,20 @@ namespace GPlatesFileIO
 						deformation_strain_rates_option,
 						deformation_strains_option);
 
-				boost::optional< std::vector<double> > dilatation_rates;
-				if (include_dilatation_rate)
+				boost::optional< std::vector<double> > dilatation_strain_rates;
+				if (include_dilatation_strain_rate)
 				{
-					dilatation_rates = std::vector<double>();
+					dilatation_strain_rates = std::vector<double>();
 
 					// The number of domain points should match the number of deformation strain rates.
 					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 							deformed_domain_points.size() == deformation_strain_rates.size(),
 							GPLATES_ASSERTION_SOURCE);
 
-					dilatation_rates->reserve(deformation_strain_rates.size());
+					dilatation_strain_rates->reserve(deformation_strain_rates.size());
 					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
 					{
-						dilatation_rates->push_back(deformation_strain_rates[n].get_strain_rate_dilatation());
+						dilatation_strain_rates->push_back(deformation_strain_rates[n].get_strain_rate_dilatation());
 					}
 				}
 
@@ -320,10 +320,10 @@ namespace GPlatesFileIO
 				{
 					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
-					boost::optional<const double &> dilatation_rate;
-					if (include_dilatation_rate)
+					boost::optional<const double &> dilatation_strain_rate;
+					if (include_dilatation_strain_rate)
 					{
-						dilatation_rate = dilatation_rates.get()[index];
+						dilatation_strain_rate = dilatation_strain_rates.get()[index];
 					}
 
 					boost::optional<const double &> dilatation;
@@ -336,7 +336,7 @@ namespace GPlatesFileIO
 							output_stream,
 							domain_point,
 							domain_point_lon_lat_format,
-							dilatation_rate,
+							dilatation_strain_rate,
 							dilatation);
 				}
 			}
@@ -346,14 +346,14 @@ namespace GPlatesFileIO
 
 
 void
-GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
+GPlatesFileIO::GMTFormatDeformationExport::export_deformation_strain_rate(
 		const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_dilatation_rate,
+		bool include_dilatation_strain_rate,
 		bool include_dilatation)
 {
 	// Open the file.
@@ -384,9 +384,9 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 	{
 		output_stream << " Latitude Longitude";
 	}
-	if (include_dilatation_rate)
+	if (include_dilatation_strain_rate)
 	{
-		output_stream << " DilatationRate";
+		output_stream << " DilatationStrainRate";
 	}
 	if (include_dilatation)
 	{
@@ -418,12 +418,12 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 		{
 			const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *dfg = *dfg_iter;
 
-			// Write the topology reconstructed feature geometry (positions and dilatation rates).
+			// Write the topology reconstructed feature geometry (positions and dilatation strain rates).
 			print_gmt_deformed_feature_geometry(
 					output_stream,
 					*dfg,
 					domain_point_lon_lat_format,
-					include_dilatation_rate,
+					include_dilatation_strain_rate,
 					include_dilatation);
 		}
 	}

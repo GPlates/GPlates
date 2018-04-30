@@ -23,14 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QT_WIDGETS_EXPORTDEFORMATIONOPTIONSWIDGET_H
-#define GPLATES_QT_WIDGETS_EXPORTDEFORMATIONOPTIONSWIDGET_H
+#ifndef GPLATES_QT_WIDGETS_EXPORTDEFORMATIONSTRAINRATEOPTIONSWIDGET_H
+#define GPLATES_QT_WIDGETS_EXPORTDEFORMATIONSTRAINRATEOPTIONSWIDGET_H
 
-#include "ExportDeformationOptionsWidgetUi.h"
+#include "ExportDeformationStrainRateOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 
-#include "gui/ExportDeformationAnimationStrategy.h"
+#include "gui/ExportDeformationStrainRateAnimationStrategy.h"
 
 
 namespace GPlatesQtWidgets
@@ -38,26 +38,26 @@ namespace GPlatesQtWidgets
 	class ExportFileOptionsWidget;
 
 	/**
-	 * ExportDeformationOptionsWidget is used to show export options for exporting deformation info (such as strain).
+	 * ExportDeformationStrainRateOptionsWidget is used to show export options for exporting deformation strain rates.
 	 */
-	class ExportDeformationOptionsWidget :
+	class ExportDeformationStrainRateOptionsWidget :
 			public ExportOptionsWidget,
-			protected Ui_ExportDeformationOptionsWidget
+			protected Ui_ExportDeformationStrainRateOptionsWidget
 	{
 		Q_OBJECT
 
 	public:
 		/**
-		 * Creates a @a ExportDeformationOptionsWidget containing default export options.
+		 * Creates a @a ExportDeformationStrainRateOptionsWidget containing default export options.
 		 */
 		static
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const GPlatesGui::ExportDeformationAnimationStrategy::const_configuration_ptr &export_configuration)
+				const GPlatesGui::ExportDeformationStrainRateAnimationStrategy::const_configuration_ptr &export_configuration)
 		{
-			return new ExportDeformationOptionsWidget(parent, export_configuration);
+			return new ExportDeformationStrainRateOptionsWidget(parent, export_configuration);
 		}
 
 
@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
-		react_include_dilatation_rate_check_box_clicked();
+		react_include_dilatation_strain_rate_check_box_clicked();
 
 		void
 		react_include_dilatation_check_box_clicked();
@@ -85,9 +85,9 @@ namespace GPlatesQtWidgets
 	private:
 
 		explicit
-		ExportDeformationOptionsWidget(
+		ExportDeformationStrainRateOptionsWidget(
 				QWidget *parent_,
-				const GPlatesGui::ExportDeformationAnimationStrategy::const_configuration_ptr &export_configuration);
+				const GPlatesGui::ExportDeformationStrainRateAnimationStrategy::const_configuration_ptr &export_configuration);
 
 		void
 		make_signal_slot_connections();
@@ -96,10 +96,10 @@ namespace GPlatesQtWidgets
 		update_output_description_label();
 
 
-		GPlatesGui::ExportDeformationAnimationStrategy::configuration_ptr d_export_configuration;
+		GPlatesGui::ExportDeformationStrainRateAnimationStrategy::configuration_ptr d_export_configuration;
 
 		ExportFileOptionsWidget *d_export_file_options_widget;
 	};
 }
 
-#endif // GPLATES_QT_WIDGETS_EXPORTDEFORMATIONOPTIONSWIDGET_H
+#endif // GPLATES_QT_WIDGETS_EXPORTDEFORMATIONSTRAINRATEOPTIONSWIDGET_H

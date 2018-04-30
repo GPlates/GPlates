@@ -222,9 +222,9 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
-    ExportDeformationOptionsWidget.cc
-    ExportDeformationOptionsWidget.h
-    ExportDeformationOptionsWidgetUi.ui
+    ExportDeformationStrainRateOptionsWidget.cc
+    ExportDeformationStrainRateOptionsWidget.h
+    ExportDeformationStrainRateOptionsWidgetUi.ui
     ExportFileNameTemplateWidget.cc
     ExportFileNameTemplateWidget.h
     ExportFileNameTemplateWidgetUi.ui

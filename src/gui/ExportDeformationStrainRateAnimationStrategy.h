@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_EXPORTDEFORMATIONANIMATIONSTRATEGY_H
-#define GPLATES_GUI_EXPORTDEFORMATIONANIMATIONSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTDEFORMATIONSTRAINRATEANIMATIONSTRATEGY_H
+#define GPLATES_GUI_EXPORTDEFORMATIONSTRAINRATEANIMATIONSTRATEGY_H
 
 #include <vector>
 #include <boost/optional.hpp>
@@ -51,17 +51,17 @@ namespace GPlatesGui
 	/**
 	 * Concrete implementation of the ExportAnimationStrategy class for writing deformation.
 	 * 
-	 * ExportDeformationAnimationStrategy serves as the concrete Strategy role as
+	 * ExportDeformationStrainRateAnimationStrategy serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportDeformationAnimationStrategy :
+	class ExportDeformationStrainRateAnimationStrategy :
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportDeformationAnimationStrategy>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportDeformationStrainRateAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportDeformationAnimationStrategy> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportDeformationStrainRateAnimationStrategy> non_null_ptr_type;
 
 
 		/**
@@ -84,12 +84,12 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
-				include_dilatation_rate(include_dilatation_rate_),
+				include_dilatation_strain_rate(include_dilatation_strain_rate_),
 				include_dilatation(include_dilatation_)
 			{  }
 
@@ -102,7 +102,7 @@ namespace GPlatesGui
 
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
-			bool include_dilatation_rate;
+			bool include_dilatation_strain_rate;
 			bool include_dilatation;
 		};
 
@@ -124,9 +124,9 @@ namespace GPlatesGui
 			GpmlConfiguration(
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
-				Configuration(filename_template_, GPML, file_options_, include_dilatation_rate_, include_dilatation_)
+				Configuration(filename_template_, GPML, file_options_, include_dilatation_strain_rate_, include_dilatation_)
 			{  }
 
 			virtual
@@ -157,9 +157,9 @@ namespace GPlatesGui
 					const QString &filename_template_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					DomainPointFormatType domain_point_format_,
-					bool include_dilatation_rate_,
+					bool include_dilatation_strain_rate_,
 					bool include_dilatation_) :
-				Configuration(filename_template_, GMT, file_options_, include_dilatation_rate_, include_dilatation_),
+				Configuration(filename_template_, GMT, file_options_, include_dilatation_strain_rate_, include_dilatation_),
 				domain_point_format(domain_point_format_)
 			{  }
 
@@ -181,14 +181,14 @@ namespace GPlatesGui
 				const const_configuration_ptr &export_configuration)
 		{
 			return non_null_ptr_type(
-					new ExportDeformationAnimationStrategy(
+					new ExportDeformationStrainRateAnimationStrategy(
 							export_animation_context,
 							export_configuration));
 		}
 
 
 		virtual
-		~ExportDeformationAnimationStrategy()
+		~ExportDeformationStrainRateAnimationStrategy()
 		{  }
 		
 
@@ -228,7 +228,7 @@ namespace GPlatesGui
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
 		explicit
-		ExportDeformationAnimationStrategy(
+		ExportDeformationStrainRateAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
 		
@@ -245,4 +245,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif // GPLATES_GUI_EXPORTDEFORMATIONANIMATIONSTRATEGY_H
+#endif // GPLATES_GUI_EXPORTDEFORMATIONSTRAINRATEANIMATIONSTRATEGY_H

@@ -121,7 +121,7 @@ namespace
 	insert_reconstructed_scalar_coverage_into_feature_collection(
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			const GPlatesAppLogic::ReconstructedScalarCoverage *reconstructed_scalar_coverage,
-			bool include_dilatation_rate,
+			bool include_dilatation_strain_rate,
 			bool include_dilatation)
 	{
 		// Create a new feature.
@@ -156,7 +156,7 @@ namespace
 		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
 				GPlatesPropertyValues::GmlDataBlock::create();
 
-		if (include_dilatation_rate ||
+		if (include_dilatation_strain_rate ||
 			include_dilatation)
 		{
 			boost::optional<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> dfg =
@@ -177,7 +177,7 @@ namespace
 				// Only retrieve strain rates and total strains if needed.
 				boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
 				boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-				if (include_dilatation_rate)
+				if (include_dilatation_strain_rate)
 				{
 					deformation_strain_rates_option = deformation_strain_rates;
 				}
@@ -193,40 +193,40 @@ namespace
 						deformation_strains_option);
 			}
 
-			if (include_dilatation_rate)
+			if (include_dilatation_strain_rate)
 			{
-				std::vector<double> dilatation_rates;
+				std::vector<double> dilatation_strain_rates;
 
 				if (dfg)
 				{
-					dilatation_rates.reserve(deformation_strain_rates.size());
+					dilatation_strain_rates.reserve(deformation_strain_rates.size());
 					for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
 					{
-						dilatation_rates.push_back(deformation_strain_rates[d].get_strain_rate_dilatation());
+						dilatation_strain_rates.push_back(deformation_strain_rates[d].get_strain_rate_dilatation());
 					}
 				}
 				else
 				{
 					// The RFG is not a TopologyReconstructedFeatureGeometry so we have no deformation strain information.
 					// Default to zero strain.
-					dilatation_rates.resize(scalar_values.size(), 0.0);
+					dilatation_strain_rates.resize(scalar_values.size(), 0.0);
 				}
 
-				GPlatesPropertyValues::ValueObjectType dilatation_rate_type =
-						GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationRate");
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_rate_xml_attrs;
+				GPlatesPropertyValues::ValueObjectType dilatation_strain_rate_type =
+						GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationStrainRate");
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_strain_rate_xml_attrs;
 				GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
 				GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
-				dilatation_rate_xml_attrs.insert(std::make_pair(uom, per_second));
+				dilatation_strain_rate_xml_attrs.insert(std::make_pair(uom, per_second));
 
-				// Add the dilatation rate scalar values we're exporting.
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_rate_range =
+				// Add the dilatation strain rate scalar values we're exporting.
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_rate_range =
 						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-								dilatation_rate_type,
-								dilatation_rate_xml_attrs,
-								dilatation_rates.begin(),
-								dilatation_rates.end());
-				reconstructed_range_property->tuple_list_push_back(dilatation_rate_range);
+								dilatation_strain_rate_type,
+								dilatation_strain_rate_xml_attrs,
+								dilatation_strain_rates.begin(),
+								dilatation_strain_rates.end());
+				reconstructed_range_property->tuple_list_push_back(dilatation_strain_rate_range);
 			}
 
 			if (include_dilatation)
@@ -304,7 +304,7 @@ GPlatesFileIO::GpmlFormatReconstructedScalarCoverageExport::export_reconstructed
 		const std::list<reconstructed_scalar_coverage_group_type> &reconstructed_scalar_coverage_group_seq,
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,
-		bool include_dilatation_rate,
+		bool include_dilatation_strain_rate,
 		bool include_dilatation)
 {
 	// We want to merge model events across this scope so that only one model event
@@ -342,7 +342,7 @@ GPlatesFileIO::GpmlFormatReconstructedScalarCoverageExport::export_reconstructed
 			insert_reconstructed_scalar_coverage_into_feature_collection(
 					feature_collection_ref,
 					rsc,
-					include_dilatation_rate,
+					include_dilatation_strain_rate,
 					include_dilatation);
 		}
 	}
