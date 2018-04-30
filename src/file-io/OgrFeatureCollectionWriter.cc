@@ -391,6 +391,20 @@ namespace
 	}
 
 	void
+	add_geometry_import_time_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::GEOMETRY_IMPORT_TIME),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("double"),
+						 dictionary);
+	}
+
+	void
 	add_region_to_kvd(
 			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header,
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
@@ -582,6 +596,7 @@ namespace
 		add_left_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_right_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_spreading_asymmetry_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
+		add_geometry_import_time_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
 	
@@ -626,7 +641,7 @@ namespace
 
 
 	double
-	get_time_from_time_period(
+	get_time_from_time_instant(
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 
@@ -883,6 +898,47 @@ namespace
 	}
 
 	void
+	fill_kvd_with_geometry_import_time(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+		static const GPlatesModel::PropertyName geometry_import_time_property_name =
+				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+		boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+						feature, geometry_import_time_property_name);
+		if (time_instant)
+		{
+
+			const double geometry_import_time = get_time_from_time_instant(*time_instant.get());
+
+			GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+					GPlatesPropertyValues::XsDouble::create(geometry_import_time);
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("double"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+			}
+		}
+	}
+
+	void
 	fill_kvd_with_feature_type(
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 			const QMap< QString,QString > &model_to_shapefile_map,
@@ -974,8 +1030,8 @@ namespace
 		if (time_period)
 		{
 
-			double begin_time = get_time_from_time_period(*(time_period.get()->begin()));
-			double end_time = get_time_from_time_period(*(time_period.get()->end()));
+			double begin_time = get_time_from_time_instant(*(time_period.get()->begin()));
+			double end_time = get_time_from_time_instant(*(time_period.get()->end()));
 
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
 					GPlatesPropertyValues::XsDouble::create(begin_time);
@@ -1322,7 +1378,7 @@ namespace
 					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(recon_method_element);
 
-		// Add a spreading asymmetry method entry
+		// Add a spreading asymmetry entry
 		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
 		key = GPlatesPropertyValues::XsString::create(
 					GPlatesUtils::make_icu_string_from_qstring(*it));
@@ -1335,6 +1391,20 @@ namespace
 					spreading_asymmetry_value,
 					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		elements.push_back(spreading_asymmetry_element);
+
+		// Add a geometry import time entry
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type geometry_import_time_value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement geometry_import_time_element(
+					key,
+					geometry_import_time_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+		elements.push_back(geometry_import_time_element);
 
 		// Add them all to the default kvd.
 		default_key_value_dictionary.reset(GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements));
@@ -1359,6 +1429,7 @@ namespace
 		fill_kvd_with_left_plate_id(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_right_plate_id(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_spreading_asymmetry(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_geometry_import_time(dictionary,model_to_shapefile_map,feature);
 	}
 	
 	void

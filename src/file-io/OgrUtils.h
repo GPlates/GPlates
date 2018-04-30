@@ -285,6 +285,11 @@ namespace GPlatesFileIO
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
+		void
+		add_geometry_import_time_to_kvd(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
 		QVariant
 		get_qvariant_from_kvd_element(
 				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);

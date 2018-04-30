@@ -63,6 +63,7 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+#include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
@@ -112,23 +113,34 @@ namespace
 
 
 	const GPlatesPropertyValues::GeoTimeInstant
+	create_geo_time_instant(
+			const double &time)
+	{
+		if (time < -998.9 && time > -1000.0)
+		{
+			// It's in the distant future, which is denoted in PLATES4 line-format
+			// files using times like -999.0 or -999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+		}
+		if (time > 998.9 && time < 1000.0)
+		{
+			// It's in the distant past, which is denoted in PLATES4 line-format files
+			// using times like 999.0 or 999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+		}
+
+		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+
+	const GPlatesPropertyValues::GeoTimeInstant
 	create_begin_geo_time_instant(
 			const boost::optional<double> &time)
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
 	}
 
@@ -138,18 +150,9 @@ namespace
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	}
 
@@ -387,6 +390,20 @@ namespace
 	}
 
 	void
+	append_geometry_import_time_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		double geometry_import_time)
+	{
+		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type geometry_import_time_property_value =
+				GPlatesModel::ModelUtils::create_gml_time_instant(
+						create_geo_time_instant(geometry_import_time));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					geometry_import_time_property_value));
+	}
+
+	void
 	append_name_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		QString name)
@@ -424,6 +441,7 @@ namespace
 	 *		leftPlate
 	 *		rightPlate
 	 *		spreadingAsymmetry
+	 *		geometryImportTime
 	 *	from the feature given by @a feature_handle.
 	 *
 	 * This is used when re-mapping model properties from shapefile attributes.
@@ -443,6 +461,7 @@ namespace
 		property_name_list << QString("leftPlate");
 		property_name_list << QString("rightPlate");
 		property_name_list << QString("spreadingAsymmetry");
+		property_name_list << QString("geometryImportTime");
 
 		GPlatesModel::FeatureHandle::iterator p_iter = feature->begin();
 		GPlatesModel::FeatureHandle::iterator p_iter_end = feature->end();
@@ -681,8 +700,26 @@ namespace
 
 		}
 
+		it = model_to_attribute_map.find(
+					ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
 
-		
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			double geometry_import_time = attribute.toDouble(&ok);
+			if (ok){
+				append_geometry_import_time_to_feature(feature,geometry_import_time);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+					GPlatesFileIO::ReadErrors::AttributeIgnored));
+			}
+		}
 	}
 
 	/**

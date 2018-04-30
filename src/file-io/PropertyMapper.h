@@ -48,6 +48,7 @@ namespace ShapefileAttributes {
 		LEFT_PLATE,
 		RIGHT_PLATE,
 		SPREADING_ASYMMETRY,
+		GEOMETRY_IMPORT_TIME,
 		
 		NUM_PROPERTIES
 	};
@@ -64,7 +65,8 @@ namespace ShapefileAttributes {
 		"ReconstructionMethod",
 		"LeftPlate",
 		"RightPlate",
-		"SpreadingAsymmetry"
+		"SpreadingAsymmetry",
+		"GeometryImportTime"
 	};
 	
 	static const QString default_attribute_field_names[] = {
@@ -79,8 +81,8 @@ namespace ShapefileAttributes {
 		"RECON_METH",
 		"L_PLATE",
 		"R_PLATE",
-		"SPREAD_ASY"
-
+		"SPREAD_ASY",
+		"IMPORT_AGE"
 	};
 
 }

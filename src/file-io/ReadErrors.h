@@ -121,6 +121,7 @@ namespace GPlatesFileIO
 			InvalidOgrPolygon,
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
+			InvalidShapefileGeometryImportTime,
 			UnableToMatchOgrGeometryWithFeature,
 			NoGeometriesFoundInMultiGeometry,
 			
