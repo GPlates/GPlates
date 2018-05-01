@@ -385,6 +385,13 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 	//
 
 	//
+	// Update: Turns out even the minimal change below (now commented out) breaks existing topologies
+	//         since they depend on mid-ocean ridges that in turn (mistakenly) rely on missing plate IDs
+	//         (in the rotation file) at various times. So reverting back to the original code.
+	//         Leaving the commented-out code here so we don't try something like this again.
+	//
+#if 0
+	//
 	// In the code below, if no plate ID is found for either time (t1 or t2) for a specific plate (fixed or moving)
 	// then we set both rotations to the identity rotation (eg, use identity for fixed plate, wrt anchor, at t1 *and* t2).
 	//
@@ -451,6 +458,36 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 
 	GPlatesMaths::FiniteRotation stage_pole = 
 		GPlatesMaths::compose(finite_rot_t2,GPlatesMaths::get_reverse(finite_rot_t1));	
+#else
+	// For t1, get the rotation for plate M w.r.t. anchor	
+	GPlatesMaths::FiniteRotation finite_rot_0_to_t1_M = 
+		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
+
+	// For t1, get the rotation for plate F w.r.t. anchor	
+	GPlatesMaths::FiniteRotation finite_rot_0_to_t1_F = 
+		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;
+
+
+	// For t2, get the rotation for plate M w.r.t. anchor	
+	GPlatesMaths::FiniteRotation finite_rot_0_to_t2_M = 
+		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first;
+
+	// For t2, get the rotation for plate F w.r.t. anchor	
+	GPlatesMaths::FiniteRotation finite_rot_0_to_t2_F = 
+		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;
+
+	// Compose these rotations so that we get
+	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
+
+	GPlatesMaths::FiniteRotation finite_rot_t1 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(finite_rot_0_to_t1_F), finite_rot_0_to_t1_M);
+
+	GPlatesMaths::FiniteRotation finite_rot_t2 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(finite_rot_0_to_t2_F), finite_rot_0_to_t2_M);	
+
+	GPlatesMaths::FiniteRotation stage_pole = 
+		GPlatesMaths::compose(finite_rot_t2,GPlatesMaths::get_reverse(finite_rot_t1));	
+#endif
 
 	return stage_pole;	
 }
