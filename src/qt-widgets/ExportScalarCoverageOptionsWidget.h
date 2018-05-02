@@ -80,7 +80,7 @@ namespace GPlatesQtWidgets
 		react_include_dilatation_strain_rate_check_box_clicked();
 
 		void
-		react_include_dilatation_check_box_clicked();
+		react_include_second_invariant_check_box_clicked();
 
 	private:
 

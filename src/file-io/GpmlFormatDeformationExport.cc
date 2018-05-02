@@ -67,7 +67,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *deformed_feature_geometry,
 			bool include_dilatation_strain_rate,
-			bool include_dilatation)
+			bool include_second_invariant_strain_rate)
 	{
 		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
 				point_deformation_strain_rate_seq_type;
@@ -75,25 +75,19 @@ namespace
 				point_deformation_total_strain_seq_type;
 
 		point_deformation_strain_rate_seq_type deformation_strain_rates;
-		point_deformation_total_strain_seq_type deformation_strains;
 
-		// Only retrieve strain rates and total strains if needed.
+		// Only retrieve strain rates if needed.
 		boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
-		boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-		if (include_dilatation_strain_rate)
+		if (include_dilatation_strain_rate ||
+			include_second_invariant_strain_rate)
 		{
 			deformation_strain_rates_option = deformation_strain_rates;
-		}
-		if (include_dilatation)
-		{
-			deformation_strains_option = deformation_strains;
 		}
 
 		// Get the current (per-point) geometry data.
 		deformed_feature_geometry->get_geometry_data(
 				boost::none/*points*/,
-				deformation_strain_rates_option,
-				deformation_strains_option);
+				deformation_strain_rates_option);
 
 		// Create a new feature.
 		const GPlatesModel::FeatureHandle::non_null_ptr_type deformed_feature_geometry_feature =
@@ -155,30 +149,32 @@ namespace
 			reconstructed_range_property->tuple_list_push_back(dilatation_strain_rate_range);
 		}
 
-		// Include accumulated dilatation if requested.
-		if (include_dilatation)
+		// Include second invariant strain rate if requested.
+		if (include_second_invariant_strain_rate)
 		{
-			std::vector<double> dilatations;
-			dilatations.reserve(deformation_strains.size());
-			for (unsigned int d = 0; d < deformation_strains.size(); ++d)
+			std::vector<double> second_invariant_strain_rates;
+			second_invariant_strain_rates.reserve(deformation_strain_rates.size());
+			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
 			{
-				dilatations.push_back(deformation_strains[d].get_strain_dilatation());
+				second_invariant_strain_rates.push_back(deformation_strain_rates[d].get_strain_rate_second_invariant());
 			}
 
-			GPlatesPropertyValues::ValueObjectType dilatation_type =
-					GPlatesPropertyValues::ValueObjectType::create_gpml("Dilatation");
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_xml_attrs;
-			// Total dilatation has no units so don't add any "uom" XML attribute.
+			GPlatesPropertyValues::ValueObjectType second_invariant_strain_rate_type =
+					GPlatesPropertyValues::ValueObjectType::create_gpml("TotalStrainRate");
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type second_invariant_strain_rate_xml_attrs;
+			GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
+			GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
+			second_invariant_strain_rate_xml_attrs.insert(std::make_pair(uom, per_second));
 
-			// Add the dilatation scalar values we're exporting.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_range =
+			// Add the second invariant strain rate scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type second_invariant_strain_rate_range =
 					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-							dilatation_type,
-							dilatation_xml_attrs,
-							dilatations.begin(),
-							dilatations.end());
+							second_invariant_strain_rate_type,
+							second_invariant_strain_rate_xml_attrs,
+							second_invariant_strain_rates.begin(),
+							second_invariant_strain_rates.end());
 
-			reconstructed_range_property->tuple_list_push_back(dilatation_range);
+			reconstructed_range_property->tuple_list_push_back(second_invariant_strain_rate_range);
 		}
 
 
@@ -203,7 +199,7 @@ namespace
 		}
 
 		if (include_dilatation_strain_rate ||
-			include_dilatation)
+			include_second_invariant_strain_rate)
 		{
 			if (!GPlatesModel::ModelUtils::add_property(
 					deformed_feature_geometry_feature_ref,
@@ -228,7 +224,7 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation_strain_rate(
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,
 		bool include_dilatation_strain_rate,
-		bool include_dilatation)
+		bool include_second_invariant_strain_rate)
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
@@ -266,7 +262,7 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation_strain_rate(
 					feature_collection_ref,
 					dfg,
 					include_dilatation_strain_rate,
-					include_dilatation);
+					include_second_invariant_strain_rate);
 		}
 	}
 

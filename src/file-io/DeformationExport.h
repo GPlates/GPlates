@@ -55,13 +55,13 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a TopologyReconstructedFeatureGeometry objects containing dilatation strain rates to the GPML file format.
+		 * Exports @a TopologyReconstructedFeatureGeometry objects containing strain rates to the GPML file format.
 		 *
 		 * If @a include_dilatation_strain_rate is true then an extra set of per-point scalars,
 		 * under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain rates (in units of 1/second).
 		 *
-		 * If @a include_dilatation  is true then an extra set of per-point scalars,
-		 * under 'gpml:Dilatation', is exported as per-point accumulated dilatation (unit-less).
+		 * If @a include_second_invariant_strain_rate is true then an extra set of per-point scalars,
+		 * under 'gpml:TotalStrainRate', is exported as per-point second invariant strain rates (in units of 1/second).
 		 *
 		 * @param export_single_output_file specifies whether to write all deformed feature geometries to a single file.
 		 * @param export_per_input_file specifies whether to group deformed feature geometries according
@@ -82,24 +82,24 @@ namespace GPlatesFileIO
 				GPlatesModel::ModelInterface &model,
 				const std::vector<const File::Reference *> &active_files,
 				bool include_dilatation_strain_rate,
-				bool include_dilatation,
+				bool include_second_invariant_strain_rate,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);
 
 
 		/**
-		 * Exports @a TopologyReconstructedFeatureGeometry objects containing dilatation strain rates to the GMT file format.
+		 * Exports @a TopologyReconstructedFeatureGeometry objects containing strain rates to the GMT file format.
 		 *
 		 * Note that GMT format provides a choice of how to output each topology reconstructed feature geometry.
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    domain_point [dilatation_strain_rate] [dilatation]
+		 *    domain_point [dilatation_strain_rate] [second_invariant_strain_rate]
 		 * 
 		 * ...where 'domain_point' is position associated with the dilatation strain rate.
 		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
-		 * If @a include_dilatation is true then accumulated dilatation is output (unit-less).
+		 * If @a include_second_invariant_strain_rate is true second invariant strain rate is output (in units of 1/second).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
@@ -125,7 +125,7 @@ namespace GPlatesFileIO
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
 				bool include_dilatation_strain_rate,
-				bool include_dilatation,
+				bool include_second_invariant_strain_rate,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);

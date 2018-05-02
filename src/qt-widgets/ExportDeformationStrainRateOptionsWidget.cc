@@ -60,14 +60,7 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::ExportDeformationStr
 	//
 
 	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
-	include_dilatation_check_box->setChecked(d_export_configuration->include_dilatation);
-
-#if 1
-	// Hide the total strain check box until the accuracy of total strain is sorted out.
-	// For now we don't want to export it.
-	include_dilatation_check_box->hide();
-	d_export_configuration->include_dilatation = false;
-#endif
+	include_second_invariant_strain_rate_check_box->setChecked(d_export_configuration->include_second_invariant_strain_rate);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportDeformationStrainRateAnimationStrategy::Configuration::GMT)
 	{
@@ -118,10 +111,10 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::make_signal_slot_con
 			this,
 			SLOT(react_include_dilatation_strain_rate_check_box_clicked()));
 	QObject::connect(
-			include_dilatation_check_box,
+			include_second_invariant_strain_rate_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_dilatation_check_box_clicked()));
+			SLOT(react_include_second_invariant_check_box_clicked()));
 
 	//
 	// GMT format connections.
@@ -189,9 +182,9 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_include_dilata
 
 
 void
-GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_include_dilatation_check_box_clicked()
+GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::react_include_second_invariant_check_box_clicked()
 {
-	d_export_configuration->include_dilatation  = include_dilatation_check_box->isChecked();
+	d_export_configuration->include_second_invariant_strain_rate  = include_second_invariant_strain_rate_check_box->isChecked();
 
 	update_output_description_label();
 }
@@ -213,7 +206,7 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::update_output_descri
 							*d_export_configuration);
 
 			if (configuration.include_dilatation_strain_rate ||
-				configuration.include_dilatation)
+				configuration.include_second_invariant_strain_rate)
 			{
 				output_description = tr("Deformation will be exported as scalar coverages containing:\n");
 
@@ -222,9 +215,9 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::update_output_descri
 					output_description += tr("  DilatationStrainRate\n");
 				}
 
-				if (configuration.include_dilatation)
+				if (configuration.include_second_invariant_strain_rate)
 				{
-					output_description += tr("  Dilatation\n");
+					output_description += tr("  TotalStrainRate\n");
 				}
 			}
 		}
@@ -254,9 +247,9 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::update_output_descri
 				output_description += tr("  dilatation_strain_rate");
 			}
 
-			if (configuration.include_dilatation)
+			if (configuration.include_second_invariant_strain_rate)
 			{
-				output_description += tr("  dilatation");
+				output_description += tr("  total_strain_rate");
 			}
 
 			output_description += "\n";

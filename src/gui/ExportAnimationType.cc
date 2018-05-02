@@ -129,7 +129,7 @@ namespace GPlatesGui
 							"<p>Export deformation strain rates.</p>"
 							"<ul>"
 							"<li>Exports visible reconstructed geometry layers connected to topology layers.</li>"
-							"<li>Each geometry point exports a position and dilatation strain rate.</li>"
+							"<li>Each geometry point exports a position, a dilatation strain rate and a total strain rate.</li>"
 							"</body></html>");
 				export_type_description_map[VELOCITIES] =
 						QObject::tr(

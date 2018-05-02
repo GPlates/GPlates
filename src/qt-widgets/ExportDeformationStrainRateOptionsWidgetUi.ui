@@ -90,9 +90,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="include_dilatation_check_box">
+       <widget class="QCheckBox" name="include_second_invariant_strain_rate_check_box">
         <property name="text">
-         <string>Include (accumulated) dilatation</string>
+         <string>Include total strain rate</string>
         </property>
        </widget>
       </item>

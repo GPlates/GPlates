@@ -69,7 +69,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 		GPlatesModel::ModelInterface &model,
 		const std::vector<const File::Reference *> &active_files,
 		bool include_dilatation_strain_rate,
-		bool include_dilatation,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -98,7 +98,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 				filename,
 				model,
 				include_dilatation_strain_rate,
-				include_dilatation);
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -128,7 +128,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 					*output_filename_iter,
 					model,
 					include_dilatation_strain_rate,
-					include_dilatation);
+					include_second_invariant_strain_rate);
 		}
 	}
 }
@@ -143,7 +143,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
 		bool include_dilatation_strain_rate,
-		bool include_dilatation,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -175,7 +175,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 				reconstruction_time,
 				domain_point_lon_lat_format,
 				include_dilatation_strain_rate,
-				include_dilatation);
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -208,7 +208,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 					reconstruction_time,
 					domain_point_lon_lat_format,
 					include_dilatation_strain_rate,
-					include_dilatation);
+					include_second_invariant_strain_rate);
 		}
 	}
 }

@@ -55,13 +55,13 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a TopologyReconstructedFeatureGeometry objects along with their dilatation strain rates.
+		 * Exports @a TopologyReconstructedFeatureGeometry objects along with their strain rates.
 		 *
 		 * If @a include_dilatation_strain_rate is true then an extra set of per-point scalars,
 		 * under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain rates (in units of 1/second).
 		 *
-		 * If @a include_dilatation  is true then an extra set of per-point scalars,
-		 * under 'gpml:Dilatation', is exported as per-point accumulated dilatation (unit-less).
+		 * If @a include_second_invariant_strain_rate  is true then an extra set of per-point scalars,
+		 * under 'gpml:TotalStrainRate', is exported as per-point second invariant strain rates (in units of 1/second).
 		 */
 		void
 		export_deformation_strain_rate(
@@ -69,7 +69,7 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				GPlatesModel::ModelInterface &model,
 				bool include_dilatation_strain_rate,
-				bool include_dilatation);
+				bool include_second_invariant_strain_rate);
 	}
 }
 
