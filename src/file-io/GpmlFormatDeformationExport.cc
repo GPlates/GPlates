@@ -71,8 +71,6 @@ namespace
 	{
 		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
 				point_deformation_strain_rate_seq_type;
-		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_total_strain_seq_type
-				point_deformation_total_strain_seq_type;
 
 		point_deformation_strain_rate_seq_type deformation_strain_rates;
 
