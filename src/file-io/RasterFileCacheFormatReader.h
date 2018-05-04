@@ -205,7 +205,10 @@ namespace GPlatesFileIO
 					d_block_infos,
 					&RasterFileCacheFormat::BlockInfo::main_offset);
 
-			// Add the no-data value to the raster if the raster type needs one (ie, if not RGBA).
+			// Add the no-data value to the raster if the raster type needs one.
+			//
+			// Note: This can also apply to RGBA rasters - if they have an RGB(A) nodata value then any
+			// pixels matching it will have the alpha component set to zero (ie, made transparent).
 			if (d_no_data_value)
 			{
 				GPlatesPropertyValues::RawRasterUtils::add_no_data_value(*result, d_no_data_value.get());

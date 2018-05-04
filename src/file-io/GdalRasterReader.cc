@@ -199,13 +199,65 @@ namespace GPlatesFileIO
 			const RasterBand &raster_band,
 			GPlatesGui::rgba8_t &no_data_value)
 	{
-		// Colour rasters do not have a no-data value.
-		//
-		// But we'll initialise a value since caller will not be able to easily determine the
-		// template parameter type and initialise a dummy value themselves.
-		no_data_value = GPlatesGui::rgba8_t(0, 0, 0, 0);
+		// This should not throw because our raster band should be a colour band because
+		// this 'get_no_data_value()' specialisation takes care of that.
+		const RasterBand::GDALRgbaBands gdal_rgba_bands =
+				boost::get<RasterBand::GDALRgbaBands>(raster_band.gdal_raster_band);
 
-		return false;
+		//
+		// For there to be a nodata RGBA value for the RGBA raster... the red, green and blue bands
+		// must each have a nodata byte value. But it's optional for the alpha channel.
+		//
+
+		// Red component.
+		boost::uint8_t red_no_data_value;
+		if (!get_no_data_value(
+				RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_bands.red_band),
+				red_no_data_value))
+		{
+			return false;
+		}
+
+		// Green component.
+		boost::uint8_t green_no_data_value;
+		if (!get_no_data_value(
+				RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_bands.green_band),
+				green_no_data_value))
+		{
+			return false;
+		}
+
+		// Blue component.
+		boost::uint8_t blue_no_data_value;
+		if (!get_no_data_value(
+				RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_bands.blue_band),
+				blue_no_data_value))
+		{
+			return false;
+		}
+
+		// If there's no alpha band, or there is one but it does not have a nodata value, then
+		// set the nodata value to 255. This means if only the RGB components have a nodata value
+		// then the RGB components of a pixel must match the respective nodata values and the
+		// alpha component of the pixel must match 255.
+		boost::uint8_t alpha_no_data_value = 255;
+		if (gdal_rgba_bands.alpha_band)
+		{
+			if (!get_no_data_value(
+					RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_bands.alpha_band.get()),
+					alpha_no_data_value))
+			{
+				alpha_no_data_value = 255;
+			}
+		}
+
+		no_data_value = GPlatesGui::rgba8_t(
+				red_no_data_value,
+				green_no_data_value,
+				blue_no_data_value,
+				alpha_no_data_value);
+
+		return true;
 	}
 
 

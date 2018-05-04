@@ -445,6 +445,36 @@ namespace GPlatesPropertyValues
 				}
 			};
 
+			// Specialisation for RGBA rasters that have data but don't have a no-data value.
+			// For these rasters we'll just mask out those pixels matching the specified nodata value
+			// by setting their alpha components to zero (making them transparent).
+			template<class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<GPlatesGui::rgba8_t, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::WithoutNoDataValue> >
+			{
+				typedef RawRasterImpl<GPlatesGui::rgba8_t, RawRasterDataPolicies::WithData, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithoutNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					raster_element_type *const data = raster.data();
+					const unsigned int num_pixels = raster.width() * raster.height();
+					for (unsigned int n = 0; n < num_pixels; ++n)
+					{
+						if (data[n] == no_data_value)
+						{
+							data[n].alpha = 0;
+						}
+					}
+				}
+			};
+
 
 			/**
 			 * Adds statistics to a raster.
@@ -720,6 +750,11 @@ namespace GPlatesPropertyValues
 		 *
 		 * This is useful when you've loaded data into a raster and need to set the no-data value
 		 * that's appropriate for the data loaded.
+		 *
+		 * Also RGBA rasters are handled even though their raw raster type does not have a no-data value
+		 * (ie, the no-data policy is 'RawRasterNoDataValuePolicies::WithoutNoDataValue').
+		 * In this case any pixels matching the specified no-data value will have their alpha component
+		 * set to zero (ie, made transparent). This essentially just applies to 'Rgba8RawRaster'.
 		 */
 		template<class RawRasterType>
 		void
