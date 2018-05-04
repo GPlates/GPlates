@@ -34,10 +34,13 @@
 #include <string>
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/type_traits/is_floating_point.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <QDateTime>
 
@@ -59,6 +62,7 @@
 #include "maths/Real.h"
 
 #include "property-values/RasterStatistics.h"
+#include "property-values/RasterType.h"
 #include "property-values/RawRasterUtils.h"
 
 #include "utils/Base2Utils.h"
@@ -130,6 +134,146 @@ namespace
 				return GDT_Unknown;
 		}
 	}
+
+
+	//
+	// Utilities to handle conversion of RGBA data.
+	//
+	// Separates floating-point channel data into a separate class specialisation to avoid
+	// compile errors such as comparing floating-point values for exact equality.
+	//
+	template <typename RasterBandElementType, bool is_floating_point>
+	struct ConvertRgbaBandData
+	{
+		// Set the alpha channel to zero (ie, make transparent) any pixels that match the
+		// RGBA no-data value.
+		//
+		// Handle case where RasterBandElementType is an integer type.
+		static
+		void
+		make_no_data_pixels_transparent(
+				RasterBandElementType *const rgba_pixels,
+				unsigned int num_pixels,
+				const RasterBandElementType red_no_data_value,
+				const RasterBandElementType green_no_data_value,
+				const RasterBandElementType blue_no_data_value,
+				const RasterBandElementType alpha_no_data_value)
+		{
+			for (unsigned int i = 0; i != num_pixels; ++i)
+			{
+				if (rgba_pixels[4 * i + 0] == red_no_data_value &&
+					rgba_pixels[4 * i + 1] == green_no_data_value &&
+					rgba_pixels[4 * i + 2] == blue_no_data_value &&
+					rgba_pixels[4 * i + 3] == alpha_no_data_value)
+				{
+					// Set alpha component to zero.
+					rgba_pixels[4 * i + 3] = 0;
+				}
+			}
+		}
+
+		// RasterBandElementType is larger than a byte so we convert to byte.
+		static
+		void
+		convert_to_rgba8_pixels(
+				GPlatesGui::rgba8_t *const dst_pixels,
+				const RasterBandElementType *const src_rgba_pixels,
+				unsigned int num_pixels)
+		{
+			// Number of bits to right-shift to get results down to 8 bits.
+			// This is the number of bits in band element minus the sign bit (if signed) minus 8.
+			const int right_shift_bits = std::numeric_limits<RasterBandElementType>::digits - 8;
+
+			if (std::numeric_limits<RasterBandElementType>::is_signed)
+			{
+				for (unsigned int i = 0; i != num_pixels; ++i)
+				{
+					RasterBandElementType src_red = src_rgba_pixels[4 * i + 0];
+					RasterBandElementType src_green = src_rgba_pixels[4 * i + 1];
+					RasterBandElementType src_blue = src_rgba_pixels[4 * i + 2];
+					RasterBandElementType src_alpha = src_rgba_pixels[4 * i + 3];
+
+					// Clamp to zero if negative, otherwise right shift.
+					src_red = (src_red < 0) ? 0 : (src_red >> right_shift_bits);
+					src_green = (src_green < 0) ? 0 : (src_green >> right_shift_bits);
+					src_blue = (src_blue < 0) ? 0 : (src_blue >> right_shift_bits);
+					src_alpha = (src_alpha < 0) ? 0 : (src_alpha >> right_shift_bits);
+
+					dst_pixels[i] = GPlatesGui::rgba8_t(
+						static_cast<boost::uint8_t>(src_red),
+						static_cast<boost::uint8_t>(src_green),
+						static_cast<boost::uint8_t>(src_blue),
+						static_cast<boost::uint8_t>(src_alpha));
+				}
+			}
+			else // unsigned, so no need to clamp to zero...
+			{
+				for (unsigned int i = 0; i != num_pixels; ++i)
+				{
+					// Right shift unsigned component values.
+					dst_pixels[i] = GPlatesGui::rgba8_t(
+						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 0] >> right_shift_bits),
+						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 1] >> right_shift_bits),
+						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 2] >> right_shift_bits),
+						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 3] >> right_shift_bits));
+				}
+			}
+		}
+	};
+
+	template <typename RasterBandElementType>
+	struct ConvertRgbaBandData<RasterBandElementType, true>
+	{
+		// Set the alpha channel to zero (ie, make transparent) any pixels that match the
+		// RGBA no-data value.
+		//
+		// Handle case where RasterBandElementType is a floating-point type.
+		static
+		void
+		make_no_data_pixels_transparent(
+				RasterBandElementType *const rgba_pixels,
+				unsigned int num_pixels,
+				const RasterBandElementType red_no_data_value,
+				const RasterBandElementType green_no_data_value,
+				const RasterBandElementType blue_no_data_value,
+				const RasterBandElementType alpha_no_data_value)
+		{
+			for (unsigned int i = 0; i != num_pixels; ++i)
+			{
+				if (GPlatesMaths::are_almost_exactly_equal(rgba_pixels[4 * i + 0], red_no_data_value) &&
+					GPlatesMaths::are_almost_exactly_equal(rgba_pixels[4 * i + 1], green_no_data_value) &&
+					GPlatesMaths::are_almost_exactly_equal(rgba_pixels[4 * i + 2], blue_no_data_value) &&
+					GPlatesMaths::are_almost_exactly_equal(rgba_pixels[4 * i + 3], alpha_no_data_value))
+				{
+					// Set alpha component to zero.
+					rgba_pixels[4 * i + 3] = 0;
+				}
+			}
+		}
+
+		// RasterBandElementType is larger than a byte so we convert to byte.
+		static
+		void
+		convert_to_rgba8_pixels(
+				GPlatesGui::rgba8_t *const dst_pixels,
+				const RasterBandElementType *const src_rgba_pixels,
+				unsigned int num_pixels)
+		{
+			for (unsigned int i = 0; i != num_pixels; ++i)
+			{
+				const GPlatesGui::Colour src_pixel(
+						static_cast<GLfloat>(src_rgba_pixels[4 * i + 0]),
+						static_cast<GLfloat>(src_rgba_pixels[4 * i + 1]),
+						static_cast<GLfloat>(src_rgba_pixels[4 * i + 2]),
+						static_cast<GLfloat>(src_rgba_pixels[4 * i + 3]));
+
+				// Takes care of clamping the floating-point range to [0.0, 1.0] and converting
+				// to integer range [0, 255].
+				dst_pixels[i] = GPlatesGui::Colour::to_rgba8(src_pixel);
+			}
+		}
+	};
+
 
 	bool
 	unpack_region(
@@ -374,55 +518,124 @@ namespace GPlatesFileIO
 		const RasterBand::GDALRgbaBands &gdal_rgba_raster_bands =
 				boost::get<const RasterBand::GDALRgbaBands>(raster_band.gdal_raster_band);
 
+		// Read the RGBA bands and combine the 3 RGB (or 4 RGBA) bands into one GPlatesGui::rgba8_t band.
+		// All RGBA bands have the same data type.
+		switch (gdal_rgba_raster_bands.band_data_type)
+		{
+		case GDT_Byte:
+			add_rgba_data<quint8>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_Int16:
+			add_rgba_data<qint16>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_UInt16:
+			add_rgba_data<quint16>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_Int32:
+			add_rgba_data<qint32>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_UInt32:
+			add_rgba_data<quint32>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_Float32:
+			add_rgba_data<float>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		case GDT_Float64:
+			add_rgba_data<double>(result_buf, gdal_rgba_raster_bands, flip, region_x_offset, region_y_offset, region_width, region_height);
+			break;
+
+		default:
+			throw GPlatesGlobal::LogException(
+					GPLATES_EXCEPTION_SOURCE, "Unexpected GDAL data type.");
+		}
+	}
+
+
+	template <typename RasterBandElementType>
+	void
+	GDALRasterReader::add_rgba_data(
+			GPlatesGui::rgba8_t *result_buf,
+			const RasterBand::GDALRgbaBands &gdal_rgba_raster_bands,
+			bool flip,
+			unsigned int region_x_offset,
+			unsigned int region_y_offset,
+			unsigned int region_width,
+			unsigned int region_height)
+	{
+		// If the RGBA band data type is not bytes then we'll need to read each row into a
+		// temporary array and then convert to bytes, otherwise can just read directly into bytes array.
+		const bool convert_band_data_to_bytes = (sizeof(RasterBandElementType) != 1);
+		boost::scoped_array<RasterBandElementType> non_byte_band_data_storage;
+		if (convert_band_data_to_bytes)
+		{
+			// Enough for a single row of RGBA pixel values in the raster.
+			non_byte_band_data_storage.reset(new RasterBandElementType[4 * region_width]);
+		}
+
+		const GPlatesPropertyValues::RasterType::Type raster_band_type =
+				GPlatesPropertyValues::RasterType::get_type_as_enum<RasterBandElementType>();
+
+		// Opaque alpha is max integer (if integer) or 1.0 (if floating-point).
+		const RasterBandElementType opaque_alpha = GPlatesPropertyValues::RasterType::is_integer(raster_band_type)
+				? (std::numeric_limits<RasterBandElementType>::max)() // integer
+				: static_cast<RasterBandElementType>(1);      // must be floating-point (because can't be RGBA)
+
 		//
-		// For there to be a no-data RGBA value for the RGBA raster... the red, green and blue bands
+		// For there to be an RGBA no-data value for the RGBA raster... the red, green and blue bands
 		// must each have a no-data byte value. But it's optional for the alpha channel.
 		//
-		boost::optional<GPlatesGui::rgba8_t> no_data_value;
-		{
-			// RGB components.
-			boost::uint8_t red_no_data_value;
-			boost::uint8_t green_no_data_value;
-			boost::uint8_t blue_no_data_value;
-			if (get_no_data_value(
-					RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_raster_bands.red_band),
-					red_no_data_value) &&
-				get_no_data_value(
-					RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_raster_bands.green_band),
-					green_no_data_value) &&
-				get_no_data_value(
-					RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_raster_bands.blue_band),
-					blue_no_data_value))
-			{
-				// If there's no alpha band, or there is one but it does not have a no-data value, then
-				// set the no-data value to 255. This means if only the RGB components have a no-data value
-				// then the RGB components of a pixel must match the respective no-data values and the
-				// alpha component of the pixel must match 255.
-				boost::uint8_t alpha_no_data_value = 255;
-				if (gdal_rgba_raster_bands.alpha_band)
-				{
-					if (!get_no_data_value(
-							RasterBand(GPlatesPropertyValues::RasterType::UINT8, gdal_rgba_raster_bands.alpha_band.get()),
-							alpha_no_data_value))
-					{
-						alpha_no_data_value = 255;
-					}
-				}
+		bool have_rgba_no_data_value = false;
 
-				no_data_value = GPlatesGui::rgba8_t(
-						red_no_data_value,
-						green_no_data_value,
-						blue_no_data_value,
-						alpha_no_data_value);
+		// RGB components of no-data value.
+		RasterBandElementType red_no_data_value;
+		RasterBandElementType green_no_data_value;
+		RasterBandElementType blue_no_data_value;
+		// If there's no alpha band, or there is one but it does not have a no-data value, then set
+		// the no-data value to fully opaque. This means if only the RGB components have a no-data value
+		// then the RGB components of a pixel must match the respective no-data values and the
+		// alpha component of the pixel must match fully opaque (which is the max integer, or 1.0 for floats).
+		RasterBandElementType alpha_no_data_value = opaque_alpha;
+		if (get_no_data_value(
+				RasterBand(raster_band_type, gdal_rgba_raster_bands.red_band),
+				red_no_data_value) &&
+			get_no_data_value(
+				RasterBand(raster_band_type, gdal_rgba_raster_bands.green_band),
+				green_no_data_value) &&
+			get_no_data_value(
+				RasterBand(raster_band_type, gdal_rgba_raster_bands.blue_band),
+				blue_no_data_value))
+		{
+			have_rgba_no_data_value = true;
+
+			if (gdal_rgba_raster_bands.alpha_band)
+			{
+				if (!get_no_data_value(
+						RasterBand(raster_band_type, gdal_rgba_raster_bands.alpha_band.get()),
+						alpha_no_data_value))
+				{
+					alpha_no_data_value = opaque_alpha;
+				}
 			}
 		}
 
 		for (unsigned int j = 0; j != region_height; ++j)
 		{
-			// Destination write pointer.
-			// Using qint64 in case reading file larger than 4Gb...
+			// The final destination of the read data.
+			// Using qint64 in case reading file larger than 4Gb.
 			GPlatesGui::rgba8_t *const result_line_ptr = result_buf + qint64(j) * region_width;
-			boost::uint8_t *const result_line_byte_ptr = reinterpret_cast<boost::uint8_t *>(result_line_ptr);
+
+			// Pointer to read RGBA band data into.
+			// It's either read into the temporary line storage if need to convert read band data into bytes
+			// before storing in result buffer, or read directly into result buffer (if band data is in bytes).
+			RasterBandElementType *const read_line_ptr = convert_band_data_to_bytes
+					? non_byte_band_data_storage.get()
+					: reinterpret_cast<RasterBandElementType *>(result_line_ptr);
 
 			// Work out which line we want to read in, depending on whether it's flipped.
 			int line_index = region_y_offset + j;
@@ -438,11 +651,11 @@ namespace GPlatesFileIO
 					line_index,
 					region_width,
 					1 /* read one row */,
-					result_line_byte_ptr,
+					read_line_ptr + 0/*red offset*/,
 					region_width,
 					1 /* one row of buffer */,
-					GDT_Byte,
-					sizeof(GPlatesGui::rgba8_t),
+					gdal_rgba_raster_bands.band_data_type,
+					4 * sizeof(RasterBandElementType) /* RGBA pixel */,
 					0 /* no offsets in buffer */);
 			if (error != CE_None)
 			{
@@ -457,11 +670,11 @@ namespace GPlatesFileIO
 					line_index,
 					region_width,
 					1 /* read one row */,
-					result_line_byte_ptr + 1/*green offset*/,
+					read_line_ptr + 1/*green offset*/,
 					region_width,
 					1 /* one row of buffer */,
-					GDT_Byte,
-					sizeof(GPlatesGui::rgba8_t),
+					gdal_rgba_raster_bands.band_data_type,
+					4 * sizeof(RasterBandElementType) /* RGBA pixel */,
 					0 /* no offsets in buffer */);
 			if (error != CE_None)
 			{
@@ -476,11 +689,11 @@ namespace GPlatesFileIO
 					line_index,
 					region_width,
 					1 /* read one row */,
-					result_line_byte_ptr + 2/*blue offset*/,
+					read_line_ptr + 2/*blue offset*/,
 					region_width,
 					1 /* one row of buffer */,
-					GDT_Byte,
-					sizeof(GPlatesGui::rgba8_t),
+					gdal_rgba_raster_bands.band_data_type,
+					4 * sizeof(RasterBandElementType) /* RGBA pixel */,
 					0 /* no offsets in buffer */);
 			if (error != CE_None)
 			{
@@ -497,11 +710,11 @@ namespace GPlatesFileIO
 						line_index,
 						region_width,
 						1 /* read one row */,
-						result_line_byte_ptr + 3/*alpha offset*/,
+						read_line_ptr + 3/*alpha offset*/,
 						region_width,
 						1 /* one row of buffer */,
-						GDT_Byte,
-						sizeof(GPlatesGui::rgba8_t),
+						gdal_rgba_raster_bands.band_data_type,
+						4 * sizeof(RasterBandElementType) /* RGBA pixel */,
 						0 /* no offsets in buffer */);
 				if (error != CE_None)
 				{
@@ -509,26 +722,38 @@ namespace GPlatesFileIO
 							GPLATES_EXCEPTION_SOURCE, "Unable to read alpha channel GDAL raster data.");
 				}
 			}
-			else // Set the alpha components to 255 (fully opaque)...
+			else // Set the alpha components to fully opaque...
 			{
 				for (unsigned int i = 0; i != region_width; ++i)
 				{
-					result_line_ptr[i].alpha = 255;
+					read_line_ptr[4 * i + 3] = opaque_alpha;
 				}
 			}
 
-			// Any pixels matching the no-data RGB(A) value (if one) have their alpha component
-			// set to zero (ie, made transparent).
-			if (no_data_value)
+			if (have_rgba_no_data_value)
 			{
-				const GPlatesGui::rgba8_t no_data_rgba = no_data_value.get();
-				for (unsigned int i = 0; i != region_width; ++i)
-				{
-					if (result_line_ptr[i] == no_data_rgba)
-					{
-						result_line_ptr[i].alpha = 0;
-					}
-				}
+				// Any pixels matching the no-data RGB(A) value (if have one) get their alpha component
+				// set to zero (ie, made transparent).
+				ConvertRgbaBandData<
+						RasterBandElementType,
+						boost::is_floating_point<RasterBandElementType>::value>::make_no_data_pixels_transparent(
+								read_line_ptr,
+								region_width,
+								red_no_data_value,
+								green_no_data_value,
+								blue_no_data_value,
+								alpha_no_data_value);
+			}
+
+			// If the band data size is bigger than a byte then need to convert it to bytes.
+			if (convert_band_data_to_bytes)
+			{
+ 				ConvertRgbaBandData<
+ 						RasterBandElementType,
+ 						boost::is_floating_point<RasterBandElementType>::value>::convert_to_rgba8_pixels(
+								result_line_ptr,
+ 								read_line_ptr,
+ 								region_width);
 			}
 		}
 	}
@@ -1054,25 +1279,42 @@ GPlatesFileIO::GDALRasterReader::is_colour_raster()
 	}
 
 	std::map<GDALColorInterp, GDALRasterBand *> gdal_colour_raster_bands;
+	boost::optional<GDALDataType> band_data_type;
 	const GDALColorInterp gdal_colour_interp[4] = { GCI_RedBand, GCI_GreenBand, GCI_BlueBand, GCI_AlphaBand };
 
 	for (unsigned int i = 1; i != num_gdal_raster_bands + 1; ++i)
 	{
 		GDALRasterBand *gdal_raster_band = d_dataset->GetRasterBand(i);
 
-		// All channels must be of type 'byte'.
-		if (gdal_raster_band == NULL ||
-			gdal_raster_band->GetRasterDataType() != GDT_Byte)
+		if (gdal_raster_band == NULL)
 		{
 			return boost::none;
+		}
+
+		if (band_data_type)
+		{
+			// We require all bands to have same type (to be a RGBA raster).
+			if (band_data_type.get() != gdal_raster_band->GetRasterDataType())
+			{
+				return boost::none;
+			}
+		}
+		else
+		{
+			// First band encountered so far.
+			band_data_type = gdal_raster_band->GetRasterDataType();
 		}
 
 		const GDALColorInterp colour_interpretation = gdal_raster_band->GetColorInterpretation();
 
 		if (colour_interpretation == GCI_Undefined)
 		{
-			// Assume R,G,B or A are band 1,2,3 or 4.
-			gdal_colour_raster_bands[gdal_colour_interp[i - 1]] = gdal_raster_band;
+			// If the data type is a byte then assume R,G,B or A are band 1,2,3 or 4.
+			// If not a byte then ignore the band.
+			if (band_data_type.get() == GDT_Byte)
+			{
+				gdal_colour_raster_bands[gdal_colour_interp[i - 1]] = gdal_raster_band;
+			}
 		}
 		else if (colour_interpretation == GCI_RedBand ||
 			colour_interpretation == GCI_GreenBand ||
@@ -1100,6 +1342,7 @@ GPlatesFileIO::GDALRasterReader::is_colour_raster()
 	//qDebug() << "Raster is " << ((num_gdal_raster_bands == 4) ? "RGBA" : "RGB");
 
 	RasterBand::GDALRgbaBands gdal_rgba_bands;
+	gdal_rgba_bands.band_data_type = band_data_type.get();
 	gdal_rgba_bands.red_band = gdal_colour_raster_bands[GCI_RedBand];
 	gdal_rgba_bands.green_band = gdal_colour_raster_bands[GCI_GreenBand];
 	gdal_rgba_bands.blue_band = gdal_colour_raster_bands[GCI_BlueBand];
