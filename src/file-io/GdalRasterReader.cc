@@ -631,9 +631,9 @@ namespace GPlatesFileIO
 		bool have_rgba_no_data_value = false;
 
 		// RGB components of no-data value.
-		RasterBandElementType red_no_data_value;
-		RasterBandElementType green_no_data_value;
-		RasterBandElementType blue_no_data_value;
+		RasterBandElementType red_no_data_value = opaque_alpha;
+		RasterBandElementType green_no_data_value = opaque_alpha;
+		RasterBandElementType blue_no_data_value = opaque_alpha;
 		// If there's no alpha band, or there is one but it does not have a no-data value, then set
 		// the no-data value to fully opaque. This means if only the RGB components have a no-data value
 		// then the RGB components of a pixel must match the respective no-data values and the
