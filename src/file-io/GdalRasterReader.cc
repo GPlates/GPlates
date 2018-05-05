@@ -137,6 +137,76 @@ namespace
 
 
 	//
+	// Handle conversion of 4-band integer data (of type RasterBandElementType that is larger than a byte)
+	// to 4-byte RGBA data.
+	//
+	// Unspecialised class handles case where RasterBandElementType is a *unsigned* integer type.
+	template <typename RasterBandElementType, bool is_integer_signed>
+	struct ConvertIntegerBandsToRgbaPixels
+	{
+		static
+		void
+		convert(
+				GPlatesGui::rgba8_t *const dst_pixels,
+				const RasterBandElementType *const src_rgba_pixels,
+				unsigned int num_pixels)
+		{
+			// Number of bits to right-shift to get results down to 8 bits.
+			// This is the number of bits in band element minus the sign bit (if signed) minus 8.
+			const int right_shift_bits = std::numeric_limits<RasterBandElementType>::digits - 8;
+
+			// unsigned, so no need to clamp to zero...
+			for (unsigned int i = 0; i != num_pixels; ++i)
+			{
+				// Right shift unsigned component values.
+				dst_pixels[i] = GPlatesGui::rgba8_t(
+					static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 0] >> right_shift_bits),
+					static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 1] >> right_shift_bits),
+					static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 2] >> right_shift_bits),
+					static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 3] >> right_shift_bits));
+			}
+		}
+	};
+
+	// This specialisation handles case where RasterBandElementType is a *signed* integer type.
+	template <typename RasterBandElementType>
+	struct ConvertIntegerBandsToRgbaPixels<RasterBandElementType, true>
+	{
+		static
+		void
+		convert(
+				GPlatesGui::rgba8_t *const dst_pixels,
+				const RasterBandElementType *const src_rgba_pixels,
+				unsigned int num_pixels)
+		{
+			// Number of bits to right-shift to get results down to 8 bits.
+			// This is the number of bits in band element minus the sign bit (if signed) minus 8.
+			const int right_shift_bits = std::numeric_limits<RasterBandElementType>::digits - 8;
+
+			// signed, so also need to clamp to zero...
+			for (unsigned int i = 0; i != num_pixels; ++i)
+			{
+				RasterBandElementType src_red = src_rgba_pixels[4 * i + 0];
+				RasterBandElementType src_green = src_rgba_pixels[4 * i + 1];
+				RasterBandElementType src_blue = src_rgba_pixels[4 * i + 2];
+				RasterBandElementType src_alpha = src_rgba_pixels[4 * i + 3];
+
+				// Clamp to zero if negative, otherwise right shift.
+				src_red = (src_red < 0) ? 0 : (src_red >> right_shift_bits);
+				src_green = (src_green < 0) ? 0 : (src_green >> right_shift_bits);
+				src_blue = (src_blue < 0) ? 0 : (src_blue >> right_shift_bits);
+				src_alpha = (src_alpha < 0) ? 0 : (src_alpha >> right_shift_bits);
+
+				dst_pixels[i] = GPlatesGui::rgba8_t(
+					static_cast<boost::uint8_t>(src_red),
+					static_cast<boost::uint8_t>(src_green),
+					static_cast<boost::uint8_t>(src_blue),
+					static_cast<boost::uint8_t>(src_alpha));
+			}
+		}
+	};
+
+	//
 	// Utilities to handle conversion of RGBA data.
 	//
 	// Separates floating-point channel data into a separate class specialisation to avoid
@@ -172,73 +242,6 @@ namespace
 			}
 		}
 
-		// Handle case where RasterBandElementType is *unsigned* integer type.
-		template <bool is_integer_signed>
-		struct ConvertToRgbaPixels
-		{
-			// Handle unsigned integers.
-			static
-			void
-			convert(
-					GPlatesGui::rgba8_t *const dst_pixels,
-					const RasterBandElementType *const src_rgba_pixels,
-					unsigned int num_pixels)
-			{
-				// Number of bits to right-shift to get results down to 8 bits.
-				// This is the number of bits in band element minus the sign bit (if signed) minus 8.
-				const int right_shift_bits = std::numeric_limits<RasterBandElementType>::digits - 8;
-
-				// unsigned, so no need to clamp to zero...
-				for (unsigned int i = 0; i != num_pixels; ++i)
-				{
-					// Right shift unsigned component values.
-					dst_pixels[i] = GPlatesGui::rgba8_t(
-						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 0] >> right_shift_bits),
-						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 1] >> right_shift_bits),
-						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 2] >> right_shift_bits),
-						static_cast<boost::uint8_t>(src_rgba_pixels[4 * i + 3] >> right_shift_bits));
-				}
-			}
-		};
-
-		// Handle case where RasterBandElementType is *signed* integer type.
-		template <>
-		struct ConvertToRgbaPixels<true>
-		{
-			static
-			void
-			convert(
-					GPlatesGui::rgba8_t *const dst_pixels,
-					const RasterBandElementType *const src_rgba_pixels,
-					unsigned int num_pixels)
-			{
-				// Number of bits to right-shift to get results down to 8 bits.
-				// This is the number of bits in band element minus the sign bit (if signed) minus 8.
-				const int right_shift_bits = std::numeric_limits<RasterBandElementType>::digits - 8;
-
-				// signed, so also need to clamp to zero...
-				for (unsigned int i = 0; i != num_pixels; ++i)
-				{
-					RasterBandElementType src_red = src_rgba_pixels[4 * i + 0];
-					RasterBandElementType src_green = src_rgba_pixels[4 * i + 1];
-					RasterBandElementType src_blue = src_rgba_pixels[4 * i + 2];
-					RasterBandElementType src_alpha = src_rgba_pixels[4 * i + 3];
-
-					// Clamp to zero if negative, otherwise right shift.
-					src_red = (src_red < 0) ? 0 : (src_red >> right_shift_bits);
-					src_green = (src_green < 0) ? 0 : (src_green >> right_shift_bits);
-					src_blue = (src_blue < 0) ? 0 : (src_blue >> right_shift_bits);
-					src_alpha = (src_alpha < 0) ? 0 : (src_alpha >> right_shift_bits);
-
-					dst_pixels[i] = GPlatesGui::rgba8_t(
-						static_cast<boost::uint8_t>(src_red),
-						static_cast<boost::uint8_t>(src_green),
-						static_cast<boost::uint8_t>(src_blue),
-						static_cast<boost::uint8_t>(src_alpha));
-				}
-			}
-		};
-
 		// RasterBandElementType is larger than a byte so we convert to byte.
 		static
 		void
@@ -249,8 +252,10 @@ namespace
 		{
 			// Unsigned and signed integers each get there own class (through specialisation) to
 			// avoid compile errors regarding unnecessary clamping to zero of unsigned integers.
-			ConvertToRgbaPixels<std::numeric_limits<RasterBandElementType>::is_signed>::convert(
-					dst_pixels, src_rgba_pixels, num_pixels);
+			ConvertIntegerBandsToRgbaPixels<
+					RasterBandElementType,
+					std::numeric_limits<RasterBandElementType>::is_signed>::convert(
+							dst_pixels, src_rgba_pixels, num_pixels);
 		}
 	};
 
