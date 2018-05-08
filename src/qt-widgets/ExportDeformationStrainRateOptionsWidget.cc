@@ -205,11 +205,11 @@ GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget::update_output_descri
 					dynamic_cast<GPlatesGui::ExportDeformationStrainRateAnimationStrategy::GpmlConfiguration &>(
 							*d_export_configuration);
 
+			output_description = tr("Deformation will be exported as scalar coverages containing:\n");
+
 			if (configuration.include_dilatation_strain_rate ||
 				configuration.include_second_invariant_strain_rate)
 			{
-				output_description = tr("Deformation will be exported as scalar coverages containing:\n");
-
 				if (configuration.include_dilatation_strain_rate)
 				{
 					output_description += tr("  DilatationStrainRate\n");

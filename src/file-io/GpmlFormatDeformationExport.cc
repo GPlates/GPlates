@@ -196,18 +196,14 @@ namespace
 			return;
 		}
 
-		if (include_dilatation_strain_rate ||
-			include_second_invariant_strain_rate)
+		if (!GPlatesModel::ModelUtils::add_property(
+				deformed_feature_geometry_feature_ref,
+				range_property_name.get(),
+				reconstructed_range_property))
 		{
-			if (!GPlatesModel::ModelUtils::add_property(
-					deformed_feature_geometry_feature_ref,
-					range_property_name.get(),
-					reconstructed_range_property))
-			{
-				// We probably changed the domain/range property names so we could output a scalar coverage,
-				// but the feature type doesn't support them. Return without outputting the feature.
-				return;
-			}
+			// We probably changed the domain/range property names so we could output a scalar coverage,
+			// but the feature type doesn't support them. Return without outputting the feature.
+			return;
 		}
 
 		// Finally add the feature to the feature collection.
