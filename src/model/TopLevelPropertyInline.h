@@ -126,7 +126,7 @@ namespace GPlatesModel
 			typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type
 			operator*() const
 			{
-				return d_top_level_property_inline->get_current_revision<Revision>()
+				return d_top_level_property_inline->template get_current_revision<Revision>()
 						.values[d_index].get_revisionable();
 			}
 
