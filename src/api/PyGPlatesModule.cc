@@ -303,9 +303,6 @@ BOOST_PYTHON_MODULE(pygplates)
 			"  A Python module consisting of classes and functions providing access to "
 			"GPlates functionality.\n";
 
-	// Set the array type (and module) to numpy array (so we can use bp::numeric::array in C++ code).
-	bp::numeric::array::set_module_and_type("numpy", "ndarray");
-
 	// Inject the __builtin__ module into the 'pygplates' module's __dict__.
 	//
 	// This enables us to pass the 'pygplates' __dict__ as the globals/locals parameter
