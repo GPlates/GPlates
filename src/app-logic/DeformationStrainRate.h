@@ -149,11 +149,53 @@ namespace GPlatesAppLogic
 		/**
 		 * Return the strain rate dilatation.
 		 *
-		 * This is trace(D): trace of the rate-of-deformation symmetric tensor D.
+		 * This is trace(D): trace of the rate-of-deformation symmetric tensor D
+		 * (see section 4.11 of "Continuum mechanics for engineers" by Mase).
+		 * 
+		 * Essentially an initial parallelepiped of volume dV formed by parallel edge vectors dX1, dX2, dX2
+		 * is deformed into a parallelepiped of volume dv formed by parallel edge vectors dx1, dx2, dx2.
+		 *
+		 * We want to find (dv/dt)/dv which is the rate of change of dv. The following carries on
+		 * from the derivation in the comment of DeformationStrain::get_strain_dilatation() where
+		 * 
+		 *   dv = det(F) * dV
+		 * 
+		 * where F is the deformation gradient tensor.
+		 * 
+		 *   dv/dt = d(det(F))/dt * dV + det(F) * dV/dt
+		 *         = d(det(F))/dt * dV
+		 * 
+		 * using dV/dt = 0 since initial volume does not change.
+		 * The following identity is used
+		 * 
+		 *   d(det(F))/dt = trace(dF/dt * inverse(F)) * det(F)
+		 *                = trace(L) * det(F)
+		 *                = trace(D) * det(F)
+		 * 
+		 * where dF/dt = L * F was used, and trace(L)=trace(D) since D is symmetric part of L=D+W
+		 * (skew-symmetric part W has trace of zero).
+		 * So now
+		 * 
+		 *   dv/dt = trace(D) * det(F) * dV
+		 *         = trace(D) * dv
+		 * 
+		 * or
+		 * 
+		 *   (dv/dt) / dv = trace(D)
 		 */
 		double
 		get_strain_rate_dilatation() const
 		{
+			// Another way to look at this is to consider the initial dV and hence deformed dv volumes
+			// to be aligned with the principal axes such that deformed dx1, dx2 and dx3 are orthogonal
+			// (as are initial dX1, dX2 and dX3)
+			// 
+			//   (dv/dt)/dv = d(dx1 * dx2 * dx3)/dt / (dx1 * dx2 * dx3)
+			//              = (d(dx1)/dt / dx1) + (d(dx2)/dt / dx2) + (d(dx3)/dt / dx3)
+			//              = D_principal_11 + D_principal_22 + D_principal_33
+			//              = trace(D_principal)
+			//              = trace(D)   # since trace is invariant.
+
 			// The following is the equivalent to:
 			//
 			//   return get_rate_of_deformation().theta_theta + get_rate_of_deformation().phi_phi;
@@ -173,15 +215,20 @@ namespace GPlatesAppLogic
 			// Use the geodesy definition of second invariant in Kreemer et al. 2014.
 			// This amounts to sqrt[trace(D^2)] where D is the rate-of-deformation symmetric tensor.
 			// See chapter 4 of "Introduction to the mechanics of a continuous medium" by Malvern).
+			//
+			// Note that the usual second invariant is 0.5 * [trace(D)^2 - trace(D^2)].
+			// But a sqrt[trace(D^2)] is a function of invariants and hence is also invariant.
 			const RateOfDeformation rate_of_deformation = get_rate_of_deformation();
 			return std::sqrt(
+					//
+					// trace(D^2) = D_11*D_11 + D_12*D_21 + D_21*D_12 + D_22*D_22
+					//            = D_11*D_11 + D_22*D_22 + 2 * D_12*D_21
+					//            = D_11*D_11 + D_22*D_22 + 2 * D_12*D_12
+					// 
+					// where D_21 = D_12 since D is symmetric.
+					//
 					rate_of_deformation.theta_theta * rate_of_deformation.theta_theta +
 					rate_of_deformation.phi_phi * rate_of_deformation.phi_phi +
-					//
-					// The factor of 2 is due to D being symmetric (ie, D_theta_phi = D_phi_theta) and hence:
-					//
-					//   D_theta_phi * D_theta_phi = D_phi_theta * D_phi_theta
-					//
 					2 * rate_of_deformation.theta_phi * rate_of_deformation.theta_phi);
 		}
 
