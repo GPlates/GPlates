@@ -6,10 +6,10 @@ import os
 import unittest
 import pygplates
 
-import test_get_property_value
-import test_ids
-import test_property_values
-import test_revisioned_vector
+import test_model.test_get_property_value
+import test_model.test_ids
+import test_model.test_property_values
+import test_model.test_revisioned_vector
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
@@ -749,7 +749,7 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
         try:
             self.file_format_registry.read(None)
             self.assertTrue(False, "Loading invalid file name should fail")
-        except Exception, e:
+        except Exception as e:
             self.assertEquals(e.__class__.__name__, 'TypeError')
 
     def test_unsupported_file_format(self):
@@ -889,10 +889,10 @@ def suite():
     
     # Add test suites from sibling modules.
     test_modules = [
-            test_get_property_value,
-            test_ids,
-            test_property_values,
-            test_revisioned_vector
+            test_model.test_get_property_value,
+            test_model.test_ids,
+            test_model.test_property_values,
+            test_model.test_revisioned_vector
             ]
 
     for test_module in test_modules:

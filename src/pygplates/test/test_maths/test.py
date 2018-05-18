@@ -13,7 +13,7 @@ try:
 except ImportError:
     imported_numpy = False
 
-import test_geometries_on_sphere
+import test_maths.test_geometries_on_sphere
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
@@ -618,7 +618,7 @@ def suite():
     
     # Add test suites from sibling modules.
     test_modules = [
-            test_geometries_on_sphere
+            test_maths.test_geometries_on_sphere
             ]
 
     for test_module in test_modules:
