@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm> // std::swap
 #include <cmath>
 
 #include "DeformationStrain.h"
@@ -33,28 +34,136 @@
 const GPlatesAppLogic::DeformationStrain::StrainPrincipal
 GPlatesAppLogic::DeformationStrain::get_strain_principal() const
 {
-	const double f_squared =
-			d_deformation_gradient.theta_theta * d_deformation_gradient.theta_theta +
-			d_deformation_gradient.theta_phi * d_deformation_gradient.theta_phi +
-			d_deformation_gradient.phi_theta * d_deformation_gradient.phi_theta +
-			d_deformation_gradient.phi_phi * d_deformation_gradient.phi_phi;
-	const double f_det =
+	//
+	// The stretch along a deformed normal direction n is (|dx|/|dX|) where dx and dX are
+	// deformed and undeformed element vectors. The square of the stretch is
+	//
+	//   stretch(n)^2 = |dx|^2 / |dX|^2
+	//                = (dx.dx) / (dX.dX)
+	//   1 / stretch(n)^2 = (dX.dX) / (dx.dx)
+	//                    = ((F^-1 * dx).(F^-1 * dx)) / (dx.dx)
+	//                    = (dx * transpose(F^-1) * F^-1 * dx) / (dx.dx)
+	//                    = (dx * c * dx) / (dx.dx)
+	//                    = (dx * c * dx) / |dx|^2
+	//                    = n.c.n
+	//
+	// where "n = dx / |dx|" and "c = transpose(F^-1) * F^-1" is the Cauchy deformation tensor in terms
+	// of the deformation gradient tensor F.
+	//
+	// The principal axes are orthogonal and this occurs when the two deformed normal directions
+	// dx1 and dx2 are aligned with the principal axes, which happens when their dot product is zero.
+	// And these principal axes rotated back into the undeformed configuration with undeformed normal
+	// directions dX1 and dX2 that will also be orthogonal with a zero dot product defined by
+	// 
+	//   0 = dX1.dX2
+	//     = (F^-1 * dx1).(F^-1 * dx2)
+	//     = dx1.transpose(F^-1).(F^-1).dx2
+	//     = dx1.c.dx2
+	// 
+	// and dividing by |dx1|*|dx2| we have
+	// 
+	//   0 = dx1.c.dx2 / (|dx1|*|dx2|)
+	//     = n1.c.n2
+	// 
+	// where n1 and n2 are orthogonal principal axes in deformed configuration.
+	// If we set n1 at an angle 'angle' to the original axes (and n2 at 90 degrees larger) then
+	// 
+	//   n1 = (cos(angle) , sin(angle))
+	//   n2 = (-sin(angle), cos(angle))
+	//
+	//   0 = n1.c.n2
+	//     = (c_22 - c_11) * sin(angle) * cos(angle) + c_12 * (cos^2(angle) - sin^2(angle))
+	//
+	// which is equivalent to
+	// 
+	//   tan(2*angle) = 2 * c_12 / (c_11 - c_22)
+	// 
+	// which gives us the angle of rotation of the principal axes in the deformed configuration.
+	// 
+	// To get c we first need the inverse of F
+	// 
+	//   F^-1 = 1/det(F) * |  F_22 -F_12 |
+	//                     | -F_21  F_11 |
+	// 
+	//   c    = transpose(F^-1) * (F^-1)
+	//   c_11 = 1/det(F)^2 * (F_22^2 + F_21^2)
+	//   c_22 = 1/det(F)^2 * (F_12^2 + F_11^2)
+	//   c_12 = 1/det(F)^2 * (-F_12*F_22 - F_11*F_21)
+	//   c_21 = c_12
+	//
+	// And from previously we have
+	// 
+	//   1 / stretch(n1)^2 = n1.c.n1
+	//   1 / stretch(n2)^2 = n2.c.n2
+	// 
+	// where
+	// 
+	//   n1.c.n1 = c_11 * cos^2(angle) + c_22 * sin^2(angle) + 2 * c_12 * sin(angle) * cos(angle)
+	//   n2.c.n2 = c_11 * sin^2(angle) + c_22 * cos^2(angle) - 2 * c_12 * sin(angle) * cos(angle)
+	//
+	// and the engineering strain in the principal directions n1 and n2 are
+	// 
+	//   strain(n1) = (|dx1| - |dX1|) / |dX1| = stretch(n1) - 1 = 1/sqrt(n1.c.n1) - 1
+	//   strain(n2) = (|dx2| - |dX2|) / |dX2| = stretch(n2) - 1 = 1/sqrt(n2.c.n2) - 1
+	//
+	//
+	// References:
+	// 
+	//    Section 4.8 of "Continuum mechanics for engineers" by Mase.
+	//    
+	//    Principal Strains & Invariants - http://www.continuummechanics.org/principalstrain.html
+	//   
+
+	const double F_det =
 			d_deformation_gradient.theta_theta * d_deformation_gradient.phi_phi -
 			d_deformation_gradient.theta_phi * d_deformation_gradient.phi_theta;
+	// Deformation gradient tensor F only has an inverse if it's determinant is non-zero
+	// (which should always be the case, but we'll check to be sure).
+	if (F_det <= 0.0)
+	{
+		// Return zero strain.
+		return StrainPrincipal(0.0/*strain1*/, 0.0/*strain2*/, 0.0/*angle*/);
+	}
 
-	const double strain_variation = std::sqrt(f_squared * f_squared - 4.0 * f_det * f_det);
-	const double strain1 = std::sqrt(0.5 * (f_squared + strain_variation)) - 1.0;
-	const double strain2 = std::sqrt(0.5 * (f_squared - strain_variation)) - 1.0;
+	const double inv_square_F_det = 1.0 / (F_det * F_det);
+	const double c_theta_theta = inv_square_F_det * (
+			d_deformation_gradient.phi_phi * d_deformation_gradient.phi_phi +
+			d_deformation_gradient.phi_theta * d_deformation_gradient.phi_theta);
+	const double c_phi_phi = inv_square_F_det * (
+			d_deformation_gradient.theta_phi * d_deformation_gradient.theta_phi +
+			d_deformation_gradient.theta_theta * d_deformation_gradient.theta_theta);
+	const double c_theta_phi = inv_square_F_det * (
+			-d_deformation_gradient.theta_phi * d_deformation_gradient.phi_phi -
+			d_deformation_gradient.theta_theta * d_deformation_gradient.phi_theta);
 
-	const double f_angle_y = 2.0 * (
-			d_deformation_gradient.theta_theta * d_deformation_gradient.phi_theta +
-			d_deformation_gradient.theta_phi * d_deformation_gradient.phi_phi);
-	const double f_angle_x =
-			d_deformation_gradient.theta_theta * d_deformation_gradient.theta_theta +
-			d_deformation_gradient.theta_phi * d_deformation_gradient.theta_phi -
-			d_deformation_gradient.phi_theta * d_deformation_gradient.phi_theta -
-			d_deformation_gradient.phi_phi * d_deformation_gradient.phi_phi;
-	const double angle = 0.5 * std::atan2(f_angle_y, f_angle_x);
+	double angle = 0.5 * std::atan2(2 * c_theta_phi, c_theta_theta - c_phi_phi);
+	const double cos_angle = std::cos(angle);
+	const double sin_angle = std::sin(angle);
+
+	const double c1 = c_theta_theta * cos_angle * cos_angle +
+			c_phi_phi * sin_angle * sin_angle +
+			2.0 * c_theta_phi * sin_angle * cos_angle;
+	const double c2 = c_theta_theta * sin_angle * sin_angle +
+			c_phi_phi * cos_angle * cos_angle -
+			2.0 * c_theta_phi * sin_angle * cos_angle;
+
+	// Cauchy deformation tensor 'c' is symmetric and positive definite, so its eigenvalues c1 and c2 are positive.
+	double strain1 = (1.0 / std::sqrt(c1)) - 1.0;
+	double strain2 = (1.0 / std::sqrt(c2)) - 1.0;
+
+	// Keep the largest strain (positive is extension, negative is compression)
+	// in the first strain. Swap if necessary, including the angle which we have specified
+	// to always be relative to the first strain.
+	//
+	// Note: It might be possible to always swap them (without checking) since the eigenvalues
+	// c1 and c2 of the Cauchy deformation tensor 'c' might be such that c1 > c2 always holds, and
+	// hence strain2 > strain1 is always true. But I'm not sure so we'll check anyway.
+	if (strain2 > strain1)
+	{
+		std::swap(strain1, strain2);
+		// The second strain is 90 degrees larger than the first strain.
+		angle += GPlatesMaths::HALF_PI;
+	}
 
 	return StrainPrincipal(strain1, strain2, angle);
 }

@@ -89,25 +89,31 @@ namespace GPlatesAppLogic
 			{  }
 
 			/**
-			 * The larger principle strain.
+			 * The larger principal strain.
 			 *
-			 * If @a angle is zero then this is aligned with co-latitude
+			 * If @a angle is zero then this principal axis is aligned with co-latitude
 			 * (ie, the direction from North to South).
+			 *
+			 * Elsewhere in GPlates (such as rendering strain arrows) this is referred to as the x-axis.
 			 */
 			double principal1;
 
 			/**
-			 * The smaller principle strain.
+			 * The smaller principal strain.
 			 *
-			 * If @a angle is zero then this is aligned with longitude
+			 * If @a angle is zero then this principal axis is aligned with longitude
 			 * (ie, the direction from West to East).
+			 *
+			 * Elsewhere in GPlates (such as rendering strain arrows) this is referred to as the y-axis.
 			 */
 			double principal2;
 
 			/**
-			 * The angle to rotate the principle strain directions.
+			 * The angle to rotate the principal strain axes/directions.
 			 *
-			 * This is a counter-clockwise rotation (for positive angles) when viewed from above the globe.
+			 * This is a counter-clockwise rotation (for positive angles) when viewed from above the globe
+			 * because the x-axis is colatitude (pointing South) and the y-axis is longitude (pointing East)
+			 * and so the z-axis (rotation axis) points outward from the globe.
 			 */
 			double angle;
 		};
@@ -200,7 +206,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Return the principle strain.
+		 * Return the principal strain.
 		 */
 		const StrainPrincipal
 		get_strain_principal() const;
