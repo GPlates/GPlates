@@ -213,7 +213,7 @@ namespace
 
 
 void
-GPlatesFileIO::GpmlFormatDeformationExport::export_deformation_strain_rate(
+GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 		const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,

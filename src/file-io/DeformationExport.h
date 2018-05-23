@@ -76,7 +76,7 @@ namespace GPlatesFileIO
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
-		export_deformation_strain_rate_to_gpml_format(
+		export_deformation_to_gpml_format(
 				const QString &filename,
 				const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 				GPlatesModel::ModelInterface &model,
@@ -117,7 +117,7 @@ namespace GPlatesFileIO
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
-		export_deformation_strain_rate_to_gmt_format(
+		export_deformation_to_gmt_format(
 				const QString &filename,
 				const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 				const std::vector<const File::Reference *> &active_files,

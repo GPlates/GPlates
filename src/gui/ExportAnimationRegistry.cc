@@ -34,7 +34,7 @@
 #include "ExportAnimationType.h"
 #include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportCoRegistrationAnimationStrategy.h"
-#include "ExportDeformationStrainRateAnimationStrategy.h"
+#include "ExportDeformationAnimationStrategy.h"
 #include "ExportFileNameTemplateValidationUtils.h"
 #include "ExportFlowlineAnimationStrategy.h"
 #include "ExportImageAnimationStrategy.h"
@@ -58,7 +58,7 @@
 #include "property-values/RasterType.h"
 
 #include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
-#include "qt-widgets/ExportDeformationStrainRateOptionsWidget.h"
+#include "qt-widgets/ExportDeformationOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportImageOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
@@ -329,53 +329,53 @@ namespace GPlatesGui
 		register_default_export_deformation_animation_types(
 				ExportAnimationRegistry &registry)
 		{
-			const ExportOptionsUtils::ExportFileOptions default_deformation_strain_rate_file_export_options(
+			const ExportOptionsUtils::ExportFileOptions default_deformation_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
 			const bool default_include_dilatation_strain_rate = true;
-			const bool default_include_dilatation = false;
+			const bool default_include_second_invariant_strain_rate = false;
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
-							ExportAnimationType::DEFORMATION_STRAIN_RATES,
+							ExportAnimationType::DEFORMATION,
 							ExportAnimationType::GPML),
-					ExportDeformationStrainRateAnimationStrategy::const_configuration_ptr(
-							new ExportDeformationStrainRateAnimationStrategy::GpmlConfiguration(
-									add_export_filename_extension("deformation_strain_rate_%0.2fMa", ExportAnimationType::GPML),
-									default_deformation_strain_rate_file_export_options,
+					ExportDeformationAnimationStrategy::const_configuration_ptr(
+							new ExportDeformationAnimationStrategy::GpmlConfiguration(
+									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GPML),
+									default_deformation_file_export_options,
 									default_include_dilatation_strain_rate,
-									default_include_dilatation)),
-					&create_animation_strategy<ExportDeformationStrainRateAnimationStrategy>,
+									default_include_second_invariant_strain_rate)),
+					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
 							// which overload of 'create_export_options_widget()' to use...
 							static_cast<create_export_options_widget_function_pointer_type>(
 									&create_export_options_widget<
-											GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget,
-											ExportDeformationStrainRateAnimationStrategy>),
+											GPlatesQtWidgets::ExportDeformationOptionsWidget,
+											ExportDeformationAnimationStrategy>),
 							_1, _2, _3),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
-							ExportAnimationType::DEFORMATION_STRAIN_RATES,
+							ExportAnimationType::DEFORMATION,
 							ExportAnimationType::GMT),
-					ExportDeformationStrainRateAnimationStrategy::const_configuration_ptr(
-							new ExportDeformationStrainRateAnimationStrategy::GMTConfiguration(
-									add_export_filename_extension("deformation_strain_rate_%0.2fMa", ExportAnimationType::GMT),
-									default_deformation_strain_rate_file_export_options,
+					ExportDeformationAnimationStrategy::const_configuration_ptr(
+							new ExportDeformationAnimationStrategy::GMTConfiguration(
+									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GMT),
+									default_deformation_file_export_options,
 									// Lon/lat is the default GMT ordering...
-									ExportDeformationStrainRateAnimationStrategy::GMTConfiguration::LON_LAT,
+									ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT,
 									default_include_dilatation_strain_rate,
-									default_include_dilatation)),
-					&create_animation_strategy<ExportDeformationStrainRateAnimationStrategy>,
+									default_include_second_invariant_strain_rate)),
+					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
 							// which overload of 'create_export_options_widget()' to use...
 							static_cast<create_export_options_widget_function_pointer_type>(
 									&create_export_options_widget<
-											GPlatesQtWidgets::ExportDeformationStrainRateOptionsWidget,
-											ExportDeformationStrainRateAnimationStrategy>),
+											GPlatesQtWidgets::ExportDeformationOptionsWidget,
+											ExportDeformationAnimationStrategy>),
 							_1, _2, _3),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 		}

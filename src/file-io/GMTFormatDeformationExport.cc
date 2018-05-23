@@ -337,7 +337,7 @@ namespace GPlatesFileIO
 
 
 void
-GPlatesFileIO::GMTFormatDeformationExport::export_deformation_strain_rate(
+GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 		const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,

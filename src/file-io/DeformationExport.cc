@@ -63,7 +63,7 @@ namespace GPlatesFileIO
 
 
 void
-GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
+GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 		const QString &filename,
 		const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 		GPlatesModel::ModelInterface &model,
@@ -93,7 +93,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 
 	if (export_single_output_file)
 	{
-		GpmlFormatDeformationExport::export_deformation_strain_rate(
+		GpmlFormatDeformationExport::export_deformation(
 				grouped_deformed_feature_geometry_seq,
 				filename,
 				model,
@@ -123,7 +123,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 			grouped_features_iter != grouped_features_end;
 			++grouped_features_iter, ++output_filename_iter)
 		{
-			GpmlFormatDeformationExport::export_deformation_strain_rate(
+			GpmlFormatDeformationExport::export_deformation(
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
 					model,
@@ -135,7 +135,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gpml_format(
 
 
 void
-GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
+GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 		const QString &filename,
 		const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 		const std::vector<const File::Reference *> &active_files,
@@ -167,7 +167,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 
 	if (export_single_output_file)
 	{
-		GMTFormatDeformationExport::export_deformation_strain_rate(
+		GMTFormatDeformationExport::export_deformation(
 				grouped_deformed_feature_geometry_seq,
 				filename,
 				referenced_files,
@@ -200,7 +200,7 @@ GPlatesFileIO::DeformationExport::export_deformation_strain_rate_to_gmt_format(
 			grouped_features_iter != grouped_features_end;
 			++grouped_features_iter, ++output_filename_iter)
 		{
-			GMTFormatDeformationExport::export_deformation_strain_rate(
+			GMTFormatDeformationExport::export_deformation(
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
 					referenced_files,

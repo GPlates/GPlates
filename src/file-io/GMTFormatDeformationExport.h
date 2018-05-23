@@ -70,7 +70,7 @@ namespace GPlatesFileIO
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
 		 */
 		void
-		export_deformation_strain_rate(
+		export_deformation(
 				const std::list<deformed_feature_geometry_group_type> &velocity_vector_field_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,

@@ -50,7 +50,7 @@ namespace GPlatesGui
 			COLOUR_RASTER, // Lat/lon colour raster export
 			NUMERICAL_RASTER, // Lat/lon floating-point raster export
 			SCALAR_COVERAGES, // Per-point scalar values.
-			DEFORMATION_STRAIN_RATES,
+			DEFORMATION,
 			VELOCITIES,
 			RESOLVED_TOPOLOGIES, // General (non-CitcomS-specific) resolved topology exports
 			RESOLVED_TOPOLOGIES_CITCOMS, // CitcomS-specific resolved topology exports
