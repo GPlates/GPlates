@@ -68,9 +68,9 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="inclusion_options">
+    <widget class="QGroupBox" name="strain_inclusion_options">
      <property name="title">
-      <string>Include Options</string>
+      <string>Include Strain Options</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_9">
       <property name="spacing">
@@ -83,16 +83,41 @@
        <number>1</number>
       </property>
       <item>
+       <widget class="QCheckBox" name="include_dilatation_strain_check_box">
+        <property name="text">
+         <string>Include dilatation strain</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="strain_rate_inclusion_options">
+     <property name="title">
+      <string>Include Strain Rate Options</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
        <widget class="QCheckBox" name="include_dilatation_strain_rate_check_box">
         <property name="text">
-         <string>Include dilatation strain rate</string>
+         <string>Include dilatation strain rate (1/sec)</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QCheckBox" name="include_second_invariant_strain_rate_check_box">
         <property name="text">
-         <string>Include total strain rate</string>
+         <string>Include total strain rate (1/sec)</string>
         </property>
        </widget>
       </item>

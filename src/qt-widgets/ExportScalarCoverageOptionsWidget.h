@@ -77,6 +77,9 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
+		react_include_dilatation_strain_check_box_clicked();
+
+		void
 		react_include_dilatation_strain_rate_check_box_clicked();
 
 		void

@@ -59,6 +59,7 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::ExportScalarCoverageOptions
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
+	include_dilatation_strain_check_box->setChecked(d_export_configuration->include_dilatation_strain);
 	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
 	include_second_invariant_strain_rate_check_box->setChecked(d_export_configuration->include_second_invariant_strain_rate);
 
@@ -105,6 +106,11 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::create_export_animation_str
 void
 GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::make_signal_slot_connections()
 {
+	QObject::connect(
+			include_dilatation_strain_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_dilatation_strain_check_box_clicked()));
 	QObject::connect(
 			include_dilatation_strain_rate_check_box,
 			SIGNAL(stateChanged(int)),
@@ -173,6 +179,15 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_gmt_domain_point_form
 
 
 void
+GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_strain_check_box_clicked()
+{
+	d_export_configuration->include_dilatation_strain = include_dilatation_strain_check_box->isChecked();
+
+	update_output_description_label();
+}
+
+
+void
 GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::react_include_dilatation_strain_rate_check_box_clicked()
 {
 	d_export_configuration->include_dilatation_strain_rate = include_dilatation_strain_rate_check_box->isChecked();
@@ -207,10 +222,16 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 
 			output_description = tr("Scalar coverages containing visible scalar values will be exported.\n");
 
-			if (configuration.include_dilatation_strain_rate ||
+			if (configuration.include_dilatation_strain ||
+				configuration.include_dilatation_strain_rate ||
 				configuration.include_second_invariant_strain_rate)
 			{
 				output_description += tr("Also deformation will be exported as:\n");
+
+				if (configuration.include_dilatation_strain)
+				{
+					output_description += tr("  DilatationStrain\n");
+				}
 
 				if (configuration.include_dilatation_strain_rate)
 				{
@@ -242,6 +263,11 @@ GPlatesQtWidgets::ExportScalarCoverageOptionsWidget::update_output_description_l
 			else
 			{
 				output_description += tr("  latitude  longitude");
+			}
+
+			if (configuration.include_dilatation_strain)
+			{
+				output_description += tr("  dilatation_strain");
 			}
 
 			if (configuration.include_dilatation_strain_rate)

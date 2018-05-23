@@ -75,6 +75,7 @@ namespace GPlatesFileIO
 					QTextStream &output_stream,
 					const GPlatesMaths::PointOnSphere &domain_point,
 					bool domain_point_lon_lat_format,
+					boost::optional<const double &> dilatation_strain,
 					boost::optional<const double &> dilatation_strain_rate,
 					boost::optional<const double &> second_invariant_strain_rate,
 					const double &scalar_value)
@@ -118,6 +119,18 @@ namespace GPlatesFileIO
 				// Output scalars as double precision.
 				static const unsigned SCALAR_PRECISION = 16;
 				static const unsigned SCALAR_FIELDWIDTH = SCALAR_PRECISION + 3;
+
+				//
+				// Output dilatation strain.
+				//
+
+				if (dilatation_strain)
+				{
+					// Don't format as fixed notation.
+					gmt_line << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< dilatation_strain.get();
+				}
 
 				//
 				// Output dilatation strain rate.
@@ -169,6 +182,7 @@ namespace GPlatesFileIO
 					QTextStream &output_stream,
 					const GPlatesAppLogic::ReconstructedScalarCoverage &reconstructed_scalar_coverage,
 					bool domain_point_lon_lat_format,
+					bool include_dilatation_strain,
 					bool include_dilatation_strain_rate,
 					bool include_second_invariant_strain_rate)
 			{
@@ -279,6 +293,10 @@ namespace GPlatesFileIO
 				{
 					output_stream << " Latitude Longitude";
 				}
+				if (include_dilatation_strain)
+				{
+					output_stream << " DilatationStrain";
+				}
 				if (include_dilatation_strain_rate)
 				{
 					output_stream << " DilatationStrainRate";
@@ -307,26 +325,42 @@ namespace GPlatesFileIO
 						reconstructed_domain_points.size() == scalar_values.size(),
 						GPLATES_ASSERTION_SOURCE);
 
+				boost::optional< std::vector<double> > dilatation_strains;
 				boost::optional< std::vector<double> > dilatation_strain_rates;
 				boost::optional< std::vector<double> > second_invariant_strain_rates;
-				if (include_dilatation_strain_rate ||
+				if (include_dilatation_strain ||
+					include_dilatation_strain_rate ||
 					include_second_invariant_strain_rate)
 				{
 					if (dfg)
 					{
 						typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
 								point_deformation_strain_rate_seq_type;
+						typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_total_strain_seq_type
+								point_deformation_total_strain_seq_type;
 
 						// Get the current (per-point) geometry data.
 						point_deformation_strain_rate_seq_type deformation_strain_rates;
+						point_deformation_total_strain_seq_type deformation_strains;
 						dfg.get()->get_geometry_data(
 								boost::none/*points*/,
-								deformation_strain_rates);
+								deformation_strain_rates,
+								deformation_strains);
 						// The number of strain rates should match the number of scalars.
 						GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 								deformation_strain_rates.size() == scalar_values.size(),
 								GPLATES_ASSERTION_SOURCE);
 
+						if (include_dilatation_strain)
+						{
+							dilatation_strains = std::vector<double>();
+
+							dilatation_strains->reserve(deformation_strains.size());
+							for (unsigned int n = 0; n < deformation_strains.size(); ++n)
+							{
+								dilatation_strains->push_back(deformation_strains[n].get_strain_dilatation());
+							}
+						}
 						if (include_dilatation_strain_rate)
 						{
 							dilatation_strain_rates = std::vector<double>();
@@ -351,7 +385,12 @@ namespace GPlatesFileIO
 					else
 					{
 						// The RFG is not a TopologyReconstructedFeatureGeometry so we have no deformation strain information.
-						// Default to zero strain rate.
+						// Default to zero strain and strain rate.
+						if (include_dilatation_strain)
+						{
+							dilatation_strains = std::vector<double>();
+							dilatation_strains->resize(scalar_values.size(), 0.0);
+						}
 						if (include_dilatation_strain_rate)
 						{
 							dilatation_strain_rates = std::vector<double>();
@@ -375,6 +414,12 @@ namespace GPlatesFileIO
 				{
 					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
+					boost::optional<const double &> dilatation_strain;
+					if (include_dilatation_strain)
+					{
+						dilatation_strain = dilatation_strains.get()[index];
+					}
+
 					boost::optional<const double &> dilatation_strain_rate;
 					if (include_dilatation_strain_rate)
 					{
@@ -393,6 +438,7 @@ namespace GPlatesFileIO
 							output_stream,
 							domain_point,
 							domain_point_lon_lat_format,
+							dilatation_strain,
 							dilatation_strain_rate,
 							second_invariant_strain_rate,
 							scalar_value);
@@ -411,6 +457,7 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
+		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
 		bool include_second_invariant_strain_rate)
 {
@@ -459,6 +506,7 @@ GPlatesFileIO::GMTFormatReconstructedScalarCoverageExport::export_reconstructed_
 					output_stream,
 					*rsc,
 					domain_point_lon_lat_format,
+					include_dilatation_strain,
 					include_dilatation_strain_rate,
 					include_second_invariant_strain_rate);
 		}
