@@ -61,14 +61,14 @@
          <item>
           <widget class="QRadioButton" name="velocity_vector_angle_magnitude_radio_button">
            <property name="text">
-            <string>Angle (-180 to +180 degrees anti-clockwise from West) / Magnitude</string>
+            <string>Angle (-180 to +180 degrees anti-clockwise from West; 0 is East) / Magnitude</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QRadioButton" name="velocity_vector_azimuth_magnitude_radio_button">
            <property name="text">
-            <string>Azimuth (0 to 360 degrees clockwise from North) / Magnitude</string>
+            <string>Azimuth (0 to 360 degrees clockwise from North; 0 is North) / Magnitude</string>
            </property>
           </widget>
          </item>

@@ -119,7 +119,7 @@ namespace
 			"<html><body>\n"
 			"<p>Total strain is accumulated for each point from oldest age of the time span/range of topology reconstruction to the "
 			"current reconstruction time. If strain is displayed then each point will render the principal components of its strain "
-			"oriented in the principle directions, with outwards-facing red arrows for extension and inward-facing blue arrows for compression.</p>"
+			"oriented in the principal directions, with outwards-facing red arrows for extension and inward-facing blue arrows for compression.</p>"
 			"</body></html>\n");
 }
 
