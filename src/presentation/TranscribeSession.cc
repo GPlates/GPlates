@@ -2939,6 +2939,9 @@ namespace GPlatesPresentation
 			//       For example, transcribing the graticule settings is probably not a good idea.        //
 			////////////////////////////////////////////////////////////////////////////////////////////////
 
+			// Save the background colour.
+			scribe.save(TRANSCRIBE_SOURCE, view_state.get_background_colour(), session_state_tag("background_colour"));
+
 			//
 			// Save the feature type symbol map (might be empty if no symbol file loaded).
 			//
@@ -2969,6 +2972,17 @@ namespace GPlatesPresentation
 			//       Global settings should usually be avoided.                                           //
 			//       For example, transcribing the graticule settings is probably not a good idea.        //
 			////////////////////////////////////////////////////////////////////////////////////////////////
+
+			// Load the background colour.
+			//
+			// Note that if there's no background colour to load (eg, loading from an old version project file)
+			// then the default background colour at GPlates startup will be used (it has already been set since
+			// the session state is always cleared to the default state just before loading a new session).
+			GPlatesGui::Colour background_colour;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, background_colour, session_state_tag("background_colour")))
+			{
+				view_state.set_background_colour(background_colour);
+			}
 
 			//
 			// Load the feature type symbol map (might be empty if no symbol file was loaded when the project/session was saved).
