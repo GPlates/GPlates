@@ -43,6 +43,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
@@ -66,6 +68,7 @@ namespace
 	insert_deformed_feature_geometry_into_feature_collection(
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *deformed_feature_geometry,
+			boost::optional<GPlatesFileIO::DeformationExport::PrincipalStrainOptions> include_principal_strain,
 			bool include_dilatation_strain,
 			bool include_dilatation_strain_rate,
 			bool include_second_invariant_strain_rate)
@@ -88,7 +91,8 @@ namespace
 
 		// Only retrieve strain if needed.
 		boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-		if (include_dilatation_strain)
+		if (include_principal_strain ||
+			include_dilatation_strain)
 		{
 			deformation_strains_option = deformation_strains;
 		}
@@ -130,6 +134,78 @@ namespace
 		// The reconstructed range (scalars) property.
 		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
 				GPlatesPropertyValues::GmlDataBlock::create();
+
+		// Include principal strain if requested.
+		if (include_principal_strain)
+		{
+			std::vector<double> principal_majors;
+			std::vector<double> principal_minors;
+			std::vector<double> principal_angles;
+			principal_majors.reserve(deformation_strains.size());
+			principal_minors.reserve(deformation_strains.size());
+			principal_angles.reserve(deformation_strains.size());
+			for (unsigned int d = 0; d < deformation_strains.size(); ++d)
+			{
+				const GPlatesAppLogic::DeformationStrain::StrainPrincipal principal_strain =
+						deformation_strains[d].get_strain_principal();
+
+				if (include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN)
+				{
+					// Output strain.
+					principal_majors.push_back(principal_strain.principal1);
+					principal_minors.push_back(principal_strain.principal2);
+				}
+				else // PrincipalStrainOptions::STRETCH...
+				{
+					// Output stretch (1.0 + strain).
+					principal_majors.push_back(1.0 + principal_strain.principal1);
+					principal_minors.push_back(1.0 + principal_strain.principal2);
+				}
+
+				principal_angles.push_back(
+						include_principal_strain->get_principal_angle_or_azimuth_in_degrees(principal_strain));
+			}
+
+			// Add the principal angle scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type principal_angle_xml_attrs;
+			principal_angle_xml_attrs.insert(std::make_pair(
+					GPlatesModel::XmlAttributeName::create_gpml("uom"),
+					GPlatesModel::XmlAttributeValue("urn:x-epsg:v0.1:uom:degree")));
+			reconstructed_range_property->tuple_list_push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN
+							? (include_principal_strain->format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
+									? GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAngle")
+									: GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAzimuth"))
+							: (include_principal_strain->format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
+									? GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAngle")
+									: GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAzimuth")),
+					principal_angle_xml_attrs,
+					principal_angles.begin(),
+					principal_angles.end()));
+
+			// Add the principal major scalar values we're exporting.
+			reconstructed_range_property->tuple_list_push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAxis") :
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAxis"),
+					// Strain/stretch has no units so don't add any "uom" XML attribute...
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+					principal_majors.begin(),
+					principal_majors.end()));
+
+			// Add the principal minor scalar values we're exporting.
+			reconstructed_range_property->tuple_list_push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMinorAxis") :
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMinorAxis"),
+					// Strain/stretch has no units so don't add any "uom" XML attribute...
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+					principal_minors.begin(),
+					principal_minors.end()));
+		}
 
 		// Include dilatation strain if requested.
 		if (include_dilatation_strain)
@@ -255,6 +331,7 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 		const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,
+		boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
 		bool include_second_invariant_strain_rate)
@@ -294,6 +371,7 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 			insert_deformed_feature_geometry_into_feature_collection(
 					feature_collection_ref,
 					dfg,
+					include_principal_strain,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
 					include_second_invariant_strain_rate);

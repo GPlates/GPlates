@@ -101,7 +101,7 @@ namespace GPlatesFileIO
 		 * 
 		 *    domain_point [dilatation_strain] [dilatation_strain_rate] [second_invariant_strain_rate] scalar
 		 * 
-		 * ...where 'domain_point' is position associated with the dilatation strain rate.
+		 * ...where 'domain_point' is position associated with the scalar (and deformation information).
 		 * If @a include_dilatation_strain is true then dilatation strain is output (unitless).
 		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
 		 * If @a include_second_invariant_strain_rate is true then second invariant strain rate is output (in units of 1/second).

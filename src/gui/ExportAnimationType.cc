@@ -120,7 +120,7 @@ namespace GPlatesGui
 							"<li>Exports visible reconstructed scalar coverage layers.</li>"
 							"<li>Each geometry point exports a position and a scalar value.</li>"
 							"<li>Scalar values for the currently selected scalar type are exported.</li>"
-							"<li>Per-point deformation strain rates can also be exported.</li>"
+							"<li>Per-point deformation strain and strain rate can also be exported.</li>"
 							"</ul>"
 							"</body></html>");
 				export_type_description_map[DEFORMATION] =

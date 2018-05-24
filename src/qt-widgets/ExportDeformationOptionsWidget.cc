@@ -59,6 +59,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
+	include_principal_strain_stretch_check_box->setChecked(d_export_configuration->include_principal_strain);
 	include_dilatation_strain_check_box->setChecked(d_export_configuration->include_dilatation_strain);
 	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
 	include_second_invariant_strain_rate_check_box->setChecked(d_export_configuration->include_second_invariant_strain_rate);
@@ -85,6 +86,37 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 		gmt_format_options->hide();
 	}
 
+	//
+	// Principal strain options.
+	//
+
+	if (d_export_configuration->include_principal_strain)
+	{
+		principal_strain_stretch_options->show();
+	}
+	else
+	{
+		principal_strain_stretch_options->hide();
+	}
+
+	if (d_export_configuration->principal_strain_options.output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN)
+	{
+		principal_output_strain_radio_button->setChecked(true);
+	}
+	else
+	{
+		principal_output_stretch_radio_button->setChecked(true);
+	}
+
+	if (d_export_configuration->principal_strain_options.format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+	{
+		principal_angle_major_minor_radio_button->setChecked(true);
+	}
+	else
+	{
+		principal_azimuth_major_minor_radio_button->setChecked(true);
+	}
+
 	// Write a description depending on the file format and deformation options.
 	update_output_description_label();
 }
@@ -107,35 +139,44 @@ void
 GPlatesQtWidgets::ExportDeformationOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
-			include_dilatation_strain_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_include_dilatation_strain_check_box_clicked()));
+			include_principal_strain_stretch_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_include_principal_strain_check_box_clicked()));
 	QObject::connect(
-			include_dilatation_strain_rate_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_include_dilatation_strain_rate_check_box_clicked()));
+			include_dilatation_strain_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_include_dilatation_strain_check_box_clicked()));
 	QObject::connect(
-			include_second_invariant_strain_rate_check_box,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_include_second_invariant_check_box_clicked()));
+			include_dilatation_strain_rate_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_include_dilatation_strain_rate_check_box_clicked()));
+	QObject::connect(
+			include_second_invariant_strain_rate_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_include_second_invariant_strain_rate_check_box_clicked()));
+
+	//
+	// Principal strain options.
+	//
+	QObject::connect(
+			principal_output_strain_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_principal_output_radio_button_toggled(bool)));
+	QObject::connect(
+			principal_output_stretch_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_principal_output_radio_button_toggled(bool)));
+	QObject::connect(
+			principal_angle_major_minor_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_principal_angle_radio_button_toggled(bool)));
+	QObject::connect(
+			principal_azimuth_major_minor_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_principal_angle_radio_button_toggled(bool)));
 
 	//
 	// GMT format connections.
 	//
 
 	QObject::connect(
-			gmt_lon_lat_radio_button,
-			SIGNAL(toggled(bool)),
-			this,
-			SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
+			gmt_lon_lat_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
 	QObject::connect(
-			gmt_lat_lon_radio_button,
-			SIGNAL(toggled(bool)),
-			this,
-			SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
+			gmt_lat_lon_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
 
 	//
 	// GPML format connections.
@@ -179,6 +220,40 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_gmt_domain_point_format_
 
 
 void
+GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_principal_strain_check_box_clicked()
+{
+	d_export_configuration->include_principal_strain = include_principal_strain_stretch_check_box->isChecked();
+	principal_strain_stretch_options->setVisible(d_export_configuration->include_principal_strain);
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportDeformationOptionsWidget::react_principal_output_radio_button_toggled(
+		bool checked)
+{
+	d_export_configuration->principal_strain_options.output = principal_output_strain_radio_button->isChecked()
+			? GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN
+			: GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRETCH;
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportDeformationOptionsWidget::react_principal_angle_radio_button_toggled(
+		bool checked)
+{
+	d_export_configuration->principal_strain_options.format = principal_angle_major_minor_radio_button->isChecked()
+			? GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
+			: GPlatesFileIO::DeformationExport::PrincipalStrainOptions::AZIMUTH_MAJOR_MINOR;
+
+	update_output_description_label();
+}
+
+
+void
 GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_dilatation_strain_check_box_clicked()
 {
 	d_export_configuration->include_dilatation_strain = include_dilatation_strain_check_box->isChecked();
@@ -197,7 +272,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_dilatation_strai
 
 
 void
-GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_second_invariant_check_box_clicked()
+GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_second_invariant_strain_rate_check_box_clicked()
 {
 	d_export_configuration->include_second_invariant_strain_rate  = include_second_invariant_strain_rate_check_box->isChecked();
 
@@ -222,24 +297,54 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 
 			output_description = tr("Deformation will be exported as scalar coverages containing:\n");
 
-			if (configuration.include_dilatation_strain ||
-				configuration.include_dilatation_strain_rate ||
-				configuration.include_second_invariant_strain_rate)
+			if (configuration.include_principal_strain)
 			{
-				if (configuration.include_dilatation_strain)
+				if (configuration.principal_strain_options.output ==
+					GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN)
 				{
-					output_description += tr("  DilatationStrain\n");
-				}
+					if (configuration.principal_strain_options.format ==
+						GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+					{
+						output_description += tr("  PrincipalStrainMajorAngle\n");
+					}
+					else
+					{
+						output_description += tr("  PrincipalStrainMajorAzimuth\n");
+					}
 
-				if (configuration.include_dilatation_strain_rate)
-				{
-					output_description += tr("  DilatationStrainRate\n");
+					output_description += tr("  PrincipalStrainMajorAxis\n");
+					output_description += tr("  PrincipalStrainMinorAxis\n");
 				}
+				else
+				{
+					if (configuration.principal_strain_options.format ==
+						GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+					{
+						output_description += tr("  PrincipalStretchMajorAngle\n");
+					}
+					else
+					{
+						output_description += tr("  PrincipalStretchMajorAzimuth\n");
+					}
 
-				if (configuration.include_second_invariant_strain_rate)
-				{
-					output_description += tr("  TotalStrainRate\n");
+					output_description += tr("  PrincipalStretchMajorAxis\n");
+					output_description += tr("  PrincipalStretchMinorAxis\n");
 				}
+			}
+
+			if (configuration.include_dilatation_strain)
+			{
+				output_description += tr("  DilatationStrain\n");
+			}
+
+			if (configuration.include_dilatation_strain_rate)
+			{
+				output_description += tr("  DilatationStrainRate\n");
+			}
+
+			if (configuration.include_second_invariant_strain_rate)
+			{
+				output_description += tr("  TotalStrainRate\n");
 			}
 		}
 		break;
@@ -261,6 +366,40 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 			else
 			{
 				output_description += tr("  latitude  longitude");
+			}
+
+			if (configuration.include_principal_strain)
+			{
+				if (configuration.principal_strain_options.output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN)
+				{
+					if (configuration.principal_strain_options.format ==
+						GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+					{
+						output_description += tr("  principal_strain_major_angle");
+					}
+					else
+					{
+						output_description += tr("  principal_strain_major_azimuth");
+					}
+
+					output_description += tr("  principal_strain_major_axis");
+					output_description += tr("  principal_strain_minor_axis");
+				}
+				else
+				{
+					if (configuration.principal_strain_options.format ==
+						GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+					{
+						output_description += tr("  principal_stretch_major_angle");
+					}
+					else
+					{
+						output_description += tr("  principal_stretch_major_azimuth");
+					}
+
+					output_description += tr("  principal_stretch_major_axis");
+					output_description += tr("  principal_stretch_minor_axis");
+				}
 			}
 
 			if (configuration.include_dilatation_strain)

@@ -216,11 +216,19 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 						deformed_feature_geometry_seq,
 						d_export_animation_context_ptr->view_state());
 
+				// Principal strain options.
+				boost::optional<GPlatesFileIO::DeformationExport::PrincipalStrainOptions> include_principal_strain_options;
+				if (configuration.include_principal_strain)
+				{
+					include_principal_strain_options = configuration.principal_strain_options;
+				}
+
 				GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 					full_filename,
 					deformed_feature_geometry_seq,
 					d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
 					d_loaded_files,
+					include_principal_strain_options,
 					configuration.include_dilatation_strain,
 					configuration.include_dilatation_strain_rate,
 					configuration.include_second_invariant_strain_rate,
@@ -241,6 +249,13 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 						deformed_feature_geometry_seq,
 						d_export_animation_context_ptr->view_state());
 
+				// Principal strain options.
+				boost::optional<GPlatesFileIO::DeformationExport::PrincipalStrainOptions> include_principal_strain_options;
+				if (configuration.include_principal_strain)
+				{
+					include_principal_strain_options = configuration.principal_strain_options;
+				}
+
 				GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 					full_filename,
 					deformed_feature_geometry_seq,
@@ -248,6 +263,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 					d_export_animation_context_ptr->view_time(),
 					(configuration.domain_point_format == GMTConfiguration::LON_LAT),
+					include_principal_strain_options,
 					configuration.include_dilatation_strain,
 					configuration.include_dilatation_strain_rate,
 					configuration.include_second_invariant_strain_rate,

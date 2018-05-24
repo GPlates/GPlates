@@ -27,8 +27,11 @@
 #define GPLATES_FILE_IO_DEFORMATIONEXPORT_H
 
 #include <vector>
+#include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QString>
+
+#include "app-logic/DeformationStrain.h"
 
 #include "file-io/File.h"
 
@@ -55,7 +58,49 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Options for exporting principal strain/stretch.
+		 */
+		struct PrincipalStrainOptions
+		{
+			enum OutputType
+			{
+				STRAIN,  //!< Extension is positive; compression is negative.
+				STRETCH  //!< Is positive (1.0 + strain); can plot as ellipse.
+			};
+
+			enum FormatType
+			{
+				//! MajorAngle (-180 to +180 degrees anti-clockwise from West; 0 is East) / MajorAxis / MinorAxis.
+				ANGLE_MAJOR_MINOR,
+				//! MajorAzimuth (0 to 360 degrees clockwise from North; 0 is North) / MajorAxis / MinorAxis.
+				AZIMUTH_MAJOR_MINOR
+			};
+
+
+			PrincipalStrainOptions(
+					OutputType output_,
+					FormatType format_);
+
+			/**
+			 * Returns the angle or azimuth from the specified principal strain.
+			 */
+			double
+			get_principal_angle_or_azimuth_in_degrees(
+					const GPlatesAppLogic::DeformationStrain::StrainPrincipal &principal_strain) const;
+
+
+			OutputType output;
+			FormatType format;
+		};
+
+
+		/**
 		 * Exports @a TopologyReconstructedFeatureGeometry objects containing deformation information to the GPML file format.
+		 *
+		 * If @a include_principal_strain is specified then 3 extra sets of per-point scalars are exported:
+		 * - 'gpml:PrincipalStrainMajorAngle/Azimuth' or 'PrincipalStretchMajorAngle/Azimuth' is the angle or azimuth (in degrees) of major principal axis.
+		 * - 'gpml:PrincipalStrainMajorAxis' or 'PrincipalStretchMajorAxis' is largest principal strain or stretch (1+strain), both unitless.
+		 * - 'gpml:PrincipalStrainMinorAxis' or 'PrincipalStretchMinorAxis' is smallest principal strain or stretch (1+strain), both unitless.
 		 *
 		 * If @a include_dilatation_strain is true then an extra set of per-point scalars,
 		 * under 'gpml:DilatationStrain', is exported as per-point dilatation strain (unitless).
@@ -84,6 +129,7 @@ namespace GPlatesFileIO
 				const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 				GPlatesModel::ModelInterface &model,
 				const std::vector<const File::Reference *> &active_files,
+				boost::optional<PrincipalStrainOptions> include_principal_strain,
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
 				bool include_second_invariant_strain_rate,
@@ -99,9 +145,12 @@ namespace GPlatesFileIO
 		 *
 		 * Each line in the GMT file contains:
 		 * 
-		 *    domain_point [dilatation_strain] [dilatation_strain_rate] [second_invariant_strain_rate]
+		 *    domain_point [principal_<strain|stretch>_major_<angle|azimuth> principal_<strain|stretch>_major_axis principal_<strain|stretch>_minor_axis]
+		 *                 [dilatation_strain] [dilatation_strain_rate] [second_invariant_strain_rate]
 		 * 
-		 * ...where 'domain_point' is position associated with the dilatation strain rate.
+		 * ...where 'domain_point' is position associated with the deformation information.
+		 * If @a include_principal_strain is specified then principal strain/stretch (angle/azimuth, major axis, minor axis)
+		 * are output (where strain/stretch is unitless and angle/azimuth is in degrees).
 		 * If @a include_dilatation_strain is true then dilatation strain is output (unitless).
 		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
 		 * If @a include_second_invariant_strain_rate is true second invariant strain rate is output (in units of 1/second).
@@ -129,6 +178,7 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool domain_point_lon_lat_format,
+				boost::optional<PrincipalStrainOptions> include_principal_strain,
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
 				bool include_second_invariant_strain_rate,

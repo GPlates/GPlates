@@ -28,6 +28,7 @@
 
 #include <QFileInfo>
 
+#include "DeformationExport.h"
 #include "ReconstructionGeometryExportImpl.h"
 
 #include "model/types.h"
@@ -57,6 +58,11 @@ namespace GPlatesFileIO
 		/**
 		 * Exports @a TopologyReconstructedFeatureGeometry objects along with their deformation information.
 		 *
+		 * If @a include_principal_strain is specified then 3 extra sets of per-point scalars are exported:
+		 * - 'gpml:PrincipalStrainMajorAngle/Azimuth' or 'PrincipalStretchMajorAngle/Azimuth' is the angle or azimuth (in degrees) of major principal axis.
+		 * - 'gpml:PrincipalStrainMajorAxis' or 'PrincipalStretchMajorAxis' is largest principal strain or stretch (1+strain), both unitless.
+		 * - 'gpml:PrincipalStrainMinorAxis' or 'PrincipalStretchMinorAxis' is smallest principal strain or stretch (1+strain), both unitless.
+		 *
 		 * If @a include_dilatation_strain is true then an extra set of per-point scalars,
 		 * under 'gpml:DilatationStrainRate', is exported as per-point dilatation strain (unitless).
 		 *
@@ -71,6 +77,7 @@ namespace GPlatesFileIO
 				const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				GPlatesModel::ModelInterface &model,
+				boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
 				bool include_second_invariant_strain_rate);

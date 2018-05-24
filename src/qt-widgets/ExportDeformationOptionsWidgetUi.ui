@@ -83,6 +83,101 @@
        <number>1</number>
       </property>
       <item>
+       <widget class="QCheckBox" name="include_principal_strain_stretch_check_box">
+        <property name="text">
+         <string>Include principal strain/stretch</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="principal_strain_stretch_options" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QGroupBox" name="principal_strain_stretch_output_options">
+           <property name="title">
+            <string>Strain or Stretch</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <property name="leftMargin">
+             <number>18</number>
+            </property>
+            <property name="topMargin">
+             <number>1</number>
+            </property>
+            <property name="rightMargin">
+             <number>1</number>
+            </property>
+            <property name="bottomMargin">
+             <number>1</number>
+            </property>
+            <item>
+             <widget class="QRadioButton" name="principal_output_strain_radio_button">
+              <property name="text">
+               <string>Strain (extension is positive; compression is negative)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="principal_output_stretch_radio_button">
+              <property name="text">
+               <string>Stretch (1.0 + strain; is positive; can plot as ellipse)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="principal_strain_stretch_format_options">
+           <property name="title">
+            <string>Format Options</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <property name="leftMargin">
+             <number>18</number>
+            </property>
+            <property name="topMargin">
+             <number>1</number>
+            </property>
+            <property name="rightMargin">
+             <number>1</number>
+            </property>
+            <property name="bottomMargin">
+             <number>1</number>
+            </property>
+            <item>
+             <widget class="QRadioButton" name="principal_angle_major_minor_radio_button">
+              <property name="text">
+               <string>MajorAngle (-180 to +180 degrees anti-clockwise from West; 0 is East) / MajorAxis / MinorAxis</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="principal_azimuth_major_minor_radio_button">
+              <property name="text">
+               <string>MajorAzimuth (0 to 360 degrees clockwise from North; 0 is North) / MajorAxis / MinorAxis</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="include_dilatation_strain_check_box">
         <property name="text">
          <string>Include dilatation strain</string>

@@ -332,6 +332,10 @@ namespace GPlatesGui
 			const ExportOptionsUtils::ExportFileOptions default_deformation_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
+			const bool default_include_principal_strain = false;
+			const GPlatesFileIO::DeformationExport::PrincipalStrainOptions default_principal_strain_options(
+					/*output*/GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN,
+					/*format*/GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR);
 			const bool default_include_dilatation_strain = false;
 			const bool default_include_dilatation_strain_rate = true;
 			const bool default_include_second_invariant_strain_rate = false;
@@ -344,6 +348,8 @@ namespace GPlatesGui
 							new ExportDeformationAnimationStrategy::GpmlConfiguration(
 									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GPML),
 									default_deformation_file_export_options,
+									default_include_principal_strain,
+									default_principal_strain_options,
 									default_include_dilatation_strain,
 									default_include_dilatation_strain_rate,
 									default_include_second_invariant_strain_rate)),
@@ -368,6 +374,8 @@ namespace GPlatesGui
 									default_deformation_file_export_options,
 									// Lon/lat is the default GMT ordering...
 									ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT,
+									default_include_principal_strain,
+									default_principal_strain_options,
 									default_include_dilatation_strain,
 									default_include_dilatation_strain_rate,
 									default_include_second_invariant_strain_rate)),
