@@ -76,6 +76,7 @@
 #include "gui/Dialogs.h"
 #include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
+#include "gui/GraticuleSettings.h"
 #include "gui/PythonConfiguration.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
@@ -2911,6 +2912,14 @@ namespace GPlatesPresentation
 			// Save the background colour.
 			scribe.save(TRANSCRIBE_SOURCE, view_state.get_background_colour(), session_state_tag("background_colour"));
 
+			// Save the graticule settings.
+			//
+			// Some users set the alpha channel of graticule to zero to make them disappear so they can
+			// load their own graticule lines (eg, from gpml file) that have plate ID zero and hence move
+			// when the anchored plate ID is non-zero. And saving/loading graticule state means the
+			// internal session or project file will set the alpha channel to zero for them.
+			scribe.save(TRANSCRIBE_SOURCE, view_state.get_graticule_settings(), session_state_tag("graticule_settings"));
+
 			//
 			// Save the feature type symbol map (might be empty if no symbol file loaded).
 			//
@@ -2950,6 +2959,17 @@ namespace GPlatesPresentation
 			if (scribe.transcribe(TRANSCRIBE_SOURCE, background_colour, session_state_tag("background_colour")))
 			{
 				view_state.set_background_colour(background_colour);
+			}
+
+			// Load the graticule settings.
+			//
+			// Note that if there's no graticule settings to load (eg, loading from an old version project file)
+			// then the default graticule settings at GPlates startup will be used (it has already been set since
+			// the session state is always cleared to the default state just before loading a new session).
+			GPlatesGui::GraticuleSettings graticule_settings;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, graticule_settings, session_state_tag("graticule_settings")))
+			{
+				view_state.get_graticule_settings() = graticule_settings;
 			}
 
 			//

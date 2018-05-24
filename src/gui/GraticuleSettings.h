@@ -34,6 +34,9 @@
 
 #include "maths/MathsUtils.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesGui
 {
@@ -42,6 +45,13 @@ namespace GPlatesGui
 	{
 	public:
 
+		// Default graticule spacing in latitude and longitude.
+		static const double DEFAULT_GRATICULE_DELTA_LAT;
+		static const double DEFAULT_GRATICULE_DELTA_LON;
+		// Default graticule colour.
+		static const GPlatesGui::Colour DEFAULT_GRATICULE_COLOUR;
+
+
 		/**
 		 * Constructs a GraticuleSettings. Lines of latitude are rendered @a delta_lat
 		 * radians apart, and lines of longitude are rendered @a delta_lon radians
@@ -49,9 +59,9 @@ namespace GPlatesGui
 		 * of longitude are not rendered, respectively.
 		 */
 		GraticuleSettings(
-				double delta_lat,
-				double delta_lon,
-				const GPlatesGui::Colour &colour) :
+				double delta_lat = DEFAULT_GRATICULE_DELTA_LAT,
+				double delta_lon = DEFAULT_GRATICULE_DELTA_LON,
+				const GPlatesGui::Colour &colour = DEFAULT_GRATICULE_COLOUR) :
 			d_delta_lat(delta_lat),
 			d_delta_lon(delta_lon),
 			d_colour(colour),
@@ -128,6 +138,15 @@ namespace GPlatesGui
 				lhs.d_colour == rhs.d_colour &&
 				GPlatesMaths::are_almost_exactly_equal(lhs.d_line_width_hint, rhs.d_line_width_hint);
 		}
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }
