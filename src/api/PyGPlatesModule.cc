@@ -211,9 +211,9 @@ namespace
         builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
         builtin_next = pygplates_module.attr("__builtins__").attr("next");
 #else
-		builtin_hash = boost::python::scope().attr("builtins").attr("hash");
-		builtin_iter = boost::python::scope().attr("builtins").attr("iter");
-		builtin_next = boost::python::scope().attr("builtins").attr("next");
+		builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
+		builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
+		builtin_next = boost::python::scope().attr("__builtins__").attr("next");
 #endif
 	}
 }
@@ -319,7 +319,7 @@ BOOST_PYTHON_MODULE(pygplates)
 #if PY_MAJOR_VERSION < 3
     pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
 #else
-    bp::scope().attr("__dict__")["builtins"] = bp::import("builtins");
+	bp::scope().attr("__dict__")["__builtins__"] = bp::import("builtins");
 #endif
     // Cache some commonly used built-in attributes.
 	// Note: This must be done *after* initialising 'pygplates_module' and injecting the __builtin__ module.
