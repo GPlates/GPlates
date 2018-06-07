@@ -16,11 +16,39 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+#
+# Python 2 and 3 compatibility.
+#
+# Iterating over a dict.
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def itervalues(d):
+        return iter(d.values())
+    def iteritems(d):
+        return iter(d.items())
+    def listvalues(d):
+        return list(d.values())
+    def listitems(d):
+        return list(d.items())
+else:
+    # Python 2
+    def itervalues(d):
+        return d.itervalues()
+    def iteritems(d):
+        return d.iteritems()
+    def listvalues(d):
+        return d.values()
+    def listitems(d):
+        return d.items()
+
+
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name):
     features = [feature_without_geometry.clone()]
     
-    for geometry_property_name, geometries_with_property_name in geometries_grouped_by_property_name.iteritems():
+    for geometry_property_name, geometries_with_property_name in iteritems(geometries_grouped_by_property_name):
             
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
@@ -389,7 +417,7 @@ def plate_partitioner_partition_features(
                     unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
             
-            for partitioning_plate, geometries_inside_partition in partitioned_geometries.iteritems():
+            for partitioning_plate, geometries_inside_partition in iteritems(partitioned_geometries):
                 features_inside_partition = _plate_partitioning_set_geometries(feature_without_geometry, geometries_inside_partition)
                 
                 # Copy the requested properties over from the partitioning feature.
@@ -465,7 +493,7 @@ def plate_partitioner_partition_features(
     elif partition_return == PartitionReturn.separate_partitioned_and_unpartitioned:
         return (partitioned_features, unpartitioned_features)
     else: # partition_return == PartitionReturn.partitioned_groups_and_unpartitioned
-        return (partitioned_feature_groups.items(), unpartitioned_features)
+        return (listitems(partitioned_feature_groups), unpartitioned_features)
 
 
 # Add the module function as a class method.

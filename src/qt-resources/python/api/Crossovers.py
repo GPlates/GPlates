@@ -20,6 +20,33 @@ from collections import namedtuple
 from functools import partial
 import math
 
+#
+# Python 2 and 3 compatibility.
+#
+# Iterating over a dict.
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def itervalues(d):
+        return iter(d.values())
+    def iteritems(d):
+        return iter(d.items())
+    def listvalues(d):
+        return list(d.values())
+    def listitems(d):
+        return list(d.items())
+else:
+    # Python 2
+    def itervalues(d):
+        return d.itervalues()
+    def iteritems(d):
+        return d.iteritems()
+    def listvalues(d):
+        return d.values()
+    def listitems(d):
+        return d.items()
+
 
 # The maximum number of iterations over all crossovers to be synchronised.
 # If this is exceeded then it's likely there was an infinite cycle.
@@ -386,7 +413,7 @@ def find_crossovers(
     crossovers = []
     
     # Iterate over the moving plates.
-    for moving_plate_id, fixed_plate_rotation_sequences in total_reconstruction_poles_by_moving_plate.iteritems():
+    for moving_plate_id, fixed_plate_rotation_sequences in iteritems(total_reconstruction_poles_by_moving_plate):
         # Only one fixed plate means no crossovers for the current moving plate.
         if len(fixed_plate_rotation_sequences) == 1:
             continue
