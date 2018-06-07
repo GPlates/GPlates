@@ -231,8 +231,8 @@ def set_name(feature, name, verify_information_model=VerifyInformationModel.yes)
     .. seealso:: :meth:`get_name`
     """
     
-    # If 'name' is a sequence.
-    if hasattr(name, '__iter__'):
+    # If 'name' is a sequence of strings or equivalent (but not a sequences of characters).
+    if hasattr(name, '__iter__') and not isinstance(name, (str, bytes, bytearray)):
         return feature.set(PropertyName.gml_name, [XsString(n) for n in name], verify_information_model)
     
     return feature.set(PropertyName.gml_name, XsString(name), verify_information_model)
