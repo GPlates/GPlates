@@ -674,7 +674,12 @@ export_reconstruction_tree()
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::self,
 				bp::return_value_policy<bp::copy_non_const_reference>())
-		.def("next",
+		.def(
+#if PY_MAJOR_VERSION < 3
+				"next",
+#else
+				"__next__",
+#endif
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::next)
 	;
 
@@ -701,7 +706,12 @@ export_reconstruction_tree()
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::self,
 				bp::return_value_policy<bp::copy_non_const_reference>())
-		.def("next",
+		.def(
+#if PY_MAJOR_VERSION < 3
+				"next",
+#else
+				"__next__",
+#endif
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::next)
 	;
 

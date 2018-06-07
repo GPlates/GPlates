@@ -194,8 +194,8 @@ class FeatureCase(unittest.TestCase):
 
     def setUp(self):
         self.property_count = 4
-        self.feature = iter(pygplates.FeatureCollectionFileFormatRegistry().read(
-            os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
+        self.feature = next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(
+            os.path.join(FIXTURES, 'volcanoes.gpml'))))
     
     def test_clone(self):
         # Modify original and make sure clone is not affected.
@@ -559,7 +559,7 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertTrue(found_feature_with_integer_property)
         # Added feature should have one property.
         self.assertTrue(len(found_feature_with_integer_property) == 1)
-        self.assertTrue(iter(found_feature_with_integer_property).next().get_value().get_integer() == 100)
+        self.assertTrue(next(iter(found_feature_with_integer_property)).get_value().get_integer() == 100)
         
         # Remove and add again as a list.
         self.feature_collection.remove(feature_with_integer_property)
@@ -570,8 +570,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_remove(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature_to_remove1 = feature_iter.next()
-        feature_to_remove2 = feature_iter.next()
+        feature_to_remove1 = next(feature_iter)
+        feature_to_remove2 = next(feature_iter)
         
         # Should not raise ValueError.
         self.feature_collection.remove(feature_to_remove2)
@@ -600,8 +600,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_remove_by_feature_type(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature_to_remove1 = feature_iter.next()
-        feature_to_remove2 = feature_iter.next()
+        feature_to_remove1 = next(feature_iter)
+        feature_to_remove2 = next(feature_iter)
         
         self.assertTrue(len(self.feature_collection) > 0)
         self.feature_collection.remove(feature_to_remove2.get_feature_type())
@@ -621,8 +621,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_remove_by_feature_id(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature_to_remove1 = feature_iter.next()
-        feature_to_remove2 = feature_iter.next()
+        feature_to_remove1 = next(feature_iter)
+        feature_to_remove2 = next(feature_iter)
         
         self.assertTrue(len(self.feature_collection) > 0)
         self.feature_collection.remove(feature_to_remove2.get_feature_id())
@@ -642,8 +642,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_remove_by_predicate(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature_to_remove1 = feature_iter.next()
-        feature_to_remove2 = feature_iter.next()
+        feature_to_remove1 = next(feature_iter)
+        feature_to_remove2 = next(feature_iter)
         
         self.assertTrue(len(self.feature_collection) > 0)
         self.feature_collection.remove(
@@ -681,8 +681,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_get_by_feature_id(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature1 = feature_iter.next()
-        feature2 = feature_iter.next()
+        feature1 = next(feature_iter)
+        feature2 = next(feature_iter)
         
         feature = self.feature_collection.get(feature1.get_feature_id())
         self.assertTrue(feature.get_feature_id() == feature1.get_feature_id())
@@ -694,8 +694,8 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_get_by_predicate(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
-        feature1 = feature_iter.next()
-        feature2 = feature_iter.next()
+        feature1 = next(feature_iter)
+        feature2 = next(feature_iter)
         
         feature = self.feature_collection.get(
                 lambda feature: feature.get_feature_id() == feature1.get_feature_id())
@@ -821,12 +821,12 @@ class PropertyCase(unittest.TestCase):
 class PropertyNameCase(unittest.TestCase):
 
     def setUp(self):
-        feature = iter(pygplates.FeatureCollectionFileFormatRegistry().read(
-            os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
+        feature = next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(
+            os.path.join(FIXTURES, 'volcanoes.gpml'))))
         i = iter(feature)
         # From the first volcano: its name and valid time (name is blank)
-        self.feature_name = i.next()
-        self.feature_valid_time = i.next()
+        self.feature_name = next(i)
+        self.feature_valid_time = next(i)
 
     def test_get_name(self):
         # Feature property: gml:name
@@ -844,12 +844,12 @@ class PropertyNameCase(unittest.TestCase):
 class PropertyValueCase(unittest.TestCase):
 
     def setUp(self):
-        feature = iter(pygplates.FeatureCollectionFileFormatRegistry().read(
-            os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
+        feature = next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(
+            os.path.join(FIXTURES, 'volcanoes.gpml'))))
         i = iter(feature)
         # From the first volcano: its name and valid time (name is blank)
-        self.feature_name = i.next()
-        self.feature_valid_time = i.next()
+        self.feature_name = next(i)
+        self.feature_valid_time = next(i)
 
     def test_get_value(self):
         # The volcano's name is blank so we expect an empty string
