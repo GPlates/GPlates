@@ -27,7 +27,9 @@
 #ifndef GPLATES_GLOBAL_PYTHON_H
 #define GPLATES_GLOBAL_PYTHON_H
 
-#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+// Workaround for Qt moc failing to parse BOOST_JOIN macro in Boost library.
+// Workaround mentioned at https://bugreports.qt.io/browse/QTBUG-22829
+#ifndef Q_MOC_RUN
 
 #include "global/config.h" // GPLATES_NO_PYTHON
 
