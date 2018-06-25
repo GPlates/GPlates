@@ -1250,7 +1250,8 @@ namespace GPlatesOpenGL
 		GPlatesMaths::PointOnSphere
 		convert_pixel_coord_to_geographic_coord(
 				const double &x_pixel_coord,
-				const double &y_pixel_coord) const;
+				const double &y_pixel_coord,
+				boost::optional<double &> y_pixel_coord_clamped = boost::none) const;
 	};
 }
 

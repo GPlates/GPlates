@@ -846,6 +846,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 	// of the tile so we can calculate tangent-space frames for each tile vertex.
 	std::vector<GPlatesMaths::UnitVector3D> vertex_positions;
 	vertex_positions.reserve(num_vertices_in_tile);
+	// Also allocate memory for the texture V coordinates since they might get clamped at the poles
+	// on the first pass.
+	std::vector<double> vertex_v_coords;
+	vertex_v_coords.reserve(num_vertices_in_tile);
 
 	// Set up some variables before initialising the geo-referenced vertex positions.
 	const double inverse_x_num_quads = 1.0 / (lod_tile.x_num_vertices - 1);
@@ -854,6 +858,18 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 			inverse_x_num_quads * (lod_tile.x_geo_end - lod_tile.x_geo_start);
 	const double y_pixels_per_quad =
 			inverse_y_num_quads * (lod_tile.y_geo_end - lod_tile.y_geo_start);
+
+	// Set up some variables before initialising the vertices.
+	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
+	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
+
+	// The texture gradient of v wrt y.
+	// This is only used when y coords are clamped, *and* when y is aligned with v
+	// (ie, dv/dx = du/dy = 0; eg, the regular lat/lon projection).
+	// In other words, clamping only happens inside convert_pixel_coord_to_geographic_coord()
+	// when y is aligned with v (it is assumed this is the only case where clamping of
+	// 'grid-registered' rasters is required).
+	const double dv_dy = v_increment_per_quad / y_pixels_per_quad;
 
 	// Calculate the geo-referenced vertex positions.
 	unsigned int j;
@@ -867,6 +883,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 				? lod_tile.y_geo_end
 				: lod_tile.y_geo_start + j * y_pixels_per_quad;
 
+		// The 'v' texture coordinate.
+		const double v = lod_tile.v_start + j * v_increment_per_quad;
+
 		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
 		{
 			// NOTE: The positions of the last column of vertices should
@@ -878,10 +897,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 					: lod_tile.x_geo_start + i * x_pixels_per_quad;
 
 			// Convert from pixel coordinates to a position on the unit globe.
+			double y_clamped = y;
 			const GPlatesMaths::PointOnSphere vertex_position =
-					convert_pixel_coord_to_geographic_coord(x, y);
+					convert_pixel_coord_to_geographic_coord(x, y, y_clamped);
+			// If the y coordinate got clamped then we need to clamp the v texture coordinate also,
+			// otherwise the v texture coordinate is unchanged.
+			const double v_clamped = v + (y_clamped - y) * dv_dy;
 
 			vertex_positions.push_back(vertex_position.position_vector());
+			vertex_v_coords.push_back(v_clamped);
 		}
 	}
 
@@ -927,24 +951,20 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 	// Initialise the vertices
 	//
 
-	// Set up some variables before initialising the vertices.
-	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
-	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
-
 	// Only needed if gradients are calculated.
 	const double inv_num_texels_per_vertex = double(1 << 16) / d_num_texels_per_vertex;
 
 	// Calculate the vertices.
 	for (j = 0; j < lod_tile.y_num_vertices; ++j)
 	{
-		// The 'v' texture coordinate.
-		const double v = lod_tile.v_start + j * v_increment_per_quad;
-
 		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
 		{
 			// Get the geo-referenced vertex position.
 			const GPlatesMaths::UnitVector3D &vertex_position =
 					vertex_positions[i + j * lod_tile.x_num_vertices];
+
+			// The possibly clamped 'v' texture coordinate.
+			const double v = vertex_v_coords[i + j * lod_tile.x_num_vertices];
 
 			// The 'u' texture coordinate.
 			const double u = lod_tile.u_start + i * u_increment_per_quad;
@@ -2338,7 +2358,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_buffer(
 GPlatesMaths::PointOnSphere
 GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 		const double &x_pixel_coord,
-		const double &y_pixel_coord) const
+		const double &y_pixel_coord,
+		boost::optional<double &> y_pixel_coord_clamped) const
 {
 	// Get the georeferencing parameters.
 	const GPlatesPropertyValues::Georeferencing::parameters_type &georef =
@@ -2360,19 +2381,42 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 	d_coordinate_transformation->transform_in_place(&x_geo, &y_geo);
 
 	// Some rasters have a geographic coordinate latitude extent of, for example, [-90.05, 90.05]
-	// (for a raster of height 1801) such that the pixel centre of the first and last rows are at the
-	// same position (-90 or 90 degrees). However we are rendering in cartesian (x,y,z) space and not
-	// lat/lon space so we need to clamp latitudes to the poles. This introduces a slight error in
-	// positioning (georeferencing) of raster data but only for raster pixels between the pole and
-	// the nearest vertex in the raster mesh (which is up to 5 degrees away). The error manifests
-	// as squishing of the pixels across the mesh quad by up to half a pixel.
+	// (for a raster of height 1801) such that the pixel centre of the first and last rows are at
+	// -90 or 90 degrees. However we are rendering in cartesian (x,y,z) space and not
+	// lat/lon space so we need to clamp latitudes to the poles. This means the texture coordinates
+	// also need to be adjusted otherwise a slight error in positioning (georeferencing) of raster data
+	// would occur (but only for raster pixels between the pole and the nearest vertex in the raster mesh
+	// which is up to 5 degrees away).
+	bool clamped = false;
 	if (y_geo < -90)
 	{
 		y_geo = -90;
+		clamped = true;
 	}
 	else if (y_geo > 90)
 	{
 		y_geo = 90;
+		clamped = true;
+	}
+
+	if (y_pixel_coord_clamped)
+	{
+		if (clamped &&
+			// May need to update this to work for non-identity cases if we update how datum transforms are handled
+			// (eg, might have no projection transform, but still a datum transform such as geocentric -> WGS84).
+			// Currently, in RasterLayerProxy::set_raster_params(), we use an identity transform if either
+			// the raster has no spatial reference system or it has datum WGS84 (but no projection transform) ...
+			d_coordinate_transformation->is_identity_transform() &&
+			GPlatesMaths::are_almost_exactly_equal(georef.y_component_of_pixel_width, 0.0) &&
+			GPlatesMaths::are_almost_exactly_equal(georef.x_component_of_pixel_height, 0.0))
+		{
+			// This is the reverse of the conversion from pixel coordinates to georeference coordinates above.
+			y_pixel_coord_clamped.get() = (y_geo - georef.top_left_y_coordinate) / georef.y_component_of_pixel_height;
+		}
+		else
+		{
+			y_pixel_coord_clamped.get() = y_pixel_coord;
+		}
 	}
 
 	// Wrap longitude into the range [-360,360] if necessary since otherwise LatLonPoint will thrown an exception.
