@@ -5,23 +5,21 @@ Table of Contents
  1. Introduction
  2. Program and library dependencies
  3. Corresponding package dependencies
-     1. For Ubuntu 8.04
-         1. Ubuntu 8.04 packages
+     1. For Ubuntu
+         1. Ubuntu packages
          3. How to install via a GUI (recommended)
          4. How to install using the command-line (advanced)
          5. A note about the packages for GL and GLU
          6. A note about Qt
-     2. For Fedora 13
+     2. For other Linux variants
 
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
 to build GPlates from source on Linux.
 
-Below, we list the corresponding Ubuntu 8.04 packages. Similar packages should
-be available on other Linux distributions. Although we only list packages for
-Ubuntu 8.04, GPlates will work with newer Ubuntu distributions; the names of the
-packages vary slightly. However, Ubuntu 8.04 is the oldest Ubuntu release that
+Below, we list the corresponding Ubuntu packages. Similar packages should
+be available on other Linux distributions. Ubuntu 8.04 is the oldest Ubuntu release that
 we support; users of older Ubuntu releases may, for some packages, be required
 to install and/or compile the dependencies manually.
 
@@ -31,14 +29,14 @@ To compile GPlates, you will need the following programs and libraries
 installed:
 
   • cmake (2.6.2 or newer)
-  • g++ 4.x
+  • g++ 4.x 
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
   • Python library (version 2.x but not version 3.x)
-  • Boost library headers (version 1.34 or newer)
-  • Qt library (version 4.4 or newer)
-  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
+  • Boost library headers (version 1.34 or newer; the highest version number which has been tested so far is 1.65.)
+  • Qt library (version 4.4 or newer; does not compile with Qt 5 yet.)
+  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer; GDAL 2 is high recommended.)
   • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
   • PROJ.4 (4.6.0 or newer)
   • Qwt 6.0.1
@@ -64,19 +62,21 @@ installed manually:
 
 Program/library Corresponding Ubuntu packages
 cmake           cmake
-g++             g++-4.2
+gcc             gcc
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
 Python          python-dev
-Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
+                libboost-test-dev libboost-system-dev (See note below)
 Qt              libqt4-gui libqt4-dev (See note below.)
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev
 PROJ.4          libproj-dev
 Qwt		libqwt-dev
 
-Started from Ubuntu 14.04 Trusty Tahr, the following additional libraries are required libxrender-dev, libice-dev, libsm-dev, libfreetype6-dev and libfontconfig1-dev.
+Started from Ubuntu 14.04 Trusty Tahr, the following additional libraries are required libxrender-dev, 
+libice-dev, libsm-dev, libfreetype6-dev and libfontconfig1-dev.
 
 The command to install the dependencies on Ubuntu is:
 
@@ -171,6 +171,8 @@ the latest bugfix release of Qt 4.4.
 Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
 not necessary to enable the 'backports' repository on those systems.
 
+GPlates cannot compile with Qt 5.x yet.
+
 A note about GDAL
 
 If you decide to compile GDAL from source then ensure that GDAL links *statically*
@@ -179,23 +181,31 @@ does not generate a dynamic library loading error (for PROJ4) when a raster with
 inbuilt spatial reference system (eg, a projection) is loaded.
 You'll also need to ensure that the NetCDF library is installed and that GDAL is
 configured to use it - this is necessary for GPlates to be able to load gridded rasters.
-Here are the relevant options for the GDAL 'configure' script:
-   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-static-proj4=/path/to/proj4
+Here are the relevant options for the GDAL 2.x 'configure' script(assuming GDAL dependencies 
+have been installed in /opt/local/):
+
+   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-static-proj4=/path/to/proj4 --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
 
 ...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5'
 according to https://trac.osgeo.org/gdal/wiki/NetCDF
 
-Fedora 13 packages
+A note about Boost
 
-The following packages are not installed by default and may need to be
-installed manually:
+The highest version number which has been tested so far is 1.65.
+Starting with 1.67, Boost's Python library name has been changed and now includes the version suffix of the Python version used to compile it. 
+GPlates cannot find the new name and ,therefore, cannot compile with Boost 1.67 for now.
+There are several reports about compiling failure with Boost 1.61, it would be better avoiding that version of Boost. 
 
-Program/library Corresponding Fedora packages
-cmake           cmake
-g++             gcc-c++
-GLEW            glew-devel
-Boost           boost-devel
-Qt              qt-devel
-GDAL            gdal-devel
-CGAL            CGAL-devel
-PROJ.4          proj-devel
+For other Linux variants
+
+There are some sucessful stories about compiling GPlates on other Linux variants, including Fedora, Debian, Redhat
+and CentOS.
+
+Known issues
+
+Sometimes, the parallel compiling fails and complains about the missing file ViewportWindowUi.h. Usually the problem
+goes away after executing the parallel compiling command again.
+
+Sometimes, the compiling on Ubuntu Trusty 32-bit exhausts the virtual memory. It is recommended to use the newer Ubuntu
+or use the 64-bit Ubuntu.
+ 
