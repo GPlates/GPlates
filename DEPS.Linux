@@ -62,7 +62,7 @@ installed manually:
 
 Program/library Corresponding Ubuntu packages
 cmake           cmake
-gcc             gcc
+g++             g++
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
