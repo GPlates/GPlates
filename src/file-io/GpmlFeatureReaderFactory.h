@@ -33,6 +33,7 @@
 
 #include "GpmlFeatureReaderImpl.h"
 #include "GpmlFeatureReaderInterface.h"
+#include "GpmlPropertyReader.h"
 #include "GpmlPropertyStructuralTypeReader.h"
 #include "GpmlUpgradeReaderUtils.h"
 
@@ -77,28 +78,23 @@ namespace GPlatesFileIO
 		 * This creates each feature reader on demand to avoid creating readers for feature types
 		 * that are never encountered in loaded GPML files.
 		 *
-		 * Returns boost::none if the specified feature type is not recognised by the GPGIM.
-		 */
-		boost::optional<GpmlFeatureReaderInterface>
-		get_feature_reader(
-				const GPlatesModel::FeatureType &feature_type) const;
-
-
-		/**
-		 * Returns the feature reader to be used when a feature type is not recognised by the GPGIM.
+		 * Note that any feature type can be read (even if it's not defined in the GPGIM).
 		 *
-		 * The returned feature reader reads each feature property as an 'UninterpretedPropertyValue'.
-		 *
-		 * Note: Check with @a get_feature_reader for a valid feature reader first.
+		 * This can read any property defined in the GPGIM - they will be allowed.
+		 * NOTE: This is because we no longer enforce which properties a feature type can load.
 		 */
 		GpmlFeatureReaderInterface
-		get_uninterpreted_feature_reader() const;
+		get_feature_reader(
+				const GPlatesModel::FeatureType &feature_type) const;
 
 	private:
 
 		//! Typedef for a map of feature types to feature reader impls.
 		typedef std::map<GPlatesModel::FeatureType, GpmlFeatureReaderImpl::non_null_ptr_type>
 				feature_reader_map_impl_type;
+
+		//! Typedef for a sequence of property readers.
+		typedef std::vector<GpmlPropertyReader::non_null_ptr_to_const_type> property_reader_seq_type;
 
 
 		/**
@@ -112,28 +108,30 @@ namespace GPlatesFileIO
 		GPlatesModel::GpgimVersion d_gpml_version;
 
 		/**
+		 * Used to read feature properties not allowed for a feature type, or when a feature type
+		 * is not recognised (by the GPGIM).
+		 *
+		 * Currently any property (defined in the GPGIM) can be loaded for any feature type
+		 * (defined or not defined in the GPGIM). Previously these unprocessed properties (or all
+		 * properties for an unknown feature type) were read in as 'UninterpretedPropertyValue' property values.
+		 */
+		property_reader_seq_type d_unprocessed_property_readers;
+
+		/**
 		 * Map of feature types to feature reader impls.
 		 *
-		 * NOTE: Does not include the catch-all uninterpreted feature reader impl at the head of each feature reader's chain.
+		 * NOTE: Does not include the catch-all unprocessed feature reader impl at the head of each feature reader's chain.
 		 *
 		 * NOTE: Feature readers are created on demand as feature types are encountered in GPML files.
 		 * This avoids creating feature readers for feature types that are never encountered.
 		 */
 		mutable feature_reader_map_impl_type d_feature_reader_impl_map;
 
-		/**
-		 * Used to read feature properties as 'UninterpretedPropertyValue' when a feature type
-		 * is not recognised by the GPGIM.
-		 *
-		 * The feature reader is only created if it is needed.
-		 */
-		mutable boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type> d_uninterpreted_feature_reader_impl;
-
 
 		/**
 		 * Gets the feature reader implementation for the specified feature type.
 		 *
-		 * NOTE: Does not include the catch-all uninterpreted feature reader impl at the head of the reader chain.
+		 * NOTE: Does not include the catch-all unprocessed feature reader impl at the head of the reader chain.
 		 */
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
 		get_feature_reader_impl(
@@ -143,7 +141,7 @@ namespace GPlatesFileIO
 		/**
 		 * Creates a feature reader implementation for the specified feature type.
 		 *
-		 * NOTE: Does not include the catch-all uninterpreted feature reader impl at the head of the reader chain.
+		 * NOTE: Does not include the catch-all unprocessed feature reader impl at the head of the reader chain.
 		 */
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
 		create_feature_reader_impl(
@@ -153,7 +151,7 @@ namespace GPlatesFileIO
 		/**
 		 * Creates a feature reader implementation for the specified feature class.
 		 *
-		 * NOTE: Does not include the catch-all uninterpreted feature reader impl at the head of the reader chain.
+		 * NOTE: Does not include the catch-all unprocessed feature reader impl at the head of the reader chain.
 		 */
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
 		create_feature_reader_impl(
@@ -169,13 +167,6 @@ namespace GPlatesFileIO
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
 		get_parent_feature_reader_impl(
 				const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &gpgim_feature_class) const;
-
-
-		/**
-		 * Gets/creates the sole uninterpreted feature reader implementation.
-		 */
-		GpmlFeatureReaderImpl::non_null_ptr_type
-		get_uninterpreted_feature_reader_impl() const;
 
 
 		/**

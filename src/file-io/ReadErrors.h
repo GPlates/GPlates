@@ -270,7 +270,6 @@ namespace GPlatesFileIO
 			PropertyConvertedFromTimeDependent,
 			PropertyConvertedBetweenTimeDependentTypes,
 			PropertyNotInterpreted,
-			FeatureNotInterpreted,
 			AttributesIgnored,
 			
 			// The following are specific to GMAP vgp files

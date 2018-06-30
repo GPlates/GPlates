@@ -559,8 +559,6 @@ namespace
 				QT_TR_NOOP("The type of time-dependent property wrapper was changed.") },
 		{ GPlatesFileIO::ReadErrors::PropertyNotInterpreted,
 				QT_TR_NOOP("The property was not interpreted.") },
-		{ GPlatesFileIO::ReadErrors::FeatureNotInterpreted,
-				QT_TR_NOOP("The feature was not interpreted.") },
 		{ GPlatesFileIO::ReadErrors::AttributesIgnored,
 				QT_TR_NOOP("The attributes were ignored.") },
 
