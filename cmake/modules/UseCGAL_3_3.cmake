@@ -20,6 +20,9 @@ if(NOT USE_CGAL_FILE_INCLUDED)
   link_libraries      ( ${CGAL_LIBRARY} )
 
   # Set the compiler flags that are required to match those used when building the CGAL library.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math -fno-strict-aliasing")
+  # Note: Clang compiler does not support "-frounding-math".
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math -fno-strict-aliasing")
+  endif (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   
 endif(NOT USE_CGAL_FILE_INCLUDED) 
