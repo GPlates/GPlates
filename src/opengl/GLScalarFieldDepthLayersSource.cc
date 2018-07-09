@@ -682,11 +682,15 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 	// of the raster - we duplicate the last column of texels into the adjacent column to ensure
 	// that subsequent sampling of the texture at the right edge of the last column of texels
 	// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
+	//
+	// Note: We don't use anisotropic filtering for floating-point textures (like we do for fixed-point)
+	// and so we don't have to worry about a anisotropic filter width sampling texels beyond our
+	// duplicated single row/column of border texels.
 	if (texel_width < d_tile_texel_dimension)
 	{
 		// Copy the right edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
-		// The last pixel in the first row of the region.
+		// The last texel in the first row of the region.
 		const float *region_last_column = d_tile_scalar_gradient_data_working_space.get() +
 				num_floats_per_scalar_gradient_data_texel * (texel_width - 1);
 		for (unsigned int y = 0; y < texel_height; ++y)
@@ -699,7 +703,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 			region_last_column += num_floats_per_scalar_gradient_data_texel * texel_width;
 		}
 
-		// Load the one-pixel wide column of default normal data into adjacent column.
+		// Load the one-texel wide column of default normal data into adjacent column.
 		GLTextureUtils::load_image_into_texture_2D(
 				renderer,
 				target_texture,
@@ -717,7 +721,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 	{
 		// Copy the bottom edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
-		// The first pixel in the last row of the region.
+		// The first texel in the last row of the region.
 		const float *region_last_row = d_tile_scalar_gradient_data_working_space.get() +
 				num_floats_per_scalar_gradient_data_texel * (texel_height - 1) * texel_width;
 		for (unsigned int x = 0; x < texel_width; ++x)
@@ -729,15 +733,26 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 			working_space += num_floats_per_scalar_gradient_data_texel;
 			region_last_row += num_floats_per_scalar_gradient_data_texel;
 		}
+		// Copy the corner texel, we want it to get copied to the texel at column 'texel_width' and row 'texel_height'.
+		unsigned int texels_in_last_row = texel_width;
+		if (texel_width < d_tile_texel_dimension)
+		{
+			const float *corner_texel = region_last_row - num_floats_per_scalar_gradient_data_texel;
+			for (unsigned int component = 0; component < num_floats_per_scalar_gradient_data_texel; ++component)
+			{
+				working_space[component] = corner_texel[component];
+			}
+			++texels_in_last_row;
+		}
 
-		// Load the one-pixel wide row of default normal data into adjacent row.
+		// Load the one-texel wide row of default normal data into adjacent row.
 		GLTextureUtils::load_image_into_texture_2D(
 				renderer,
 				target_texture,
 				d_tile_edge_working_space.get(),
 				GL_RGBA,
 				GL_FLOAT,
-				texel_width,
+				texels_in_last_row/*image_width*/,
 				1/*image_height*/,
 				0/*texel_u_offset*/,
 				texel_height/*texel_v_offset*/);
