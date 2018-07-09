@@ -135,13 +135,13 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_advanced_check
 	{
 		case Qt::Unchecked:
 			populate_lat_lon_extents_spinboxes(
-					d_georeferencing->lat_lon_extents(d_raster_width, d_raster_height));
+					d_georeferencing->get_lat_lon_extents(d_raster_width, d_raster_height));
 			main_stackedwidget->setCurrentIndex(0);
 			break;
 
 		case Qt::Checked:
 			populate_affine_transform_spinboxes(
-					d_georeferencing->parameters());
+					d_georeferencing->get_parameters());
 			main_stackedwidget->setCurrentIndex(1);
 			break;
 	}
@@ -194,7 +194,7 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_affine_transfo
 
 		// Read it back into the spinboxes (there's no guarantee that what we put in
 		// is what we get back out).
-		populate_affine_transform_spinboxes(d_georeferencing->parameters());
+		populate_affine_transform_spinboxes(d_georeferencing->get_parameters());
 	}
 }
 
@@ -214,12 +214,12 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::refresh()
 	if (main_stackedwidget->currentIndex() == 0 /* lat-lon extents page */)
 	{
 		populate_lat_lon_extents_spinboxes(
-				d_georeferencing->lat_lon_extents(d_raster_width, d_raster_height));
+				d_georeferencing->get_lat_lon_extents(d_raster_width, d_raster_height));
 	}
 	else
 	{
 		populate_affine_transform_spinboxes(
-				d_georeferencing->parameters());
+				d_georeferencing->get_parameters());
 	}
 }
 

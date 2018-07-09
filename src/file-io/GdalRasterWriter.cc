@@ -575,7 +575,7 @@ GPlatesFileIO::GDALRasterWriter::set_georeferencing(
 	double affine_geo_transform[6];
 
 	// Extract the affine transform parameters.
-	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->parameters();
+	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->get_parameters();
 	for (unsigned int i = 0; i != GPlatesPropertyValues::Georeferencing::parameters_type::NUM_COMPONENTS; ++i)
 	{
 		affine_geo_transform[i] = geo_parameters.components[i];

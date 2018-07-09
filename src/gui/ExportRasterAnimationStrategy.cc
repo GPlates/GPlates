@@ -816,8 +816,10 @@ namespace
 		// Set the exported raster's georeferencing.
 		// This will get ignored by those colour file formats that do not support georeferencing.
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
-				GPlatesPropertyValues::Georeferencing::create();
-		georeferencing->set_lat_lon_extents(lat_lon_extents, export_raster_width, export_raster_height);
+				GPlatesPropertyValues::Georeferencing::create(
+						lat_lon_extents,
+						export_raster_width,
+						export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
 
 		// Set the exported raster's spatial reference system.
@@ -1054,8 +1056,10 @@ namespace
 
 		// Set the exported raster's georeferencing.
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
-				GPlatesPropertyValues::Georeferencing::create();
-		georeferencing->set_lat_lon_extents(lat_lon_extents, export_raster_width, export_raster_height);
+				GPlatesPropertyValues::Georeferencing::create(
+						lat_lon_extents,
+						export_raster_width,
+						export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
 
 		// Set the exported raster's spatial reference system.

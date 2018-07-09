@@ -393,7 +393,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::import_georeferencing_and_spatial_r
 			georeferencing = reader->get_georeferencing();
 	if (georeferencing)
 	{
-		d_georeferencing->set_parameters(georeferencing.get()->parameters());
+		d_georeferencing->set_parameters(georeferencing.get()->get_parameters());
 	}
 
 	// Get the spatial reference system.

@@ -2362,8 +2362,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 		boost::optional<double &> y_pixel_coord_clamped) const
 {
 	// Get the georeferencing parameters.
-	const GPlatesPropertyValues::Georeferencing::parameters_type &georef =
-			d_georeferencing->parameters();
+	const GPlatesPropertyValues::Georeferencing::parameters_type georef = d_georeferencing->get_parameters();
 
 	// Use the georeferencing information to convert from pixel/line coordinates to georeference
 	// coordinates in the raster's spatial reference system.
