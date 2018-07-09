@@ -56,21 +56,15 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * A raster source that converts a floating-point raster into a normal map for surface lighting.
+	 * A raster source that converts a floating-point raster into a tangent-space normal map for surface lighting.
 	 *
 	 * The input floating-point raster is treated like a height field but can be any scalar field,
 	 * such as gravity, that the user desires to view as if it was a height field.
 	 *
-	 * The texture format of the normals is 32-bit floating-point with the red channel containing the
-	 * x-component of the surface normal and the green channel containing the y-component.
-	 * 
-	 *
-	 * NOTE: The 'GL_ARB_texture_float' extension is required (along with GL_ARB_vertex_shader and
-	 * GL_ARB_fragment_shader) in which case the texture format is 'GL_RGBA32F_ARB'
-	 * (note that RGB could have been used but hardware typically still takes up four channels anyway).
-	 * However if the 'GL_ARB_texture_rg' extension is also supported then the 'GL_RG32F' texture
-	 * format is used instead to reduce memory usage (by a half).
-	 * In either case the red and green channels are used and any extra channels are ignored.
+	 * The texture format of the normals is 8-bit fixed-point RGBA with the red and green channels
+	 * containing the x and y components of the tangent-space surface normal
+	 * (converted from [-1.0, 1.0] to [0, 255]) and the blue channel containing the positive z-component
+	 * (converted from [0.0, 1.0] to [0, 255]).
 	 */
 	class GLNormalMapSource :
 			public GLMultiResolutionRasterSource
@@ -86,8 +80,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns true if @a GLNormalMapSource is supported on the runtime system.
 		 *
-		 * The runtime system requires the OpenGL extension 'GL_ARB_texture_float' and
-		 * vertex/fragment shader programs (GL_ARB_vertex_shader and GL_ARB_fragment_shader).
+		 * The runtime system requires vertex/fragment shader programs
+		 * (GL_ARB_vertex_shader and GL_ARB_fragment_shader).
 		 */
 		static
 		bool

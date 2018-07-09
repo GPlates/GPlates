@@ -36,6 +36,7 @@
 
 #include "GLNormalMapSource.h"
 
+#include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
@@ -804,47 +805,105 @@ GPlatesOpenGL::GLNormalMapSource::cpu_convert_height_field_to_normal_map(
 	// If the region does not occupy the entire tile then it means we've reached the right edge
 	// of the raster - we set the last column of texels to the default normal to ensure
 	// reasonable values if it happens to get sampled due to numerical precision.
-	if (normal_map_texel_width < d_tile_texel_dimension)
+	// Normally, for a full tile, the OpenGL clamp-to-edge filter will ensure the texture border colour
+	// is not used - however for partially filled textures we need to specify adjacent texels to
+	// achieve the same effect otherwise numerical precision in the graphics hardware and
+	// nearest neighbour filtering could sample a garbage texel.
+	if (normal_map_texel_width < d_tile_texel_dimension ||
+		normal_map_texel_height < d_tile_texel_dimension)
 	{
-		GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
-		for (unsigned int y = 0; y < normal_map_texel_height; ++y)
+		unsigned int fill_size = 1;
+
+		// Fixed-point textures can use anisotropic filtering that can have a filter width
+		// greater than one (even for nearest neighbour filtering). And so we need to extend
+		// the fill region according to the maximum anisotropy.
+		const GLCapabilities &capabilities = renderer.get_capabilities();
+		if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 		{
-			*working_space++ = default_normal;
+			fill_size = static_cast<unsigned int>(
+					// The '1 - 1e-4' rounds up to the next integer...
+					capabilities.texture.gl_texture_max_anisotropy + 1 - 1e-4);
 		}
 
-		// Load the one-pixel wide column of default normal data into adjacent column.
-		GLTextureUtils::load_image_into_texture_2D(
-				renderer,
-				target_texture,
-				d_tile_normal_data_working_space.get(),
-				GL_RGBA,
-				GL_UNSIGNED_BYTE,
-				1/*image_width*/,
-				normal_map_texel_height,
-				normal_map_texel_width/*texel_u_offset*/);
-	}
-
-	// Same applies if we've reached the bottom edge of raster (where the raster height is not an
-	// integer multiple of the tile texel dimension).
-	if (normal_map_texel_height < d_tile_texel_dimension)
-	{
-		GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
-		for (unsigned int y = 0; y < normal_map_texel_width; ++y)
+		// Fill an extra 'fill_size' columns.
+		unsigned int padded_normal_map_texel_width = normal_map_texel_width + fill_size;
+		if (padded_normal_map_texel_width > d_tile_texel_dimension)
 		{
-			*working_space++ = default_normal;
+			padded_normal_map_texel_width = d_tile_texel_dimension;
 		}
 
-		// Load the one-pixel wide row of default normal data into adjacent row.
-		GLTextureUtils::load_image_into_texture_2D(
-				renderer,
-				target_texture,
-				d_tile_normal_data_working_space.get(),
-				GL_RGBA,
-				GL_UNSIGNED_BYTE,
-				normal_map_texel_width,
-				1/*image_height*/,
-				0/*texel_u_offset*/,
-				normal_map_texel_height/*texel_v_offset*/);
+		// See if we've reached the right edge of raster (and the raster width is not an
+		// integer multiple of the tile texel dimension).
+		if (normal_map_texel_width < padded_normal_map_texel_width)
+		{
+			GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
+			for (unsigned int y = 0; y < normal_map_texel_height; ++y)
+			{
+				*working_space++ = default_normal;
+			}
+
+			for (unsigned int texel_u_offset = normal_map_texel_width;
+				texel_u_offset < padded_normal_map_texel_width;
+				++texel_u_offset)
+			{
+				// Load the one-texel wide column of default normal data into column 'texel_u_offset'.
+				GLTextureUtils::load_image_into_texture_2D(
+						renderer,
+						target_texture,
+						d_tile_normal_data_working_space.get(),
+						GL_RGBA,
+						GL_UNSIGNED_BYTE,
+						1/*image_width*/,
+						normal_map_texel_height/*image_height*/,
+						texel_u_offset);
+			}
+		}
+
+		// Fill an extra 'fill_size' rows.
+		unsigned int padded_normal_map_texel_height = normal_map_texel_height + fill_size;
+		if (padded_normal_map_texel_height > d_tile_texel_dimension)
+		{
+			padded_normal_map_texel_height = d_tile_texel_dimension;
+		}
+
+		// See if we've reached the bottom edge of raster (and the raster height is not an
+		// integer multiple of the tile texel dimension).
+		if (normal_map_texel_height < padded_normal_map_texel_height)
+		{
+			GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
+			unsigned int x = 0;
+			for ( ; x < normal_map_texel_width; ++x)
+			{
+				*working_space++ = default_normal;
+			}
+			// Also fill the empty texels where:
+			//
+			//   normal_map_texel_width  <= x < padded_normal_map_texel_width
+			//   normal_map_texel_height <= y < padded_normal_map_texel_height
+			//
+			// ...this will ultimately fill that entire region.
+			for ( ; x < padded_normal_map_texel_width; ++x)
+			{
+				*working_space++ = default_normal;
+			}
+
+			for (unsigned int texel_v_offset = normal_map_texel_height;
+				texel_v_offset < padded_normal_map_texel_height;
+				++texel_v_offset)
+			{
+				// Load the one-texel wide row of default normal data into row 'texel_v_offset'.
+				GLTextureUtils::load_image_into_texture_2D(
+						renderer,
+						target_texture,
+						d_tile_normal_data_working_space.get(),
+						GL_RGBA,
+						GL_UNSIGNED_BYTE,
+						padded_normal_map_texel_width/*image_width*/,
+						1/*image_height*/,
+						0/*texel_u_offset*/,
+						texel_v_offset);
+			}
+		}
 	}
 }
 
