@@ -242,8 +242,8 @@ GPlatesFileIO::GpmlFeatureReader::read_feature(
 GPlatesFileIO::GpmlAnyPropertyFeatureReader::GpmlAnyPropertyFeatureReader(
 		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
 		const property_reader_seq_type &all_property_readers) :
-	d_feature_reader(feature_reader),
-	d_all_property_readers(all_property_readers)
+	d_all_property_readers(all_property_readers),
+	d_feature_reader(feature_reader)
 {
 }
 
