@@ -176,19 +176,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Creates an affine transform that maps a raster to the entire globe.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then the global extents ([-90,90] and [-180,180])
 		 * are assumed to bound the pixel *centres* (not *boxes*) - in other words the border pixels have their
@@ -207,8 +209,8 @@ namespace GPlatesPropertyValues
 				bool convert_from_grid_line_registration = false)
 		{
 			return new Georeferencing(
-					convert_lat_lon_extents_to_parameters(
-							GLOBAL_EXTENTS,
+					convert_to_pixel_registration(
+							GLOBAL_LAT_LON_EXTENTS,
 							raster_width,
 							raster_height,
 							convert_from_grid_line_registration));
@@ -217,19 +219,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Creates an affine transform that maps a raster to the specified lat-lon extents.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then @a lat_lon_extents are assumed to bound the
 		 * pixel *centres* (not *boxes*) - in other words the border pixels have their *centres* lying
@@ -254,7 +258,7 @@ namespace GPlatesPropertyValues
 				bool convert_from_grid_line_registration = false)
 		{
 			return new Georeferencing(
-					convert_lat_lon_extents_to_parameters(
+					convert_to_pixel_registration(
 							lat_lon_extents,
 							raster_width,
 							raster_height,
@@ -264,19 +268,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Creates an affine transform with the specified @a parameters.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then @a parameters are assumed to bound the
 		 * pixel *centres* (not *boxes*) - in other words the border pixels have their *centres* lying
@@ -289,7 +295,9 @@ namespace GPlatesPropertyValues
 				bool convert_from_grid_line_registration = false)
 		{
 			return new Georeferencing(
-					convert_to_parameters(parameters, convert_from_grid_line_registration));
+					convert_to_pixel_registration(
+							parameters,
+							convert_from_grid_line_registration));
 		}
 
 		/**
@@ -306,19 +314,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Sets the affine transform parameters.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then @a parameters are assumed to bound the
 		 * pixel *centres* (not *boxes*) - in other words the border pixels have their *centres* lying
@@ -329,7 +339,9 @@ namespace GPlatesPropertyValues
 				const parameters_type &parameters,
 				bool convert_from_grid_line_registration = false)
 		{
-			d_parameters = convert_to_parameters(parameters, convert_from_grid_line_registration);
+			d_parameters = convert_to_pixel_registration(
+					parameters,
+					convert_from_grid_line_registration);
 		}
 
 		/**
@@ -357,19 +369,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Sets the affine transform parameters using lat-lon extents.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then @a extents are assumed to bound the
 		 * pixel *centres* (not *boxes*) - in other words the border pixels have their *centres* lying
@@ -392,7 +406,7 @@ namespace GPlatesPropertyValues
 				unsigned int raster_height,
 				bool convert_from_grid_line_registration = false)
 		{
-			d_parameters = convert_lat_lon_extents_to_parameters(
+			d_parameters = convert_to_pixel_registration(
 					lat_lon_extents,
 					raster_width,
 					raster_height,
@@ -402,19 +416,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Resets the affine transform so that the raster covers the entire globe.
 		 *
-		 * Grid registration uses an extra row and column of pixels (data points) since data points are
-		 * *on* the grid lines instead of at the centre of grid cells (area between grid lines).
-		 * For example...
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
-		 *   |+|+|    | | |
-		 *   -----    +-+-+
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * The left is pixel registration with 2x2 data points.
-		 * The right is grid line registration with 3x3 data points.
+		 * On the left is grid line registration.
+		 * On the right is pixel registration.
+		 * Both registrations have 3x3 data points.
 		 *
 		 * If @a convert_from_grid_line_registration is true then the global extents ([-90,90] and [-180,180])
 		 * are assumed to bound the pixel *centres* (not *boxes*) - in other words the border pixels have their
@@ -431,8 +447,8 @@ namespace GPlatesPropertyValues
 				unsigned int raster_height,
 				bool convert_from_grid_line_registration = false)
 		{
-			d_parameters = convert_lat_lon_extents_to_parameters(
-					GLOBAL_EXTENTS,
+			d_parameters = convert_to_pixel_registration(
+					GLOBAL_LAT_LON_EXTENTS,
 					raster_width,
 					raster_height,
 					convert_from_grid_line_registration);
@@ -441,19 +457,22 @@ namespace GPlatesPropertyValues
 	private:
 
 		//! Global lat-lon extents (latitude range [-90, 90] and longitude range [-180, 180]).
-		static const lat_lon_extents_type GLOBAL_EXTENTS;
+		static const lat_lon_extents_type GLOBAL_LAT_LON_EXTENTS;
 
-		//! Convert parameters from grid line registration if requested, otherwise simply returns parameters.
+		//! Convert parameters to pixel registration (if @a convert_from_grid_line_registration is true),
+		//! otherwise simply returns parameters.
 		static
 		parameters_type
-		convert_to_parameters(
+		convert_to_pixel_registration(
 				parameters_type parameters,
 				bool convert_from_grid_line_registration);
 
-		//! Convert lat-lon extents to georeferencing parameters.
+		/**
+		 * Convert lat-lon extents (as pixel or grid line registration) to pixel registration parameters.
+		 */
 		static
 		parameters_type
-		convert_lat_lon_extents_to_parameters(
+		convert_to_pixel_registration(
 				const lat_lon_extents_type &lat_lon_extents,
 				unsigned int raster_width,
 				unsigned int raster_height,
