@@ -32,6 +32,8 @@
 
 #include "EditAffineTransformGeoreferencingWidgetUi.h"
 
+#include "InformationDialog.h"
+
 #include "property-values/Georeferencing.h"
 
 
@@ -109,6 +111,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
 		unsigned int d_raster_width, d_raster_height;
+
+		GPlatesQtWidgets::InformationDialog *d_help_grid_line_registration_dialog;
 	};
 }
 

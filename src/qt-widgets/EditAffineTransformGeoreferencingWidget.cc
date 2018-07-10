@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QObject>
+
 #include "EditAffineTransformGeoreferencingWidget.h"
 
 #include "maths/MathsUtils.h"
@@ -32,6 +34,38 @@
 
 namespace
 {
+	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TITLE =
+			QObject::tr("Time to start topology reconstruction from");
+	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Grid line registration involves placing the pixel <b>centres</b> of border pixels at the "
+			"georeferencing extents. The default is pixel registration which places the pixel <b>area</b> "
+			"boundaries of border pixels at the georeferencing extents, and hence the centres of "
+			"border pixels are essentially moved inside the georeferencing extents by half a pixel.</p>"
+			"<p>This applies to both the simpler lat-lon extents and the more general affine transform:</p>"
+			"<ul>"
+			"<li><b>Lat-lon extents</b>: The top latitude and left longitude refer to the top-left pixel "
+			"<i>centre</i> for grid line registration and top-left <i>corner</i> of top-left pixel for pixel registration. "
+			"Additionally the bottom latitude and right longitude refer to the bottom-right pixel <i>centre</i> for "
+			"grid line registration and bottom-right <i>corner</i> of bottom-right pixel for pixel registration. "
+			"Also note that the top latitude can be less than the bottom latitude (raster is flipped vertically), "
+			"and the right longitude can be less than the left longitude (raster is flipped horizontally).</li>"
+			"<li><b>Affine transform</b>: The top-left x and y coordinates refer to the top-left pixel "
+			"<i>centre</i> for grid line registration and top-left <i>corner</i> of top-left pixel for pixel registration. "
+			"The remaining affine parameters determine the bottom-right pixel <i>centre</i> for grid line registration and "
+			"bottom-right <i>corner</i> of bottom-right pixel for pixel registration. For example, if the raster width and height "
+			"are W and H pixels then the latitude of the bottom-right pixel <i>centre</i> for grid line registration is "
+			"<i>top_left_y_coordinate + (W - 1) * y_component_of_pixel_width + (H - 1) * y_component_of_pixel_height</i>, and "
+			"the bottom-right <i>corner</i> of bottom-right pixel for pixel registration is "
+			"<i>top_left_y_coordinate + W * y_component_of_pixel_width + H * y_component_of_pixel_height</i>, "
+			"noting that pixel registration has one extra pixel increment compared to grid line registration due to "
+			"extents covering pixel areas instead of pixel centres.</li>"
+			"</ul>"
+			"<p>Note that it helps to think of top/bottom/left/right as references to the raster image <i>before</i> it is "
+			"georeferenced onto the globe since georeferencing can scale and invert the image, and skew in the case of an "
+			"affine transform.</p>"
+			"</body></html>\n");
+
 	bool
 	any_changed(
 			QDoubleSpinBox **spinboxes,
@@ -58,7 +92,12 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::EditAffineTransformGe
 	QWidget(parent_),
 	d_georeferencing(georeferencing),
 	d_raster_width(0),
-	d_raster_height(0)
+	d_raster_height(0),
+	d_help_grid_line_registration_dialog(
+			new InformationDialog(
+					HELP_GRID_LINE_REGISTRATION_DIALOG_TEXT,
+					HELP_GRID_LINE_REGISTRATION_DIALOG_TITLE,
+					this))
 {
 	setupUi(this);
 
@@ -92,6 +131,10 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::EditAffineTransformGe
 void
 GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::make_signal_slot_connections()
 {
+	QObject::connect(
+			push_button_help_grid_line_registration, SIGNAL(clicked()),
+			d_help_grid_line_registration_dialog, SLOT(show()));
+
 	QObject::connect(
 			advanced_checkbox,
 			SIGNAL(stateChanged(int)),
