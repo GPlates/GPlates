@@ -303,9 +303,24 @@ namespace GPlatesPropertyValues
 		/**
 		 * Retrieves the affine transform parameters.
 		 *
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
+		 *
+		 *   -------------             
+		 *   | + | + | + |    +---+---+
+		 *   -------------    |   |   |
+		 *   | + | + | + |    +---+---+
+		 *   -------------    |   |   |
+		 *   | + | + | + |    +---+---+
+		 *   -------------             
+		 *
+		 * ...the '+' symbols are data points.
+		 * On the left is the pixel registration returned (if @a convert_to_grid_line_registration is false).
+		 * On the right is the grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 *
 		 * If @a convert_to_grid_line_registration is true then the returned parameters will
 		 * bound the pixel *centres*, otherwise will bound the pixel *boxes*.
-		 * Note that this class always stores georeferencing that bounds pixel *boxes*.
+		 * Note that this class always internally stores georeferencing that bounds pixel *boxes*.
 		 */
 		parameters_type
 		get_parameters(
@@ -354,9 +369,24 @@ namespace GPlatesPropertyValues
 		 *    Pixel *centres* of used (instead of pixel *boxes*) because, for example, grid line
 		 *    registered rasters with global extents have pixel centres at -90 and 90.
 		 *
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
+		 *
+		 *   -------------             
+		 *   | + | + | + |    +---+---+
+		 *   -------------    |   |   |
+		 *   | + | + | + |    +---+---+
+		 *   -------------    |   |   |
+		 *   | + | + | + |    +---+---+
+		 *   -------------             
+		 *
+		 * ...the '+' symbols are data points.
+		 * On the left is the pixel registration returned (if @a convert_to_grid_line_registration is false).
+		 * On the right is the grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 *
 		 * If @a convert_to_grid_line_registration is true then the returned lat-lon extents will
 		 * bound the pixel *centres*, otherwise will bound the pixel *boxes*.
-		 * Note that this class always stores georeferencing that bounds pixel *boxes*.
+		 * Note that this class always internally stores georeferencing that bounds pixel *boxes*.
 		 *
 		 * Where it is not possible to produce lat-lon extents, boost::none is returned.
 		 */

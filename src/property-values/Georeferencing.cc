@@ -57,24 +57,26 @@ GPlatesPropertyValues::Georeferencing::convert_to_pixel_registration(
 		parameters_type parameters,
 		bool convert_from_grid_line_registration)
 {
-	// Grid registration places data points *on* the grid lines instead of at the centre of
-	// grid cells (area between grid lines). For example...
-	//
-	//   +--+--+  -------
-	//   |  |  |  |+|+|+|
-	//   |  |  |  -------
-	//   +--+--+  |+|+|+|
-	//   |  |  |  -------
-	//   |  |  |  |+|+|+|
-	//   +--+--+  -------
-	//
-	// ...the '+' symbols are data points.
-	// On the left is grid line registration.
-	// On the right is pixel registration.
-	// Both registrations have 3x3 data points.
-	//
 	if (convert_from_grid_line_registration)
 	{
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//                -------------
+		//   +---+---+    | + | + | + |
+		//   |   |   |    -------------
+		//   +---+---+    | + | + | + |
+		//   |   |   |    -------------
+		//   +---+---+    | + | + | + |
+		//                -------------
+		//
+		// ...the '+' symbols are data points.
+		// On the left is the grid line registration we are converting from.
+		// On the right is the pixel registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+
 		// The top-left coordinate stored in this class is always that of the pixel *box* (not centre).
 		// So we have to adjust since the coordinates are currently referring to the pixel *centre*.
 		// We do this by substituting pixel coordinates (-0.5, -0.5) into the georeferencing equation:
@@ -135,6 +137,19 @@ GPlatesPropertyValues::Georeferencing::convert_to_pixel_registration(
 		//   E_p = E_g
 		//
 	}
+	//
+	// Else the input data is already in pixel registration...
+	//
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//
+	// ...the '+' symbols are data points.
+	//
 
 	return parameters;
 }
@@ -152,24 +167,26 @@ GPlatesPropertyValues::Georeferencing::convert_to_pixel_registration(
 	double x_component_of_pixel_width;
 	double y_component_of_pixel_height;
 
-	// Grid registration places data points *on* the grid lines instead of at the centre of
-	// grid cells (area between grid lines). For example...
-	//
-	//   +--+--+  -------
-	//   |  |  |  |+|+|+|
-	//   |  |  |  -------
-	//   +--+--+  |+|+|+|
-	//   |  |  |  -------
-	//   |  |  |  |+|+|+|
-	//   +--+--+  -------
-	//
-	// ...the '+' symbols are data points.
-	// On the left is grid line registration.
-	// On the right is pixel registration.
-	// Both registrations have 3x3 data points.
-	//
 	if (convert_from_grid_line_registration)
 	{
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//                -------------
+		//   +---+---+    | + | + | + |
+		//   |   |   |    -------------
+		//   +---+---+    | + | + | + |
+		//   |   |   |    -------------
+		//   +---+---+    | + | + | + |
+		//                -------------
+		//
+		// ...the '+' symbols are data points.
+		// On the left is the grid line registration we are converting from.
+		// On the right is the pixel registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				raster_width > 1 && raster_height > 1,
 				GPLATES_ASSERTION_SOURCE);
@@ -192,12 +209,31 @@ GPlatesPropertyValues::Georeferencing::convert_to_pixel_registration(
 	}
 	else
 	{
+		//
+		// Input data is already in pixel registration...
+		//
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//
+		// ...the '+' symbols are data points.
+		//
+
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				raster_width > 0 && raster_height > 0,
 				GPLATES_ASSERTION_SOURCE);
 
+		// We divide by raster width (and raster height) since this is the spacing in pixels across
+		// the pixel *boxes* from left to right (and top to bottom).
 		x_component_of_pixel_width = (lat_lon_extents.right - lat_lon_extents.left) / raster_width;
 		y_component_of_pixel_height = (lat_lon_extents.bottom - lat_lon_extents.top) / raster_height;
+
+		// The top-left coordinate stored in this class is always that of the pixel *box* (not centre).
+		// The coordinates are already referring to the pixel *box* so we don't need to make any adjustments.
 		top_left_x_coordinate = lat_lon_extents.left;
 		top_left_y_coordinate = lat_lon_extents.top;
 	}
@@ -223,6 +259,24 @@ GPlatesPropertyValues::Georeferencing::get_parameters(
 
 	if (convert_to_grid_line_registration)
 	{
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//   -------------             
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------             
+		//
+		// ...the '+' symbols are data points.
+		// On the left is the pixel registration we are converting from.
+		// On the right is the grid line registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+
 		// The boundary of the pixel *boxes* (not pixel *centres*).
 		// We store georeferencing (as does GDAL) with the boundary around the pixel *boxes* (not pixel *centres*).
 		// So the boundary of the pixel *centres* need to be adjusted inward by half a pixel.
@@ -245,6 +299,19 @@ GPlatesPropertyValues::Georeferencing::get_parameters(
 		// See 'convert_to_pixel_registration()' for a mathematical proof.
 		//
 	}
+	//
+	// Else the input data is already in pixel registration...
+	//
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//   | + | + | + |
+	//   -------------
+	//
+	// ...the '+' symbols are data points.
+	//
 
 	return parameters;
 }
@@ -296,7 +363,25 @@ GPlatesPropertyValues::Georeferencing::get_lat_lon_extents(
 
 	if (convert_to_grid_line_registration)
 	{
-		// The top-left coordinate for grid line registration is that of the pixel *centre* (not box).
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//   -------------             
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------             
+		//
+		// ...the '+' symbols are data points.
+		// On the left is the pixel registration we are converting from.
+		// On the right is the grid line registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+
+		// The top-left and bottom-right coordinates for grid line registration are that of pixel *centres* (not boxes).
 		const lat_lon_extents_type result = {{{
 			top_pixel_centre,
 			bottom_pixel_centre,
@@ -308,7 +393,21 @@ GPlatesPropertyValues::Georeferencing::get_lat_lon_extents(
 	}
 	else
 	{
-		// The top-left coordinate for pixel registration is that of the pixel *box* (not centre).
+		//
+		// Input data is already in pixel registration...
+		//
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//   | + | + | + |
+		//   -------------
+		//
+		// ...the '+' symbols are data points.
+		//
+
+		// The top-left and bottom-right coordinates for pixel registration are that of pixel *boxes* (not centres).
 		const lat_lon_extents_type result = {{{
 			top,
 			bottom,
