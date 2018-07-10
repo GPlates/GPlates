@@ -86,6 +86,52 @@ GPlatesPropertyValues::Georeferencing::convert_to_parameters(
 		parameters.top_left_y_coordinate -=
 				0.5 * parameters.y_component_of_pixel_width/*D*/ +
 				0.5 * parameters.y_component_of_pixel_height/*E*/;
+
+		//
+		// Note that we don't need to adjust the other parameters (components of pixel width and height)
+		// since the spacing between pixels does not change during the conversion.
+		//
+		// This can also be shown mathematically by equating the geographic coordinates at the
+		// centre of the top-left pixels (in pixel and grid line registrations), and likewise for
+		// the bottom-right pixels. Top-left and bottom-right pixel coordinates for grid line registration
+		// are (0,0) and (Nx-1,Ny-1) respectively, where Nx and Ny are raster width and height in number of pixels.
+		// And top-left and bottom-right pixel coordinates for pixel registration are (0.5,0.5) and (Nx-0.5,Ny-0.5)...
+		//
+		//   x_top_left_centre = 0.5 * A_p + 0.5 * B_p + C_p
+		//   y_top_left_centre = 0.5 * D_p + 0.5 * E_p + F_p
+		//
+		//   x_top_left_centre = 0.0 * A_g + 0.0 * B_g + C_g = C_g
+		//   y_top_left_centre = 0.0 * D_g + 0.0 * E_g + F_g = F_g
+		//
+		//   x_bottom_right_centre = (Nx - 0.5) * A_p + (Ny - 0.5) * B_p + C_p
+		//   y_bottom_right_centre = (Nx - 0.5) * D_p + (Ny - 0.5) * E_p + F_p
+		//
+		//   x_bottom_right_centre = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g + C_g
+		//   y_bottom_right_centre = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
+		//
+		// ...where '_p' refers to pixel registration and '_g' refers to grid line registration.
+		// Equating the top-left pixel centre coordinates results in:
+		// 
+		//   C_p = C_g - 0.5 * A_p - 0.5 * B_p
+		//   F_p = C_g - 0.5 * A_p - 0.5 * B_p
+		//
+		// ...which substituted into the equations for bottom-right pixel centre become:
+		// 
+		//   (Nx - 0.5) * A_p + (Ny - 0.5) * B_p + C_g - 0.5 * A_p - 0.5 * B_p = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g + C_g
+		//   (Nx - 0.5) * D_p + (Ny - 0.5) * E_p + C_g - 0.5 * A_p - 0.5 * B_p = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
+		// 
+		// ...which simplifies to:
+		// 
+		//   (Nx - 1.0) * A_p + (Ny - 1.0) * B_p + C_g = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g + C_g
+		//   (Nx - 1.0) * D_p + (Ny - 1.0) * E_p + C_g = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
+		// 
+		// ...which results in:
+		// 
+		//   A_p = A_g
+		//   B_p = B_g
+		//   D_p = D_g
+		//   E_p = E_g
+		//
 	}
 
 	return parameters;
@@ -184,6 +230,13 @@ GPlatesPropertyValues::Georeferencing::get_parameters(
 		parameters.top_left_y_coordinate +=
 				0.5 * parameters.y_component_of_pixel_width/*D*/ +
 				0.5 * parameters.y_component_of_pixel_height/*E*/;
+
+		//
+		// Note that we don't need to adjust the other parameters (components of pixel width and height)
+		// since the spacing between pixels does not change during the conversion.
+		//
+		// See 'convert_to_parameters()' for a mathematical proof.
+		//
 	}
 
 	return parameters;
