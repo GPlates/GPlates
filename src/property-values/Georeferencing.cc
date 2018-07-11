@@ -30,15 +30,15 @@
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
 
-#include "maths/Real.h"
 #include "maths/MathsUtils.h"
 
 
 namespace
 {
-	// Use 'Real' instead of 'double' to allow a numerical tolerance/epsilon during comparisons.
-	const GPlatesMaths::Real MIN_LATITUDE = -90.0;
-	const GPlatesMaths::Real MAX_LATITUDE = 90.0;
+	const double MIN_LATITUDE = -90.0;
+	const double MAX_LATITUDE = 90.0;
+	// Enough to account for transformations back and forth between grid line registration.
+	const double LATITUDE_EPISLON = 1e-4; // This is quite generous.
 }
 
 
@@ -352,11 +352,11 @@ GPlatesPropertyValues::Georeferencing::get_lat_lon_extents(
 	// Check that the boundary pixel *centres* are within acceptable latitude range [-90, 90].
 	// Note that the pixel *boxes* of the boundary pixels can be outside though.
 	//
-	// NOTE: These are epsilon comparisons using 'Real'.
-	if (top_pixel_centre > MAX_LATITUDE ||
-		top_pixel_centre < MIN_LATITUDE ||
-		bottom_pixel_centre > MAX_LATITUDE ||
-		bottom_pixel_centre < MIN_LATITUDE)
+	// NOTE: We use epsilon comparisons to account for transformations back and forth between grid line registration.
+	if (top_pixel_centre > MAX_LATITUDE + LATITUDE_EPISLON ||
+		top_pixel_centre < MIN_LATITUDE - LATITUDE_EPISLON ||
+		bottom_pixel_centre > MAX_LATITUDE + LATITUDE_EPISLON ||
+		bottom_pixel_centre < MIN_LATITUDE - LATITUDE_EPISLON)
 	{
 		return boost::none;
 	}
