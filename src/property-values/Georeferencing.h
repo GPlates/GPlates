@@ -306,17 +306,17 @@ namespace GPlatesPropertyValues
 		 * Grid registration places data points *on* the grid lines instead of at the centre of
 		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -------------             
-		 *   | + | + | + |    +---+---+
-		 *   -------------    |   |   |
-		 *   | + | + | + |    +---+---+
-		 *   -------------    |   |   |
-		 *   | + | + | + |    +---+---+
-		 *   -------------             
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * On the left is the pixel registration returned (if @a convert_to_grid_line_registration is false).
-		 * On the right is the grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 * On the left is the original grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 * On the right is the original pixel registration returned (if @a convert_to_grid_line_registration is false).
 		 *
 		 * If @a convert_to_grid_line_registration is true then the returned parameters will
 		 * bound the pixel *centres*, otherwise will bound the pixel *boxes*.
@@ -372,17 +372,17 @@ namespace GPlatesPropertyValues
 		 * Grid registration places data points *on* the grid lines instead of at the centre of
 		 * grid cells (area between grid lines). For example...
 		 *
-		 *   -------------             
-		 *   | + | + | + |    +---+---+
-		 *   -------------    |   |   |
-		 *   | + | + | + |    +---+---+
-		 *   -------------    |   |   |
-		 *   | + | + | + |    +---+---+
-		 *   -------------             
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
 		 *
 		 * ...the '+' symbols are data points.
-		 * On the left is the pixel registration returned (if @a convert_to_grid_line_registration is false).
-		 * On the right is the grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 * On the left is the original grid line registration returned (if @a convert_to_grid_line_registration is true).
+		 * On the right is the original pixel registration returned (if @a convert_to_grid_line_registration is false).
 		 *
 		 * If @a convert_to_grid_line_registration is true then the returned lat-lon extents will
 		 * bound the pixel *centres*, otherwise will bound the pixel *boxes*.
@@ -483,6 +483,68 @@ namespace GPlatesPropertyValues
 					raster_height,
 					convert_from_grid_line_registration);
 		}
+
+
+		/**
+		 * Contract from grid line registration to pixel registration.
+		 *
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
+		 *
+		 *   +--+--+  -------
+		 *   |  |  |  |+|+|+|
+		 *   |  |  |  -------
+		 *   +--+--+  |+|+|+|
+		 *   |  |  |  -------
+		 *   |  |  |  |+|+|+|
+		 *   +--+--+  -------
+		 *
+		 * ...the '+' symbols are data points.
+		 * On the left is grid line registration we are converting from.
+		 * On the right is pixel registration we are converting to.
+		 * Both registrations have 3x3 data points.
+		 *
+		 * This conversion moves the data points according to the above diagram.
+		 *
+		 * NOTE: This conversion differs from the usual conversions to/from the native pixel registration
+		 * used internally inside this class in that this conversion contracts the pixels (data node locations)
+		 * which are the '+' symbols in the above diagrams.
+		 */
+		void
+		contract_grid_line_to_pixel_registration(
+				unsigned int raster_width,
+				unsigned int raster_height);
+
+
+		/**
+		 * Expand from pixel registration to grid line registration.
+		 *
+		 * Grid registration places data points *on* the grid lines instead of at the centre of
+		 * grid cells (area between grid lines). For example...
+		 *
+		 *   -------  +--+--+
+		 *   |+|+|+|  |  |  |
+		 *   -------  |  |  |
+		 *   |+|+|+|  +--+--+
+		 *   -------  |  |  |
+		 *   |+|+|+|  |  |  |
+		 *   -------  +--+--+
+		 *
+		 * ...the '+' symbols are data points.
+		 * On the left is pixel registration we are converting from.
+		 * On the right is grid line registration we are converting to.
+		 * Both registrations have 3x3 data points.
+		 *
+		 * This conversion moves the data points according to the above diagram.
+		 *
+		 * NOTE: This conversion differs from the usual conversions to/from the native pixel registration
+		 * used internally inside this class in that this conversion expands the pixels (data node locations)
+		 * which are the '+' symbols in the above diagrams.
+		 */
+		void
+		expand_pixel_to_grid_line_registration(
+				unsigned int raster_width,
+				unsigned int raster_height);
 
 	private:
 

@@ -117,17 +117,17 @@ GPlatesPropertyValues::Georeferencing::convert_to_pixel_registration(
 		// Equating the top-left pixel centre coordinates results in:
 		// 
 		//   C_p = C_g - 0.5 * A_p - 0.5 * B_p
-		//   F_p = C_g - 0.5 * A_p - 0.5 * B_p
+		//   F_p = F_g - 0.5 * D_p - 0.5 * E_p
 		//
 		// ...which substituted into the equations for bottom-right pixel centre become:
 		// 
 		//   (Nx - 0.5) * A_p + (Ny - 0.5) * B_p + C_g - 0.5 * A_p - 0.5 * B_p = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g + C_g
-		//   (Nx - 0.5) * D_p + (Ny - 0.5) * E_p + C_g - 0.5 * A_p - 0.5 * B_p = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
+		//   (Nx - 0.5) * D_p + (Ny - 0.5) * E_p + F_g - 0.5 * D_p - 0.5 * E_p = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
 		// 
 		// ...which simplifies to:
 		// 
-		//   (Nx - 1.0) * A_p + (Ny - 1.0) * B_p + C_g = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g + C_g
-		//   (Nx - 1.0) * D_p + (Ny - 1.0) * E_p + C_g = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g + F_g
+		//   (Nx - 1.0) * A_p + (Ny - 1.0) * B_p = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g
+		//   (Nx - 1.0) * D_p + (Ny - 1.0) * E_p = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g
 		// 
 		// ...which results in:
 		// 
@@ -417,4 +417,186 @@ GPlatesPropertyValues::Georeferencing::get_lat_lon_extents(
 
 		return result;
 	}
+}
+
+
+void
+GPlatesPropertyValues::Georeferencing::contract_grid_line_to_pixel_registration(
+		unsigned int raster_width,
+		unsigned int raster_height)
+{
+	//
+	// Grid registration places data points *on* the grid lines instead of at the centre of
+	// grid cells (area between grid lines). For example...
+	//
+	//   +--+--+  -------
+	//   |  |  |  |+|+|+|
+	//   |  |  |  -------
+	//   +--+--+  |+|+|+|
+	//   |  |  |  -------
+	//   |  |  |  |+|+|+|
+	//   +--+--+  -------
+	//
+	// ...the '+' symbols are data points.
+	// On the left is grid line registration we are converting from.
+	// On the right is pixel registration we are converting to.
+	// Both registrations have 3x3 data points.
+	//
+	// NOTE: This conversion differs from the usual conversions to/from the native pixel registration
+	// used internally inside this class in that this conversion contracts the pixels (data node locations)
+	// which are the '+' symbols in the above diagrams.
+	//
+
+	//
+	// The conversion equation can be derived mathematically by equating the geographic coordinates
+	// at the centre of the top-left pixel (in grid line registration) with the top-left corner of the
+	// top-left pixel (in pixel registration), and likewise for the bottom-right pixels.
+	// Top-left and bottom-right coordinates for grid line registration are (0.5,0.5) and
+	// (Nx-0.5,Ny-0.5) respectively, where Nx and Ny are raster width and height in number of pixels.
+	// And top-left and bottom-right coordinates for pixel registration are (0.5,0.5) and (Nx,Ny)...
+	//
+	//   x_top_left = 0.0 * A_p + 0.0 * B_p + C_p = C_p
+	//   y_top_left = 0.0 * D_p + 0.0 * E_p + F_p = F_p
+	//
+	//   x_top_left = 0.5 * A_g + 0.5 * B_g + C_g
+	//   y_top_left = 0.5 * D_g + 0.5 * E_g + F_g
+	//
+	//   x_bottom_right = Nx * A_p + Ny * B_p + C_p
+	//   y_bottom_right = Nx * D_p + Ny * E_p + F_p
+	//
+	//   x_bottom_right = (Nx - 0.5) * A_g + (Ny - 0.5) * B_g + C_g
+	//   y_bottom_right = (Nx - 0.5) * D_g + (Ny - 0.5) * E_g + F_g
+	//
+	// ...where '_p' refers to pixel registration and '_g' refers to grid line registration.
+	// Equating the top-left pixel coordinates results in:
+	// 
+	//   C_p = C_g + 0.5 * A_g + 0.5 * B_g
+	//   F_p = F_g + 0.5 * D_g + 0.5 * E_g
+	//
+	// ...which substituted into the equations for bottom-right pixel coordinates become:
+	// 
+	//   Nx * A_p + Ny * B_p + C_g + 0.5 * A_g + 0.5 * B_g = (Nx - 0.5) * A_g + (Ny - 0.5) * B_g + C_g
+	//   Nx * D_p + Ny * E_p + F_g + 0.5 * D_g + 0.5 * E_g = (Nx - 0.5) * D_g + (Ny - 0.5) * E_g + F_g
+	// 
+	// ...which simplifies to:
+	// 
+	//   Nx * A_p + Ny * B_p = (Nx - 1.0) * A_g + (Ny - 1.0) * B_g
+	//   Nx * D_p + Ny * E_p = (Nx - 1.0) * D_g + (Ny - 1.0) * E_g
+	// 
+	// ...which results in:
+	// 
+	//   A_p = A_g * ((Nx - 1) / Nx)
+	//   B_p = B_g * ((Ny - 1) / Ny)
+	//   D_p = D_g * ((Nx - 1) / Nx)
+	//   E_p = E_g * ((Ny - 1) / Ny)
+	//
+
+	//
+	// The final conversion equations are:
+	//
+	//   C_p = C_g + 0.5 * A_g + 0.5 * B_g
+	//   F_p = F_g + 0.5 * D_g + 0.5 * E_g
+	//   A_p = A_g * ((Nx - 1) / Nx)
+	//   B_p = B_g * ((Ny - 1) / Ny)
+	//   D_p = D_g * ((Nx - 1) / Nx)
+	//   E_p = E_g * ((Ny - 1) / Ny)
+	//
+
+	// Copy current parameters.
+	parameters_type new_parameters = d_parameters;
+
+	new_parameters.top_left_x_coordinate = d_parameters.top_left_x_coordinate +
+			0.5 * d_parameters.x_component_of_pixel_width + 0.5 * d_parameters.x_component_of_pixel_height;
+	new_parameters.top_left_y_coordinate = d_parameters.top_left_y_coordinate +
+			0.5 * d_parameters.y_component_of_pixel_width + 0.5 * d_parameters.y_component_of_pixel_height;
+
+	new_parameters.x_component_of_pixel_width = d_parameters.x_component_of_pixel_width *
+			(raster_width - 1.0) / raster_width;
+	new_parameters.x_component_of_pixel_height = d_parameters.x_component_of_pixel_height *
+			(raster_height - 1.0) / raster_height;
+
+	new_parameters.y_component_of_pixel_width = d_parameters.y_component_of_pixel_width *
+			(raster_width - 1.0) / raster_width;
+	new_parameters.y_component_of_pixel_height = d_parameters.y_component_of_pixel_height *
+			(raster_height - 1.0) / raster_height;
+
+	// Overwrite current parameters with new parameters.
+	d_parameters = new_parameters;
+}
+
+
+void
+GPlatesPropertyValues::Georeferencing::expand_pixel_to_grid_line_registration(
+		unsigned int raster_width,
+		unsigned int raster_height)
+{
+	//
+	// Grid registration places data points *on* the grid lines instead of at the centre of
+	// grid cells (area between grid lines). For example...
+	//
+	//   -------  +--+--+
+	//   |+|+|+|  |  |  |
+	//   -------  |  |  |
+	//   |+|+|+|  +--+--+
+	//   -------  |  |  |
+	//   |+|+|+|  |  |  |
+	//   -------  +--+--+
+	//
+	// ...the '+' symbols are data points.
+	// On the left is pixel registration we are converting from.
+	// On the right is grid line registration we are converting to.
+	// Both registrations have 3x3 data points.
+	//
+	// NOTE: This conversion differs from the usual conversions to/from the native pixel registration
+	// used internally inside this class in that this conversion expands the pixels (data node locations)
+	// which are the '+' symbols in the above diagrams.
+	//
+
+	//
+	// The conversion equation is the inverse of the equation using in 'contract_grid_line_to_pixel_registration()'...
+	// 
+	//   C_p = C_g + 0.5 * A_g + 0.5 * B_g
+	//   F_p = F_g + 0.5 * D_g + 0.5 * E_g
+	//   A_p = A_g * ((Nx - 1) / Nx)
+	//   B_p = B_g * ((Ny - 1) / Ny)
+	//   D_p = D_g * ((Nx - 1) / Nx)
+	//   E_p = E_g * ((Ny - 1) / Ny)
+	//
+	// ...where the inverse is...
+	// 
+	//   A_g = A_p * (Nx / (Nx - 1))
+	//   B_g = B_p * (Ny / (Ny - 1))
+	//   D_g = D_p * (Nx / (Nx - 1))
+	//   E_g = E_p * (Ny / (Ny - 1))
+	//   C_g = C_p - 0.5 * A_g - 0.5 * B_g
+	//   F_g = F_p - 0.5 * D_g - 0.5 * E_g
+	//
+	// ...noting that C_g and F_g use the '_g' values of A, B, D and E which need to be
+	// calculated first.
+	//
+
+	// Copy current parameters.
+	parameters_type new_parameters = d_parameters;
+
+	new_parameters.x_component_of_pixel_width = d_parameters.x_component_of_pixel_width *
+			raster_width / (raster_width - 1.0);
+	new_parameters.x_component_of_pixel_height = d_parameters.x_component_of_pixel_height *
+			raster_height / (raster_height - 1.0);
+
+	new_parameters.y_component_of_pixel_width = d_parameters.y_component_of_pixel_width *
+			raster_width / (raster_width - 1.0);
+	new_parameters.y_component_of_pixel_height = d_parameters.y_component_of_pixel_height *
+			raster_height / (raster_height - 1.0);
+
+	//
+	// NOTE: C_g and F_g use the '_g' values of A, B, D and E (that we calculated above) and
+	//       hence use 'new_parameters' below instead of 'd_parameters' below for A, B, D and E.
+	//
+	new_parameters.top_left_x_coordinate = d_parameters.top_left_x_coordinate -
+			0.5 * new_parameters.x_component_of_pixel_width - 0.5 * new_parameters.x_component_of_pixel_height;
+	new_parameters.top_left_y_coordinate = d_parameters.top_left_y_coordinate -
+			0.5 * new_parameters.y_component_of_pixel_width - 0.5 * new_parameters.y_component_of_pixel_height;
+
+	// Overwrite current parameters with new parameters.
+	d_parameters = new_parameters;
 }
