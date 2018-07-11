@@ -136,10 +136,20 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::make_signal_slot_conn
 			d_help_grid_line_registration_dialog, SLOT(show()));
 
 	QObject::connect(
+			grid_line_registration_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_grid_line_registration_checkbox_state_changed(int)));
+
+	QObject::connect(
 			advanced_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
 			SLOT(handle_advanced_checkbox_state_changed(int)));
+
+	QObject::connect(
+			use_global_extents_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_global_extents_button_clicked()));
 
 	// Extents spinboxes.
 	for (unsigned int i = 0; i != lat_lon_extents_type::NUM_COMPONENTS; ++i)
@@ -160,13 +170,87 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::make_signal_slot_conn
 				this,
 				SLOT(update_affine_transform_if_necessary()));
 	}
+}
 
-	// Buttons.
-	QObject::connect(
-			use_global_extents_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_use_global_extents_button_clicked()));
+
+void
+GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::reset(
+		unsigned int raster_width,
+		unsigned int raster_height)
+{
+	d_raster_width = raster_width;
+	d_raster_height = raster_height;
+
+	// Reset to global extents (optionally using grid line registration).
+	d_georeferencing->reset_to_global_extents(
+			d_raster_width,
+			d_raster_height,
+			grid_line_registration_checkbox->isChecked());
+	Q_EMIT georeferencing_changed();
+	refresh_spinboxes();
+}
+
+
+void
+GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_grid_line_registration_checkbox_state_changed(
+		int /*state*/)
+{
+	//
+	// Expand/contract between grid line and pixel registrations.
+	//
+	// NOTE: These conversions differ from the conversions to/from the native pixel registration
+	// used internally inside class Georeferencing in that these conversions contract/expand the
+	// pixels (data node locations) which are the '+' symbols in the diagrams below.
+	//
+	if (grid_line_registration_checkbox->isChecked())
+	{
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//   -------  +--+--+
+		//   |+|+|+|  |  |  |
+		//   -------  |  |  |
+		//   |+|+|+|  +--+--+
+		//   -------  |  |  |
+		//   |+|+|+|  |  |  |
+		//   -------  +--+--+
+		//
+		// ...the '+' symbols are data points.
+		// On the left is pixel registration we are converting from.
+		// On the right is grid line registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+		// Note that the data point locations expand.
+		//
+		d_georeferencing->expand_pixel_to_grid_line_registration(d_raster_width, d_raster_height);
+	}
+	else
+	{
+		//
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//   +--+--+  -------
+		//   |  |  |  |+|+|+|
+		//   |  |  |  -------
+		//   +--+--+  |+|+|+|
+		//   |  |  |  -------
+		//   |  |  |  |+|+|+|
+		//   +--+--+  -------
+		//
+		// ...the '+' symbols are data points.
+		// On the left is grid line registration we are converting from.
+		// On the right is pixel registration we are converting to.
+		// Both registrations have 3x3 data points.
+		//
+		// Note that the data point locations contract.
+		//
+		d_georeferencing->contract_grid_line_to_pixel_registration(d_raster_width, d_raster_height);
+	}
+
+	Q_EMIT georeferencing_changed();
+	refresh_spinboxes();
 }
 
 
@@ -178,13 +262,17 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_advanced_check
 	{
 		case Qt::Unchecked:
 			populate_lat_lon_extents_spinboxes(
-					d_georeferencing->get_lat_lon_extents(d_raster_width, d_raster_height));
+					d_georeferencing->get_lat_lon_extents(
+							d_raster_width,
+							d_raster_height,
+							grid_line_registration_checkbox->isChecked()));
 			main_stackedwidget->setCurrentIndex(0);
 			break;
 
 		case Qt::Checked:
 			populate_affine_transform_spinboxes(
-					d_georeferencing->get_parameters());
+					d_georeferencing->get_parameters(
+							grid_line_registration_checkbox->isChecked()));
 			main_stackedwidget->setCurrentIndex(1);
 			break;
 	}
@@ -192,10 +280,20 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_advanced_check
 
 
 void
+GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_use_global_extents_button_clicked()
+{
+	d_georeferencing->reset_to_global_extents(
+			d_raster_width,
+			d_raster_height,
+			grid_line_registration_checkbox->isChecked());
+	Q_EMIT georeferencing_changed();
+	refresh_spinboxes();
+}
+
+
+void
 GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_extents_if_necessary()
 {
-	using namespace GPlatesPropertyValues;
-
 	if (any_changed(
 			d_extents_spinboxes,
 			d_last_known_extents_values,
@@ -210,9 +308,16 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_extents_if_nec
 		d_georeferencing->set_lat_lon_extents(
 				new_extents,
 				d_raster_width,
-				d_raster_height);
+				d_raster_height,
+				grid_line_registration_checkbox->isChecked());
 
 		Q_EMIT georeferencing_changed();
+
+		populate_lat_lon_extents_spinboxes(
+				d_georeferencing->get_lat_lon_extents(
+						d_raster_width,
+						d_raster_height,
+						grid_line_registration_checkbox->isChecked()));
 	}
 }
 
@@ -231,38 +336,37 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_affine_transfo
 		{
 			new_parameters.components[i] = d_affine_transform_spinboxes[i]->value();
 		}
-		d_georeferencing->set_parameters(new_parameters);
+		d_georeferencing->set_parameters(
+				new_parameters,
+				grid_line_registration_checkbox->isChecked());
 
 		Q_EMIT georeferencing_changed();
 
 		// Read it back into the spinboxes (there's no guarantee that what we put in
 		// is what we get back out).
-		populate_affine_transform_spinboxes(d_georeferencing->get_parameters());
+		populate_affine_transform_spinboxes(
+				d_georeferencing->get_parameters(
+						grid_line_registration_checkbox->isChecked()));
 	}
 }
 
 
 void
-GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_use_global_extents_button_clicked()
-{
-	d_georeferencing->reset_to_global_extents(d_raster_width, d_raster_height);
-	Q_EMIT georeferencing_changed();
-	refresh();
-}
-
-
-void
-GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::refresh()
+GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::refresh_spinboxes()
 {
 	if (main_stackedwidget->currentIndex() == 0 /* lat-lon extents page */)
 	{
 		populate_lat_lon_extents_spinboxes(
-				d_georeferencing->get_lat_lon_extents(d_raster_width, d_raster_height));
+				d_georeferencing->get_lat_lon_extents(
+						d_raster_width,
+						d_raster_height,
+						grid_line_registration_checkbox->isChecked()));
 	}
 	else
 	{
 		populate_affine_transform_spinboxes(
-				d_georeferencing->get_parameters());
+				d_georeferencing->get_parameters(
+						grid_line_registration_checkbox->isChecked()));
 	}
 }
 
