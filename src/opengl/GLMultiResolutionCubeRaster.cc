@@ -665,6 +665,21 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 				tile.d_src_raster_tiles,
 				source_cache_handle);
 		tile_cache_handle->push_back(source_cache_handle);
+
+#if 0	// Debug the tiles by writing them out to file...
+		QImage image(QSize(d_tile_texel_dimension, d_tile_texel_dimension), QImage::Format_ARGB32);
+		image.fill(QColor(0,0,0,0).rgba());
+
+		GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+				renderer,
+				image,
+				GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+				GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
+
+		static int count = 0;
+		++count;
+		image.save(QString("tile_image_") + QString::number(count) + ".png");
+#endif
 	}
 	while (render_target_scope.end_tile());
 
