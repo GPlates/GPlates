@@ -29,6 +29,7 @@
 #include "ExportRasterOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
+#include "InformationDialog.h"
 
 #include "gui/ExportRasterAnimationStrategy.h"
 
@@ -111,6 +112,8 @@ namespace GPlatesQtWidgets
 
 
 		GPlatesGui::ExportRasterAnimationStrategy::Configuration d_export_configuration;
+
+		GPlatesQtWidgets::InformationDialog *d_help_grid_line_registration_dialog;
 
 	};
 }

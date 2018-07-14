@@ -35,6 +35,22 @@
 
 namespace
 {
+	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TITLE =
+			QObject::tr("Time to start topology reconstruction from");
+	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>Grid line registration involves placing the pixel <b>centres</b> of border pixels on the "
+			"boundary of the exported region. The default is pixel registration which places the pixel <b>area</b> "
+			"boxes of border pixels within the boundary, and hence the centres of border pixels are "
+			"inside the exported region by half a pixel.</p>"
+			"<p>The top latitude and left longitude refer to the top-left pixel <i>centre</i> for <i>grid line</i> "
+			"registration and top-left <i>corner</i> of top-left pixel for <i>pixel</i> registration. "
+			"Additionally the bottom latitude and right longitude refer to the bottom-right pixel <i>centre</i> for "
+			"<i>grid line</i> registration and bottom-right <i>corner</i> of bottom-right pixel for <i>pixel</i> registration.</p>"
+			"<p>Also note that the top latitude can be less than the bottom latitude (raster is flipped vertically), "
+			"and the right longitude can be less than the left longitude (raster is flipped horizontally).</p>"
+			"</body></html>\n");
+
 	/**
 	 * Calculates the export raster dimensions from resolution and lat/lon extents.
 	 */
@@ -79,7 +95,13 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
 		const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &
 				export_configuration) :
 	ExportOptionsWidget(parent_),
-	d_export_configuration(*export_configuration)
+	d_export_configuration(*export_configuration),
+	d_help_grid_line_registration_dialog(
+			new InformationDialog(
+					HELP_GRID_LINE_REGISTRATION_DIALOG_TEXT,
+					HELP_GRID_LINE_REGISTRATION_DIALOG_TITLE,
+					// Seems needs to be parent instead of 'this' otherwise information dialog not centred properly..
+					parent_))
 {
 	setupUi(this);
 
@@ -131,6 +153,10 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::create_export_animation_strategy_co
 void
 GPlatesQtWidgets::ExportRasterOptionsWidget::make_signal_slot_connections()
 {
+	QObject::connect(
+			push_button_help_grid_line_registration, SIGNAL(clicked()),
+			d_help_grid_line_registration_dialog, SLOT(show()));
+
 	QObject::connect(
 			resolution_spin_box,
 			SIGNAL(valueChanged(double)),
