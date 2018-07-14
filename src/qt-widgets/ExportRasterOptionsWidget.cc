@@ -185,6 +185,10 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::make_signal_slot_connections()
 			SLOT(react_right_extents_spin_box_value_changed(double)));
 
 	QObject::connect(
+			grid_line_registration_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_grid_line_registration_checkbox_state_changed(int)));
+
+	QObject::connect(
 			use_global_extents_button,
 			SIGNAL(clicked()),
 			this,
@@ -318,6 +322,15 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_right_extents_spin_box_value_
 				this, SLOT(react_left_extents_spin_box_value_changed(double)));
 	}
 
+	update_raster_dimensions();
+}
+
+
+void
+GPlatesQtWidgets::ExportRasterOptionsWidget::handle_grid_line_registration_checkbox_state_changed(
+		int /*state*/)
+{
+	d_export_configuration.use_grid_line_registration = grid_line_registration_checkbox->isChecked();
 	update_raster_dimensions();
 }
 

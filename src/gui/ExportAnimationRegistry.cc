@@ -1233,6 +1233,7 @@ namespace GPlatesGui
 				-180/*left*/,
 				180/*right*/
 			}}};
+			const bool default_use_grid_line_registration = false;
 
 			// Determine which colour raster formats are supported.
 			const GPlatesFileIO::RasterWriter::supported_formats_type colour_raster_supported_formats =
@@ -1301,6 +1302,7 @@ namespace GPlatesGui
 										ExportRasterAnimationStrategy::Configuration::COLOUR,
 										default_raster_resolution_in_degrees,
 										default_raster_lat_lon_extents,
+										default_use_grid_line_registration,
 										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(
@@ -1333,6 +1335,7 @@ namespace GPlatesGui
 				-180/*left*/,
 				180/*right*/
 			}}};
+			const bool default_use_grid_line_registration = false;
 
 			// Determine which numerical raster formats are supported.
 			const GPlatesFileIO::RasterWriter::supported_formats_type numerical_raster_supported_formats =
@@ -1388,6 +1391,7 @@ namespace GPlatesGui
 										ExportRasterAnimationStrategy::Configuration::NUMERICAL,
 										default_raster_resolution_in_degrees,
 										default_raster_lat_lon_extents,
+										default_use_grid_line_registration,
 										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(

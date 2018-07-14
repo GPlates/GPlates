@@ -90,6 +90,10 @@ namespace GPlatesQtWidgets
 				double value);
 
 		void
+		handle_grid_line_registration_checkbox_state_changed(
+				int state);
+
+		void
 		react_use_global_extents_button_clicked();
 
 		void

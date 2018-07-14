@@ -83,11 +83,13 @@ namespace GPlatesGui
 					RasterType raster_type_,
 					const double &resolution_in_degrees_,
 					const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents_,
+					bool use_grid_line_registration_ = false,
 					boost::optional<bool> compress_ = boost::none) :
 				ConfigurationBase(filename_template_),
 				raster_type(raster_type_),
 				resolution_in_degrees(resolution_in_degrees_),
 				lat_lon_extents(lat_lon_extents_),
+				use_grid_line_registration(use_grid_line_registration_),
 				compress(compress_)
 			{  }
 
@@ -101,6 +103,7 @@ namespace GPlatesGui
 			RasterType raster_type;
 			double resolution_in_degrees;
 			GPlatesPropertyValues::Georeferencing::lat_lon_extents_type lat_lon_extents;
+			bool use_grid_line_registration;
 
 			/**
 			 * Whether to compress raster or not.
