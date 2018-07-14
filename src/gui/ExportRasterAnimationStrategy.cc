@@ -356,8 +356,8 @@ namespace
 	GPlatesGui::MapProjection::non_null_ptr_type
 	get_export_raster_projection_and_parameters(
 			const GPlatesGui::ExportRasterAnimationStrategy::Configuration &configuration,
-			unsigned int &width,
-			unsigned int &height,
+			unsigned int &raster_width,
+			unsigned int &raster_height,
 			GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents)
 	{
 		lat_lon_extents = configuration.lat_lon_extents;
@@ -430,26 +430,46 @@ namespace
 				GPLATES_EXCEPTION_SOURCE,
 				QObject::tr("latitude/longitude extents must have finite extents"));
 
-		const double &raster_resolution_in_degrees = configuration.resolution_in_degrees;
-
 		// Avoid divide by zero.
 		// Thrown exception will get caught and report error (and update status message).
 		GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
-				!GPlatesMaths::are_almost_exactly_equal(raster_resolution_in_degrees, 0.0),
+				!GPlatesMaths::are_almost_exactly_equal(configuration.resolution_in_degrees, 0.0),
 				GPLATES_EXCEPTION_SOURCE,
 				QObject::tr("raster resolution cannot be zero"));
 
 		// We use absolute value in case user swapped top/bottom or left/right to flip exported raster.
 		// We also round to the nearest integer.
-		width = static_cast<unsigned int>(std::fabs(lon_extent / raster_resolution_in_degrees) + 0.5);
-		height = static_cast<unsigned int>(std::fabs(lat_extent / raster_resolution_in_degrees) + 0.5);
-		if (width == 0)
+		raster_width = static_cast<unsigned int>(std::fabs(lon_extent / configuration.resolution_in_degrees) + 0.5);
+		raster_height = static_cast<unsigned int>(std::fabs(lat_extent / configuration.resolution_in_degrees) + 0.5);
+		if (raster_width == 0)
 		{
-			width = 1;
+			raster_width = 1;
 		}
-		if (height == 0)
+		if (raster_height == 0)
 		{
-			height = 1;
+			raster_height = 1;
+		}
+
+		// Grid registration uses an extra row and column of pixels (data points) since data points are
+		// *on* the grid lines instead of at the centre of grid cells (area between grid lines).
+		// For example...
+		//
+		//   +-+-+    -----
+		//   | | |    |+|+|
+		//   +-+-+    -----
+		//   | | |    |+|+|
+		//   +-+-+    -----
+		//
+		// ...the '+' symbols are data points.
+		// The left is grid line registration with 2x2 data points.
+		// The right is pixel registration with 3x3 data points.
+		//
+		// However note that the grid resolution (spacing between data points) remains the same.
+		//
+		if (configuration.use_grid_line_registration)
+		{
+			raster_width += 1;
+			raster_height += 1;
 		}
 
 		const GPlatesGui::MapProjection::non_null_ptr_type map_projection =
@@ -489,7 +509,7 @@ namespace
 	 */
 	void
 	setup_tile_for_rendering(
-			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
+			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_rendering_lat_lon_extents,
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLTileRender &tile_render)
 	{
@@ -526,10 +546,12 @@ namespace
 		GPlatesOpenGL::GLMatrix projection_matrix_tile = projection_transform_tile->get_matrix();
 
 		// The regular projection transform maps to the lat/lon georeferencing region of exported raster.
+		// These lat-lon extents should be using pixel registration since we are rendering pixels which have
+		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels.
 		projection_matrix_tile.gl_ortho(
-				lat_lon_extents.left, lat_lon_extents.right,
+				pixel_rendering_lat_lon_extents.left, pixel_rendering_lat_lon_extents.right,
 				// NOTE: Invert top and bottom since OpenGL inverts the coordinate system (along y-axis)...
-				lat_lon_extents.top/*bottom*/, lat_lon_extents.bottom/*top*/,
+				pixel_rendering_lat_lon_extents.top/*bottom*/, pixel_rendering_lat_lon_extents.bottom/*top*/,
 				-999999, 999999);
 
 		renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);

@@ -54,13 +54,14 @@ namespace
 	/**
 	 * Calculates the export raster dimensions from resolution and lat/lon extents.
 	 */
-	std::pair<unsigned int/*width*/, unsigned int/*height*/>
+	std::pair<unsigned int/*raster_width*/, unsigned int/*raster_height*/>
 	get_export_raster_parameters(
 			const double &top_extents,
 			const double &bottom_extents,
 			const double &left_extents,
 			const double &right_extents,
-			const double &raster_resolution_in_degrees)
+			const double &raster_resolution_in_degrees,
+			bool use_grid_line_registration)
 	{
 		// Avoid divide by zero.
 		if (GPlatesMaths::are_almost_exactly_equal(raster_resolution_in_degrees, 0.0))
@@ -80,12 +81,34 @@ namespace
 
 		// We use absolute value in case user swapped top/bottom or left/right to flip exported raster.
 		// We also round to the nearest integer.
-		unsigned int width = static_cast<unsigned int>(
+		unsigned int raster_width = static_cast<unsigned int>(
 				std::fabs(lon_extent / raster_resolution_in_degrees) + 0.5);
-		unsigned int height = static_cast<unsigned int>(
+		unsigned int raster_height = static_cast<unsigned int>(
 				std::fabs(lat_extent / raster_resolution_in_degrees) + 0.5);
 
-		return std::make_pair(width, height);
+		// Grid registration uses an extra row and column of pixels (data points) since data points are
+		// *on* the grid lines instead of at the centre of grid cells (area between grid lines).
+		// For example...
+		//
+		//   +-+-+    -----
+		//   | | |    |+|+|
+		//   +-+-+    -----
+		//   | | |    |+|+|
+		//   +-+-+    -----
+		//
+		// ...the '+' symbols are data points.
+		// The left is grid line registration with 2x2 data points.
+		// The right is pixel registration with 3x3 data points.
+		//
+		// However note that the grid resolution (spacing between data points) remains the same.
+		//
+		if (use_grid_line_registration)
+		{
+			raster_width += 1;
+			raster_height += 1;
+		}
+
+		return std::make_pair(raster_width, raster_height);
 	}
 }
 
@@ -211,7 +234,8 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::update_raster_dimensions()
 					d_export_configuration.lat_lon_extents.bottom,
 					d_export_configuration.lat_lon_extents.left,
 					d_export_configuration.lat_lon_extents.right,
-					d_export_configuration.resolution_in_degrees);
+					d_export_configuration.resolution_in_degrees,
+					d_export_configuration.use_grid_line_registration);
 
 	QString width_string;
 	width_string.setNum(dimensions.first);
