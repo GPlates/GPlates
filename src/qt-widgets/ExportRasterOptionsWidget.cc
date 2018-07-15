@@ -145,6 +145,9 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
 	right_extents_spinbox->setMinimum(-360);
 	left_extents_spinbox->setMaximum(360);
 
+	// Set grid line registration checkbox.
+	grid_line_registration_checkbox->setChecked(export_configuration->use_grid_line_registration);
+
 	// If raster compression is an option then initialise it, otherwise hide it.
 	if (d_export_configuration.compress)
 	{
