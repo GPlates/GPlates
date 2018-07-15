@@ -547,7 +547,9 @@ namespace
 
 		// The regular projection transform maps to the lat/lon georeferencing region of exported raster.
 		// These lat-lon extents should be using pixel registration since we are rendering pixels which have
-		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels.
+		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels
+		// - for grid line registration this means border pixel *centres* are at the original lat-lon extents
+		// (specified by the user) and so our pixel-rendering lat-lon extents got expanded by half a pixel.
 		projection_matrix_tile.gl_ortho(
 				pixel_rendering_lat_lon_extents.left, pixel_rendering_lat_lon_extents.right,
 				// NOTE: Invert top and bottom since OpenGL inverts the coordinate system (along y-axis)...
@@ -660,8 +662,9 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
-			bool export_raster_compress,
-			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
+			const bool export_raster_compress,
+			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
+			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 			GPlatesOpenGL::GLRenderer &renderer,
 			const GPlatesGui::MapProjection::non_null_ptr_to_const_type &map_projection)
@@ -731,9 +734,10 @@ namespace
 		// according to the map projection's central meridian.
 		const double map_view_central_meridian =
 				map_projection->get_projection_settings().get_central_llp().longitude();
-		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type map_view_lat_lon_extents = lat_lon_extents;
-		map_view_lat_lon_extents.left -= map_view_central_meridian;
-		map_view_lat_lon_extents.right -= map_view_central_meridian;
+		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type pixel_rendering_lat_lon_extents =
+				pixel_registration_lat_lon_extents;
+		pixel_rendering_lat_lon_extents.left -= map_view_central_meridian;
+		pixel_rendering_lat_lon_extents.right -= map_view_central_meridian;
 
 		// Set up raster alpha blending for pre-multiplied alpha.
 		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
@@ -762,7 +766,7 @@ namespace
 
 			// Setup for rendering to the current tile.
 			setup_tile_for_rendering(
-					map_view_lat_lon_extents,
+					pixel_rendering_lat_lon_extents,
 					renderer,
 					tile_render);
 
@@ -837,11 +841,6 @@ namespace
 
 		// Set the exported raster's georeferencing.
 		// This will get ignored by those colour file formats that do not support georeferencing.
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
-				GPlatesPropertyValues::Georeferencing::create(
-						lat_lon_extents,
-						export_raster_width,
-						export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
 
 		// Set the exported raster's spatial reference system.
@@ -868,7 +867,7 @@ namespace
 			const unsigned int raster_band_index,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
-			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
+			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			GPlatesFileIO::RasterWriter &raster_writer,
 			GPlatesOpenGL::GLRenderer &renderer,
 			const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type &map_cube_mesh)
@@ -935,9 +934,10 @@ namespace
 		// according to the map projection's central meridian.
 		const double map_view_central_meridian =
 				map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
-		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type map_view_lat_lon_extents = lat_lon_extents;
-		map_view_lat_lon_extents.left -= map_view_central_meridian;
-		map_view_lat_lon_extents.right -= map_view_central_meridian;
+		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type pixel_rendering_lat_lon_extents =
+				pixel_registration_lat_lon_extents;
+		pixel_rendering_lat_lon_extents.left -= map_view_central_meridian;
+		pixel_rendering_lat_lon_extents.right -= map_view_central_meridian;
 
 		// Render the current raster band tile-by-tile.
 		for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
@@ -949,7 +949,7 @@ namespace
 
 			// Setup for rendering to the current tile.
 			setup_tile_for_rendering(
-					map_view_lat_lon_extents,
+					pixel_rendering_lat_lon_extents,
 					renderer,
 					tile_render);
 
@@ -1017,8 +1017,9 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
-			bool export_raster_compress,
-			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents,
+			const bool export_raster_compress,
+			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
+			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			GPlatesOpenGL::GLRenderer &renderer,
 			const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type &map_cube_mesh)
 	{
@@ -1070,18 +1071,13 @@ namespace
 					band_index,
 					export_raster_width,
 					export_raster_height,
-					lat_lon_extents,
+					pixel_registration_lat_lon_extents,
 					*raster_writer,
 					renderer,
 					map_cube_mesh);
 		}
 
 		// Set the exported raster's georeferencing.
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
-				GPlatesPropertyValues::Georeferencing::create(
-						lat_lon_extents,
-						export_raster_width,
-						export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
 
 		// Set the exported raster's spatial reference system.
@@ -1140,6 +1136,33 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_width,
 						export_raster_height,
 						lat_lon_extents);
+
+		// Create georeferencing from the original lat-lon extents (specified by user),
+		// the grid line registration option (specified by user) and the resultant raster dimensions
+		// (also derived from user-specified pixel resolution).
+		GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
+				GPlatesPropertyValues::Georeferencing::create(
+						lat_lon_extents,
+						export_raster_width,
+						export_raster_height,
+						d_configuration->use_grid_line_registration);
+
+		// Retrieve the lat-lon extents in *pixel* registration format since we are rendering pixels which have
+		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels
+		// - for grid line registration this means border pixel *centres* are at the original lat-lon extents
+		// (specified by the user) and so our pixel-rendering lat-lon extents got expanded by half a pixel.
+		boost::optional<GPlatesPropertyValues::Georeferencing::lat_lon_extents_type>
+				pixel_registration_lat_lon_extents_opt = georeferencing->get_lat_lon_extents(
+						export_raster_width,
+						export_raster_height,
+						false/*convert_to_grid_line_registration*/);
+		// This assertion shouldn't happen since we've restricted the range of latitudes already.
+		GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
+				pixel_registration_lat_lon_extents_opt,
+				GPLATES_EXCEPTION_SOURCE,
+				QObject::tr("latitude exceeded range [-90, 90]"));
+		const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type
+				pixel_registration_lat_lon_extents = pixel_registration_lat_lon_extents_opt.get();
 
 		// Compress raster if it is supported and has been turned on.
 		const bool export_raster_compress = d_configuration->compress && d_configuration->compress.get();
@@ -1201,7 +1224,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_width,
 						export_raster_height,
 						export_raster_compress,
-						lat_lon_extents,
+						georeferencing,
+						pixel_registration_lat_lon_extents,
 						gl_visual_layers,
 						*renderer,
 						map_projection);
@@ -1263,7 +1287,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_width,
 						export_raster_height,
 						export_raster_compress,
-						lat_lon_extents,
+						georeferencing,
+						pixel_registration_lat_lon_extents,
 						*renderer,
 						map_cube_mesh);
 			}
