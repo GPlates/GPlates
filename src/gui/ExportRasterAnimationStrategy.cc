@@ -509,6 +509,9 @@ namespace
 	 */
 	void
 	setup_tile_for_rendering(
+			const unsigned int export_raster_width,
+			const unsigned int export_raster_height,
+			const bool export_raster_grid_line_registration,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_rendering_lat_lon_extents,
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLTileRender &tile_render)
@@ -544,7 +547,6 @@ namespace
 		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type projection_transform_tile =
 				tile_render.get_tile_projection_transform();
 		GPlatesOpenGL::GLMatrix projection_matrix_tile = projection_transform_tile->get_matrix();
-
 		// The regular projection transform maps to the lat/lon georeferencing region of exported raster.
 		// These lat-lon extents should be using pixel registration since we are rendering pixels which have
 		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels
@@ -556,7 +558,147 @@ namespace
 				pixel_rendering_lat_lon_extents.top/*bottom*/, pixel_rendering_lat_lon_extents.bottom/*top*/,
 				-999999, 999999);
 
-		renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+		// Model-view matrix defaults to identity for all cases except *grid line* registration where
+		// at least one of the top/bottom/left/right extents is near the global lat-lon boundary
+		// (for reasons explained below).
+		GPlatesOpenGL::GLMatrix model_view_matrix_tile;
+		// Grid registration places data points *on* the grid lines instead of at the centre of
+		// grid cells (area between grid lines). For example...
+		//
+		//   -------------             
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------    |   |   |
+		//   | + | + | + |    +---+---+
+		//   -------------             
+		//
+		// ...the '+' symbols are data points.
+		// On the left is the pixel registration we are using for rendering.
+		// On the right is the original grid line registration.
+		//
+		if (export_raster_grid_line_registration)
+		{
+			// The number of bits of fixed-point precision used in the OpenGL pixel rasterization engine
+			// determines the accuracy of vertex position coordinates in that there are
+			// "2 ^ sub_pixel_bits" fixed-point positions between adjacent pixels that vertex coordinates
+			// can get snapped (quantized) to.
+			//
+			// Note: The '1.01' is to give a little extra headroom (eg, for finite precision of floating-point).
+			const double sub_pixel_precision = 1.01 / (1 << renderer.get_capabilities().framebuffer.gl_sub_pixel_bits);
+
+			// The increment in vertex coordinates between two adjacent pixels in the x and y directions
+			// (from left to right, and from bottom to top respectively).
+			//
+			// Note that *pixel* registration coordinates cover an extra pixel
+			// (hence division by dimension instead of 'dimension - 1').
+			const double pixel_increment_y =
+					(pixel_rendering_lat_lon_extents.top - pixel_rendering_lat_lon_extents.bottom) / export_raster_height;
+			const double pixel_increment_x =
+					(pixel_rendering_lat_lon_extents.right - pixel_rendering_lat_lon_extents.left) / export_raster_width;
+
+			// The pixel *centres* of the four border pixels in the corners of the image are half a pixel
+			// inside the *pixel* registration extents (which bound pixel *areas*).
+			const double top_pixel_centre = pixel_rendering_lat_lon_extents.top - 0.5 * pixel_increment_y;
+			const double bottom_pixel_centre = pixel_rendering_lat_lon_extents.bottom + 0.5 * pixel_increment_y;
+			const double left_pixel_centre = pixel_rendering_lat_lon_extents.left + 0.5 * pixel_increment_x;
+			const double right_pixel_centre = pixel_rendering_lat_lon_extents.right - 0.5 * pixel_increment_x;
+
+			//
+			// If any pixel *centre* of the four border pixels (in the corners of the image) is close enough
+			// to the global lat-lon extents then it's possible that the associated border pixels will not
+			// get rendered since a global map is rendered with minimum/maximum latitude extent of -90/90.
+			// The 'close enough' part is due to the sub-pixel precision mentioned above which snaps/quantizes
+			// vertex coordinates a maximum distance of 'sub_pixel_precision'.
+			//
+
+			int adjust_top_flag = 0;
+			if (top_pixel_centre + sub_pixel_precision * pixel_increment_y > 90.0 ||
+				top_pixel_centre + sub_pixel_precision * pixel_increment_y < -90.0)
+			{
+				// Top row of pixels might not get rendered unless adjusted.
+				adjust_top_flag = 1;
+			}
+
+			int adjust_bottom_flag = 0;
+			if (bottom_pixel_centre - sub_pixel_precision * pixel_increment_y > 90.0 ||
+				bottom_pixel_centre - sub_pixel_precision * pixel_increment_y < -90.0)
+			{
+				// Bottom row of pixels might not get rendered unless adjusted.
+				adjust_bottom_flag = 1;
+			}
+
+			int adjust_left_flag = 0;
+			if (left_pixel_centre - sub_pixel_precision * pixel_increment_x > 180.0 ||
+				left_pixel_centre - sub_pixel_precision * pixel_increment_x < -180.0)
+			{
+				// Left column of pixels might not get rendered unless adjusted.
+				adjust_left_flag = 1;
+			}
+
+			int adjust_right_flag = 0;
+			if (right_pixel_centre + sub_pixel_precision * pixel_increment_x > 180.0 ||
+				right_pixel_centre + sub_pixel_precision * pixel_increment_x < -180.0)
+			{
+				// Right column of pixels might not get rendered unless adjusted.
+				adjust_right_flag = 1;
+			}
+
+			//
+			// We need to increase the scale of the rectangle map rendering slightly such that problematic
+			// border pixel *centres* are now covered by the vertices/triangles of the map mesh.
+			// In order to scale correctly we first need to translate such that the centre of scaling
+			// is in the correct position, then do the scaling and then undo the translation.
+			// If both latitude extents touch the global boundary then the centre of scaling
+			// (in the y, or latitude, direction) should be in the middle
+			// (the average of top and bottom latitudes) and the scaling should be twice as much so
+			// that both top *and* bottom pixel centres are covered, otherwise if only one latitude extent
+			// touches global boundary then centre of scaling is the opposite extent (such that it does
+			// not move, and hence all scaling is applied to the extent requiring adjustment), otherwise
+			// if neither latitude extent touches global boundary then there is no scaling (or translation).
+			// The same applies in the x, or longitude, direction.
+			//
+			// This scaling does distort the exported raster a little bit but it's very small.
+			// For example, a 1 degree resolution global raster of dimensions 361x181 and 8 sub-pixel bits renderer
+			// is scaled by a factor of 1.0000434, but more importantly (for 8 sub-pixel bits) the largest
+			// error in units of pixels does not exceed '2 ^ -8 = 0.004' of a pixel (regardless of resolution).
+			//
+
+			double translate_x = 0.0;
+			double scale_x = 1.0;
+			if (adjust_left_flag || adjust_right_flag)
+			{
+				translate_x = (adjust_left_flag * pixel_rendering_lat_lon_extents.right +
+						adjust_right_flag * pixel_rendering_lat_lon_extents.left) /
+						(adjust_left_flag + adjust_right_flag);
+				scale_x = (export_raster_width - 1 + (adjust_left_flag + adjust_right_flag) * sub_pixel_precision) /
+						(export_raster_width - 1);
+			}
+
+			double translate_y = 0.0;
+			double scale_y = 1.0;
+			if (adjust_top_flag || adjust_bottom_flag)
+			{
+				translate_x = (adjust_top_flag * pixel_rendering_lat_lon_extents.bottom +
+						adjust_bottom_flag * pixel_rendering_lat_lon_extents.top) /
+						(adjust_top_flag + adjust_bottom_flag);
+				scale_y = (export_raster_height - 1 + (adjust_top_flag + adjust_bottom_flag) * sub_pixel_precision) /
+						(export_raster_height - 1);
+			}
+
+			// First translate *to* the centre of scaling (using '-translate_x' and '-translate_y'), then
+			// scale and finally translate *from* the centre of scaling (using 'translate_x' and 'translate_y').
+			//
+			// Note that if neither top nor bottom need adjusting then there is no translation
+			// or scaling in the y direction. Similarly for left and right for the x direction.
+			//
+			// Also note that no scaling or translation is needed for the z direction at all.
+			model_view_matrix_tile.gl_translate(translate_x, translate_y, 0.0);
+			model_view_matrix_tile.gl_scale(scale_x, scale_y, 1.0);
+			model_view_matrix_tile.gl_translate(-translate_x, -translate_y, 0.0);
+		}
+
+		renderer.gl_load_matrix(GL_MODELVIEW, model_view_matrix_tile);
 		renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_tile);
 	}
 
@@ -662,6 +804,7 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
+			const bool export_raster_grid_line_registration,
 			const bool export_raster_compress,
 			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
@@ -766,6 +909,9 @@ namespace
 
 			// Setup for rendering to the current tile.
 			setup_tile_for_rendering(
+					export_raster_width,
+					export_raster_height,
+					export_raster_grid_line_registration,
 					pixel_rendering_lat_lon_extents,
 					renderer,
 					tile_render);
@@ -867,6 +1013,7 @@ namespace
 			const unsigned int raster_band_index,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
+			const bool export_raster_grid_line_registration,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			GPlatesFileIO::RasterWriter &raster_writer,
 			GPlatesOpenGL::GLRenderer &renderer,
@@ -949,6 +1096,9 @@ namespace
 
 			// Setup for rendering to the current tile.
 			setup_tile_for_rendering(
+					export_raster_width,
+					export_raster_height,
+					export_raster_grid_line_registration,
 					pixel_rendering_lat_lon_extents,
 					renderer,
 					tile_render);
@@ -1017,6 +1167,7 @@ namespace
 			const QString &filename,
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
+			const bool export_raster_grid_line_registration,
 			const bool export_raster_compress,
 			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
@@ -1071,6 +1222,7 @@ namespace
 					band_index,
 					export_raster_width,
 					export_raster_height,
+					export_raster_grid_line_registration,
 					pixel_registration_lat_lon_extents,
 					*raster_writer,
 					renderer,
@@ -1137,6 +1289,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_height,
 						lat_lon_extents);
 
+		const bool export_raster_grid_line_registration = d_configuration->use_grid_line_registration;
+
 		// Create georeferencing from the original lat-lon extents (specified by user),
 		// the grid line registration option (specified by user) and the resultant raster dimensions
 		// (also derived from user-specified pixel resolution).
@@ -1145,7 +1299,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						lat_lon_extents,
 						export_raster_width,
 						export_raster_height,
-						d_configuration->use_grid_line_registration);
+						export_raster_grid_line_registration);
 
 		// Retrieve the lat-lon extents in *pixel* registration format since we are rendering pixels which have
 		// a pixel area (box) - we want to map the view frustum to the *corners/edges* of the border pixels
@@ -1223,6 +1377,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_filename.get(),
 						export_raster_width,
 						export_raster_height,
+						export_raster_grid_line_registration,
 						export_raster_compress,
 						georeferencing,
 						pixel_registration_lat_lon_extents,
@@ -1286,6 +1441,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_filename.get(),
 						export_raster_width,
 						export_raster_height,
+						export_raster_grid_line_registration,
 						export_raster_compress,
 						georeferencing,
 						pixel_registration_lat_lon_extents,
