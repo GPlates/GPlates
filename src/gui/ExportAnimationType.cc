@@ -253,8 +253,8 @@ namespace GPlatesGui
 				export_format_description_map[TIFF]            =QObject::tr("Tagged Image File Format (*.tiff)");
 				export_format_description_map[XBM]             =QObject::tr("X11 Bitmap (*.xbm)");
 				export_format_description_map[XPM]             =QObject::tr("X11 Pixmap (*.xpm)");
-				export_format_description_map[NETCDF]          =QObject::tr("NetCDF (*.nc)");
-				export_format_description_map[GMT_NETCDF]      =QObject::tr("GMT NetCDF (*.grd)");
+				export_format_description_map[NETCDF_NC]       =QObject::tr("NetCDF/GMT (*.nc)");
+				export_format_description_map[NETCDF_GRD]      =QObject::tr("NetCDF/GMT (*.grd)");
 				export_format_description_map[GEOTIFF]         =QObject::tr("GeoTIFF (*.tif)");
 				export_format_description_map[ERDAS_IMAGINE]   =QObject::tr("Erdas Imagine (*.img)");
 				export_format_description_map[ERMAPPER]        =QObject::tr("ERMapper (*.ers)");
@@ -286,8 +286,8 @@ namespace GPlatesGui
 				export_format_filename_extension_map[TIFF]            ="tiff";
 				export_format_filename_extension_map[XBM]             ="xbm";
 				export_format_filename_extension_map[XPM]             ="xpm";
-				export_format_filename_extension_map[NETCDF]          ="nc";
-				export_format_filename_extension_map[GMT_NETCDF]      ="grd";
+				export_format_filename_extension_map[NETCDF_NC]       ="nc";
+				export_format_filename_extension_map[NETCDF_GRD]      ="grd";
 				export_format_filename_extension_map[GEOTIFF]         ="tif";
 				export_format_filename_extension_map[ERDAS_IMAGINE]   ="img";
 				export_format_filename_extension_map[ERMAPPER]        ="ers";

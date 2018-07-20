@@ -1243,8 +1243,8 @@ namespace GPlatesGui
 			// This includes colour-only formats and numerical formats that also support colour (such as GeoTIFF).
 			const ExportAnimationType::Format colour_raster_formats[] =
 			{
-				ExportAnimationType::NETCDF,
-				ExportAnimationType::GMT_NETCDF,
+				ExportAnimationType::NETCDF_NC,
+				ExportAnimationType::NETCDF_GRD,
 				ExportAnimationType::GEOTIFF,
 				ExportAnimationType::ERDAS_IMAGINE,
 				ExportAnimationType::ERMAPPER,
@@ -1344,8 +1344,8 @@ namespace GPlatesGui
 			// A list of numerical raster formats we will try to register.
 			const ExportAnimationType::Format numerical_raster_formats[] =
 			{
-				ExportAnimationType::NETCDF,
-				ExportAnimationType::GMT_NETCDF,
+				ExportAnimationType::NETCDF_NC,
+				ExportAnimationType::NETCDF_GRD,
 				ExportAnimationType::GEOTIFF,
 				ExportAnimationType::ERDAS_IMAGINE,
 				ExportAnimationType::ERMAPPER
