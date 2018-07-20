@@ -49,6 +49,12 @@ namespace
 			"<i>grid line</i> registration and bottom-right <i>corner</i> of bottom-right pixel for <i>pixel</i> registration.</p>"
 			"<p>Also note that the top latitude can be less than the bottom latitude (raster is flipped vertically), "
 			"and the right longitude can be less than the left longitude (raster is flipped horizontally).</p>"
+			"<p>This lat-lon georeferencing information is also saved to those formats supporting it. Note that some software "
+			"reports the lat-lon extents of the exported raster in <i>pixel</i> registration (such as GDAL) while other software "
+			"reports it in <i>grid line</i> registration (such as GMT). For example, a 1-degree global raster exported by GPlates "
+			"with grid line registration is reported by GDAL as having pixel-registered lat-lon extents [-90.5, 90.5] and "
+			"[-180.5, 180.5], and reported by GMT as having grid-line-registered lat-lon extents [-90, 90] and [-180, 180]. "
+			"Both are correct since both place border pixel <i>centres</i> along the lat-lon extents [-90, 90] and [-180, 180].</p>"
 			"</body></html>\n");
 
 	/**
