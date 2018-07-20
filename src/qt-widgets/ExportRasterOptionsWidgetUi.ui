@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>533</width>
-    <height>353</height>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -341,7 +341,7 @@
       <item>
        <widget class="QLabel" name="lat_extents_label">
         <property name="text">
-         <string>If top latitude is less than bottom latitude then raster is flipped vertically (drawn South to North).</string>
+         <string>If top latitude is less than bottom latitude then raster is flipped vertically.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -351,7 +351,7 @@
       <item>
        <widget class="QLabel" name="lon_extents_label">
         <property name="text">
-         <string>If right longitude is less than left longitude then raster is flipped horizontally (drawn East to West).</string>
+         <string>If right longitude is less than left longitude then raster is flipped horizontally.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
