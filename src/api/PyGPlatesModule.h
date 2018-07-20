@@ -33,24 +33,6 @@
 
 namespace GPlatesApi
 {
-	/**
-	 * Returns the 'pygplates' module (or Py_None if the 'pygplates' module has not been initialised).
-	 *
-	 * This function is useful for calling the pygplates python API from C++ code.
-	 * For example - to construct a temporary 'pygplates.FeatureCollectionFileFormatRegistry' and
-	 * use it to read a feature collection from a file:
-	 *
-	 *    GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-	 *        bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
-	 *            get_pygplates_module().attr("FeatureCollectionFileFormatRegistry")()
-	 *                .attr("read")(filename));
-	 *
-	 * ...although usually it's better (and in most cases easier) just to call C++ code from C++ code.
-	 */
-	boost::python::object
-	get_pygplates_module();
-
-
 	//
 	// Some commonly used Python built-in attributes.
 	//
@@ -58,7 +40,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the Python built-in 'hash()' function.
 	 *
-	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("hash")'.
+	 * This is a cached version of the pygplates module attribute 'attr("__builtins__").attr("hash")'.
 	 */
 	boost::python::object
 	get_builtin_hash();
@@ -66,7 +48,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the Python built-in 'iter()' function.
 	 *
-	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("iter")'.
+	 * This is a cached version of the pygplates module attribute 'attr("__builtins__").attr("iter")'.
 	 */
 	boost::python::object
 	get_builtin_iter();
@@ -74,7 +56,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the Python built-in 'next()' function.
 	 *
-	 * This is a cached version of 'get_pygplates_module().attr("__builtins__").attr("next")'.
+	 * This is a cached version of the pygplates module attribute 'attr("__builtins__").attr("next")'.
 	 */
 	boost::python::object
 	get_builtin_next();

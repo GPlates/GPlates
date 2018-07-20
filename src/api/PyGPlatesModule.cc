@@ -196,33 +196,17 @@ void export_pure_python_api();
 
 namespace
 {
-	boost::python::object pygplates_module;
-
-
 	boost::python::object builtin_hash;
 	boost::python::object builtin_iter;
 	boost::python::object builtin_next;
 
 	void
 	cache_builtin_attributes()
-    {
-#if PY_MAJOR_VERSION < 3
-        builtin_hash = pygplates_module.attr("__builtins__").attr("hash");
-        builtin_iter = pygplates_module.attr("__builtins__").attr("iter");
-        builtin_next = pygplates_module.attr("__builtins__").attr("next");
-#else
+	{
 		builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
 		builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
 		builtin_next = boost::python::scope().attr("__builtins__").attr("next");
-#endif
 	}
-}
-
-
-boost::python::object
-GPlatesApi::get_pygplates_module()
-{
-	return pygplates_module;
 }
 
 
@@ -261,11 +245,6 @@ BOOST_PYTHON_MODULE(pygplates)
 		bp::throw_error_already_set();
 	}
 
-	// The 'pygplates' module is the current scope.
-#if PY_MAJOR_VERSION < 3
-    pygplates_module = bp::scope();
-#endif
-
 	//
 	// Specify the 'pygplate' module's docstring options.
 	//
@@ -293,11 +272,7 @@ BOOST_PYTHON_MODULE(pygplates)
 			false/*show_cpp_signatures*/);
 
 	// Set the 'pygplates' module docstring.
-#if PY_MAJOR_VERSION < 3
-    pygplates_module.attr("__doc__") =
-#else
-    bp::scope().attr("__doc__") =
-#endif
+	bp::scope().attr("__doc__") =
 			"**GPlates Python Application Programming Interface (API)**\n"
 			"\n"
 			"  A Python module consisting of classes and functions providing access to "
@@ -316,13 +291,14 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
+	bp::scope().attr("__dict__")["__builtins__"] =
 #if PY_MAJOR_VERSION < 3
-    pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
+			bp::import("__builtin__");
 #else
-	bp::scope().attr("__dict__")["__builtins__"] = bp::import("builtins");
+			bp::import("builtins");
 #endif
     // Cache some commonly used built-in attributes.
-	// Note: This must be done *after* initialising 'pygplates_module' and injecting the __builtin__ module.
+	// Note: This must be done *after* injecting the __builtins__ module.
 	cache_builtin_attributes();
 
 	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
