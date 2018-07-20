@@ -31,6 +31,7 @@
 #include <QProcess>
 #include <QMap>
 #include <iostream>
+#include <string>
 
 #include "PythonManager.h"
 
@@ -245,10 +246,15 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	execution. No code in the Python interpreter will change the contents of this storage.
 	*/
 #if PY_MAJOR_VERSION >= 3
-    //TODO: convert char* to wchar_t*
-    //Py_SetProgramName(argv[0]);
+	// Convert char* to wchar_t*
+	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
+	// Seems Py_SetProgramName accepts a wchar_t* pointer to 'non-const', so make a copy.
+	std::vector<wchar_t> program_name_non_const(program_name.begin(), program_name.end());
+	program_name_non_const.push_back('\0'); // Null terminate the string.
+
+	Py_SetProgramName(&program_name_non_const[0]);
 #else
-    Py_SetProgramName(argv[0]);
+	Py_SetProgramName(argv[0]);
 #endif
 	/*
 	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
