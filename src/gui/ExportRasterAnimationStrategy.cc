@@ -679,7 +679,7 @@ namespace
 			double scale_y = 1.0;
 			if (adjust_top_flag || adjust_bottom_flag)
 			{
-				translate_x = (adjust_top_flag * pixel_rendering_lat_lon_extents.bottom +
+				translate_y = (adjust_top_flag * pixel_rendering_lat_lon_extents.bottom +
 						adjust_bottom_flag * pixel_rendering_lat_lon_extents.top) /
 						(adjust_top_flag + adjust_bottom_flag);
 				scale_y = (export_raster_height - 1 + (adjust_top_flag + adjust_bottom_flag) * sub_pixel_precision) /
