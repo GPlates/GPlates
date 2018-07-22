@@ -238,6 +238,81 @@ namespace GPlatesFileIO
 
 
 	/**
+	 * A feature reader that reads all unprocessed properties using any of the properties defined in the GPGIM.
+	 *
+	 * This is used for properties that are not supported for a particular feature type.
+	 *
+	 * Note: Previously we used @a GpmlUninterpretedFeatureReader for this (which would essentially load
+	 *       these properties as XML, so they could still be saved out again, but didn't create valid properties).
+	 *       Now we allow any properties to be read for any feature type. This was partly due to the
+	 *       fact that Shapefiles wrote out the standard set of shapefile-mapped properties regardless
+	 *       of whether the feature type supported them or not (and hence would get loaded back into GPlates
+	 *       thus bypassing GPGIM restrictions), and partly because GPlates allows the user to add
+	 *       properties to a feature that are not allowed by the GPGIM (although it does warn the user)
+	 *       and allows user to save these features to GPML but then these properties would get blocked
+	 *       on reloading the GPML file (note that only GPML(Z) files block like this).
+	 *       So now we just allow any property for any feature type.
+	 */
+	class GpmlAnyPropertyFeatureReader :
+			public GpmlFeatureReaderImpl
+	{
+	public:
+
+		//! A convenience typedef for a shared pointer to a non-const @a GpmlAnyPropertyFeatureReader.
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlAnyPropertyFeatureReader> non_null_ptr_type;
+
+		//! A convenience typedef for a shared pointer to a const @a GpmlAnyPropertyFeatureReader.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlAnyPropertyFeatureReader> non_null_ptr_to_const_type;
+
+
+		//! Typedef for a sequence of property readers.
+		typedef std::vector<GpmlPropertyReader::non_null_ptr_to_const_type> property_reader_seq_type;
+
+
+		/**
+		 * Creates a @a GpmlAnyPropertyFeatureReader that handles any feature properties not
+		 * processed by @a feature_reader.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
+				const property_reader_seq_type &all_property_readers)
+		{
+			return non_null_ptr_type(
+					new GpmlAnyPropertyFeatureReader(feature_reader, all_property_readers));
+		}
+
+
+		/**
+		 * Reads all unprocessed properties using any property defined in the GPGIM.
+		 */
+		virtual
+		GPlatesModel::FeatureHandle::non_null_ptr_type
+		read_feature(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+				xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+				GpmlReaderUtils::ReaderParams &reader_params) const;
+
+	private:
+
+		/**
+		 * Property readers for all properties defined in the GPGIM.
+		 */
+		property_reader_seq_type d_all_property_readers;
+
+		//! Delegate reading of feature properties to this feature reader.
+		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type d_feature_reader;
+
+
+		GpmlAnyPropertyFeatureReader(
+				const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
+				const property_reader_seq_type &all_property_readers);
+
+	};
+
+
+	/**
 	 * A feature reader that reads all unprocessed properties as 'UninterpretedPropertyValue' property values.
 	 *
 	 * This is used for feature types that are not recognised by the GPGIM.

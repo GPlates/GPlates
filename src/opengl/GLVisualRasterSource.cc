@@ -35,6 +35,7 @@
 
 #include "GLVisualRasterSource.h"
 
+#include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLImageUtils.h"
 #include "GLRenderer.h"
@@ -427,51 +428,106 @@ GPlatesOpenGL::GLVisualRasterSource::load_proxied_raster_data_into_raster_textur
 		// filter will ensure the texture border colour is not used - however for partially filled
 		// textures we need to duplicate the edge to achieve the same effect otherwise numerical precision
 		// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
-		if (texel_width < d_tile_texel_dimension)
+		if (texel_width < d_tile_texel_dimension ||
+			texel_height < d_tile_texel_dimension)
 		{
-			// Copy the right edge of the region into the working space.
-			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
-			// The last pixel in the first row of the region.
-			const GPlatesGui::rgba8_t *region_last_column = raster_region_opt.get()->data() + texel_width - 1;
-			for (unsigned int y = 0; y < texel_height; ++y)
+			unsigned int duplication_size = 1;
+
+			// Fixed-point textures can use anisotropic filtering that can have a filter width
+			// greater than one (even for nearest neighbour filtering). And so we need to extend
+			// the duplicated region according to the maximum anisotropy.
+			const GLCapabilities &capabilities = renderer.get_capabilities();
+			if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 			{
-				working_space[y] = *region_last_column;
-				region_last_column += texel_width;
+				duplication_size = static_cast<unsigned int>(
+						// The '1 - 1e-4' rounds up to the next integer...
+						capabilities.texture.gl_texture_max_anisotropy + 1 - 1e-4);
 			}
 
-			// Load the one-pixel wide column of data from column 'texel_width-1' into column 'texel_width'.
-			GLTextureUtils::load_image_into_rgba8_texture_2D(
-					renderer,
-					raster_texture,
-					d_tile_edge_working_space.get(),
-					1/*image_width*/,
-					texel_height,
-					texel_width/*texel_u_offset*/);
-		}
-
-		// Same applies if we've reached the bottom edge of raster (and the raster height is not an
-		// integer multiple of the tile texel dimension).
-		if (texel_height < d_tile_texel_dimension)
-		{
-			// Copy the bottom edge of the region into the working space.
-			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
-			// The first pixel in the last row of the region.
-			const GPlatesGui::rgba8_t *const region_last_row =
-					raster_region_opt.get()->data() + (texel_height - 1) * texel_width;
-			for (unsigned int x = 0; x < texel_width; ++x)
+			// Duplicate the last column into an extra 'duplication_size' columns.
+			unsigned int padded_texel_width = texel_width + duplication_size;
+			if (padded_texel_width > d_tile_texel_dimension)
 			{
-				working_space[x] = region_last_row[x];
+				padded_texel_width = d_tile_texel_dimension;
 			}
 
-			// Load the one-pixel wide row of data from row 'texel_height-1' into row 'texel_height'.
-			GLTextureUtils::load_image_into_rgba8_texture_2D(
-					renderer,
-					raster_texture,
-					d_tile_edge_working_space.get(),
-					texel_width,
-					1/*image_height*/,
-					0/*texel_u_offset*/,
-					texel_height/*texel_v_offset*/);
+			// See if we've reached the right edge of raster (and the raster width is not an
+			// integer multiple of the tile texel dimension).
+			if (texel_width < padded_texel_width)
+			{
+				// Copy the right edge of the region into the working space.
+				GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+				// The last texel in the first row of the region.
+				const GPlatesGui::rgba8_t *region_last_column = raster_region_opt.get()->data() + texel_width - 1;
+				for (unsigned int y = 0; y < texel_height; ++y)
+				{
+					working_space[y] = *region_last_column;
+					region_last_column += texel_width;
+				}
+
+				for (unsigned int texel_u_offset = texel_width;
+					texel_u_offset < padded_texel_width;
+					++texel_u_offset)
+				{
+					// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_u_offset'.
+					GLTextureUtils::load_image_into_rgba8_texture_2D(
+							renderer,
+							raster_texture,
+							d_tile_edge_working_space.get(),
+							1/*image_width*/,
+							texel_height/*image_height*/,
+							texel_u_offset);
+				}
+			}
+
+			// Duplicate the last row into an extra 'duplication_size' rows.
+			unsigned int padded_texel_height = texel_height + duplication_size;
+			if (padded_texel_height > d_tile_texel_dimension)
+			{
+				padded_texel_height = d_tile_texel_dimension;
+			}
+
+			// See if we've reached the bottom edge of raster (and the raster height is not an
+			// integer multiple of the tile texel dimension).
+			if (texel_height < padded_texel_height)
+			{
+				// Copy the bottom edge of the region into the working space.
+				GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+				// The first texel in the last row of the region.
+				const GPlatesGui::rgba8_t *const region_last_row =
+						raster_region_opt.get()->data() + (texel_height - 1) * texel_width;
+				unsigned int x = 0;
+				for ( ; x < texel_width; ++x)
+				{
+					working_space[x] = region_last_row[x];
+				}
+				// Also copy the corner texel to the right to cover the empty texels where:
+				//
+				//   texel_width  <= x < padded_texel_width
+				//   texel_height <= y < padded_texel_height
+				//
+				// ...this will ultimately duplicate the corner texel across that entire region.
+				const GPlatesGui::rgba8_t corner_texel = working_space[texel_width - 1];
+				for ( ; x < padded_texel_width; ++x)
+				{
+					working_space[x] = corner_texel;
+				}
+
+				for (unsigned int texel_v_offset = texel_height;
+					texel_v_offset < padded_texel_height;
+					++texel_v_offset)
+				{
+					// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_v_offset'.
+					GLTextureUtils::load_image_into_rgba8_texture_2D(
+							renderer,
+							raster_texture,
+							d_tile_edge_working_space.get(),
+							padded_texel_width/*image_width*/,
+							1/*image_height*/,
+							0/*texel_u_offset*/,
+							texel_v_offset);
+				}
+			}
 		}
 	}
 	else

@@ -100,6 +100,32 @@ boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
 GPlatesAppLogic::ReconstructScalarCoverageLayerParams::get_scalar_statistics(
 		const GPlatesPropertyValues::ValueObjectType &scalar_type) const
 {
+	// Before we lookup any cached statistics make sure they're even valid since the
+	// scalar coverage feature may have changed since they were cached.
+	//
+	// We need this since we don't get notified *directly* of changes in the Reconstruct layer
+	// that our Reconstruct Scalar Coverage layer is connected to.
+	const_cast<ReconstructScalarCoverageLayerParams *>(this)->update();
+
+	// If scalar statistics not cached for scalar type then create them and cache.
+	scalar_statistics_map_type::const_iterator scalar_statistics_iter =
+			d_cached_scalar_statistics.find(scalar_type);
+	if (scalar_statistics_iter == d_cached_scalar_statistics.end())
+	{
+		scalar_statistics_iter = d_cached_scalar_statistics.insert(
+				scalar_statistics_map_type::value_type(
+						scalar_type,
+						create_scalar_statistics(scalar_type))).first;
+	}
+
+	return scalar_statistics_iter->second;
+}
+
+
+boost::optional<GPlatesPropertyValues::ScalarCoverageStatistics>
+GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
+		const GPlatesPropertyValues::ValueObjectType &scalar_type) const
+{
 	// Scalar statistics.
 	//
 	// mean = M = sum(Xi) / N
@@ -289,6 +315,10 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::update()
 		// Set the current scalar type using the default scalar type index of zero.
 		d_layer_proxy->set_current_scalar_type(scalar_types.front());
 	}
+
+	// Since the scalar coverage features may have been reloaded from file we'll need to clear our
+	// scalar statistics cache since the statistics might be different the next time they're requested.
+	d_cached_scalar_statistics.clear();
 
 	// We are now up-to-date with respect to the layer proxy.
 	//

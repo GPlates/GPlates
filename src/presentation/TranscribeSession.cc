@@ -76,6 +76,7 @@
 #include "gui/Dialogs.h"
 #include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
+#include "gui/GraticuleSettings.h"
 #include "gui/PythonConfiguration.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
@@ -2700,9 +2701,8 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::ApplicationState &application_state)
 		{
 			////////////////////////////////////////////////////////////////////////////////////////
-			// NOTE: Should only transcribe state relevant to the individual layers.              //
-			//       Global settings should usually be avoided.                                   //
-			//       For example, transcribing the anchored plate ID is probably not a good idea. //
+			// NOTE: Generally only transcribe state relevant to the individual layers.           //
+			//       Global settings should usually be avoided in most cases.                     //
 			////////////////////////////////////////////////////////////////////////////////////////
 
 			// Save whether to update default reconstruction tree layer.
@@ -2711,25 +2711,11 @@ namespace GPlatesPresentation
 					application_state.is_updating_default_reconstruction_tree_layer(),
 					session_state_tag("updating_default_reconstruction_tree_layer"));
 
-			//
-			// Only saving state that affects the layers and their visualisation.
-			//
-			// For any other state, the user is not likely to want to have that changed on them
-			// when they restore a project/session.
-			//
-#if 0
-			// Save the reconstruction time.
-			scribe.save(
-					TRANSCRIBE_SOURCE,
-					application_state.get_current_reconstruction_time(),
-					session_state_tag("reconstruction_time"));
-
 			// Save the anchored plate ID.
 			scribe.save(
 					TRANSCRIBE_SOURCE,
 					application_state.get_current_anchored_plate_id(),
 					session_state_tag("anchored_plate_id"));
-#endif
 		}
 
 
@@ -2740,9 +2726,8 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			////////////////////////////////////////////////////////////////////////////////////////
-			// NOTE: Should only transcribe state relevant to the individual layers.              //
-			//       Global settings should usually be avoided.                                   //
-			//       For example, transcribing the anchored plate ID is probably not a good idea. //
+			// NOTE: Generally only transcribe state relevant to the individual layers.           //
+			//       Global settings should usually be avoided in most cases.                     //
 			////////////////////////////////////////////////////////////////////////////////////////
 
 			// Load whether to update default reconstruction tree layer.
@@ -2756,24 +2741,11 @@ namespace GPlatesPresentation
 						updating_default_reconstruction_tree_layer);
 			}
 
-			//
-			// Only loading state that affects the layers and their visualisation.
-			//
-			// For any other state, the user is not likely to want to have that changed on them
-			// when they restore a project/session.
-			//
-#if 0
-			// Load the reconstruction time.
-			double reconstruction_time;
-			if (scribe.transcribe(
-					TRANSCRIBE_SOURCE,
-					reconstruction_time,
-					session_state_tag("reconstruction_time")))
-			{
-				application_state.set_reconstruction_time(reconstruction_time);
-			}
-
 			// Load the anchored plate ID.
+			//
+			// Note that if there's no anchored plate ID to load (eg, loading from an old version project file)
+			// then the default anchored plate ID (zero) at GPlates startup will be used (it has already been set
+			// since the session state is always cleared to the default state just before loading a new session).
 			GPlatesModel::integer_plate_id_type anchored_plate_id;
 			if (scribe.transcribe(
 					TRANSCRIBE_SOURCE,
@@ -2782,7 +2754,6 @@ namespace GPlatesPresentation
 			{
 				application_state.set_anchored_plate_id(anchored_plate_id);
 			}
-#endif
 		}
 
 
@@ -2933,11 +2904,21 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				const ViewState &view_state)
 		{
-			////////////////////////////////////////////////////////////////////////////////////////////////
-			// NOTE: Should only transcribe state relevant to the visualisation of the individual layers. //
-			//       Global settings should usually be avoided.                                           //
-			//       For example, transcribing the graticule settings is probably not a good idea.        //
-			////////////////////////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////////
+			// NOTE: Generally only transcribe state relevant to the individual layers.           //
+			//       Global settings should usually be avoided in most cases.                     //
+			////////////////////////////////////////////////////////////////////////////////////////
+
+			// Save the background colour.
+			scribe.save(TRANSCRIBE_SOURCE, view_state.get_background_colour(), session_state_tag("background_colour"));
+
+			// Save the graticule settings.
+			//
+			// Some users set the alpha channel of graticule to zero to make them disappear so they can
+			// load their own graticule lines (eg, from gpml file) that have plate ID zero and hence move
+			// when the anchored plate ID is non-zero. And saving/loading graticule state means the
+			// internal session or project file will set the alpha channel to zero for them.
+			scribe.save(TRANSCRIBE_SOURCE, view_state.get_graticule_settings(), session_state_tag("graticule_settings"));
 
 			//
 			// Save the feature type symbol map (might be empty if no symbol file loaded).
@@ -2964,11 +2945,32 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				ViewState &view_state)
 		{
-			////////////////////////////////////////////////////////////////////////////////////////////////
-			// NOTE: Should only transcribe state relevant to the visualisation of the individual layers. //
-			//       Global settings should usually be avoided.                                           //
-			//       For example, transcribing the graticule settings is probably not a good idea.        //
-			////////////////////////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////////
+			// NOTE: Generally only transcribe state relevant to the individual layers.           //
+			//       Global settings should usually be avoided in most cases.                     //
+			////////////////////////////////////////////////////////////////////////////////////////
+
+			// Load the background colour.
+			//
+			// Note that if there's no background colour to load (eg, loading from an old version project file)
+			// then the default background colour at GPlates startup will be used (it has already been set since
+			// the session state is always cleared to the default state just before loading a new session).
+			GPlatesGui::Colour background_colour;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, background_colour, session_state_tag("background_colour")))
+			{
+				view_state.set_background_colour(background_colour);
+			}
+
+			// Load the graticule settings.
+			//
+			// Note that if there's no graticule settings to load (eg, loading from an old version project file)
+			// then the default graticule settings at GPlates startup will be used (it has already been set since
+			// the session state is always cleared to the default state just before loading a new session).
+			GPlatesGui::GraticuleSettings graticule_settings;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, graticule_settings, session_state_tag("graticule_settings")))
+			{
+				view_state.get_graticule_settings() = graticule_settings;
+			}
 
 			//
 			// Load the feature type symbol map (might be empty if no symbol file was loaded when the project/session was saved).

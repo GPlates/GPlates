@@ -1304,6 +1304,14 @@ namespace GPlatesAppLogic
 		ReconstructionInfo
 		create_reconstruction_info(
 				const reconstruction_cache_key_type &reconstruction_cache_key);
+
+
+		/**
+		 * Utility method to get, or create, a reconstruct context for the specified reconstruct parameters.
+		 */
+		ReconstructContext::context_state_reference_type
+		get_or_create_reconstruct_context(
+				const ReconstructParams &reconstruct_params);
 	};
 }
 

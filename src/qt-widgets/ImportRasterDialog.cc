@@ -250,7 +250,7 @@ GPlatesQtWidgets::ImportRasterDialog::nextId() const
 					raster_georeferencing = get_raster_georeferencing();
 			if (raster_georeferencing)
 			{
-				d_georeferencing->set_parameters(raster_georeferencing.get()->parameters());
+				d_georeferencing->set_parameters(raster_georeferencing.get()->get_parameters());
 
 				return RASTER_FEATURE_COLLECTION_PAGE_ID;
 			}
@@ -744,8 +744,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_domain_set() const
 
 	// NOTE: GPlates 1.3 and prior will not be able to load rasters imported by this version when
 	// the georeferencing origin has a lat/lon outside the valid lat/lon range (since an invalid
-	// lat/lon exception will incorrectly get raised in GmlRectifiedGrid::convert_to_georeferencing()
-	// which will get converted to a file load error).
+	// lat/lon exception will incorrectly get raised in the GmlRectifiedGrid::convert_to_georeferencing()
+	// inside GPlates 1.3 which will get converted to a file load error).
 	// This can happen when importing global GMT grids with *gridline* registration
 	// (see http://gmt.soest.hawaii.edu/doc/latest/GMT_Docs.html#grid-registration) because they
 	// have top and bottom rows with pixels at latitudes 90 and -90 degrees and GDAL expands the
@@ -755,8 +755,9 @@ GPlatesQtWidgets::ImportRasterDialog::create_domain_set() const
 	// to cover the range [-91, 90] instead of [-90.5, 90.5].
 	// So we no longer clamp like that. In any case GPlates 1.3 is now quite an old version that
 	// hopefully few users are still using.
-	// Note that there is still clamping inside GLMultiResolutionRaster but it only affects/squishes
-	// the top and bottom mesh quads used to render raster (which are maximum of 5 degrees wide).
+	// Note that there is still clamping inside GLMultiResolutionRaster but it only affects the
+	// top and bottom mesh quads used to render raster (which are maximum of 5 degrees wide) and
+	// it adjusts texture/image coordinates to compensate (so that the image is still rendered correctly).
 	GmlRectifiedGrid::non_null_ptr_type rectified_grid = GmlRectifiedGrid::create(
 			d_georeferencing,
 			raster_width,

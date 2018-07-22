@@ -208,8 +208,9 @@ namespace GPlatesQtWidgets
 			hboxLayout->setObjectName(QString::fromUtf8("hboxLayout"));
 			
 			line_edit = new QLineEdit(this);
-			choose_button = new QPushButton("open...",this);
-			
+			choose_button = new QPushButton("Open...",this);
+			reload_button = new QPushButton("Reload",this);
+
 			line_edit->setText(d_cfg_item->get_value());
 			line_edit->setEnabled(false);
 			
@@ -217,14 +218,21 @@ namespace GPlatesQtWidgets
 			//hboxLayout->addItem(spacer);
 			hboxLayout->addWidget(line_edit);
 			hboxLayout->addWidget(choose_button);
-			
+			hboxLayout->addWidget(reload_button);
 
 			QObject::connect(
 					choose_button,
 					SIGNAL(clicked(bool)),
 					this,
 					SLOT(handle_choose_button_clicked(bool)));
+
+			QObject::connect(
+					reload_button,
+					SIGNAL(clicked(bool)),
+					this,
+					SLOT(handle_reload_button_clicked(bool)));
 		}
+
 		private Q_SLOTS:
 			void
 			handle_choose_button_clicked(bool b)
@@ -249,10 +257,18 @@ namespace GPlatesQtWidgets
 				}
 			}
 
+			void
+			handle_reload_button_clicked(bool b)
+			{
+				d_cfg_item->set_value(line_edit->text());
+				Q_EMIT configuration_changed();
+			}
+
 	private:
 		QHBoxLayout* hboxLayout;
 		QLineEdit* line_edit;
 		QPushButton* choose_button;
+		QPushButton* reload_button;
 		QSpacerItem* spacer;
 		QString d_last_open_directory;
 		GPlatesGui::PythonCfgItem*  d_cfg_item;

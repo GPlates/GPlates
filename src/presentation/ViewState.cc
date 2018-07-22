@@ -76,21 +76,10 @@
 
 namespace
 {
-	const double DEFAULT_GRATICULES_DELTA_LAT = GPlatesMaths::PI / 6.0; // 30 degrees
-	const double DEFAULT_GRATICULES_DELTA_LON = GPlatesMaths::PI / 6.0; // 30 degrees
-
 	GPlatesGui::Colour
 	get_default_background_colour()
 	{
 		return GPlatesGui::Colour(0.35f, 0.35f, 0.35f);
-	}
-
-	GPlatesGui::Colour
-	get_default_graticules_colour()
-	{
-		GPlatesGui::Colour result = GPlatesGui::Colour::get_silver();
-		result.alpha() = 0.5f;
-		return result;
 	}
 }
 
@@ -151,10 +140,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
 	d_graticule_settings(
-			new GPlatesGui::GraticuleSettings(
-				DEFAULT_GRATICULES_DELTA_LAT,
-				DEFAULT_GRATICULES_DELTA_LON,
-				get_default_graticules_colour())),
+			new GPlatesGui::GraticuleSettings()),
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
 	d_velocity_legend_overlay_settings(

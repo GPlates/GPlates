@@ -66,15 +66,18 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Outputs a deformation line to the GMT output consisting of position and optional dilatation strain rate and strain.
+			 * Outputs a deformation line to the GMT output consisting of position and optional strain rates.
 			 */
 			void
 			print_gmt_deformation_line(
 					QTextStream &output_stream,
 					const GPlatesMaths::PointOnSphere &domain_point,
 					bool domain_point_lon_lat_format,
-					boost::optional<const double &> dilatation_rate,
-					boost::optional<const double &> dilatation)
+					boost::optional<const GPlatesAppLogic::DeformationStrain::StrainPrincipal &> principal_strain,
+					boost::optional<const GPlatesFileIO::DeformationExport::PrincipalStrainOptions &> principal_strain_options,
+					boost::optional<const double &> dilatation_strain,
+					boost::optional<const double &> dilatation_strain_rate,
+					boost::optional<const double &> second_invariant_strain_rate)
 			{
 				/*
 				 * Write the complete line to a string stream first, so that in case an exception
@@ -117,27 +120,72 @@ namespace GPlatesFileIO
 				static const unsigned SCALAR_FIELDWIDTH = SCALAR_PRECISION + 3;
 
 				//
-				// Output dilatation rate.
+				// Output principal strain.
 				//
 
-				if (dilatation_rate)
+				if (principal_strain &&
+					principal_strain_options) // Either both are true or both are false.
 				{
+					const double principal_angle_or_azimuth_in_degrees =
+							principal_strain_options->get_principal_angle_or_azimuth_in_degrees(principal_strain.get());
+
+					double principal_major;
+					double principal_minor;
+					if (principal_strain_options->output == DeformationExport::PrincipalStrainOptions::STRAIN)
+					{
+						// Output strain.
+						principal_major = principal_strain->principal1;
+						principal_minor = principal_strain->principal2;
+					}
+					else // PrincipalStrainOptions::STRETCH...
+					{
+						// Output stretch (1.0 + strain).
+						principal_major = 1.0 + principal_strain->principal1;
+						principal_minor = 1.0 + principal_strain->principal2;
+					}
+
 					// Don't format as fixed notation.
 					gmt_line << " "
-							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
-							<< dilatation_rate.get();
+							<< std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< std::setw(SCALAR_FIELDWIDTH) << principal_angle_or_azimuth_in_degrees << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << principal_major << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << principal_minor;
 				}
 
 				//
-				// Output accumulated dilatation.
+				// Output dilatation strain.
 				//
 
-				if (dilatation)
+				if (dilatation_strain)
 				{
 					// Don't format as fixed notation.
 					gmt_line << " "
 							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
-							<< dilatation.get();
+							<< dilatation_strain.get();
+				}
+
+				//
+				// Output dilatation strain rate.
+				//
+
+				if (dilatation_strain_rate)
+				{
+					// Don't format as fixed notation.
+					gmt_line << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< dilatation_strain_rate.get();
+				}
+
+				//
+				// Output second invariant strain rate.
+				//
+
+				if (second_invariant_strain_rate)
+				{
+					// Don't format as fixed notation.
+					gmt_line << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< second_invariant_strain_rate.get();
 				}
 
 				//
@@ -150,15 +198,17 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Write the deformed feature geometry (positions and dilatation strain rates).
+			 * Write the deformed feature geometry (positions and strain rates).
 			 */
 			void
 			print_gmt_deformed_feature_geometry(
 					QTextStream &output_stream,
 					const GPlatesAppLogic::TopologyReconstructedFeatureGeometry &deformed_feature_geometry,
 					bool domain_point_lon_lat_format,
-					bool include_dilatation_rate,
-					bool include_dilatation)
+					boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
+					bool include_dilatation_strain,
+					bool include_dilatation_strain_rate,
+					bool include_second_invariant_strain_rate)
 			{
 				//
 				// Print the feature header.
@@ -262,14 +312,18 @@ namespace GPlatesFileIO
 				point_deformation_strain_rate_seq_type deformation_strain_rates;
 				point_deformation_total_strain_seq_type deformation_strains;
 
-				// Only retrieve strain rates and total strains if needed.
+				// Only retrieve strain rates if needed.
 				boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
-				boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-				if (include_dilatation_rate)
+				if (include_dilatation_strain_rate ||
+					include_second_invariant_strain_rate)
 				{
 					deformation_strain_rates_option = deformation_strain_rates;
 				}
-				if (include_dilatation)
+
+				// Only retrieve strain if needed.
+				boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
+				if (include_principal_strain ||
+					include_dilatation_strain)
 				{
 					deformation_strains_option = deformation_strains;
 				}
@@ -280,37 +334,69 @@ namespace GPlatesFileIO
 						deformation_strain_rates_option,
 						deformation_strains_option);
 
-				boost::optional< std::vector<double> > dilatation_rates;
-				if (include_dilatation_rate)
+				if (include_principal_strain ||
+					include_dilatation_strain)
 				{
-					dilatation_rates = std::vector<double>();
-
-					// The number of domain points should match the number of deformation strain rates.
-					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-							deformed_domain_points.size() == deformation_strain_rates.size(),
-							GPLATES_ASSERTION_SOURCE);
-
-					dilatation_rates->reserve(deformation_strain_rates.size());
-					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
-					{
-						dilatation_rates->push_back(deformation_strain_rates[n].get_strain_rate_dilatation());
-					}
-				}
-
-				boost::optional< std::vector<double> > dilatations;
-				if (include_dilatation)
-				{
-					dilatations = std::vector<double>();
-
 					// The number of domain points should match the number of deformation strains.
 					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 							deformed_domain_points.size() == deformation_strains.size(),
 							GPLATES_ASSERTION_SOURCE);
+				}
 
-					dilatations->reserve(deformation_strains.size());
+				if (include_dilatation_strain_rate ||
+					include_second_invariant_strain_rate)
+				{
+					// The number of domain points should match the number of deformation strain rates.
+					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+							deformed_domain_points.size() == deformation_strain_rates.size(),
+							GPLATES_ASSERTION_SOURCE);
+				}
+
+				boost::optional< std::vector<GPlatesAppLogic::DeformationStrain::StrainPrincipal> > principal_strains;
+				if (include_principal_strain)
+				{
+					principal_strains = std::vector<GPlatesAppLogic::DeformationStrain::StrainPrincipal>();
+
+					principal_strains->reserve(deformation_strains.size());
 					for (unsigned int n = 0; n < deformation_strains.size(); ++n)
 					{
-						dilatations->push_back(deformation_strains[n].get_strain_dilatation());
+						principal_strains->push_back(deformation_strains[n].get_strain_principal());
+					}
+				}
+
+				boost::optional< std::vector<double> > dilatation_strains;
+				if (include_dilatation_strain)
+				{
+					dilatation_strains = std::vector<double>();
+
+					dilatation_strains->reserve(deformation_strains.size());
+					for (unsigned int n = 0; n < deformation_strains.size(); ++n)
+					{
+						dilatation_strains->push_back(deformation_strains[n].get_strain_dilatation());
+					}
+				}
+
+				boost::optional< std::vector<double> > dilatation_strain_rates;
+				if (include_dilatation_strain_rate)
+				{
+					dilatation_strain_rates = std::vector<double>();
+
+					dilatation_strain_rates->reserve(deformation_strain_rates.size());
+					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
+					{
+						dilatation_strain_rates->push_back(deformation_strain_rates[n].get_strain_rate_dilatation());
+					}
+				}
+
+				boost::optional< std::vector<double> > second_invariant_strain_rates;
+				if (include_second_invariant_strain_rate)
+				{
+					second_invariant_strain_rates = std::vector<double>();
+
+					second_invariant_strain_rates->reserve(deformation_strain_rates.size());
+					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
+					{
+						second_invariant_strain_rates->push_back(deformation_strain_rates[n].get_strain_rate_second_invariant());
 					}
 				}
 
@@ -320,24 +406,41 @@ namespace GPlatesFileIO
 				{
 					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
-					boost::optional<const double &> dilatation_rate;
-					if (include_dilatation_rate)
+					boost::optional<const GPlatesAppLogic::DeformationStrain::StrainPrincipal &> principal_strain;
+					boost::optional<const DeformationExport::PrincipalStrainOptions &> principal_strain_options;
+					if (include_principal_strain)
 					{
-						dilatation_rate = dilatation_rates.get()[index];
+						principal_strain = principal_strains.get()[index];
+						principal_strain_options = include_principal_strain.get();
 					}
 
-					boost::optional<const double &> dilatation;
-					if (include_dilatation)
+					boost::optional<const double &> dilatation_strain;
+					if (include_dilatation_strain)
 					{
-						dilatation = dilatations.get()[index];
+						dilatation_strain = dilatation_strains.get()[index];
+					}
+
+					boost::optional<const double &> dilatation_strain_rate;
+					if (include_dilatation_strain_rate)
+					{
+						dilatation_strain_rate = dilatation_strain_rates.get()[index];
+					}
+
+					boost::optional<const double &> second_invariant_strain_rate;
+					if (include_second_invariant_strain_rate)
+					{
+						second_invariant_strain_rate = second_invariant_strain_rates.get()[index];
 					}
 
 					print_gmt_deformation_line(
 							output_stream,
 							domain_point,
 							domain_point_lon_lat_format,
-							dilatation_rate,
-							dilatation);
+							principal_strain,
+							principal_strain_options,
+							dilatation_strain,
+							dilatation_strain_rate,
+							second_invariant_strain_rate);
 				}
 			}
 		}
@@ -353,8 +456,10 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_dilatation_rate,
-		bool include_dilatation)
+		boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -384,13 +489,48 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 	{
 		output_stream << " Latitude Longitude";
 	}
-	if (include_dilatation_rate)
+	if (include_principal_strain)
 	{
-		output_stream << " DilatationRate";
+		if (include_principal_strain->output == DeformationExport::PrincipalStrainOptions::STRAIN)
+		{
+			if (include_principal_strain->format == DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+			{
+				output_stream << " PrincipalStrainMajorAngle";
+			}
+			else
+			{
+				output_stream << " PrincipalStrainMajorAzimuth";
+			}
+
+			output_stream << " PrincipalStrainMajorAxis";
+			output_stream << " PrincipalStrainMinorAxis";
+		}
+		else
+		{
+			if (include_principal_strain->format == DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+			{
+				output_stream << " PrincipalStretchMajorAngle";
+			}
+			else
+			{
+				output_stream << " PrincipalStretchMajorAzimuth";
+			}
+
+			output_stream << " PrincipalStretchMajorAxis";
+			output_stream << " PrincipalStretchMinorAxis";
+		}
 	}
-	if (include_dilatation)
+	if (include_dilatation_strain)
 	{
-		output_stream << " Dilatation";
+		output_stream << " DilatationStrain";
+	}
+	if (include_dilatation_strain_rate)
+	{
+		output_stream << " DilatationStrainRate";
+	}
+	if (include_second_invariant_strain_rate)
+	{
+		output_stream << " TotalStrainRate";
 	}
 	output_stream << "\n";
 
@@ -418,13 +558,15 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 		{
 			const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *dfg = *dfg_iter;
 
-			// Write the topology reconstructed feature geometry (positions and dilatation rates).
+			// Write the topology reconstructed feature geometry (positions and strain rates).
 			print_gmt_deformed_feature_geometry(
 					output_stream,
 					*dfg,
 					domain_point_lon_lat_format,
-					include_dilatation_rate,
-					include_dilatation);
+					include_principal_strain,
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 }

@@ -213,24 +213,12 @@ namespace
 		const Model::FeatureType feature_type(feature_xml_element->get_name());
 
 		// Get the feature reader associated with the feature type.
-		boost::optional<IO::GpmlFeatureReaderInterface> feature_reader =
+		IO::GpmlFeatureReaderInterface feature_reader =
 				feature_reader_factory.get_feature_reader(feature_type);
-		if (!feature_reader)
-		{
-			append_recoverable_error_if(true,
-					feature_xml_element,
-					params,
-					IO::ReadErrors::UnrecognisedFeatureType,
-					IO::ReadErrors::FeatureNotInterpreted);
-
-			// Read in the feature properties as 'UninterpretedPropertyValue' property values.
-			// This ensures they get stored in the GPML file when it gets written back out to disk.
-			feature_reader = feature_reader_factory.get_uninterpreted_feature_reader();
-		}
 
 		// Create and read a new feature from the GPML file (from the already-read-in XML feature node).
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
-				feature_reader.get().read_feature(feature_xml_element, params);
+				feature_reader.read_feature(feature_xml_element, params);
 
 		// Add the new feature to the feature collection.
 		feature_collection->add(feature);

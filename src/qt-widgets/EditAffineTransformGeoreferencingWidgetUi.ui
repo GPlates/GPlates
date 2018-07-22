@@ -59,7 +59,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Start latitude:</string>
+               <string>Top latitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -81,7 +81,7 @@
                <string>°</string>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>6</number>
               </property>
               <property name="minimum">
                <double>-90.000000000000000</double>
@@ -110,7 +110,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>End latitude:</string>
+               <string>Bottom latitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -132,7 +132,7 @@
                <string>°</string>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>6</number>
               </property>
               <property name="minimum">
                <double>-90.000000000000000</double>
@@ -161,7 +161,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Start longitude:</string>
+               <string>Left longitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -183,7 +183,7 @@
                <string>°</string>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>6</number>
               </property>
               <property name="minimum">
                <double>-1000000000.000000000000000</double>
@@ -212,7 +212,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>End longitude:</string>
+               <string>Right longitude:</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -234,7 +234,7 @@
                <string>°</string>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>6</number>
               </property>
               <property name="minimum">
                <double>-1000000000.000000000000000</double>
@@ -259,7 +259,7 @@
           <item>
            <widget class="QLabel" name="lat_extents_label">
             <property name="text">
-             <string>If start latitude is less than end latitude then raster is flipped vertically.</string>
+             <string>If top latitude is less than bottom latitude then raster is flipped vertically (drawn South to North).</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -269,7 +269,7 @@
           <item>
            <widget class="QLabel" name="lon_extents_label">
             <property name="text">
-             <string>If end longitude is less than start longitude then raster is flipped horizontally (drawn East to West).</string>
+             <string>If right longitude is less than left longitude then raster is flipped horizontally (drawn East to West).</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -468,7 +468,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-1000000000.000000000000000</double>
@@ -490,7 +490,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-1000000000.000000000000000</double>
@@ -512,7 +512,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-1000000000.000000000000000</double>
@@ -534,7 +534,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-90.000000000000000</double>
@@ -556,7 +556,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-1000000000.000000000000000</double>
@@ -578,7 +578,7 @@
           <string/>
          </property>
          <property name="decimals">
-          <number>4</number>
+          <number>6</number>
          </property>
          <property name="minimum">
           <double>-1000000000.000000000000000</double>
@@ -604,6 +604,41 @@
       </layout>
      </widget>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QCheckBox" name="grid_line_registration_checkbox">
+       <property name="text">
+        <string>Grid line registration</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="push_button_help_grid_line_registration">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QCheckBox" name="advanced_checkbox">

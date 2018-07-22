@@ -36,6 +36,8 @@
 
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
+#include "maths/MathsUtils.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/LogException.h"
@@ -62,14 +64,67 @@ namespace GPlatesFileIO
 }
 
 
+GPlatesFileIO::DeformationExport::PrincipalStrainOptions::PrincipalStrainOptions(
+		OutputType output_,
+		FormatType format_) :
+	output(output_),
+	format(format_)
+{
+}
+
+
+double
+GPlatesFileIO::DeformationExport::PrincipalStrainOptions::get_principal_angle_or_azimuth_in_degrees(
+		const GPlatesAppLogic::DeformationStrain::StrainPrincipal &principal_strain) const
+{
+	// The angle in 'DeformationStrain::StrainPrincipal' is counter-clockwise and zero when axis points South
+	// (actually the major/minor axes are each more like a line than a direction, so flipping by
+	// 180 degrees doesn't matter and hence, for example, South and North are really the same line).
+	double principal_angle_or_azimuth_in_degrees = GPlatesMaths::convert_rad_to_deg(principal_strain.angle);
+
+	if (format == DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR)
+	{
+		// Convert angle such that -180 to +180 degrees is counter-clockwise from West and 0 is East.
+		principal_angle_or_azimuth_in_degrees -= 90.0;
+		// Make sure in range [-180, 180].
+		if (principal_angle_or_azimuth_in_degrees > 180.0)
+		{
+			principal_angle_or_azimuth_in_degrees -= 360.0;
+		}
+		else if (principal_angle_or_azimuth_in_degrees < -180.0)
+		{
+			principal_angle_or_azimuth_in_degrees += 360.0;
+		}
+	}
+	else // PrincipalStrainOptions::AZIMUTH_MAJOR_MINOR...
+	{
+		// Convert angle such that 0 to 360 degrees clockwise from North and 0 is North.
+		principal_angle_or_azimuth_in_degrees = 180.0 - principal_angle_or_azimuth_in_degrees;
+		// Make sure in range [0, 360].
+		if (principal_angle_or_azimuth_in_degrees > 360.0)
+		{
+			principal_angle_or_azimuth_in_degrees -= 360.0;
+		}
+		else if (principal_angle_or_azimuth_in_degrees < 0.0)
+		{
+			principal_angle_or_azimuth_in_degrees += 360.0;
+		}
+	}
+
+	return principal_angle_or_azimuth_in_degrees;
+}
+
+
 void
 GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 		const QString &filename,
 		const std::vector<const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *> &deformed_feature_geometry_seq,
 		GPlatesModel::ModelInterface &model,
 		const std::vector<const File::Reference *> &active_files,
-		bool include_dilatation_rate,
-		bool include_dilatation,
+		boost::optional<PrincipalStrainOptions> include_principal_strain,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -97,8 +152,10 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 				grouped_deformed_feature_geometry_seq,
 				filename,
 				model,
-				include_dilatation_rate,
-				include_dilatation);
+				include_principal_strain,
+				include_dilatation_strain,
+				include_dilatation_strain_rate,
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -127,8 +184,10 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
 					model,
-					include_dilatation_rate,
-					include_dilatation);
+					include_principal_strain,
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 }
@@ -142,8 +201,10 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_dilatation_rate,
-		bool include_dilatation,
+		boost::optional<PrincipalStrainOptions> include_principal_strain,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -174,8 +235,10 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
 				domain_point_lon_lat_format,
-				include_dilatation_rate,
-				include_dilatation);
+				include_principal_strain,
+				include_dilatation_strain,
+				include_dilatation_strain_rate,
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -207,8 +270,10 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
 					domain_point_lon_lat_format,
-					include_dilatation_rate,
-					include_dilatation);
+					include_principal_strain,
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 }

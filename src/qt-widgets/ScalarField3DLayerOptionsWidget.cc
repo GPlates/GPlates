@@ -504,12 +504,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					isosurface_render_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_render_mode_button(bool)));
-			QObject::connect(
-					cross_sections_render_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_render_mode_button(bool)));
 
 			QObject::connect(
 					isosurface_render_mode_button, SIGNAL(toggled(bool)),
@@ -547,16 +541,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					isosurface_depth_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)));
-			QObject::connect(
-					isosurface_scalar_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)),
-					Qt::UniqueConnection);
-			QObject::connect(
-					isosurface_gradient_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_colour_mode_button(bool)));
 
 			QObject::connect(
 					isosurface_depth_colour_mode_button, SIGNAL(toggled(bool)),
@@ -591,12 +575,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					cross_sections_scalar_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_cross_sections_colour_mode_button(bool)));
-			QObject::connect(
-					cross_sections_gradient_colour_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_cross_sections_colour_mode_button(bool)));
 
 			QObject::connect(
 					cross_sections_scalar_colour_mode_button, SIGNAL(toggled(bool)),
@@ -633,15 +611,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 
-			QObject::disconnect(
-					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::disconnect(
-					single_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::disconnect(
-					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 			switch (visual_layer_params->get_isosurface_deviation_window_mode())
 			{
 			case GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_DEVIATION_WINDOW_MODE_NONE:
@@ -657,15 +626,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
 			}
-			QObject::connect(
-					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::connect(
-					single_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
-			QObject::connect(
-					double_deviation_window_mode_button, SIGNAL(toggled(bool)),
-					this, SLOT(handle_isosurface_deviation_window_mode_button(bool)));
 
 			QObject::connect(
 					no_deviation_window_mode_button, SIGNAL(toggled(bool)),
@@ -1341,6 +1301,17 @@ void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_render_mode_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
@@ -1403,6 +1374,17 @@ void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_isosurface_deviation_window_mode_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
@@ -1552,6 +1534,17 @@ void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_isosurface_colour_mode_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
@@ -1592,6 +1585,17 @@ void
 GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_cross_sections_colour_mode_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{

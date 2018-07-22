@@ -54,6 +54,17 @@ namespace GPlatesPropertyValues
 			UNKNOWN
 		};
 
+		/**
+		 * Convert enum to raster element type using 'GetEnumAsType<Type>::type' where
+		 * 'Type' is replaced by a specific enumeration value.
+		 */
+		template<Type>
+		struct GetEnumAsType;
+
+		/**
+		 * Convert raster element type to enum using 'get_type_as_enum<RasterElementType>()' where
+		 * 'RasterElementType' is replaced by a specific raster element type.
+		 */
 		template<typename T>
 		Type
 		get_type_as_enum();
@@ -88,52 +99,30 @@ namespace GPlatesPropertyValues
 {
 	namespace RasterType
 	{
-		template<typename T>
-		Type
-		get_type_as_enum()
-		{
-			return UNKNOWN;
-		}
+		// Default type returned for UNINITIALISED and UNKNOWN enums.
+		template<Type> struct GetEnumAsType { typedef void type; };
+		template<> struct GetEnumAsType<INT8> { typedef qint8 type; };
+		template<> struct GetEnumAsType<UINT8> { typedef quint8 type; };
+		template<> struct GetEnumAsType<INT16> { typedef qint16 type; };
+		template<> struct GetEnumAsType<UINT16> { typedef quint16 type; };
+		template<> struct GetEnumAsType<INT32> { typedef qint32 type; };
+		template<> struct GetEnumAsType<UINT32> { typedef quint32 type; };
+		template<> struct GetEnumAsType<FLOAT> { typedef float type; };
+		template<> struct GetEnumAsType<DOUBLE> { typedef double type; };
+		template<> struct GetEnumAsType<RGBA8> { typedef GPlatesGui::rgba8_t type; };
 
-		template<>
-		Type
-		get_type_as_enum<void>();
-
-		template<>
-		Type
-		get_type_as_enum<qint8>();
-
-		template<>
-		Type
-		get_type_as_enum<quint8>();
-
-		template<>
-		Type
-		get_type_as_enum<qint16>();
-
-		template<>
-		Type
-		get_type_as_enum<quint16>();
-
-		template<>
-		Type
-		get_type_as_enum<qint32>();
-
-		template<>
-		Type
-		get_type_as_enum<quint32>();
-
-		template<>
-		Type
-		get_type_as_enum<float>();
-
-		template<>
-		Type
-		get_type_as_enum<double>();
-
-		template<>
-		Type
-		get_type_as_enum<GPlatesGui::rgba8_t>();
+		// Default enum returned for unrecognised types.
+		template<typename T> Type get_type_as_enum() { return UNKNOWN; }
+		template<> Type get_type_as_enum<void>();
+		template<> Type get_type_as_enum<qint8>();
+		template<> Type get_type_as_enum<quint8>();
+		template<> Type get_type_as_enum<qint16>();
+		template<> Type get_type_as_enum<quint16>();
+		template<> Type get_type_as_enum<qint32>();
+		template<> Type get_type_as_enum<quint32>();
+		template<> Type get_type_as_enum<float>();
+		template<> Type get_type_as_enum<double>();
+		template<> Type get_type_as_enum<GPlatesGui::rgba8_t>();
 	}
 }
 

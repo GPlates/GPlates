@@ -68,8 +68,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		const std::vector<const GPlatesAppLogic::ReconstructedScalarCoverage *> &reconstructed_scalar_coverage_seq,
 		GPlatesModel::ModelInterface &model,
 		const std::vector<const File::Reference *> &active_files,
-		bool include_dilatation_rate,
-		bool include_dilatation,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -97,8 +98,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 				grouped_reconstructed_scalar_coverage_seq,
 				filename,
 				model,
-				include_dilatation_rate,
-				include_dilatation);
+				include_dilatation_strain,
+				include_dilatation_strain_rate,
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -127,8 +129,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
 					model,
-					include_dilatation_rate,
-					include_dilatation);
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 }
@@ -142,8 +145,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool domain_point_lon_lat_format,
-		bool include_dilatation_rate,
-		bool include_dilatation,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -174,8 +178,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
 				domain_point_lon_lat_format,
-				include_dilatation_rate,
-				include_dilatation);
+				include_dilatation_strain,
+				include_dilatation_strain_rate,
+				include_second_invariant_strain_rate);
 	}
 
 	if (export_per_input_file)
@@ -207,8 +212,9 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
 					domain_point_lon_lat_format,
-					include_dilatation_rate,
-					include_dilatation);
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 }

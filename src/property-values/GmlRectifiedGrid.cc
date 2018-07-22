@@ -81,7 +81,7 @@ GPlatesPropertyValues::GmlRectifiedGrid::create(
 	axes_.push_back(XsString::create("latitude"));
 
 	// The origin is the top-left corner in the georeferencing.
-	Georeferencing::parameters_type params = georeferencing->parameters();
+	Georeferencing::parameters_type params = georeferencing->get_parameters();
 	GmlPoint::non_null_ptr_type origin_ = GmlPoint::create_from_pos_2d(
 			// This version of create takes (lat, lon) but doesn't check for valid lat/lon ranges
 			// in case georeferenced coordinates are not in a lat/lon coordinate system.
@@ -211,6 +211,12 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	// NOTE: We don't call 'GmlPoint::get_point_in_lat_lon()' because that checks the lat/lon are in
 	// valid ranges and our georeferenced origin might be in a *projection* coordinate system
 	// (ie, not a lat/lon coordinate system) and hence could easily be outside the valid lat/lon range.
+	//
+	// Even if there's no projection it might still be a *gridline* registered global raster which places
+	// the centres of the top and bottom pixels at the North and South poles and hence GDAL adjusted the
+	// origin by half a pixel (such that it is the *corner* of the top-left pixel, instead of *centre*).
+	// For example, a 1 degree *gridline*-registereed raster would have an origin latitude of 90.5 degrees
+	// to make it *pixel* registered (the registration GDAL and GPlates uses).
 	const std::pair<double, double> &origin_2d = revision.origin.get_revisionable()->get_point_2d();
 
 	Georeferencing::parameters_type params = {{{

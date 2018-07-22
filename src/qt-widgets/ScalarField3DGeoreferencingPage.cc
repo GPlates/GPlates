@@ -71,14 +71,9 @@ GPlatesQtWidgets::ScalarField3DGeoreferencingPage::initializePage()
 		d_last_seen_raster_width = d_raster_width;
 		d_last_seen_raster_height = d_raster_height;
 
-		d_georeferencing->reset_to_global_extents(
-				d_last_seen_raster_width,
-				d_last_seen_raster_height);
-		d_georeferencing_widget->set_raster_size(
+		d_georeferencing_widget->reset(
 				d_last_seen_raster_width,
 				d_last_seen_raster_height);
 	}
-
-	d_georeferencing_widget->refresh();
 }
 

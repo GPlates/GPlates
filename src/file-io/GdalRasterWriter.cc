@@ -231,7 +231,7 @@ GPlatesFileIO::GDALRasterWriter::get_supported_formats(
 	// Ensure all drivers have been registered.
 	GdalUtils::register_all_drivers();
 
-	// Add support for numerical rasters (eg, GMT grid/NetCDF files), written by GDAL.
+	// Add support for numerical rasters (eg, NetCDF/GMT files), written by GDAL.
 	// These formats can also support RGBA data such as GeoTIFF (*.tif) but have the advantage
 	// (due to GDAL) of also supporting georeferencing and spatial reference systems
 	// (unlike the RGBA raster writer above).
@@ -262,17 +262,25 @@ GPlatesFileIO::GDALRasterWriter::get_supported_formats(
 	add_supported_format(
 			supported_formats,
 			"nc", // filename_extension
-			"NetCDF grid data", // format_description
+			"NetCDF/GMT grid data", // format_description
 			"application/x-netcdf", // format_mime_type
 			netcdf_creation_options);
 
+	//
+	// There is a separate "GMT" driver (separate from the "netCDF" driver) that the GDAL docs state:
+	//
+	//   "This driver is primarily intended to provide a mechanism for grid interchange with the GMT package"
+	// 
+	// ...however most users just use NetCDF ".nc" files and rename the extension to ".grd" since GMT
+	// supports NetCDF. So we'll just provide an option to write out NetCDF files as either ".nc" or ".grd"
+	// using the NetCDF driver and ignore the GMT driver.
+	//
 	add_supported_format(
 			supported_formats,
 			"grd", // filename_extension
-			"GMT grid data", // format_description
+			"NetCDF/GMT grid data", // format_description
 			"application/x-netcdf", // format_mime_type
-			// Unfortunately none of the NetCDF creation options can be used for GMT NetCDF...
-			InternalFormatInfo("GMT"));
+			netcdf_creation_options);
 
 
 	InternalFormatInfo tiff_creation_options("GTiff");
@@ -575,7 +583,7 @@ GPlatesFileIO::GDALRasterWriter::set_georeferencing(
 	double affine_geo_transform[6];
 
 	// Extract the affine transform parameters.
-	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->parameters();
+	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->get_parameters();
 	for (unsigned int i = 0; i != GPlatesPropertyValues::Georeferencing::parameters_type::NUM_COMPONENTS; ++i)
 	{
 		affine_geo_transform[i] = geo_parameters.components[i];

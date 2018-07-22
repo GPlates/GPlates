@@ -43,6 +43,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
@@ -66,8 +68,10 @@ namespace
 	insert_deformed_feature_geometry_into_feature_collection(
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			const GPlatesAppLogic::TopologyReconstructedFeatureGeometry *deformed_feature_geometry,
-			bool include_dilatation_rate,
-			bool include_dilatation)
+			boost::optional<GPlatesFileIO::DeformationExport::PrincipalStrainOptions> include_principal_strain,
+			bool include_dilatation_strain,
+			bool include_dilatation_strain_rate,
+			bool include_second_invariant_strain_rate)
 	{
 		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
 				point_deformation_strain_rate_seq_type;
@@ -77,14 +81,18 @@ namespace
 		point_deformation_strain_rate_seq_type deformation_strain_rates;
 		point_deformation_total_strain_seq_type deformation_strains;
 
-		// Only retrieve strain rates and total strains if needed.
+		// Only retrieve strain rates if needed.
 		boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
-		boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
-		if (include_dilatation_rate)
+		if (include_dilatation_strain_rate ||
+			include_second_invariant_strain_rate)
 		{
 			deformation_strain_rates_option = deformation_strain_rates;
 		}
-		if (include_dilatation)
+
+		// Only retrieve strain if needed.
+		boost::optional<point_deformation_total_strain_seq_type &> deformation_strains_option;
+		if (include_principal_strain ||
+			include_dilatation_strain)
 		{
 			deformation_strains_option = deformation_strains;
 		}
@@ -126,58 +134,158 @@ namespace
 		// The reconstructed range (scalars).
 		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> reconstructed_ranges;
 
-		// Include dilatation rate if requested.
-		if (include_dilatation_rate)
+		// Include principal strain if requested.
+		if (include_principal_strain)
 		{
-			std::vector<double> dilatation_rates;
-			dilatation_rates.reserve(deformation_strain_rates.size());
-			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
-			{
-				dilatation_rates.push_back(deformation_strain_rates[d].get_strain_rate_dilatation());
-			}
-
-			GPlatesPropertyValues::ValueObjectType dilatation_rate_type =
-					GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationRate");
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_rate_xml_attrs;
-			GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
-			GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
-			dilatation_rate_xml_attrs.insert(std::make_pair(uom, per_second));
-
-			// Add the dilatation rate scalar values we're exporting.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_rate_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
-							dilatation_rate_type,
-							dilatation_rate_xml_attrs,
-							dilatation_rates.begin(),
-							dilatation_rates.end());
-
-			reconstructed_ranges.push_back(dilatation_rate_range);
-		}
-
-		// Include accumulated dilatation if requested.
-		if (include_dilatation)
-		{
-			std::vector<double> dilatations;
-			dilatations.reserve(deformation_strains.size());
+			std::vector<double> principal_majors;
+			std::vector<double> principal_minors;
+			std::vector<double> principal_angles;
+			principal_majors.reserve(deformation_strains.size());
+			principal_minors.reserve(deformation_strains.size());
+			principal_angles.reserve(deformation_strains.size());
 			for (unsigned int d = 0; d < deformation_strains.size(); ++d)
 			{
-				dilatations.push_back(deformation_strains[d].get_strain_dilatation());
+				const GPlatesAppLogic::DeformationStrain::StrainPrincipal principal_strain =
+						deformation_strains[d].get_strain_principal();
+
+				if (include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN)
+				{
+					// Output strain.
+					principal_majors.push_back(principal_strain.principal1);
+					principal_minors.push_back(principal_strain.principal2);
+				}
+				else // PrincipalStrainOptions::STRETCH...
+				{
+					// Output stretch (1.0 + strain).
+					principal_majors.push_back(1.0 + principal_strain.principal1);
+					principal_minors.push_back(1.0 + principal_strain.principal2);
+				}
+
+				principal_angles.push_back(
+						include_principal_strain->get_principal_angle_or_azimuth_in_degrees(principal_strain));
 			}
 
-			GPlatesPropertyValues::ValueObjectType dilatation_type =
-					GPlatesPropertyValues::ValueObjectType::create_gpml("Dilatation");
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_xml_attrs;
-			// Total dilatation has no units so don't add any "uom" XML attribute.
-
-			// Add the dilatation scalar values we're exporting.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_range =
+			// Add the principal angle scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type principal_angle_xml_attrs;
+			principal_angle_xml_attrs.insert(std::make_pair(
+					GPlatesModel::XmlAttributeName::create_gpml("uom"),
+					GPlatesModel::XmlAttributeValue("urn:x-epsg:v0.1:uom:degree")));
+			reconstructed_ranges.push_back(
 					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
-							dilatation_type,
-							dilatation_xml_attrs,
-							dilatations.begin(),
-							dilatations.end());
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN
+							? (include_principal_strain->format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
+									? GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAngle")
+									: GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAzimuth"))
+							: (include_principal_strain->format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
+									? GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAngle")
+									: GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAzimuth")),
+					principal_angle_xml_attrs,
+					principal_angles.begin(),
+					principal_angles.end()));
 
-			reconstructed_ranges.push_back(dilatation_range);
+			// Add the principal major scalar values we're exporting.
+			reconstructed_ranges.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAxis") :
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAxis"),
+					// Strain/stretch has no units so don't add any "uom" XML attribute...
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+					principal_majors.begin(),
+					principal_majors.end()));
+
+			// Add the principal minor scalar values we're exporting.
+			reconstructed_ranges.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMinorAxis") :
+							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMinorAxis"),
+					// Strain/stretch has no units so don't add any "uom" XML attribute...
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+					principal_minors.begin(),
+					principal_minors.end()));
+		}
+
+		// Include dilatation strain if requested.
+		if (include_dilatation_strain)
+		{
+			std::vector<double> dilatation_strains;
+			dilatation_strains.reserve(deformation_strains.size());
+			for (unsigned int d = 0; d < deformation_strains.size(); ++d)
+			{
+				dilatation_strains.push_back(deformation_strains[d].get_strain_dilatation());
+			}
+
+			GPlatesPropertyValues::ValueObjectType dilatation_strain_type =
+					GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationStrain");
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_strain_xml_attrs;
+			// Dilatation has no units so don't add any "uom" XML attribute.
+
+			// Add the dilatation strain scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_range =
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+							dilatation_strain_type,
+							dilatation_strain_xml_attrs,
+							dilatation_strains.begin(),
+							dilatation_strains.end());
+
+			reconstructed_ranges.push_back(dilatation_strain_range);
+		}
+
+		// Include dilatation strain rate if requested.
+		if (include_dilatation_strain_rate)
+		{
+			std::vector<double> dilatation_strain_rates;
+			dilatation_strain_rates.reserve(deformation_strain_rates.size());
+			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
+			{
+				dilatation_strain_rates.push_back(deformation_strain_rates[d].get_strain_rate_dilatation());
+			}
+
+			GPlatesPropertyValues::ValueObjectType dilatation_strain_rate_type =
+					GPlatesPropertyValues::ValueObjectType::create_gpml("DilatationStrainRate");
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type dilatation_strain_rate_xml_attrs;
+			GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
+			GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
+			dilatation_strain_rate_xml_attrs.insert(std::make_pair(uom, per_second));
+
+			// Add the dilatation strain rate scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_rate_range =
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+							dilatation_strain_rate_type,
+							dilatation_strain_rate_xml_attrs,
+							dilatation_strain_rates.begin(),
+							dilatation_strain_rates.end());
+
+			reconstructed_ranges.push_back(dilatation_strain_rate_range);
+		}
+
+		// Include second invariant strain rate if requested.
+		if (include_second_invariant_strain_rate)
+		{
+			std::vector<double> second_invariant_strain_rates;
+			second_invariant_strain_rates.reserve(deformation_strain_rates.size());
+			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
+			{
+				second_invariant_strain_rates.push_back(deformation_strain_rates[d].get_strain_rate_second_invariant());
+			}
+
+			GPlatesPropertyValues::ValueObjectType second_invariant_strain_rate_type =
+					GPlatesPropertyValues::ValueObjectType::create_gpml("TotalStrainRate");
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type second_invariant_strain_rate_xml_attrs;
+			GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
+			GPlatesModel::XmlAttributeValue per_second("urn:x-si:v1999:uom:per_second");
+			second_invariant_strain_rate_xml_attrs.insert(std::make_pair(uom, per_second));
+
+			// Add the second invariant strain rate scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type second_invariant_strain_rate_range =
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+							second_invariant_strain_rate_type,
+							second_invariant_strain_rate_xml_attrs,
+							second_invariant_strain_rates.begin(),
+							second_invariant_strain_rates.end());
+
+			reconstructed_ranges.push_back(second_invariant_strain_rate_range);
 		}
 
 
@@ -205,18 +313,14 @@ namespace
 			return;
 		}
 
-		if (include_dilatation_rate ||
-			include_dilatation)
+		if (!GPlatesModel::ModelUtils::add_property(
+				deformed_feature_geometry_feature_ref,
+				range_property_name.get(),
+				reconstructed_range_property))
 		{
-			if (!GPlatesModel::ModelUtils::add_property(
-					deformed_feature_geometry_feature_ref,
-					range_property_name.get(),
-					reconstructed_range_property))
-			{
-				// We probably changed the domain/range property names so we could output a scalar coverage,
-				// but the feature type doesn't support them. Return without outputting the feature.
-				return;
-			}
+			// We probably changed the domain/range property names so we could output a scalar coverage,
+			// but the feature type doesn't support them. Return without outputting the feature.
+			return;
 		}
 
 		// Finally add the feature to the feature collection.
@@ -230,8 +334,10 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 		const std::list<deformed_feature_geometry_group_type> &deformed_feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		GPlatesModel::ModelInterface &model,
-		bool include_dilatation_rate,
-		bool include_dilatation)
+		boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
+		bool include_dilatation_strain,
+		bool include_dilatation_strain_rate,
+		bool include_second_invariant_strain_rate)
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
@@ -268,8 +374,10 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 			insert_deformed_feature_geometry_into_feature_collection(
 					feature_collection_ref,
 					dfg,
-					include_dilatation_rate,
-					include_dilatation);
+					include_principal_strain,
+					include_dilatation_strain,
+					include_dilatation_strain_rate,
+					include_second_invariant_strain_rate);
 		}
 	}
 

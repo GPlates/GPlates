@@ -160,6 +160,7 @@ set(srcs
     GMTColourNames.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
+    GraticuleSettings.cc
     GraticuleSettings.h
     GuiDebug.cc
     GuiDebug.h

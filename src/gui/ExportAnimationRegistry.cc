@@ -332,8 +332,13 @@ namespace GPlatesGui
 			const ExportOptionsUtils::ExportFileOptions default_deformation_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
-			const bool default_include_dilatation_rate = true;
-			const bool default_include_dilatation = false;
+			const bool default_include_principal_strain = false;
+			const GPlatesFileIO::DeformationExport::PrincipalStrainOptions default_principal_strain_options(
+					/*output*/GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN,
+					/*format*/GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR);
+			const bool default_include_dilatation_strain = false;
+			const bool default_include_dilatation_strain_rate = true;
+			const bool default_include_second_invariant_strain_rate = false;
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
@@ -343,8 +348,11 @@ namespace GPlatesGui
 							new ExportDeformationAnimationStrategy::GpmlConfiguration(
 									add_export_filename_extension("deformation_%0.2fMa", ExportAnimationType::GPML),
 									default_deformation_file_export_options,
-									default_include_dilatation_rate,
-									default_include_dilatation)),
+									default_include_principal_strain,
+									default_principal_strain_options,
+									default_include_dilatation_strain,
+									default_include_dilatation_strain_rate,
+									default_include_second_invariant_strain_rate)),
 					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
@@ -366,8 +374,11 @@ namespace GPlatesGui
 									default_deformation_file_export_options,
 									// Lon/lat is the default GMT ordering...
 									ExportDeformationAnimationStrategy::GMTConfiguration::LON_LAT,
-									default_include_dilatation_rate,
-									default_include_dilatation)),
+									default_include_principal_strain,
+									default_principal_strain_options,
+									default_include_dilatation_strain,
+									default_include_dilatation_strain_rate,
+									default_include_second_invariant_strain_rate)),
 					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
@@ -391,7 +402,8 @@ namespace GPlatesGui
 			const ExportOptionsUtils::ExportFileOptions default_scalar_coverage_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
-			const bool default_include_dilatation_rate = false;
+			const bool default_include_dilatation_strain = false;
+			const bool default_include_dilatation_strain_rate = false;
 			const bool default_include_dilatation = false;
 
 			registry.register_exporter(
@@ -402,7 +414,8 @@ namespace GPlatesGui
 							new ExportScalarCoverageAnimationStrategy::GpmlConfiguration(
 									add_export_filename_extension("scalar_coverage_%0.2fMa", ExportAnimationType::GPML),
 									default_scalar_coverage_file_export_options,
-									default_include_dilatation_rate,
+									default_include_dilatation_strain,
+									default_include_dilatation_strain_rate,
 									default_include_dilatation)),
 					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
 					boost::bind(
@@ -425,7 +438,8 @@ namespace GPlatesGui
 									default_scalar_coverage_file_export_options,
 									// Lon/lat is the default GMT ordering...
 									ExportScalarCoverageAnimationStrategy::GMTConfiguration::LON_LAT,
-									default_include_dilatation_rate,
+									default_include_dilatation_strain,
+									default_include_dilatation_strain_rate,
 									default_include_dilatation)),
 					&create_animation_strategy<ExportScalarCoverageAnimationStrategy>,
 					boost::bind(
@@ -1219,6 +1233,7 @@ namespace GPlatesGui
 				-180/*left*/,
 				180/*right*/
 			}}};
+			const bool default_use_grid_line_registration = false;
 
 			// Determine which colour raster formats are supported.
 			const GPlatesFileIO::RasterWriter::supported_formats_type colour_raster_supported_formats =
@@ -1228,8 +1243,8 @@ namespace GPlatesGui
 			// This includes colour-only formats and numerical formats that also support colour (such as GeoTIFF).
 			const ExportAnimationType::Format colour_raster_formats[] =
 			{
-				ExportAnimationType::NETCDF,
-				ExportAnimationType::GMT_NETCDF,
+				ExportAnimationType::NETCDF_NC,
+				ExportAnimationType::NETCDF_GRD,
 				ExportAnimationType::GEOTIFF,
 				ExportAnimationType::ERDAS_IMAGINE,
 				ExportAnimationType::ERMAPPER,
@@ -1287,6 +1302,7 @@ namespace GPlatesGui
 										ExportRasterAnimationStrategy::Configuration::COLOUR,
 										default_raster_resolution_in_degrees,
 										default_raster_lat_lon_extents,
+										default_use_grid_line_registration,
 										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(
@@ -1319,6 +1335,7 @@ namespace GPlatesGui
 				-180/*left*/,
 				180/*right*/
 			}}};
+			const bool default_use_grid_line_registration = false;
 
 			// Determine which numerical raster formats are supported.
 			const GPlatesFileIO::RasterWriter::supported_formats_type numerical_raster_supported_formats =
@@ -1327,8 +1344,8 @@ namespace GPlatesGui
 			// A list of numerical raster formats we will try to register.
 			const ExportAnimationType::Format numerical_raster_formats[] =
 			{
-				ExportAnimationType::NETCDF,
-				ExportAnimationType::GMT_NETCDF,
+				ExportAnimationType::NETCDF_NC,
+				ExportAnimationType::NETCDF_GRD,
 				ExportAnimationType::GEOTIFF,
 				ExportAnimationType::ERDAS_IMAGINE,
 				ExportAnimationType::ERMAPPER
@@ -1374,6 +1391,7 @@ namespace GPlatesGui
 										ExportRasterAnimationStrategy::Configuration::NUMERICAL,
 										default_raster_resolution_in_degrees,
 										default_raster_lat_lon_extents,
+										default_use_grid_line_registration,
 										default_raster_compress)),
 						&create_animation_strategy<ExportRasterAnimationStrategy>,
 						boost::bind(

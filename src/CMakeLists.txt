@@ -100,8 +100,10 @@ if ( NOT WIN32 )
 	# type of build (Release/Debug).
 	# The two following lines scrub out the -g and -O<something> from
 	# CMAKE_CXX_FLAGS but leave the good stuff (e.g. -frounding-math).
-	string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-	string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	if (CMAKE_CXX_FLAGS)
+		string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+		string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	endif (CMAKE_CXX_FLAGS)
 
 	# Valgrind doesn't emulate the FPU properly, so CGAL will complain about
 	# incorrect rounding when run under Valgrind (this is even if we compile

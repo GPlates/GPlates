@@ -121,6 +121,7 @@ namespace GPlatesFileIO
 			InvalidOgrPolygon,
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
+			InvalidShapefileGeometryImportTime,
 			UnableToMatchOgrGeometryWithFeature,
 			NoGeometriesFoundInMultiGeometry,
 			
@@ -269,7 +270,6 @@ namespace GPlatesFileIO
 			PropertyConvertedFromTimeDependent,
 			PropertyConvertedBetweenTimeDependentTypes,
 			PropertyNotInterpreted,
-			FeatureNotInterpreted,
 			AttributesIgnored,
 			
 			// The following are specific to GMAP vgp files

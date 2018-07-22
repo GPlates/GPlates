@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "GpmlFeatureReaderFactory.h"
@@ -32,6 +33,7 @@
 
 #include "model/Gpgim.h"
 #include "model/GpgimFeatureClass.h"
+#include "model/GpgimProperty.h"
 
 
 GPlatesFileIO::GpmlFeatureReaderFactory::GpmlFeatureReaderFactory(
@@ -40,10 +42,42 @@ GPlatesFileIO::GpmlFeatureReaderFactory::GpmlFeatureReaderFactory(
 	d_property_structural_type_reader(property_structural_type_reader),
 	d_gpml_version(gpml_version)
 {
+	// Create the property readers to use for any unprocessed properties remaining after
+	// using a feature reader designed for a specific feature type (ie, to read any properties
+	// not expected for a feature type).
+
+	// We add a property reader for each property name present in the GPGIM.
+	GPlatesModel::Gpgim::property_seq_type gpgim_properties = GPlatesModel::Gpgim::instance().get_properties();
+	d_unprocessed_property_readers.reserve(gpgim_properties.size());
+	BOOST_FOREACH(
+			GPlatesModel::GpgimProperty::non_null_ptr_to_const_type gpgim_property,
+			gpgim_properties)
+	{
+		// If the property is required then make it optional.
+		// These properties should be optional because they are not allowed, for the feature type,
+		// by the GPGIM. And also means if this property has already been read (by another feature reader)
+		// then this property reader won't emit a read error.
+		if (gpgim_property->get_multiplicity() == GPlatesModel::GpgimProperty::ONE)
+		{
+			GPlatesModel::GpgimProperty::non_null_ptr_type cloned_gpgim_property = gpgim_property->clone();
+			cloned_gpgim_property->set_multiplicity(GPlatesModel::GpgimProperty::ZERO_OR_ONE);
+			gpgim_property = cloned_gpgim_property;
+		}
+		else if (gpgim_property->get_multiplicity() == GPlatesModel::GpgimProperty::ONE_OR_MORE)
+		{
+			GPlatesModel::GpgimProperty::non_null_ptr_type cloned_gpgim_property = gpgim_property->clone();
+			cloned_gpgim_property->set_multiplicity(GPlatesModel::GpgimProperty::ZERO_OR_MORE);
+			gpgim_property = cloned_gpgim_property;
+		}
+
+		// Add a property reader for the current GPGIM property.
+		d_unprocessed_property_readers.push_back(
+				GpmlPropertyReader::create(gpgim_property, property_structural_type_reader, gpml_version));
+	}
 }
 
 
-boost::optional<GPlatesFileIO::GpmlFeatureReaderInterface>
+GPlatesFileIO::GpmlFeatureReaderInterface
 GPlatesFileIO::GpmlFeatureReaderFactory::get_feature_reader(
 		const GPlatesModel::FeatureType &feature_type) const
 {
@@ -52,26 +86,21 @@ GPlatesFileIO::GpmlFeatureReaderFactory::get_feature_reader(
 			get_feature_reader_impl(feature_type);
 	if (!feature_reader_impl)
 	{
-		return boost::none;
+		// The feature reader to be used when a feature type is not recognised by the GPGIM just creates
+		// a new feature and reads in the feature-id and revision-id that exist in every GPlates feature.
+		feature_reader_impl = GpmlFeatureCreator::create(d_gpml_version);
 	}
 
-	// Create a final catch-all feature reader impl that reads all unprocessed feature
-	// properties as 'UninterpretedPropertyValue'.
-	GpmlUninterpretedFeatureReader::non_null_ptr_type uninterpreted_feature_reader_impl =
-			GpmlUninterpretedFeatureReader::create(feature_reader_impl.get());
+	// Create a final catch-all feature reader impl that reads all unprocessed properties using
+	// any of the properties defined in the GPGIM.
+	GpmlAnyPropertyFeatureReader::non_null_ptr_type unprocessed_feature_reader_impl =
+			GpmlAnyPropertyFeatureReader::create(feature_reader_impl.get(), d_unprocessed_property_readers);
 
-	// NOTE: We add the final catch-all uninterpreted feature reader here since this ensures we only
-	// have one uninterpreted feature reader at the head of the feature reader's chain (ie, it avoids
-	// a feature reader chain that alternates between regular and uninterpreted feature readers).
+	// NOTE: We add the final catch-all unprocessed feature reader here since this ensures we only
+	// have one unprocessed feature reader at the head of the feature reader's chain (ie, it avoids
+	// a feature reader chain that alternates between regular and unprocessed feature readers).
 
-	return GpmlFeatureReaderInterface(uninterpreted_feature_reader_impl);
-}
-
-
-GPlatesFileIO::GpmlFeatureReaderInterface
-GPlatesFileIO::GpmlFeatureReaderFactory::get_uninterpreted_feature_reader() const
-{
-	return GpmlFeatureReaderInterface(get_uninterpreted_feature_reader_impl());
+	return GpmlFeatureReaderInterface(unprocessed_feature_reader_impl);
 }
 
 
@@ -223,25 +252,6 @@ GPlatesFileIO::GpmlFeatureReaderFactory::get_parent_feature_reader_impl(
 
 	// Get the feature reader implementation associated with the parent GPGIM feature class.
 	return get_feature_reader_impl(parent_feature_type);
-}
-
-
-GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type
-GPlatesFileIO::GpmlFeatureReaderFactory::get_uninterpreted_feature_reader_impl() const
-{
-	if (!d_uninterpreted_feature_reader_impl)
-	{
-		// Create the terminal feature reader impl that actually creates a new feature and reads in
-		// the feature-id and revision-id that exist in every GPlates feature.
-		GpmlFeatureCreator::non_null_ptr_to_const_type feature_creator =
-				GpmlFeatureCreator::create(d_gpml_version);
-
-		// Create a feature reader impl that reads all feature properties as 'UninterpretedPropertyValue'
-		// property values - this is used for feature types that are not recognised by the GPGIM.
-		d_uninterpreted_feature_reader_impl = GpmlUninterpretedFeatureReader::create(feature_creator);
-	}
-
-	return d_uninterpreted_feature_reader_impl.get();
 }
 
 

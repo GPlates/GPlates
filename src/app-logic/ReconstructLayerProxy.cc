@@ -341,30 +341,26 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_time_spans(
 		const TimeSpanUtils::TimeRange &time_range,
 		const ReconstructParams &reconstruct_params)
 {
-	// We're not going to cache the results so we don't need to check the input proxies.
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
 
+	// Use a trick to keep the context state cached after we return from the current function.
+	// TODO: Implement a cache specifically for time spans.
+#if 0
 	// Find an existing context state or create a new one.
-	ReconstructContext::context_state_reference_type context_state_ref;
-
-	// See if we've already got a reconstruct context state for the current reconstruct params.
-	reconstruct_context_state_map_type::iterator context_state_weak_ref_iter =
-			d_reconstruct_context_state_map.find(reconstruct_params);
-	if (context_state_weak_ref_iter != d_reconstruct_context_state_map.end() &&
-		!context_state_weak_ref_iter->second.expired())
-	{
-		// Use existing reconstruct context state...
-		context_state_ref = context_state_weak_ref_iter->second.lock();
-	}
-	else
-	{
-		// Create a new reconstruct context state...
-		//
-		// The context state has either been released from the least-recently used reconstruction
-		// cache (when no ReconstructionInfo objects reference it anymore) or was never created
-		// to begin with - so we create a new one.
-		context_state_ref = d_reconstruct_context.create_context_state(
-				get_reconstruct_method_context(reconstruct_params));
-	}
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			get_or_create_reconstruct_context(reconstruct_params);
+#else
+	// Similar to calling 'get_or_create_reconstruct_context()' but also caches the context state
+	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
+	// re-used (rather than just having it get destroyed as soon as we leave the current function.
+	//
+	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			d_cached_reconstructions.get_value(
+					reconstruction_cache_key_type(0.0/*reconstruction_time*/, reconstruct_params))
+							.context_state;
+#endif
 
 	return d_reconstruct_context.get_reconstructed_feature_time_spans(
 			reconstructed_feature_time_spans,
@@ -378,30 +374,26 @@ GPlatesAppLogic::ReconstructLayerProxy::get_topology_reconstructed_feature_time_
 		std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
 		const ReconstructParams &reconstruct_params)
 {
-	// We're not going to cache the results so we don't need to check the input proxies.
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
 
+	// Use a trick to keep the context state cached after we return from the current function.
+	// TODO: Implement a cache specifically for time spans.
+#if 0
 	// Find an existing context state or create a new one.
-	ReconstructContext::context_state_reference_type context_state_ref;
-
-	// See if we've already got a reconstruct context state for the current reconstruct params.
-	reconstruct_context_state_map_type::iterator context_state_weak_ref_iter =
-			d_reconstruct_context_state_map.find(reconstruct_params);
-	if (context_state_weak_ref_iter != d_reconstruct_context_state_map.end() &&
-		!context_state_weak_ref_iter->second.expired())
-	{
-		// Use existing reconstruct context state...
-		context_state_ref = context_state_weak_ref_iter->second.lock();
-	}
-	else
-	{
-		// Create a new reconstruct context state...
-		//
-		// The context state has either been released from the least-recently used reconstruction
-		// cache (when no ReconstructionInfo objects reference it anymore) or was never created
-		// to begin with - so we create a new one.
-		context_state_ref = d_reconstruct_context.create_context_state(
-				get_reconstruct_method_context(reconstruct_params));
-	}
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			get_or_create_reconstruct_context(reconstruct_params);
+#else
+	// Similar to calling 'get_or_create_reconstruct_context()' but also caches the context state
+	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
+	// re-used (rather than just having it get destroyed as soon as we leave the current function.
+	//
+	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			d_cached_reconstructions.get_value(
+					reconstruction_cache_key_type(0.0/*reconstruction_time*/, reconstruct_params))
+							.context_state;
+#endif
 
 	return d_reconstruct_context.get_topology_reconstructed_feature_time_spans(
 				topology_reconstructed_feature_time_spans,
@@ -428,7 +420,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_topological_sections(
 	const ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	//
-	// We don't want to want to re-generate the cache - we only want to re-use the cache if it's there.
+	// We don't want to re-generate the cache - we only want to re-use the cache if it's there.
 	// We also want the context state to remain (in the cached ReconstructionInfo) so it can be re-used
 	// (this is really just re-using anything that happens to be cached inside the context's ReconstructMethod instances).
 	//
@@ -1361,10 +1353,28 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructionInfo
 GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 		const reconstruction_cache_key_type &reconstruction_cache_key)
 {
+	// See if we've already got a reconstruct context state for the specified reconstruct params
+	// part of the key, ignoring the reconstruction time part.
+	//
+	// This is important because we don't want to create a new context for each new
+	// reconstruction time (when the reconstruct parameters haven't changed) since, when geometries
+	// are reconstructed using topologies, this results in excessive generation of expensive
+	// reconstruction lookup tables in the reconstruct methods (inside the reconstruct context).
+	const ReconstructParams &reconstruct_params = reconstruction_cache_key.second;
+	const ReconstructContext::context_state_reference_type context_state_ref =
+			get_or_create_reconstruct_context(reconstruct_params);
+
+	return ReconstructionInfo(context_state_ref);
+}
+
+
+GPlatesAppLogic::ReconstructContext::context_state_reference_type
+GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstruct_context(
+		const ReconstructParams &reconstruct_params)
+{
 	// First go through the sequence of mapped reconstruct context states and remove any expired entries.
 	// This is to prevent the accumulation of expired entries over time.
-	reconstruct_context_state_map_type::iterator context_state_iter =
-			d_reconstruct_context_state_map.begin();
+	reconstruct_context_state_map_type::iterator context_state_iter = d_reconstruct_context_state_map.begin();
 	while (context_state_iter != d_reconstruct_context_state_map.end())
 	{
 		reconstruct_context_state_map_type::iterator current_context_state_iter = context_state_iter;
@@ -1376,12 +1386,7 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 		}
 	}
 
-	// See if we've already got a reconstruct context state for the current reconstruct params.
-	// This is important because we don't want to create a new context for each new
-	// reconstruction time (when the reconstruct parameters haven't changed) since, when geometries
-	// are reconstructed using topologies, this results in excessive generation of expensive
-	// reconstruction lookup tables in the reconstruct methods (inside the reconstruct context).
-	const ReconstructParams &reconstruct_params = reconstruction_cache_key.second;
+	// See if we've already got a reconstruct context state for the specified reconstruct params.
 	ReconstructContext::context_state_weak_reference_type &context_state_weak_ref =
 			d_reconstruct_context_state_map[reconstruct_params];
 
@@ -1390,9 +1395,10 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 	{
 		// Create a new reconstruct context state...
 		//
-		// The context state has either been released from the least-recently used reconstruction
-		// cache (when no ReconstructionInfo objects reference it anymore) or was never created
-		// to begin with - so we create a new one.
+		// The context state has either been released from all clients holding/referencing it
+		// (eg, all cached ReconstructionInfo objects referencing it have been flushed)
+		// or a context state was never created for the specified reconstruct parameters.
+		// In both cases we create a new context state and map it to the reconstruct parameters.
 		context_state_ref = d_reconstruct_context.create_context_state(
 				get_reconstruct_method_context(reconstruct_params));
 
@@ -1405,5 +1411,5 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 		context_state_ref = context_state_weak_ref.lock();
 	}
 
-	return ReconstructionInfo(context_state_ref);
+	return context_state_ref;
 }

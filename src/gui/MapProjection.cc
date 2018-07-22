@@ -223,7 +223,13 @@ GPlatesGui::MapProjection::forward_transform(
 	if (d_projection_type == RECTANGULAR)
 	{
 		// The rectangular projection is playing silly buggers under non-zero central meridians,
-		// so I'm going to handle this case explicitly. 
+		// so I'm going to handle this case explicitly.
+		//
+		// Note: Also exporting of global grid-line-registered rasters depends on latitude and longitude
+		// extents being exactly [-90, 90] and [-180, 180] after subtracting central longitude since the
+		// export expands the map projection very slightly (using OpenGL model-view transform) to ensure
+		// border pixels get rendered.
+		// So if this code path changes then should check that those rasters are exported correctly.
 		longitude -= d_central_llp.longitude();
 
 		if (longitude > 180.)

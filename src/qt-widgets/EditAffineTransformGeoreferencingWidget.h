@@ -32,6 +32,8 @@
 
 #include "EditAffineTransformGeoreferencingWidgetUi.h"
 
+#include "InformationDialog.h"
+
 #include "property-values/Georeferencing.h"
 
 
@@ -51,19 +53,12 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Repopulates the spinboxes depending on which page is currently visible.
+		 * Resets the raster to global extents.
 		 */
 		void
-		refresh();
-
-		void
-		set_raster_size(
+		reset(
 				unsigned int raster_width,
-				unsigned int raster_height)
-		{
-			d_raster_width = raster_width;
-			d_raster_height = raster_height;
-		}
+				unsigned int raster_height);
 
 	Q_SIGNALS:
 
@@ -73,17 +68,21 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		handle_grid_line_registration_checkbox_state_changed(
+				int state);
+
+		void
 		handle_advanced_checkbox_state_changed(
 				int state);
+
+		void
+		handle_use_global_extents_button_clicked();
 
 		void
 		update_extents_if_necessary();
 
 		void
 		update_affine_transform_if_necessary();
-
-		void
-		handle_use_global_extents_button_clicked();
 
 	private:
 
@@ -101,6 +100,9 @@ namespace GPlatesQtWidgets
 		populate_affine_transform_spinboxes(
 				const affine_transform_type &parameters);
 
+		void
+		refresh_spinboxes();
+
 		QDoubleSpinBox *d_extents_spinboxes[lat_lon_extents_type::NUM_COMPONENTS];
 		QDoubleSpinBox *d_affine_transform_spinboxes[affine_transform_type::NUM_COMPONENTS];
 
@@ -109,6 +111,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
 		unsigned int d_raster_width, d_raster_height;
+
+		GPlatesQtWidgets::InformationDialog *d_help_grid_line_registration_dialog;
 	};
 }
 

@@ -59,7 +59,9 @@ GPlatesAppLogic::ReconstructParams::ReconstructParams() :
 	d_topology_reconstruction_lifetime_detection_threshold_velocity_delta(
 			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_velocity_delta),
 	d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_distance_to_boundary_in_kms_per_my)
+			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_distance_to_boundary_in_kms_per_my),
+	d_topology_reconstruction_deactivate_points_that_fall_outside_a_network(
+			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.deactivate_points_that_fall_outside_a_network)
 {
 }
 
@@ -126,7 +128,8 @@ GPlatesAppLogic::ReconstructParams::operator==(
 		d_topology_reconstruction_line_tessellation_degrees == rhs.d_topology_reconstruction_line_tessellation_degrees &&
 		d_topology_reconstruction_enable_lifetime_detection == rhs.d_topology_reconstruction_enable_lifetime_detection &&
 		d_topology_reconstruction_lifetime_detection_threshold_velocity_delta == rhs.d_topology_reconstruction_lifetime_detection_threshold_velocity_delta &&
-		d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary == rhs.d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary;
+		d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary == rhs.d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary &&
+		d_topology_reconstruction_deactivate_points_that_fall_outside_a_network == rhs.d_topology_reconstruction_deactivate_points_that_fall_outside_a_network;
 }
 
 
@@ -278,6 +281,15 @@ GPlatesAppLogic::ReconstructParams::operator<(
 		return false;
 	}
 
+	if (d_topology_reconstruction_deactivate_points_that_fall_outside_a_network < rhs.d_topology_reconstruction_deactivate_points_that_fall_outside_a_network)
+	{
+		return true;
+	}
+	if (d_topology_reconstruction_deactivate_points_that_fall_outside_a_network > rhs.d_topology_reconstruction_deactivate_points_that_fall_outside_a_network)
+	{
+		return false;
+	}
+
 	return false;
 }
 
@@ -388,6 +400,14 @@ GPlatesAppLogic::ReconstructParams::transcribe(
 	{
 		d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary =
 				DEFAULT_PARAMS.d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_topology_reconstruction_deactivate_points_that_fall_outside_a_network,
+			// Using similar tag name as original tags above...
+			"deformation_deactivate_points_that_fall_outside_a_network"))
+	{
+		d_topology_reconstruction_deactivate_points_that_fall_outside_a_network =
+				DEFAULT_PARAMS.d_topology_reconstruction_deactivate_points_that_fall_outside_a_network;
 	}
 
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_visibility_setting, "vgp_visibility_setting"))
