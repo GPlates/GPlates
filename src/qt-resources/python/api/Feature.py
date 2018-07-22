@@ -328,6 +328,83 @@ Feature.set_valid_time = set_valid_time
 del set_valid_time
 
 
+def get_geometry_import_time(feature, default=0.0):
+    """get_geometry_import_time([default=0.0])
+    Returns the geometry import time of this feature.
+    
+    :param default: the default geometry import time (defaults to present day)
+    :type default: float or None
+    :returns: geometry import time (if exactly one `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property found), otherwise *default* is returned
+    :rtype: float, or type(*default*)
+    
+    This is a convenience method that wraps :meth:`get_value` for the common property
+    `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_.
+    
+    Return the geometry import time as a float (defaults to present day if not exactly one found):
+    ::
+    
+      geometry_import_time = feature.get_geometry_import_time()
+    
+    Set *default* to ``None`` to test that there is exactly one 'gpml:geometryImportTime' property:
+    ::
+    
+      geometry_import_time = feature.get_geometry_import_time(None)
+      # Compare with None since a geometry import time of zero evaluates to False.
+      if geometry_import_time:
+        ...
+    
+    .. seealso:: :meth:`set_geometry_import_time`
+    """
+    
+    gpml_geometry_import_time = feature.get_value(PropertyName.gpml_geometry_import_time)
+    if not gpml_geometry_import_time:
+        return default
+    
+    try:
+        return gpml_geometry_import_time.get_time()
+    except AttributeError:
+        # The property value type did not match the property name.
+        # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+        return default
+
+# Add the module function as a class method.
+Feature.get_geometry_import_time = get_geometry_import_time
+# Delete the module reference to the function - we only keep the class method.
+del get_geometry_import_time
+
+
+def set_geometry_import_time(feature, geometry_import_time, verify_information_model=VerifyInformationModel.yes):
+    """set_geometry_import_time(geometry_import_time, [verify_information_model=VerifyInformationModel.yes])
+    Sets the geometry import time of this feature.
+    
+    :param geometry_import_time: the reconstruction time that geometry was imported
+    :type geometry_import_time: float or :class:`GeoTimeInstant`
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :returns: the property containing the geometry import time
+    :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property.
+    
+    This is a convenience method that wraps :meth:`set` for the common property
+    `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_.
+    
+    Set the geometry import time to 100Ma:
+    ::
+    
+      feature.set_geometry_import_time(100)
+    
+    .. seealso:: :meth:`get_geometry_import_time`
+    """
+    
+    return feature.set(PropertyName.gpml_geometry_import_time, GmlTimeInstant(geometry_import_time), verify_information_model)
+
+# Add the module function as a class method.
+Feature.set_geometry_import_time = set_geometry_import_time
+# Delete the module reference to the function - we only keep the class method.
+del set_geometry_import_time
+
+
 def get_left_plate(feature, default=0):
     """get_left_plate([default=0])
     Returns the left plate ID of this feature.

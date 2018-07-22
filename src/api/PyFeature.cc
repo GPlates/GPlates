@@ -3040,6 +3040,8 @@ export_feature()
 					"* :meth:`get_times`\n"
 					"* :meth:`set_reconstruction_method`\n"
 					"* :meth:`get_reconstruction_method`\n"
+					"* :meth:`set_geometry_import_time`\n"
+					"* :meth:`get_geometry_import_time`\n"
 					"* :meth:`set_total_reconstruction_pole`\n"
 					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"
