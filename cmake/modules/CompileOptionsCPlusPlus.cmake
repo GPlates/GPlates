@@ -233,7 +233,14 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 # of which may be in /Library/Frameworks
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") 
     message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+
+    if (GPLATES_PUBLIC_RELEASE)
+        # Disable all warnings when releasing source code to non-developers.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+        add_definitions(-DGPLATES_PUBLIC_RELEASE)
+    else (GPLATES_PUBLIC_RELEASE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+    endif (GPLATES_PUBLIC_RELEASE)
 endif()
 
 
