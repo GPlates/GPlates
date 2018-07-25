@@ -107,8 +107,6 @@ set(srcs
     GpmlTopologicalSection.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h
-    PropertyValues.cc
-    PropertyValues.h
     ProxiedRasterCache.cc
     ProxiedRasterCache.h
     ProxiedRasterResolver.cc
