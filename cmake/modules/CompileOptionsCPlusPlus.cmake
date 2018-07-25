@@ -234,6 +234,13 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") 
     message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
 
+    # Use C++11 standard for Clang 3.3 and above.
+    # GDAL 2.3 and above require a minimum of C++11.
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.2")
+        message(STATUS "...using C++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    endif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.2")
+
     if (GPLATES_PUBLIC_RELEASE)
         # Disable all warnings when releasing source code to non-developers.
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
