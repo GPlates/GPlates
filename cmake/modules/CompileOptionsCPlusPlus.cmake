@@ -19,7 +19,7 @@
 # (there appears to be two configure stages in cmake) CGAL does not override and then we add to CGAL's settings here.
 
 # Our Visual Studio configuration:
-if(MSVC)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
 
@@ -72,10 +72,10 @@ if(MSVC)
     
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO and _MINSIZEREL suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
-endif(MSVC)
+endif()
 
 # Our G++ configuration:
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU") 
 
 	# Mac OSX specific configuration options:
 	if(APPLE)
@@ -102,7 +102,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 		# Automatically adds compiler definitions to all subdirectories too.
 		add_definitions(-D__APPLE__)
 
-		# Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
 		# 'bind_at_load' causes undefined symbols to be referenced at load/launch.
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
 	endif(APPLE)
@@ -225,13 +224,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO, _MINSIZEREL and _PROFILEGPROF suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
-endif(CMAKE_COMPILER_IS_GNUCXX)
+endif()
 
 # Suppress warnings under clang (at least under Apple LLVM 5.1)
 # Otherwise we get a lot of redeclared-class-member warnings from boost (from boost 1.47 at least), related to BOOST_BIMAP, and
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
     message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
 
     # Use C++11 standard for Clang 3.3 and above.
