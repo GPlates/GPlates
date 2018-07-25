@@ -566,7 +566,7 @@ namespace GPlatesAppLogic
 			bool
 			is_initialised() const
 			{
-				return d_vertex_info;
+				return static_cast<bool>(d_vertex_info);
 			}
 
 			/**

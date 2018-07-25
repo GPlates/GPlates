@@ -240,7 +240,7 @@ namespace GPlatesOpenGL
 		bool
 		is_currently_rendering() const
 		{
-			return d_current_render_info;
+			return static_cast<bool>(d_current_render_info);
 		}
 	};
 }

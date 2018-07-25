@@ -242,9 +242,10 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 
 		// See if the feature type supports a geometry import time property.
-		return GPlatesModel::Gpgim::instance().get_feature_property(
-				feature_type.get(),
-				GEOMETRY_IMPORT_TIME_PROPERTY_NAME);
+		return static_cast<bool>(
+				GPlatesModel::Gpgim::instance().get_feature_property(
+						feature_type.get(),
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME));
 	}
 
 
@@ -346,7 +347,8 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("conjugate");
 
 		// See if the feature type supports a 'conjugate' reference property.
-		return GPlatesModel::Gpgim::instance().get_feature_property(feature_type.get(), CONJUGATE_PROPERTY_NAME);
+		return static_cast<bool>(
+				GPlatesModel::Gpgim::instance().get_feature_property(feature_type.get(), CONJUGATE_PROPERTY_NAME));
 	}
 	
 	/**
@@ -420,9 +422,10 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("relativePlate");
 
 		// See if the feature type supports a relative plate id property.
-		return GPlatesModel::Gpgim::instance().get_feature_property(
-				feature_type.get(),
-				RELATIVE_PLATE_PROPERTY_NAME);
+		return static_cast<bool>(
+				GPlatesModel::Gpgim::instance().get_feature_property(
+						feature_type.get(),
+						RELATIVE_PLATE_PROPERTY_NAME));
 	}
 
 	/**

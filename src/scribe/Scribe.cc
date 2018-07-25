@@ -68,7 +68,7 @@ bool
 GPlatesScribe::Scribe::is_in_transcription(
 		const ObjectTag &object_tag) const
 {
-	return d_transcription_context.is_in_transcription(object_tag);
+	return static_cast<bool>(d_transcription_context.is_in_transcription(object_tag));
 }
 
 

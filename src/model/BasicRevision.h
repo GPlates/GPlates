@@ -399,7 +399,7 @@ namespace GPlatesModel
 	{
 		if (index < d_children.size())
 		{
-			return d_children[index];
+			return d_children[index] != 0;
 		}
 		else
 		{

@@ -82,7 +82,7 @@ namespace GPlatesModel
 		 * PropertyValue to a pointer to const.
 		 */
 		typedef boost::function< PropertyValue::non_null_ptr_to_const_type (
-				PropertyValue::non_null_ptr_type) > make_const_ptr_fn_type;
+				const PropertyValue::non_null_ptr_type &) > make_const_ptr_fn_type;
 
 	public:
 

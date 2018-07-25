@@ -493,7 +493,7 @@ bool
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::does_file_format_support_reading(
 		Format file_format) const
 {
-	return get_file_format_info(file_format).read_feature_collection_function;
+	return static_cast<bool>(get_file_format_info(file_format).read_feature_collection_function);
 }
 
 
@@ -501,7 +501,7 @@ bool
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::does_file_format_support_writing(
 		Format file_format) const
 {
-	return get_file_format_info(file_format).create_feature_collection_writer_function;
+	return static_cast<bool>(get_file_format_info(file_format).create_feature_collection_writer_function);
 }
 
 

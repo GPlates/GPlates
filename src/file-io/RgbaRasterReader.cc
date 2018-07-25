@@ -135,7 +135,7 @@ bool
 GPlatesFileIO::RgbaRasterReader::can_read()
 {
 	// Return true if we have successfully created a source raster file cache format reader.
-	return d_source_raster_file_cache_format_reader;
+	return d_source_raster_file_cache_format_reader != 0;
 }
 
 

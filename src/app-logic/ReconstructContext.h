@@ -753,7 +753,7 @@ namespace GPlatesAppLogic
 		bool
 		have_assigned_geometry_property_handles() const
 		{
-			return d_cached_present_day_geometries;
+			return static_cast<bool>(d_cached_present_day_geometries);
 		}
 
 		/**

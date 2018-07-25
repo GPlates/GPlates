@@ -1008,7 +1008,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_unpartitioned_geometry_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref feature =
 				partitioned_feature_manager.get_feature_for_partition(
 						geometry_property.domain_property_name,
-						property_clone.range/*geometry_domain_has_associated_range*/,
+						static_cast<bool>(property_clone.range)/*geometry_domain_has_associated_range*/,
 						partition);
 
 		// Extract the geometry from the geometry property clone.

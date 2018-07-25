@@ -1423,8 +1423,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 						// the configuration of the current tile and lighting...
 						get_shader_program_for_tile(
 								GLTexture::is_format_floating_point(d_source_raster->get_tile_texture_internal_format()),
-								age_grid_mask_quad_tree_node,
-								normal_map_quad_tree_node,
+								static_cast<bool>(age_grid_mask_quad_tree_node),
+								static_cast<bool>(normal_map_quad_tree_node),
 								true/*active_polygons*/),
 						source_raster_texture.get(),
 						source_raster_uv_transform,
@@ -1508,8 +1508,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			boost::optional<ProgramObject> active_polygons_program_object =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
-							age_grid_mask_quad_tree_node,
-							normal_map_quad_tree_node,
+							static_cast<bool>(age_grid_mask_quad_tree_node),
+							static_cast<bool>(normal_map_quad_tree_node),
 							active_polygons);
 			// Draw state for *active* polygons...
 			const RenderQuadTreeNode::TileDrawState active_polygons_draw_state =
@@ -1543,8 +1543,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			boost::optional<ProgramObject> inactive_polygons_program_object =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
-							age_grid_mask_quad_tree_node,
-							normal_map_quad_tree_node,
+							static_cast<bool>(age_grid_mask_quad_tree_node),
+							static_cast<bool>(normal_map_quad_tree_node),
 							active_polygons);
 			// Draw state for *inactive* polygons...
 			const RenderQuadTreeNode::TileDrawState inactive_polygons_draw_state =
@@ -1577,8 +1577,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			boost::optional<ProgramObject> program_object =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
-							age_grid_mask_quad_tree_node,
-							normal_map_quad_tree_node,
+							static_cast<bool>(age_grid_mask_quad_tree_node),
+							static_cast<bool>(normal_map_quad_tree_node),
 							true/*active_polygons*/);
 			// Draw state...
 			const RenderQuadTreeNode::TileDrawState draw_state =
