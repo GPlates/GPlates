@@ -54,7 +54,6 @@
 #include "RasterFileCacheFormat.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/GdalVersion.h"
 #include "global/GPlatesAssert.h"
 #include "global/LogException.h"
 
@@ -1098,7 +1097,7 @@ GPlatesFileIO::GDALRasterReader::get_spatial_reference_system()
 
 	// Create a spatial reference for the raster.
 	OGRSpatialReference ogr_srs;
-#if defined(GDAL_COMPUTE_VERSION) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,3,0)
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,3,0)
 	// GDAL >= 2.3 uses const.
 	const char *spatial_reference_wkt_ptr = srs_wkt.c_str();
 #else

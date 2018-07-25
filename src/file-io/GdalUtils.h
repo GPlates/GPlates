@@ -32,8 +32,6 @@
 
 #include "Gdal.h"
 
-#include "global/GdalVersion.h" // For GDAL_VERSION_MAJOR
-
 
 class GDALDataset;
 class GDALDriver;

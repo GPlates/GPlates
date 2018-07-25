@@ -26,6 +26,10 @@
 #ifndef GPLATES_FILEIO_OGR_H
 #define GPLATES_FILEIO_OGR_H
 
+// The <gdal_version.h> header is probably included indirectly below but we'll include here also
+// just in case. That way including "Ogr.h" ensures access to the version macros.
+#include "global/GdalVersion.h"
+
 
 #ifdef HAVE_CONFIG_H
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
