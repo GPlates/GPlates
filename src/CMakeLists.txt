@@ -292,21 +292,17 @@ file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 #
 # The 'qt-widgets' target generates header files so it should get built before anything that depends on it.
 #
-# NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
-#   It seems that subdirs are built in the order they are listed provided you don't run a parallel build (eg, 'make -j').
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
-    add_dependencies(canvas-tools qt-widgets)
-    add_dependencies(view-operations qt-widgets)
-    add_dependencies(presentation qt-widgets)
-    add_dependencies(gui qt-widgets)
-	add_dependencies(utils qt-widgets) #Need more investigation
+add_dependencies(canvas-tools qt-widgets)
+add_dependencies(view-operations qt-widgets)
+add_dependencies(presentation qt-widgets)
+add_dependencies(gui qt-widgets)
+add_dependencies(utils qt-widgets) #Need more investigation
 if(NOT GPLATES_NO_PYTHON)
-	add_dependencies(api gui)
+add_dependencies(api gui)
 endif(NOT GPLATES_NO_PYTHON)
-    add_dependencies(global run-gplates-extract-svn-info)
-	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
-    #add_dependencies(qt-widgets qt-resources)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
+add_dependencies(global run-gplates-extract-svn-info)
+# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
+#add_dependencies(qt-widgets qt-resources)
 
 # Does the following:
 # - finds '.ui' files and adds commands to create 'Ui.h' files.
@@ -492,8 +488,6 @@ if (APPLE)
     	BUNDLE DESTINATION bin
     	CONFIGURATIONS release)
 else (APPLE)
-    # CMake 2.4 doesn't know about "BUNDLE DESTINATION" so don't force Windows/Linux users
-    # to require CMake 2.6.
     install(TARGETS gplates
     	RUNTIME DESTINATION bin
     	CONFIGURATIONS release)
@@ -503,14 +497,7 @@ endif (APPLE)
 # a standalone version of GPlates (with dependent libraries included) for distribution
 # to another computer.
 #
-# NOTE: we don't include if CMake version is less than 2.6 because the
-# "package" module uses some commands, such as 'function', that were
-# introduced in CMake 2.6. This means you must have CMake 2.6 or better
-# to create binary install packages for distribution.
-#
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
-    include(Package)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
+include(Package)
 
 # We have a nasty case of a variable shadow warning in the boost program_options library.
 # Since it's a system header it should not emit a warning but it does on g++ 4.1.2 and g++ 4.1.3 
