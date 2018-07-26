@@ -1,6 +1,7 @@
 project(GPlates)
 
-cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
+# CMake 2.8.8 introduced CMAKE_CXX_COMPILER_VERSION.
+cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 
 # Where to find our CMake modules (this variable is visible in subdirectories).
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")

@@ -62,7 +62,7 @@ Microsoft Visual Studio
 
 CMake
 
-  1. Get and install cmake-2.6.2-win32-x86.exe from: http://www.cmake.org/
+  1. Get and install cmake 2.8.8 (or above) from: http://www.cmake.org/
 
 Qt
 
