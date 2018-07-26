@@ -18,6 +18,9 @@
 # configures (which overrides our settings in this file) but in the second configure
 # (there appears to be two configure stages in cmake) CGAL does not override and then we add to CGAL's settings here.
 
+# Print the compiler we're using.
+message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} compiler ${CMAKE_CXX_COMPILER_VERSION}")
+
 # Our Visual Studio configuration:
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") 
     # Automatically adds compiler definitions to all subdirectories too.
@@ -82,32 +85,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
 	endif(APPLE)
 
-	# Detect g++ compiler version.
-	# Generate a fatal error if the version is not 4.2 or above.
+	# Generate a fatal error if the compiler version is not 4.2 or above.
 	# This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
 	# that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
 	# This is also required because we use certain GCC pragmas only available on 4.2 and above.
-	execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
-		OUTPUT_VARIABLE CXX_VERSION
-		RESULT_VARIABLE CXX_VERSION_RESULT)
-	if (CXX_VERSION_RESULT)
-		message(FATAL_ERROR "Could not detect g++ compiler version.")
-	else (CXX_VERSION_RESULT)
-		# Convert 4.2.1 to 4.2 for example.
-		string(STRIP ${CXX_VERSION} CXX_VERSION)
-		string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
-		string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-		string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-		add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
-		add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
-		message(STATUS "Found g++ version ${CXX_VERSION}")
-		if (CXX_MAJOR_VERSION STRLESS "4")
-			message(FATAL_ERROR "g++ compiler version less than 4.0.")
-		elseif (CXX_MINOR_VERSION STRLESS "2")
-			message(FATAL_ERROR "Require g++ compiler version 4.2 or above. "
-					"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
-		endif (CXX_MAJOR_VERSION STRLESS "4")
-	endif (CXX_VERSION_RESULT)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.2")
+        message(FATAL_ERROR "Require g++ compiler version 4.2 or above. "
+                "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
+    endif ()
 
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
@@ -140,30 +125,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		add_definitions(-DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings_flags}")
-		# G++ 4.2 is not respecting pragmas turning off -Wuninitialized so we'll just
-		# shut it up here.
-		if (CXX_MAJOR_VERSION EQUAL "4")
-			if (CXX_MINOR_VERSION STRLESS "4")
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
-			endif (CXX_MINOR_VERSION STRLESS "4")
-			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-				#The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
-				#The boost::optional<> has been used widely throughout gplates. So supress the error for now.
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-			endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-			if (CXX_MINOR_VERSION EQUAL "9")
-				# gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
-				# so suppress the warning.
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
-			endif (CXX_MINOR_VERSION EQUAL "9")
-		endif (CXX_MAJOR_VERSION EQUAL "4")
-		if ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
-			# gcc 5.x, 6.x and 7.x report warnings on unused functions.
-			# We prefer to keep unused functions available, so suppress the warning.
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
-			# boost::optional<> is used widely throughout GPlates. So supress the error for now.
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-		endif ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.4")
+            # gcc 4.2 is not respecting pragmas turning off -Wuninitialized so we'll just shut it up here.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
+        endif ()
+        if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
+            # gcc 4.7 onwards reports maybe-uninitialized warning when the default
+            # boost::optional<> declaration is present.
+            # It has been used widely throughout gplates, so supress the error for now.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+        endif ()
+        if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            # gcc 4.9 onwards reports warnings on unused functions.
+            # We prefer to keep unused functions available, so suppress the warning.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
+        endif ()
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
@@ -207,14 +183,12 @@ endif()
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
-    message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
-
-    # Use C++11 standard for Clang 3.3 and above.
+    # Use C++11 standard for Clang 3.3 and above (these vesions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.2")
+    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3"))
         message(STATUS "...using C++11")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-    endif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.2")
+    endif ()
 
     if (GPLATES_PUBLIC_RELEASE)
         # Disable all warnings when releasing source code to non-developers.
@@ -225,7 +199,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     endif (GPLATES_PUBLIC_RELEASE)
 endif()
 
-# Apple-specific configuration options:
+# Apple platforms use GNU and Clang compilers (separately configured above).
+# So the configuration that is common to both goes here.
 if(APPLE)
     # Detect Mac OSX version.
     execute_process(COMMAND "sw_vers" "-productVersion"
