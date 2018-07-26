@@ -94,6 +94,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
                 "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
     endif ()
 
+    # Use C++11 standard for g++ 4.8.1 and above (these vesions all have full support).
+    # GDAL 2.3 and above require a minimum of C++11.
+    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1"))
+        message(STATUS "...using C++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif ()
+
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
         # Headers in system include paths (and '-isystem' paths) should not generate warnings.
