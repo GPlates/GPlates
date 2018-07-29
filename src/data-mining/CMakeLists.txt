@@ -39,7 +39,6 @@ set(srcs
     MinReducer.h
     OpaqueData.h
     OpaqueDataToDouble.h
-    OpaqueDataToQString.cc
     OpaqueDataToQString.h
     PercentileReducer.h
     PopulateShapeFileAttributesVisitor.cc

@@ -229,10 +229,10 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise_widgets()
 		// If the focused feature is *not* a topological network then initialise using its plate ID,
 		// otherwise set to zero (because plate IDs for topological networks currently don't have a
 		// well-defined meaning since they are not used for anything, eg, velocity calculations).
-		const bool is_resolved_topological_network =
+		const bool is_resolved_topological_network = static_cast<bool>(
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 						const GPlatesAppLogic::ResolvedTopologicalNetwork *>(
-								d_feature_focus.associated_reconstruction_geometry());
+								d_feature_focus.associated_reconstruction_geometry()));
 		if (!is_resolved_topological_network)
 		{
 			// Get the reconstruction plate ID of the focused feature.
@@ -680,7 +680,8 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_points_region_mod
 	}
 
 	// Enable focused feature button only if a focused feature (with a polygon) is selected.
-	focused_feature_radio_button->setEnabled(d_focused_boundary_polygon);
+	focused_feature_radio_button->setEnabled(
+			static_cast<bool>(d_focused_boundary_polygon));
 
 	// Lat/lon extents only enabled when lat/lon extent button checked.
 	points_region_lat_lon_group_box->setEnabled(

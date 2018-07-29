@@ -18,8 +18,11 @@
 # configures (which overrides our settings in this file) but in the second configure
 # (there appears to be two configure stages in cmake) CGAL does not override and then we add to CGAL's settings here.
 
+# Print the compiler we're using.
+message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} compiler ${CMAKE_CXX_COMPILER_VERSION}")
+
 # Our Visual Studio configuration:
-if(MSVC)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
 
@@ -72,67 +75,31 @@ if(MSVC)
     
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO and _MINSIZEREL suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
-endif(MSVC)
+endif()
 
 # Our G++ configuration:
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU") 
 
-	# Mac OSX specific configuration options:
 	if(APPLE)
-		# Detect Mac OSX version.
-		execute_process(COMMAND "sw_vers" "-productVersion"
-			OUTPUT_VARIABLE OSX_VERSION
-			RESULT_VARIABLE OSX_VERSION_RESULT)
-		if (NOT OSX_VERSION_RESULT)
-			# Convert 10.4.11 to 10.4 for example.
-			string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
-			string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-			string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-			add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
-			add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
-			if (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-				message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Tiger)")
-				add_definitions(-DMAC_OSX_TIGER)
-			elseif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.5")
-				message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Leopard)")
-				add_definitions(-DMAC_OSX_LEOPARD)
-			endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-		endif (NOT OSX_VERSION_RESULT)
-
-		# Automatically adds compiler definitions to all subdirectories too.
-		add_definitions(-D__APPLE__)
-
-		# Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
 		# 'bind_at_load' causes undefined symbols to be referenced at load/launch.
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
 	endif(APPLE)
 
-	# Detect g++ compiler version.
-	# Generate a fatal error if the version is not 4.2 or above.
+	# Generate a fatal error if the compiler version is not 4.2 or above.
 	# This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
 	# that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
 	# This is also required because we use certain GCC pragmas only available on 4.2 and above.
-	execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
-		OUTPUT_VARIABLE CXX_VERSION
-		RESULT_VARIABLE CXX_VERSION_RESULT)
-	if (CXX_VERSION_RESULT)
-		message(FATAL_ERROR "Could not detect g++ compiler version.")
-	else (CXX_VERSION_RESULT)
-		# Convert 4.2.1 to 4.2 for example.
-		string(STRIP ${CXX_VERSION} CXX_VERSION)
-		string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
-		string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-		string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-		add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
-		add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
-		message(STATUS "Found g++ version ${CXX_VERSION}")
-		if (CXX_MAJOR_VERSION STRLESS "4")
-			message(FATAL_ERROR "g++ compiler version less than 4.0.")
-		elseif (CXX_MINOR_VERSION STRLESS "2")
-			message(FATAL_ERROR "Require g++ compiler version 4.2 or above. "
-					"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
-		endif (CXX_MAJOR_VERSION STRLESS "4")
-	endif (CXX_VERSION_RESULT)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.2")
+        message(FATAL_ERROR "Require g++ compiler version 4.2 or above. "
+                "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
+    endif ()
+
+    # Use C++11 standard for g++ 4.8.1 and above (these vesions all have full support).
+    # GDAL 2.3 and above require a minimum of C++11.
+    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1"))
+        message(STATUS "...using C++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif ()
 
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
@@ -165,30 +132,21 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 		add_definitions(-DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings_flags}")
-		# G++ 4.2 is not respecting pragmas turning off -Wuninitialized so we'll just
-		# shut it up here.
-		if (CXX_MAJOR_VERSION EQUAL "4")
-			if (CXX_MINOR_VERSION STRLESS "4")
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
-			endif (CXX_MINOR_VERSION STRLESS "4")
-			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-				#The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
-				#The boost::optional<> has been used widely throughout gplates. So supress the error for now.
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-			endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-			if (CXX_MINOR_VERSION EQUAL "9")
-				# gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
-				# so suppress the warning.
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
-			endif (CXX_MINOR_VERSION EQUAL "9")
-		endif (CXX_MAJOR_VERSION EQUAL "4")
-		if ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
-			# gcc 5.x, 6.x and 7.x report warnings on unused functions.
-			# We prefer to keep unused functions available, so suppress the warning.
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
-			# boost::optional<> is used widely throughout GPlates. So supress the error for now.
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-		endif ((CXX_MAJOR_VERSION EQUAL "5") OR (CXX_MAJOR_VERSION EQUAL "6") OR (CXX_MAJOR_VERSION EQUAL "7"))
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.4")
+            # gcc 4.2 is not respecting pragmas turning off -Wuninitialized so we'll just shut it up here.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
+        endif ()
+        if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
+            # gcc 4.7 onwards reports maybe-uninitialized warning when the default
+            # boost::optional<> declaration is present.
+            # It has been used widely throughout gplates, so supress the error for now.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+        endif ()
+        if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            # gcc 4.9 onwards reports warnings on unused functions.
+            # We prefer to keep unused functions available, so suppress the warning.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
+        endif ()
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
@@ -225,17 +183,49 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO, _MINSIZEREL and _PROFILEGPROF suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
-endif(CMAKE_COMPILER_IS_GNUCXX)
+endif()
 
 # Suppress warnings under clang (at least under Apple LLVM 5.1)
 # Otherwise we get a lot of redeclared-class-member warnings from boost (from boost 1.47 at least), related to BOOST_BIMAP, and
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
+    # Use C++11 standard for Clang 3.3 and above (these vesions all have full support).
+    # GDAL 2.3 and above require a minimum of C++11.
+    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3"))
+        message(STATUS "...using C++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    endif ()
+
+    if (GPLATES_PUBLIC_RELEASE)
+        # Disable all warnings when releasing source code to non-developers.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+        add_definitions(-DGPLATES_PUBLIC_RELEASE)
+    else (GPLATES_PUBLIC_RELEASE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+    endif (GPLATES_PUBLIC_RELEASE)
 endif()
 
+# Apple platforms use GNU and Clang compilers (separately configured above).
+# So the configuration that is common to both goes here.
+if(APPLE)
+    # Detect Mac OSX version.
+    execute_process(COMMAND "sw_vers" "-productVersion"
+        OUTPUT_VARIABLE OSX_VERSION
+        RESULT_VARIABLE OSX_VERSION_RESULT)
+    if (NOT OSX_VERSION_RESULT)
+        # Convert 10.4.11 to 10.4 for example.
+        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
+        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+        add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
+        add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
+        message(STATUS "MacOS version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION}")
+    endif (NOT OSX_VERSION_RESULT)
+
+    # Automatically adds compiler definitions to all subdirectories too.
+    add_definitions(-D__APPLE__)
+endif(APPLE)
 
 # The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
 # Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application

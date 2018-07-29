@@ -45,8 +45,6 @@
 
 #include "feature-visitors/ToQvariantConverter.h"
 
-#include "global/GdalVersion.h" // For GDAL_VERSION_MAJOR
-
 #include "maths/LatLonPoint.h"
 
 #include "property-values/GpmlKeyValueDictionary.h"

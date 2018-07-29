@@ -62,6 +62,8 @@ namespace GPlatesGlobal
 	 * by the various overloaded versions of @a Assert.
 	 *
 	 * @param assertion is the expression to test as the assertion condition.
+	 * This can be any type that can be tested via an 'if' statement. Examples include bool,
+	 * boost::optional, boost::shared_ptr, boost::intrusive_ptr, boost::scoped_ptr, etc.
 	 *
 	 * Note: There are several overloaded versions of @a Assert
 	 * each taking a different number of arguments for the exception constructor.
@@ -70,13 +72,22 @@ namespace GPlatesGlobal
 	 * @a GPlatesUtils::CallStack::Trace. This means each class derived from
 	 * @a GPlatesGlobal::Exception must order its constructor arguments this way.
 	 *
+	 * Note that previously only type 'bool' was accepted for @a assertion but this implied that
+	 * other types (such as boost::optional and boost::shared_ptr) could be *implicitly* cast to
+	 * bool when Assert is called (so that caller doesn't not need to explicitly cast to bool).
+	 * However when the boost library made the 'bool' conversation operator (of these classes)
+	 * 'explicit' (when compiling with c++11 enabled) this prevented implicit conversions.
+	 * For example, this happened with boost::optional in version 1.56.
+	 * So now we pass the boolean testable type directly to our internal 'if' statement which,
+	 * according to c++11, is treated as a special case that allows implicit conversion to bool.
+	 *
 	 * This overload version accepts zero additional exception constructor arguments.
 	 */
-	template<class ExceptionType>
+	template<class ExceptionType, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location)
 	{
 		if (!assertion)
@@ -91,11 +102,11 @@ namespace GPlatesGlobal
 
 
 	//! Overloaded @a Assert taking one additional argument to the ExceptionType constructor.
-	template<class ExceptionType, typename A1>
+	template<class ExceptionType, typename A1, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location,
 			const A1 &arg1)
 	{
@@ -112,11 +123,11 @@ namespace GPlatesGlobal
 
 
 	//! Overloaded @a Assert taking two additional arguments to the ExceptionType constructor.
-	template<class ExceptionType, typename A1, typename A2>
+	template<class ExceptionType, typename A1, typename A2, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location,
 			const A1 &arg1, const A2 &arg2)
 	{
@@ -133,11 +144,11 @@ namespace GPlatesGlobal
 
 
 	//! Overloaded @a Assert taking three additional arguments to the ExceptionType constructor.
-	template<class ExceptionType, typename A1, typename A2, typename A3>
+	template<class ExceptionType, typename A1, typename A2, typename A3, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location,
 			const A1 &arg1, const A2 &arg2, const A3 &arg3)
 	{
@@ -154,11 +165,11 @@ namespace GPlatesGlobal
 
 
 	//! Overloaded @a Assert taking four additional arguments to the ExceptionType constructor.
-	template<class ExceptionType, typename A1, typename A2, typename A3, typename A4>
+	template<class ExceptionType, typename A1, typename A2, typename A3, typename A4, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location,
 			const A1 &arg1, const A2 &arg2, const A3 &arg3, const A4 &arg4)
 	{
@@ -175,11 +186,11 @@ namespace GPlatesGlobal
 
 
 	//! Overloaded @a Assert taking five additional arguments to the ExceptionType constructor.
-	template<class ExceptionType, typename A1, typename A2, typename A3, typename A4, typename A5>
+	template<class ExceptionType, typename A1, typename A2, typename A3, typename A4, typename A5, typename AssertionConditionType>
 	inline
 	void
 	Assert(
-			bool assertion,
+			const AssertionConditionType &assertion,
 			const GPlatesUtils::CallStack::Trace &assert_location,
 			const A1 &arg1, const A2 &arg2, const A3 &arg3, const A4 &arg4, const A5 &arg5)
 	{

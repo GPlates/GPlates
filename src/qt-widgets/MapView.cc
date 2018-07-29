@@ -221,7 +221,7 @@ GPlatesQtWidgets::MapView::handle_mouse_pointer_pos_change()
 {
 	boost::optional<GPlatesMaths::LatLonPoint> llp = mouse_pointer_llp();
 
-	d_mouse_pointer_is_on_surface = llp;
+	d_mouse_pointer_is_on_surface = static_cast<bool>(llp);
 
 	Q_EMIT mouse_pointer_position_changed(llp, d_mouse_pointer_is_on_surface);
 }
@@ -468,7 +468,7 @@ GPlatesQtWidgets::MapView::paintEvent(
 	// explicitly swap the OpenGL front and back buffers.
 	d_gl_widget_ptr->swap_buffers_if_necessary();
 
-	Q_EMIT repainted(d_mouse_press_info);
+	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
 }
 
 
@@ -628,7 +628,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_scene_coords()
 bool
 GPlatesQtWidgets::MapView::mouse_pointer_is_on_surface()
 {
-	return mouse_pointer_llp();
+	return static_cast<bool>(mouse_pointer_llp());
 }
 
 

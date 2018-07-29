@@ -195,13 +195,19 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 
 	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
 			gpml_irregular_sampling.time_samples();
+	if (time_samples.empty())
+	{
+		return;
+	}
 
 	// Optimisation to avoid interpolating a property value when it's the
 	// wrong type and will just get discarded anyway.
-	if (time_samples.empty() ||
-		typeid(*time_samples.front().get()->value()) != property_value_type_info)
 	{
-		return;
+		const GPlatesModel::PropertyValue &first_time_sample_value = *time_samples.front().get()->value();
+		if (typeid(first_time_sample_value) != property_value_type_info)
+		{
+			return;
+		}
 	}
 
 	// Get a list of the *enabled* time samples.

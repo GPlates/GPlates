@@ -54,7 +54,6 @@
 #include "RasterFileCacheFormat.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/GdalVersion.h"
 #include "global/GPlatesAssert.h"
 #include "global/LogException.h"
 
@@ -1098,9 +1097,14 @@ GPlatesFileIO::GDALRasterReader::get_spatial_reference_system()
 
 	// Create a spatial reference for the raster.
 	OGRSpatialReference ogr_srs;
-	// Some workarounds to avoid reinterpret casts apparently required for OGR's lack of 'const'.
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,3,0)
+	// GDAL >= 2.3 uses const.
+	const char *spatial_reference_wkt_ptr = srs_wkt.c_str();
+#else
+	// Some workarounds to avoid reinterpret casts apparently required for GDAL's lack of 'const'.
 	std::vector<char> srs_wkt_vec(srs_wkt.begin(), srs_wkt.end()); srs_wkt_vec.push_back('\0');
 	char *spatial_reference_wkt_ptr = &srs_wkt_vec[0];
+#endif
 	if (ogr_srs.importFromWkt(&spatial_reference_wkt_ptr) != OGRERR_NONE)
 	{
 		return boost::none;

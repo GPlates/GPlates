@@ -47,4 +47,27 @@
 	#include <gdal_version.h>
 #endif
 
+
+//
+// GDAL introduced the GDAL_COMPUTE_VERSION macro in GDAL 1.10.
+// However statements like:
+//
+//   #if defined(GDAL_COMPUTE_VERSION) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,3,0)
+//
+// ...will fail if GDAL_COMPUTE_VERSION is not defined because the "GDAL_COMPUTE_VERSION(2,3,0)" part
+// will not make sense to the preprocessor.
+//
+// So we'll just go ahead and copy the relevant macros from GDAL so that they're always defined.
+//
+
+#ifndef GPLATES_GDAL_COMPUTE_VERSION
+// Same as defined in GDAL >= 1.10...
+#define GPLATES_GDAL_COMPUTE_VERSION(maj,min,rev) ((maj)*1000000+(min)*10000+(rev)*100)
+#endif
+
+#ifndef GPLATES_GDAL_VERSION_NUM
+// Same as defined in GDAL >= 1.10...
+#define GPLATES_GDAL_VERSION_NUM (GPLATES_GDAL_COMPUTE_VERSION(GDAL_VERSION_MAJOR,GDAL_VERSION_MINOR,GDAL_VERSION_REV)+GDAL_VERSION_BUILD)
+#endif
+
 #endif // GPLATES_GLOBAL_GDALVERSION_H

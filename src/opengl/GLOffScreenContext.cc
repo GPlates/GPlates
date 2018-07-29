@@ -65,7 +65,7 @@ bool
 GPlatesOpenGL::GLOffScreenContext::is_off_screen() const
 {
 	// If truly rendering to off-screen then the off-screen context should be valid.
-	return d_off_screen_context;
+	return static_cast<bool>(d_off_screen_context);
 }
 
 

@@ -81,7 +81,7 @@ namespace GPlatesApi
 			{
 				std::stringstream ss;
 				ex.write(ss);
-				qWarning() << ss;
+				qWarning() << ss.str().c_str();
 			}
 		}
 

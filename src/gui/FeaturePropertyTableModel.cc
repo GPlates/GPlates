@@ -405,7 +405,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->clone();
 				top_level_prop_clone->accept_visitor(qvariant_converter);
 				*add_it = top_level_prop_clone;
-				bool can_convert_inline = qvariant_converter.get_property_value();
+				bool can_convert_inline = static_cast<bool>(qvariant_converter.get_property_value());
 		
 				FeaturePropertyTableInfo info = { property_name, add_it, can_convert_inline };
 				d_property_info_cache.push_back(info);

@@ -413,7 +413,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::import_georeferencing_and_spatial_r
 	// If we at least found georeferencing then we were successful.
 	// If unsuccessful importing SRS then we'll assume the default WGS84
 	// (which results in an identity coordinate transformation).
-	return georeferencing;
+	return static_cast<bool>(georeferencing);
 }
 
 

@@ -322,7 +322,7 @@ namespace GPlatesAppLogic
 			bool
 			boolean_test() const
 			{
-				return d_optional_input_layer_proxy;
+				return static_cast<bool>(d_optional_input_layer_proxy);
 			}
 
 

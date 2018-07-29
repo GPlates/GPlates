@@ -1,6 +1,7 @@
 project(GPlates)
 
-cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
+# CMake 2.8.8 introduced CMAKE_CXX_COMPILER_VERSION.
+cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 
 # Where to find our CMake modules (this variable is visible in subdirectories).
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
@@ -9,9 +10,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 include (ConfigCMake)
 
 #
-# CMake version 2.6 introduces policies to tell CMake to behave like a certain version ( > 2.4 ).
+# CMake policies give the choice of OLD (backwards compatible) or NEW (non-backwards compatible) behaviour
+# when a version of CMake newer than specified in 'cmake_minimum_required()' above is used.
+# CMake states that ultimately all policies should specify NEW with OLD being a temporary solution.
 #
-include (Policies_26)
+include (Policies)
 
 #
 # Recurse into source code directory.

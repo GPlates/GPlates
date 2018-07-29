@@ -81,7 +81,8 @@ GPlatesGui::DefaultPlateIdPalette::build_map()
 		(Palette::Key(static_cast<long>(8)), html_colour("orange"))
 		(Palette::Key(static_cast<long>(9)), html_colour("lightsalmon"))
 		(Palette::Key(static_cast<long>(10)), Colour::get_navy())
-		;
+				// The following is needed to workaround c++11 bug in boost assign...
+				.convert_to_container< std::map<const Palette::Key, Colour> >();
 }
 
 boost::optional<GPlatesGui::Colour>
@@ -121,7 +122,8 @@ GPlatesGui::RegionalPlateIdPalette::build_map()
 		(Palette::Key(static_cast<long>(7)), html_colour("orange"))
 		(Palette::Key(static_cast<long>(8)), Colour::get_purple())
 		(Palette::Key(static_cast<long>(9)), html_colour("slategray"))
-		;
+				// The following is needed to workaround c++11 bug in boost assign...
+				.convert_to_container< std::map<const Palette::Key, Colour> >();
 }
 
 

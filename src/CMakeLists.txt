@@ -300,21 +300,17 @@ file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 #
 # The 'qt-widgets' target generates header files so it should get built before anything that depends on it.
 #
-# NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
-#   It seems that subdirs are built in the order they are listed provided you don't run a parallel build (eg, 'make -j').
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
-    add_dependencies(canvas-tools qt-widgets)
-    add_dependencies(view-operations qt-widgets)
-    add_dependencies(presentation qt-widgets)
-    add_dependencies(gui qt-widgets)
-	add_dependencies(utils qt-widgets) #Need more investigation
+add_dependencies(canvas-tools qt-widgets)
+add_dependencies(view-operations qt-widgets)
+add_dependencies(presentation qt-widgets)
+add_dependencies(gui qt-widgets)
+add_dependencies(utils qt-widgets) #Need more investigation
 if(NOT GPLATES_NO_PYTHON)
-	add_dependencies(api gui)
+add_dependencies(api gui)
 endif(NOT GPLATES_NO_PYTHON)
-    add_dependencies(global run-gplates-extract-svn-info)
-	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
-    #add_dependencies(qt-widgets qt-resources)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
+add_dependencies(global run-gplates-extract-svn-info)
+# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
+#add_dependencies(qt-widgets qt-resources)
 
 
 #

@@ -305,8 +305,8 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	}
 
 	// If we have an age grid raster then we are reconstructing with an age grid.
-	const bool reconstructing_with_age_grid =
-			d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster;
+	const bool reconstructing_with_age_grid = static_cast<bool>(
+			d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster);
 
 	// Get the reconstructed polygon meshes from the layers containing the reconstructed polygons.
 	std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;

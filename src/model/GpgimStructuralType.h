@@ -83,7 +83,7 @@ namespace GPlatesModel
 			bool
 			is_template() const
 			{
-				return d_value_type;
+				return static_cast<bool>(d_value_type);
 			}
 
 			const GPlatesPropertyValues::StructuralType &

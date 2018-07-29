@@ -3510,7 +3510,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
 		d_size == 4 &&
 		d_type == GL_FLOAT &&
-		d_normalized == GL_FALSE &&
+		static_cast<bool>(d_normalized) == GL_FALSE &&
 		d_stride == 0)
 	{
 		return;
@@ -3557,7 +3557,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
 		d_size == 4 &&
 		d_type == GL_FLOAT &&
-		d_normalized == GL_FALSE &&
+		static_cast<bool>(d_normalized) == GL_FALSE &&
 		d_stride == 0)
 	{
 		return;

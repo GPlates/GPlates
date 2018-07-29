@@ -1100,7 +1100,7 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(d_mouse_press_info);
+	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
 }
 
 

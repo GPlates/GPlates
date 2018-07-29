@@ -27,8 +27,10 @@
 // Fragment shader for rendering a single iso-surface.
 //
 
-// "#extension" needs to be specified in the shader source *string* where it is used (this is not
-// documented in the GLSL spec but is mentioned at http://www.opengl.org/wiki/GLSL_Core_Language).
+// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
+// This is because extension lines must not occur *after* any non-preprocessor source code.
+//
+// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
 #extension GL_EXT_texture_array : enable
 // Shouldn't need this since '#version 120' (in separate source string) supports 'gl_FragData', but just in case...
 #extension GL_ARB_draw_buffers : enable
