@@ -154,7 +154,8 @@ GPlatesApi::PointSequenceFunctionArgument::is_convertible(
 
 	// Else it's a boost::python::object so we're expecting it to be a sequence of
 	// points which requires further checking.
-	return PythonExtractUtils::check_sequence<GPlatesMaths::PointOnSphere>(python_function_argument);
+	return static_cast<bool>(
+			PythonExtractUtils::check_sequence<GPlatesMaths::PointOnSphere>(python_function_argument));
 }
 
 
