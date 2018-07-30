@@ -46,14 +46,16 @@ foreach (_line ${_otool_output})
   endif (_line MATCHES Python.framework) 
 endforeach (_line)
  
-string (STRIP ${PYTHON_FRAMEWORK_ROOT} PYTHON_FRAMEWORK_ROOT) 
-string (REGEX REPLACE "^.+/" "" PYTHON_FRAMEWORK_VERSION ${PYTHON_FRAMEWORK_ROOT})
+if (PYTHON_FRAMEWORK_ROOT)
+  string (STRIP ${PYTHON_FRAMEWORK_ROOT} PYTHON_FRAMEWORK_ROOT) 
+  string (REGEX REPLACE "^.+/" "" PYTHON_FRAMEWORK_VERSION ${PYTHON_FRAMEWORK_ROOT})
 
-MESSAGE(STATUS "python framework root: ${PYTHON_FRAMEWORK_ROOT}")
-MESSAGE(STATUS "python framework version: ${PYTHON_FRAMEWORK_VERSION}")
+  MESSAGE(STATUS "python framework root: ${PYTHON_FRAMEWORK_ROOT}")
+  MESSAGE(STATUS "python framework version: ${PYTHON_FRAMEWORK_VERSION}")
 
-#SET(Python_FRAMEWORKS ${PYTHON_FRAMEWORK_ROOT} "")
-#MESSAGE(STATUS "python framework: ${Python_FRAMEWORKS}")
+  #SET(Python_FRAMEWORKS ${PYTHON_FRAMEWORK_ROOT} "")
+  #MESSAGE(STATUS "python framework: ${Python_FRAMEWORKS}")
+endif (PYTHON_FRAMEWORK_ROOT)
 ENDIF(APPLE)
 
 # End GPlates modification.
