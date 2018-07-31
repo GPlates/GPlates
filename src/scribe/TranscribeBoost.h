@@ -302,7 +302,7 @@ namespace GPlatesScribe
 
 		if (scribe.is_saving())
 		{
-			initialised = optional_object_reference;
+			initialised = static_cast<bool>(optional_object_reference);
 		}
 
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, initialised, "initialised"))
