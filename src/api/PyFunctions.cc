@@ -22,11 +22,12 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#if defined(__APPLE__)
-//On mac, this header file must be included here to workaround a boost python bug.
-//If you don't do this, you will get strange error messages when compiling on mac.
-#include <Python.h> 
-#endif
+
+// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// Workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+#include "global/python.h"
 
 #include <boost/foreach.hpp>
 #include <QString>
@@ -42,8 +43,6 @@
 #include "file-io/File.h"
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
-
-#include "global/python.h"
 
 #include "model/Gpgim.h"
 

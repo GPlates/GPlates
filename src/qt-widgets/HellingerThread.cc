@@ -26,15 +26,22 @@
 // This definition sets the maximum number of
 // parameters that you can send to a boost python function.
 #define BOOST_PYTHON_MAX_ARITY 16
-#include "Python.h"
+
+// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// Workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+#include "global/python.h"
+
 #include <QDebug>
 #include <QThread>
 
 
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonUtils.h"
+
 #include "global/CompilerWarnings.h"
-#include "global/python.h"
+
 #include "HellingerDialog.h"
 #include "HellingerModel.h"
 #include "HellingerThread.h"
