@@ -32,8 +32,8 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger.py")
         DESTINATION share/gplates/scripts/)
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py"
+if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger_maths.py")
+    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger_maths.py"
         DESTINATION share/gplates/scripts/)
 endif()
 
