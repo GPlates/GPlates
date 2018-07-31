@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "Python.h"
+
 #include <boost/foreach.hpp>
 #include <QDir>
 #include <QCoreApplication>

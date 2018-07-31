@@ -26,7 +26,7 @@
 // This definition sets the maximum number of
 // parameters that you can send to a boost python function.
 #define BOOST_PYTHON_MAX_ARITY 16
-
+#include "Python.h"
 #include <QDebug>
 #include <QThread>
 

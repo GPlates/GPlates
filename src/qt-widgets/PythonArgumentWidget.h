@@ -27,6 +27,9 @@
  
 #ifndef GPLATES_QTWIDGETS_PYTHONARGUMENTWIDGET_H
 #define GPLATES_QTWIDGETS_PYTHONARGUMENTWIDGET_H
+
+#include "Python.h"
+
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QtGui/QApplication>

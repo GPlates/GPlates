@@ -25,7 +25,7 @@
 
 #ifndef GPLATES_API_PYTHONINTERPRETERLOCKER_H
 #define GPLATES_API_PYTHONINTERPRETERLOCKER_H
-
+#include "Python.h"
 #include "global/python.h"
 
 #if !defined(GPLATES_NO_PYTHON)

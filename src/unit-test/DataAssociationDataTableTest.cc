@@ -57,16 +57,12 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 	GPlatesDataMining::DataRowSharedPtr row(
 			new GPlatesDataMining::DataRow);
 
-	boost::optional< int > i = 7 ;
-	boost::optional< QString > str("hello world!");
-	boost::optional< bool > b = true;
-
 	row->append_cell(
-			GPlatesDataMining::OpaqueData(i));
+			GPlatesDataMining::OpaqueData(7));
 	row->append_cell(
-			GPlatesDataMining::OpaqueData(str));
+			GPlatesDataMining::OpaqueData("hello world!"));
 	row->append_cell(
-			GPlatesDataMining::OpaqueData(b));
+			GPlatesDataMining::OpaqueData(true));
 			
 	d_data_table->push_back(row);
 	d_data_table->push_back(row);
