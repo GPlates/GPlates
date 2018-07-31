@@ -23,6 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// Workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+#include "global/python.h"
+
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -54,7 +60,6 @@
 #include "file-io/ReconstructedMotionPathExport.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
 
-#include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/raw_function.hpp>
