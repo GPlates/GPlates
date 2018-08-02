@@ -26,26 +26,6 @@ add_subdirectory(src)
 #
 add_subdirectory(doc-cpp)
 
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger_maths.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger_maths.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/SampleData/")
-    install(DIRECTORY SampleData/ DESTINATION share/gplates/SampleData/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz")
-    install(FILES  "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz"
-        DESTINATION share/man/man1/)
-endif()
-
 #
 # Recurse into python API documentation directory.
 #
