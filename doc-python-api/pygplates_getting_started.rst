@@ -3,7 +3,7 @@
 Getting started
 ===============
 
-This document covers installation of *pygplates* and a tutorial to get you started using *pygplates*.
+This document covers installation of pyGPlates and a tutorial to get you started using pyGPlates.
 
 .. contents::
    :local:
@@ -14,36 +14,36 @@ This document covers installation of *pygplates* and a tutorial to get you start
 Installation
 ------------
 
-This section covers how and when to install *pygplates*.
-It also covers installing Python and telling Python how to find *pygplates*.
+This section covers how and when to install pyGPlates.
+It also covers installing Python and telling Python how to find pyGPlates.
 
 .. contents::
    :local:
    :depth: 2
 
-When to install pygplates
+When to install pyGPlates
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As covered in the :ref:`introduction <pygplates_introduction>` there are two ways to use *pygplates*:
+As covered in the :ref:`introduction <pygplates_introduction>` there are two ways to use pyGPlates:
 
 * with an :ref:`external <pygplates_introduction_using_pygplates_external>` Python interpreter, and
 * with the GPlates :ref:`embedded <pygplates_introduction_using_pygplates_embedded>` Python interpreter.
 
 .. note:: The *embedded* option is **not** yet available.
 
-No installation is required for the *embedded* case since both *pygplates* and a Python interpreter are
+No installation is required for the *embedded* case since both pyGPlates and a Python interpreter are
 already embedded inside the GPlates desktop application. All that is required is the
 `installation of GPlates <http://www.gplates.org>`_.
 
-However installation of *pygplates* is required for the *external* case since, in this situation,
-*pygplates* is provided as a separate Python library/module (that is not part of the
+However installation of pyGPlates is required for the *external* case since, in this situation,
+pyGPlates is provided as a separate Python library/module (that is not part of the
 GPlates desktop application).
 
-The following sections cover the installation of *pygplates* in the *external* case.
+The following sections cover the installation of pyGPlates in the *external* case.
 
 .. _pygplates_getting_started_installation_external:
 
-Installing pygplates
+Installing pyGPlates
 ^^^^^^^^^^^^^^^^^^^^
 
 Each release includes the following files:
@@ -59,41 +59,41 @@ Each release includes the following files:
 
 .. note:: For public releases there are also Ubuntu packages (``.deb`` files).
 
-| The *pygplates* documentation is in ``pygplates_rev@PYGPLATES_REVISION@_docs.zip``.
+| The pyGPlates documentation is in ``pygplates_rev@PYGPLATES_REVISION@_docs.zip``.
 | If you extract this zip file to your hard drive and then open ``pygplates_rev@PYGPLATES_REVISION@_docs/index.html``
   in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
-The remaining zip files contain a pre-built *pygplates* library for MacOS X and Windows, and source
-code for Linux (and Ubuntu packages for public *pygplates* releases):
+The remaining zip files contain a pre-built pyGPlates library for MacOS X and Windows, and source
+code for Linux (and Ubuntu packages for public pyGPlates releases):
   
-* ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip`` - *pygplates* for MacOS X (compiled for 64-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip`` - pyGPlates for MacOS X (compiled for 64-bit Python 2.7).
 
   Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64`` containing the
-  ``pygplates.so`` *pygplates* library and its dependency libraries.
+  ``pygplates.so`` pyGPlates library and its dependency libraries.
   
-  .. note:: This pre-built *pygplates* library will only work with a Python interpreter that is
+  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
      version 2.7.x and is 64-bit. The operating system can be Snow Leopard or above.
   
-* ``pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip`` - *pygplates* for Windows (compiled for 32-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip`` - pyGPlates for Windows (compiled for 32-bit Python 2.7).
 
   Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_win32`` containing the
-  ``pygplates.pyd`` *pygplates* library and its dependency libraries.
+  ``pygplates.pyd`` pyGPlates library and its dependency libraries.
   
-  .. note:: This pre-built *pygplates* library will only work with a Python interpreter that is
+  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
      version 2.7.x and is 32-bit. It will work on a 32-bit or 64-bit operating system (Windows 7 or above),
      **but the installed Python must be 32-bit**. A 64-bit Python installation will not work.
   
-* ``pygplates_rev@PYGPLATES_REVISION@_src.zip`` - *pygplates* source code (typically used to compile *pygplates* on Linux).
+* ``pygplates_rev@PYGPLATES_REVISION@_src.zip`` - pyGPlates source code (typically used to compile pyGPlates on Linux).
 
   Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_src``
-  containing the *pygplates* source code.
+  containing the pyGPlates source code.
   
-  Unlike the pre-built *pygplates* libraries for MacOS X and Windows, here we have source code that
-  needs to be compiled into a *pygplates* library. This is typically used to compile *pygplates* on
+  Unlike the pre-built pyGPlates libraries for MacOS X and Windows, here we have source code that
+  needs to be compiled into a pyGPlates library. This is typically used to compile pyGPlates on
   Linux systems because they have binary package managers that make installing dependency
-  libraries (of *pygplates* and GPlates) a lot easier than with MacOS X and Windows.
+  libraries (of pyGPlates and GPlates) a lot easier than with MacOS X and Windows.
   
-  To compile *pygplates* follow the instructions for building GPlates in the files ``BUILD.Linux`` and
+  To compile pyGPlates follow the instructions for building GPlates in the files ``BUILD.Linux`` and
   ``DEPS.Linux`` in the root directory ``pygplates_rev@PYGPLATES_REVISION@_src`` of the source code.
   Once the dependency libraries have been installed this process essentially boils down to executing
   the following commands in a *Terminal* in the root source code directory:
@@ -108,15 +108,15 @@ code for Linux (and Ubuntu packages for public *pygplates* releases):
   Also if you have a dual-core or quad-core system then you can speed up compilation
   using ``make -j 2 pygplates`` or ``make -j 4 pygplates``.
   
-  .. note:: The *pygplates* source code is actually the same as the GPlates source code except we build
-     *pygplates* with ``make pygplates`` (whereas GPlates is built with just ``make``). However the
-     *pygplates* source code is currently a separate development branch (of the GPlates source code repository)
+  .. note:: The pyGPlates source code is actually the same as the GPlates source code except we build
+     pyGPlates with ``make pygplates`` (whereas GPlates is built with just ``make``). However the
+     pyGPlates source code is currently a separate development branch (of the GPlates source code repository)
      that has not yet made its way into the development mainline (hence you won't find it in regular
      GPlates source code releases yet).
   
-* ``pygplates-ubuntu_...`` - *pygplates* Ubuntu ``.deb`` packages (compiled for Python 2.7).
+* ``pygplates-ubuntu_...`` - pyGPlates Ubuntu ``.deb`` packages (compiled for Python 2.7).
 
-  To install *pygplates* on Ubuntu, double-click on the ``.deb`` file appropriate for your system.
+  To install pyGPlates on Ubuntu, double-click on the ``.deb`` file appropriate for your system.
   
   If you do not know which version of Ubuntu is installed, open a terminal and enter the following:
   ::
@@ -125,18 +125,18 @@ code for Linux (and Ubuntu packages for public *pygplates* releases):
   
   ...and note the codename displayed.
   
-  *pygplates* will then be installed to ``/usr/lib/pygplates/revision@PYGPLATES_REVISION@/``.
+  PyGPlates will then be installed to ``/usr/lib/pygplates/revision@PYGPLATES_REVISION@/``.
   
   .. note:: Ubuntu ``.deb`` packages are not available for internal (non-public) releases.
   
-In the next section we will tell Python how to find our pre-built (or compiled) *pygplates* installation.
+In the next section we will tell Python how to find our pre-built (or compiled) pyGPlates installation.
 
 .. _pygplates_getting_started_installation_telling_python_how_to_find_pygplates:
 
-Telling Python how to find pygplates
+Telling Python how to find pyGPlates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The easiest, but least flexible, way to tell Python how to find *pygplates* is to directly modify
+The easiest, but least flexible, way to tell Python how to find pyGPlates is to directly modify
 your python scripts before they ``import pygplates``. The following example demonstrates this:
 ::
 
@@ -147,8 +147,8 @@ your python scripts before they ``import pygplates``. The following example demo
 However a better solution is to set the *PYTHONPATH* environment variable so that you don't have
 to modify all your Python scripts.
 
-.. note:: If *pygplates* is found in the same directory as the python script you are running, it will
-   be imported and any *pygplates* in *PYTHONPATH* will be ignored. This is because ``sys.path`` is
+.. note:: If pyGPlates is found in the same directory as the python script you are running, it will
+   be imported and any pyGPlates in *PYTHONPATH* will be ignored. This is because ``sys.path`` is
    initialised with the directory containing the python script and then *PYTHONPATH*.
 
 Setting the *PYTHONPATH* environment variable:
@@ -206,13 +206,13 @@ Setting the *PYTHONPATH* environment variable:
   #. Create a new *PYTHONPATH* variable (if not already present):
   
      * can be a user or system variable,
-  #. Add the extracted *pygplates* folder path both to *PYTHONPATH* and *PATH*
+  #. Add the extracted pyGPlates folder path both to *PYTHONPATH* and *PATH*
      (they both contain a ``;`` separated list of paths).
   
-.. note:: *PYTHONPATH* might already refer to a previous *pygplates* installation. In this case
-   you will first need to remove the path to the previous *pygplates* installation (from *PYTHONPATH*)
-   before adding the path to the newly installed/extracted *pygplates* (otherwise Python will load the
-   previous *pygplates*).
+.. note:: *PYTHONPATH* might already refer to a previous pyGPlates installation. In this case
+   you will first need to remove the path to the previous pyGPlates installation (from *PYTHONPATH*)
+   before adding the path to the newly installed/extracted pyGPlates (otherwise Python will load the
+   previous pyGPlates).
 
 Installing Python
 ^^^^^^^^^^^^^^^^^
@@ -227,19 +227,19 @@ Alternatively it is available in Python distributions such as `Anaconda <http://
 that also include common Python packages.
 
 And as noted in :ref:`pygplates_using_the_correct_python_version` you will need to install the
-correct version of Python if you are using pre-built versions of *pygplates*.
+correct version of Python if you are using pre-built versions of pyGPlates.
 
 .. _pygplates_using_the_correct_python_version:
 
 Using the correct Python version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As noted in :ref:`pygplates_getting_started_installation_external` the pre-built MacOS X and Windows *pygplates*
+As noted in :ref:`pygplates_getting_started_installation_external` the pre-built MacOS X and Windows pyGPlates
 libraries have been compiled for a specific version of Python (such as 64-bit Python 2.7.x on MacOS X).
-So if you attempt to import *pygplates* into a Python interpreter with a different version then you
+So if you attempt to import pyGPlates into a Python interpreter with a different version then you
 will get an error.
 
-For example, on Windows if you attempt to import a pre-built *pygplates* library compiled for
+For example, on Windows if you attempt to import a pre-built pyGPlates library compiled for
 32-bit Python **2.7.x** into a 32-bit Python **2.6.x** interpreter then you will get an error similar to:
 ::
 
@@ -250,11 +250,11 @@ And on MacOS X the error message (in a similar situation) is more cryptic:
 
   Fatal Python error: PyThreadState_Get: no current thread
 
-...but means the same thing (a Python version mismatch between *pygplates* and the Python interpreter).
+...but means the same thing (a Python version mismatch between pyGPlates and the Python interpreter).
 
 It is also important to use matching architectures (32-bit versus 64-bit).
 
-For example, on Windows if you attempt to import the pre-built *pygplates* library (compiled for
+For example, on Windows if you attempt to import the pre-built pyGPlates library (compiled for
 **32-bit** Python 2.7.x) into a **64-bit** Python 2.7.x interpreter then you will get the following
 error:
 ::
@@ -262,7 +262,7 @@ error:
   ImportError: DLL load failed: %1 is not a valid Win32 application.
 
 And for MacOS X there are two Python 2.7 installers ("64-bit/32-bit" and "32-bit i386/PPC"),
-so if you attempt to import the pre-built *pygplates* library (compiled for **64-bit** Python 2.7.x)
+so if you attempt to import the pre-built pyGPlates library (compiled for **64-bit** Python 2.7.x)
 into a **32-bit** Python 2.7.x interpreter (eg, installed from "i386/PPC") then you will get the following
 error:
 ::
@@ -320,8 +320,8 @@ installation. If this happens then you might get an error message similar to the
 presumably via the Windows registry) but it loaded the Python **2.7.6** standard libraries
 (the ``PYTHONHOME`` environment variable was set to "C:\\SDK\\python\\Python-2.7.6").
 
-.. note:: The above error had nothing to do with pygplates (it could happen with any python script
-   regardless of whether it imported pygplates or not).
+.. note:: The above error had nothing to do with pyGPlates (it could happen with any python script
+   regardless of whether it imported pyGPlates or not).
 
 So, on Windows, it is usually best to run your python script as:
 ::
@@ -337,7 +337,7 @@ Miscellaneous issues
 Windows runtime library error
 """""""""""""""""""""""""""""
 
-On Windows operating systems it is possible to get the following error when importing *pygplates* or
+On Windows operating systems it is possible to get the following error when importing pyGPlates or
 other Python C extension modules (that use native libraries):
 
 .. figure:: images/MSVC_runtime_error.png
@@ -360,7 +360,7 @@ Tutorial
 --------
 
 This tutorial first provides a fundamental overview of functions and classes.
-And then covers the steps to set up and run a simple *pygplates* script.
+And then covers the steps to set up and run a simple pyGPlates script.
 
 .. contents::
    :local:
@@ -378,7 +378,7 @@ to the function and output arguments pass data from the function back to the cal
 return value is also another way to pass data back to the caller. A function argument can be both
 input and output if the function first reads from it (input) and then writes to it (output).
 
-An example *pygplates* function call is reconstructing coastlines to 10Ma:
+An example pyGPlates function call is reconstructing coastlines to 10Ma:
 ::
 
   pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
@@ -434,20 +434,20 @@ These class *methods* behave similarly to top-level functions (such as ``pygplat
 they operate on an instance of class. Hence a class *method* has an implicit first function
 argument that is the object itself (for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
 
-.. note:: A complete list of *pygplates* functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
+.. note:: A complete list of pyGPlates functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
 
 
 .. _pygplates_getting_started_tutorial_first_script:
 
-Introductory *pygplates* script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Introductory pyGPlates script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. note:: Before starting this section please make sure you have :ref:`installed<pygplates_getting_started_installation>` *pygplates*.
+.. note:: Before starting this section please make sure you have :ref:`installed<pygplates_getting_started_installation>` pyGPlates.
 
 Source code
 """""""""""
 
-Our introductory *pygplates* Python script will contain the following lines of source code:
+Our introductory pyGPlates Python script will contain the following lines of source code:
 ::
 
   import pygplates
@@ -459,10 +459,10 @@ The first statement...
 
   import pygplates
 
-| ...tells Python to load *pygplates*.
-| This needs to be done before *pygplates* can be used in subsequent statements.
+| ...tells Python to load pyGPlates.
+| This needs to be done before pyGPlates can be used in subsequent statements.
 
-.. note:: There are other ways to import *pygplates* but this is the simplest and most common way.
+.. note:: There are other ways to import pyGPlates but this is the simplest and most common way.
 
 The second statement...
 ::
@@ -491,7 +491,7 @@ Setting up the script
 
 Next open up a terminal or command window (on MacOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
 
-| We may need to let Python know where to find *pygplates* by setting an environment variable
+| We may need to let Python know where to find pyGPlates by setting an environment variable
   as covered in :ref:`pygplates_getting_started_installation_telling_python_how_to_find_pygplates`.
 | For example on MacOS this can be done by typing:
 
@@ -499,7 +499,7 @@ Next open up a terminal or command window (on MacOS and Ubuntu this is a *Termin
 
   export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
 
-...where ``/path/to/pygplates`` is replaced with the directory where you extracted *pygplates*.
+...where ``/path/to/pygplates`` is replaced with the directory where you extracted pyGPlates.
 
 | Next change the current working directory to the directory containing the ``tutorial.py`` file.
 | For example, on MacOS or Linux:
@@ -517,7 +517,7 @@ Next run the Python script by typing:
   python tutorial.py
 
 If any errors were generated they might be due to a version incompatibility between the Python you are using and the
-*pygplates* you have installed - please see :ref:`pygplates_using_the_correct_python_version` for more details.
+pyGPlates you have installed - please see :ref:`pygplates_using_the_correct_python_version` for more details.
 
 .. note:: We are running our Python script through an *external* Python interpreter - see
    :ref:`pygplates_introduction_external_vs_embedded`.

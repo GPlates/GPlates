@@ -812,7 +812,7 @@ namespace
 	{
 		// If there's no property mapper then fill the mapping with default values.
 		// If there's no property mapper then 'set_property_mapper()' was never called which
-		// can happen when we not using GPlates as a GUI (eg, importing pygplates into a python
+		// can happen when we not using GPlates as a GUI (eg, importing 'pygplates' into a python
 		// interpreter) - in this case we don't want to abort due to lack of a shapefile mapping.
 		if (mapper == NULL)
 		{

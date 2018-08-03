@@ -1883,13 +1883,13 @@ namespace GPlatesApi
 void
 export_polyline_on_sphere()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesMaths::FlattenLongitudeOverlaps::Value>("FlattenLongitudeOverlaps")
 			.value("no", GPlatesMaths::FlattenLongitudeOverlaps::NO)
 			.value("use_from", GPlatesMaths::FlattenLongitudeOverlaps::USE_FROM)
 			.value("use_to", GPlatesMaths::FlattenLongitudeOverlaps::USE_TO);
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PolylineConversion::Value>("PolylineConversion")
 			.value("convert_to_polyline", GPlatesApi::PolylineConversion::CONVERT_TO_POLYLINE)
 			.value("ignore_non_polyline", GPlatesApi::PolylineConversion::IGNORE_NON_POLYLINE)

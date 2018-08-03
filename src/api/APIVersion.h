@@ -42,11 +42,11 @@
 namespace GPlatesApi
 {
 	/**
-	 * The GPlates Python API (pygplates) version number.
+	 * The GPlates Python API (pyGPlates) version number.
 	 *
 	 * In string format the version number looks like "<MAJOR>.<MINOR>.<PATCH>.<REVISION>" where
-	 * <MAJOR>, <MINOR> and <PATCH> are the GPlates version and <REVISION> is the pygplates
-	 * revision number that is incremented for each pygplates API change (and never reset to zero).
+	 * <MAJOR>, <MINOR> and <PATCH> are the GPlates version and <REVISION> is the pyGPlates
+	 * revision number that is incremented for each pyGPlates API change (and never reset to zero).
 	 *
 	 * However, comparison of Version objects only uses the <REVISION> number since this alone
 	 * identifies API changes.
@@ -81,7 +81,7 @@ namespace GPlatesApi
 
 
 		/**
-		 * Gets the current version (of this imported pygplates build).
+		 * Gets the current version (of this imported pyGPlates build).
 		 *
 		 * Using 'operator <<' on the returned instance will print "<REVISION> (GPlates <MAJOR>.<MINOR>.<PATCH>)".
 		 */

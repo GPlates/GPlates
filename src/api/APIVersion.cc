@@ -158,14 +158,14 @@ export_version()
 {
 	std::stringstream version_class_docstring_stream;
 	version_class_docstring_stream <<
-			"A version of pygplates (GPlates Python API).\n"
+			"A version of pyGPlates (GPlates Python API).\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported and Version is "
 			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
-			"| During the lifespan of pygplates, the :meth:`imported pygplates version<get_imported_version>` "
+			"| During the lifespan of pyGPlates, the :meth:`imported pyGPlates version<get_imported_version>` "
 			"has been incremented for each API change. So it can be used to ensure new API additions are "
-			"present in the imported pygplates library.\n"
+			"present in the imported pyGPlates library.\n"
 			"| For example, if we are using a new API function that was added in this revision (which is "
 			<< GPlatesGlobal::PygplatesRevision <<
 			") then we can ensure we are using a sufficient API version by checking "
@@ -176,15 +176,15 @@ export_version()
 			"  if pygplates.Version.get_imported_version() < pygplates.Version("
 			<< GPlatesGlobal::PygplatesRevision <<
 			"):\n"
-			"      print 'pygplates version %s is not supported' % "
+			"      print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n"
 			"\n"
-			"To print the version string of the imported pygplates library:\n"
+			"To print the version string of the imported pyGPlates library:\n"
 			"::\n"
 			"\n"
-			"  print 'imported pygplates version: %s' % pygplates.Version.get_imported_version()\n"
+			"  print 'imported pyGPlates version: %s' % pygplates.Version.get_imported_version()\n"
 			"\n"
-			"...which for pygplates revision "
+			"...which for pyGPlates revision "
 			<< GPlatesGlobal::PygplatesRevision <<
 			" (associated with GPlates version "
 			<< GPlatesGlobal::GPlatesVersion <<
@@ -197,12 +197,12 @@ export_version()
 			"``:\n"
 			"::\n"
 			"\n"
-			"  print 'pygplates version: %s' % pygplates.Version("
+			"  print 'PyGPlates version: %s' % pygplates.Version("
 			<< GPlatesGlobal::PygplatesRevision <<
 			")\n"
 			"\n"
 			"There is also a ``pygplates.__version__`` string equal to the concatenation of the GPlates "
-			"version and the pygplates revision of the imported pygplates library. For pygplates revision "
+			"version and the pyGPlates revision of the imported pyGPlates library. For pyGPlates revision "
 			<< GPlatesGlobal::PygplatesRevision <<
 			" (associated with GPlates version "
 			<< GPlatesGlobal::GPlatesVersion <<
@@ -218,7 +218,7 @@ export_version()
 			"  :param revision: the revision number\n"
 			"  :type revision: int\n"
 			"\n"
-			"  To check if the imported pygplates library is revision "
+			"  To check if the imported pyGPlates library is revision "
 			<< GPlatesGlobal::PygplatesRevision <<
 			" or greater:\n"
 			"  ::\n"
@@ -226,7 +226,7 @@ export_version()
 			"    if pygplates.Version.get_imported_version() < pygplates.Version("
 			<< GPlatesGlobal::PygplatesRevision <<
 			"):\n"
-			"        print 'pygplates version %s is not supported' % "
+			"        print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n";
 
 	std::stringstream version_get_imported_version_docstring_stream;
@@ -235,13 +235,13 @@ export_version()
 			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 			// (like it can a pure python function) and we cannot document it in first (signature) line
 			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Return the version of the imported pygplates library.\n"
+			"  [*staticmethod*] Return the version of the imported pyGPlates library.\n"
 			"\n"
 			"  :returns: a Version instance representing the :meth:`revision number<get_revision>` "
-			"of the imported pygplates library\n"
+			"of the imported pyGPlates library\n"
 			"  :rtype: :class:`Version`\n"
 			"\n"
-			"  To check if the imported pygplates library is revision "
+			"  To check if the imported pyGPlates library is revision "
 			<< GPlatesGlobal::PygplatesRevision <<
 			" or greater:\n"
 			"  ::\n"
@@ -249,7 +249,7 @@ export_version()
 			"    if pygplates.Version.get_imported_version() < pygplates.Version("
 			<< GPlatesGlobal::PygplatesRevision <<
 			"):\n"
-			"        print 'pygplates version %s is not supported' % "
+			"        print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n";
 
 	//

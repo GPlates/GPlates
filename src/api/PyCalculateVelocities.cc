@@ -117,7 +117,7 @@ namespace GPlatesApi
 void
 export_calculate_velocities()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::VelocityUnits::Value>("VelocityUnits")
 			.value("kms_per_my", GPlatesApi::VelocityUnits::KMS_PER_MY)
 			.value("cms_per_yr", GPlatesApi::VelocityUnits::CMS_PER_YR);

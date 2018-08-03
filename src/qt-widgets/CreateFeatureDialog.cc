@@ -2068,9 +2068,9 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_enter_page(
 		// then select the default geometry property name based on the feature type.
 		//
 		// Note that we really want to encourage users to use the 'default' geometry property
-		// for a feature type as this makes retrieving geometries (eg, in python pygplates API)
+		// for a feature type as this makes retrieving geometries (eg, in python pyGPlates API)
 		// much easier for users (since they don't have to specify the geometry property name -
-		// when not specified pygplates will extract the 'default' geometry property).
+		// when not specified pyGPlates will extract the 'default' geometry property).
 		if (last_page < COMMON_PROPERTIES_PAGE && d_feature_type != d_previously_selected_feature_type)
 		{
 			select_default_geometry_property_name();

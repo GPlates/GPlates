@@ -83,7 +83,7 @@ namespace
 #endif
 						// Note that the 'globals' and 'locals' arguments to 'PyEval_EvalCode()' should
 						// be the *same* object because we are executing the code as if it were embedded
-						// in the pygplates *module* and according the docs for 'exec'...
+						// in the 'pygplates' *module* and according the docs for 'exec'...
 						//
 						//   "Remember that at module level, globals and locals are the same dictionary.
 						//    If two separate objects are given as globals and locals, the code will be
@@ -109,9 +109,9 @@ namespace
 						//
 						// ...and the 'print x' statement would raise an error since 'x' is not defined
 						// (because it looks for a global, not class, 'x' and doesn't find one).
-						// So, in our pygplates module case, any reference to a pygplates module variable
+						// So, in our 'pygplates' module case, any reference to a 'pygplates' module variable
 						// would have needed to be prefixed by 'pygplates.' since the globals dict
-						// would be the "__main__" module (ie, one level up from pygplates).
+						// would be the "__main__" module (ie, one level up from 'pygplates').
 						pygplates_globals.ptr(),
 						pygplates_globals.ptr())));
 #endif
@@ -136,7 +136,7 @@ export_pure_python_api()
 	// (4) add/commit the changes to Subversion.
 	//
 	// Note that since the pure python code is part of the 'pygplates' module, its source code
-	// does not need to prefix 'pygplates.' if it calls the GPlates python API.
+	// does not need to prefix 'pygplates'. if it calls the GPlates python API.
 	//
 
 	export_pure_python_code(":/python/api/Crossovers.py");

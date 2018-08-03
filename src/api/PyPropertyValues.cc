@@ -429,7 +429,7 @@ namespace GPlatesApi
 	 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
 	 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
 	 * on the python side (eg, removing container elements on the C++ side while iterating over
-	 * the container on the python side, for example, via a pygplates call back into the C++ code).
+	 * the container on the python side, for example, via a pyGPlates call back into the C++ code).
 	 */
 	class GmlDataBlockCoordinateListIterator
 	{
@@ -2332,7 +2332,7 @@ namespace GPlatesApi
 	 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
 	 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
 	 * on the python side (eg, removing container elements on the C++ side while iterating over
-	 * the container on the python side, for example, via a pygplates call back into the C++ code).
+	 * the container on the python side, for example, via a pyGPlates call back into the C++ code).
 	 */
 	class GpmlKeyValueDictionaryIterator
 	{

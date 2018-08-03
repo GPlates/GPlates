@@ -673,7 +673,7 @@ namespace GPlatesApi
 void
 export_resolve_topologies()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::ResolveTopologyType::Value>("ResolveTopologyType")
 			.value("line", GPlatesApi::ResolveTopologyType::LINE)
 			.value("boundary", GPlatesApi::ResolveTopologyType::BOUNDARY)

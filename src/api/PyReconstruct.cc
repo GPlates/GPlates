@@ -956,7 +956,7 @@ namespace GPlatesApi
 void
 export_reconstruct()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::ReconstructType::Value>("ReconstructType")
 			.value("feature_geometry", GPlatesApi::ReconstructType::FEATURE_GEOMETRY)
 			.value("motion_path", GPlatesApi::ReconstructType::MOTION_PATH)

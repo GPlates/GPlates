@@ -2923,13 +2923,13 @@ GPlatesApi::AmbiguousGeometryCoverageException::write_message(
 void
 export_feature()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PropertyReturn::Value>("PropertyReturn")
 			.value("exactly_one", GPlatesApi::PropertyReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::PropertyReturn::FIRST)
 			.value("all", GPlatesApi::PropertyReturn::ALL);
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::CoverageReturn::Value>("CoverageReturn")
 			.value("geometry_only", GPlatesApi::CoverageReturn::GEOMETRY_ONLY)
 			.value("geometry_and_scalars", GPlatesApi::CoverageReturn::GEOMETRY_AND_SCALARS);

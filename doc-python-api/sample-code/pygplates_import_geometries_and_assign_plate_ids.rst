@@ -4,12 +4,12 @@ Import geometries and assign plate IDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example shows how to import points or polylines from a text file and assign plate IDs to them.
-The resulting feature data is then saved to a file format that *pygplates* can load directly.
+The resulting feature data is then saved to a file format that pyGPlates can load directly.
 
 .. note:: Importing features is different than :ref:`loading<pygplates_load_and_save_feature_collections>` features.
-   When feature data is not in a file format that *pygplates* can load then it needs to be imported into a
+   When feature data is not in a file format that pyGPlates can load then it needs to be imported into a
    GPlates-compatible file format. This usually involves more than just importing the geometry data.
-   For example, plate IDs need to be assigned so that *pygplates* can reconstruct the feature data
+   For example, plate IDs need to be assigned so that pyGPlates can reconstruct the feature data
    to geological times. And other feature metadata such as :meth:`name<pygplates.Feature.set_name>` and
    :meth:`description<pygplates.Feature.set_description>` should also be assigned.
 
@@ -57,7 +57,7 @@ Sample code
 
     # Parse the input points text file containing a lon/lat point per line.
     # Longitude/latitude is the order that GMT files ('.xy', '.gmt') use.
-    # Note that pygplates specifies points in the opposite (latitude/longitude) order.
+    # Note that pyGPlates specifies points in the opposite (latitude/longitude) order.
     input_points = []
     with open(input_points_filename, 'r') as input_points_file:
         for line_number, line in enumerate(input_points_file):
@@ -82,8 +82,8 @@ Sample code
                 print 'Line %d: Ignoring point - cannot read lon/lat values.' % line_number
                 continue
 
-            # Create a pygplates point from the latitude and longitude, and add it to our list of points.
-            # Note that pygplates uses the opposite (lat/lon) order to GMT (lon/lat).
+            # Create a pyGPlates point from the latitude and longitude, and add it to our list of points.
+            # Note that pyGPlates uses the opposite (lat/lon) order to GMT (lon/lat).
             input_points.append(pygplates.PointOnSphere(lat, lon))
 
     # Create a feature for each point we read from the input file.
@@ -223,7 +223,7 @@ Load *points* from a GMT file and assign plate IDs
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 This example is similiar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids` except it
-takes advantage of the ability of *pygplates* to load a GMT file to avoid having to manually parse a text file line-by-line.
+takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
 
 Sample code
 """""""""""
@@ -352,7 +352,7 @@ Sample code
 
     # Parse the input polylines text file containing groups of lon/lat points per line.
     # Longitude/latitude is the order that GMT files ('.xy', '.gmt') use.
-    # Note that pygplates specifies points in the opposite (latitude/longitude) order.
+    # Note that pyGPlates specifies points in the opposite (latitude/longitude) order.
     polyline_features = []
     polyline_points = []
     with open(input_polylines_filename, 'r') as input_polylines_file:
@@ -388,8 +388,8 @@ Sample code
                 print 'Line %d: Ignoring point - cannot read lon/lat values.' % line_number
                 continue
             
-            # Create a pygplates point from the latitude and longitude, and add it to our list of points.
-            # Note that pygplates uses the opposite (lat/lon) order to GMT (lon/lat).
+            # Create a pyGPlates point from the latitude and longitude, and add it to our list of points.
+            # Note that pyGPlates uses the opposite (lat/lon) order to GMT (lon/lat).
             polyline_points.append(pygplates.PointOnSphere(lat, lon))
         
         # If we have any points leftover then generate the last polyline feature.
@@ -557,7 +557,7 @@ Load *polylines* from a GMT file and assign plate IDs
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 This example is similiar to :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids` except it
-takes advantage of the ability of *pygplates* to load a GMT file to avoid having to manually parse a text file line-by-line.
+takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
 
 Sample code
 """""""""""

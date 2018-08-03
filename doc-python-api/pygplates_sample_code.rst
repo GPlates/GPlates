@@ -3,7 +3,7 @@
 Sample code
 ===========
 
-This document contains sample code that shows *pygplates* solving common plate tectonic problems.
+This document contains sample code that shows pyGPlates solving common plate tectonic problems.
 
 .. note:: The :ref:`pygplates_getting_started` section has a
    :ref:`Getting Started tutorial<pygplates_getting_started_tutorial>` as well as an
@@ -17,7 +17,7 @@ This document contains sample code that shows *pygplates* solving common plate t
 Import
 ------
 
-This section covers how to get geometry data into a state where it can be reconstructed by *pygplates*.
+This section covers how to get geometry data into a state where it can be reconstructed by pyGPlates.
 
 .. toctree::
    :maxdepth: 3

@@ -3,8 +3,8 @@
 Introduction
 ============
 
-This document introduces *pygplates* and covers some advantages over GPlates.
-It also gives an overview of embedded versus external *pygplates*.
+This document introduces pyGPlates and covers some advantages over GPlates.
+It also gives an overview of embedded versus external pyGPlates.
 
 .. contents::
    :local:
@@ -12,7 +12,7 @@ It also gives an overview of embedded versus external *pygplates*.
 
 .. _pygplates_introduction_using_gplates_versus_pygplates:
 
-GPlates versus pygplates
+GPlates versus pyGPlates
 ------------------------
 
 `GPlates <http://www.gplates.org>`_ is desktop software for the interactive visualisation of plate-tectonics.
@@ -43,7 +43,7 @@ There are two ways to interact with GPlates functionality:
    small Python script using functions (and classes) provided by :ref:`pygplates<pygplates_reference>`:
    ::
 
-     # Import the pygplates library.
+     # Import the pyGPlates library.
      import pygplates
      
      # Load the coastline features and rotation model.
@@ -61,12 +61,12 @@ There are two ways to interact with GPlates functionality:
 
 .. _pygplates_introduction_why_use_pygplates:
 
-Why use pygplates ?
+Why use pyGPlates ?
 -------------------
 
 In general, writing a Python script affords a greater level of flexibility (compared to a
 graphical user interface) provided you are comfortable using Python as a programming language.
-Python libraries such as *pygplates* typically provide both high-level and low-level granularity
+Python libraries such as pyGPlates typically provide both high-level and low-level granularity
 in their functions and classes to enable this kind of flexibility.
 
 High-level functionality enables common tasks (such as reconstructing entire files of geological data)
@@ -78,20 +78,20 @@ to a past geological time:
   pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
 
 ...but it cannot restrict reconstructed data to a specific region on the globe.
-To achieve that, some more Python code needs to be written that accesses lower-level *pygplates* functionality
+To achieve that, some more Python code needs to be written that accesses lower-level pyGPlates functionality
 as shown in the sample code :ref:`pygplates_find_features_overlapping_a_polygon`.
 
 Also if GPlates is just one node in a research pipeline then it can be easier to process all nodes
 together in a single script (or collection of scripts) reducing the need to interact with a graphical
-user interface. In this case :ref:`external pygplates<pygplates_introduction_using_pygplates_external>`
+user interface. In this case :ref:`external pyGPlates<pygplates_introduction_using_pygplates_external>`
 can replace the GPlates desktop application as a node in the pipeline.
 
 .. _pygplates_introduction_external_vs_embedded:
 
-External versus embedded pygplates
+External versus embedded pyGPlates
 ----------------------------------
 
-There are two ways to run Python source code that uses *pygplates*.
+There are two ways to run Python source code that uses pyGPlates.
 You can run it in either:
 
 * an *external* Python interpreter, or
@@ -101,7 +101,7 @@ You can run it in either:
 
 .. _pygplates_introduction_using_pygplates_external:
 
-Using pygplates with an *external* Python interpreter
+Using pyGPlates with an *external* Python interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this scenario you are running a Python script using an *external* Python interpreter.
@@ -116,29 +116,29 @@ For example you might have a file called ``my_python_script.py`` that you execut
 ...this starts up the Python interpreter and instructs it to execute Python source code found in
 the ``my_python_script.py`` script.
 
-| In your Python script you will need to import *pygplates* before you can access *pygplates* functionality.
-| For example a script that just prints the *pygplates* version would look like:
+| In your Python script you will need to import pyGPlates before you can access pyGPlates functionality.
+| For example a script that just prints the pyGPlates version would look like:
 
 ::
 
   import pygplates
   
-  print 'Imported pygplates version: %s' % pygplates.Version.get_imported_version()
+  print 'Imported pyGPlates version: %s' % pygplates.Version.get_imported_version()
 
 ...which would print out...
 ::
 
-  @PYGPLATES_REVISION@ (GPlates @GPLATES_PACKAGE_VERSION@)
+  Imported pyGPlates version: @PYGPLATES_REVISION@ (GPlates @GPLATES_PACKAGE_VERSION@)
 
-...where ``@PYGPLATES_REVISION@`` is the *pygplates* revision and ``GPlates @GPLATES_PACKAGE_VERSION@`` (in parentheses) indicates that
+...where ``@PYGPLATES_REVISION@`` is the pyGPlates revision and ``GPlates @GPLATES_PACKAGE_VERSION@`` (in parentheses) indicates that
 revision ``@PYGPLATES_REVISION@`` is associated with GPlates @GPLATES_PACKAGE_VERSION@.
 
-.. note:: You will need to :ref:`install <pygplates_getting_started_installation_external>` *pygplates* so that the
+.. note:: You will need to :ref:`install <pygplates_getting_started_installation_external>` pyGPlates so that the
    Python interpreter can find it when you execute ``python my_python_script.py``.
 
 .. _pygplates_introduction_using_pygplates_embedded:
 
-Using pygplates with the GPlates *embedded* Python interpreter
+Using pyGPlates with the GPlates *embedded* Python interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning:: This option is **not** yet available.

@@ -315,7 +315,7 @@ in terms of the *actual reconstructed position*:
                          &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
 
 ...where the rotation adjustment :math:`R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position})` represents the
-:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed_position}` to :math:`\text{desired_reconstructed_position}` which (in *pygplates*) is
+:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed_position}` to :math:`\text{desired_reconstructed_position}` which (in pyGPlates) is
 ``pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)``.
 
 The composed rotation from *present day position* to *desired reconstructed position* represents the adjusted *equivalent* rotation:
@@ -344,7 +344,7 @@ Pre-multiplying both sides by :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})^
 ...which represents the *adjusted* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}`
 in terms of the *original* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})`.
 
-This is written in pygplates as:
+This is written in pyGPlates as:
 ::
 
     fixed_plate_frame = rotation_model_before_adjustment.get_rotation(reconstruction_time, fixed_plate_id)

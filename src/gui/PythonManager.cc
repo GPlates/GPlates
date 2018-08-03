@@ -297,7 +297,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 
 	PythonInterpreterLocker interpreter_locker;
 
-	// Load the pygplates module.
+	// Load the 'pygplates' module.
 	try
 	{
 		d_python_main_module = import("__main__");

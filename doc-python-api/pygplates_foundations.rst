@@ -3,7 +3,7 @@
 Foundations
 ===========
 
-This document covers some plate tectonic foundations of *pygplates*.
+This document covers some plate tectonic foundations of pyGPlates.
 
 .. contents::
    :local:
@@ -90,7 +90,7 @@ Working with finite rotations
 A finite rotation represents the motion of a plate (relative to another plate) on the surface of the
 globe over a period of geological time.
 
-In *pygplates*, finite rotations are represented by :class:`pygplates.FiniteRotation`.
+In pyGPlates, finite rotations are represented by :class:`pygplates.FiniteRotation`.
 
 In the following sections we will first cover some rotation maths and then derive the four
 fundamental finite rotation categories:
@@ -100,7 +100,7 @@ fundamental finite rotation categories:
 * :ref:`pygplates_foundations_equivalent_stage_rotation`
 * :ref:`pygplates_foundations_relative_stage_rotation`
 
-In *pygplates*, these can be obtained from a :class:`pygplates.RotationModel`.
+In pyGPlates, these can be obtained from a :class:`pygplates.RotationModel`.
 
 
 .. _pygplates_foundations_composing_finite_rotations:
@@ -128,7 +128,7 @@ rotated in the following way:
 
 .. note:: Rotations are *not* commutative (:math:`R2 \times R1 \neq R1 \times R2`)
 
-The composed rotation :math:`R2 \times R1` can be written in pygplates as either:
+The composed rotation :math:`R2 \times R1` can be written in pyGPlates as either:
 ::
 
   R2 * R1
@@ -246,7 +246,7 @@ from present day time :math:`0` to time :math:`t_{to}` is:
 
    R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M})
 
-In *pygplates*, the equivalent total rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
+In pyGPlates, the equivalent total rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
 ::
 
   rotation_model = pygplates.RotationModel(...)
@@ -270,7 +270,7 @@ from present day time :math:`0` to time :math:`t_{to}` is:
 
 ...where :math:`P_{A}` is the anchor plate.
 
-In *pygplates*, the relative total rotation can be obtained from :meth:`pygplates.RotationModel.get_rotation` as:
+In pyGPlates, the relative total rotation can be obtained from :meth:`pygplates.RotationModel.get_rotation` as:
 ::
 
   rotation_model = pygplates.RotationModel(...)
@@ -292,7 +292,7 @@ from time :math:`t_{from}` to time :math:`t_{to}` is:
    &  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(t_{from} \rightarrow 0,P_{A} \rightarrow P_{M}) \\
    &  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})^{-1}
 
-In *pygplates*, the equivalent stage rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
+In pyGPlates, the equivalent stage rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
 ::
 
   rotation_model = pygplates.RotationModel(...)
@@ -319,7 +319,7 @@ from time :math:`t_{from}` to time :math:`t_{to}` is:
 
 ...where :math:`P_{A}` is the anchor plate.
 
-In *pygplates*, the relative stage rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
+In pyGPlates, the relative stage rotation can be obtained :meth:`pygplates.RotationModel.get_rotation` as:
 ::
 
   rotation_model = pygplates.RotationModel(...)

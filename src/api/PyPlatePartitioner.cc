@@ -398,7 +398,7 @@ namespace GPlatesApi
 void
 export_plate_partitioner()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PartitionMethod::Value>("PartitionMethod")
 			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
 			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
@@ -407,7 +407,7 @@ export_plate_partitioner()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionMethod::Value>();
 
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PartitionProperty::Value>("PartitionProperty")
 			.value("reconstruction_plate_id", GPlatesApi::PartitionProperty::RECONSTRUCTION_PLATE_ID)
 			.value("valid_time_period", GPlatesApi::PartitionProperty::VALID_TIME_PERIOD)
@@ -418,7 +418,7 @@ export_plate_partitioner()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionProperty::Value>();
 
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PartitionReturn::Value>("PartitionReturn")
 			.value("combined_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::COMBINED_PARTITIONED_AND_UNPARTITIONED)
 			.value("separate_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::SEPARATE_PARTITIONED_AND_UNPARTITIONED)
@@ -428,7 +428,7 @@ export_plate_partitioner()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PartitionReturn::Value>();
 
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>("SortPartitioningPlates")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)

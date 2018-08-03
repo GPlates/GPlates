@@ -1108,7 +1108,7 @@ namespace GPlatesApi
 void
 export_feature_collection()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::FeatureReturn::Value>("FeatureReturn")
 			.value("exactly_one", GPlatesApi::FeatureReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::FeatureReturn::FIRST)
