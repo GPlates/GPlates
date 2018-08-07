@@ -3,10 +3,15 @@ GPlates 2.1
 
 Changes since 2.0:
 
- * Velocity legends.
- 
+ * Velocity legend:
+   * Visual indicator of velocity arrow lengths in a target velocity layer.
+   * Displays a single arrow and its velocity (in cm/yr).
+   * Legend velocity can be constant (eg, 2 cm/yr), or variable (to keep arrow length within reasonable limits).
+     * Legend arrow length changes in response to velocity scaling in the target layer.
  * Deformation:
    * Topological networks:
+     * Can now use mid-ocean ridges as boundary/interior sections.
+       * Or any feature reconstructed by half-stage rotation (in addition to by-plate-ID).
      * Added triangulation *draw* mode in topology network (brown) layers.
        * Can draw boundary, mesh or fill (independently of colour mode).
      * Display topological networks as meshes by default (instead of boundaries).
@@ -21,7 +26,9 @@ Changes since 2.0:
      * Added exports for the following strain-related quantities:
        * Strain dilatation.
        * Principal strain and stretch.
-         * Plot stretch ellipses in GMT.
+         * Exports triplet (angle/azimuth, major axis and minor axis).
+         * Major/minor axes are strain (extension positive; compression negative) or stretch (1.0 + strain; always positive).
+         * Plot stretch ellipses in GMT (with psxy).
      * Added optional strain rate clamping:
        * Useful when strain rates in some triangles of deforming mesh are excessively high.
          * Depends on how deforming network was built/modelled.
@@ -32,7 +39,12 @@ Changes since 2.0:
      * Finite strain is now correctly accumulated.
        * By integrating deformation gradient tensor over time, using spatial gradients of velocity.
    * Reconstructing regular features using topologies:
+     * Added option to remove points from within a deforming network as soon as they fall outside.
+     * The Set Topology Reconstruction Parameters dialog now pops up when generating crustal thickness points.
+       * Since points must be topologically reconstructed in order for crustal thicknesses to evolve.
+     * Fixed cancelling of Set Topology Reconstruction Parameters dialog always turning on "reconstruct using topologies".
    * Scalar coverages:
+     * Added option to also export dilatation strain and total strain rate (in addition to dilatation strain rate).
      * Interpolate vertex colours along each line segment of polylines/polygons.
        * Previously just rendered as point geometries with no line segments.
      * Disabled insert/delete/split tools for scalar coverage features.
@@ -46,12 +58,17 @@ Changes since 2.0:
        * Thickness (kms), stretching (beta) factor and thinning (gamma) factor.
        * Independently visualize and export.
      * Can optionally generate points within a lat-lon box.
+     * Calculate statistics using entire history of crustal thicknesses/factors.
+       * Provides a better mapping of palette colours.
+       * Previously calculated statistics only at initial time (but initial thicknesses are constant).
+     * Fixed missing IMPORT_AGE attribute in OGR vector formats (eg, Shapefile).
+       * Required for version 3 half-stage rotations (created in GPlates 2.0 and above) to work properly.
+       * Also required for crustal thickness points to work.
    * Symbols:
      * Fixed symbols not working for points that are reconstructed using topologies.
      * Fixed strain accumulation symbol size truncating to integer values.
  * Projects and recent sessions:
    * Fixed problems loading projects saved on computers with different locales:
-     * Was incorrectly saving/loading QDateTime using 'system' locale (instead of "C" locale).
      * The following backward/forward compatibility rules apply:
        * Can load on 2.1:
          * Projects saved with 2.1 on any locale:
@@ -63,17 +80,42 @@ Changes since 2.0:
              * For example, (English or Chinese)->English.
          * Only projects saved with 2.0 on matching locale.
              * For example, English->English or Chinese->Chinese.
+     * Problems stemmed from incorrectly saving/loading QDateTime using 'system' locale (instead of "C" locale).
+   * Save anchored plate ID, background colour and graticule settings to project/session.
    * When asked to locate a missing data file, show directory where missing file should have been.
    * Fixed filenames, with sharename in path, not loading when session/project loaded (on Windows).
  * Rasters:
    * Enable import and export of NetCDF version 4 rasters (via GDAL library version 2).
      * Interoperable with GMT version 5.
      * Optionally compress exported NetCDF.
+   * Support export of *gridline* registered rasters.
+     * Eg, global raster where left and right pixel columns overlap on dateline.
+     * Also support *gridline* import (for rasters with no inbuilt georeferencing).
+   * Support greater than 8-bit per channel RGBA rasters (including floating-point).
+     * Import down-converts to 8-bit per channel RGBA for display.
+   * Import generates transparency for RGBA rasters supporting no-data values (in each R,G,B,A band).
+     * Alpha channel set to zero (transparent) for matching pixels.
+   * Time-dependent raster (and 3D scalar field) import now supports times (depths) anywhere in filenames.
+     * For ambiguous cases (eg, multiple decimal points) place times (depths) at end of filename (after '_' or '-').
+   * Export both ".nc" and ".grd" rasters using same NetCDF driver (difference is only the file extension).
    * Fixed incorrect half-pixel shift downwards (North to South) for *gridline* registered global GMT grids.
-     * Has been incorrectly shifting since GPlates 1.4 (included).
+     * Has been incorrectly shifting since GPlates 1.4.
+     * Also fixed a separate pixel-shift issue within 5 degrees of North or South pole (in regular lat-lon projection).
+   * Fixed semi-transparent vertical seam near North and South poles at longitude 0 or -180.
+     * Happened in 2D map views (and in 3D globe view when reconstructing raster).
    * Fixed slow rendering of very coarse rasters in 2D map views.
    * Made it easier to import/export rasters outside longitude range [-180,180].
-   * Fixed incorrect raster statistics when all pixels in raster have no-data value.
+   * Fixed incorrect raster statistics when all pixels in raster match no-data value.
+ * Velocities:
+   * Make GMT velocity export compatible with GMT psxy "-Sv" and "-SV" command-line options.
+     * Angle/azimuth now in column 3 and magnitude in column 4.
+     * Optional plate ID now in column 5.
+ * Topologies:
+   * Build/Edit:
+     * Build topology tools are now always enabled (makes it easier to build topologies at any time).
+       * When entering a build tool any focused feature is un-focused, and then re-focused on exiting build tool.
+   * Improved topology tools performance when any green layers are reconstructed using topologies.
+     * Features reconstructed "using topologies" cannot in turn be used to build topologies (cyclic dependency).
  * Digitization:
    * Fixed vertex edits not modifying topologies.
      * Eg, moving vertices of a feature used as a topological section in a topological network.
@@ -92,6 +134,7 @@ Changes since 2.0:
      * Support GMT5 CMYK "COLOR_MODEL".
      * Support different non-space-separated colour types on a single line.
        * Eg, "R/G/B" and "gray80".
+   * Added button to reload colour palette file in colouring/draw styles.
    * Assign *all* known feature types a random colour in Feature Type draw style.
      * From GPlates 1.3 to 2.0 inclusive, all but 11 feature types were incorrectly assigned the default navy colour.
    * Fixed alpha component of RGBA colours not getting interpolated.
@@ -99,11 +142,17 @@ Changes since 2.0:
  * Geometry tests:
    * Point-in-polygon test now considers points *on* a polygon edge (within extremely small tolerance) to be inside polygon.
      * Helps ensure points lying exactly on dateline are inside a polygon with edge exactly aligned with dateline.
+   * Fixed Assign Plate IDs retaining only first geometry in each feature when using 'copy by overlap'.
    * Fixed point proximity to a polyline/polygon.
      * Eg, incorrect selection with Choose Feature tool in rare situations.
    * Avoid exception attempting to normalise zero vector during point proximity to a great circle arc.
  * GPlates Geological Information Model (GPGIM):
    * Allow multiple 'gpml:boundary' polygons per feature.
+   * Loosen constraints on properties that can be loaded from a GPML file.
+     * Any feature type can now contain any property defined in the GPGIM.
+     * Can have feature types not defined in GPGIM.
+     * More aligned with current ability to add any property to any feature type (albeit with a warning message).
+     * Also more aligned with Shapefiles (which can load any property in mapping into any feature type).
  * Dateline wrapping:
    * Expose properties for each point in wrapped output geometry.
      * Eg, if original point; if tessellated; if on dateline; if on original segment.
@@ -117,8 +166,15 @@ Changes since 2.0:
      * Happens on systems that don't respect compatibility texture functions in geometry shader programs.
      * Only affects surface masking of scalar fields (not all scalar field functionality).
    * Avoid aborting due to unexpected framebuffer status.
+   * Fixed 3D scalar field run-time shader compilation failures on MacOS 10.13.
+     * Due to "#extension"s after non-preprocessor shader code.
    * No longer abort on OpenGL errors in non-debug builds (in line with typical OpenGL application development).
      * In rare cases some systems generate OpenGL errors but continue to function normally.
+ * Enable C++11 for compilers with full support since GDAL 2.3 now requires it.
+   * Clang 3.3 and GNU 4.8.1.
+   * MSVC 2015 automatically uses C++11 when needed.
+ * Fixed inability to save PLATES rotation files using non-ASCII (unicode) filenames (in some cases).
+ * Fixed inability to save/load OGR formats (eg, Shapefile) to/from non-ASCII (unicode) filenames.
  * Support up to 10-digit plate IDs (essentially 32-bit signed integers) in all Plate ID spin boxes.
  * Extend begin/end times in Kinematics tool to 9999 Ma each (previously was 1000 Ma).
  * Restore size of globe/map view (back to that of GPlates 1.5).
