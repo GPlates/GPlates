@@ -131,8 +131,10 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     provides useful information on activating/deactivating existing ports if you have several variants.
         Avoid boost 1.48 and above. They don't work well with qt.
   • Install CGAL with 'sudo port install cgal' if you don't  have CGAL. Avoid cgal 4.0.1. A bug of it crashes GPlates.
-  • Install GDAL with 'sudo port install gdal +netcdf' if you don't have GDAL - note the additional "+netcdf".
-    You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
+  • Install GDAL with 'sudo port install gdal +netcdf +proj4' if you don't have GDAL - note the additional "+netcdf" is required
+    to enable GPlates to import/export NetCDF rasters. Also "+proj4" is required to avoid conflicts with proj5 (which is called "proj").
+    Also if there is a "+expat" variant then it should be specified too, although I believe it is now enabled by default.
+    You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf +proj4' if your GDAL is already up to date. 
   • Make sure you don't have multiple installations of the same library.
     For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.
 
