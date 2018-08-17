@@ -202,7 +202,7 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeInfo(
 				make_colour_scheme(
 					DefaultAgeColourPalette::create(),
-					GPlatesAppLogic::AgePropertyExtractor()),
+					GPlatesAppLogic::AgePropertyExtractor(application_state)),
 				"Default",
 				"Colour geometries by age based on the current reconstruction time",
 				true));
@@ -211,7 +211,7 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeInfo(
 				make_colour_scheme(
 					MonochromeAgeColourPalette::create(),
-					GPlatesAppLogic::AgePropertyExtractor()),
+					GPlatesAppLogic::AgePropertyExtractor(application_state)),
 				"Monochrome",
 				"Colour geometries by age based on the current reconstruction time using shades of grey",
 				true));
