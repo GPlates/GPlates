@@ -29,6 +29,7 @@
 
 #include "PyReconstructionGeometries.h"
 
+#include "PyInformationModel.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
@@ -159,7 +160,22 @@ namespace GPlatesApi
 			}
 
 			// Set the resolved geometry.
-			resolved_feature_object.attr("set_geometry")(resolved_geometry, resolved_geometry_property_name);
+			//
+			// NOTE: We don't verify the information model when setting the geometry.
+			// When creating a resolved feature for a boundary sub-segment, or a shared sub-segment,
+			// we convert to polyline. However if the segment was a point it's possible the feature type
+			// (of the segment) only allows point geometries, such as 'gpml:position' properties, in which
+			// case setting a polyline will raise an InformationModelError exception. Since we're not
+			// giving the Python user a chance to disable this we will go ahead and disable internally here.
+			// Note that when creating a resolved feature for a topological line, boundary or network
+			// we don't really need this since there is no conversion to polyline (as is the case
+			// with sub-segments) and so the original geometry type matches; but we'll go ahead
+			// and disable for all cases anyway.
+			resolved_feature_object.attr("set_geometry")(
+					resolved_geometry,
+					resolved_geometry_property_name,
+					bp::object()/*Py_None*/,  // reverse_reconstruct
+					VerifyInformationModel::NO);  // verify_information_model
 
 			return resolved_feature_object;
 		}
