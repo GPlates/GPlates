@@ -508,10 +508,16 @@ export_reconstruction_geometry()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type (and vice versa).
+	// Enable GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ReconstructionGeometry>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ReconstructionGeometry>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ReconstructionGeometry>
+	// to a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ReconstructionGeometry pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ReconstructionGeometry pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructionGeometry
@@ -627,13 +633,19 @@ export_reconstructed_feature_geometry()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedFeatureGeometry>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ReconstructedFeatureGeometry>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedFeatureGeometry>
+	// to a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ReconstructedFeatureGeometry pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ReconstructedFeatureGeometry pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFeatureGeometry>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFeatureGeometry>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedFeatureGeometry>();
 
@@ -777,13 +789,19 @@ export_reconstructed_motion_path()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedMotionPath>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ReconstructedMotionPath>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedMotionPath>
+	// to a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ReconstructedMotionPath pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ReconstructedMotionPath pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedMotionPath>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedMotionPath>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedMotionPath>();
 
@@ -958,13 +976,19 @@ export_reconstructed_flowline()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedFlowline>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ReconstructedFlowline>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ReconstructedFlowline>
+	// to a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ReconstructedFlowline pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ReconstructedFlowline pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFlowline>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFlowline>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ReconstructedFlowline>();
 
@@ -1169,13 +1193,19 @@ export_resolved_topological_line()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalLine>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalLine>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalLine>
+	// to a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ResolvedTopologicalLine pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ResolvedTopologicalLine pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalLine>();
 
@@ -1380,13 +1410,19 @@ export_resolved_topological_boundary()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalBoundary>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalBoundary>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalBoundary>
+	// to a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ResolvedTopologicalBoundary pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ResolvedTopologicalBoundary pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalBoundary>();
 
@@ -1586,13 +1622,19 @@ export_resolved_topological_network()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type to be converted
-	// to-python as a python-wrapped ReconstructionGeometryTypeWrapper<>.
+	// Enable GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type to be to-python converted to
+	// a python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalNetwork>.
 	GPlatesApi::register_to_python_conversion_reconstruction_geometry_type_non_null_intrusive_ptr_to_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalNetwork>();
+	//
+	// From-python conversion from python-wrapped ReconstructionGeometryTypeWrapper<ResolvedTopologicalNetwork>
+	// to a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type is provided by
+	// get_pointer(ReconstructionGeometryTypeWrapper) in header to create a ResolvedTopologicalNetwork pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ResolvedTopologicalNetwork pointer to a ReconstructionGeometry::non_null_ptr_type.
 
 	// Enable a python-wrapped ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	// to be converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>.
+	// to be from-python converted to a ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>.
 	GPlatesApi::register_from_python_conversion_base_to_derived_reconstruction_geometry_wrapper<
 			GPlatesAppLogic::ResolvedTopologicalNetwork>();
 
@@ -1679,7 +1721,7 @@ namespace GPlatesApi
 
 	/**
 	 * To-python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
-	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
+	 * 'ResolvedTopologicalGeometrySubSegmentWrapper'.
 	 */
 	struct ToPythonConversionResolvedTopologicalGeometrySubSegment :
 			private boost::noncopyable
@@ -1702,7 +1744,7 @@ namespace GPlatesApi
 
 	/**
 	 * Registers converter from a 'ResolvedTopologicalGeometrySubSegment' to a
-	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
+	 * 'ResolvedTopologicalGeometrySubSegmentWrapper'.
 	 */
 	void
 	register_to_python_conversion_resolved_topological_geometry_sub_segment()
@@ -1841,6 +1883,11 @@ export_resolved_topological_sub_segment()
 	// Enable a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment to be converted
 	// to-python as a python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_geometry_sub_segment();
+	//
+	// From-python conversion from python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper
+	// to a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment reference is provided by
+	// get_pointer(ResolvedTopologicalGeometrySubSegmentWrapper) in header to create a
+	// ResolvedTopologicalGeometrySubSegment pointer.
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment
@@ -1988,7 +2035,7 @@ namespace GPlatesApi
 
 	/**
 	 * To-python converter from a 'ResolvedTopologicalSharedSubSegment' to a
-	 * 'ResolvedTopologicalSharedSubSegmentWrapper' (and vice versa).
+	 * 'ResolvedTopologicalSharedSubSegmentWrapper'.
 	 */
 	struct ToPythonConversionResolvedTopologicalSharedSubSegment :
 			private boost::noncopyable
@@ -2011,7 +2058,7 @@ namespace GPlatesApi
 
 	/**
 	 * Registers converter from a 'ResolvedTopologicalSharedSubSegment' to a
-	 * 'ResolvedTopologicalSharedSubSegmentWrapper' (and vice versa).
+	 * 'ResolvedTopologicalSharedSubSegmentWrapper'.
 	 */
 	void
 	register_to_python_conversion_resolved_topological_shared_sub_segment()
@@ -2171,6 +2218,11 @@ export_resolved_topological_shared_sub_segment()
 	// Enable a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment to be converted
 	// to-python as a python-wrapped ResolvedTopologicalSharedSubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_shared_sub_segment();
+	//
+	// From-python conversion from python-wrapped ResolvedTopologicalSharedSubSegmentWrapper
+	// to a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment reference is provided by
+	// get_pointer(ResolvedTopologicalSharedSubSegmentWrapper) in header to create a
+	// ResolvedTopologicalSharedSubSegment pointer.
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalSharedSubSegment
@@ -2251,8 +2303,8 @@ namespace GPlatesApi
 
 
 	/**
-	 * To-python converter from a 'ResolvedTopologicalSection' to a
-	 * 'ResolvedTopologicalSectionWrapper' (and vice versa).
+	 * To-python converter from a 'non_null_intrusive_ptr<ResolvedTopologicalSection>' to a
+	 * 'ResolvedTopologicalSectionWrapper'.
 	 */
 	struct ToPythonConversionResolvedTopologicalSection :
 			private boost::noncopyable
@@ -2274,8 +2326,8 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a 'ResolvedTopologicalSection' to a
-	 * 'ResolvedTopologicalSectionWrapper' (and vice versa).
+	 * Registers converter from a 'non_null_intrusive_ptr<ResolvedTopologicalSection>' to a
+	 * 'ResolvedTopologicalSectionWrapper'.
 	 */
 	void
 	register_to_python_conversion_resolved_topological_section()
@@ -2380,6 +2432,12 @@ export_resolved_topological_section()
 	// Enable a GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type to be converted
 	// to-python as a python-wrapped ResolvedTopologicalSectionWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_section();
+	//
+	// From-python conversion from python-wrapped ResolvedTopologicalSectionWrapper
+	// to a GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type is provided by
+	// get_pointer(ResolvedTopologicalSectionWrapper) in header to create a ResolvedTopologicalSection pointer
+	// combined with PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<>()
+	// below to convert ResolvedTopologicalSection pointer to a ResolvedTopologicalSection::non_null_ptr_type.
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalSection
