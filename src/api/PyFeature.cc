@@ -2789,7 +2789,7 @@ namespace GPlatesApi
 
 		// Set the reconstruction method to half-stage rotation.
 		// Call python since Feature.set_reconstruction_method is implemented in python code...
-		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion2", verify_information_model);
+		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion3", verify_information_model);
 
 		if (name != bp::object()/*Py_None*/)
 		{
@@ -3408,7 +3408,7 @@ export_feature()
 				"  :param reconstruction_method: the reconstruction method, if not specified then a "
 				"`pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ "
 				"property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) "
-				"- note that 'HalfStageRotationVersion2' is the latest and most accurate half-stage method and should "
+				"- note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should "
 				"generally be used unless backward compatibility with old GPlates versions is required\n"
 				"  :type reconstruction_method: string  (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
@@ -3463,7 +3463,7 @@ export_feature()
 				"        valid_time=(time_of_appearance, time_of_disappearance),\n"
 				"        left_plate=201,\n"
 				"        right_plate=701,\n"
-				"        reconstruction_method='HalfStageRotationVersion2',\n"
+				"        reconstruction_method='HalfStageRotationVersion3',\n"
 				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
 				"\n"
 				"  The previous example is the equivalent of the following (note that the "
@@ -3478,7 +3478,7 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)\n"
 				"    mid_ocean_ridge_feature.set_left_plate(201)\n"
 				"    mid_ocean_ridge_feature.set_right_plate(701)\n"
-				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
+				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion3')\n"
 				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)\n"
 				"    \n"
 				"    # ...or...\n"
@@ -3488,7 +3488,7 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)\n"
 				"    mid_ocean_ridge_feature.set_left_plate(201)\n"
 				"    mid_ocean_ridge_feature.set_right_plate(701)\n"
-				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
+				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion3')\n"
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    mid_ocean_ridge_feature.set_geometry(\n"
 				"        geometry_at_time_of_appearance,\n"
@@ -3605,7 +3605,7 @@ export_feature()
 				"    flowline_feature.set_valid_time(50, 0)\n"
 				"    flowline_feature.set_left_plate(201)\n"
 				"    flowline_feature.set_right_plate(701)\n"
-				"    flowline_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
+				"    flowline_feature.set_reconstruction_method('HalfStageRotationVersion3')\n"
 				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n"
 				"    \n"
 				"    # ...or...\n"
@@ -3615,7 +3615,7 @@ export_feature()
 				"    flowline_feature.set_valid_time(50, 0)\n"
 				"    flowline_feature.set_left_plate(201)\n"
 				"    flowline_feature.set_right_plate(701)\n"
-				"    flowline_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
+				"    flowline_feature.set_reconstruction_method('HalfStageRotationVersion3')\n"
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    flowline_feature.set_geometry(\n"
 				"        seed_geometry_at_50Ma,\n"
