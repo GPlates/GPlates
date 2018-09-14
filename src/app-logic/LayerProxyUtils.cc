@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <vector>
 #include <boost/foreach.hpp>
 
 #include "Layer.h"
@@ -33,6 +34,7 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalLine.h"
 #include "TopologyGeometryResolverLayerProxy.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 
 void
@@ -88,6 +90,42 @@ GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
 
 		// Add the reconstruct handle to the list.
 		reconstruct_handles.push_back(reconstruct_handle);
+	}
+}
+
+
+void
+GPlatesAppLogic::LayerProxyUtils::find_dependent_topological_sections(
+		std::set<GPlatesModel::FeatureId> &dependent_topological_sections,
+		const Reconstruction &reconstruction)
+{
+	PROFILE_FUNC();
+
+	// Get the resolved geometry layer outputs.
+	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> topology_geometry_resolver_layer_proxies;
+	reconstruction.get_active_layer_outputs<TopologyGeometryResolverLayerProxy>(topology_geometry_resolver_layer_proxies);
+
+	BOOST_FOREACH(
+			const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topology_geometry_resolver_layer_proxy,
+			topology_geometry_resolver_layer_proxies)
+	{
+		// Get the dependent topological sections from the current layer.
+		topology_geometry_resolver_layer_proxy->get_current_dependent_topological_sections(
+				dependent_topological_sections/*resolved_boundary_dependent_topological_sections*/,
+				dependent_topological_sections/*resolved_line_dependent_topological_sections*/);
+	}
+
+
+	// Get the resolved network layer outputs.
+	std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type> topology_network_resolver_layer_proxies;
+	reconstruction.get_active_layer_outputs<TopologyNetworkResolverLayerProxy>(topology_network_resolver_layer_proxies);
+
+	BOOST_FOREACH(
+			const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topology_network_resolver_layer_proxy,
+			topology_network_resolver_layer_proxies)
+	{
+		// Get the dependent topological sections from the current layer.
+		topology_network_resolver_layer_proxy->get_current_dependent_topological_sections(dependent_topological_sections);
 	}
 }
 

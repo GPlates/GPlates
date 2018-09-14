@@ -150,6 +150,19 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 }
 
 
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_dependent_topological_sections(
+		std::set<GPlatesModel::FeatureId> &dependent_topological_sections) const
+{
+	// NOTE: We don't need to call 'check_input_layer_proxies()' because the feature IDs come from
+	// our topological features (not the dependent topological section layers).
+
+	dependent_topological_sections.insert(
+			d_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_dependent_topological_sections.get_topological_section_feature_ids().end());
+}
+
+
 const GPlatesUtils::SubjectToken &
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_subject_token()
 {

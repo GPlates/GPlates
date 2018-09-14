@@ -170,9 +170,6 @@ namespace GPlatesAppLogic
 				const TimeSpanUtils::TimeRange &time_range,
 				const TopologyNetworkParams &topology_network_params);
 
-		//
-		// Getting current topology network params and reconstruction time as set by the layer system.
-		//
 
 		/**
 		 * Gets the current reconstruction time as set by the layer system.
@@ -184,13 +181,21 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Gets the parameters used for resolving topological networks and their associated attributes.
+		 * Get the current parameters used for resolving topological networks and their associated attributes.
 		 */
 		const TopologyNetworkParams &
 		get_current_topology_network_params() const
 		{
 			return d_current_topology_network_params;
 		}
+
+		/**
+		 * Inserts the feature IDs of topological sections referenced by the current
+		 * topological networks for *all* times (not just the current time).
+		 */
+		void
+		get_current_dependent_topological_sections(
+				std::set<GPlatesModel::FeatureId> &dependent_topological_sections) const;
 
 
 		/**

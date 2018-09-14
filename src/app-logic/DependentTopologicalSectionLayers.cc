@@ -97,7 +97,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
-		std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers)
+		std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers) const
 {
 	get_dependent_topological_section_layers(dependent_layers, d_dependency_reconstructed_geometry_layers);
 }
@@ -105,7 +105,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_se
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
-		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &dependent_layers)
+		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &dependent_layers) const
 {
 	get_dependent_topological_section_layers(dependent_layers, d_dependency_resolved_line_layers);
 }
@@ -189,7 +189,7 @@ template <class LayerProxyType>
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
 		std::vector<typename LayerProxyType::non_null_ptr_type> &dependent_layers,
-		std::set<LayerProxyType *> &layers)
+		const std::set<LayerProxyType *> &layers) const
 {
 	dependent_layers.insert(
 			dependent_layers.end(),

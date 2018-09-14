@@ -236,6 +236,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Inserts the feature IDs of topological sections referenced by the current topological features
+		 * (resolved lines and boundaries) for *all* times (not just the current time).
+		 */
+		void
+		get_current_dependent_topological_sections(
+				std::set<GPlatesModel::FeatureId> &resolved_boundary_dependent_topological_sections,
+				std::set<GPlatesModel::FeatureId> &resolved_line_dependent_topological_sections) const;
+
+
+		/**
 		 * Returns the subject token that clients can use to determine if the resolved
 		 * topological geometries (boundaries and lines) have changed since they were last retrieved.
 		 *

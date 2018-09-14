@@ -427,6 +427,23 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_reconstruction_
 }
 
 
+void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_dependent_topological_sections(
+		std::set<GPlatesModel::FeatureId> &resolved_boundary_dependent_topological_sections,
+		std::set<GPlatesModel::FeatureId> &resolved_line_dependent_topological_sections) const
+{
+	// NOTE: We don't need to call 'check_input_layer_proxies()' because the feature IDs come from
+	// our topological features (not the dependent topological section layers).
+
+	resolved_boundary_dependent_topological_sections.insert(
+			d_resolved_boundary_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_resolved_boundary_dependent_topological_sections.get_topological_section_feature_ids().end());
+	resolved_line_dependent_topological_sections.insert(
+			d_resolved_line_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_resolved_line_dependent_topological_sections.get_topological_section_feature_ids().end());
+}
+
+
 const GPlatesUtils::SubjectToken &
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_subject_token()
 {
