@@ -400,6 +400,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
 	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
 	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
@@ -732,6 +733,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_multipoint_display()));
 	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
 			this, SLOT(enable_arrows_display()));
+	QObject::connect(action_Show_Topological_Sections, SIGNAL(triggered()),
+			this, SLOT(enable_topological_section_display()));
 	// Also update the GUI when the RenderSettings change.
 	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
 			this, SLOT(handle_render_settings_changed()));
@@ -1341,6 +1344,13 @@ GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_topological_section_display()
+{
+	get_view_state().get_render_settings().set_show_topological_sections(
+			action_Show_Topological_Sections->isChecked());
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 {
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -1352,6 +1362,7 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
 	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
 	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
 }
 
 void

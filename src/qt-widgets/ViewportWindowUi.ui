@@ -156,6 +156,7 @@
      <addaction name="action_Show_Polygon_Features"/>
      <addaction name="action_Show_Multipoint_Features"/>
      <addaction name="action_Show_Arrow_Decorations"/>
+     <addaction name="action_Show_Topological_Sections"/>
     </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
@@ -1218,6 +1219,20 @@
   <action name="action_Configure_Velocity_Legend">
    <property name="text">
     <string>Configure Velocity Le&amp;gend...</string>
+   </property>
+  </action>
+  <action name="action_Show_Topological_Sections">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Topological Sections</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether features used a topological sections are shown.</string>
    </property>
   </action>
  </widget>

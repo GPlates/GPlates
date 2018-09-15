@@ -370,6 +370,9 @@ namespace GPlatesQtWidgets
 		enable_arrows_display();
 
 		void
+		enable_topological_section_display();
+
+		void
 		handle_render_settings_changed();
 
 		void
