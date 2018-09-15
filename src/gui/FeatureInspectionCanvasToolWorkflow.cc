@@ -95,6 +95,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
+	d_render_settings(view_state.get_render_settings()),
 	d_symbol_map(view_state.get_feature_type_symbol_map()),
 	d_viewport_window(viewport_window)
 {
@@ -427,6 +428,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
 			d_symbol_map);
 }
 

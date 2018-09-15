@@ -71,9 +71,9 @@ namespace GPlatesGui
 		 */
 		bool
 		is_active_and_enabled_tool(
-				const GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-				GPlatesGui::CanvasToolWorkflows::ToolType tool)
+				const CanvasToolWorkflows &canvas_tool_workflows,
+				CanvasToolWorkflows::WorkflowType workflow,
+				CanvasToolWorkflows::ToolType tool)
 		{
 			return canvas_tool_workflows.get_active_canvas_tool() == std::make_pair(workflow, tool) &&
 				canvas_tool_workflows.is_canvas_tool_enabled(workflow, tool);
@@ -96,6 +96,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
+	d_render_settings(view_state.get_render_settings()),
 	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
@@ -386,6 +387,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
 			d_symbol_map);
 }
 

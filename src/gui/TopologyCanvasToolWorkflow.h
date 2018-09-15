@@ -54,6 +54,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class FeatureFocus;
+	class RenderSettings;
 
 	/**
 	 * The canvas tool workflow for building/editing topological features.
@@ -86,7 +87,7 @@ namespace GPlatesGui
 		deactivate_workflow();
 
 		virtual
-		boost::optional< std::pair<GPlatesGui::GlobeCanvasTool *, GPlatesGui::MapCanvasTool *> >
+		boost::optional< std::pair<GlobeCanvasTool *, MapCanvasTool *> >
 		get_selected_globe_and_map_canvas_tools(
 					CanvasToolWorkflows::ToolType selected_tool) const;
 
@@ -122,7 +123,10 @@ namespace GPlatesGui
 		//! Parameters for rendering geometries in canvas tools.
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
-		const GPlatesGui::symbol_map_type &d_symbol_map;
+		//! Show/hide geometry settings.
+		const RenderSettings &d_render_settings;
+
+		const symbol_map_type &d_symbol_map;
 
 		//! For clicking geometries in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;

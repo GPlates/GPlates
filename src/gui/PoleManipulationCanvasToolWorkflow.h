@@ -54,6 +54,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class FeatureFocus;
+	class RenderSettings;
 
 	/**
 	 * The canvas tool workflow for manipulating rotation poles.
@@ -110,6 +111,9 @@ namespace GPlatesGui
 
 		//! Parameters for rendering geometries in canvas tools.
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
+
+		//! Show/hide geometry settings.
+		const RenderSettings &d_render_settings;
 
 		const GPlatesGui::symbol_map_type &d_symbol_map;
 

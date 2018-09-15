@@ -49,6 +49,11 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 }
 
+namespace GPlatesGui
+{
+	class RenderSettings;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryParameters;
@@ -96,6 +101,7 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::Layer &layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+				const GPlatesGui::RenderSettings &render_settings,
 				const GPlatesGui::symbol_map_type &symbol_map,
 				int layer_number);
 
@@ -241,6 +247,7 @@ namespace GPlatesPresentation
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
+		const GPlatesGui::RenderSettings &d_render_settings;
 		const GPlatesGui::symbol_map_type &d_symbol_map;
 
 		/**

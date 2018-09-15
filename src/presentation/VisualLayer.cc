@@ -48,11 +48,13 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 		GPlatesAppLogic::Layer &layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+		const GPlatesGui::RenderSettings &render_settings,
 		const GPlatesGui::symbol_map_type &symbol_map,
 		int layer_number) :
 	d_visual_layers(visual_layers),
 	d_visual_layer_registry(visual_layer_registry),
 	d_rendered_geometry_parameters(rendered_geometry_parameters),
+	d_render_settings(render_settings),
 	d_symbol_map(symbol_map),
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
@@ -149,6 +151,7 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),
+			d_render_settings,
 			boost::none, // colour 
             boost::none, // rotation adjustment
 			d_symbol_map,

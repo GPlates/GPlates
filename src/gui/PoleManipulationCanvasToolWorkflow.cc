@@ -82,6 +82,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
+	d_render_settings(view_state.get_render_settings()),
 	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
@@ -289,6 +290,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
 			d_symbol_map);
 }
 

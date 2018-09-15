@@ -65,6 +65,11 @@
 #include "view-operations/ScalarField3DRenderParameters.h"
 
 
+namespace GPlatesGui
+{
+	class RenderSettings;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
@@ -249,6 +254,7 @@ namespace GPlatesPresentation
 		 */
 		ReconstructionGeometryRenderer(
 				const RenderParams &render_params,
+				const GPlatesGui::RenderSettings &render_settings,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
 				boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
@@ -394,6 +400,7 @@ namespace GPlatesPresentation
 
 
 		RenderParams d_render_params;
+		const GPlatesGui::RenderSettings &d_render_settings;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<const GPlatesGui::symbol_map_type &> d_feature_type_symbol_map;

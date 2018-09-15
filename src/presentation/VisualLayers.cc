@@ -565,6 +565,7 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 				layer,
 				d_rendered_geometry_collection,
 				d_view_state.get_rendered_geometry_parameters(),
+				d_view_state.get_render_settings(),
 				d_view_state.get_feature_type_symbol_map(),
 				d_next_visual_layer_number));
 

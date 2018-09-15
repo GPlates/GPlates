@@ -43,12 +43,14 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/RenderedGeometryUtils.h"
 
+
 void
 GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		FeatureFocus &feature_focus,
 		GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+		const GPlatesGui::RenderSettings &render_settings,
 		const symbol_map_type &symbol_map)
 {
 	// Clear all geometries from layer before adding them.
@@ -118,6 +120,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
 				render_style_params,
+				render_settings,
 				highlight_colour, 
 				boost::none,
 				symbol_map);

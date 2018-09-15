@@ -73,6 +73,7 @@
 #include "gui/Colour.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
+#include "gui/RenderSettings.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
@@ -322,11 +323,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 
 GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRenderer(
 		const RenderParams &render_params,
+		const GPlatesGui::RenderSettings &render_settings,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
+	d_render_settings(render_settings),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
