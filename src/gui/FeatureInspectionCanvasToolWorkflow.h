@@ -45,6 +45,11 @@
 #include "model/FeatureHandle.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesCanvasTools
 {
 	class ClickGeometry;
@@ -142,6 +147,9 @@ namespace GPlatesGui
 		const RenderSettings &d_render_settings;
 
 		const GPlatesGui::symbol_map_type &d_symbol_map;
+
+		//! Used to get current topological sections.
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		//! Used when restoring the clicked geometries on workflow activation.
 		GPlatesQtWidgets::ViewportWindow &d_viewport_window;

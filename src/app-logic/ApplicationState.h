@@ -122,6 +122,19 @@ namespace GPlatesAppLogic
 		const Reconstruction &
 		get_current_reconstruction() const;
 
+		/**
+		 * Return the current feature IDs of topological sections referenced for *all* times
+		 * by all topologies (topological geometry and network) in all loaded files.
+		 *
+		 * This is useful when hiding topological sections (ie, not rendering them).
+		 *
+		 * NOTE: The returned reference is invalidated whenever the feature store is modified
+		 * (ie, when a feature collection is added/removed/modified), so should only be used
+		 * within a limited scope.
+		 */
+		const std::set<GPlatesModel::FeatureId> &
+		get_current_topological_sections() const;
+
 
 		/**
 		 * Keeps track of active feature collections loaded from files.
@@ -267,15 +280,6 @@ namespace GPlatesAppLogic
 		{
 			return *d_age_model_collection;
 		}
-
-		/**
-		 * Return the feature IDs of topological sections referenced for *all* times by all topologies
-		 * (topological geometry and network) in all loaded files.
-		 *
-		 * This is useful when hiding topological sections (ie, not rendering them).
-		 */
-		const std::set<GPlatesModel::FeatureId> &
-		get_dependent_topological_sections() const;
 
 
 		/**
@@ -601,7 +605,7 @@ namespace GPlatesAppLogic
 		 * It's mutable since, as an optimisation, we only calculate it when needed.
 		 * And it gets reset/cleared whenever the feature store is modified.
 		 */
-		mutable boost::optional< std::set<GPlatesModel::FeatureId> > d_dependent_topological_sections;
+		mutable boost::optional< std::set<GPlatesModel::FeatureId> > d_current_topological_sections;
 
 
 		/**
@@ -622,7 +626,7 @@ namespace GPlatesAppLogic
 		 * (topological geometry and network) in all loaded files.
 		 */
 		void
-		find_dependent_topological_sections() const;
+		find_current_topological_sections() const;
 
 		//! Begin blocking of calls to @a reconstruct.
 		void

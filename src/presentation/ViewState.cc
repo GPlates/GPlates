@@ -123,10 +123,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_scene_lighting_parameters(
 			new GPlatesGui::SceneLightingParameters()),
 	d_visual_layers(
-			new VisualLayers(
-				d_application_state,
-				*this,
-				*d_rendered_geometry_collection)),
+			new VisualLayers(d_application_state, *this)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
 	d_map_transform(

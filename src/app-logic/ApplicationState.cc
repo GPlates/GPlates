@@ -244,6 +244,12 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	// connected to its layer creation, attempting to access any of the loaded files and expecting
 	// them to have been added to the reconstruct graph.
 	d_reconstruct_graph->add_files(new_files, auto_create_layers);
+
+	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
+	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
+	//
+	// Reset the cache so the next time they are requested they'll have to be recalculated.
+	d_current_topological_sections = boost::none;
 }
 
 
@@ -263,6 +269,12 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
 	d_reconstruct_graph->remove_file(file_about_to_be_removed);
+
+	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
+	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
+	//
+	// Reset the cache so the next time they are requested they'll have to be recalculated.
+	d_current_topological_sections = boost::none;
 }
 
 
@@ -378,9 +390,9 @@ GPlatesAppLogic::ApplicationState::get_reconstruct_graph() const
 
 
 const std::set<GPlatesModel::FeatureId> &
-GPlatesAppLogic::ApplicationState::get_dependent_topological_sections() const
+GPlatesAppLogic::ApplicationState::get_current_topological_sections() const
 {
-	if (!d_dependent_topological_sections)
+	if (!d_current_topological_sections)
 	{
 		// Find the feature IDs of topological sections referenced for *all* times by all topologies
 		// (topological geometry and network) in all loaded files.
@@ -389,18 +401,18 @@ GPlatesAppLogic::ApplicationState::get_dependent_topological_sections() const
 		// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
 		// It's not hugely expensive to calculate (tens of milliseconds) but enough that it makes sense not
 		// to calculate it at every scene render.
-		find_dependent_topological_sections();
+		find_current_topological_sections();
 	}
 
-	return d_dependent_topological_sections.get();
+	return d_current_topological_sections.get();
 }
 
 
 void
-GPlatesAppLogic::ApplicationState::find_dependent_topological_sections() const
+GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
 {
 	// Start with an empty set of topological sections.
-	d_dependent_topological_sections = std::set<GPlatesModel::FeatureId>();
+	d_current_topological_sections = std::set<GPlatesModel::FeatureId>();
 
 	if (d_currently_creating_reconstruction)
 	{
@@ -424,7 +436,7 @@ GPlatesAppLogic::ApplicationState::find_dependent_topological_sections() const
 		{
 			// Insert referenced topological section feature IDs (for *all* reconstruction times).
 			TopologyInternalUtils::find_topological_sections_referenced(
-					d_dependent_topological_sections.get(),
+					d_current_topological_sections.get(),
 					file_ref.get_file().get_feature_collection());
 		}
 	}
@@ -437,7 +449,7 @@ GPlatesAppLogic::ApplicationState::find_dependent_topological_sections() const
 		// already keep track of dependent topological sections.
 		//
 		LayerProxyUtils::find_dependent_topological_sections(
-				d_dependent_topological_sections.get(),
+				d_current_topological_sections.get(),
 				*d_reconstruction);
 	}
 }
@@ -520,7 +532,7 @@ GPlatesAppLogic::ApplicationState::feature_store_modified()
 	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
 	//
 	// Reset the cache so the next time they are requested they'll have to be recalculated.
-	d_dependent_topological_sections = boost::none;
+	d_current_topological_sections = boost::none;
 
 	// Perform a reconstruction every time the model (feature store) is modified,
 	// unless we are already inside a reconstruction (avoid infinite cycle).

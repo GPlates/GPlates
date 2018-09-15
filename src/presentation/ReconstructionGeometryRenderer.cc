@@ -59,6 +59,7 @@
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedScalarField3D.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ResolvedTriangulationDelaunay2.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
@@ -88,6 +89,23 @@
 
 namespace
 {
+	/**
+	 * Returns true if the reconstruction geometry is used as a topological section
+	 * in any topology for any reconstruction time.
+	 */
+	template <typename ReconstructionGeometryPointer>
+	bool
+	is_topological_section(
+			const ReconstructionGeometryPointer &reconstruction_geometry,
+			const std::set<GPlatesModel::FeatureId> &topological_sections)
+	{
+		GPlatesModel::FeatureHandle *feature_handle = reconstruction_geometry->feature_handle_ptr();
+
+		return feature_handle != NULL &&
+				topological_sections.find(feature_handle->feature_id()) != topological_sections.end();
+	}
+
+
 	/**
 	 * Returns a GPlatesGui::Symbol for the feature type of the @a reconstruction_geometry, if
 	 * an appropriate entry in the @a feature_type_symbol_map exists.
@@ -324,12 +342,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRenderer(
 		const RenderParams &render_params,
 		const GPlatesGui::RenderSettings &render_settings,
+		const std::set<GPlatesModel::FeatureId> &topological_sections,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
 	d_render_settings(render_settings),
+	d_topological_sections(topological_sections),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
@@ -547,6 +567,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// If hiding topological sections then avoid rendering topological sections of topological boundaries or networks.
+	if (!d_render_settings.show_topological_sections())
+	{
+		if (is_topological_section(rfg, d_topological_sections))
+		{
+			return;
+		}
+	}
+
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
 				rfg->reconstructed_geometry(),
@@ -716,6 +745,21 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// If hiding topological sections then avoid rendering resolved topological lines that are
+	// topological sections of topological boundaries or networks.
+	if (!d_render_settings.show_topological_sections())
+	{
+		// Of resolved topological geometries, only resolved topological lines can be topological sections.
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+				const GPlatesAppLogic::ResolvedTopologicalLine *>(rtg))
+		{
+			if (is_topological_section(rtg, d_topological_sections))
+			{
+				return;
+			}
+		}
+	}
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(

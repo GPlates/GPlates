@@ -68,8 +68,7 @@ namespace GPlatesPresentation
 		 */
 		VisualLayers(
 				GPlatesAppLogic::ApplicationState &application_state,
-				ViewState &view_state,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
+				ViewState &view_state);
 
 		/**
 		 * Returns the number of visual layers.

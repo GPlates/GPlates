@@ -1903,6 +1903,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_style_params,
 			d_viewport_window_ptr->get_view_state().get_render_settings(),
+			d_application_state_ptr->get_current_topological_sections(),
 			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_colour(),
 			boost::none,
 			boost::none);

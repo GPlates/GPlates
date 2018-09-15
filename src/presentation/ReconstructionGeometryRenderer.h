@@ -28,6 +28,7 @@
 #define GPLATES_PRESENTATION_RECONSTRUCTION_GEOMETRY_RENDERER_H
 
 #include <functional>
+#include <set>
 #include <utility>
 #include <vector>
 #include <boost/bind.hpp>
@@ -59,6 +60,8 @@
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
+
+#include "model/FeatureId.h"
 
 #include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedGeometry.h"
@@ -246,6 +249,11 @@ namespace GPlatesPresentation
 		 *
 		 * @a render_params controls various rendering options.
 		 *
+		 * @a render_settings are show/hide settings that control geometry visibility.
+		 *
+		 * @a topological_sections are all topological sections referenced by loaded topologies.
+		 * Together with @a render_settings this determines whether to show/hide topological sections.
+		 *
 		 * @a reconstruction_adjustment is only used to rotate derived @a ReconstructionGeometry
 		 * objects that are reconstructed. Ignored by types not explicitly reconstructed.
 		 *
@@ -255,6 +263,7 @@ namespace GPlatesPresentation
 		ReconstructionGeometryRenderer(
 				const RenderParams &render_params,
 				const GPlatesGui::RenderSettings &render_settings,
+				const std::set<GPlatesModel::FeatureId> &topological_sections,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
 				boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
@@ -401,6 +410,7 @@ namespace GPlatesPresentation
 
 		RenderParams d_render_params;
 		const GPlatesGui::RenderSettings &d_render_settings;
+		const std::set<GPlatesModel::FeatureId> &d_topological_sections;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<const GPlatesGui::symbol_map_type &> d_feature_type_symbol_map;

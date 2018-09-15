@@ -51,6 +51,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 		const GPlatesGui::RenderSettings &render_settings,
+		const std::set<GPlatesModel::FeatureId> &topological_sections,
 		const symbol_map_type &symbol_map)
 {
 	// Clear all geometries from layer before adding them.
@@ -121,6 +122,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
 				render_style_params,
 				render_settings,
+				topological_sections,
 				highlight_colour, 
 				boost::none,
 				symbol_map);

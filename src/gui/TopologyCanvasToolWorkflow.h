@@ -40,6 +40,11 @@
 #include "gui/Symbol.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
@@ -127,6 +132,9 @@ namespace GPlatesGui
 		const RenderSettings &d_render_settings;
 
 		const symbol_map_type &d_symbol_map;
+
+		//! Used to get current topological sections.
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		//! For clicking geometries in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
