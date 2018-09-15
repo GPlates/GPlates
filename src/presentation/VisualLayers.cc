@@ -38,6 +38,7 @@
 #include "app-logic/ReconstructGraph.h"
 
 #include "gui/DrawStyleManager.h"
+#include "gui/RenderSettings.h"
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
@@ -332,6 +333,13 @@ GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 	QObject::connect(
 			&d_view_state.get_rendered_geometry_parameters(),
 			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(create_rendered_geometries()));
+
+	// Create new rendered geometries when RenderSettings changes.
+	QObject::connect(
+			&d_view_state.get_render_settings(),
+			SIGNAL(settings_changed()),
 			this,
 			SLOT(create_rendered_geometries()));
 

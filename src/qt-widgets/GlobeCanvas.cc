@@ -471,13 +471,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 			this,
 			SLOT(update_canvas()));
 
-	// Update canvas whenever RenderSettings gets changed.
-	QObject::connect(
-			&(d_view_state.get_render_settings()),
-			SIGNAL(settings_changed()),
-			this,
-			SLOT(update_canvas()));
-
 	handle_zoom_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);

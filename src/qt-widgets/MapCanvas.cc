@@ -164,13 +164,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
 		this,
 		SLOT(update_canvas()));
-
-	// Update if RenderSettings gets changed
-	QObject::connect(
-			&render_settings,
-			SIGNAL(settings_changed()),
-			this,
-			SLOT(update_canvas()));
 }
 
 GPlatesQtWidgets::MapCanvas::~MapCanvas()
