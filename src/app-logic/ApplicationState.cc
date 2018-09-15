@@ -244,12 +244,6 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	// connected to its layer creation, attempting to access any of the loaded files and expecting
 	// them to have been added to the reconstruct graph.
 	d_reconstruct_graph->add_files(new_files, auto_create_layers);
-
-	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
-	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
-	//
-	// Reset the cache so the next time they are requested they'll have to be recalculated.
-	d_current_topological_sections = boost::none;
 }
 
 
@@ -269,7 +263,13 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
 	d_reconstruct_graph->remove_file(file_about_to_be_removed);
+}
 
+
+void
+GPlatesAppLogic::ApplicationState::handle_file_state_changed(
+		FeatureCollectionFileState &file_state)
+{
 	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
 	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
 	//
@@ -411,46 +411,35 @@ GPlatesAppLogic::ApplicationState::get_current_topological_sections() const
 void
 GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
 {
+	PROFILE_FUNC();
+
 	// Start with an empty set of topological sections.
 	d_current_topological_sections = std::set<GPlatesModel::FeatureId>();
 
-	if (d_currently_creating_reconstruction)
+	//
+	// Iterate through the loaded files searching for topological features and
+	// the topological sections they reference.
+	//
+	// We could have used LayerProxyUtils::find_dependent_topological_sections() instead, and it is
+	// less expensive since the topological layers already keep track of dependent topological sections,
+	// but it is difficult to get the signaling right. In other words, sometimes a caller calls
+	// 'get_current_topological_sections()' just after a file is loaded but before the reconstruct
+	// graph has been updated, and hence the topology layers are not yet up-to-date.
+	// So instead we just search through all loaded files whenever a file is added/removed/modified.
+	// It's slower but at least this function isn't called for each reconstruction or globe/map view redraw.
+	//
+
+	// From the file state, obtain the list of all currently loaded files.
+	const std::vector<FeatureCollectionFileState::file_reference> loaded_files =
+			d_feature_collection_file_state->get_loaded_files();
+
+	// Iterate over the loaded files and find topological sections referenced in any of them.
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
-		PROFILE_BLOCK("ApplicationState::find_dependent_topological_sections searching loaded files");
-
-		//
-		// We've been called in the middle of creating a reconstruction so we can't really rely on the
-		// result of the reconstruction (the Reconstruction object). Instead we iterate through the
-		// loaded files searching for topological features and the topological sections they reference.
-		//
-
-		// From the file state, obtain the list of all currently loaded files.
-		const std::vector<FeatureCollectionFileState::file_reference> loaded_files =
-				d_feature_collection_file_state->get_loaded_files();
-
-		// Iterate over the loaded files and find topological sections referenced in any of them.
-		//
-		// Note that this can also be done via the layers (in reconstruct graph) since the topology layers
-		// already keep track of this information, however we would then need to keep track 
-		BOOST_FOREACH(FeatureCollectionFileState::file_reference file_ref, loaded_files)
-		{
-			// Insert referenced topological section feature IDs (for *all* reconstruction times).
-			TopologyInternalUtils::find_topological_sections_referenced(
-					d_current_topological_sections.get(),
-					file_ref.get_file().get_feature_collection());
-		}
-	}
-	else // not currently creating a reconstruction ...
-	{
-		PROFILE_BLOCK("ApplicationState::find_dependent_topological_sections searching topological layers");
-
-		//
-		// Getting topological sections from the layers is less expensive since the topological layers
-		// already keep track of dependent topological sections.
-		//
-		LayerProxyUtils::find_dependent_topological_sections(
+		// Insert referenced topological section feature IDs (for *all* reconstruction times).
+		TopologyInternalUtils::find_topological_sections_referenced(
 				d_current_topological_sections.get(),
-				*d_reconstruction);
+				file_ref.get_file().get_feature_collection());
 	}
 }
 
@@ -479,6 +468,13 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+	QObject::connect(
+			&get_feature_collection_file_state(),
+			SIGNAL(file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			this,
+			SLOT(handle_file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
 
 	//
 	// Perform a new reconstruction whenever layers are modified.

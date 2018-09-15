@@ -416,6 +416,10 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
+		void
+		handle_file_state_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+
 	private:
 
 		/**
