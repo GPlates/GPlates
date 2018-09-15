@@ -164,8 +164,8 @@ namespace GPlatesAppLogic
 		 * Returns the feature IDs of topological sections referenced for *all* times by all active
 		 * topological layers (topological geometry and network) in the specified reconstruction.
 		 *
-		 * NOTE: Each topological layer will keep track of its dependent topological sections
-		 * for *all* times, so this should be a fairly inexpensive call.
+		 * NOTE: Each topological layer already keeps track of its dependent topological sections for
+		 * *all* times, so this is not as expensive as searching through all loaded feature collections.
 		 */
 		void
 		find_dependent_topological_sections(

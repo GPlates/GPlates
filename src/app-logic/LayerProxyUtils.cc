@@ -99,7 +99,7 @@ GPlatesAppLogic::LayerProxyUtils::find_dependent_topological_sections(
 		std::set<GPlatesModel::FeatureId> &dependent_topological_sections,
 		const Reconstruction &reconstruction)
 {
-	PROFILE_FUNC();
+	dependent_topological_sections.clear();
 
 	// Get the resolved geometry layer outputs.
 	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> topology_geometry_resolver_layer_proxies;

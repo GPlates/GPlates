@@ -147,7 +147,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds all topological section features referenced by the topological feature
+		 * Inserts all topological section features referenced by the topological feature
 		 * @a topology_feature_ref (which can be a topological line, boundary or network).
 		 *
 		 * If @a topology_geometry_type is specified then only matching topology geometries in
