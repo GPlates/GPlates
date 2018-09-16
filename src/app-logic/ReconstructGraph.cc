@@ -317,7 +317,7 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plated_id)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Determine a default reconstruction layer proxy.
 	boost::optional<ReconstructionLayerProxy::non_null_ptr_type> default_reconstruction_layer_proxy;

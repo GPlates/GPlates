@@ -40,6 +40,8 @@
 
 #include "model/FeatureHandle.h"
 
+#include "utils/Profile.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -269,6 +271,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 		const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 		const double &reconstruction_time)
 {
+	PROFILE_FUNC();
+
 	// See if there are any cached resolved lines associated with the reconstruction time.
 	// We don't want to want to re-generate the cache - we only want to re-use the cache if it's there.
 	if (d_cached_resolved_lines.cached_reconstruction_time == GPlatesMaths::real_t(reconstruction_time))
@@ -386,6 +390,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_features(
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
 		bool only_topological_features) const
 {
+	PROFILE_FUNC();
+
 	// Iterate over the current feature collections.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
 			d_current_topological_geometry_feature_collections.begin();

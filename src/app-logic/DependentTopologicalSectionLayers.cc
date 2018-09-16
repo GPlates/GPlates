@@ -28,6 +28,8 @@
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyInternalUtils.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::DependentTopologicalSectionLayers::~DependentTopologicalSectionLayers()
 {
@@ -117,6 +119,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::set_dependency_topological_s
 		const std::vector<typename LayerProxyType::non_null_ptr_type> &all_layers,
 		std::set<LayerProxyType *> &layers)
 {
+	PROFILE_FUNC();
+
 	std::set<LayerProxyType *> new_layers;
 
 	// Iterate over all the layers and insert those that the topologies depend on.
@@ -149,6 +153,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 		const typename LayerProxyType::non_null_ptr_type &layer,
 		std::set<LayerProxyType *> &layers)
 {
+	PROFILE_FUNC();
+
 	if (layers.find(layer.get()) != layers.end())
 	{
 		if (topologies_depend_on_layer(layer))
@@ -249,6 +255,8 @@ bool
 GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_features(
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
 {
+	PROFILE_FUNC();
+
 	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator features_iter = features.begin();
 	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator features_end = features.end();
 	for ( ; features_iter != features_end; ++features_iter)

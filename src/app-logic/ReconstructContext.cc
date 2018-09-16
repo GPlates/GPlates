@@ -229,7 +229,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_geometries(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each RFG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -260,7 +260,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructions(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -315,7 +315,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_features(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -383,7 +383,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstruction_time_spans(
 		const context_state_reference_type &context_state_ref,
 		const TimeSpanUtils::TimeRange &time_range)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -456,7 +456,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_time_spans(
 		const context_state_reference_type &context_state_ref,
 		const TimeSpanUtils::TimeRange &time_range)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -597,7 +597,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_topological_sections(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each RFG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -634,7 +634,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each velocity field.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();

@@ -210,12 +210,16 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<raster_layer_proxy_type> &raster_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit raster layer");
+
 	// Get the resolved raster for the current reconstruction time.
 	boost::optional<GPlatesAppLogic::ResolvedRaster::non_null_ptr_type> resolved_raster =
 			raster_layer_proxy->get_resolved_raster();
 
 	if (resolved_raster)
 	{
+		PROFILE_BLOCK("reconstruction geometry rendering");
+
 		d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 		// Render the resolved raster.
@@ -230,10 +234,14 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruct_layer_proxy_type> &reconstruct_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit reconstruct layer");
+
 	// Get the reconstructed feature geometries in a spatial partition for the current reconstruction time.
 	GPlatesAppLogic::ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 			rfg_spatial_partition =
 					reconstruct_layer_proxy->get_reconstructed_feature_geometries_spatial_partition();
+
+	PROFILE_BLOCK("reconstruction geometry rendering");
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
@@ -252,9 +260,13 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &reconstruct_scalar_coverage_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit reconstruct scalar coverage layer");
+
 	// Get the reconstructed scalar coverages for the current reconstruction time.
 	std::vector<GPlatesAppLogic::ReconstructedScalarCoverage::non_null_ptr_type> reconstructed_scalar_coverages;
 	reconstruct_scalar_coverage_layer_proxy->get_reconstructed_scalar_coverages(reconstructed_scalar_coverages);
+
+	PROFILE_BLOCK("reconstruction geometry rendering");
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
@@ -282,12 +294,16 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<scalar_field_3d_layer_proxy_type> &scalar_field_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit scalar field 3D layer");
+
 	// Get the resolved scalar field for the current reconstruction time.
 	boost::optional<GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_type> resolved_scalar_field =
 			scalar_field_layer_proxy->get_resolved_scalar_field_3d();
 
 	if (resolved_scalar_field)
 	{
+		PROFILE_BLOCK("reconstruction geometry rendering");
+
 		d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 		// Render the resolved scalar field.
@@ -302,9 +318,13 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_geometry_resolver_layer_proxy_type> &topology_geometry_resolver_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit topology geometry resolver layer");
+
 	// Get the resolved topological geometries for the current reconstruction time.
 	std::vector<GPlatesAppLogic::ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_geometries;
 	topology_geometry_resolver_layer_proxy->get_resolved_topological_geometries(resolved_topological_geometries);
+
+	PROFILE_BLOCK("reconstruction geometry rendering");
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
@@ -324,10 +344,14 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_network_resolver_layer_proxy_type> &topology_network_resolver_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit topology network resolver layer");
+
 	// Get the resolved topological networks for the current reconstruction time.
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 
 	topology_network_resolver_layer_proxy->get_resolved_topological_networks(resolved_topological_networks);
+
+	PROFILE_BLOCK("reconstruction geometry rendering");
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
@@ -347,9 +371,13 @@ void
 GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<velocity_field_calculator_layer_proxy_type> &velocity_field_calculator_layer_proxy)
 {
+	PROFILE_BLOCK("LayerOutputRenderer::visit velocity field calculator layer");
+
 	// Get the velocity vector fields for the current reconstruction time.
 	std::vector<GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type> multi_point_vector_fields;
 	velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_vector_fields);
+
+	PROFILE_BLOCK("reconstruction geometry rendering");
 
 	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 

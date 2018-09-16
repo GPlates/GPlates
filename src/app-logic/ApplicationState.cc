@@ -183,6 +183,8 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 		return;
 	}
 
+	PROFILE_FUNC();
+
 	// Ensure that our model notification event does not cause 'reconstruct()' to be called again
 	// (re-entered) since this can create an infinite cycle.
 	ScopedBooleanGuard scoped_reentrant_guard(*this, &ApplicationState::d_currently_reconstructing);
@@ -209,8 +211,6 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 		// Get each layer to update itself in response to any changes that caused this 'reconstruct' method to get called.
 		d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
 	}
-
-	//PROFILE_BLOCK("ApplicationState::reconstruct: emit reconstructed");
 
 	Q_EMIT reconstructed(*this);
 }

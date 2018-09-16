@@ -81,6 +81,7 @@
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/XsString.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -1158,6 +1159,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
 		boost::optional<double> reconstruction_time)
 {
+	PROFILE_FUNC();
+
 	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
 	visitor.visit_feature(topology_feature_ref);
 }
@@ -1170,6 +1173,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type,
 		boost::optional<double> reconstruction_time)
 {
+	PROFILE_FUNC();
+
 	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
 	AppLogicUtils::visit_feature_collection(topology_feature_collection_ref, visitor);
 }

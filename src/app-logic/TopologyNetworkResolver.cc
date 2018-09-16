@@ -650,6 +650,8 @@ GPlatesAppLogic::TopologyNetworkResolver::process_topological_boundary_section_i
 		return;
 	}
 
+	PROFILE_FUNC();
+
 	// Special case treatment when there are exactly two sections.
 	// In this case the two sections can intersect twice to form a closed polygon.
 	// This is the only case where two adjacent sections are allowed to intersect twice.

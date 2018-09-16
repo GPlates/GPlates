@@ -408,6 +408,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_topological_sections(
 		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
 {
+	PROFILE_FUNC();
+
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
@@ -491,7 +493,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
 		bool reconstructing_with_age_grid,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	bool need_to_update = false;
 
@@ -897,6 +899,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_current_features(
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
 		bool only_non_topological_features) const
 {
+	PROFILE_FUNC();
+
 	// Iterate over the current feature collections.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
 			d_current_reconstructable_feature_collections.begin();

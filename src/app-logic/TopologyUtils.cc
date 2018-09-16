@@ -59,6 +59,7 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlTopologicalLine.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -594,6 +595,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
+	PROFILE_FUNC();
+
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
@@ -664,6 +667,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
+	PROFILE_FUNC();
+
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
@@ -737,6 +742,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		const TopologyNetworkParams &topology_network_params,
 		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced)
 {
+	PROFILE_FUNC();
+
 	// Get the next global reconstruct handle - it'll be stored in each RTN.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 

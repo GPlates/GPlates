@@ -464,6 +464,8 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_boundary_topological
 		return;
 	}
 
+	PROFILE_FUNC();
+
 	// Special case treatment when there are exactly two sections.
 	// In this case the two sections can intersect twice to form a closed polygon.
 	// This is the only case where two adjacent sections are allowed to intersect twice.
@@ -563,6 +565,8 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_line_topological_sec
 	{
 		return;
 	}
+
+	PROFILE_FUNC();
 
 	// Resolved topological *lines* do not form a closed loop like boundaries.
 	// So there's no need to treat the special case of two topological sections forming a closed loop.
