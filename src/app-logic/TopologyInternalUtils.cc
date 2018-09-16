@@ -1180,6 +1180,20 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 }
 
 
+void
+GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+		std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topology_features,
+		boost::optional<TopologyGeometry::Type> topology_geometry_type,
+		boost::optional<double> reconstruction_time)
+{
+	PROFILE_FUNC();
+
+	FindTopologicalSectionsReferenced visitor(topological_sections_referenced, topology_geometry_type, reconstruction_time);
+	AppLogicUtils::visit_features(topology_features.begin(), topology_features.end(), visitor);
+}
+
+
 GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 		const GPlatesModel::FeatureId &feature_id)

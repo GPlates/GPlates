@@ -442,7 +442,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 
 	// If there's no focused feature or it's a topological feature then most of the tools are disabled.
 	if (!focused_feature.is_valid() ||
-		GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+		GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 	{
 		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, false);
 		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX, false);

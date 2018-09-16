@@ -471,20 +471,23 @@ namespace GPlatesAppLogic
 		 * Calls to @a get_reconstructed_feature_geometries, etc, will then use that mapping of features to
 		 * reconstruct methods (and the context state passed in) when carrying out reconstructions.
 		 *
+		 * If @a reconstructable_features is specified then the subset of features that are reconstructable are returned.
+		 *
 		 * Note: If the features change you should call @a set_features again.
 		 * This is because each feature might now require a different reconstruct method.
 		 */
 		void
 		set_features(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstructable_feature_collections);
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
+				boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref> &> reconstructable_features = boost::none);
 
 		/**
 		 * Overload accepting a sequence of features instead of feature collections.
 		 */
 		void
 		set_features(
-				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features);
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+				boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref> &> reconstructable_features = boost::none);
 
 
 		/**

@@ -35,7 +35,6 @@
 
 #include "global/PointerTraits.h"
 
-#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
@@ -66,7 +65,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_topological_section_feature_ids(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_features,
 				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none);
 
 		/**

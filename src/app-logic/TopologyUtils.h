@@ -67,27 +67,22 @@ namespace GPlatesAppLogic
 	 */
 	namespace TopologyUtils
 	{
-		//
-		// Topological boundaries
-		//
-
-
 		/**
-		 * Returns true if @a feature contains any topological geometry.
+		 * Returns true if @a feature is topological.
 		 *
 		 * Currently this includes a topological boundary (polygon), line (polyline) or network.
 		 */
 		bool
-		is_topological_geometry_feature(
+		is_topological_feature(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 		/**
-		 * Returns true if @a feature feature_collection any topological geometry.
+		 * Returns true if any feature in @a feature_collection is topological.
 		 *
 		 * Currently this includes a topological boundary (polygon), line (polyline) or network.
 		 */
 		bool
-		has_topological_geometry_features(
+		has_topological_features(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
 
@@ -125,6 +120,17 @@ namespace GPlatesAppLogic
 		resolve_topological_lines(
 				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
+
+		/**
+		 * An overload of @a resolve_topological_lines accepting a vector of features instead of a feature collection.
+		 */
+		ReconstructHandle::type
+		resolve_topological_lines(
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
@@ -171,14 +177,20 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
+		/**
+		 * An overload of @a resolve_topological_boundaries accepting a vector of features instead of a feature collection.
+		 */
+		ReconstructHandle::type
+		resolve_topological_boundaries(
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_closed_plate_polygon_features,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
+
 
 		//! Typedef for a sequence of resolved topological boundaries.
 		typedef std::vector<const ResolvedTopologicalBoundary *> resolved_topological_boundary_seq_type;
-
-
-		//
-		// Topological networks
-		//
 
 
 		/**
@@ -224,6 +236,18 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
+				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
+
+		/**
+		 * An overload of @a resolve_topological_networks accepting a vector of features instead of a feature collection.
+		 */
+		ReconstructHandle::type
+		resolve_topological_networks(
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
+				const double &reconstruction_time,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
 				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
 				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);

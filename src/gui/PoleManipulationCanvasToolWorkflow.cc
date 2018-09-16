@@ -314,7 +314,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::update_manipulate_pole_tool()
 	// Enable pole manipulation if there's a focused feature that is not topological.
 	if (focused_feature.is_valid())
 	{
-		if (!GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+		if (!GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 		{
 			enable_manipulate_pole_tool = true;
 		}

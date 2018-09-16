@@ -895,17 +895,25 @@ GPlatesAppLogic::ReconstructLayerProxy::get_current_reconstruction_layer_proxy()
 
 
 void
-GPlatesAppLogic::ReconstructLayerProxy::get_current_features(
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
-		bool only_non_topological_features) const
+GPlatesAppLogic::ReconstructLayerProxy::get_current_reconstructable_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
 {
-	PROFILE_FUNC();
+	features.insert(
+			features.end(),
+			d_current_reconstructable_features.begin(),
+			d_current_reconstructable_features.end());
+}
 
+
+void
+GPlatesAppLogic::ReconstructLayerProxy::get_current_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
+{
 	// Iterate over the current feature collections.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
-			d_current_reconstructable_feature_collections.begin();
+			d_current_feature_collections.begin();
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
-			d_current_reconstructable_feature_collections.end();
+			d_current_feature_collections.end();
 	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
 	{
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
@@ -917,18 +925,10 @@ GPlatesAppLogic::ReconstructLayerProxy::get_current_features(
 			{
 				const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
 
-				if (!feature.is_valid())
+				if (feature.is_valid())
 				{
-					continue;
+					features.push_back(feature);
 				}
-
-				if (only_non_topological_features &&
-					TopologyUtils::is_topological_geometry_feature(feature))
-				{
-					continue;
-				}
-
-				features.push_back(feature);
 			}
 		}
 	}
@@ -1078,10 +1078,13 @@ void
 GPlatesAppLogic::ReconstructLayerProxy::add_reconstructable_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_current_reconstructable_feature_collections.push_back(feature_collection);
+	d_current_feature_collections.push_back(feature_collection);
 
 	// Notify the reconstruct context of the new features.
-	d_reconstruct_context.set_features(d_current_reconstructable_feature_collections);
+	d_current_reconstructable_features.clear();
+	d_reconstruct_context.set_features(
+			d_current_feature_collections,
+			d_current_reconstructable_features);
 
 	// The cached reconstruction info is now invalid.
 	reset_reconstruction_cache();
@@ -1102,14 +1105,17 @@ GPlatesAppLogic::ReconstructLayerProxy::remove_reconstructable_feature_collectio
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Erase the feature collection from our list.
-	d_current_reconstructable_feature_collections.erase(
+	d_current_feature_collections.erase(
 			std::find(
-					d_current_reconstructable_feature_collections.begin(),
-					d_current_reconstructable_feature_collections.end(),
+					d_current_feature_collections.begin(),
+					d_current_feature_collections.end(),
 					feature_collection));
 
 	// Notify the reconstruct context of the new features.
-	d_reconstruct_context.set_features(d_current_reconstructable_feature_collections);
+	d_current_reconstructable_features.clear();
+	d_reconstruct_context.set_features(
+			d_current_feature_collections,
+			d_current_reconstructable_features);
 
 	// The cached reconstruction info is now invalid.
 	reset_reconstruction_cache();
@@ -1130,7 +1136,10 @@ GPlatesAppLogic::ReconstructLayerProxy::modified_reconstructable_feature_collect
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Notify the reconstruct context of the new features.
-	d_reconstruct_context.set_features(d_current_reconstructable_feature_collections);
+	d_current_reconstructable_features.clear();
+	d_reconstruct_context.set_features(
+			d_current_feature_collections,
+			d_current_reconstructable_features);
 
 	// The cached reconstruction info is now invalid.
 	reset_reconstruction_cache();

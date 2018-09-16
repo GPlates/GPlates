@@ -40,22 +40,16 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::~DependentTopologicalSection
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::set_topological_section_feature_ids(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_features,
 		boost::optional<TopologyGeometry::Type> topology_geometry_type)
 {
 	d_feature_ids.clear();
 
-	// Set the feature IDs of topological sections referenced by the topologies.
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_feature_collection,
-			topological_feature_collections)
-	{
-		// Find referenced feature IDs for *all* reconstruction times.
-		TopologyInternalUtils::find_topological_sections_referenced(
-				d_feature_ids,
-				topological_feature_collection,
-				topology_geometry_type);
-	}
+	// Set the feature IDs of topological sections referenced by the topologies for *all* reconstruction times.
+	TopologyInternalUtils::find_topological_sections_referenced(
+			d_feature_ids,
+			topological_features,
+			topology_geometry_type);
 
 	// Using our existing topological section layers, find those that have any of the above feature IDs.
 	set_dependency_topological_section_layers(d_reconstructed_geometry_layers, d_dependency_reconstructed_geometry_layers);
@@ -221,7 +215,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_layer(
 	// on the topological layer (connected to same file as non-topological layer if file has a mixture
 	// of topological and non-topological features).
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_section_features;
-	layer->get_current_features(topological_section_features, true/*only_non_topological_features*/);
+	layer->get_current_reconstructable_features(topological_section_features);
 
 	return topologies_depend_on_features(topological_section_features);
 }
@@ -245,7 +239,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_layer(
 	// of topological and non-topological features) - since that topological layer will in turn
 	// depend on other non-topological layers thus unnecessarily widening our dependency graph.
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_section_features;
-	layer->get_current_features(topological_section_features, true/*only_topological_features*/);
+	layer->get_current_topological_geometry_features(topological_section_features);
 
 	return topologies_depend_on_features(topological_section_features);
 }

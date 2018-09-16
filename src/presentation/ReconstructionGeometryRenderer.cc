@@ -567,7 +567,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	// If hiding topological sections then avoid rendering topological sections of topological boundaries or networks.
+	// If hiding topological sections then avoid rendering features referenced by topologies.
 	if (!d_render_settings.show_topological_sections())
 	{
 		if (is_topological_section(rfg, d_topological_sections))
@@ -746,8 +746,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	// If hiding topological sections then avoid rendering resolved topological lines that are
-	// topological sections of topological boundaries or networks.
+	// If hiding topological sections then avoid rendering resolved topological lines referenced by topologies.
 	if (!d_render_settings.show_topological_sections())
 	{
 		// Of resolved topological geometries, only resolved topological lines can be topological sections.

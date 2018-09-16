@@ -28,6 +28,7 @@
 
 #include <set>
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <QString>
@@ -173,6 +174,17 @@ namespace GPlatesAppLogic
 		find_topological_sections_referenced(
 				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
+				boost::optional<double> reconstruction_time = boost::none);
+
+		/**
+		 * An overload of @a find_topological_sections_referenced accepting a vector of
+		 * topological features instead of a feature collection.
+		 */
+		void
+		find_topological_sections_referenced(
+				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topology_features,
 				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
 				boost::optional<double> reconstruction_time = boost::none);
 

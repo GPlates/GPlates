@@ -211,7 +211,7 @@ GPlatesAppLogic::LayerProxyUtils::find_reconstruct_layer_outputs_of_feature(
 		// Note that we only consider non-topological features since a feature collection may contain a mixture
 		// of topological and non-topological (thus creating reconstruct layer and topological layer).
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> features;
-		reconstruct_layer_proxy->get_current_features(features, true/*only_non_topological_features*/);
+		reconstruct_layer_proxy->get_current_reconstructable_features(features);
 
 		// See if any features match our feature.
 		std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator features_iter = features.begin();

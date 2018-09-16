@@ -445,7 +445,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::update_edit_topology_tool()
 		{
 			const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus.focused_feature();
 
-			if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+			if (GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 			{
 				enable_edit_topology_tool = true;
 			}

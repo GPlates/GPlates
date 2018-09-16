@@ -41,6 +41,56 @@
 #include "maths/MathsUtils.h"
 
 
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		/**
+		 * Filter out features that are topological networks.
+		 *
+		 * This function is actually reasonably expensive, so it's best to only call this when
+		 * the layer input feature collections change.
+		 */
+		void
+		find_topological_network_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections)
+		{
+			PROFILE_FUNC();
+
+			// Iterate over the current feature collections.
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+					feature_collections.begin();
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+					feature_collections.end();
+			for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+			{
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+				if (feature_collection.is_valid())
+				{
+					GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+					GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+					for ( ; features_iter != features_end; ++features_iter)
+					{
+						const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+						if (!feature.is_valid())
+						{
+							continue;
+						}
+
+						if (TopologyUtils::is_topological_network_feature(feature))
+						{
+							topological_network_features.push_back(feature);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::TopologyNetworkResolverLayerProxy(
 		const TopologyNetworkParams &topology_network_params) :
 	d_current_reconstruction_time(0),
@@ -147,6 +197,47 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 	}
 
 	return d_cached_time_span.cached_resolved_network_time_span.get();
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_topological_network_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features) const
+{
+	topological_network_features.insert(
+			topological_network_features.end(),
+			d_current_topological_network_features.begin(),
+			d_current_topological_network_features.end());
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
+{
+	// Iterate over the current feature collections.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+			d_current_feature_collections.begin();
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+			d_current_feature_collections.end();
+	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+	{
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+		if (feature_collection.is_valid())
+		{
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+				if (feature.is_valid())
+				{
+					features.push_back(feature);
+				}
+			}
+		}
+	}
 }
 
 
@@ -267,13 +358,18 @@ void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::add_topological_network_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_current_topological_network_feature_collections.push_back(feature_collection);
+	d_current_feature_collections.push_back(feature_collection);
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -289,17 +385,22 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::remove_topological_network_f
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Erase the feature collection from our list.
-	d_current_topological_network_feature_collections.erase(
+	d_current_feature_collections.erase(
 			std::find(
-					d_current_topological_network_feature_collections.begin(),
-					d_current_topological_network_feature_collections.end(),
+					d_current_feature_collections.begin(),
+					d_current_feature_collections.end(),
 					feature_collection));
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -314,11 +415,16 @@ void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::modified_topological_network_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
+
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -592,9 +698,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_reconstructed_geometry_topological_sections_layers);
 	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_resolved_line_topological_sections_layers);
 
-	// If we have no topological features or there are no topological section layers then we
+	// If we have no topological network features or there are no topological section layers then we
 	// can't get any topological sections and we can't resolve any topological networks.
-	if (d_current_topological_network_feature_collections.empty() ||
+	if (d_current_topological_network_features.empty() ||
 		(dependent_reconstructed_geometry_topological_sections_layers.empty() &&
 			dependent_resolved_line_topological_sections_layers.empty()))
 	{
@@ -613,16 +719,11 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
 	// by networks that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
 	std::set<GPlatesModel::FeatureId> topological_sections_referenced;
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_network_feature_collection,
-			d_current_topological_network_feature_collections)
-	{
-		TopologyInternalUtils::find_topological_sections_referenced(
-				topological_sections_referenced,
-				topological_network_feature_collection,
-				TopologyGeometry::NETWORK,
-				reconstruction_time);
-	}
+	TopologyInternalUtils::find_topological_sections_referenced(
+			topological_sections_referenced,
+			d_current_topological_network_features,
+			TopologyGeometry::NETWORK,
+			reconstruction_time);
 
 	// Topological boundary sections and/or interior geometries that are reconstructed static features...
 	// We're ensuring that all potential (reconstructed geometry) topological-referenced geometries are
@@ -674,7 +775,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	return TopologyUtils::resolve_topological_networks(
 			resolved_topological_networks,
 			reconstruction_time,
-			d_current_topological_network_feature_collections,
+			d_current_topological_network_features,
 			topological_geometry_reconstruct_handles,
 			topology_network_params);
 }
