@@ -698,6 +698,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding points.
+	//
+	// We consider a VGP as a point geometry (even though it also has a circular or elliptical error geometry).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
+
 	// The RVGP feature-properties-based colour.
 	const GPlatesGui::ColourProxy rvgp_colour = get_colour(rvgp, d_colour, d_style_adapter);
 	
@@ -938,6 +946,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding points.
+	//
+	// We consider a flowline as a (seed) point geometry (even though the history of that point are two left/right lines).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
+
 	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
 		GPlatesGui::DefaultPlateIdColourPalette::create();
 
@@ -996,6 +1012,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding points.
+	//
+	// We consider a motion path as a (seed) point geometry (even though the history of that point is a line).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
