@@ -330,7 +330,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)	
 {
-	if (!d_render_settings.show_multipoints())
+	if (!d_render_settings.show_static_multipoints())
 	{
 		return;
 	}
@@ -380,7 +380,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedColouredMultiPointOnSphere &rendered_coloured_multi_point_on_sphere)	
 {
-	if (!d_render_settings.show_multipoints())
+	if (!d_render_settings.show_static_multipoints())
 	{
 		return;
 	}
@@ -450,7 +450,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 			const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
-	if (!d_render_settings.show_points())
+	if (!d_render_settings.show_static_points())
 	{
 		return;
 	}
@@ -513,7 +513,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-	if (!d_render_settings.show_polygons())
+	if (!d_render_settings.show_static_polygons())
 	{
 		return;
 	}
@@ -566,7 +566,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedColouredPolygonOnSphere &rendered_coloured_polygon_on_sphere)
 {
-	if (!d_render_settings.show_polygons())
+	if (!d_render_settings.show_static_polygons())
 	{
 		return;
 	}
@@ -618,7 +618,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
-	if (!d_render_settings.show_lines())
+	if (!d_render_settings.show_static_lines())
 	{
 		return;
 	}
@@ -671,7 +671,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedColouredPolylineOnSphere &rendered_coloured_polyline_on_sphere)
 {
-	if (!d_render_settings.show_lines())
+	if (!d_render_settings.show_static_lines())
 	{
 		return;
 	}

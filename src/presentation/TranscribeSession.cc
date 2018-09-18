@@ -2763,11 +2763,22 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				const GPlatesGui::RenderSettings &render_settings)
 		{
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_points(), geometry_visibility_tag("show_points"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_multipoints(), geometry_visibility_tag("show_multipoints"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_lines(), geometry_visibility_tag("show_lines"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_polygons(), geometry_visibility_tag("show_polygons"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_points(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_points"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_multipoints(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_multipoints"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_lines(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_lines"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_polygons(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_polygons"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_sections(), geometry_visibility_tag("show_topological_sections"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_lines(), geometry_visibility_tag("show_topological_lines"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_polygons(), geometry_visibility_tag("show_topological_polygons"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_networks(), geometry_visibility_tag("show_topological_networks"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_velocity_arrows(),
 					// Keeping original tag name for compatibility...
 					geometry_visibility_tag("show_arrows"));
@@ -2780,34 +2791,60 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				GPlatesGui::RenderSettings &render_settings)
 		{
-			bool show_points;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_points, geometry_visibility_tag("show_points")))
+			bool show_static_points;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_points,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_points")))
 			{
-				render_settings.set_show_points(show_points);
+				render_settings.set_show_static_points(show_static_points);
 			}
 
-			bool show_multipoints;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_multipoints, geometry_visibility_tag("show_multipoints")))
+			bool show_static_multipoints;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_multipoints,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_multipoints")))
 			{
-				render_settings.set_show_multipoints(show_multipoints);
+				render_settings.set_show_static_multipoints(show_static_multipoints);
 			}
 
-			bool show_lines;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_lines, geometry_visibility_tag("show_lines")))
+			bool show_static_lines;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_lines,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_lines")))
 			{
-				render_settings.set_show_lines(show_lines);
+				render_settings.set_show_static_lines(show_static_lines);
 			}
 
-			bool show_polygons;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_polygons, geometry_visibility_tag("show_polygons")))
+			bool show_static_polygons;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_polygons,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_polygons")))
 			{
-				render_settings.set_show_polygons(show_polygons);
+				render_settings.set_show_static_polygons(show_static_polygons);
 			}
 
 			bool show_topological_sections;
 			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_sections, geometry_visibility_tag("show_topological_sections")))
 			{
 				render_settings.set_show_topological_sections(show_topological_sections);
+			}
+
+			bool show_topological_lines;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_lines, geometry_visibility_tag("show_topological_lines")))
+			{
+				render_settings.set_show_topological_lines(show_topological_lines);
+			}
+
+			bool show_topological_polygons;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_polygons, geometry_visibility_tag("show_topological_polygons")))
+			{
+				render_settings.set_show_topological_polygons(show_topological_polygons);
+			}
+
+			bool show_topological_networks;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_networks, geometry_visibility_tag("show_topological_networks")))
+			{
+				render_settings.set_show_topological_networks(show_topological_networks);
 			}
 
 			bool show_velocity_arrows;

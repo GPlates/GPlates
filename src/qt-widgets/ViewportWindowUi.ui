@@ -151,12 +151,15 @@
      <property name="title">
       <string>Geometry &amp;Visibility</string>
      </property>
-     <addaction name="action_Show_Point_Features"/>
-     <addaction name="action_Show_Line_Features"/>
-     <addaction name="action_Show_Polygon_Features"/>
-     <addaction name="action_Show_Multipoint_Features"/>
+     <addaction name="action_Show_Static_Points"/>
+     <addaction name="action_Show_Static_Lines"/>
+     <addaction name="action_Show_Static_Polygons"/>
+     <addaction name="action_Show_Static_Multipoints"/>
      <addaction name="action_Show_Velocity_Arrows"/>
      <addaction name="action_Show_Topological_Sections"/>
+     <addaction name="action_Show_Topological_Lines"/>
+     <addaction name="action_Show_Topological_Polygons"/>
+     <addaction name="action_Show_Topological_Networks"/>
     </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
@@ -606,7 +609,7 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="action_Show_Point_Features">
+  <action name="action_Show_Static_Points">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -614,13 +617,13 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Point Geometries</string>
+    <string>Show Static Points</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether point features are shown.</string>
+    <string>A toggle operation which controls whether non-topological points are shown.</string>
    </property>
   </action>
-  <action name="action_Show_Line_Features">
+  <action name="action_Show_Static_Lines">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -628,13 +631,13 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Line Geometries</string>
+    <string>Show Static Lines</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether line features are shown.</string>
+    <string>A toggle operation which controls whether non-topological lines are shown.</string>
    </property>
   </action>
-  <action name="action_Show_Polygon_Features">
+  <action name="action_Show_Static_Polygons">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -642,13 +645,13 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Polygon Geometries</string>
+    <string>Show Static Polygons</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether polygon features are shown.</string>
+    <string>A toggle operation which controls whether non-topological polygons are shown.</string>
    </property>
   </action>
-  <action name="action_Show_Multipoint_Features">
+  <action name="action_Show_Static_Multipoints">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -656,10 +659,10 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Multipoint Geometries</string>
+    <string>Show Static Multipoints</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether multipoint features are shown.</string>
+    <string>A toggle operation which controls whether non-topological multipoints are shown.</string>
    </property>
   </action>
   <action name="action_Show_Velocity_Arrows">
@@ -1232,7 +1235,49 @@
     <string>Show Topological Sections</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether features used a topological sections are shown.</string>
+    <string>A toggle operation which controls whether features used as topological sections are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Topological_Lines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Topological Lines</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether topological lines are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Topological_Polygons">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Topological Polygons</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether topological polygons are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Topological_Networks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Topological Networks</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether topological networks are shown.</string>
    </property>
   </action>
  </widget>

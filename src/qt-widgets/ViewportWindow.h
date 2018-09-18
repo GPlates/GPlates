@@ -355,22 +355,31 @@ namespace GPlatesQtWidgets
 		handle_window_menu_about_to_show();
 
 		void
-		enable_point_display();
+		enable_static_point_display();
 
 		void
-		enable_line_display();
+		enable_static_line_display();
 
 		void
-		enable_polygon_display();
+		enable_static_polygon_display();
 
 		void
-		enable_multipoint_display();
+		enable_static_multipoint_display();
 
 		void
-		enable_velocity_arrows_display();
+		enable_velocity_arrow_display();
 
 		void
 		enable_topological_section_display();
+
+		void
+		enable_topological_line_display();
+
+		void
+		enable_topological_polygon_display();
+
+		void
+		enable_topological_network_display();
 
 		void
 		handle_render_settings_changed();

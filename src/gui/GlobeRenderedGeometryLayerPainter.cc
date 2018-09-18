@@ -200,7 +200,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		return;
 	}
 
-	if (!d_render_settings.show_points())
+	if (!d_render_settings.show_static_points())
 	{
 		return;
 	}
@@ -263,7 +263,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		return;
 	}
 
-	if (!d_render_settings.show_multipoints())
+	if (!d_render_settings.show_static_multipoints())
 	{
 		return;
 	}
@@ -318,7 +318,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_multi_poi
 		return;
 	}
 
-	if (!d_render_settings.show_multipoints())
+	if (!d_render_settings.show_static_multipoints())
 	{
 		return;
 	}
@@ -389,7 +389,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 		return;
 	}
 
-	if (!d_render_settings.show_lines())
+	if (!d_render_settings.show_static_lines())
 	{
 		return;
 	}
@@ -452,7 +452,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_
 		return;
 	}
 
-	if (!d_render_settings.show_lines())
+	if (!d_render_settings.show_static_lines())
 	{
 		return;
 	}
@@ -510,7 +510,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		return;
 	}
 
-	if (!d_render_settings.show_polygons())
+	if (!d_render_settings.show_static_polygons())
 	{
 		return;
 	}
@@ -586,7 +586,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_o
 		return;
 	}
 
-	if (!d_render_settings.show_polygons())
+	if (!d_render_settings.show_static_polygons())
 	{
 		return;
 	}

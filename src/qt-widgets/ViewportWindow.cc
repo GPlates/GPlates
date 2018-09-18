@@ -395,12 +395,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Synchronise the "Show X Features" menu items with RenderSettings.
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
-	action_Show_Point_Features->setChecked(render_settings.show_points());
-	action_Show_Line_Features->setChecked(render_settings.show_lines());
-	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
-	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
+	action_Show_Static_Points->setChecked(render_settings.show_static_points());
+	action_Show_Static_Lines->setChecked(render_settings.show_static_lines());
+	action_Show_Static_Polygons->setChecked(render_settings.show_static_polygons());
+	action_Show_Static_Multipoints->setChecked(render_settings.show_static_multipoints());
 	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
 	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
+	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
+	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
+	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
@@ -723,18 +726,24 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
 			this, SLOT(enable_stars_display()));
 	// ----
-	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
-			this, SLOT(enable_point_display()));
-	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
-			this, SLOT(enable_line_display()));
-	QObject::connect(action_Show_Polygon_Features, SIGNAL(triggered()),
-			this, SLOT(enable_polygon_display()));
-	QObject::connect(action_Show_Multipoint_Features, SIGNAL(triggered()),
-			this, SLOT(enable_multipoint_display()));
+	QObject::connect(action_Show_Static_Points, SIGNAL(triggered()),
+			this, SLOT(enable_static_point_display()));
+	QObject::connect(action_Show_Static_Lines, SIGNAL(triggered()),
+			this, SLOT(enable_static_line_display()));
+	QObject::connect(action_Show_Static_Polygons, SIGNAL(triggered()),
+			this, SLOT(enable_static_polygon_display()));
+	QObject::connect(action_Show_Static_Multipoints, SIGNAL(triggered()),
+			this, SLOT(enable_static_multipoint_display()));
 	QObject::connect(action_Show_Velocity_Arrows, SIGNAL(triggered()),
-			this, SLOT(enable_velocity_arrows_display()));
+			this, SLOT(enable_velocity_arrow_display()));
 	QObject::connect(action_Show_Topological_Sections, SIGNAL(triggered()),
 			this, SLOT(enable_topological_section_display()));
+	QObject::connect(action_Show_Topological_Lines, SIGNAL(triggered()),
+			this, SLOT(enable_topological_line_display()));
+	QObject::connect(action_Show_Topological_Polygons, SIGNAL(triggered()),
+			this, SLOT(enable_topological_polygon_display()));
+	QObject::connect(action_Show_Topological_Networks, SIGNAL(triggered()),
+			this, SLOT(enable_topological_network_display()));
 	// Also update the GUI when the RenderSettings change.
 	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
 			this, SLOT(handle_render_settings_changed()));
@@ -1306,38 +1315,38 @@ GPlatesQtWidgets::ViewportWindow::dropEvent(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_point_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_point_display()
 {
-	get_view_state().get_render_settings().set_show_points(
-			action_Show_Point_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_points(
+			action_Show_Static_Points->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_line_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_line_display()
 {
-	get_view_state().get_render_settings().set_show_lines(
-			action_Show_Line_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_lines(
+			action_Show_Static_Lines->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_polygon_display()
 {
-	get_view_state().get_render_settings().set_show_polygons(
-			action_Show_Polygon_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_polygons(
+			action_Show_Static_Polygons->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_multipoint_display()
 {
-	get_view_state().get_render_settings().set_show_multipoints(
-			action_Show_Multipoint_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_multipoints(
+			action_Show_Static_Multipoints->isChecked());
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_velocity_arrows_display()
+GPlatesQtWidgets::ViewportWindow::enable_velocity_arrow_display()
 {
 	get_view_state().get_render_settings().set_show_velocity_arrows(
 			action_Show_Velocity_Arrows->isChecked());
@@ -1351,18 +1360,42 @@ GPlatesQtWidgets::ViewportWindow::enable_topological_section_display()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_topological_line_display()
+{
+	get_view_state().get_render_settings().set_show_topological_lines(
+			action_Show_Topological_Lines->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_polygon_display()
+{
+	get_view_state().get_render_settings().set_show_topological_polygons(
+			action_Show_Topological_Polygons->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_network_display()
+{
+	get_view_state().get_render_settings().set_show_topological_networks(
+			action_Show_Topological_Networks->isChecked());
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 {
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
 
 	// Note: Calling 'setChecked()' does not result in the QAction 'triggered' signal so
 	// we don't need to worry about infinite recursion.
-	action_Show_Point_Features->setChecked(render_settings.show_points());
-	action_Show_Line_Features->setChecked(render_settings.show_lines());
-	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
-	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
+	action_Show_Static_Points->setChecked(render_settings.show_static_points());
+	action_Show_Static_Lines->setChecked(render_settings.show_static_lines());
+	action_Show_Static_Polygons->setChecked(render_settings.show_static_polygons());
+	action_Show_Static_Multipoints->setChecked(render_settings.show_static_multipoints());
 	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
 	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
+	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
+	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
+	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
 }
 
 void
