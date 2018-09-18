@@ -46,14 +46,7 @@ namespace GPlatesGui
 			d_show_static_multipoints(true),
 			d_show_static_lines(true),
 			d_show_static_polygons(true),
-			// NOTE: By default, topological sections are hidden.
-			// These are features referenced by topologies (as topological sections) for *all* reconstruction times.
-			// As soon as a topology is loaded that references an already loaded feature, that feature then
-			// becomes a topological section.
-			// Most users don't want to see these 'dangling bits' around topologies
-			// (ie, they just want to see the topologies). The small percentage of users who actually
-			// build topologies will have to turn this on manually...
-			d_show_topological_sections(false),
+			d_show_topological_sections(true),
 			d_show_topological_lines(true),
 			d_show_topological_polygons(true),
 			d_show_topological_networks(true),
