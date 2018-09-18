@@ -45,7 +45,6 @@
 #include "gui/Map.h"
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
-#include "gui/RenderSettings.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 
@@ -119,7 +118,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		QGLWidget *gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-		GPlatesGui::RenderSettings &render_settings,
 		GPlatesGui::ViewportZoom &viewport_zoom,
 		const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
 		QWidget *parent_) :
@@ -136,7 +134,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			gl_visual_layers,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
-			render_settings,
 			viewport_zoom,
 			colour_scheme),
 	d_rendered_geometry_collection(&rendered_geometry_collection)

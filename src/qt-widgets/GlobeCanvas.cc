@@ -343,7 +343,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			view_state.get_render_settings(),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
 	d_text_overlay(

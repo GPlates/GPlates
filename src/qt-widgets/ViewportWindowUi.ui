@@ -155,11 +155,11 @@
      <addaction name="action_Show_Static_Lines"/>
      <addaction name="action_Show_Static_Polygons"/>
      <addaction name="action_Show_Static_Multipoints"/>
-     <addaction name="action_Show_Velocity_Arrows"/>
      <addaction name="action_Show_Topological_Sections"/>
      <addaction name="action_Show_Topological_Lines"/>
      <addaction name="action_Show_Topological_Polygons"/>
      <addaction name="action_Show_Topological_Networks"/>
+     <addaction name="action_Show_Velocity_Arrows"/>
      <addaction name="action_Show_Rasters"/>
      <addaction name="action_Show_3D_Scalar_Fields"/>
      <addaction name="action_Show_Scalar_Coverages"/>

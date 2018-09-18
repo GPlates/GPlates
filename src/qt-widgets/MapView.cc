@@ -139,7 +139,6 @@ GPlatesQtWidgets::MapView::MapView(
 				d_gl_widget_ptr,
 				d_gl_context,
 				d_gl_visual_layers,
-				view_state.get_render_settings(),
 				view_state.get_viewport_zoom(),
 				colour_scheme,
 				this)),

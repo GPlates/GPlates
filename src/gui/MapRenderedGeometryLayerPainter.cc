@@ -277,13 +277,11 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
-		const RenderSettings &render_settings,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-	d_render_settings(render_settings),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(
@@ -330,11 +328,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)	
 {
-	if (!d_render_settings.show_static_multipoints())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_multi_point_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -380,11 +373,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedColouredMultiPointOnSphere &rendered_coloured_multi_point_on_sphere)	
 {
-	if (!d_render_settings.show_static_multipoints())
-	{
-		return;
-	}
-
 	// The multipoint and its associated per-point colours.
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 			rendered_coloured_multi_point_on_sphere.get_multi_point_on_sphere();
@@ -450,11 +438,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 			const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
-	if (!d_render_settings.show_static_points())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_point_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -513,11 +496,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-	if (!d_render_settings.show_static_polygons())
-	{
-		return;
-	}
-	
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polygon_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -566,11 +544,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedColouredPolygonOnSphere &rendered_coloured_polygon_on_sphere)
 {
-	if (!d_render_settings.show_static_polygons())
-	{
-		return;
-	}
-
 	// The polygon and its associated per-point colours.
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_coloured_polygon_on_sphere.get_polygon_on_sphere();
@@ -618,11 +591,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
-	if (!d_render_settings.show_static_lines())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polyline_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -671,11 +639,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedColouredPolylineOnSphere &rendered_coloured_polyline_on_sphere)
 {
-	if (!d_render_settings.show_static_lines())
-	{
-		return;
-	}
-
 	// The polyline and its associated per-point colours.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_coloured_polyline_on_sphere.get_polyline_on_sphere();
@@ -1431,11 +1394,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_string(
 		const GPlatesViewOperations::RenderedString &rendered_string)
 {
-	if (!d_render_settings.show_strings())
-	{
-		return;
-	}
-
 	// Get the projected text position.
 	const QPointF proj_pos = get_projected_unwrapped_position(rendered_string.get_point_on_sphere());
 

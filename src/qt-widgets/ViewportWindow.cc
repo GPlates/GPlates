@@ -115,6 +115,7 @@
 #include "gui/GuiDebug.h"
 #include "gui/ImportMenu.h"
 #include "gui/PythonManager.h"
+#include "gui/RenderSettings.h"
 #include "gui/SessionMenu.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"

@@ -40,7 +40,6 @@
 #include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
-#include "RenderSettings.h"
 
 #include "maths/CubeQuadTreeLocation.h"
 #include "maths/CubeQuadTreePartition.h"
@@ -107,7 +106,6 @@ namespace GPlatesGui
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
-				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
@@ -333,9 +331,6 @@ namespace GPlatesGui
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 
 		const double d_inverse_zoom_factor;
-
-		//! Rendering flags for determining what gets shown
-		const RenderSettings &d_render_settings;
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
