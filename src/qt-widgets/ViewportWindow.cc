@@ -399,7 +399,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	action_Show_Line_Features->setChecked(render_settings.show_lines());
 	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
 	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
-	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
 	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
 
 	// Synchronise "Show Stars" with what's in ViewState.
@@ -731,8 +731,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_polygon_display()));
 	QObject::connect(action_Show_Multipoint_Features, SIGNAL(triggered()),
 			this, SLOT(enable_multipoint_display()));
-	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
-			this, SLOT(enable_arrows_display()));
+	QObject::connect(action_Show_Velocity_Arrows, SIGNAL(triggered()),
+			this, SLOT(enable_velocity_arrows_display()));
 	QObject::connect(action_Show_Topological_Sections, SIGNAL(triggered()),
 			this, SLOT(enable_topological_section_display()));
 	// Also update the GUI when the RenderSettings change.
@@ -1337,10 +1337,10 @@ GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
+GPlatesQtWidgets::ViewportWindow::enable_velocity_arrows_display()
 {
-	get_view_state().get_render_settings().set_show_arrows(
-			action_Show_Arrow_Decorations->isChecked());
+	get_view_state().get_render_settings().set_show_velocity_arrows(
+			action_Show_Velocity_Arrows->isChecked());
 }
 
 void
@@ -1361,7 +1361,7 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 	action_Show_Line_Features->setChecked(render_settings.show_lines());
 	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
 	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
-	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
 	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
 }
 

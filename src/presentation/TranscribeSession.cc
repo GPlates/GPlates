@@ -2768,7 +2768,9 @@ namespace GPlatesPresentation
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_lines(), geometry_visibility_tag("show_lines"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_polygons(), geometry_visibility_tag("show_polygons"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_sections(), geometry_visibility_tag("show_topological_sections"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_arrows(), geometry_visibility_tag("show_arrows"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_velocity_arrows(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_arrows"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_strings(), geometry_visibility_tag("show_strings"));
 		}
 
@@ -2808,10 +2810,12 @@ namespace GPlatesPresentation
 				render_settings.set_show_topological_sections(show_topological_sections);
 			}
 
-			bool show_arrows;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_arrows, geometry_visibility_tag("show_arrows")))
+			bool show_velocity_arrows;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_velocity_arrows,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_arrows")))
 			{
-				render_settings.set_show_arrows(show_arrows);
+				render_settings.set_show_velocity_arrows(show_velocity_arrows);
 			}
 
 			bool show_strings;

@@ -397,6 +397,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding velocity arrows.
+	if (!d_render_settings.show_velocity_arrows())
+	{
+		return;
+	}
+
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = mpvf->multi_point()->end();
 

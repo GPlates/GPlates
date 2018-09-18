@@ -1184,11 +1184,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		return;
 	}
 
-	if (!d_render_settings.show_arrows())
-	{
-		return;
-	}
-
 	const GPlatesMaths::Vector3D start(
 			rendered_tangential_arrow.get_start_position().position_vector());
 

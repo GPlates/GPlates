@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -155,7 +155,7 @@
      <addaction name="action_Show_Line_Features"/>
      <addaction name="action_Show_Polygon_Features"/>
      <addaction name="action_Show_Multipoint_Features"/>
-     <addaction name="action_Show_Arrow_Decorations"/>
+     <addaction name="action_Show_Velocity_Arrows"/>
      <addaction name="action_Show_Topological_Sections"/>
     </widget>
     <addaction name="action_Set_Projection"/>
@@ -662,7 +662,7 @@
     <string>A toggle operation which controls whether multipoint features are shown.</string>
    </property>
   </action>
-  <action name="action_Show_Arrow_Decorations">
+  <action name="action_Show_Velocity_Arrows">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -673,10 +673,10 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Arrow Decorations</string>
+    <string>Show Velocity Arrows</string>
    </property>
    <property name="toolTip">
-    <string>A toggle operation which controls whether arrow decorations are shown.</string>
+    <string>A toggle operation which controls whether velocity arrows are shown.</string>
    </property>
   </action>
   <action name="action_Delete_Feature">

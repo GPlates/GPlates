@@ -1689,11 +1689,6 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 	const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
 {
-	if (!d_render_settings.show_arrows())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_tangential_arrow.get_colour());
 	if (!colour)
 	{

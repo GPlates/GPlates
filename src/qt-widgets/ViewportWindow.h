@@ -367,7 +367,7 @@ namespace GPlatesQtWidgets
 		enable_multipoint_display();
 
 		void
-		enable_arrows_display();
+		enable_velocity_arrows_display();
 
 		void
 		enable_topological_section_display();
