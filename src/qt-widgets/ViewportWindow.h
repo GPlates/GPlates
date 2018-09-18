@@ -382,6 +382,15 @@ namespace GPlatesQtWidgets
 		enable_topological_network_display();
 
 		void
+		enable_raster_display();
+
+		void
+		enable_3d_scalar_field_display();
+
+		void
+		enable_scalar_coverage_display();
+
+		void
 		handle_render_settings_changed();
 
 		void

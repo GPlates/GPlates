@@ -160,6 +160,9 @@
      <addaction name="action_Show_Topological_Lines"/>
      <addaction name="action_Show_Topological_Polygons"/>
      <addaction name="action_Show_Topological_Networks"/>
+     <addaction name="action_Show_Rasters"/>
+     <addaction name="action_Show_3D_Scalar_Fields"/>
+     <addaction name="action_Show_Scalar_Coverages"/>
     </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
@@ -1278,6 +1281,48 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether topological networks are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Rasters">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Rasters</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether rasters are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_3D_Scalar_Fields">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show 3D Scalar Fields</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether 3D scalar fields are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Scalar_Coverages">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Scalar Coverages</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether scalar coverages are shown.</string>
    </property>
   </action>
  </widget>

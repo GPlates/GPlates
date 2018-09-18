@@ -58,6 +58,9 @@ namespace GPlatesGui
 			d_show_topological_polygons(true),
 			d_show_topological_networks(true),
 			d_show_velocity_arrows(true),
+			d_show_rasters(true),
+			d_show_3d_scalar_fields(true),
+			d_show_scalar_coverages(true),
 			d_show_strings(true)
 		{  }
 
@@ -71,6 +74,9 @@ namespace GPlatesGui
 				bool show_topological_polygons_,
 				bool show_topological_networks_,
 				bool show_velocity_arrows_,
+				bool show_rasters_,
+				bool show_3d_scalar_fields_,
+				bool show_scalar_coverages_,
 				bool show_strings_) :
 			d_show_static_points(show_static_points_),
 			d_show_static_multipoints(show_static_multipoints_),
@@ -81,6 +87,9 @@ namespace GPlatesGui
 			d_show_topological_polygons(show_topological_polygons_),
 			d_show_topological_networks(show_topological_networks_),
 			d_show_velocity_arrows(show_velocity_arrows_),
+			d_show_rasters(show_rasters_),
+			d_show_3d_scalar_fields(show_3d_scalar_fields_),
+			d_show_scalar_coverages(show_scalar_coverages_),
 			d_show_strings(show_strings_)
 		{  }
 
@@ -93,6 +102,9 @@ namespace GPlatesGui
 		bool show_topological_polygons() const { return d_show_topological_polygons; }
 		bool show_topological_networks() const { return d_show_topological_networks; }
 		bool show_velocity_arrows() const { return d_show_velocity_arrows; }
+		bool show_rasters() const { return d_show_rasters; }
+		bool show_3d_scalar_fields() const { return d_show_3d_scalar_fields; }
+		bool show_scalar_coverages() const { return d_show_scalar_coverages; }
 		bool show_strings() const { return d_show_strings; }
 
 		void set_show_static_points(bool b) { d_show_static_points = b; Q_EMIT settings_changed(); }
@@ -104,6 +116,9 @@ namespace GPlatesGui
 		void set_show_topological_polygons(bool b) { d_show_topological_polygons = b; Q_EMIT settings_changed(); }
 		void set_show_topological_networks(bool b) { d_show_topological_networks = b; Q_EMIT settings_changed(); }
 		void set_show_velocity_arrows(bool b) { d_show_velocity_arrows = b; Q_EMIT settings_changed(); }
+		void set_show_rasters(bool b) { d_show_rasters = b; Q_EMIT settings_changed(); }
+		void set_show_3d_scalar_fields(bool b) { d_show_3d_scalar_fields = b; Q_EMIT settings_changed(); }
+		void set_show_scalar_coverages(bool b) { d_show_scalar_coverages = b; Q_EMIT settings_changed(); }
 		void set_show_strings(bool b) { d_show_strings = b; Q_EMIT settings_changed(); }
 	
 	Q_SIGNALS:
@@ -122,6 +137,9 @@ namespace GPlatesGui
 		bool d_show_topological_polygons;
 		bool d_show_topological_networks;
 		bool d_show_velocity_arrows;
+		bool d_show_rasters;
+		bool d_show_3d_scalar_fields;
+		bool d_show_scalar_coverages;
 		bool d_show_strings;
 
 	};

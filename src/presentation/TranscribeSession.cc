@@ -2782,6 +2782,9 @@ namespace GPlatesPresentation
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_velocity_arrows(),
 					// Keeping original tag name for compatibility...
 					geometry_visibility_tag("show_arrows"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_rasters(), geometry_visibility_tag("show_rasters"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_3d_scalar_fields(), geometry_visibility_tag("show_3d_scalar_fields"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_scalar_coverages(), geometry_visibility_tag("show_scalar_coverages"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_strings(), geometry_visibility_tag("show_strings"));
 		}
 
@@ -2853,6 +2856,24 @@ namespace GPlatesPresentation
 					geometry_visibility_tag("show_arrows")))
 			{
 				render_settings.set_show_velocity_arrows(show_velocity_arrows);
+			}
+
+			bool show_rasters;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_rasters, geometry_visibility_tag("show_rasters")))
+			{
+				render_settings.set_show_rasters(show_rasters);
+			}
+
+			bool show_3d_scalar_fields;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_3d_scalar_fields, geometry_visibility_tag("show_3d_scalar_fields")))
+			{
+				render_settings.set_show_3d_scalar_fields(show_3d_scalar_fields);
+			}
+
+			bool show_scalar_coverages;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_scalar_coverages, geometry_visibility_tag("show_scalar_coverages")))
+			{
+				render_settings.set_show_scalar_coverages(show_scalar_coverages);
 			}
 
 			bool show_strings;

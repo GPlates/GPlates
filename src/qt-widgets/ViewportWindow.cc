@@ -404,6 +404,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
 	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
 	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
+	action_Show_Rasters->setChecked(render_settings.show_rasters());
+	action_Show_3D_Scalar_Fields->setChecked(render_settings.show_3d_scalar_fields());
+	action_Show_Scalar_Coverages->setChecked(render_settings.show_scalar_coverages());
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
@@ -744,6 +747,12 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_topological_polygon_display()));
 	QObject::connect(action_Show_Topological_Networks, SIGNAL(triggered()),
 			this, SLOT(enable_topological_network_display()));
+	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
+			this, SLOT(enable_raster_display()));
+	QObject::connect(action_Show_3D_Scalar_Fields, SIGNAL(triggered()),
+			this, SLOT(enable_3d_scalar_field_display()));
+	QObject::connect(action_Show_Scalar_Coverages, SIGNAL(triggered()),
+			this, SLOT(enable_scalar_coverage_display()));
 	// Also update the GUI when the RenderSettings change.
 	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
 			this, SLOT(handle_render_settings_changed()));
@@ -1381,6 +1390,27 @@ GPlatesQtWidgets::ViewportWindow::enable_topological_network_display()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_raster_display()
+{
+	get_view_state().get_render_settings().set_show_rasters(
+			action_Show_Rasters->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_3d_scalar_field_display()
+{
+	get_view_state().get_render_settings().set_show_3d_scalar_fields(
+			action_Show_3D_Scalar_Fields->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_scalar_coverage_display()
+{
+	get_view_state().get_render_settings().set_show_scalar_coverages(
+			action_Show_Scalar_Coverages->isChecked());
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 {
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -1396,6 +1426,9 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
 	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
 	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
+	action_Show_Rasters->setChecked(render_settings.show_rasters());
+	action_Show_3D_Scalar_Fields->setChecked(render_settings.show_3d_scalar_fields());
+	action_Show_Scalar_Coverages->setChecked(render_settings.show_scalar_coverages());
 }
 
 void

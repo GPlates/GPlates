@@ -641,6 +641,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding rasters.
+	if (!d_render_settings.show_rasters())
+	{
+		return;
+	}
+
 	// Create a RenderedGeometry for drawing the resolved raster.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
@@ -670,6 +676,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding 3D scalar fields.
+	if (!d_render_settings.show_3d_scalar_fields())
+	{
+		return;
+	}
 
 	// Create a RenderedGeometry for drawing the scalar field.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_scalar_field =
@@ -1047,6 +1059,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding scalar coverages.
+	if (!d_render_settings.show_scalar_coverages())
+	{
+		return;
+	}
 
 	// Get the domain geometry.
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_geometry = rsc->get_reconstructed_geometry();
