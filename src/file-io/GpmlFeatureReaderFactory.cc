@@ -91,16 +91,22 @@ GPlatesFileIO::GpmlFeatureReaderFactory::get_feature_reader(
 		feature_reader_impl = GpmlFeatureCreator::create(d_gpml_version);
 	}
 
-	// Create a final catch-all feature reader impl that reads all unprocessed properties using
-	// any of the properties defined in the GPGIM.
+	// Create a feature reader impl that reads feature properties (not processed by the above feature reader)
+	// using any of the properties defined in the GPGIM.
 	GpmlAnyPropertyFeatureReader::non_null_ptr_type unprocessed_feature_reader_impl =
 			GpmlAnyPropertyFeatureReader::create(feature_reader_impl.get(), d_unprocessed_property_readers);
+
+	// Create a final catch-all feature reader impl that reads feature properties
+	// (not processed by the above feature reader) as 'UninterpretedPropertyValue'.
+	// This can happen if a property cannot be interpreted using any property defined in the GPGIM.
+	GpmlUninterpretedFeatureReader::non_null_ptr_type uninterpreted_feature_reader_impl =
+			GpmlUninterpretedFeatureReader::create(unprocessed_feature_reader_impl);
 
 	// NOTE: We add the final catch-all unprocessed feature reader here since this ensures we only
 	// have one unprocessed feature reader at the head of the feature reader's chain (ie, it avoids
 	// a feature reader chain that alternates between regular and unprocessed feature readers).
 
-	return GpmlFeatureReaderInterface(unprocessed_feature_reader_impl);
+	return GpmlFeatureReaderInterface(uninterpreted_feature_reader_impl);
 }
 
 
