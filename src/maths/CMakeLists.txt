@@ -47,6 +47,8 @@ set(srcs
     GeometryForwardDeclarations.h
     GeometryInterpolation.cc
     GeometryInterpolation.h
+    GeometryIntersect.cc
+    GeometryIntersect.h
     GeometryOnSphere.h
     GeometryType.h
     GnomonicProjection.cc

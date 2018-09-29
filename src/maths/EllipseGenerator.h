@@ -29,8 +29,10 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "maths/Rotation.h"
+#include "Rotation.h"
+
 #include "model/types.h"
+
 
 namespace GPlatesMaths
 {

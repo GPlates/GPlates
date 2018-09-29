@@ -31,7 +31,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/IntrusivePointerZeroRefCountException.h"
 
 #include "model/WeakObserverVisitor.h"
 

@@ -36,11 +36,9 @@
 
 #include "CalculateVelocity.h"
 
-#include "global/IllegalParametersException.h"
-
-#include "maths/CartesianConvMatrix3D.h"
-#include "maths/MathsUtils.h"
-#include "maths/UnitQuaternion3D.h"
+#include "CartesianConvMatrix3D.h"
+#include "MathsUtils.h"
+#include "UnitQuaternion3D.h"
 
 #include "utils/Earth.h"
 

@@ -41,10 +41,10 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/EllipseGenerator.h"
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
-#include "maths/MathsUtils.h"
 
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"

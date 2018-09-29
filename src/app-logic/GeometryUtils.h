@@ -184,7 +184,9 @@ namespace GPlatesAppLogic
 		 * If @a exclude_polygons_with_interior_rings is true (default) and the geometry is a
 		 * polygon with interior rings then returns boost::none (since it is not obvious how to
 		 * create a polyline from multiple rings). If it is false then only the exterior ring
-		 * is converted to a polyline (the interior rings are ignored).
+		 * is converted to a polyline (the interior rings are ignored). If the last exterior ring
+		 * segment is *not* zero length (which is usually the case) then an extra segment from the
+		 * last vertex to first vertex of exterior ring is created as the final polyline segment.
 		 */
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polyline(

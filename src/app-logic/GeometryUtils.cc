@@ -178,7 +178,7 @@ namespace
 		{
 			d_num_geometry_points = d_exterior_points_only
 					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
-					: polygon_on_sphere->number_of_vertices_in_all_rings();
+					: polygon_on_sphere->number_of_vertices();
 		}
 
 
@@ -273,7 +273,7 @@ namespace
 			// Avoid excessive re-allocations when the number of points is large.
 			d_point_seq.reserve(d_exterior_points_only
 					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
-					: polygon_on_sphere->number_of_vertices_in_all_rings());
+					: polygon_on_sphere->number_of_vertices());
 
 			if (d_reverse_points)
 			{
@@ -580,7 +580,7 @@ namespace
 				// Copy points from all rings into one sequence.
 				// We could have used boost::join, but it's not supported in boost version 1.34.
 				std::vector<GPlatesMaths::PointOnSphere> all_rings_points;
-				all_rings_points.reserve(polygon_on_sphere->number_of_vertices_in_all_rings());
+				all_rings_points.reserve(polygon_on_sphere->number_of_vertices());
 
 				all_rings_points.insert(
 						all_rings_points.end(),
@@ -682,9 +682,15 @@ namespace
 			}
 
 			// A polygon has at least three points - enough for a polyline.
+
+			// NOTE: We iterate over one extra vertex compared to the usual polygon ring iterator since
+			// this treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+			// vertex is the end point of the last ring segment (which is also the first vertex of ring).
+			// If we just used the usual polygon ring iterator then our polyline would be missing
+			// the last segment that joins the last and first vertices in the ring.
 			d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-					polygon_on_sphere->exterior_ring_vertex_begin(),
-					polygon_on_sphere->exterior_ring_vertex_end());
+					polygon_on_sphere->exterior_polyline_vertex_begin(),
+					polygon_on_sphere->exterior_polyline_vertex_end());
 		}
 
 		virtual

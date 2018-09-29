@@ -44,7 +44,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/IntrusivePointerZeroRefCountException.h"
 #include "global/NotYetImplementedException.h"
 
 #include "maths/AzimuthalEqualAreaProjection.h"

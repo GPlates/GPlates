@@ -1003,42 +1003,42 @@ namespace
 	 */
 	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 	concatenate_partitioned_polylines_starting_at_intersection(
-			const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection,
+			const GPlatesMaths::PolylineIntersections::Intersection *intersection,
 			const IntersectionGraphTraversal intersection_graph_traversal)
 	{
 		// Data member pointers to the data members of Graph::Intersection and
 		// Graph::PartitionedPolyline that we will follow to traverse the intersection
 		// graph as requested by the caller.
-		const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
-			GPlatesMaths::PolylineIntersections::Graph::Intersection::*next_partitioned_polyline_ptr = NULL;
-		const GPlatesMaths::PolylineIntersections::Graph::Intersection *
-			GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::*next_intersection_ptr = NULL;
+		const GPlatesMaths::PolylineIntersections::PartitionedPolyline *
+			GPlatesMaths::PolylineIntersections::Intersection::*next_partitioned_polyline_ptr = NULL;
+		const GPlatesMaths::PolylineIntersections::Intersection *
+			GPlatesMaths::PolylineIntersections::PartitionedPolyline::*next_intersection_ptr = NULL;
 
 		switch (intersection_graph_traversal)
 		{
 		case PREVIOUS_POLYLINE1:
 			next_partitioned_polyline_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::Intersection::prev_partitioned_polyline1;
+				&GPlatesMaths::PolylineIntersections::Intersection::prev_partitioned_polyline1;
 			next_intersection_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::prev_intersection;
+				&GPlatesMaths::PolylineIntersections::PartitionedPolyline::prev_intersection;
 			break;
 		case PREVIOUS_POLYLINE2:
 			next_partitioned_polyline_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::Intersection::prev_partitioned_polyline2,
+				&GPlatesMaths::PolylineIntersections::Intersection::prev_partitioned_polyline2,
 			next_intersection_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::prev_intersection;
+				&GPlatesMaths::PolylineIntersections::PartitionedPolyline::prev_intersection;
 			break;
 		case NEXT_POLYLINE1:
 			next_partitioned_polyline_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::Intersection::next_partitioned_polyline1;
+				&GPlatesMaths::PolylineIntersections::Intersection::next_partitioned_polyline1;
 			next_intersection_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::next_intersection;
+				&GPlatesMaths::PolylineIntersections::PartitionedPolyline::next_intersection;
 			break;
 		case NEXT_POLYLINE2:
 			next_partitioned_polyline_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::Intersection::next_partitioned_polyline2;
+				&GPlatesMaths::PolylineIntersections::Intersection::next_partitioned_polyline2;
 			next_intersection_ptr =
-				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::next_intersection;
+				&GPlatesMaths::PolylineIntersections::PartitionedPolyline::next_intersection;
 			break;
 		}
 
@@ -1047,7 +1047,7 @@ namespace
 		do
 		{
 			// Get the polyline following the current intersection in the graph.
-			const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
+			const GPlatesMaths::PolylineIntersections::PartitionedPolyline *
 					next_partitioned_polyline = (intersection->*next_partitioned_polyline_ptr);
 
 			if (!next_partitioned_polyline)
@@ -1395,13 +1395,12 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline)
 {
 	// Intersect the two section polylines.
-	boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection_graph =
-			GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
-					*first_section_polyline,
-					*second_section_polyline);
-
 	// If there were no intersections then return false.
-	if (!intersection_graph)
+	GPlatesMaths::PolylineIntersections::Graph intersection_graph;
+	if (!GPlatesMaths::PolylineIntersections::partition(
+			intersection_graph,
+			*first_section_polyline,
+			*second_section_polyline))
 	{
 		return boost::none;
 	}
@@ -1410,10 +1409,10 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 // Better to write a pyGPlates script to detect these types of errors as a post-process.
 #if 0
 	// Produce a warning message if there is more than one intersection.
-	if (intersection_graph->intersections.size() >= 2)
+	if (intersection_graph.intersections.size() >= 2)
 	{
 		qWarning() << "TopologyInternalUtils::intersect_topological_sections: ";
-		qWarning() << "	num_intersect=" << intersection_graph->intersections.size();
+		qWarning() << "	num_intersect=" << intersection_graph.intersections.size();
 		qWarning() << "	Boundary feature intersection relations may not be correct!";
 		qWarning() << "	Make sure boundary feature's only intersect once.";
 	}
@@ -1424,13 +1423,17 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	//
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!intersection_graph->intersections.empty(),
+			!intersection_graph.unordered_intersections.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// If even there is more than one intersection we'll just consider the first
-	// intersection.
-	const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection =
-			intersection_graph->intersections[0].get();
+	// If even there is more than one intersection we'll just consider the first intersection.
+	//
+	// Note: We arbitrarily choose the first intersection along the *first* geometry.
+	//       This matches the previous implementation which used the first *unordered* intersection
+	//       but, for the previous implementation of PolylineIntersections, this happened to be ordered
+	//       along the first geometry. Our current PolylineIntersections implementation is truly unordered.
+	const GPlatesMaths::PolylineIntersections::Intersection *intersection =
+			intersection_graph.geometry1_ordered_intersections[0].get();
 
 	// If we have an intersection then we should have at least one segment from each polyline.
 	// This is our guarantee to the caller.
@@ -1627,13 +1630,12 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline)
 {
 	// Intersect the two section polylines.
-	boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection_graph =
-			GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
-					*first_section_polyline,
-					*second_section_polyline);
-
 	// If there were no intersections then return false.
-	if (!intersection_graph)
+	GPlatesMaths::PolylineIntersections::Graph intersection_graph;
+	if (!GPlatesMaths::PolylineIntersections::partition(
+			intersection_graph,
+			*first_section_polyline,
+			*second_section_polyline))
 	{
 		return boost::none;
 	}
@@ -1642,10 +1644,10 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 // Better to write a pyGPlates script to detect these types of errors as a post-process.
 #if 0
 	// Produce a warning message if there is more than two intersections.
-	if (intersection_graph->intersections.size() >= 3)
+	if (intersection_graph.intersections.size() >= 3)
 	{
 		qWarning() << "TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections: ";
-		qWarning() << "	num_intersect=" << intersection_graph->intersections.size();
+		qWarning() << "	num_intersect=" << intersection_graph.intersections.size();
 		qWarning() << "	Boundary feature intersection relations may not be correct!";
 		qWarning() << "	Make sure a boundary with exactly two sections only intersects twice.";
 	}
@@ -1656,11 +1658,17 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	//
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!intersection_graph->intersections.empty(),
+			!intersection_graph.unordered_intersections.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	const GPlatesMaths::PolylineIntersections::Graph::Intersection *first_intersection =
-			intersection_graph->intersections[0].get();
+	// Get the first intersection.
+	//
+	// Note: We arbitrarily choose the first intersection along the *first* geometry.
+	//       This matches the previous implementation which used the first *unordered* intersection
+	//       but, for the previous implementation of PolylineIntersections, this happened to be ordered
+	//       along the first geometry. Our current PolylineIntersections implementation is truly unordered.
+	const GPlatesMaths::PolylineIntersections::Intersection *first_intersection =
+			intersection_graph.geometry1_ordered_intersections[0].get();
 
 	// If we have an intersection then we should have at least one segment from each polyline.
 	// This is our guarantee to the caller.
@@ -1685,7 +1693,7 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 
 	// If there's only one intersection then there is only head and tail segments -
 	// no middle segments.
-	if (intersection_graph->intersections.size() == 1)
+	if (intersection_graph.unordered_intersections.size() == 1)
 	{
 		if (first_intersection->prev_partitioned_polyline1)
 		{
@@ -1721,10 +1729,14 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	// If we get here then we have two or more intersections.
 	//
 
-	// If even there is more than two intersections we'll just consider the first two
-	// intersections.
-	const GPlatesMaths::PolylineIntersections::Graph::Intersection *
-			second_intersection = intersection_graph->intersections[1].get();
+	// Get the second intersection.
+	//
+	// Note: We arbitrarily choose the second intersection along the *first* geometry.
+	//       This matches the previous implementation which used the second *unordered* intersection
+	//       but, for the previous implementation of PolylineIntersections, this happened to be ordered
+	//       along the first geometry. Our current PolylineIntersections implementation is truly unordered.
+	const GPlatesMaths::PolylineIntersections::Intersection *
+			second_intersection = intersection_graph.geometry1_ordered_intersections[1].get();
 
 	//
 	// If there are more than two intersections then only the first two intersections are

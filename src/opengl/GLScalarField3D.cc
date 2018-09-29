@@ -3954,7 +3954,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
 		bool &entire_geometry_is_in_stream_target)
 {
-	const unsigned int num_vertices_in_all_rings = polygon->number_of_vertices_in_all_rings();
+	const unsigned int num_vertices_in_all_rings = polygon->number_of_vertices();
 	const unsigned int num_interior_rings = polygon->number_of_interior_rings();
 
 	// Each ring in the polygon is rendered as a triangle fan which has an extra vertex at centroid

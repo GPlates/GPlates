@@ -33,8 +33,6 @@
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 
-#include "global/IntrusivePointerZeroRefCountException.h"
-
 #include "utils/ReferenceCount.h"
 
 
