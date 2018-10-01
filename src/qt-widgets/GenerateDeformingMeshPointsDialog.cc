@@ -907,19 +907,20 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::open_topology_reconstructio
 
 			// This dialog is shown modally.
 			// Note that the user may change various layer parameters here.
-			d_set_topology_reconstruction_parameters_dialog->exec();
-
 			//
-			// Note that user only has option to accept dialog.
-			// So we'll go ahead and turn on "reconstruct using topologies" (it starts out turned off by default).
-			// This will then trigger the lengthy generation of the history of topologically-reconstructed crustal thicknesses
-			// using the parameters configured above by the user.
-			//
-			// Switch to using topologies.
-			// Note that we reload the reconstruct parameters since user may have modified them.
-			reconstruct_params = layer_params->get_reconstruct_params();
-			reconstruct_params.set_reconstruct_using_topologies(true);
-			layer_params->set_reconstruct_params(reconstruct_params);
+			// Since we've disabled the 'cancel' button, the user should only have the option to accept the dialog.
+			// However they can still press the Escape key to reject the dialog, so we'll only turn on
+			// "reconstruct using topologies" (it starts out turned off by default) if they accepted.
+			// This will then trigger the lengthy generation of the history of topologically-reconstructed
+			// crustal thicknesses using the parameters configured by the user.
+			if (d_set_topology_reconstruction_parameters_dialog->exec()== QDialog::Accepted)
+			{
+				// Switch to using topologies.
+				// Note that we reload the reconstruct parameters since user may have modified them.
+				reconstruct_params = layer_params->get_reconstruct_params();
+				reconstruct_params.set_reconstruct_using_topologies(true);
+				layer_params->set_reconstruct_params(reconstruct_params);
+			}
 		}
 	}
 }
