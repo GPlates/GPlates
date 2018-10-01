@@ -81,21 +81,6 @@ namespace
 	{
 		return GPlatesGui::Colour(0.35f, 0.35f, 0.35f);
 	}
-
-	void
-	set_default_render_settings(
-			GPlatesGui::RenderSettings &default_render_settings)
-	{
-		// By default, everything is shown except topological sections (which are hidden).
-		//
-		// Topological sections are features referenced by topologies for *all* reconstruction times.
-		// As soon as a topology that references an already loaded feature is loaded,
-		// that feature then becomes a topological section.
-		// Most users don't want to see these 'dangling bits' around topologies
-		// (ie, they just want to see the topologies). The small percentage of users who actually
-		// build topologies will have to turn this on manually.
-		default_render_settings.set_show_topological_sections(false);
-	}
 }
 
 
@@ -165,8 +150,6 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::TopologySectionsContainer()),
 	d_python_manager_ptr(GPlatesGui::PythonManager::instance())
 {
-	set_default_render_settings(*d_render_settings);
-
 	// Override a few defaults to the user's taste.
 	initialise_from_user_preferences();
 
@@ -204,6 +187,14 @@ GPlatesPresentation::ViewState::initialise_from_user_preferences()
 	
 	d_show_stars = prefs.get_value("view/show_stars").toBool();
 
+	// By default, geometry visibility is enabled for all geometry types except topological sections
+	// (which are hidden, in "DefaultPreferences.conf").
+	//
+	// Topological sections are features referenced by topologies for *all* reconstruction times.
+	// As soon as a topology that references an already loaded feature is loaded, that feature then
+	// becomes a topological section. Most users don't want to see these 'dangling bits' around topologies
+	// (ie, they just want to see the topologies). The small percentage of users who actually build
+	// topologies will have to turn this on manually.
 	d_render_settings->set_show_topological_sections(
 			prefs.get_value("view/geometry_visibility/show_topological_sections").toBool());
 }
