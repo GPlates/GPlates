@@ -203,6 +203,9 @@ GPlatesPresentation::ViewState::initialise_from_user_preferences()
 	const GPlatesAppLogic::UserPreferences &prefs = get_application_state().get_user_preferences();
 	
 	d_show_stars = prefs.get_value("view/show_stars").toBool();
+
+	d_render_settings->set_show_topological_sections(
+			prefs.get_value("view/geometry_visibility/show_topological_sections").toBool());
 }
 
 
