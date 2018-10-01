@@ -102,8 +102,8 @@ namespace GPlatesMaths
 			Intersection(
 					Type type_,
 					const PointOnSphere &position_,
-					int segment_index1_,
-					int segment_index2_,
+					unsigned int segment_index1_,
+					unsigned int segment_index2_,
 					double angle_in_segment1_ = 0.0,
 					double angle_in_segment2_ = 0.0) :
 				type(type_),
@@ -130,9 +130,9 @@ namespace GPlatesMaths
 			//
 
 			//! Segment index within the first geometry.
-			int segment_index1;
+			unsigned int segment_index1;
 			//! Segment index within the second geometry.
-			int segment_index2;
+			unsigned int segment_index2;
 
 			//! Angle (radians) from segment start point to intersection along segment in first geometry.
 			double angle_in_segment1;

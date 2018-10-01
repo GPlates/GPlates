@@ -98,7 +98,7 @@ namespace GPlatesMaths
 
 			SortGeometryIntersection(
 					const intersection_seq_type &intersections,
-					const int Intersection::*segment_index_ptr,
+					const unsigned int Intersection::*segment_index_ptr,
 					const double Intersection::*angle_in_segment_ptr) :
 				d_intersections(&intersections),
 				d_segment_index_ptr(segment_index_ptr),
@@ -137,7 +137,7 @@ namespace GPlatesMaths
 
 		private:
 			const intersection_seq_type *d_intersections;
-			const int Intersection::*d_segment_index_ptr;
+			const unsigned int Intersection::*d_segment_index_ptr;
 			const double Intersection::*d_angle_in_segment_ptr;
 		};
 
@@ -522,13 +522,13 @@ namespace GPlatesMaths
 			//
 			// To highlight this, the following diagram shows segment 'A' and it's previous segment 'A_prev'...
 			//
-			//         \     \
-			//   _  _  _\ _  _\ _  _  _
-			//           \     \
-			//   A_prev---\--+  \
-			//   _  _  _  _\ _\ _x _  _
-			//              \  \  \
-			//               \  A  \
+			//               /     /   
+			//   _  _  _  _ /_  _ /_  _
+			//             /     /     
+			//   A_prev---/--+  /      
+			//   _  _  _ /_ /_ x_  _  _
+			//          /  /  /        
+			//         /  A  /         
 			//
 			// ...where the *thick* planes are shown around both segments. Both segments share the vertex '+'.
 			// Any point is considered coincident with the vertex '+' if the point lies within the rhombus
