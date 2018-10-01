@@ -23,15 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_GENERATECRUSTALTHICKNESSPOINTSDIALOG_H
-#define GPLATES_QTWIDGETS_GENERATECRUSTALTHICKNESSPOINTSDIALOG_H
+#ifndef GPLATES_QTWIDGETS_GENERATEDEFORMINGMESHPOINTSDIALOG_H
+#define GPLATES_QTWIDGETS_GENERATEDEFORMINGMESHPOINTSDIALOG_H
 
 #include <boost/optional.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDialog>
 #include <QString>
 
-#include "GenerateCrustalThicknessPointsDialogUi.h"
+#include "GenerateDeformingMeshPointsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"
@@ -72,9 +72,9 @@ namespace GPlatesQtWidgets
 	/**
 	 * This dialog generates a distribution of points with initial crustal thicknesses at a past geological time.
 	 */
-	class GenerateCrustalThicknessPointsDialog :
+	class GenerateDeformingMeshPointsDialog :
 			public GPlatesDialog,
-			protected Ui_GenerateCrustalThicknessPointsDialog
+			protected Ui_GenerateDeformingMeshPointsDialog
 	{
 		Q_OBJECT
 
@@ -87,7 +87,7 @@ namespace GPlatesQtWidgets
 			COLLECTION_PAGE
 		};	
 
-		GenerateCrustalThicknessPointsDialog(
+		GenerateDeformingMeshPointsDialog(
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent = 0);
 
@@ -152,7 +152,7 @@ namespace GPlatesQtWidgets
 		{
 		public:
 			CurrentlyCreatingFeatureGuard(
-					GenerateCrustalThicknessPointsDialog &dialog) :
+					GenerateDeformingMeshPointsDialog &dialog) :
 				d_dialog(dialog)
 			{
 				d_dialog.d_currently_creating_feature = true;
@@ -164,7 +164,7 @@ namespace GPlatesQtWidgets
 			}
 
 		private:
-			GenerateCrustalThicknessPointsDialog &d_dialog;
+			GenerateDeformingMeshPointsDialog &d_dialog;
 		};
 
 
@@ -248,4 +248,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif // GPLATES_QTWIDGETS_GENERATECRUSTALTHICKNESSPOINTSDIALOG_H
+#endif // GPLATES_QTWIDGETS_GENERATEDEFORMINGMESHPOINTSDIALOG_H

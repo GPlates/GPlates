@@ -794,8 +794,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 	QObject::connect(action_Generate_LatitudeLongitude_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_lat_lon_dialog()));
-	QObject::connect(action_Generate_Crustal_Thickness_Points, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_generate_crustal_thickness_points_dialog()));
+	QObject::connect(action_Generate_Deforming_Mesh_Points, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_generate_deforming_mesh_points_dialog()));
 }
 
 

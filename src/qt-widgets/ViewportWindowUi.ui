@@ -207,7 +207,7 @@
     <addaction name="separator"/>
     <addaction name="action_Create_VGP"/>
     <addaction name="action_Assign_Plate_IDs"/>
-    <addaction name="action_Generate_Crustal_Thickness_Points"/>
+    <addaction name="action_Generate_Deforming_Mesh_Points"/>
     <addaction name="menuGenerate_Velocity_Point_Locations"/>
    </widget>
    <widget class="QMenu" name="menu_Utilities">
@@ -1217,9 +1217,9 @@
     <bool>false</bool>
    </property>
   </action>
-  <action name="action_Generate_Crustal_Thickness_Points">
+  <action name="action_Generate_Deforming_Mesh_Points">
    <property name="text">
-    <string>Generate &amp;Crustal Thickness Points</string>
+    <string>Generate Deforming &amp;Mesh Points</string>
    </property>
   </action>
   <action name="action_Configure_Velocity_Legend">
