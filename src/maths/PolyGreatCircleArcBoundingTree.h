@@ -469,8 +469,8 @@ namespace GPlatesMaths
 		unsigned int partition_begin_node_great_circle_arcs_index = 0;
 
 		// Create the partitioned sub-tree nodes (one sub-tree per partitioned region).
-		partition_separator_seq_type::const_iterator partition_separators_iter = partition_separators.begin();
-		partition_separator_seq_type::const_iterator partition_separators_end = partition_separators.end();
+		typename partition_separator_seq_type::const_iterator partition_separators_iter = partition_separators.begin();
+		typename partition_separator_seq_type::const_iterator partition_separators_end = partition_separators.end();
 		for ( ; partition_separators_iter != partition_separators_end; ++partition_separators_iter)
 		{
 			const GreatCircleArcConstIteratorType &partition_separator = *partition_separators_iter;

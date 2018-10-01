@@ -27,16 +27,9 @@
 #define GPLATES_APP_LOGIC_APPLOGICUTILS_H
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureHandle.h"
+#include "model/FeatureVisitor.h"
 
-
-namespace GPlatesModel
-{
-	// Forward declarations.
-	class FeatureHandle;
-	template<class FeatureHandleType> class FeatureVisitorBase;
-	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
-	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
-}
 
 namespace GPlatesAppLogic
 {
