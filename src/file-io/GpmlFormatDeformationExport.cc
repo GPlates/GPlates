@@ -71,7 +71,8 @@ namespace
 			boost::optional<GPlatesFileIO::DeformationExport::PrincipalStrainOptions> include_principal_strain,
 			bool include_dilatation_strain,
 			bool include_dilatation_strain_rate,
-			bool include_second_invariant_strain_rate)
+			bool include_second_invariant_strain_rate,
+			bool include_strain_rate_style)
 	{
 		typedef GPlatesAppLogic::TopologyReconstructedFeatureGeometry::point_deformation_strain_rate_seq_type
 				point_deformation_strain_rate_seq_type;
@@ -84,7 +85,8 @@ namespace
 		// Only retrieve strain rates if needed.
 		boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
 		if (include_dilatation_strain_rate ||
-			include_second_invariant_strain_rate)
+			include_second_invariant_strain_rate ||
+			include_strain_rate_style)
 		{
 			deformation_strain_rates_option = deformation_strain_rates;
 		}
@@ -289,6 +291,31 @@ namespace
 			reconstructed_range_property->tuple_list_push_back(second_invariant_strain_rate_range);
 		}
 
+		// Include strain rate style if requested.
+		if (include_strain_rate_style)
+		{
+			std::vector<double> strain_rate_styles;
+			strain_rate_styles.reserve(deformation_strain_rates.size());
+			for (unsigned int d = 0; d < deformation_strain_rates.size(); ++d)
+			{
+				strain_rate_styles.push_back(deformation_strain_rates[d].get_strain_rate_style());
+			}
+
+			GPlatesPropertyValues::ValueObjectType strain_rate_style_type =
+					GPlatesPropertyValues::ValueObjectType::create_gpml("StrainRateStyle");
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type strain_rate_style_xml_attrs;
+
+			// Add the strain rate style scalar values we're exporting.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type strain_rate_style_range =
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+							strain_rate_style_type,
+							strain_rate_style_xml_attrs,
+							strain_rate_styles.begin(),
+							strain_rate_styles.end());
+
+			reconstructed_range_property->tuple_list_push_back(strain_rate_style_range);
+		}
+
 
 		// The reconstructed domain (geometry) property.
 		const GPlatesModel::PropertyValue::non_null_ptr_type reconstructed_domain_property =
@@ -334,7 +361,8 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 		boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
-		bool include_second_invariant_strain_rate)
+		bool include_second_invariant_strain_rate,
+		bool include_strain_rate_style)
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
@@ -374,7 +402,8 @@ GPlatesFileIO::GpmlFormatDeformationExport::export_deformation(
 					include_principal_strain,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
-					include_second_invariant_strain_rate);
+					include_second_invariant_strain_rate,
+					include_strain_rate_style);
 		}
 	}
 

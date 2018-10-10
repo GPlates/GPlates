@@ -339,6 +339,7 @@ namespace GPlatesGui
 			const bool default_include_dilatation_strain = false;
 			const bool default_include_dilatation_strain_rate = true;
 			const bool default_include_second_invariant_strain_rate = false;
+			const bool default_include_strain_rate_style = false;
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
@@ -352,7 +353,8 @@ namespace GPlatesGui
 									default_principal_strain_options,
 									default_include_dilatation_strain,
 									default_include_dilatation_strain_rate,
-									default_include_second_invariant_strain_rate)),
+									default_include_second_invariant_strain_rate,
+									default_include_strain_rate_style)),
 					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining
@@ -378,7 +380,8 @@ namespace GPlatesGui
 									default_principal_strain_options,
 									default_include_dilatation_strain,
 									default_include_dilatation_strain_rate,
-									default_include_second_invariant_strain_rate)),
+									default_include_second_invariant_strain_rate,
+									default_include_strain_rate_style)),
 					&create_animation_strategy<ExportDeformationAnimationStrategy>,
 					boost::bind(
 							// 'static_cast' is because some compilers have trouble determining

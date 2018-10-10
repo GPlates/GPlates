@@ -69,6 +69,7 @@ namespace GPlatesFileIO
 		 * If @a include_dilatation_strain is true then dilatation strain is output (unitless).
 		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
 		 * If @a include_second_invariant_strain_rate is true then second invariant strain rate is output (in units of 1/second).
+		 * If @a include_strain_rate_style is true then strain rate style is output (unitless).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
@@ -84,7 +85,8 @@ namespace GPlatesFileIO
 				boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
-				bool include_second_invariant_strain_rate);
+				bool include_second_invariant_strain_rate,
+				bool include_strain_rate_style);
 	}
 }
 
