@@ -320,6 +320,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		d_render_params.topological_network_triangulation_colour_palette = params.get_second_invariant_colour_palette();
 		break;
 
+	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE:
+		d_render_params.topological_network_triangulation_colour_palette = params.get_strain_rate_style_colour_palette();
+		break;
+
 	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 	default:
 		// When using the draw style we don't use a colour palette.
@@ -1395,6 +1399,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+			}
 		}
 
 		if (!vertex_colour)
@@ -1490,6 +1501,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 				face_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
+			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				face_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
 			}
 		}
 
@@ -1692,6 +1710,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+			}
 		}
 
 		if (!vertex_colour)
@@ -1798,6 +1823,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 				{
 					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_second_invariant();
+				}
+				else if (d_render_params.topological_network_triangulation_colour_mode ==
+					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+				{
+					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_style();
 				}
 			}
 

@@ -138,6 +138,20 @@ namespace GPlatesQtWidgets
 		handle_use_default_second_invariant_palette_button_clicked();
 
 		void
+		handle_min_strain_rate_style_spinbox_changed(
+				double min_strain_rate_style);
+
+		void
+		handle_max_strain_rate_style_spinbox_changed(
+				double max_strain_rate_style);
+
+		void
+		handle_select_strain_rate_style_palette_filename_button_clicked();
+
+		void
+		handle_use_default_strain_rate_style_palette_button_clicked();
+
+		void
 		handle_fill_opacity_spinbox_changed(
 				double value);
 
@@ -170,6 +184,9 @@ namespace GPlatesQtWidgets
 
 		FriendlyLineEdit *d_second_invariant_palette_filename_lineedit;
 		ColourScaleWidget *d_second_invariant_colour_scale_widget;
+
+		FriendlyLineEdit *d_strain_rate_style_palette_filename_lineedit;
+		ColourScaleWidget *d_strain_rate_style_colour_scale_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

@@ -1659,6 +1659,11 @@ namespace GPlatesPresentation
 						d_scribe, TRANSCRIBE_SOURCE, params.get_second_invariant_colour_palette_filename(),
 						d_layer_params_tag("second_invariant_colour_palette_filename"));
 
+				// Save the strain rate style colour palette filename (an empty filename means use default palette).
+				GPlatesScribe::TranscribeUtils::save_file_path(
+						d_scribe, TRANSCRIBE_SOURCE, params.get_strain_rate_style_colour_palette_filename(),
+						d_layer_params_tag("strain_rate_style_colour_palette_filename"));
+
 				d_scribe.save(TRANSCRIBE_SOURCE, params.show_segment_velocity(),
 						d_layer_params_tag("show_segment_velocity"));
 
@@ -1688,6 +1693,12 @@ namespace GPlatesPresentation
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_second_invariant(),
 						d_layer_params_tag("max_abs_second_invariant"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_strain_rate_style(),
+						d_layer_params_tag("min_strain_rate_style"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_strain_rate_style(),
+						d_layer_params_tag("max_strain_rate_style"));
 
 				// Only used by GPlates 2.0 (removed in 2.1) ...
 				d_scribe.save(TRANSCRIBE_SOURCE,
@@ -2111,6 +2122,20 @@ namespace GPlatesPresentation
 					params.set_min_abs_second_invariant(min_abs_second_invariant);
 				}
 
+				double max_strain_rate_style;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_strain_rate_style,
+						d_layer_params_tag("max_strain_rate_style")))
+				{
+					params.set_max_strain_rate_style(max_strain_rate_style);
+				}
+
+				double min_strain_rate_style;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_strain_rate_style,
+						d_layer_params_tag("min_strain_rate_style")))
+				{
+					params.set_min_strain_rate_style(min_strain_rate_style);
+				}
+
 				TopologyNetworkVisualLayerParams::TriangulationColourMode colour_mode;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, colour_mode,
 						d_layer_params_tag("colour_mode")))
@@ -2223,6 +2248,42 @@ namespace GPlatesPresentation
 				{
 					// Load the default strain second invariant colour palette.
 					params.use_default_second_invariant_colour_palette();
+				}
+
+				//
+				// Load the strain rate style colour palette from a file (if a non-empty filename specified).
+				//
+
+				boost::optional<QString> strain_rate_style_colour_palette_filename =
+						GPlatesScribe::TranscribeUtils::load_file_path(
+								d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("strain_rate_style_colour_palette_filename"));
+				if (strain_rate_style_colour_palette_filename &&
+					!strain_rate_style_colour_palette_filename->isEmpty())
+				{
+					GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+							GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+									strain_rate_style_colour_palette_filename.get(),
+									// We only allow real-valued colour palettes since our data is real-valued...
+									false/*allow_integer_colour_palette*/,
+									d_read_errors);
+
+					// If we successfully read a real-valued colour palette.
+					boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+							GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+					if (colour_palette)
+					{
+						params.set_strain_rate_style_colour_palette(strain_rate_style_colour_palette_filename.get(), colour_palette.get());
+					}
+					else
+					{
+						// Load the default strain strain rate style colour palette.
+						params.use_default_strain_rate_style_colour_palette();
+					}
+				}
+				else
+				{
+					// Load the default strain strain rate style colour palette.
+					params.use_default_strain_rate_style_colour_palette();
 				}
 			}
 

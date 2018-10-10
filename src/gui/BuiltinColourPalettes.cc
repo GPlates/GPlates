@@ -1240,6 +1240,54 @@ GPlatesGui::BuiltinColourPalettes::create_strain_rate_second_invariant_colour_pa
 }
 
 
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::create_strain_rate_strain_rate_style_colour_palette(
+		double min_strain_rate_style,
+		double max_strain_rate_style)
+{
+	// These colours are an attempt to match those in Figure 5 of Kreemer et al. 2014.
+	static const Colour DEFAULT_STRAIN_RATE_STYLE_COLOURS[] = {
+			Colour(0, 0, 1)   /* blue */,
+			Colour(0, 1, 0)   /* green */,
+			Colour(1, 1, 0)   /* yellow */,
+			Colour(1, 0.5, 0) /* orange */,
+			Colour(1, 0, 0)   /* red */
+	};
+
+	static const unsigned int NUM_DEFAULT_STRAIN_RATE_STYLE_COLOURS =
+			sizeof(DEFAULT_STRAIN_RATE_STYLE_COLOURS) / sizeof(Colour);
+
+	const double range = max_strain_rate_style - min_strain_rate_style;
+
+	RegularCptColourPalette::non_null_ptr_type colour_palette = RegularCptColourPalette::create();
+
+	// Background colour, for values before min value.
+	colour_palette->set_background_colour(DEFAULT_STRAIN_RATE_STYLE_COLOURS[0]);
+
+	// Foreground colour, for values after max value.
+	colour_palette->set_foreground_colour(DEFAULT_STRAIN_RATE_STYLE_COLOURS[NUM_DEFAULT_STRAIN_RATE_STYLE_COLOURS - 1]);
+
+	// Add the colour slices for everything in between.
+	for (unsigned int i = 0; i != NUM_DEFAULT_STRAIN_RATE_STYLE_COLOURS - 1; ++i)
+	{
+		ColourSlice colour_slice(
+				min_strain_rate_style + i * range / (NUM_DEFAULT_STRAIN_RATE_STYLE_COLOURS - 1),
+				DEFAULT_STRAIN_RATE_STYLE_COLOURS[i],
+				min_strain_rate_style + (i + 1) * range / (NUM_DEFAULT_STRAIN_RATE_STYLE_COLOURS - 1),
+				DEFAULT_STRAIN_RATE_STYLE_COLOURS[i + 1]);
+		colour_palette->add_entry(colour_slice);
+	}
+
+	// Convert/adapt Real to double.
+	return convert_colour_palette<
+			RegularCptColourPalette::key_type,
+			double,
+			RealToBuiltInConverter<double> >(
+					colour_palette,
+					RealToBuiltInConverter<double>());
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesGui::BuiltinColourPalettes::transcribe(
 		GPlatesScribe::Scribe &scribe,

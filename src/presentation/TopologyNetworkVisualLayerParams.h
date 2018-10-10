@@ -54,7 +54,8 @@ namespace GPlatesPresentation
 		{
 			TRIANGULATION_COLOUR_DRAW_STYLE,
 			TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE,
-			TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE
+			TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE,
+			TRIANGULATION_COLOUR_STRAIN_RATE_STYLE
 		};
 
 		enum TriangulationDrawMode
@@ -218,6 +219,63 @@ namespace GPlatesPresentation
 		use_default_second_invariant_colour_palette();
 
 
+		// Set min/max strain rate style (for colour blending).
+		void
+		set_min_strain_rate_style(
+				const double &min_strain_rate_style);
+		void
+		set_max_strain_rate_style(
+				const double &max_strain_rate_style);
+
+		// Get min/max strain rate style (for colour blending).
+		const double &
+		get_min_strain_rate_style() const
+		{
+			return d_min_strain_rate_style;
+		}
+		const double &
+		get_max_strain_rate_style() const
+		{
+			return d_max_strain_rate_style;
+		}
+
+		/**
+		 * Returns the strain rate style colour palette filename, if loaded from a file.
+		 *
+		 * Returns the empty string if auto-generated.
+		 */
+		const QString &
+		get_strain_rate_style_colour_palette_filename() const
+		{
+			return d_strain_rate_style_colour_palette_filename;
+		}
+
+		/**
+		 * Return the strain rate style colour palette.
+		 *
+		 * Returns none if no colour palette has been set.
+		 */
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
+		get_strain_rate_style_colour_palette() const
+		{
+			return d_strain_rate_style_colour_palette;
+		}
+
+		/** 
+		 * Set the strain rate style palette.
+		 */
+		void
+		set_strain_rate_style_colour_palette(
+				const QString &filename,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
+
+		/**
+		 * Use the default strain rate style colour palette.
+		*/
+		void
+		use_default_strain_rate_style_colour_palette();
+
+
 		bool
 		show_segment_velocity() const
 		{
@@ -369,6 +427,14 @@ namespace GPlatesPresentation
 		//! The second invariant colour palette, whether set explicitly as loaded from a file, or auto-generated.
 		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_second_invariant_colour_palette;
 
+		//! Strain rate style parameters.
+		double d_min_strain_rate_style;
+		double d_max_strain_rate_style;
+		//! The strain rate style colour palette filename (or empty if using default palette).
+		QString d_strain_rate_style_colour_palette_filename;
+		//! The strain rate style colour palette, whether set explicitly as loaded from a file, or auto-generated.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> d_strain_rate_style_colour_palette;
+
 		// The various options to show or hide.
 		bool d_show_segment_velocity;
 		bool d_fill_rigid_blocks;
@@ -384,6 +450,9 @@ namespace GPlatesPresentation
 
 		void
 		create_default_second_invariant_colour_palette();
+
+		void
+		create_default_strain_rate_style_colour_palette();
 	};
 
 
