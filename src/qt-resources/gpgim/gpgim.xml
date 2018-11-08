@@ -2069,6 +2069,18 @@
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
 		
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
+			<Name>gpml:DeformingRegionEdge</Name>
+			<Description>Edge of a deforming region that is not a plate boundary.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
+			<Comment>This classification helps to post-process and remove feature of this type when measuring plate boundary lengths in a deforming topological dataset. Currently UnclassifiedFeature is being used for that and we would prefer to have a specific thing.</Comment>
+		</FeatureClass>
+		
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<!--
 				FIXME: Do we need this feature type ?
