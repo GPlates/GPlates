@@ -77,7 +77,8 @@ namespace GPlatesFileIO
 					boost::optional<const GPlatesFileIO::DeformationExport::PrincipalStrainOptions &> principal_strain_options,
 					boost::optional<const double &> dilatation_strain,
 					boost::optional<const double &> dilatation_strain_rate,
-					boost::optional<const double &> second_invariant_strain_rate)
+					boost::optional<const double &> second_invariant_strain_rate,
+					boost::optional<const double &> strain_rate_style)
 			{
 				/*
 				 * Write the complete line to a string stream first, so that in case an exception
@@ -189,6 +190,18 @@ namespace GPlatesFileIO
 				}
 
 				//
+				// Output strain rate style.
+				//
+
+				if (strain_rate_style)
+				{
+					// Don't format as fixed notation.
+					gmt_line << " "
+							<< std::setw(SCALAR_FIELDWIDTH) << std::scientific << std::setprecision(SCALAR_PRECISION)
+							<< strain_rate_style.get();
+				}
+
+				//
 				// Output the final line.
 				//
 
@@ -208,7 +221,8 @@ namespace GPlatesFileIO
 					boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 					bool include_dilatation_strain,
 					bool include_dilatation_strain_rate,
-					bool include_second_invariant_strain_rate)
+					bool include_second_invariant_strain_rate,
+					bool include_strain_rate_style)
 			{
 				//
 				// Print the feature header.
@@ -315,7 +329,8 @@ namespace GPlatesFileIO
 				// Only retrieve strain rates if needed.
 				boost::optional<point_deformation_strain_rate_seq_type &> deformation_strain_rates_option;
 				if (include_dilatation_strain_rate ||
-					include_second_invariant_strain_rate)
+					include_second_invariant_strain_rate ||
+					include_strain_rate_style)
 				{
 					deformation_strain_rates_option = deformation_strain_rates;
 				}
@@ -344,7 +359,8 @@ namespace GPlatesFileIO
 				}
 
 				if (include_dilatation_strain_rate ||
-					include_second_invariant_strain_rate)
+					include_second_invariant_strain_rate ||
+					include_strain_rate_style)
 				{
 					// The number of domain points should match the number of deformation strain rates.
 					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -400,6 +416,18 @@ namespace GPlatesFileIO
 					}
 				}
 
+				boost::optional< std::vector<double> > strain_rate_styles;
+				if (include_strain_rate_style)
+				{
+					strain_rate_styles = std::vector<double>();
+
+					strain_rate_styles->reserve(deformation_strain_rates.size());
+					for (unsigned int n = 0; n < deformation_strain_rates.size(); ++n)
+					{
+						strain_rate_styles->push_back(deformation_strain_rates[n].get_strain_rate_style());
+					}
+				}
+
 				point_seq_type::const_iterator domain_iter = deformed_domain_points.begin();
 				point_seq_type::const_iterator domain_end = deformed_domain_points.end();
 				for (unsigned int index = 0; domain_iter != domain_end; ++domain_iter, ++index)
@@ -432,6 +460,12 @@ namespace GPlatesFileIO
 						second_invariant_strain_rate = second_invariant_strain_rates.get()[index];
 					}
 
+					boost::optional<const double &> strain_rate_style;
+					if (include_strain_rate_style)
+					{
+						strain_rate_style = strain_rate_styles.get()[index];
+					}
+
 					print_gmt_deformation_line(
 							output_stream,
 							domain_point,
@@ -440,7 +474,8 @@ namespace GPlatesFileIO
 							principal_strain_options,
 							dilatation_strain,
 							dilatation_strain_rate,
-							second_invariant_strain_rate);
+							second_invariant_strain_rate,
+							strain_rate_style);
 				}
 			}
 		}
@@ -459,7 +494,8 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 		boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
-		bool include_second_invariant_strain_rate)
+		bool include_second_invariant_strain_rate,
+		bool include_strain_rate_style)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -532,6 +568,10 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 	{
 		output_stream << " TotalStrainRate";
 	}
+	if (include_strain_rate_style)
+	{
+		output_stream << " StrainRateStyle";
+	}
 	output_stream << "\n";
 
 	output_stream << ">\n";
@@ -566,7 +606,8 @@ GPlatesFileIO::GMTFormatDeformationExport::export_deformation(
 					include_principal_strain,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
-					include_second_invariant_strain_rate);
+					include_second_invariant_strain_rate,
+					include_strain_rate_style);
 		}
 	}
 }

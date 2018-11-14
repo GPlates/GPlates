@@ -101,129 +101,183 @@ namespace GPlatesFileIO
 					// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
 					bool wrap_geometries_to_the_dateline_ = true,
 
-					// Avoid sub-segment geometry duplication by removing overlap.
-					bool non_overlapping_sub_segments_ = true,
+					//
+					// all polygon options
+					//
 
+					bool export_plate_polygons_to_all_polygons_file_        = false,
+					bool export_network_polygons_to_all_polygons_file_      = false,
+					bool export_slab_polygons_to_all_polygons_file_         = false,
+
+					bool export_plate_boundaries_to_all_boundaries_file_    = false,
+					bool export_network_boundaries_to_all_boundaries_file_  = false,
+					bool export_slab_boundaries_to_all_boundaries_file_     = false,
+
+					//
 					// plate polygon options
-					bool export_individual_plate_polygon_files_         = false,
-					bool export_all_plate_polygons_to_a_single_file_    = false,
-					bool export_plate_polygon_subsegments_to_lines_     = false,
+					//
 
-					bool export_ridge_transforms_    = false,
-					bool export_subductions_         = false,
-					bool export_left_subductions_    = false,
-					bool export_right_subductions_   = false,
+					bool export_individual_plate_polygon_files_      = false,
+					bool export_plate_polygons_to_a_single_file_     = false,
 
+					bool export_plate_boundaries_                    = false,
+
+					//
 					// network polygon options 
+					//
+
 					bool export_individual_network_polygon_files_       = false,
-					bool export_all_network_polygons_to_a_single_file_  = false,
-					bool export_network_polygon_subsegments_to_lines_   = false,
+					bool export_network_polygons_to_a_single_file_      = false,
 
-					bool export_network_ridge_transforms_  = false,
-					bool export_network_subductions_       = false,
-					bool export_network_left_subductions_  = false,
-					bool export_network_right_subductions_ = false,
+					bool export_network_boundaries_                     = false,
 
+					//
 					// slab polygon options 
+					//
+
 					bool export_individual_slab_polygon_files_      = false,
-					bool export_all_slab_polygons_to_a_single_file_ = false,
-					bool export_slab_polygon_subsegments_to_lines_  = false,
+					bool export_slab_polygons_to_a_single_file_     = false,
 
-					bool export_slab_edge_leading_       = false,
-					bool export_slab_edge_leading_left_  = false,
-					bool export_slab_edge_leading_right_ = false,
-					bool export_slab_edge_trench_        = false,
-					bool export_slab_edge_side_          = false,
+					bool export_slab_boundaries_                    = false,
 
-					// common place holder 
-					const QString &placeholder_lines_ = "lines",
+					//
+					// all polygon placeholders
+					//
 
+					const QString &placeholder_all_polygons_                     = "polygons",
+
+					const QString &placeholder_all_boundaries_                   = "boundaries",
+					const QString &placeholder_all_boundaries_ridge_transform_   = "ridge_transform_boundaries",
+					const QString &placeholder_all_boundaries_subduction_        = "subduction_boundaries",
+					const QString &placeholder_all_boundaries_subduction_left_   = "subduction_boundaries_sL",
+					const QString &placeholder_all_boundaries_subduction_right_  = "subduction_boundaries_sR",
+
+					//
 					// plate polygon place holders
-					const QString &placeholder_platepolygons_ = "platepolygons",
+					//
 
-					const QString &placeholder_ridge_transforms_ = "ridge_transform_boundaries",
-					const QString &placeholder_subductions_ = "subduction_boundaries",
-					const QString &placeholder_left_subductions_ = "subduction_boundaries_sL",
-					const QString &placeholder_right_subductions_ = "subduction_boundaries_sR",
+					const QString &placeholder_plate_polygons_                     = "platepolygons",
 
+					const QString &placeholder_plate_boundaries_                   = "plate_boundaries",
+					const QString &placeholder_plate_boundaries_ridge_transform_   = "plate_ridge_transform_boundaries",
+					const QString &placeholder_plate_boundaries_subduction_        = "plate_subduction_boundaries",
+					const QString &placeholder_plate_boundaries_subduction_left_   = "plate_subduction_boundaries_sL",
+					const QString &placeholder_plate_boundaries_subduction_right_  = "plate_subduction_boundaries_sR",
+
+					//
 					// network polygon place holders
-					const QString &placeholder_networks_ = "network_polygons",
+					//
 
-					const QString &placeholder_network_ridge_transforms_ = "network_ridge_transform_boundaries",
-					const QString &placeholder_network_subductions_ = "network_subduction_boundaries",
-					const QString &placeholder_network_left_subductions_ = "network_subduction_boundaries_sL",
-					const QString &placeholder_network_right_subductions_ = "network_subduction_boundaries_sR",
+					const QString &placeholder_networks_                             = "network_polygons",
 
+					const QString &placeholder_network_boundaries_                   = "network_boundaries",
+					const QString &placeholder_network_boundaries_ridge_transform_   = "network_ridge_transform_boundaries",
+					const QString &placeholder_network_boundaries_subduction_        = "network_subduction_boundaries",
+					const QString &placeholder_network_boundaries_subduction_left_   = "network_subduction_boundaries_sL",
+					const QString &placeholder_network_boundaries_subduction_right_  = "network_subduction_boundaries_sR",
+
+					//
 					// slab polygon place holders 
-					const QString &placeholder_slab_polygons_ = "slab_polygons",
+					//
 
-					const QString &placeholder_slab_edge_leading_ = "slab_edges_leading",
-					const QString &placeholder_slab_edge_leading_left_ = "slab_edges_leading_sL",
-					const QString &placeholder_slab_edge_leading_right_ = "slab_edges_leading_sR",
-					const QString &placeholder_slab_edge_trench_ = "slab_edges_trench",
-					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
+					const QString &placeholder_slab_polygons_             = "slab_polygons",
+
+					const QString &placeholder_slab_edges_                = "slab_edges",
+					const QString &placeholder_slab_edges_leading_        = "slab_edges_leading",
+					const QString &placeholder_slab_edges_leading_left_   = "slab_edges_leading_sL",
+					const QString &placeholder_slab_edges_leading_right_  = "slab_edges_leading_sR",
+					const QString &placeholder_slab_edges_trench_         = "slab_edges_trench",
+					const QString &placeholder_slab_edges_side_           = "slab_edges_side") :
 
 				wrap_geometries_to_the_dateline(wrap_geometries_to_the_dateline_),
-				non_overlapping_sub_segments(non_overlapping_sub_segments_),
 
+				//
+				// all polygon options
+				//
+
+				export_plate_polygons_to_all_polygons_file(export_plate_polygons_to_all_polygons_file_),
+				export_network_polygons_to_all_polygons_file(export_network_polygons_to_all_polygons_file_),
+				export_slab_polygons_to_all_polygons_file(export_slab_polygons_to_all_polygons_file_),
+
+				export_plate_boundaries_to_all_boundaries_file(export_plate_boundaries_to_all_boundaries_file_),
+				export_network_boundaries_to_all_boundaries_file(export_network_boundaries_to_all_boundaries_file_),
+				export_slab_boundaries_to_all_boundaries_file(export_slab_boundaries_to_all_boundaries_file_),
+
+				//
 				// plate polygon options
+				//
+
 				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
-				export_all_plate_polygons_to_a_single_file(export_all_plate_polygons_to_a_single_file_),
-				export_plate_polygon_subsegments_to_lines(export_plate_polygon_subsegments_to_lines_),
+				export_plate_polygons_to_a_single_file(export_plate_polygons_to_a_single_file_),
 
-				export_ridge_transforms(export_ridge_transforms_),
-				export_subductions(export_subductions_),
-				export_left_subductions(export_left_subductions_),
-				export_right_subductions(export_right_subductions_),
+				export_plate_boundaries(export_plate_boundaries_),
 
+				//
 				// network options
+				//
+
 				export_individual_network_polygon_files(export_individual_network_polygon_files_),
-				export_all_network_polygons_to_a_single_file(export_all_network_polygons_to_a_single_file_),
-				export_network_polygon_subsegments_to_lines(export_network_polygon_subsegments_to_lines_),
+				export_network_polygons_to_a_single_file(export_network_polygons_to_a_single_file_),
 
-				export_network_ridge_transforms(export_network_ridge_transforms_),
-				export_network_subductions(export_network_subductions_),
-				export_network_left_subductions(export_network_left_subductions_),
-				export_network_right_subductions(export_network_right_subductions_),
+				export_network_boundaries(export_network_boundaries_),
 
+				//
 				// slab polygon options 
+				//
+
 				export_individual_slab_polygon_files(export_individual_slab_polygon_files_),
-				export_all_slab_polygons_to_a_single_file(export_all_slab_polygons_to_a_single_file_),
-				export_slab_polygon_subsegments_to_lines(export_slab_polygon_subsegments_to_lines_),
+				export_slab_polygons_to_a_single_file(export_slab_polygons_to_a_single_file_),
 
-				export_slab_edge_leading(export_slab_edge_leading_),
-				export_slab_edge_leading_left(export_slab_edge_leading_left_),
-				export_slab_edge_leading_right(export_slab_edge_leading_right_),
-				export_slab_edge_trench(export_slab_edge_trench_),
-				export_slab_edge_side(export_slab_edge_side_),
+				export_slab_boundaries(export_slab_boundaries_),
 
-				// common place holder for all sub segment lines
-				placeholder_lines(placeholder_lines_),
+				//
+				// all polygon placeholders
+				//
 
+				placeholder_all_polygons(placeholder_all_polygons_),
+
+				placeholder_all_boundaries(placeholder_all_boundaries_),
+				placeholder_all_boundaries_ridge_transform(placeholder_all_boundaries_ridge_transform_),
+				placeholder_all_boundaries_subduction(placeholder_all_boundaries_subduction_),
+				placeholder_all_boundaries_subduction_left(placeholder_all_boundaries_subduction_left_),
+				placeholder_all_boundaries_subduction_right(placeholder_all_boundaries_subduction_right_),
+
+				//
 				// plate polygon placeholders
-				placeholder_platepolygons(placeholder_platepolygons_),
+				//
 
-				placeholder_ridge_transforms(placeholder_ridge_transforms_),
-				placeholder_subductions(placeholder_subductions_),
-				placeholder_left_subductions(placeholder_left_subductions_),
-				placeholder_right_subductions(placeholder_right_subductions_),
+				placeholder_plate_polygons(placeholder_plate_polygons_),
 
+				placeholder_plate_boundaries(placeholder_plate_boundaries_),
+				placeholder_plate_boundaries_ridge_transform(placeholder_plate_boundaries_ridge_transform_),
+				placeholder_plate_boundaries_subduction(placeholder_plate_boundaries_subduction_),
+				placeholder_plate_boundaries_subduction_left(placeholder_plate_boundaries_subduction_left_),
+				placeholder_plate_boundaries_subduction_right(placeholder_plate_boundaries_subduction_right_),
+
+				//
 				// network polygon placeholders
+				//
+
 				placeholder_networks(placeholder_networks_),
 
-				placeholder_network_ridge_transforms(placeholder_network_ridge_transforms_),
-				placeholder_network_subductions(placeholder_network_subductions_),
-				placeholder_network_left_subductions(placeholder_network_left_subductions_),
-				placeholder_network_right_subductions(placeholder_network_right_subductions_),
+				placeholder_network_boundaries(placeholder_network_boundaries_),
+				placeholder_network_boundaries_ridge_transform(placeholder_network_boundaries_ridge_transform_),
+				placeholder_network_boundaries_subduction(placeholder_network_boundaries_subduction_),
+				placeholder_network_boundaries_subduction_left(placeholder_network_boundaries_subduction_left_),
+				placeholder_network_boundaries_subduction_right(placeholder_network_boundaries_subduction_right_),
 
+				//
 				// slab polygon placeholders
+				//
+
 				placeholder_slab_polygons(placeholder_slab_polygons_),
 
-				placeholder_slab_edge_leading(placeholder_slab_edge_leading_),
-				placeholder_slab_edge_leading_left(placeholder_slab_edge_leading_left_),
-				placeholder_slab_edge_leading_right(placeholder_slab_edge_leading_right_),
-				placeholder_slab_edge_trench(placeholder_slab_edge_trench_),
-				placeholder_slab_edge_side(placeholder_slab_edge_side_)
+				placeholder_slab_edges(placeholder_slab_edges_),
+				placeholder_slab_edges_leading(placeholder_slab_edges_leading_),
+				placeholder_slab_edges_leading_left(placeholder_slab_edges_leading_left_),
+				placeholder_slab_edges_leading_right(placeholder_slab_edges_leading_right_),
+				placeholder_slab_edges_trench(placeholder_slab_edges_trench_),
+				placeholder_slab_edges_side(placeholder_slab_edges_side_)
 
 			{  }
 
@@ -231,68 +285,93 @@ namespace GPlatesFileIO
 			// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
 			bool wrap_geometries_to_the_dateline;
 
-			// Avoid sub-segment geometry duplication by removing overlap.
-			bool non_overlapping_sub_segments;
+			//
+			// all polygon options 
+			//
 
+			bool export_plate_polygons_to_all_polygons_file;
+			bool export_network_polygons_to_all_polygons_file;
+			bool export_slab_polygons_to_all_polygons_file;
+
+			bool export_plate_boundaries_to_all_boundaries_file;
+			bool export_network_boundaries_to_all_boundaries_file;
+			bool export_slab_boundaries_to_all_boundaries_file;
+
+			//
 			// plate polygon options 
+			//
+
 			bool export_individual_plate_polygon_files;
-			bool export_all_plate_polygons_to_a_single_file;
-			bool export_plate_polygon_subsegments_to_lines;
+			bool export_plate_polygons_to_a_single_file;
 
-			bool export_ridge_transforms;
-			bool export_subductions;
-			bool export_left_subductions;
-			bool export_right_subductions;
+			bool export_plate_boundaries;
 
+			//
 			// network polygon options 
+			//
+
 			bool export_individual_network_polygon_files;
-			bool export_all_network_polygons_to_a_single_file;
-			bool export_network_polygon_subsegments_to_lines;
+			bool export_network_polygons_to_a_single_file;
 
-			bool export_network_ridge_transforms;
-			bool export_network_subductions;
-			bool export_network_left_subductions;
-			bool export_network_right_subductions;
+			bool export_network_boundaries;
 
+			//
 			// slab polygon options 
+			//
+
 			bool export_individual_slab_polygon_files;
-			bool export_all_slab_polygons_to_a_single_file;
-			bool export_slab_polygon_subsegments_to_lines;
+			bool export_slab_polygons_to_a_single_file;
 
-			bool export_slab_edge_leading;
-			bool export_slab_edge_leading_left;
-			bool export_slab_edge_leading_right;
-			bool export_slab_edge_trench;
-			bool export_slab_edge_side;
+			bool export_slab_boundaries;
 
-			// common place holder for all sub segment lines file 
-			// Depends on 
-			// @a export_plate_polygon_subsegments_to_lines and
-			// @a export_slab_polygon_subsegments_to_lines and
-			// @a export_network_polygon_subsegments_to_lines 
-			QString placeholder_lines;
+			//
+			// all polygon place holders 
+			//
+			// 
+			QString placeholder_all_polygons;
 
+			QString placeholder_all_boundaries;
+			QString placeholder_all_boundaries_ridge_transform;
+			QString placeholder_all_boundaries_subduction;
+			QString placeholder_all_boundaries_subduction_left;
+			QString placeholder_all_boundaries_subduction_right;
+
+			//
 			// plate polygon place holders 
-			QString placeholder_platepolygons;
-			QString placeholder_ridge_transforms;
-			QString placeholder_subductions;
-			QString placeholder_left_subductions;
-			QString placeholder_right_subductions;
+			//
 
+			QString placeholder_plate_polygons;
+
+			QString placeholder_plate_boundaries;
+			QString placeholder_plate_boundaries_ridge_transform;
+			QString placeholder_plate_boundaries_subduction;
+			QString placeholder_plate_boundaries_subduction_left;
+			QString placeholder_plate_boundaries_subduction_right;
+
+			//
 			// network placeholder string.
-			QString placeholder_networks;
-			QString placeholder_network_ridge_transforms;
-			QString placeholder_network_subductions;
-			QString placeholder_network_left_subductions;
-			QString placeholder_network_right_subductions;
+			//
 
+			QString placeholder_networks;
+
+			QString placeholder_network_boundaries;
+			QString placeholder_network_boundaries_ridge_transform;
+			QString placeholder_network_boundaries_subduction;
+			QString placeholder_network_boundaries_subduction_left;
+			QString placeholder_network_boundaries_subduction_right;
+
+			//
 			// slab polygon subsegments placeholder strings.
+			//
+
 			QString placeholder_slab_polygons;
-			QString placeholder_slab_edge_leading;
-			QString placeholder_slab_edge_leading_left;
-			QString placeholder_slab_edge_leading_right;
-			QString placeholder_slab_edge_trench;
-			QString placeholder_slab_edge_side;
+
+			QString placeholder_slab_edges;
+			QString placeholder_slab_edges_leading;
+			QString placeholder_slab_edges_leading_left;
+			QString placeholder_slab_edges_leading_right;
+			QString placeholder_slab_edges_trench;
+			QString placeholder_slab_edges_side;
 		
 		};
 

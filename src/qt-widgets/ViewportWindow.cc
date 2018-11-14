@@ -115,6 +115,7 @@
 #include "gui/GuiDebug.h"
 #include "gui/ImportMenu.h"
 #include "gui/PythonManager.h"
+#include "gui/RenderSettings.h"
 #include "gui/SessionMenu.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"
@@ -395,11 +396,18 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Synchronise the "Show X Features" menu items with RenderSettings.
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
-	action_Show_Point_Features->setChecked(render_settings.show_points());
-	action_Show_Line_Features->setChecked(render_settings.show_lines());
-	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
-	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
-	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Static_Points->setChecked(render_settings.show_static_points());
+	action_Show_Static_Lines->setChecked(render_settings.show_static_lines());
+	action_Show_Static_Polygons->setChecked(render_settings.show_static_polygons());
+	action_Show_Static_Multipoints->setChecked(render_settings.show_static_multipoints());
+	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
+	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
+	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
+	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
+	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
+	action_Show_Rasters->setChecked(render_settings.show_rasters());
+	action_Show_3D_Scalar_Fields->setChecked(render_settings.show_3d_scalar_fields());
+	action_Show_Scalar_Coverages->setChecked(render_settings.show_scalar_coverages());
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
@@ -722,16 +730,30 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
 			this, SLOT(enable_stars_display()));
 	// ----
-	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
-			this, SLOT(enable_point_display()));
-	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
-			this, SLOT(enable_line_display()));
-	QObject::connect(action_Show_Polygon_Features, SIGNAL(triggered()),
-			this, SLOT(enable_polygon_display()));
-	QObject::connect(action_Show_Multipoint_Features, SIGNAL(triggered()),
-			this, SLOT(enable_multipoint_display()));
-	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
-			this, SLOT(enable_arrows_display()));
+	QObject::connect(action_Show_Static_Points, SIGNAL(triggered()),
+			this, SLOT(enable_static_point_display()));
+	QObject::connect(action_Show_Static_Lines, SIGNAL(triggered()),
+			this, SLOT(enable_static_line_display()));
+	QObject::connect(action_Show_Static_Polygons, SIGNAL(triggered()),
+			this, SLOT(enable_static_polygon_display()));
+	QObject::connect(action_Show_Static_Multipoints, SIGNAL(triggered()),
+			this, SLOT(enable_static_multipoint_display()));
+	QObject::connect(action_Show_Velocity_Arrows, SIGNAL(triggered()),
+			this, SLOT(enable_velocity_arrow_display()));
+	QObject::connect(action_Show_Topological_Sections, SIGNAL(triggered()),
+			this, SLOT(enable_topological_section_display()));
+	QObject::connect(action_Show_Topological_Lines, SIGNAL(triggered()),
+			this, SLOT(enable_topological_line_display()));
+	QObject::connect(action_Show_Topological_Polygons, SIGNAL(triggered()),
+			this, SLOT(enable_topological_polygon_display()));
+	QObject::connect(action_Show_Topological_Networks, SIGNAL(triggered()),
+			this, SLOT(enable_topological_network_display()));
+	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
+			this, SLOT(enable_raster_display()));
+	QObject::connect(action_Show_3D_Scalar_Fields, SIGNAL(triggered()),
+			this, SLOT(enable_3d_scalar_field_display()));
+	QObject::connect(action_Show_Scalar_Coverages, SIGNAL(triggered()),
+			this, SLOT(enable_scalar_coverage_display()));
 	// Also update the GUI when the RenderSettings change.
 	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
 			this, SLOT(handle_render_settings_changed()));
@@ -772,8 +794,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 	QObject::connect(action_Generate_LatitudeLongitude_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_lat_lon_dialog()));
-	QObject::connect(action_Generate_Crustal_Thickness_Points, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_generate_crustal_thickness_points_dialog()));
+	QObject::connect(action_Generate_Deforming_Mesh_Points, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_generate_deforming_mesh_points_dialog()));
 }
 
 
@@ -1303,41 +1325,90 @@ GPlatesQtWidgets::ViewportWindow::dropEvent(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_point_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_point_display()
 {
-	get_view_state().get_render_settings().set_show_points(
-			action_Show_Point_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_points(
+			action_Show_Static_Points->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_line_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_line_display()
 {
-	get_view_state().get_render_settings().set_show_lines(
-			action_Show_Line_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_lines(
+			action_Show_Static_Lines->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_polygon_display()
 {
-	get_view_state().get_render_settings().set_show_polygons(
-			action_Show_Polygon_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_polygons(
+			action_Show_Static_Polygons->isChecked());
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
+GPlatesQtWidgets::ViewportWindow::enable_static_multipoint_display()
 {
-	get_view_state().get_render_settings().set_show_multipoints(
-			action_Show_Multipoint_Features->isChecked());
+	get_view_state().get_render_settings().set_show_static_multipoints(
+			action_Show_Static_Multipoints->isChecked());
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
+GPlatesQtWidgets::ViewportWindow::enable_velocity_arrow_display()
 {
-	get_view_state().get_render_settings().set_show_arrows(
-			action_Show_Arrow_Decorations->isChecked());
+	get_view_state().get_render_settings().set_show_velocity_arrows(
+			action_Show_Velocity_Arrows->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_section_display()
+{
+	get_view_state().get_render_settings().set_show_topological_sections(
+			action_Show_Topological_Sections->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_line_display()
+{
+	get_view_state().get_render_settings().set_show_topological_lines(
+			action_Show_Topological_Lines->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_polygon_display()
+{
+	get_view_state().get_render_settings().set_show_topological_polygons(
+			action_Show_Topological_Polygons->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topological_network_display()
+{
+	get_view_state().get_render_settings().set_show_topological_networks(
+			action_Show_Topological_Networks->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_raster_display()
+{
+	get_view_state().get_render_settings().set_show_rasters(
+			action_Show_Rasters->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_3d_scalar_field_display()
+{
+	get_view_state().get_render_settings().set_show_3d_scalar_fields(
+			action_Show_3D_Scalar_Fields->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_scalar_coverage_display()
+{
+	get_view_state().get_render_settings().set_show_scalar_coverages(
+			action_Show_Scalar_Coverages->isChecked());
 }
 
 void
@@ -1347,11 +1418,18 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 
 	// Note: Calling 'setChecked()' does not result in the QAction 'triggered' signal so
 	// we don't need to worry about infinite recursion.
-	action_Show_Point_Features->setChecked(render_settings.show_points());
-	action_Show_Line_Features->setChecked(render_settings.show_lines());
-	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
-	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
-	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Static_Points->setChecked(render_settings.show_static_points());
+	action_Show_Static_Lines->setChecked(render_settings.show_static_lines());
+	action_Show_Static_Polygons->setChecked(render_settings.show_static_polygons());
+	action_Show_Static_Multipoints->setChecked(render_settings.show_static_multipoints());
+	action_Show_Velocity_Arrows->setChecked(render_settings.show_velocity_arrows());
+	action_Show_Topological_Sections->setChecked(render_settings.show_topological_sections());
+	action_Show_Topological_Lines->setChecked(render_settings.show_topological_lines());
+	action_Show_Topological_Polygons->setChecked(render_settings.show_topological_polygons());
+	action_Show_Topological_Networks->setChecked(render_settings.show_topological_networks());
+	action_Show_Rasters->setChecked(render_settings.show_rasters());
+	action_Show_3D_Scalar_Fields->setChecked(render_settings.show_3d_scalar_fields());
+	action_Show_Scalar_Coverages->setChecked(render_settings.show_scalar_coverages());
 }
 
 void

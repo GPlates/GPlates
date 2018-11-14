@@ -100,8 +100,10 @@ namespace
 			"<html><body>\n"
 			"<p>The network triangulation is coloured with <i>use draw style</i> by default. "
 			"This colours the network triangulation and any interior rigid blocks using the colour scheme selected for the layer.</p>"
-			"<p>Alternatively the network triangulation can be coloured using <i>dilatation strain rate</i> or "
-			"<i>second invariant strain rate</i> and a colour palette.</p>"
+			"<p>Alternatively the network triangulation can be coloured using <i>dilatation strain rate</i>, "
+			"<i>total strain rate</i> or <i>strain rate style</i> and a colour palette.</p>"
+			"<p><i>Strain rate style</i> is typically in the range [-1.0, 1.0] where -1.0 implies contraction, "
+			"1.0 implies extension and 0.0 implies strike-slip.</p>"
 			"</body></html>\n");
 
 	const QString HELP_TRIANGULATION_DRAW_MODE_DIALOG_TITLE =
@@ -156,6 +158,16 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 				tr("Default Palette"), 
 				this)),
 	d_second_invariant_colour_scale_widget(
+			new ColourScaleWidget(
+				view_state, 
+				viewport_window, 
+				this)),
+	d_strain_rate_style_palette_filename_lineedit(
+			new FriendlyLineEdit( 
+				QString(), 
+				tr("Default Palette"), 
+				this)),
+	d_strain_rate_style_colour_scale_widget(
 			new ColourScaleWidget(
 				view_state, 
 				viewport_window, 
@@ -236,6 +248,10 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	QObject::connect(
 			second_invariant_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_colour_mode_button(bool)));
+	strain_rate_style_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	QObject::connect(
+			strain_rate_style_radio_button, SIGNAL(toggled(bool)),
+			this, SLOT(handle_colour_mode_button(bool)));
 	default_draw_style_radio_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			default_draw_style_radio_button, SIGNAL(toggled(bool)),
@@ -299,6 +315,24 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	second_invariant_colour_scale_palette.setColor(QPalette::Window, Qt::white);
 	d_second_invariant_colour_scale_widget->setPalette(second_invariant_colour_scale_palette);
 
+	// Set up the strain rate style controls.
+	min_strain_rate_style_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	max_strain_rate_style_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	select_strain_rate_style_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_strain_rate_style_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	d_strain_rate_style_palette_filename_lineedit->setReadOnly(true);
+	QtWidgetUtils::add_widget_to_placeholder(
+		d_strain_rate_style_palette_filename_lineedit,
+		strain_rate_style_palette_filename_placeholder_widget);
+
+	// Set up the strain rate style colour scale.
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_strain_rate_style_colour_scale_widget,
+			strain_rate_style_colour_scale_placeholder_widget);
+	QPalette strain_rate_style_colour_scale_palette = d_strain_rate_style_colour_scale_widget->palette();
+	strain_rate_style_colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_strain_rate_style_colour_scale_widget->setPalette(strain_rate_style_colour_scale_palette);
+
 	QObject::connect(
 			segment_velocity_checkbox,
 			SIGNAL(clicked()),
@@ -348,6 +382,25 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_use_default_second_invariant_palette_button_clicked()));
+
+	QObject::connect(
+			min_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_min_strain_rate_style_spinbox_changed(double)));
+	QObject::connect(
+			max_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_max_strain_rate_style_spinbox_changed(double)));
+
+	QObject::connect(
+			select_strain_rate_style_palette_filename_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_select_strain_rate_style_palette_filename_button_clicked()));
+
+	QObject::connect(
+			use_default_strain_rate_style_palette_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_default_strain_rate_style_palette_button_clicked()));
 
 	fill_opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
@@ -508,6 +561,9 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 					second_invariant_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
 			QObject::disconnect(
+					strain_rate_style_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::disconnect(
 					default_draw_style_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
 			switch (params->get_triangulation_colour_mode())
@@ -517,6 +573,9 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 				break;
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE:
 				second_invariant_radio_button->setChecked(true);
+				break;
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE:
+				strain_rate_style_radio_button->setChecked(true);
 				break;
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 				default_draw_style_radio_button->setChecked(true);
@@ -530,6 +589,9 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 					this, SLOT(handle_colour_mode_button(bool)));
 			QObject::connect(
 					second_invariant_radio_button, SIGNAL(toggled(bool)),
+					this, SLOT(handle_colour_mode_button(bool)));
+			QObject::connect(
+					strain_rate_style_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_colour_mode_button(bool)));
 			QObject::connect(
 					default_draw_style_radio_button, SIGNAL(toggled(bool)),
@@ -689,6 +751,46 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			second_invariant_default_palette_controls->setVisible(
 					params->get_second_invariant_colour_palette_filename().isEmpty());
 
+			//
+			// Strain rate style.
+			//
+
+			// Populate the strain rate style palette filename.
+			d_strain_rate_style_palette_filename_lineedit->setText(params->get_strain_rate_style_colour_palette_filename());
+
+			QObject::disconnect(
+					min_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_strain_rate_style_spinbox_changed(double)));
+			QObject::disconnect(
+					max_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_strain_rate_style_spinbox_changed(double)));
+			// Set the strain rate style values.
+			min_strain_rate_style_spinbox->setValue(params->get_min_strain_rate_style());
+			max_strain_rate_style_spinbox->setValue(params->get_max_strain_rate_style());
+			QObject::connect(
+					min_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_min_strain_rate_style_spinbox_changed(double)));
+			QObject::connect(
+					max_strain_rate_style_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_max_strain_rate_style_spinbox_changed(double)));
+
+			if (params->get_strain_rate_style_colour_palette())
+			{
+				d_strain_rate_style_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create<double>(
+								params->get_strain_rate_style_colour_palette().get()));
+			}
+			else
+			{
+				d_strain_rate_style_colour_scale_widget->populate(
+						GPlatesGui::RasterColourPalette::create());
+			}
+
+			// Only show default strain rate style palette controls when not using a user-defined palette.
+			strain_rate_style_default_palette_controls->setVisible(
+					params->get_strain_rate_style_colour_palette_filename().isEmpty());
+
+
 			// Setting the values in the spin boxes will emit signals if the value changes
 			// which can lead to an infinitely recursive decent.
 			// To avoid this we temporarily disconnect their signals.
@@ -718,16 +820,25 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE:
 				dilatation_group_box->show();
 				second_invariant_group_box->hide();
+				strain_rate_style_group_box->hide();
 				break;
 
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE:
 				second_invariant_group_box->show();
 				dilatation_group_box->hide();
+				strain_rate_style_group_box->hide();
+				break;
+
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE:
+				strain_rate_style_group_box->show();
+				dilatation_group_box->hide();
+				second_invariant_group_box->hide();
 				break;
 
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 				dilatation_group_box->hide();
 				second_invariant_group_box->hide();
+				strain_rate_style_group_box->hide();
 				break;
 
 			default:
@@ -925,6 +1036,11 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_colour_mode_
 				params->set_triangulation_colour_mode(
 						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE);
 			}
+			if (strain_rate_style_radio_button->isChecked())
+			{
+				params->set_triangulation_colour_mode(
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE);
+			}
 			if (default_draw_style_radio_button->isChecked())
 			{
 				params->set_triangulation_colour_mode(
@@ -1087,6 +1203,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_
 	}
 }
 
+
 void
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_min_abs_second_invariant_spinbox_changed(
 		double min_abs_second_invariant)
@@ -1195,6 +1312,117 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_
 		if (params)
 		{
 			params->use_default_second_invariant_colour_palette();
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_min_strain_rate_style_spinbox_changed(
+		double min_strain_rate_style)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			if (min_strain_rate_style > params->get_max_strain_rate_style())
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				min_strain_rate_style_spinbox->setValue(params->get_max_strain_rate_style());
+				return;
+			}
+
+			params->set_min_strain_rate_style(min_strain_rate_style);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_max_strain_rate_style_spinbox_changed(
+		double max_strain_rate_style)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			if (max_strain_rate_style < params->get_min_strain_rate_style())
+			{
+				// Setting the spinbox value will trigger this slot again so return after setting.
+				max_strain_rate_style_spinbox->setValue(params->get_min_strain_rate_style());
+				return;
+			}
+
+			params->set_max_strain_rate_style(max_strain_rate_style);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_strain_rate_style_palette_filename_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
+		if (palette_file_name.isEmpty())
+		{
+			return;
+		}
+
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
+
+		GPlatesFileIO::ReadErrorAccumulation cpt_read_errors;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+				GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+						palette_file_name,
+						// We only allow real-valued colour palettes since our data is real-valued...
+						false/*allow_integer_colour_palette*/,
+						cpt_read_errors);
+
+		// If we successfully read a real-valued colour palette.
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+				GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+		if (colour_palette)
+		{
+			params->set_strain_rate_style_colour_palette(palette_file_name, colour_palette.get());
+
+			d_strain_rate_style_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+
+		// Show any read errors.
+		if (cpt_read_errors.size() > 0)
+		{
+			d_viewport_window->handle_read_errors(cpt_read_errors);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_strain_rate_style_palette_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->use_default_strain_rate_style_colour_palette();
 		}
 	}
 }

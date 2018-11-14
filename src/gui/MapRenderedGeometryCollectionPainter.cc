@@ -45,13 +45,11 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		const RenderSettings &render_settings,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
-	d_render_settings(render_settings),
 	d_layer_painter(gl_visual_layers, map_projection),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
@@ -106,18 +104,11 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 	}
 
 	// Draw the current rendered geometry layer.
-	RenderSettings default_render_settings;
 	MapRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			d_map_projection,
 			rendered_geometry_layer,
 			d_gl_visual_layers,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			// If painting the reconstruction layer then use user-specified settings,
-			// otherwise the layer is for a canvas tool workflow and we should not hide its geometries...
-			(d_paint_params->d_main_rendered_layer_type ==
-				GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
-					? d_render_settings
-					: default_render_settings,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
 

@@ -52,7 +52,10 @@ GPlatesQtWidgets::PreferencesPaneView::PreferencesPaneView(
 	
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(checkbox_show_stars, prefs,
 			"view/show_stars", NULL);		// Not much point to a 'reset' button here.
-	
+
+	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
+			checkbox_show_topological_sections, prefs,
+			"view/geometry_visibility/show_topological_sections", NULL/*no reset button*/);
 }
 
 

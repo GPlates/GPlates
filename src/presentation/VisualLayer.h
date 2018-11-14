@@ -49,6 +49,11 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 }
 
+namespace GPlatesGui
+{
+	class RenderSettings;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryParameters;
@@ -58,6 +63,7 @@ namespace GPlatesPresentation
 {
 	class VisualLayerRegistry;
 	class VisualLayers;
+	class ViewState;
 
 	/**
 	 * Represents a layer that processes inputs (such as a feature collection)
@@ -91,12 +97,9 @@ namespace GPlatesPresentation
 		 * Constructor wraps a visual layer around @a layer created in @a ReconstructGraph.
 		 */
 		VisualLayer(
+				ViewState &view_state,
 				VisualLayers &visual_layers,
-				const VisualLayerRegistry &visual_layer_registry,
 				GPlatesAppLogic::Layer &layer,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
-				const GPlatesGui::symbol_map_type &symbol_map,
 				int layer_number);
 
 		/**
@@ -241,7 +244,9 @@ namespace GPlatesPresentation
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
+		const GPlatesGui::RenderSettings &d_render_settings;
 		const GPlatesGui::symbol_map_type &d_symbol_map;
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		/**
 		 * The reconstruct graph layer for which this is the counterpart in the

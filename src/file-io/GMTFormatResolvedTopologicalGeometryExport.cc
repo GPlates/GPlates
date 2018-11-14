@@ -228,18 +228,17 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		gmt_header.get_feature_header_lines(feature_ref, header_lines);
 
 		// Iterate through the sub-segments of the current section.
-		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &sub_segments =
-				section->get_shared_sub_segments();
-		std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>::const_iterator sub_segments_iter;
+		const GPlatesAppLogic::shared_sub_segment_seq_type &sub_segments = section->get_shared_sub_segments();
+		GPlatesAppLogic::shared_sub_segment_seq_type::const_iterator sub_segments_iter;
 		for (sub_segments_iter = sub_segments.begin(); sub_segments_iter != sub_segments.end(); ++sub_segments_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment = *sub_segments_iter;
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
 
 			// Print the header lines.
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
 
 			// Write the sub-segment geometry.
-			geom_exporter.export_geometry(sub_segment.get_geometry());
+			geom_exporter.export_geometry(sub_segment->get_shared_sub_segment_geometry());
 		}
 	}
 }

@@ -51,6 +51,9 @@ namespace GPlatesPresentation
 	/**
 	 * Stores the application state, the view state and ViewportWindow.
 	 *
+	 * NOTE: This class should not be used/included by any code at the appplication-logic level
+	 * (or lower such as model, property-values, math, file-io, scribe, utils).
+	 *
 	 * This is exposed in Python as the "Instance" class.
 	 */
 	class Application :

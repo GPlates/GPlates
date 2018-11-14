@@ -26,11 +26,19 @@
 #ifndef GPLATES_APP_LOGIC_TOPOLOGYINTERSECTIONS_H
 #define GPLATES_APP_LOGIC_TOPOLOGYINTERSECTIONS_H
 
+#include <utility>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/weak_ptr.hpp>
 
+#include "ResolvedSubSegmentRangeInSection.h"
+
+#include "maths/GeometryIntersect.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 
 namespace GPlatesAppLogic
@@ -51,14 +59,62 @@ namespace GPlatesAppLogic
 	 * This two-step procedure is followed in order to find the middle segment which
 	 * is the actual segment used for a resolved topological geometry.
 	 */
-	class TopologicalIntersections
+	class TopologicalIntersections :
+			public boost::enable_shared_from_this<TopologicalIntersections>
 	{
 	public:
+		typedef boost::shared_ptr<TopologicalIntersections> shared_ptr_type;
+		typedef boost::shared_ptr<const TopologicalIntersections> shared_ptr_to_const_type;
+
+		typedef boost::weak_ptr<TopologicalIntersections> weak_ptr_type;
+		typedef boost::weak_ptr<const TopologicalIntersections> weak_ptr_to_const_type;
+
+
 		/**
 		 * We initialise with the full section geometry.
+		 *
+		 * If a polygon, then only the exterior ring is used (as a polyline).
+		 *
+		 * If this section intersects both its neighbouring sections then @a reverse_hint will be ignored
+		 * (and a reverse flag determined by intersection processing will be used). If this section does
+		 * *not* intersect both its neighbouring sections then @a reverse_hint will be used.
 		 */
-		TopologicalIntersections(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry);
+		static
+		const shared_ptr_type
+		create(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
+				bool reverse_hint)
+		{
+			return shared_ptr_type(new TopologicalIntersections(section_geometry, reverse_hint));
+		}
+
+
+		/**
+		 * Set the reverse hint (if it cannot be set in the constructor, or if it needs to be changed).
+		 *
+		 * If this section intersects both its neighbouring sections then @a reverse_hint will be ignored
+		 * (and a reverse flag determined by intersection processing will be used). If this section does
+		 * *not* intersect both its neighbouring sections then @a reverse_hint will be used.
+		 */
+		void
+		set_reverse_hint(
+				bool reverse_hint)
+		{
+			d_reverse_hint = reverse_hint;
+		}
+
+
+		/**
+		 * Returns the section geometry.
+		 *
+		 * This is the geometry passed into the constructor, except for polygons where the geometry
+		 * is the exterior ring in the form of a polyline.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		get_section_geometry() const
+		{
+			return d_section_geometry;
+		}
 
 
 		/**
@@ -70,20 +126,11 @@ namespace GPlatesAppLogic
 		 * Ideally this is called on each section in a circular boundary section list ensuring
 		 * that each section gets intersected with both its neighbouring sections.
 		 *
-		 * If there were two or more intersections then only the chosen intersection is
-		 * returned - and this is reported as a user error.
-		 * See TopologyInternalUtils::intersect_topological_sections() for more details
-		 * regarding how the intersection point is chosen/handled.
-		 *
-		 * @a previous_section_reverse_hint is an optimisation hint that use the reverse
-		 * flag of the previous section to minimize the number of intersection tests needed.
-		 * This takes advantage of the iteration order in which sections are iterated
-		 * (from first section to last section).
+		 * If there were two or more intersections then only one is chosen.
 		 */
 		boost::optional<GPlatesMaths::PointOnSphere>
 		intersect_with_previous_section(
-				TopologicalIntersections &previous_section,
-				const bool previous_section_reverse_hint);
+				const shared_ptr_type &previous_section);
 
 
 		/**
@@ -109,43 +156,76 @@ namespace GPlatesAppLogic
 						// Optional second intersection
 						boost::optional<GPlatesMaths::PointOnSphere> > >
 		intersect_with_previous_section_allowing_two_intersections(
-				TopologicalIntersections &previous_section);
+				const shared_ptr_type &previous_section);
 
 
 		/**
 		 * Returns the reverse flag for this section.
 		 *
-		 * If this section intersected both its neighbouring sections then
-		 * @a reverse_hint will be ignored and a reverse flag determined by
+		 * If this section intersected both its neighbouring sections then the reverse hint
+		 * (passed in contructor) will be ignored and a reverse flag determined by
 		 * previous intersection processing will be returned.
 		 *
-		 * If this section did not intersect both its neighbouring sections then
-		 * @a reverse_hint will be passed straight back to the caller.
+		 * If this section did not intersect both its neighbouring sections then the reverse hint
+		 * (passed in contructor) will be passed straight back to the caller.
 		 * This is because the reverse flag was undetermined by intersection
-		 * processed and so the caller's flag is then respected.
+		 * processing and so the reverse hint is then respected.
 		 */
 		bool
-		get_reverse_flag(
-				bool reverse_hint) const;
+		get_reverse_flag() const;
 
 
 		/**
-		 * Returns the sub-segment that will contribute to a resolved topological geometry.
-		 *
-		 * The returned segment does not have reversal taken into account (it's the
-		 * unreversed geometry).
-		 *
-		 * The returned data is non-null since T-junctions, V-junctions and cases like
-		 * adjacent sections intersecting this section at the same point will all return
-		 * a point geometry (intersection point).
-		 *
-		 * @a reverse_hint is only used if this section has intersected exactly one of
-		 * its neighbouring sections and in this case it helps determine whether to
-		 * return the head or tail segment partitioned by that intersection.
+		 * Returns the sub-segment range (including optional start/end intersections) of the entire
+		 * section geometry that will contribute to a resolved topological geometry.
 		 */
+		ResolvedSubSegmentRangeInSection
+		get_sub_segment_range_in_section() const;
+
+
+		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		get_unreversed_sub_segment(
-				bool reverse_hint) const;
+		get_sub_segment_geometry(
+				bool include_rubber_band_points = true) const
+		{
+			return get_sub_segment_range_in_section().get_geometry(include_rubber_band_points);
+		}
+
+		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
+		void
+		get_sub_segment_points(
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+				bool include_rubber_band_points = true) const
+		{
+			get_sub_segment_range_in_section().get_geometry_points(geometry_points, include_rubber_band_points);
+		}
+
+		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
+		void
+		get_reversed_sub_segment_points(
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+				bool include_rubber_band_points = true) const
+		{
+			get_sub_segment_range_in_section()
+					.get_reversed_geometry_points(geometry_points, get_reverse_flag(), include_rubber_band_points);
+		}
+
+		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
+		std::pair<GPlatesMaths::PointOnSphere/*start point*/, GPlatesMaths::PointOnSphere/*end point*/>
+		get_sub_segment_end_points(
+				bool include_rubber_band_points = true) const
+		{
+			return get_sub_segment_range_in_section().get_end_points(include_rubber_band_points);
+		}
+
+		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
+		std::pair<GPlatesMaths::PointOnSphere/*start point*/, GPlatesMaths::PointOnSphere/*end point*/>
+		get_reversed_sub_segment_end_points(
+				bool include_rubber_band_points = true) const
+		{
+			return get_sub_segment_range_in_section()
+					.get_reversed_end_points(get_reverse_flag(), include_rubber_band_points);
+		}
 
 
 		/**
@@ -154,10 +234,8 @@ namespace GPlatesAppLogic
 		bool
 		only_intersects_previous_section() const
 		{
-			return d_num_neighbours_intersected == 1 &&
-					d_last_intersected_start_section;
+			return d_prev_intersection && !d_next_intersection;
 		}
-
 
 		/**
 		 * Returns true if this section only intersects the next section.
@@ -165,10 +243,8 @@ namespace GPlatesAppLogic
 		bool
 		only_intersects_next_section() const
 		{
-			return d_num_neighbours_intersected == 1 &&
-					!d_last_intersected_start_section;
+			return !d_prev_intersection && d_next_intersection;
 		}
-
 
 		/**
 		 * Returns true if this section intersects both its adjacent sections.
@@ -176,103 +252,115 @@ namespace GPlatesAppLogic
 		bool
 		intersects_previous_and_next_sections() const
 		{
-			return d_num_neighbours_intersected == 2;
+			return d_prev_intersection && d_next_intersection;
 		}
 
-		unsigned int 
-		get_num_neighbours_intersected() const
+		/**
+		 * Returns true if this section does not intersect either of its adjacent sections.
+		 */
+		bool 
+		does_not_intersect_previous_or_next_section() const
 		{
-			return d_num_neighbours_intersected;
+			return !d_prev_intersection && !d_next_intersection;
 		}
 
 	private:
+
 		/**
-		 * Keep track of where we are in the processing of intersections.
+		 * Type to emulate *segments* used in prior implementations.
+		 *
+		 * This is only used when two adjacent sections intersect at more than one position, in which case
+		 * it's used to choose the same intersection position as prior implementations.
+		 * The current implementation doesn't need *segments* (other than for backward compatibility).
 		 */
-		enum State { STATE_INITIALISED, STATE_PROCESSING, STATE_FINISHED} d_state;
+		typedef std::pair<
+				boost::optional<ResolvedSubSegmentRangeInSection::Intersection>,
+				boost::optional<ResolvedSubSegmentRangeInSection::Intersection> >
+						backward_compatible_segment_type;
+
 
 		/**
 		 * The original section geometry before it was partitioned by intersections.
+		 *
+		 * Note: For polygons this is actually the exterior ring of the polygon (in the form of a polyline).
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_section_geometry;
 
 		/**
-		 * The head segment resulting from the most recent intersection with one
-		 * of this section's neighbours.
+		 * If this section intersects both its neighbouring sections then @a reverse_hint will be ignored
+		 * (and a reverse flag determined by intersection processing will be used). If this section does
+		 * *not* intersect both its neighbouring sections then @a reverse_hint will be used.
+		 */
+		bool d_reverse_hint;
+
+		/**
+		 * The section geometry as an intersectable polyline.
 		 *
-		 * This segment contains (starts with) the head point of the segment that
-		 * was intersected to produce the head segment and the tail segment.
+		 * This is none for points and multipoints; and the exterior ring for polygons.
 		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				d_head_segment;
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_intersectable_section_polyline;
 
 		/**
-		 * The tail segment resulting from the most recent intersection with one
-		 * of this section's neighbours.
-		 *
-		 * This segment contains (ends with) the tail point of the segment that
-		 * was intersected to produce the head segment and the tail segment.
+		 * The previous section that we were tested for intersection with.
 		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_tail_segment;
+		boost::optional<weak_ptr_type> d_prev_section;
 
 		/**
-		 * This is only useful in the context of a second intersection
-		 * if there was one - and in that context the question is:
-		 * Did the second intersection (with one neighbour) intersect
-		 * this section's head or tail segment (from the first
-		 * intersection with the other neighbour) ?
+		 * The next section that we were tested for intersection with.
 		 */
-		bool d_last_intersected_head_segment;
+		boost::optional<weak_ptr_type> d_next_section;
 
 		/**
-		 * This is only useful in the context of a second intersection
-		 * if there was one - and in that context the question is:
-		 * Did the second intersection (with one neighbour) intersect
-		 * this section's head or tail segment (from the first
-		 * intersection with the other neighbour) ?
+		 * Intersection with previous section, if any.
 		 */
-		bool d_last_intersected_start_section;
+		boost::optional<ResolvedSubSegmentRangeInSection::Intersection> d_prev_intersection;
 
 		/**
-		 * The number of neighbours that this section intersects.
+		 * Intersection with next section, if any.
 		 */
-		unsigned int d_num_neighbours_intersected;
+		boost::optional<ResolvedSubSegmentRangeInSection::Intersection> d_next_intersection;
 
-		/**
-		 * The sub-segment that will contribute to the resolved topological geometry.
-		 *
-		 * This is empty until two intersections have been processed on this section.
-		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_sub_segment;
 
-		/**
-		 * Should the section direction be reversed?
-		 *
-		 * This flag is only valid when this section has intersected both its neighbours
-		 * otherwise the caller will have to provide a reverse flag.
-		 */
-		boost::optional<bool> d_reverse_section;
-
+		TopologicalIntersections(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
+				bool reverse_hint);
 
 		boost::optional<GPlatesMaths::PointOnSphere>
-		intersect_with_previous_section(
-				TopologicalIntersections &previous_section,
-				bool intersect_prev_section_head,
-				bool intersect_this_section_head);
+		backward_compatible_multiple_intersections_with_previous_section(
+				const shared_ptr_type &previous_section,
+				const GPlatesMaths::GeometryIntersect::Graph &intersection_graph);
 
-		/**
-		 * Determines and sets the sub-segment but requires two intersections
-		 * to have been processed on this section.
-		 */
-		void
-		set_sub_segment();
+		boost::optional<GPlatesMaths::PointOnSphere>
+		backward_compatible_multiple_intersections_between_segments(
+				const shared_ptr_type &previous_section,
+				const GPlatesMaths::GeometryIntersect::Graph &intersection_graph,
+				const backward_compatible_segment_type &previous_segment,
+				const backward_compatible_segment_type &current_segment);
 
-		/**
-		 * Detect T-junctions and set the head or tail null segment to the intersection point.
-		 */
-		void
-		handle_t_or_v_junction(
-				const GPlatesMaths::PointOnSphere &intersection);
+
+		boost::optional<ResolvedSubSegmentRangeInSection::RubberBand>
+		get_rubber_band(
+				const boost::optional<weak_ptr_type> &adjacent_section,
+				bool adjacent_is_previous_section) const;
+
+
+		GPlatesMaths::PointOnSphere
+		set_intersection_with_previous_section(
+				const shared_ptr_type &previous_section,
+				const GPlatesMaths::GeometryIntersect::Intersection &intersection,
+				const ResolvedSubSegmentRangeInSection::Intersection &intersection_in_previous,
+				const ResolvedSubSegmentRangeInSection::Intersection &intersection_in_current)
+		{
+			previous_section->d_next_intersection = intersection_in_previous;
+			d_prev_intersection = intersection_in_current;
+
+			return intersection.position;
+		}
+
+		GPlatesMaths::PointOnSphere
+		set_intersection_with_previous_section(
+				const shared_ptr_type &previous_section,
+				const GPlatesMaths::GeometryIntersect::Intersection &intersection);
 	};
 }
 

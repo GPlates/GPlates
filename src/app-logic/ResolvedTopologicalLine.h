@@ -29,10 +29,12 @@
 #define GPLATES_APP_LOGIC_RESOLVEDTOPOLOGICALLINE_H
 
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "ReconstructionGeometryVisitor.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
+#include "ResolvedVertexSourceInfo.h"
 
 #include "maths/PolylineOnSphere.h"
 
@@ -148,6 +150,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the per-vertex source reconstructed feature geometries.
+		 *
+		 * Each vertex returned by @a resolved_topology_line references a source reconstructed feature geometry.
+		 * This method returns the same number of vertex sources as vertices returned by @a resolved_topology_line.
+		 */
+		const resolved_vertex_source_info_seq_type &
+		get_vertex_source_infos() const;
+
+
+		/**
 		 * Returns the internal sequence of @a SubSegment objects.
 		 */
 		const sub_segment_seq_type &
@@ -208,6 +220,15 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Each point in the resolved topological line can potentially reference a different
+		 * source reconstructed feature geometry.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_vertex_source_infos;
+
+
+		/**
 		 * Instantiate a resolved topological line with an optional reconstruction
 		 * plate ID and an optional time of formation.
 		 *
@@ -237,6 +258,9 @@ namespace GPlatesAppLogic
 			d_resolved_topology_line_ptr(resolved_topology_line_ptr),
 			d_sub_segment_seq(sub_segment_sequence_begin, sub_segment_sequence_end)
 		{  }
+
+		void
+		calc_vertex_source_infos() const;
 	};
 }
 

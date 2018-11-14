@@ -82,15 +82,15 @@ GPlatesAppLogic::ReconstructContext::ReconstructContext(
 
 void
 GPlatesAppLogic::ReconstructContext::set_features(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstructable_feature_collections)
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
+		boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref> &> reconstructable_features)
 {
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> reconstructable_features;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> features;
 
 	// Iterate over the feature collections and extract the list of features.
 	BOOST_FOREACH(
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-			reconstructable_feature_collections)
+			feature_collections)
 	{
 		if (!feature_collection_ref.is_valid())
 		{
@@ -106,25 +106,26 @@ GPlatesAppLogic::ReconstructContext::set_features(
 
 			if (feature_ref.is_valid())
 			{
-				reconstructable_features.push_back(feature_ref);
+				features.push_back(feature_ref);
 			}
 		}
 	}
 
-	set_features(reconstructable_features);
+	set_features(features, reconstructable_features);
 }
 
 
 void
 GPlatesAppLogic::ReconstructContext::set_features(
-		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features)
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+		boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref> &> reconstructable_features)
 {
 	// First remove all reconstruct method features and present day geometries.
 	d_reconstruct_method_feature_seq.clear();
 	d_cached_present_day_geometries = boost::none;
 
 	// Iterate over the features and assign default reconstruct methods to them.
-	BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &feature_ref, reconstructable_features)
+	BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &feature_ref, features)
 	{
 		if (!feature_ref.is_valid())
 		{
@@ -153,6 +154,12 @@ GPlatesAppLogic::ReconstructContext::set_features(
 		// Add the new reconstruct method to our list.
 		d_reconstruct_method_feature_seq.push_back(
 				ReconstructMethodFeature(feature_ref, reconstruct_method_type.get()));
+
+		// Keep track of which features are reconstructable, if requested by the caller.
+		if (reconstructable_features)
+		{
+			reconstructable_features->push_back(feature_ref);
+		}
 	}
 
 	// Re-initialise the context states since the features have changed.
@@ -229,7 +236,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_geometries(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each RFG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -260,7 +267,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructions(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -315,7 +322,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_features(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -383,7 +390,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstruction_time_spans(
 		const context_state_reference_type &context_state_ref,
 		const TimeSpanUtils::TimeRange &time_range)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -456,7 +463,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_time_spans(
 		const context_state_reference_type &context_state_ref,
 		const TimeSpanUtils::TimeRange &time_range)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -597,7 +604,7 @@ GPlatesAppLogic::ReconstructContext::get_reconstructed_topological_sections(
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each RFG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -634,7 +641,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each velocity field.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();

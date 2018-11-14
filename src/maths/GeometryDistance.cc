@@ -1252,7 +1252,7 @@ GPlatesMaths::minimum_distance(
 		boost::optional<UnitVector3D &> closest_position_on_polygon_outline,
 		boost::optional<unsigned int &> closest_segment_index_in_polygon)
 {
-	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_exterior_ring_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
 
 	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
 			polygon_bounding_tree.get_root_node();
@@ -1294,7 +1294,8 @@ GPlatesMaths::minimum_distance(
 			if (closest_position_on_polygon_outline ||
 				closest_segment_index_in_polygon)
 			{
-				// Don't use a threshold since we now need to find the closest segment regardless.
+				// Don't use a threshold since we now need to find the closest segment regardless because
+				// the polygon interior is solid (and hence threshold is zero and never exceeded).
 				min_distance = AngularDistance::PI;
 				min_distance_threshold = AngularExtent::PI;
 
@@ -1711,7 +1712,7 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polyline*/, unsigned int &/*polygon*/> > closest_segment_indices)
 {
 	const PolylineOnSphere::bounding_tree_type &polyline_bounding_tree = polyline.get_bounding_tree();
-	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_exterior_ring_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
 
 	const PolylineOnSphere::bounding_tree_type::node_type polyline_bounding_tree_root_node =
 			polyline_bounding_tree.get_root_node();
@@ -1894,8 +1895,8 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*polygon1*/, UnitVector3D &/*polygon2*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*polygon1*/, unsigned int &/*polygon2*/> > closest_segment_indices)
 {
-	const PolygonOnSphere::bounding_tree_type &polygon1_bounding_tree = polygon1.get_exterior_ring_bounding_tree();
-	const PolygonOnSphere::bounding_tree_type &polygon2_bounding_tree = polygon2.get_exterior_ring_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon1_bounding_tree = polygon1.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon2_bounding_tree = polygon2.get_bounding_tree();
 
 	const PolygonOnSphere::bounding_tree_type::node_type polygon1_bounding_tree_root_node =
 			polygon1_bounding_tree.get_root_node();

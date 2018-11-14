@@ -59,6 +59,7 @@
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedScalarField3D.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ResolvedTriangulationDelaunay2.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
@@ -73,6 +74,7 @@
 #include "gui/Colour.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
+#include "gui/RenderSettings.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
@@ -87,6 +89,23 @@
 
 namespace
 {
+	/**
+	 * Returns true if the reconstruction geometry is used as a topological section
+	 * in any topology for any reconstruction time.
+	 */
+	template <typename ReconstructionGeometryPointer>
+	bool
+	is_topological_section(
+			const ReconstructionGeometryPointer &reconstruction_geometry,
+			const std::set<GPlatesModel::FeatureId> &topological_sections)
+	{
+		GPlatesModel::FeatureHandle *feature_handle = reconstruction_geometry->feature_handle_ptr();
+
+		return feature_handle != NULL &&
+				topological_sections.find(feature_handle->feature_id()) != topological_sections.end();
+	}
+
+
 	/**
 	 * Returns a GPlatesGui::Symbol for the feature type of the @a reconstruction_geometry, if
 	 * an appropriate entry in the @a feature_type_symbol_map exists.
@@ -301,6 +320,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		d_render_params.topological_network_triangulation_colour_palette = params.get_second_invariant_colour_palette();
 		break;
 
+	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE:
+		d_render_params.topological_network_triangulation_colour_palette = params.get_strain_rate_style_colour_palette();
+		break;
+
 	case TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE:
 	default:
 		// When using the draw style we don't use a colour palette.
@@ -322,11 +345,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 
 GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRenderer(
 		const RenderParams &render_params,
+		const GPlatesGui::RenderSettings &render_settings,
+		const std::set<GPlatesModel::FeatureId> &topological_sections,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
+	d_render_settings(render_settings),
+	d_topological_sections(topological_sections),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
@@ -373,6 +400,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding velocity arrows.
+	if (!d_render_settings.show_velocity_arrows())
+	{
+		return;
+	}
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = mpvf->multi_point()->end();
@@ -459,13 +492,31 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type trfg_geometry = trfg->reconstructed_geometry();
+
+	// Return early if hiding the geometry type of the (topology) reconstructed feature geometry.
+	if (!d_render_settings.show_static_points() ||
+		!d_render_settings.show_static_multipoints() ||
+		!d_render_settings.show_static_lines() ||
+		!d_render_settings.show_static_polygons())
+	{
+		const GPlatesMaths::GeometryType::Value trfg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*trfg_geometry);
+		if ((!d_render_settings.show_static_points() && (trfg_geometry_type == GPlatesMaths::GeometryType::POINT)) ||
+			(!d_render_settings.show_static_multipoints() && (trfg_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)) ||
+			(!d_render_settings.show_static_lines() && (trfg_geometry_type == GPlatesMaths::GeometryType::POLYLINE)) ||
+			(!d_render_settings.show_static_polygons() && (trfg_geometry_type == GPlatesMaths::GeometryType::POLYGON)))
+		{
+			return;
+		}
+	}
+
 	const GPlatesGui::ColourProxy dfg_colour_proxy =  get_colour(trfg, d_colour, d_style_adapter);
 
 	if (d_render_params.show_topology_reconstructed_feature_geometries)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					trfg->reconstructed_geometry(),
+					trfg_geometry,
 					trfg,
 					d_render_params,
 					dfg_colour_proxy,
@@ -544,9 +595,36 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// If hiding topological sections then avoid rendering features referenced by topologies.
+	if (!d_render_settings.show_topological_sections())
+	{
+		if (is_topological_section(rfg, d_topological_sections))
+		{
+			return;
+		}
+	}
+
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rfg_geometry = rfg->reconstructed_geometry();
+
+	// Return early if hiding the geometry type of the reconstructed feature geometry.
+	if (!d_render_settings.show_static_points() ||
+		!d_render_settings.show_static_multipoints() ||
+		!d_render_settings.show_static_lines() ||
+		!d_render_settings.show_static_polygons())
+	{
+		const GPlatesMaths::GeometryType::Value rfg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*rfg_geometry);
+		if ((!d_render_settings.show_static_points() && (rfg_geometry_type == GPlatesMaths::GeometryType::POINT)) ||
+			(!d_render_settings.show_static_multipoints() && (rfg_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)) ||
+			(!d_render_settings.show_static_lines() && (rfg_geometry_type == GPlatesMaths::GeometryType::POLYLINE)) ||
+			(!d_render_settings.show_static_polygons() && (rfg_geometry_type == GPlatesMaths::GeometryType::POLYGON)))
+		{
+			return;
+		}
+	}
+
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
-				rfg->reconstructed_geometry(),
+				rfg_geometry,
 				rfg,
 				d_render_params,
 				get_colour(rfg, d_colour, d_style_adapter),
@@ -566,6 +644,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding rasters.
+	if (!d_render_settings.show_rasters())
+	{
+		return;
+	}
 
 	// Create a RenderedGeometry for drawing the resolved raster.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
@@ -597,6 +681,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding 3D scalar fields.
+	if (!d_render_settings.show_3d_scalar_fields())
+	{
+		return;
+	}
+
 	// Create a RenderedGeometry for drawing the scalar field.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_scalar_field =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
@@ -623,6 +713,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding static points.
+	//
+	// We consider a VGP as a point geometry (even though it also has a circular or elliptical error geometry).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
 
 	// The RVGP feature-properties-based colour.
 	const GPlatesGui::ColourProxy rvgp_colour = get_colour(rvgp, d_colour, d_style_adapter);
@@ -714,9 +812,38 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rtg_geometry = rtg->resolved_topology_geometry();
+
+	if (!d_render_settings.show_topological_sections() ||
+		!d_render_settings.show_topological_lines() ||
+		!d_render_settings.show_topological_polygons())
+	{
+		const GPlatesMaths::GeometryType::Value rtg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*rtg_geometry);
+
+		// If hiding topological sections then avoid rendering resolved topological lines referenced by topologies.
+		if (!d_render_settings.show_topological_sections())
+		{
+			// Of resolved topological geometries, only resolved topological lines can be topological sections.
+			if (rtg_geometry_type == GPlatesMaths::GeometryType::POLYLINE)
+			{
+				if (is_topological_section(rtg, d_topological_sections))
+				{
+					return;
+				}
+			}
+		}
+
+		// Return early if hiding the resolved geometry type of the resolved topological geometry.
+		if ((!d_render_settings.show_topological_lines() && (rtg_geometry_type == GPlatesMaths::GeometryType::POLYLINE)) ||
+			(!d_render_settings.show_topological_polygons() && (rtg_geometry_type == GPlatesMaths::GeometryType::POLYGON)))
+		{
+			return;
+		}
+	}
+
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
-				rtg->resolved_topology_geometry(), 
+				rtg_geometry, 
 				rtg, 
 				d_render_params, 
 				get_colour(rtg, d_colour, d_style_adapter));
@@ -736,6 +863,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding topological networks.
+	if (!d_render_settings.show_topological_networks())
+	{
+		return;
+	}
 
 	if (d_render_params.topological_network_triangulation_colour_mode ==
 		TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE)
@@ -812,9 +945,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// Check for drawing velocity vectors at vertices of delaunay triangulation.
 	if (d_render_params.show_topological_network_segment_velocity)
 	{
-		render_topological_network_velocities(rtn);
+		// But only if showing velocity arrows in general.
+		if (d_render_settings.show_velocity_arrows())
+		{
+			render_topological_network_velocities(rtn);
+		}
 	}
-
 }
 
 void
@@ -825,6 +961,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding static points.
+	//
+	// We consider a flowline as a (seed) point geometry (even though the history of that point are two left/right lines).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
 
 	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
 		GPlatesGui::DefaultPlateIdColourPalette::create();
@@ -885,6 +1029,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Return early if hiding static points.
+	//
+	// We consider a motion path as a (seed) point geometry (even though the history of that point is a line).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
+
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 	// using ColourProxy.
@@ -911,6 +1063,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding scalar coverages.
+	if (!d_render_settings.show_scalar_coverages())
+	{
+		return;
+	}
 
 	// Get the domain geometry.
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_geometry = rsc->get_reconstructed_geometry();
@@ -971,6 +1129,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 		d_rendered_geometry_layer,
 		GPLATES_ASSERTION_SOURCE);
+
+	// Return early if hiding static points.
+	//
+	// We consider a small circle as a point geometry (defined by the centre of the small circle).
+	if (!d_render_settings.show_static_points())
+	{
+		return;
+	}
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
@@ -1233,6 +1399,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+			}
 		}
 
 		if (!vertex_colour)
@@ -1328,6 +1501,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 				face_colour = GPlatesGui::ColourProxy(
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
+			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				face_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
 			}
 		}
 
@@ -1530,6 +1710,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 						d_render_params.topological_network_triangulation_colour_palette.get()
 								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
 			}
+			else if (d_render_params.topological_network_triangulation_colour_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+			{
+				vertex_colour = GPlatesGui::ColourProxy(
+						d_render_params.topological_network_triangulation_colour_palette.get()
+								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+			}
 		}
 
 		if (!vertex_colour)
@@ -1636,6 +1823,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 				{
 					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_second_invariant();
+				}
+				else if (d_render_params.topological_network_triangulation_colour_mode ==
+					TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
+				{
+					face_strain_rate[t] = deformation_info.get_strain_rate().get_strain_rate_style();
 				}
 			}
 

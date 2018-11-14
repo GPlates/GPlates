@@ -28,6 +28,8 @@
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyInternalUtils.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::DependentTopologicalSectionLayers::~DependentTopologicalSectionLayers()
 {
@@ -38,22 +40,16 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::~DependentTopologicalSection
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::set_topological_section_feature_ids(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_features,
 		boost::optional<TopologyGeometry::Type> topology_geometry_type)
 {
 	d_feature_ids.clear();
 
-	// Set the feature IDs of topological sections referenced by the topologies.
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_feature_collection,
-			topological_feature_collections)
-	{
-		// Find referenced feature IDs for *all* reconstruction times.
-		TopologyInternalUtils::find_topological_sections_referenced(
-				d_feature_ids,
-				topological_feature_collection,
-				topology_geometry_type);
-	}
+	// Set the feature IDs of topological sections referenced by the topologies for *all* reconstruction times.
+	TopologyInternalUtils::find_topological_sections_referenced(
+			d_feature_ids,
+			topological_features,
+			topology_geometry_type);
 
 	// Using our existing topological section layers, find those that have any of the above feature IDs.
 	set_dependency_topological_section_layers(d_reconstructed_geometry_layers, d_dependency_reconstructed_geometry_layers);
@@ -97,7 +93,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
-		std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers)
+		std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers) const
 {
 	get_dependent_topological_section_layers(dependent_layers, d_dependency_reconstructed_geometry_layers);
 }
@@ -105,7 +101,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_se
 
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
-		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &dependent_layers)
+		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &dependent_layers) const
 {
 	get_dependent_topological_section_layers(dependent_layers, d_dependency_resolved_line_layers);
 }
@@ -117,6 +113,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::set_dependency_topological_s
 		const std::vector<typename LayerProxyType::non_null_ptr_type> &all_layers,
 		std::set<LayerProxyType *> &layers)
 {
+	PROFILE_FUNC();
+
 	std::set<LayerProxyType *> new_layers;
 
 	// Iterate over all the layers and insert those that the topologies depend on.
@@ -149,6 +147,8 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::update_topological_section_l
 		const typename LayerProxyType::non_null_ptr_type &layer,
 		std::set<LayerProxyType *> &layers)
 {
+	PROFILE_FUNC();
+
 	if (layers.find(layer.get()) != layers.end())
 	{
 		if (topologies_depend_on_layer(layer))
@@ -189,7 +189,7 @@ template <class LayerProxyType>
 void
 GPlatesAppLogic::DependentTopologicalSectionLayers::get_dependent_topological_section_layers(
 		std::vector<typename LayerProxyType::non_null_ptr_type> &dependent_layers,
-		std::set<LayerProxyType *> &layers)
+		const std::set<LayerProxyType *> &layers) const
 {
 	dependent_layers.insert(
 			dependent_layers.end(),
@@ -215,7 +215,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_layer(
 	// on the topological layer (connected to same file as non-topological layer if file has a mixture
 	// of topological and non-topological features).
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_section_features;
-	layer->get_current_features(topological_section_features, true/*only_non_topological_features*/);
+	layer->get_current_reconstructable_features(topological_section_features);
 
 	return topologies_depend_on_features(topological_section_features);
 }
@@ -239,7 +239,7 @@ GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_layer(
 	// of topological and non-topological features) - since that topological layer will in turn
 	// depend on other non-topological layers thus unnecessarily widening our dependency graph.
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_section_features;
-	layer->get_current_features(topological_section_features, true/*only_topological_features*/);
+	layer->get_current_topological_geometry_features(topological_section_features);
 
 	return topologies_depend_on_features(topological_section_features);
 }
@@ -249,6 +249,8 @@ bool
 GPlatesAppLogic::DependentTopologicalSectionLayers::topologies_depend_on_features(
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
 {
+	PROFILE_FUNC();
+
 	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator features_iter = features.begin();
 	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator features_end = features.end();
 	for ( ; features_iter != features_end; ++features_iter)

@@ -71,6 +71,9 @@ namespace GPlatesFileIO
 		 *
 		 * If @a include_second_invariant_strain_rate  is true then an extra set of per-point scalars,
 		 * under 'gpml:TotalStrainRate', is exported as per-point second invariant strain rates (in units of 1/second).
+		 *
+		 * If @a include_strain_rate_style is true then an extra set of per-point scalars,
+		 * under 'gpml:StrainRateStyle', is exported as per-point strain rate styles (unitless).
 		 */
 		void
 		export_deformation(
@@ -80,7 +83,8 @@ namespace GPlatesFileIO
 				boost::optional<DeformationExport::PrincipalStrainOptions> include_principal_strain,
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
-				bool include_second_invariant_strain_rate);
+				bool include_second_invariant_strain_rate,
+				bool include_strain_rate_style);
 	}
 }
 

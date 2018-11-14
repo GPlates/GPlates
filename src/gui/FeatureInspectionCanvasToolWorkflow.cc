@@ -95,7 +95,9 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
+	d_render_settings(view_state.get_render_settings()),
 	d_symbol_map(view_state.get_feature_type_symbol_map()),
+	d_application_state(view_state.get_application_state()),
 	d_viewport_window(viewport_window)
 {
 	create_canvas_tools(
@@ -427,6 +429,8 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
+			d_application_state.get_current_topological_sections(),
 			d_symbol_map);
 }
 
@@ -438,7 +442,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 
 	// If there's no focused feature or it's a topological feature then most of the tools are disabled.
 	if (!focused_feature.is_valid() ||
-		GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+		GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 	{
 		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, false);
 		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX, false);

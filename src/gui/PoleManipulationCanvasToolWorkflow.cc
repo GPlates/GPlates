@@ -82,7 +82,9 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
-	d_symbol_map(view_state.get_feature_type_symbol_map())
+	d_render_settings(view_state.get_render_settings()),
+	d_symbol_map(view_state.get_feature_type_symbol_map()),
+	d_application_state(view_state.get_application_state())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -289,6 +291,8 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
+			d_application_state.get_current_topological_sections(),
 			d_symbol_map);
 }
 
@@ -310,7 +314,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::update_manipulate_pole_tool()
 	// Enable pole manipulation if there's a focused feature that is not topological.
 	if (focused_feature.is_valid())
 	{
-		if (!GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+		if (!GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 		{
 			enable_manipulate_pole_tool = true;
 		}

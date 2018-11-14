@@ -25,8 +25,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <iterator>
+#include <utility>
 #include <vector>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
@@ -41,11 +43,11 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
-#include "maths/PolylineIntersections.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureVisitor.h"
@@ -178,7 +180,7 @@ namespace
 		{
 			d_num_geometry_points = d_exterior_points_only
 					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
-					: polygon_on_sphere->number_of_vertices_in_all_rings();
+					: polygon_on_sphere->number_of_vertices();
 		}
 
 
@@ -207,15 +209,29 @@ namespace
 	{
 	public:
 
+		/**
+		 * Note that the optional range [first, second) is a half-range where 'second' is one past
+		 * the last vertex to be returned (this is similar to begin/end iterators).
+		 */
 		GetGeometryOnSpherePoints(
 				std::vector<GPlatesMaths::PointOnSphere> &points,
+				boost::optional<const std::pair<unsigned int/*first*/, unsigned int/*second*/>&> range,
 				bool reverse_points,
 				bool exterior_points_only) :
 			d_point_seq(points),
+			d_range(range),
 			d_reverse_points(reverse_points),
 			d_exterior_points_only(exterior_points_only),
 			d_geometry_type(GPlatesMaths::GeometryType::NONE)
-		{  }
+		{
+			if (d_range)
+			{
+				// Should be a non-zero range.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_range->first < d_range->second,
+						GPLATES_ASSERTION_SOURCE);
+			}
+		}
 
 
 		GPlatesMaths::GeometryType::Value
@@ -232,6 +248,14 @@ namespace
 		{
 			d_geometry_type = GPlatesMaths::GeometryType::POINT;
 
+			if (d_range)
+			{
+				// The range must match that of a single point.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_range->first == 0 && d_range->second == 1,
+						GPLATES_ASSERTION_SOURCE);
+			}
+
 			d_point_seq.push_back(*point_on_sphere);
 		}
 
@@ -243,22 +267,37 @@ namespace
 		{
 			d_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
 
+			GPlatesMaths::MultiPointOnSphere::const_iterator begin_points = multi_point_on_sphere->begin();
+			GPlatesMaths::MultiPointOnSphere::const_iterator end_points = multi_point_on_sphere->end();
+
+			// If only need a sub-range of points.
+			if (d_range)
+			{
+				// Advance forward from beginning.
+				std::advance(begin_points, d_range->first);
+
+				// Note that subtracting two unsigned types can store negative in a signed type.
+				const std::ptrdiff_t diff_from_end = d_range->second - multi_point_on_sphere->number_of_points();
+
+				// The range must not go past the end.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						diff_from_end <= 0,
+						GPLATES_ASSERTION_SOURCE);
+
+				// Advance backward from end.
+				std::advance(end_points, diff_from_end);
+			}
+
 			// Avoid excessive re-allocations when the number of points is large.
-			d_point_seq.reserve(multi_point_on_sphere->number_of_points());
+			d_point_seq.reserve(std::distance(begin_points, end_points));
 
 			if (d_reverse_points)
 			{
-				std::reverse_copy(
-						multi_point_on_sphere->begin(),
-						multi_point_on_sphere->end(),
-						std::back_inserter(d_point_seq));
+				std::reverse_copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 			else
 			{
-				std::copy(
-						multi_point_on_sphere->begin(),
-						multi_point_on_sphere->end(),
-						std::back_inserter(d_point_seq));
+				std::copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 		}
 
@@ -270,54 +309,52 @@ namespace
 		{
 			d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 
+			// The iterator type is equivalent to the entire polygon (exterior and interiors).
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator begin_points = polygon_on_sphere->vertex_begin();
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator end_points = begin_points;
+
+			// If only need a sub-range of points.
+			if (d_range)
+			{
+				// Advance forward from beginning.
+				std::advance(begin_points, d_range->first);
+
+				// The range must not go past the end.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_range->second <= (d_exterior_points_only
+								? polygon_on_sphere->number_of_vertices_in_exterior_ring()
+								: polygon_on_sphere->number_of_vertices()),
+						GPLATES_ASSERTION_SOURCE);
+
+				// Advance forward from beginning.
+				// Note it doesn't matter whether using exterior points only or not since the
+				// exterior points are the first points encountered (interior rings follow exterior).
+				std::advance(end_points, d_range->second);
+			}
+			else // entire polygon exterior (and optionally interiors) ...
+			{
+				if (d_exterior_points_only)
+				{
+					// Advance forward from beginning to end of exterior ring (the first ring in sequence).
+					std::advance(end_points, polygon_on_sphere->number_of_vertices_in_exterior_ring());
+				}
+				else
+				{
+					// Simply set as the end iterator (over all vertices, exterior and interior).
+					end_points = polygon_on_sphere->vertex_end();
+				}
+			}
+
 			// Avoid excessive re-allocations when the number of points is large.
-			d_point_seq.reserve(d_exterior_points_only
-					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
-					: polygon_on_sphere->number_of_vertices_in_all_rings());
+			d_point_seq.reserve(std::distance(begin_points, end_points));
 
 			if (d_reverse_points)
 			{
-				if (!d_exterior_points_only)
-				{
-					const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
-					for (unsigned int interior_ring_index = 0;
-						interior_ring_index < num_interior_rings;
-						++interior_ring_index)
-					{
-						// Start with last interior ring and progress to first interior ring.
-						// And reverse the points in each ring.
-						std::reverse_copy(
-								polygon_on_sphere->interior_ring_vertex_begin(num_interior_rings - interior_ring_index - 1),
-								polygon_on_sphere->interior_ring_vertex_end(num_interior_rings - interior_ring_index - 1),
-								std::back_inserter(d_point_seq));
-					}
-				}
-
-				std::reverse_copy(
-						polygon_on_sphere->exterior_ring_vertex_begin(),
-						polygon_on_sphere->exterior_ring_vertex_end(),
-						std::back_inserter(d_point_seq));
+				std::reverse_copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 			else
 			{
-				std::copy(
-						polygon_on_sphere->exterior_ring_vertex_begin(),
-						polygon_on_sphere->exterior_ring_vertex_end(),
-						std::back_inserter(d_point_seq));
-
-				if (!d_exterior_points_only)
-				{
-					const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
-					for (unsigned int interior_ring_index = 0;
-						interior_ring_index < num_interior_rings;
-						++interior_ring_index)
-					{
-						std::copy(
-								polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
-								polygon_on_sphere->interior_ring_vertex_end(interior_ring_index),
-								std::back_inserter(d_point_seq));
-					}
-				}
+				std::copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 		}
 
@@ -329,28 +366,46 @@ namespace
 		{
 			d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator begin_points = polyline_on_sphere->vertex_begin();
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator end_points = polyline_on_sphere->vertex_end();
+
+			// If only need a sub-range of points.
+			if (d_range)
+			{
+				// Advance forward from beginning.
+				std::advance(begin_points, d_range->first);
+
+				// Note that subtracting two unsigned types can store negative in a signed type.
+				const std::ptrdiff_t diff_from_end = d_range->second - polyline_on_sphere->number_of_vertices();
+
+				// The range must not go past the end.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						diff_from_end <= 0,
+						GPLATES_ASSERTION_SOURCE);
+
+				// Advance backward from end.
+				std::advance(end_points, diff_from_end);
+			}
+
 			// Avoid excessive re-allocations when the number of points is large.
-			d_point_seq.reserve(polyline_on_sphere->number_of_vertices());
+			d_point_seq.reserve(std::distance(begin_points, end_points));
 
 			if (d_reverse_points)
 			{
-				std::reverse_copy(
-						polyline_on_sphere->vertex_begin(),
-						polyline_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
+				std::reverse_copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 			else
 			{
-				std::copy(
-						polyline_on_sphere->vertex_begin(),
-						polyline_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
+				std::copy(begin_points, end_points, std::back_inserter(d_point_seq));
 			}
 		}
 
 	private:
 		//! Sequence of points to append to when visiting geometry on spheres.
 		std::vector<GPlatesMaths::PointOnSphere> &d_point_seq;
+
+		//! Optional indexed range of points to return.
+		boost::optional<const std::pair<unsigned int, unsigned int>&> d_range;
 
 		//! Whether to reverse the visiting geometry points before appending.
 		bool d_reverse_points;
@@ -364,18 +419,21 @@ namespace
 
 	/**
 	 * Retrieves the end points in a derived @a GeometryOnSphere.
+	 *
+	 * For a polygon only the exterior ring is considered.
 	 */
-	class GetGeometryOnSphereEndPoints :
+	class GetGeometryOnSphereExteriorEndPoints :
 			private GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
+
 		/**
 		 * Visits @a geometry_on_sphere and returns its start and end points.
 		 */
 		std::pair<
 				GPlatesMaths::PointOnSphere/*start point*/,
 				GPlatesMaths::PointOnSphere/*end point*/>
-		get_geometry_end_points(
+		get_geometry_exterior_end_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				bool reverse_points)
 		{
@@ -580,7 +638,7 @@ namespace
 				// Copy points from all rings into one sequence.
 				// We could have used boost::join, but it's not supported in boost version 1.34.
 				std::vector<GPlatesMaths::PointOnSphere> all_rings_points;
-				all_rings_points.reserve(polygon_on_sphere->number_of_vertices_in_all_rings());
+				all_rings_points.reserve(polygon_on_sphere->number_of_vertices());
 
 				all_rings_points.insert(
 						all_rings_points.end(),
@@ -682,9 +740,15 @@ namespace
 			}
 
 			// A polygon has at least three points - enough for a polyline.
+
+			// NOTE: We iterate over one extra vertex compared to the usual polygon ring vertex iterator
+			// since this treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+			// vertex is the end point of the last ring segment (which is also the first vertex of ring).
+			// If we just used the usual polygon ring iterator then our polyline would be missing
+			// the last segment that joins the last and first vertices in the ring.
 			d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
-					polygon_on_sphere->exterior_ring_vertex_begin(),
-					polygon_on_sphere->exterior_ring_vertex_end());
+					polygon_on_sphere->exterior_polyline_vertex_begin(),
+					polygon_on_sphere->exterior_polyline_vertex_end());
 		}
 
 		virtual
@@ -1065,6 +1129,35 @@ GPlatesAppLogic::GeometryUtils::get_geometry_points(
 {
 	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
 			points,
+			boost::none/*range*/,
+			reverse_points,
+			false/*exterior_points_only*/);
+
+	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
+
+	return get_geometry_on_sphere_points.get_geometry_type();
+}
+
+
+GPlatesMaths::GeometryType::Value
+GPlatesAppLogic::GeometryUtils::get_geometry_points_range(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+		std::vector<GPlatesMaths::PointOnSphere> &points,
+		unsigned int start_vertex_index,
+		unsigned int end_vertex_index,
+		bool reverse_points)
+{
+	// Filter out zero range.
+	if (start_vertex_index == end_vertex_index)
+	{
+		return get_geometry_type(geometry_on_sphere);
+	}
+
+	const std::pair<unsigned int, unsigned int> range(start_vertex_index, end_vertex_index);
+
+	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
+			points,
+			range,
 			reverse_points,
 			false/*exterior_points_only*/);
 
@@ -1082,6 +1175,35 @@ GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 {
 	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
 			points,
+			boost::none/*range*/,
+			reverse_points,
+			true/*exterior_points_only*/);
+
+	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
+
+	return get_geometry_on_sphere_points.get_geometry_type();
+}
+
+
+GPlatesMaths::GeometryType::Value
+GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points_range(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+		std::vector<GPlatesMaths::PointOnSphere> &points,
+		unsigned int start_vertex_index,
+		unsigned int end_vertex_index,
+		bool reverse_points)
+{
+	// Filter out zero range.
+	if (start_vertex_index == end_vertex_index)
+	{
+		return get_geometry_type(geometry_on_sphere);
+	}
+
+	const std::pair<unsigned int, unsigned int> range(start_vertex_index, end_vertex_index);
+
+	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
+			points,
+			range,
 			reverse_points,
 			true/*exterior_points_only*/);
 
@@ -1099,10 +1221,10 @@ GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		bool reverse_points)
 {
-	GetGeometryOnSphereEndPoints get_geometry_on_sphere_end_points;
+	GetGeometryOnSphereExteriorEndPoints get_geometry_on_sphere_exterior_end_points;
 
-	return get_geometry_on_sphere_end_points.get_geometry_end_points(
-		geometry_on_sphere, reverse_points);
+	return get_geometry_on_sphere_exterior_end_points.get_geometry_exterior_end_points(
+			geometry_on_sphere, reverse_points);
 }
 
 

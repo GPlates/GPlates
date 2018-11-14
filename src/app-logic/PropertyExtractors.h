@@ -32,20 +32,19 @@
 #include <boost/optional.hpp>
 
 #include "ApplicationState.h"
+#include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryUtils.h"
 
 #include "maths/Real.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
-#include "app-logic/ReconstructionGeometry.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
 #include "utils/FeatureUtils.h"
-//TODO:
-//It is probably not good to include application.h here.
-#include "presentation/Application.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -111,7 +110,10 @@ namespace GPlatesAppLogic
 
 		typedef GPlatesMaths::Real return_type;
 
-		AgePropertyExtractor()
+		explicit
+		AgePropertyExtractor(
+				ApplicationState &application_state) :
+			d_application_state(application_state)
 		{  }
 
 		const boost::optional<return_type>
@@ -124,11 +126,11 @@ namespace GPlatesAppLogic
 		{
 			return GPlatesUtils::get_age(
 					&feature, 
-					GPlatesPresentation::Application::instance().get_application_state().get_current_reconstruction_time());
+					d_application_state.get_current_reconstruction_time());
 		}
 	
 	private:
-
+		ApplicationState &d_application_state;
 	};
 
 	/**

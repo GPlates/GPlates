@@ -343,7 +343,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			view_state.get_render_settings(),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
 	d_text_overlay(
@@ -468,13 +467,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 			SIGNAL(collection_was_updated(
 					GPlatesViewOperations::RenderedGeometryCollection &,
 					GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-			this,
-			SLOT(update_canvas()));
-
-	// Update canvas whenever RenderSettings gets changed.
-	QObject::connect(
-			&(d_view_state.get_render_settings()),
-			SIGNAL(settings_changed()),
 			this,
 			SLOT(update_canvas()));
 

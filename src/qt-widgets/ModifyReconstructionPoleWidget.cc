@@ -882,6 +882,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 	// get rendered as regular point-on-spheres.
 	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
 			render_style_params,
+			d_view_state_ptr->get_render_settings(),
+			d_application_state_ptr->get_current_topological_sections(),
 			white_colour,
 			boost::none,
 			boost::none);
@@ -937,6 +939,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	// using the colour 'silver_colour' and rotates geometries in the RFGs.
 	GPlatesPresentation::ReconstructionGeometryRenderer dragged_geometry_renderer(
 			render_style_params,
+			d_view_state_ptr->get_render_settings(),
+			d_application_state_ptr->get_current_topological_sections(),
 			silver_colour,
 			d_accum_orientation->rotation(),
 			boost::none);

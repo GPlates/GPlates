@@ -101,13 +101,11 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		const RenderSettings &render_settings,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
-	d_render_settings(render_settings),
 	d_layer_painter(gl_visual_layers),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
@@ -212,16 +210,9 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	}
 
 	// Draw the current rendered geometry layer.
-	RenderSettings default_render_settings;
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			// If painting the reconstruction layer then use user-specified settings,
-			// otherwise the layer is for a canvas tool workflow and we should not hide its geometries...
-			(d_paint_params->d_main_rendered_layer_type ==
-				GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
-					? d_render_settings
-					: default_render_settings,
 			d_visibility_tester,
 			d_colour_scheme,
 			d_paint_params->d_paint_region,

@@ -85,6 +85,7 @@ namespace GPlatesGui
 					bool export_topological_lines_ = true,
 					bool export_topological_polygons_ = true,
 					bool export_topological_networks_ = true,
+					bool export_topological_sections_ = true,
 					boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 							force_polygon_orientation_ = boost::none,
 					bool wrap_to_dateline_ = true) :
@@ -94,6 +95,7 @@ namespace GPlatesGui
 				export_topological_lines(export_topological_lines_),
 				export_topological_polygons(export_topological_polygons_),
 				export_topological_networks(export_topological_networks_),
+				export_topological_sections(export_topological_sections_),
 				force_polygon_orientation(force_polygon_orientation_),
 				wrap_to_dateline(wrap_to_dateline_)
 			{  }
@@ -110,6 +112,7 @@ namespace GPlatesGui
 			bool export_topological_lines;
 			bool export_topological_polygons;
 			bool export_topological_networks;
+			bool export_topological_sections;
 			//! Only applies when @a export_topological_polygons or @a export_topological_networks is true.
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation;
 			bool wrap_to_dateline;

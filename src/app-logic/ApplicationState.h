@@ -27,8 +27,10 @@
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
 #include <list>
+#include <set>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
@@ -43,8 +45,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
 
-#include "model/FeatureStoreRootHandle.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureId.h"
+#include "model/FeatureStoreRootHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
@@ -118,6 +121,19 @@ namespace GPlatesAppLogic
 		 */
 		const Reconstruction &
 		get_current_reconstruction() const;
+
+		/**
+		 * Return the current feature IDs of topological sections referenced for *all* times
+		 * by all topologies (topological geometry and network) in all loaded files.
+		 *
+		 * This is useful when hiding topological sections (ie, not rendering them).
+		 *
+		 * NOTE: The returned reference is invalidated whenever the feature store is modified
+		 * (ie, when a feature collection is added/removed/modified), so should only be used
+		 * within a limited scope.
+		 */
+		const std::set<GPlatesModel::FeatureId> &
+		get_current_topological_sections() const;
 
 
 		/**
@@ -400,16 +416,47 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
+		void
+		handle_file_state_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+
 	private:
+
 		/**
-		 * The model callback that notifies us when the feature store is modified so that
-		 * we can do a reconstruction.
+		 * Used to set a bool of ApplicationState to true within a scope.
 		 */
-		struct ReconstructWhenFeatureStoreIsModified :
+		class ScopedBooleanGuard
+		{
+		public:
+			ScopedBooleanGuard(
+					ApplicationState &application_state,
+					bool ApplicationState::*flag) :
+				d_application_state(application_state),
+				d_flag(flag)
+			{
+				d_application_state.*d_flag = true;
+			}
+
+			~ScopedBooleanGuard()
+			{
+				d_application_state.*d_flag = false;
+			}
+
+		private:
+			ApplicationState &d_application_state;
+			bool ApplicationState::*d_flag;
+		};
+
+
+		/**
+		 * The model callback that notifies us when the feature store is modified
+		 * (so that we can do a reconstruction, etc).
+		 */
+		struct FeatureStoreIsModified :
 				public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureStoreRootHandle>
 		{
 			explicit
-			ReconstructWhenFeatureStoreIsModified(
+			FeatureStoreIsModified(
 					ApplicationState &application_state) :
 				d_application_state(&application_state)
 			{  }
@@ -419,14 +466,7 @@ namespace GPlatesAppLogic
 					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
-				// Perform a reconstruction every time the model (feature store) is modified,
-				// unless we are already inside a reconstruction (avoid infinite cycle).
-				if (!d_application_state->d_currently_reconstructing)
-				{
-					// Clients should put model notification guards in the appropriate places to
-					// avoid excessive reconstructions.
-					d_application_state->reconstruct();
-				}
+				d_application_state->feature_store_modified();
 			}
 
 			ApplicationState *d_application_state;
@@ -529,6 +569,13 @@ namespace GPlatesAppLogic
 		bool d_currently_reconstructing;
 
 		/**
+		 * Is true if we are currently creating a @a Reconstruction (via updating reconstruct graph).
+		 *
+		 * This is used to detect when clients call us when that is happening.
+		 */
+		bool d_currently_creating_reconstruction;
+
+		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
 		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
 		 */
@@ -555,6 +602,15 @@ namespace GPlatesAppLogic
 
 		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 
+		/**
+		 * Feature IDs of topological sections referenced for *all* times by all topologies
+		 * (topological geometry and network) in all loaded files.
+		 *
+		 * It's mutable since, as an optimisation, we only calculate it when needed.
+		 * And it gets reset/cleared whenever the feature store is modified.
+		 */
+		mutable boost::optional< std::set<GPlatesModel::FeatureId> > d_current_topological_sections;
+
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure
@@ -564,6 +620,17 @@ namespace GPlatesAppLogic
 		 */
 		void
 		mediate_signal_slot_connections();
+
+		//! Callback when feature store is modified.
+		void
+		feature_store_modified();
+
+		/**
+		 * Find the feature IDs of topological sections referenced for *all* times by all topologies
+		 * (topological geometry and network) in all loaded files.
+		 */
+		void
+		find_current_topological_sections() const;
 
 		//! Begin blocking of calls to @a reconstruct.
 		void

@@ -45,6 +45,11 @@
 #include "model/FeatureHandle.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesCanvasTools
 {
 	class ClickGeometry;
@@ -69,6 +74,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class FeatureFocus;
+	class RenderSettings;
 
 	/**
 	 * The canvas tool workflow for query/editing a feature's properties including modifying
@@ -137,7 +143,13 @@ namespace GPlatesGui
 		//! Parameters for rendering geometries in canvas tools.
 		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
+		//! Show/hide geometry settings.
+		const RenderSettings &d_render_settings;
+
 		const GPlatesGui::symbol_map_type &d_symbol_map;
+
+		//! Used to get current topological sections.
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		//! Used when restoring the clicked geometries on workflow activation.
 		GPlatesQtWidgets::ViewportWindow &d_viewport_window;

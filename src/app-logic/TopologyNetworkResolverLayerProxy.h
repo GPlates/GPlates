@@ -170,9 +170,6 @@ namespace GPlatesAppLogic
 				const TimeSpanUtils::TimeRange &time_range,
 				const TopologyNetworkParams &topology_network_params);
 
-		//
-		// Getting current topology network params and reconstruction time as set by the layer system.
-		//
 
 		/**
 		 * Gets the current reconstruction time as set by the layer system.
@@ -184,13 +181,41 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Gets the parameters used for resolving topological networks and their associated attributes.
+		 * Get the current parameters used for resolving topological networks and their associated attributes.
 		 */
 		const TopologyNetworkParams &
 		get_current_topology_network_params() const
 		{
 			return d_current_topology_network_params;
 		}
+
+
+		/**
+		 * Returns only the topological network subset of features set by
+		 * @a add_topological_network_feature_collection, etc.
+		 */
+		void
+		get_current_topological_network_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features) const;
+
+		/**
+		 * Returns all features set by @a add_topological_network_feature_collection, etc.
+		 *
+		 * Note that the features might be a mixture of topological and non-topological.
+		 * Some files contain a mixture of both and hence create both topological and non-topological layers.
+		 */
+		void
+		get_current_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const;
+
+
+		/**
+		 * Inserts the feature IDs of topological sections referenced by the current
+		 * topological networks for *all* times (not just the current time).
+		 */
+		void
+		get_current_dependent_topological_sections(
+				std::set<GPlatesModel::FeatureId> &dependent_topological_sections) const;
 
 
 		/**
@@ -340,9 +365,17 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * The input feature collections to reconstruct.
+		 * The subset of features that are topological networks.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_topological_network_feature_collections;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_current_topological_network_features;
+
+		/**
+		 * All input feature collections.
+		 *
+		 * Note that the full set of features might be a mixture of topological and non-topological.
+		 * Some files contain a mixture of both and hence create both topological and non-topological layers.
+		 */
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_feature_collections;
 
 		/**
 		 * Used to get reconstructed static features that form the topological sections for our topological geometries.

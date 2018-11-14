@@ -1022,7 +1022,9 @@ namespace GPlatesApi
 
 		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
 				resolved_topological_line.get_sub_segment_sequence();
-		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment,
+				sub_segments)
 		{
 			line_sub_segments_list.append(sub_segment);
 		}
@@ -1043,7 +1045,7 @@ namespace GPlatesApi
 
 		d_sub_segments.reserve(sub_segments.size());
 		BOOST_FOREACH(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment,
 				sub_segments)
 		{
 			d_sub_segments.push_back(
@@ -1239,7 +1241,9 @@ namespace GPlatesApi
 
 		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
 				resolved_topological_boundary.get_sub_segment_sequence();
-		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment,
+				sub_segments)
 		{
 			boundary_sub_segments_list.append(sub_segment);
 		}
@@ -1260,7 +1264,7 @@ namespace GPlatesApi
 
 		d_sub_segments.reserve(sub_segments.size());
 		BOOST_FOREACH(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment,
 				sub_segments)
 		{
 			d_sub_segments.push_back(
@@ -1456,7 +1460,9 @@ namespace GPlatesApi
 
 		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
 				resolved_topological_network.get_boundary_sub_segment_sequence();
-		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment,
+				sub_segments)
 		{
 			boundary_sub_segments_list.append(sub_segment);
 		}
@@ -1477,7 +1483,7 @@ namespace GPlatesApi
 
 		d_boundary_sub_segments.reserve(boundary_sub_segments.size());
 		BOOST_FOREACH(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &boundary_sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &boundary_sub_segment,
 				boundary_sub_segments)
 		{
 			d_boundary_sub_segments.push_back(
@@ -1659,30 +1665,30 @@ namespace GPlatesApi
 	 */
 	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
 	resolved_topological_geometry_sub_segment_get_topological_section_feature(
-			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
 		return reconstruction_geometry_get_feature(
-				*resolved_topological_geometry_sub_segment.get_reconstruction_geometry());
+				*resolved_topological_geometry_sub_segment->get_reconstruction_geometry());
 	}
 
 	// Convert sub-segment geometries to polylines (even if they are just single points - just duplicate).
 	// This will make it easier for the user who will expect sub-segments to be polylines.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 	resolved_topological_geometry_sub_segment_get_resolved_geometry(
-			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
 		return convert_geometry_to_polyline(
-				resolved_topological_geometry_sub_segment.get_geometry());
+				resolved_topological_geometry_sub_segment->get_sub_segment_geometry());
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
 	// It should normally be one though so we don't document that Py_None could be returned to the caller.
 	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 	resolved_topological_geometry_sub_segment_get_topological_section_geometry(
-			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
 		return get_topological_section_geometry(
-				resolved_topological_geometry_sub_segment.get_reconstruction_geometry());
+				resolved_topological_geometry_sub_segment->get_reconstruction_geometry());
 	}
 
 	bp::object
@@ -1704,7 +1710,7 @@ namespace GPlatesApi
 			bp::object resolved_feature_object =
 					create_resolved_feature(
 							topological_section_feature.get(),
-							d_resolved_topological_geometry_sub_segment.get_reconstruction_geometry(),
+							d_resolved_topological_geometry_sub_segment->get_reconstruction_geometry(),
 							resolved_sub_segment_geometry);
 			if (resolved_feature_object == bp::object()/*Py_None*/)
 			{
@@ -1720,7 +1726,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * To-python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
+	 * To-python converter from a 'non_null_intrusive_ptr<ResolvedTopologicalGeometrySubSegment>' to a
 	 * 'ResolvedTopologicalGeometrySubSegmentWrapper'.
 	 */
 	struct ToPythonConversionResolvedTopologicalGeometrySubSegment :
@@ -1731,7 +1737,7 @@ namespace GPlatesApi
 			static
 			PyObject *
 			convert(
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment)
 			{
 				// Convert to ResolvedTopologicalGeometrySubSegmentWrapper first.
 				// Then it'll get converted to python.
@@ -1743,7 +1749,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a 'ResolvedTopologicalGeometrySubSegment' to a
+	 * Registers converter from a 'non_null_intrusive_ptr<ResolvedTopologicalGeometrySubSegment>' to a
 	 * 'ResolvedTopologicalGeometrySubSegmentWrapper'.
 	 */
 	void
@@ -1751,7 +1757,7 @@ namespace GPlatesApi
 	{
 		// To python conversion.
 		bp::to_python_converter<
-				GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment,
+				GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type,
 				ToPythonConversionResolvedTopologicalGeometrySubSegment::Conversion>();
 	}
 }
@@ -1766,9 +1772,6 @@ export_resolved_topological_sub_segment()
 	bp::class_<
 			GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment,
 			GPlatesApi::ResolvedTopologicalGeometrySubSegmentWrapper,
-			// NOTE: We must specify 'boost::noncopyable' otherwise boost-python will expect our wrapper
-			// to have a constructor accepting a 'pointer to non-const' and our wrapper will be
-			// responsible for deleting the pointer when it's done...
 			boost::noncopyable>(
 					"ResolvedTopologicalSubSegment",
 					"The subset of vertices of a reconstructed topological section that contribute to the "
@@ -1880,12 +1883,12 @@ export_resolved_topological_sub_segment()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment to be converted
+	// Enable a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type to be converted
 	// to-python as a python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_geometry_sub_segment();
 	//
 	// From-python conversion from python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper
-	// to a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment reference is provided by
+	// to a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type is provided by
 	// get_pointer(ResolvedTopologicalGeometrySubSegmentWrapper) in header to create a
 	// ResolvedTopologicalGeometrySubSegment pointer.
 
@@ -1894,8 +1897,8 @@ export_resolved_topological_sub_segment()
 	// (not ResolvedTopologicalGeometrySubSegmentWrapper).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalGeometrySubSegment> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<
 			GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment>();
 }
 
@@ -1910,30 +1913,30 @@ namespace GPlatesApi
 	 */
 	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
 	resolved_topological_shared_sub_segment_get_topological_section_feature(
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
 		return reconstruction_geometry_get_feature(
-				*resolved_topological_shared_sub_segment.get_reconstruction_geometry());
+				*resolved_topological_shared_sub_segment->get_reconstruction_geometry());
 	}
 
 	// Convert sub-segment geometries to polylines (even if they are just single points - just duplicate).
 	// This will make it easier for the user who will expect sub-segments to be polylines.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 	resolved_topological_shared_sub_segment_get_resolved_geometry(
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
 		return convert_geometry_to_polyline(
-				resolved_topological_shared_sub_segment.get_geometry());
+				resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry());
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
 	// It should normally be one though so we don't document that Py_None could be returned to the caller.
 	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 	resolved_topological_shared_sub_segment_get_topological_section_geometry(
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
 		return get_topological_section_geometry(
-				resolved_topological_shared_sub_segment.get_reconstruction_geometry());
+				resolved_topological_shared_sub_segment->get_reconstruction_geometry());
 	}
 
 	/**
@@ -1941,13 +1944,13 @@ namespace GPlatesApi
 	 */
 	bp::list
 	resolved_topological_shared_sub_segment_get_sharing_resolved_topology_geometry_reversal_flags(
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
 		bp::list geometry_reversal_flags_list;
 
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &
 				sharing_resolved_topologies =
-						resolved_topological_shared_sub_segment.get_sharing_resolved_topologies();
+						resolved_topological_shared_sub_segment->get_sharing_resolved_topologies();
 
 		BOOST_FOREACH(
 				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo &sharing_resolved_topology,
@@ -1962,13 +1965,17 @@ namespace GPlatesApi
 
 
 	ResolvedTopologicalSharedSubSegmentWrapper::ResolvedTopologicalSharedSubSegmentWrapper(
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment) :
-		d_resolved_topological_shared_sub_segment(resolved_topological_shared_sub_segment),
-		d_reconstruction_geometry(resolved_topological_shared_sub_segment.get_reconstruction_geometry())
+			GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_to_const_type resolved_topological_shared_sub_segment) :
+		d_resolved_topological_shared_sub_segment(
+				// We wrap *non-const* sub-segments and hence cast away const
+				// (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>(
+						resolved_topological_shared_sub_segment)),
+		d_reconstruction_geometry(resolved_topological_shared_sub_segment->get_reconstruction_geometry())
 	{
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &
 				sharing_resolved_topologies =
-						resolved_topological_shared_sub_segment.get_sharing_resolved_topologies();
+						resolved_topological_shared_sub_segment->get_sharing_resolved_topologies();
 
 		// Wrap the resolved topologies to keep their feature/property alive.
 		d_sharing_resolved_topologies.reserve(sharing_resolved_topologies.size());
@@ -2002,7 +2009,7 @@ namespace GPlatesApi
 			bp::object resolved_feature_object =
 					create_resolved_feature(
 							topological_section_feature.get(),
-							d_resolved_topological_shared_sub_segment.get_reconstruction_geometry(),
+							d_resolved_topological_shared_sub_segment->get_reconstruction_geometry(),
 							resolved_sub_segment_geometry);
 			if (resolved_feature_object == bp::object()/*Py_None*/)
 			{
@@ -2034,7 +2041,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * To-python converter from a 'ResolvedTopologicalSharedSubSegment' to a
+	 * To-python converter from a 'non_null_intrusive_ptr<ResolvedTopologicalSharedSubSegment>' to a
 	 * 'ResolvedTopologicalSharedSubSegmentWrapper'.
 	 */
 	struct ToPythonConversionResolvedTopologicalSharedSubSegment :
@@ -2045,7 +2052,7 @@ namespace GPlatesApi
 			static
 			PyObject *
 			convert(
-					const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &sub_segment)
 			{
 				// Convert to ResolvedTopologicalSharedSubSegmentWrapper first.
 				// Then it'll get converted to python.
@@ -2057,7 +2064,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a 'ResolvedTopologicalSharedSubSegment' to a
+	 * Registers converter from a 'non_null_intrusive_ptr<ResolvedTopologicalSharedSubSegment>' to a
 	 * 'ResolvedTopologicalSharedSubSegmentWrapper'.
 	 */
 	void
@@ -2065,7 +2072,7 @@ namespace GPlatesApi
 	{
 		// To python conversion.
 		bp::to_python_converter<
-				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment,
+				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type,
 				ToPythonConversionResolvedTopologicalSharedSubSegment::Conversion>();
 	}
 }
@@ -2080,9 +2087,6 @@ export_resolved_topological_shared_sub_segment()
 	bp::class_<
 			GPlatesAppLogic::ResolvedTopologicalSharedSubSegment,
 			GPlatesApi::ResolvedTopologicalSharedSubSegmentWrapper,
-			// NOTE: We must specify 'boost::noncopyable' otherwise boost-python will expect our wrapper
-			// to have a constructor accepting a 'pointer to non-const' and our wrapper will be
-			// responsible for deleting the pointer when it's done...
 			boost::noncopyable>(
 					"ResolvedTopologicalSharedSubSegment",
 					"The shared subset of vertices of a reconstructed topological section that uniquely "
@@ -2215,12 +2219,12 @@ export_resolved_topological_shared_sub_segment()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment to be converted
+	// Enable a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type to be converted
 	// to-python as a python-wrapped ResolvedTopologicalSharedSubSegmentWrapper.
 	GPlatesApi::register_to_python_conversion_resolved_topological_shared_sub_segment();
 	//
 	// From-python conversion from python-wrapped ResolvedTopologicalSharedSubSegmentWrapper
-	// to a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment reference is provided by
+	// to a GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type is provided by
 	// get_pointer(ResolvedTopologicalSharedSubSegmentWrapper) in header to create a
 	// ResolvedTopologicalSharedSubSegment pointer.
 
@@ -2229,8 +2233,8 @@ export_resolved_topological_shared_sub_segment()
 	// (not ResolvedTopologicalSharedSubSegmentWrapper).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalSharedSubSegment> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<
 			GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>();
 }
 
@@ -2271,13 +2275,13 @@ namespace GPlatesApi
 				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalSection>(resolved_topological_section)),
 		d_reconstruction_geometry(resolved_topological_section->get_reconstruction_geometry())
 	{
-		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &shared_sub_segments =
+		const GPlatesAppLogic::shared_sub_segment_seq_type &shared_sub_segments =
 				resolved_topological_section->get_shared_sub_segments();
 
 		// Wrap the resolved topologies to keep their feature/property alive.
 		d_shared_sub_segments.reserve(shared_sub_segments.size());
 		BOOST_FOREACH(
-				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
 				shared_sub_segments)
 		{
 			d_shared_sub_segments.push_back(

@@ -26,14 +26,22 @@
 #ifndef GPLATES_GUI_GEOMETRYFOCUSHIGHLIGHT_H
 #define GPLATES_GUI_GEOMETRYFOCUSHIGHLIGHT_H
 
-#include <QObject>
+#include <set>
 #include <vector>
 #include <boost/optional.hpp>
+#include <QObject>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "gui/Symbol.h"
 
+#include "model/FeatureId.h"
+
+
+namespace GPlatesGui
+{
+	class RenderSettings;
+}
 
 namespace GPlatesViewOperations
 {
@@ -61,6 +69,8 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
+				const GPlatesGui::RenderSettings &render_settings,
+				const std::set<GPlatesModel::FeatureId> &topological_sections,
 				const symbol_map_type &symbol_map);
 	}
 }

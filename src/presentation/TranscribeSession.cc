@@ -1659,6 +1659,11 @@ namespace GPlatesPresentation
 						d_scribe, TRANSCRIBE_SOURCE, params.get_second_invariant_colour_palette_filename(),
 						d_layer_params_tag("second_invariant_colour_palette_filename"));
 
+				// Save the strain rate style colour palette filename (an empty filename means use default palette).
+				GPlatesScribe::TranscribeUtils::save_file_path(
+						d_scribe, TRANSCRIBE_SOURCE, params.get_strain_rate_style_colour_palette_filename(),
+						d_layer_params_tag("strain_rate_style_colour_palette_filename"));
+
 				d_scribe.save(TRANSCRIBE_SOURCE, params.show_segment_velocity(),
 						d_layer_params_tag("show_segment_velocity"));
 
@@ -1688,6 +1693,12 @@ namespace GPlatesPresentation
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_abs_second_invariant(),
 						d_layer_params_tag("max_abs_second_invariant"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_min_strain_rate_style(),
+						d_layer_params_tag("min_strain_rate_style"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_max_strain_rate_style(),
+						d_layer_params_tag("max_strain_rate_style"));
 
 				// Only used by GPlates 2.0 (removed in 2.1) ...
 				d_scribe.save(TRANSCRIBE_SOURCE,
@@ -2111,6 +2122,20 @@ namespace GPlatesPresentation
 					params.set_min_abs_second_invariant(min_abs_second_invariant);
 				}
 
+				double max_strain_rate_style;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, max_strain_rate_style,
+						d_layer_params_tag("max_strain_rate_style")))
+				{
+					params.set_max_strain_rate_style(max_strain_rate_style);
+				}
+
+				double min_strain_rate_style;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, min_strain_rate_style,
+						d_layer_params_tag("min_strain_rate_style")))
+				{
+					params.set_min_strain_rate_style(min_strain_rate_style);
+				}
+
 				TopologyNetworkVisualLayerParams::TriangulationColourMode colour_mode;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, colour_mode,
 						d_layer_params_tag("colour_mode")))
@@ -2223,6 +2248,42 @@ namespace GPlatesPresentation
 				{
 					// Load the default strain second invariant colour palette.
 					params.use_default_second_invariant_colour_palette();
+				}
+
+				//
+				// Load the strain rate style colour palette from a file (if a non-empty filename specified).
+				//
+
+				boost::optional<QString> strain_rate_style_colour_palette_filename =
+						GPlatesScribe::TranscribeUtils::load_file_path(
+								d_scribe, TRANSCRIBE_SOURCE, d_layer_params_tag("strain_rate_style_colour_palette_filename"));
+				if (strain_rate_style_colour_palette_filename &&
+					!strain_rate_style_colour_palette_filename->isEmpty())
+				{
+					GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+							GPlatesGui::ColourPaletteUtils::read_cpt_raster_colour_palette(
+									strain_rate_style_colour_palette_filename.get(),
+									// We only allow real-valued colour palettes since our data is real-valued...
+									false/*allow_integer_colour_palette*/,
+									d_read_errors);
+
+					// If we successfully read a real-valued colour palette.
+					boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+							GPlatesGui::RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+					if (colour_palette)
+					{
+						params.set_strain_rate_style_colour_palette(strain_rate_style_colour_palette_filename.get(), colour_palette.get());
+					}
+					else
+					{
+						// Load the default strain strain rate style colour palette.
+						params.use_default_strain_rate_style_colour_palette();
+					}
+				}
+				else
+				{
+					// Load the default strain strain rate style colour palette.
+					params.use_default_strain_rate_style_colour_palette();
 				}
 			}
 
@@ -2763,11 +2824,28 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				const GPlatesGui::RenderSettings &render_settings)
 		{
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_points(), geometry_visibility_tag("show_points"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_multipoints(), geometry_visibility_tag("show_multipoints"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_lines(), geometry_visibility_tag("show_lines"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_polygons(), geometry_visibility_tag("show_polygons"));
-			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_arrows(), geometry_visibility_tag("show_arrows"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_points(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_points"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_multipoints(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_multipoints"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_lines(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_lines"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_static_polygons(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_polygons"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_sections(), geometry_visibility_tag("show_topological_sections"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_lines(), geometry_visibility_tag("show_topological_lines"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_polygons(), geometry_visibility_tag("show_topological_polygons"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_topological_networks(), geometry_visibility_tag("show_topological_networks"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_velocity_arrows(),
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_arrows"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_rasters(), geometry_visibility_tag("show_rasters"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_3d_scalar_fields(), geometry_visibility_tag("show_3d_scalar_fields"));
+			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_scalar_coverages(), geometry_visibility_tag("show_scalar_coverages"));
 			scribe.save(TRANSCRIBE_SOURCE, render_settings.show_strings(), geometry_visibility_tag("show_strings"));
 		}
 
@@ -2777,34 +2855,86 @@ namespace GPlatesPresentation
 				GPlatesScribe::Scribe &scribe,
 				GPlatesGui::RenderSettings &render_settings)
 		{
-			bool show_points;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_points, geometry_visibility_tag("show_points")))
+			bool show_static_points;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_points,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_points")))
 			{
-				render_settings.set_show_points(show_points);
+				render_settings.set_show_static_points(show_static_points);
 			}
 
-			bool show_multipoints;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_multipoints, geometry_visibility_tag("show_multipoints")))
+			bool show_static_multipoints;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_multipoints,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_multipoints")))
 			{
-				render_settings.set_show_multipoints(show_multipoints);
+				render_settings.set_show_static_multipoints(show_static_multipoints);
 			}
 
-			bool show_lines;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_lines, geometry_visibility_tag("show_lines")))
+			bool show_static_lines;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_lines,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_lines")))
 			{
-				render_settings.set_show_lines(show_lines);
+				render_settings.set_show_static_lines(show_static_lines);
 			}
 
-			bool show_polygons;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_polygons, geometry_visibility_tag("show_polygons")))
+			bool show_static_polygons;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_static_polygons,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_polygons")))
 			{
-				render_settings.set_show_polygons(show_polygons);
+				render_settings.set_show_static_polygons(show_static_polygons);
 			}
 
-			bool show_arrows;
-			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_arrows, geometry_visibility_tag("show_arrows")))
+			bool show_topological_sections;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_sections, geometry_visibility_tag("show_topological_sections")))
 			{
-				render_settings.set_show_arrows(show_arrows);
+				render_settings.set_show_topological_sections(show_topological_sections);
+			}
+
+			bool show_topological_lines;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_lines, geometry_visibility_tag("show_topological_lines")))
+			{
+				render_settings.set_show_topological_lines(show_topological_lines);
+			}
+
+			bool show_topological_polygons;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_polygons, geometry_visibility_tag("show_topological_polygons")))
+			{
+				render_settings.set_show_topological_polygons(show_topological_polygons);
+			}
+
+			bool show_topological_networks;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_topological_networks, geometry_visibility_tag("show_topological_networks")))
+			{
+				render_settings.set_show_topological_networks(show_topological_networks);
+			}
+
+			bool show_velocity_arrows;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_velocity_arrows,
+					// Keeping original tag name for compatibility...
+					geometry_visibility_tag("show_arrows")))
+			{
+				render_settings.set_show_velocity_arrows(show_velocity_arrows);
+			}
+
+			bool show_rasters;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_rasters, geometry_visibility_tag("show_rasters")))
+			{
+				render_settings.set_show_rasters(show_rasters);
+			}
+
+			bool show_3d_scalar_fields;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_3d_scalar_fields, geometry_visibility_tag("show_3d_scalar_fields")))
+			{
+				render_settings.set_show_3d_scalar_fields(show_3d_scalar_fields);
+			}
+
+			bool show_scalar_coverages;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, show_scalar_coverages, geometry_visibility_tag("show_scalar_coverages")))
+			{
+				render_settings.set_show_scalar_coverages(show_scalar_coverages);
 			}
 
 			bool show_strings;

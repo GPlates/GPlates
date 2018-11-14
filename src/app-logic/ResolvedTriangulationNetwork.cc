@@ -1036,23 +1036,36 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_index,
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.shared_reconstruct_info);
+					delaunay_point.shared_source_info);
 
 			// Increment vertex index since vertex handle does not refer to an existing vertex position.
 			++vertex_index;
 		}
-		// It's possible that the returned vertex handle refers to an existing vertex.
-		// This happens if the same position (presumably within an epsilon) is inserted more than once.
-		// If this happens we will give preference higher plate ids in order to provide a
-		// consistent insert order - this is needed because the spatial sort above can change the
-		// order of vertex insertion along the topological sub-segments of the network boundary
-		// for example - which can result in vertices at the intersection between two adjacent
-		// sub-segments switching order of insertion from one reconstruction time to the next
-		// (since both sub-segments have the same end point position) - and this can manifest
-		// as randomly switching end point velocities (from one sub-segment plate id to the other).
-		else if (vertex_handle->get_shared_reconstruct_info().is_lower_preference_than(
-				*delaunay_point.shared_reconstruct_info))
+		else
 		{
+			// The returned vertex handle refers to an existing vertex.
+			// This happens if the same position (presumably within an epsilon) is inserted more than once.
+			// So here we equally blend the source infos of the two vertices.
+			//
+			// Note that the spatial sort above can change the order of vertex insertion along the topological
+			// sub-segments of the network boundary for example - which can result in vertices at the intersection
+			// between two adjacent sub-segments switching order of insertion from one reconstruction time to the next
+			// (since both sub-segments have the same end point position) - however if we equally blend the source infos
+			// of both vertices then this re-ordering should not affect us - ie, we shouldn't get randomly switching
+			// end point velocities (from one sub-segment plate id to the other). It's possible this could
+			// still be a problem if three of more vertices coincide, because we're assuming a max of two,
+			// but it is extremely unlikely for this to happen.
+			//
+			// Create a source info that equally interpolates between the source info of the
+			// existing vertex and the source info of the vertex we're attempting to add.
+			const ResolvedVertexSourceInfo::non_null_ptr_to_const_type interpolated_source_info =
+					ResolvedVertexSourceInfo::create(
+							// Source info of existing vertex...
+							get_non_null_pointer(&vertex_handle->get_shared_source_info()),
+							// Source info of new vertex...
+							delaunay_point.shared_source_info,
+							0.5);  // equal blending
+
 			// Reset the extra info for this vertex.
 			vertex_handle->initialise(
 					d_delaunay_2.get(),
@@ -1060,7 +1073,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_handle->get_vertex_index(),
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.shared_reconstruct_info);
+					// Replace source info with the interpolated source info...
+					interpolated_source_info);
 		}
 
 		// The next insert vertex will start searching at the face of the last inserted vertex.

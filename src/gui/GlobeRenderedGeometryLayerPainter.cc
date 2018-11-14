@@ -41,10 +41,10 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/EllipseGenerator.h"
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
-#include "maths/MathsUtils.h"
 
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
@@ -127,7 +127,6 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const double &inverse_viewport_zoom_factor,
-		const RenderSettings &render_settings,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
@@ -136,7 +135,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-	d_render_settings(render_settings),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
@@ -200,11 +198,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		return;
 	}
 
-	if (!d_render_settings.show_points())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_point_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -263,11 +256,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		return;
 	}
 
-	if (!d_render_settings.show_multipoints())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_multi_point_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -314,11 +302,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_multi_poi
 		const GPlatesViewOperations::RenderedColouredMultiPointOnSphere &rendered_coloured_multi_point_on_sphere)
 {
 	if (d_paint_region != PAINT_SURFACE)
-	{
-		return;
-	}
-
-	if (!d_render_settings.show_multipoints())
 	{
 		return;
 	}
@@ -389,11 +372,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 		return;
 	}
 
-	if (!d_render_settings.show_lines())
-	{
-		return;
-	}
-
 	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polyline_on_sphere.get_colour());
 	if (!colour)
 	{
@@ -452,11 +430,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_
 		return;
 	}
 
-	if (!d_render_settings.show_lines())
-	{
-		return;
-	}
-
 	// The polyline and its associated per-point colours.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_coloured_polyline_on_sphere.get_polyline_on_sphere();
@@ -506,11 +479,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
 	if (d_paint_region != PAINT_SURFACE)
-	{
-		return;
-	}
-
-	if (!d_render_settings.show_polygons())
 	{
 		return;
 	}
@@ -582,11 +550,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_o
 		const GPlatesViewOperations::RenderedColouredPolygonOnSphere &rendered_coloured_polygon_on_sphere)
 {
 	if (d_paint_region != PAINT_SURFACE)
-	{
-		return;
-	}
-
-	if (!d_render_settings.show_polygons())
 	{
 		return;
 	}
@@ -1184,11 +1147,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		return;
 	}
 
-	if (!d_render_settings.show_arrows())
-	{
-		return;
-	}
-
 	const GPlatesMaths::Vector3D start(
 			rendered_tangential_arrow.get_start_position().position_vector());
 
@@ -1281,11 +1239,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 		const GPlatesViewOperations::RenderedString &rendered_string)
 {
 	if (d_paint_region != PAINT_SURFACE)
-	{
-		return;
-	}
-
-	if (!d_render_settings.show_strings())
 	{
 		return;
 	}

@@ -40,90 +40,60 @@
 
 #include "model/FeatureHandle.h"
 
+#include "utils/Profile.h"
+
 
 namespace GPlatesAppLogic
 {
 	namespace
 	{
 		/**
-		 * This is a TEMPORARY HACK:
+		 * Filter out features that are topological geometries (lines and boundaries).
 		 *
-		 * Currently a feature cannot really be added to more than one feature collection because each
-		 * feature has a single parent (collection) pointer. Hence when a feature is added to a second
-		 * feature collection its parent pointer is overwritten. So if we create a temporary feature
-		 * collection and add a feature from an existing feature collection to it - then when we destroy
-		 * that temporary feature collection it will set the parent pointer of its features to NULL.
-		 * This means any subsequent modifications to those features (after temporary feature collection
-		 * is destroyed) will not result in notifications being sent to the original feature collection
-		 * callbacks (due to NULL parent pointer). This was first observed when moving vertices of a feature
-		 * used as a topological section in a topological network - vertex updates appeared to not
-		 * update the model (they were actually updating the model but none of the feature collection
-		 * callbacks were getting called).
-		 *
-		 * TODO: Remove this class when the Python API branch is fully merged to trunk - when that happens
-		 * we will have completed the half-finished restructure of the model, and there should be
-		 * support for multiple parents.
+		 * This function is actually reasonably expensive, so it's best to only call this when
+		 * the layer input feature collections change.
 		 */
-		class TemporaryFeatureCollection
+		void
+		find_topological_geometry_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_boundary_features,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections)
 		{
-		public:
+			PROFILE_FUNC();
 
-			TemporaryFeatureCollection() :
-				d_temporary_feature_collection(GPlatesModel::FeatureCollectionHandle::create())
-			{  }
-
-			~TemporaryFeatureCollection()
+			// Iterate over the current feature collections.
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+					feature_collections.begin();
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+					feature_collections.end();
+			for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
 			{
-				// Destroy temporary feature collection first so that, when it removes child features,
-				// it sets their parent pointer to NULL.
-				d_temporary_feature_collection = boost::none;
-
-				// Restore the original feature collection parent pointers (and child indices).
-				BOOST_FOREACH(
-						const feature_original_parent_map_type::value_type &feature_original_parent,
-						d_feature_original_parents)
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+				if (feature_collection.is_valid())
 				{
-					GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_original_parent.first;
-					const original_parent_type &original_parent = feature_original_parent.second;
+					GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+					GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+					for ( ; features_iter != features_end; ++features_iter)
+					{
+						const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
 
-					feature->set_parent_ptr(original_parent.first, original_parent.second);
+						if (!feature.is_valid())
+						{
+							continue;
+						}
+
+						if (TopologyUtils::is_topological_line_feature(feature))
+						{
+							topological_line_features.push_back(feature);
+						}
+						else if (TopologyUtils::is_topological_boundary_feature(feature))
+						{
+							topological_boundary_features.push_back(feature);
+						}
+					}
 				}
 			}
-
-			void
-			add(
-					const GPlatesModel::FeatureHandle::non_null_ptr_type &feature)
-			{
-				// Record the original feature collection parent (and child index).
-				d_feature_original_parents[feature] = std::make_pair(feature->parent_ptr(), feature->index_in_container());
-
-				// Add to the temporary feature collection.
-				d_temporary_feature_collection.get()->add(feature);
-			}
-
-			bool
-			empty() const
-			{
-				return d_temporary_feature_collection.get()->size() == 0;
-			}
-
-			GPlatesModel::FeatureCollectionHandle::weak_ref
-			get_ref()
-			{
-				return d_temporary_feature_collection.get()->reference();
-			}
-
-		private:
-			// Using boost::optional just so we can control when to destroy.
-			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_temporary_feature_collection;
-
-			typedef std::pair<GPlatesModel::FeatureHandle::parent_type *, GPlatesModel::container_size_type>
-					original_parent_type;
-			typedef std::map<GPlatesModel::FeatureHandle::non_null_ptr_type, original_parent_type>
-					feature_original_parent_map_type;
-
-			feature_original_parent_map_type d_feature_original_parents;
-		};
+		}
 	}
 }
 
@@ -249,7 +219,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 		d_cached_resolved_lines.cached_reconstruct_handle =
 				create_resolved_topological_lines(
 						d_cached_resolved_lines.cached_resolved_topological_lines.get(),
-						d_current_topological_geometry_feature_collections,
+						d_current_topological_line_features,
 						reconstruction_time);
 	}
 
@@ -269,6 +239,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 		const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 		const double &reconstruction_time)
 {
+	PROFILE_FUNC();
+
 	// See if there are any cached resolved lines associated with the reconstruction time.
 	// We don't want to want to re-generate the cache - we only want to re-use the cache if it's there.
 	if (d_cached_resolved_lines.cached_reconstruction_time == GPlatesMaths::real_t(reconstruction_time))
@@ -300,23 +272,19 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 		}
 	}
 
-	// Gather only those features (into a temporary feature collection) that are referenced as topological sections.
-	TemporaryFeatureCollection topological_section_features_referenced;
+	// Gather only those topological lines that are referenced as topological sections.
+	// Note that topological boundaries cannot be referenced as topological sections.
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_section_features_referenced;
 	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_geometry_feature_collection,
-			d_current_topological_geometry_feature_collections)
+			const GPlatesModel::FeatureHandle::weak_ref &topological_geometry_feature,
+			d_current_topological_line_features)
 	{
-		if (topological_geometry_feature_collection.is_valid())
+		if (topological_geometry_feature.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::iterator feature_iter = topological_geometry_feature_collection->begin();
-			GPlatesModel::FeatureCollectionHandle::iterator feature_end = topological_geometry_feature_collection->end();
-			for ( ; feature_iter != feature_end; ++feature_iter)
+			if (topological_sections_referenced.find(topological_geometry_feature->feature_id()) !=
+				topological_sections_referenced.end())
 			{
-				const GPlatesModel::FeatureHandle::non_null_ptr_type feature = *feature_iter;
-				if (topological_sections_referenced.find(feature->feature_id()) != topological_sections_referenced.end())
-				{
-					topological_section_features_referenced.add(feature);
-				}
+				topological_section_features_referenced.push_back(topological_geometry_feature);
 			}
 		}
 	}
@@ -332,7 +300,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 	// feature IDs we've cached for (we could do that though, but currently it's not really necessary).
 	return create_resolved_topological_lines(
 			resolved_topological_sections,
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, topological_section_features_referenced.get_ref()),
+			topological_section_features_referenced,
 			reconstruction_time);
 }
 
@@ -382,15 +350,30 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_boundary_time_
 
 
 void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_topological_geometry_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_geometry_features) const
+{
+	topological_geometry_features.insert(
+			topological_geometry_features.end(),
+			d_current_topological_line_features.begin(),
+			d_current_topological_line_features.end());
+
+	topological_geometry_features.insert(
+			topological_geometry_features.end(),
+			d_current_topological_boundary_features.begin(),
+			d_current_topological_boundary_features.end());
+}
+
+
+void
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_features(
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
-		bool only_topological_features) const
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
 {
 	// Iterate over the current feature collections.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
-			d_current_topological_geometry_feature_collections.begin();
+			d_current_feature_collections.begin();
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
-			d_current_topological_geometry_feature_collections.end();
+			d_current_feature_collections.end();
 	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
 	{
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
@@ -402,18 +385,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_features(
 			{
 				const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
 
-				if (!feature.is_valid())
+				if (feature.is_valid())
 				{
-					continue;
+					features.push_back(feature);
 				}
-
-				if (only_topological_features &&
-					!TopologyUtils::is_topological_geometry_feature(feature))
-				{
-					continue;
-				}
-
-				features.push_back(feature);
 			}
 		}
 	}
@@ -424,6 +399,23 @@ GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_reconstruction_layer_proxy()
 {
 	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
+}
+
+
+void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_current_dependent_topological_sections(
+		std::set<GPlatesModel::FeatureId> &resolved_boundary_dependent_topological_sections,
+		std::set<GPlatesModel::FeatureId> &resolved_line_dependent_topological_sections) const
+{
+	// NOTE: We don't need to call 'check_input_layer_proxies()' because the feature IDs come from
+	// our topological features (not the dependent topological section layers).
+
+	resolved_boundary_dependent_topological_sections.insert(
+			d_resolved_boundary_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_resolved_boundary_dependent_topological_sections.get_topological_section_feature_ids().end());
+	resolved_line_dependent_topological_sections.insert(
+			d_resolved_line_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_resolved_line_dependent_topological_sections.get_topological_section_feature_ids().end());
 }
 
 
@@ -564,16 +556,25 @@ void
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::add_topological_geometry_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_current_topological_geometry_feature_collections.push_back(feature_collection);
+	d_current_feature_collections.push_back(feature_collection);
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological lines and boundaries.
+	d_current_topological_line_features.clear();
+	d_current_topological_boundary_features.clear();
+	find_topological_geometry_features(
+			d_current_topological_line_features,
+			d_current_topological_boundary_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved *boundaries* for *all* times.
 	d_resolved_boundary_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_boundary_features,
 			TopologyGeometry::BOUNDARY);
 
 	// Set the feature IDs of topological sections referenced by our resolved *lines* for *all* times.
 	d_resolved_line_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_line_features,
 			TopologyGeometry::LINE);
 
 	// The resolved topological geometries are now invalid.
@@ -590,20 +591,29 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::remove_topological_geometry
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Erase the feature collection from our list.
-	d_current_topological_geometry_feature_collections.erase(
+	d_current_feature_collections.erase(
 			std::find(
-					d_current_topological_geometry_feature_collections.begin(),
-					d_current_topological_geometry_feature_collections.end(),
+					d_current_feature_collections.begin(),
+					d_current_feature_collections.end(),
 					feature_collection));
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological lines and boundaries.
+	d_current_topological_line_features.clear();
+	d_current_topological_boundary_features.clear();
+	find_topological_geometry_features(
+			d_current_topological_line_features,
+			d_current_topological_boundary_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved *boundaries* for *all* times.
 	d_resolved_boundary_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_boundary_features,
 			TopologyGeometry::BOUNDARY);
 
 	// Set the feature IDs of topological sections referenced by our resolved *lines* for *all* times.
 	d_resolved_line_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_line_features,
 			TopologyGeometry::LINE);
 
 	// The resolved topological geometries are now invalid.
@@ -619,14 +629,23 @@ void
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::modified_topological_geometry_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological lines and boundaries.
+	d_current_topological_line_features.clear();
+	d_current_topological_boundary_features.clear();
+	find_topological_geometry_features(
+			d_current_topological_line_features,
+			d_current_topological_boundary_features,
+			d_current_feature_collections);
+
 	// Set the feature IDs of topological sections referenced by our resolved *boundaries* for *all* times.
 	d_resolved_boundary_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_boundary_features,
 			TopologyGeometry::BOUNDARY);
 
 	// Set the feature IDs of topological sections referenced by our resolved *lines* for *all* times.
 	d_resolved_line_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_line_features,
 			TopologyGeometry::LINE);
 
 	// The resolved topological geometries are now invalid.
@@ -953,9 +972,9 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	d_resolved_boundary_dependent_topological_sections.get_dependent_topological_section_layers(
 			dependent_resolved_line_topological_sections_layers);
 
-	// If we have no topological features or there are no topological section layers then we
+	// If we have no topological boundary features or there are no topological section layers then we
 	// can't get any topological sections and we can't resolve any topological boundaries.
-	if (d_current_topological_geometry_feature_collections.empty() ||
+	if (d_current_topological_boundary_features.empty() ||
 		(dependent_reconstructed_geometry_topological_sections_layers.empty() &&
 			dependent_resolved_line_topological_sections_layers.empty()))
 	{
@@ -974,16 +993,11 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
 	// by boundaries that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
 	std::set<GPlatesModel::FeatureId> topological_sections_referenced;
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_geometry_feature_collection,
-			d_current_topological_geometry_feature_collections)
-	{
-		TopologyInternalUtils::find_topological_sections_referenced(
-				topological_sections_referenced,
-				topological_geometry_feature_collection,
-				TopologyGeometry::BOUNDARY,
-				reconstruction_time);
-	}
+	TopologyInternalUtils::find_topological_sections_referenced(
+			topological_sections_referenced,
+			d_current_topological_boundary_features,
+			TopologyGeometry::BOUNDARY,
+			reconstruction_time);
 
 	// Topological boundary sections that are reconstructed static features...
 	// We're ensuring that all potential (reconstructed geometry) topological-referenced geometries are
@@ -1034,7 +1048,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	// Resolve our boundary features into our sequence of resolved topological boundaries.
 	return TopologyUtils::resolve_topological_boundaries(
 			resolved_topological_boundaries,
-			d_current_topological_geometry_feature_collections,
+			d_current_topological_boundary_features,
 			d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
 			reconstruction_time,
 			topological_geometry_reconstruct_handles);
@@ -1044,7 +1058,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological_lines(
 		std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_geometry_feature_collections,
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 		const double &reconstruction_time)
 {
 	// Get the *dependent* topological section layers.
@@ -1052,11 +1066,11 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	d_resolved_line_dependent_topological_sections.get_dependent_topological_section_layers(
 			dependent_reconstructed_geometry_topological_sections_layers);
 
-	// If we have no topological features or there are no *reconstructed geometry* topological section
+	// If we have no topological line features or there are no *reconstructed geometry* topological section
 	// layers then we can't get any topological sections and we can't resolve any topological lines.
 	// Note that we don't check the *resolved line* topological section layers because resolved lines
 	// cannot be used as topological sections for other resolved lines.
-	if (topological_geometry_feature_collections.empty() ||
+	if (topological_line_features.empty() ||
 		dependent_reconstructed_geometry_topological_sections_layers.empty())
 	{
 		// There will be no reconstructed/resolved geometries for this handle.
@@ -1074,16 +1088,11 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
 	// by lines that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
 	std::set<GPlatesModel::FeatureId> topological_sections_referenced;
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_geometry_feature_collection,
-			topological_geometry_feature_collections)
-	{
-		TopologyInternalUtils::find_topological_sections_referenced(
-				topological_sections_referenced,
-				topological_geometry_feature_collection,
-				TopologyGeometry::LINE,
-				reconstruction_time);
-	}
+	TopologyInternalUtils::find_topological_sections_referenced(
+			topological_sections_referenced,
+			topological_line_features,
+			TopologyGeometry::LINE,
+			reconstruction_time);
 
 	// Topological sections that are reconstructed static features...
 	// We're ensuring that all potential (reconstructed geometry) topological sections are reconstructed
@@ -1116,7 +1125,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 	// Resolve our topological line features into our sequence of resolved topological lines.
 	return TopologyUtils::resolve_topological_lines(
 			resolved_topological_lines,
-			topological_geometry_feature_collections,
+			topological_line_features,
 			d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
 			reconstruction_time,
 			topological_sections_reconstruct_handles);

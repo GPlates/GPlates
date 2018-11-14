@@ -1043,15 +1043,6 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 	{
 		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
 
-		// Get the resolved boundary subsegments.
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> &> boundary_sub_segments =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
-		if (!boundary_sub_segments)
-		{
-			continue;
-		}
-
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
 		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
@@ -1071,6 +1062,11 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 		boost::scoped_ptr<GMTExportHeader> gmt_export_header;
 		switch (export_type)
 		{
+		case ALL_POLYGON_EXPORT_TYPE:
+			// The file with all polygons (regardless of type) uses a different
+			// header format than the files with specific types of polygons.
+			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref.get()));
+			break;
 		case PLATE_POLYGON_EXPORT_TYPE:
 			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref.get()));
 			break;
@@ -1173,7 +1169,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 								subsegment_feature_ref,
 								resolved_geom_feature_ref.get(),
 								*sub_segment,
-								get_sub_segment_type(*sub_segment, reconstruction_time)));
+								get_sub_segment_type(subsegment_feature_ref, reconstruction_time)));
 				break;
 			case SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
 				gmt_export_header.reset(
@@ -1181,7 +1177,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 								subsegment_feature_ref,
 								resolved_geom_feature_ref.get(),
 								*sub_segment,
-								get_slab_sub_segment_type(*sub_segment, reconstruction_time)));
+								get_slab_sub_segment_type(subsegment_feature_ref, reconstruction_time)));
 				break;
 			default:
 				// Shouldn't get here.
@@ -1192,7 +1188,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 			// Write out the subsegment.
 			geom_exporter.print_gmt_header_and_geometry(
 					*gmt_export_header,
-					sub_segment->get_geometry());
+					sub_segment->get_sub_segment_geometry());
 		}
 	}
 }

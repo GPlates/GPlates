@@ -67,7 +67,7 @@
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
 #include "qt-widgets/ExportAnimationDialog.h"
-#include "qt-widgets/GenerateCrustalThicknessPointsDialog.h"
+#include "qt-widgets/GenerateDeformingMeshPointsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
@@ -519,12 +519,12 @@ GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
 }
 
 
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &
-GPlatesGui::Dialogs::generate_crustal_thickness_points_dialog()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog &
+GPlatesGui::Dialogs::generate_deforming_mesh_points_dialog()
 {
 	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_GENERATE_CRUSTAL_THICKNESS_POINTS;
-	typedef GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog dialog_typename;
+	const DialogType dialog_type = DIALOG_GENERATE_DEFORMING_MESH_POINTS;
+	typedef GPlatesQtWidgets::GenerateDeformingMeshPointsDialog dialog_typename;
 
 	if (d_dialogs[dialog_type].isNull())
 	{
@@ -535,9 +535,9 @@ GPlatesGui::Dialogs::generate_crustal_thickness_points_dialog()
 }
 
 void
-GPlatesGui::Dialogs::pop_up_generate_crustal_thickness_points_dialog()
+GPlatesGui::Dialogs::pop_up_generate_deforming_mesh_points_dialog()
 {
-	GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &dialog = generate_crustal_thickness_points_dialog();
+	GPlatesQtWidgets::GenerateDeformingMeshPointsDialog &dialog = generate_deforming_mesh_points_dialog();
 
 	dialog.initialise();
 	dialog.exec();

@@ -185,11 +185,11 @@ namespace GPlatesAppLogic
 				Section(
 						const GPlatesModel::FeatureId &source_feature_id,
 						const ReconstructionGeometry::non_null_ptr_type &source_rg,
-						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry) :
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
+						bool reverse_hint) :
 					d_source_feature_id(source_feature_id),
 					d_source_rg(source_rg),
-					d_use_reverse(false),
-					d_intersection_results(section_geometry)
+					d_intersection_results(TopologicalIntersections::create(section_geometry, reverse_hint))
 				{  }
 
 				//! The feature id of the feature referenced by this topological section.
@@ -199,26 +199,9 @@ namespace GPlatesAppLogic
 				ReconstructionGeometry::non_null_ptr_type d_source_rg;
 
 				/**
-				 * Should the subsegment geometry be reversed when creating topological geometry.
-				 */
-				bool d_use_reverse;
-
-
-				/**
-				 * The final possibly clipped boundary segment geometry.
-				 *
-				 * This is empty until it this section been tested against both its
-				 * neighbours and the appropriate possibly clipped subsegment is chosen
-				 * to be part of the resolved topological geometry.
-				 */
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-						d_final_segment_unreversed_geom;
-
-
-				/**
 				 * Keeps track of temporary results from intersections of this section with its neighbours.
 				 */
-				TopologicalIntersections d_intersection_results;
+				TopologicalIntersections::shared_ptr_type d_intersection_results;
 			};
 
 			//! Typedef for a sequence of sections.
@@ -308,7 +291,8 @@ namespace GPlatesAppLogic
 		boost::optional<ResolvedGeometry::Section>
 		record_topological_section_reconstructed_geometry(
 				const GPlatesModel::FeatureId &source_feature_id,
-				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
+				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
+				bool reverse_hint);
 
 		void
 		process_resolved_boundary_topological_section_intersections();
@@ -324,13 +308,6 @@ namespace GPlatesAppLogic
 		void
 		process_resolved_line_topological_section_intersection(
 				const std::size_t current_section_index);
-
-		void
-		assign_segments();
-
-		void
-		assign_segment(
-				const std::size_t section_index);
 
 		void
 		debug_output_topological_section_feature_id(

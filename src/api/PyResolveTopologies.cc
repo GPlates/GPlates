@@ -618,12 +618,16 @@ namespace GPlatesApi
 					resolved_topological_sections,
 					// Include resolved topological *boundaries* if requested...
 					((resolve_topological_section_types & ResolveTopologyType::BOUNDARY) != 0)
-							? resolved_topological_boundaries
-							: std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>(),
+							? std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type>(
+									resolved_topological_boundaries.begin(),
+									resolved_topological_boundaries.end()) // convert to const
+							: std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type>(),
 					// Include resolved topological *networks* if requested...
 					((resolve_topological_section_types & ResolveTopologyType::NETWORK) != 0)
-							? resolved_topological_networks
-							: std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>());
+							? std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>(
+									resolved_topological_networks.begin(),
+									resolved_topological_networks.end()) // convert to const
+							: std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>());
 
 			//
 			// Either export the resolved topological sections to a file or append them to a python list.

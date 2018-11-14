@@ -232,6 +232,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 					configuration.include_dilatation_strain,
 					configuration.include_dilatation_strain_rate,
 					configuration.include_second_invariant_strain_rate,
+					configuration.include_strain_rate_style,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
 					configuration.file_options.separate_output_directory_per_file);
@@ -267,6 +268,7 @@ GPlatesGui::ExportDeformationAnimationStrategy::do_export_iteration(
 					configuration.include_dilatation_strain,
 					configuration.include_dilatation_strain_rate,
 					configuration.include_second_invariant_strain_rate,
+					configuration.include_strain_rate_style,
 					configuration.file_options.export_to_a_single_file,
 					configuration.file_options.export_to_multiple_files,
 					configuration.file_options.separate_output_directory_per_file);

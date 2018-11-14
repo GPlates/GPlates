@@ -51,6 +51,7 @@
 #include "maths/PolygonMesh.h"
 #include "maths/types.h"
 
+#include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
 #include "utils/KeyValueCache.h"
@@ -789,19 +790,22 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns only the reconstructable (non-topological) subset of features set by
+		 * @a add_reconstructable_feature_collection, etc.
+		 */
+		void
+		get_current_reconstructable_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const;
+
+		/**
 		 * Returns all features set by @a add_reconstructable_feature_collection, etc.
 		 *
 		 * Note that the features might be a mixture of non-topological and topological.
-		 *
-		 * If @a only_non_topological_features is true then only the sub-set of features
-		 * (set by @a add_reconstructable_feature_collection, etc)
-		 * that are actually non-topological features are returned.
-		 * By default all features are returned.
+		 * Some files contain a mixture of both and hence create both non-topological and topological layers.
 		 */
 		void
 		get_current_features(
-				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
-				bool only_non_topological_features = false) const;
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const;
 
 
 		/**
@@ -1143,9 +1147,17 @@ namespace GPlatesAppLogic
 		reconstruct_context_state_map_type d_reconstruct_context_state_map;
 
 		/**
-		 * The input feature collections to reconstruct.
+		 * The subset of features that are reconstructable (non-topological).
+		 *
+		 * Note that the full set of features might be a mixture of non-topological and topological.
+		 * Some files contain a mixture of both and hence create both non-topological and topological layers.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_reconstructable_feature_collections;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_current_reconstructable_features;
+
+		/**
+		 * All input feature collections.
+		 */
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_feature_collections;
 
 		/**
 		 * Used to get reconstruction trees at desired reconstruction times.

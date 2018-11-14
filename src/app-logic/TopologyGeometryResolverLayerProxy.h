@@ -40,6 +40,7 @@
 #include "ResolvedTopologicalLine.h"
 #include "TopologyReconstruct.h"
 
+#include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
 #include "utils/SubjectObserverToken.h"
@@ -213,19 +214,22 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns only the topological geometry subset (topological lines and boundaries) of features
+		 * set by @a add_topological_geometry_feature_collection, etc.
+		 */
+		void
+		get_current_topological_geometry_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_geometry_features) const;
+
+		/**
 		 * Returns all features set by @a add_topological_geometry_feature_collection, etc.
 		 *
 		 * Note that the features might be a mixture of topological and non-topological.
-		 *
-		 * If @a only_topological_features is true then only the sub-set of features
-		 * (set by @a add_topological_geometry_feature_collection, etc)
-		 * that are actually topological features are returned.
-		 * By default all features are returned.
+		 * Some files contain a mixture of both and hence create both topological and non-topological layers.
 		 */
 		void
 		get_current_features(
-				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
-				bool only_topological_features = false) const;
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const;
 
 
 		/**
@@ -233,6 +237,16 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type
 		get_current_reconstruction_layer_proxy();
+
+
+		/**
+		 * Inserts the feature IDs of topological sections referenced by the current topological features
+		 * (resolved lines and boundaries) for *all* times (not just the current time).
+		 */
+		void
+		get_current_dependent_topological_sections(
+				std::set<GPlatesModel::FeatureId> &resolved_boundary_dependent_topological_sections,
+				std::set<GPlatesModel::FeatureId> &resolved_line_dependent_topological_sections) const;
 
 
 		/**
@@ -411,9 +425,22 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * The input feature collections to reconstruct.
+		 * The subset of features that are topological lines.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_topological_geometry_feature_collections;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_current_topological_line_features;
+
+		/**
+		 * The subset of features that are topological boundaries.
+		 */
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_current_topological_boundary_features;
+
+		/**
+		 * All input feature collections.
+		 *
+		 * Note that the full set of features might be a mixture of topological and non-topological.
+		 * Some files contain a mixture of both and hence create both topological and non-topological layers.
+		 */
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_feature_collections;
 
 		/**
 		 * Used to get reconstruction trees at desired reconstruction times.
@@ -537,7 +564,7 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		create_resolved_topological_lines(
 				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_geometry_feature_collections,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 				const double &reconstruction_time);
 	};
 }
