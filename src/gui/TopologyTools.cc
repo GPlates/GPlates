@@ -85,7 +85,6 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ProximityCriteria.h"
-#include "maths/PolylineIntersections.h"
 #include "maths/Real.h"
 
 #include "model/FeatureHandle.h"
@@ -2373,6 +2372,7 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
 						d_application_state_ptr->get_current_reconstruction_time(),
+						section_info.d_table_row.get_reverse(),
 						topological_section_reconstruct_handles);
 
 		if (!visible_section)
@@ -2425,6 +2425,7 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
 						d_application_state_ptr->get_current_reconstruction_time(),
+						section_info.d_table_row.get_reverse(),
 						reconstruct_handles);
 
 		if (!visible_section)
@@ -2554,7 +2555,7 @@ GPlatesGui::TopologyTools::process_resolved_boundary_two_topological_sections_in
 							intersected_segments_type;
 
 	const intersected_segments_type intersected_segments =
-			second_visible_section.d_intersection_results.
+			second_visible_section.d_intersection_results->
 					intersect_with_previous_section_allowing_two_intersections(
 							first_visible_section.d_intersection_results);
 
@@ -2620,9 +2621,8 @@ GPlatesGui::TopologyTools::process_topological_section_intersection(
 	// Process the actual intersection.
 	//
 	const boost::optional<GPlatesMaths::PointOnSphere> intersection =
-			second_visible_section.d_intersection_results.intersect_with_previous_section(
-					first_visible_section.d_intersection_results,
-					get_boundary_section_info(first_visible_section).d_table_row.get_reverse());
+			second_visible_section.d_intersection_results->intersect_with_previous_section(
+					first_visible_section.d_intersection_results);
 
 	// Store the possible intersection point with each section.
 	// Was there an intersection?
@@ -2767,12 +2767,12 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 				// For topological *lines* the first visible section can start a subset if it does not
 				// intersect its next neighbour (and it cannot intersect its previous neighbour).
 				// This is because there's no circular wraparound for topological lines.
-				if (visible_section_info.d_intersection_results.get_num_neighbours_intersected() == 0)
+				if (visible_section_info.d_intersection_results->does_not_intersect_previous_or_next_section())
 				{
 					index_of_first_section_of_first_subset = visible_section_index;
 				}
 			}
-			else if (visible_section_info.d_intersection_results.only_intersects_previous_section())
+			else if (visible_section_info.d_intersection_results->only_intersects_previous_section())
 			{
 				index_of_first_section_of_first_subset = visible_section_index;
 			}
@@ -2785,7 +2785,7 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 			visible_section_index == 0)
 		{
 			// First section in topological line can only intersect with the next section.
-			if (!visible_section_info.d_intersection_results.only_intersects_next_section())
+			if (!visible_section_info.d_intersection_results->only_intersects_next_section())
 			{
 				all_sections_intersect_their_neighbours = false;
 			}
@@ -2794,13 +2794,13 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 			visible_section_index == num_visible_sections - 1)
 		{
 			// Last section in topological line can only intersect with the previous section.
-			if (!visible_section_info.d_intersection_results.only_intersects_previous_section())
+			if (!visible_section_info.d_intersection_results->only_intersects_previous_section())
 			{
 				all_sections_intersect_their_neighbours = false;
 			}
 		}
 		// Interior sections treated same for topological lines and boundaries...
-		else if (!visible_section_info.d_intersection_results.intersects_previous_and_next_sections())
+		else if (!visible_section_info.d_intersection_results->intersects_previous_and_next_sections())
 		{
 			all_sections_intersect_their_neighbours = false;
 		}
@@ -2874,7 +2874,7 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 
 		// If start of a subset...
 		if (visible_section_index == index_of_first_section_of_first_subset.get() ||
-			visible_section_info.d_intersection_results.only_intersects_previous_section())
+			visible_section_info.d_intersection_results->only_intersects_previous_section())
 		{
 			// For topological lines we don't start a new subset if it's the last section because
 			// if we did then we'd have a subset with only one section in it and there needs to be
@@ -2889,7 +2889,7 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 		}
 
 		// This works for both topological boundaries and lines (even for the last visible section).
-		if (!visible_section_info.d_intersection_results.intersects_previous_and_next_sections())
+		if (!visible_section_info.d_intersection_results->intersects_previous_and_next_sections())
 		{
 			// Add section to the current subset.
 			reverse_section_subsets.back().push_back(visible_section_index);
@@ -2921,8 +2921,8 @@ GPlatesGui::TopologyTools::find_flip_reverse_order_flags(
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				parent_geometry_start_and_endpoints = get_boundary_geometry_end_points(
-						parent_visible_section_index, flip_parent_reverse_flag);
+				parent_geometry_start_and_endpoints = get_boundary_sub_segment_end_points(
+						parent_visible_section_index, flip_parent_reverse_flag, false/*include_rubber_band_points*/);
 		const GPlatesMaths::PointOnSphere &parent_geometry_head =
 				parent_geometry_start_and_endpoints.first;
 		const GPlatesMaths::PointOnSphere &parent_geometry_tail =
@@ -2940,8 +2940,8 @@ GPlatesGui::TopologyTools::find_flip_reverse_order_flags(
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				child_section_start_and_endpoints_flipped = get_boundary_geometry_end_points(
-						child_visible_section_index, true);
+				child_section_start_and_endpoints_flipped = get_boundary_sub_segment_end_points(
+						child_visible_section_index, true, false/*include_rubber_band_points*/);
 		const GPlatesMaths::PointOnSphere &child_section_flipped_geometry_head =
 				child_section_start_and_endpoints_flipped.first;
 		const GPlatesMaths::PointOnSphere &child_section_flipped_geometry_tail =
@@ -2952,8 +2952,8 @@ GPlatesGui::TopologyTools::find_flip_reverse_order_flags(
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				child_section_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
-						child_visible_section_index, false);
+				child_section_start_and_endpoints_not_flipped = get_boundary_sub_segment_end_points(
+						child_visible_section_index, false, false/*include_rubber_band_points*/);
 		const GPlatesMaths::PointOnSphere &child_section_not_flipped_geometry_head =
 				child_section_start_and_endpoints_not_flipped.first;
 		const GPlatesMaths::PointOnSphere &child_section_not_flipped_geometry_tail =
@@ -3081,8 +3081,8 @@ GPlatesGui::TopologyTools::find_reverse_order_subset_to_minimize_rubber_banding(
 	std::pair<
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
-			next_section_start_and_endpoints_flipped = get_boundary_geometry_end_points(
-					next_visible_section_index, true);
+			next_section_start_and_endpoints_flipped = get_boundary_sub_segment_end_points(
+					next_visible_section_index, true, false/*include_rubber_band_points*/);
 
 	const GPlatesMaths::PointOnSphere &next_section_flipped_geometry_head =
 			next_section_start_and_endpoints_flipped.first;
@@ -3093,8 +3093,8 @@ GPlatesGui::TopologyTools::find_reverse_order_subset_to_minimize_rubber_banding(
 	std::pair<
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
-			next_section_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
-					next_visible_section_index, false);
+			next_section_start_and_endpoints_not_flipped = get_boundary_sub_segment_end_points(
+					next_visible_section_index, false, false/*include_rubber_band_points*/);
 
 	const GPlatesMaths::PointOnSphere &next_section_not_flipped_geometry_head =
 			next_section_start_and_endpoints_not_flipped.first;
@@ -3234,21 +3234,21 @@ GPlatesGui::TopologyTools::determine_topological_line_intersecting_end_section_r
 
 	// Determine the first visible section intersects its neighbour (can only intersect its next section).
 	VisibleSection &first_visible_section = d_visible_boundary_section_seq.front();
-	if (first_visible_section.d_intersection_results.only_intersects_next_section())
+	if (first_visible_section.d_intersection_results->only_intersects_next_section())
 	{
 		// The geometry end points if its geometry is flipped.
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				geometry_start_and_endpoints_flipped = get_boundary_geometry_end_points(
-						0, true);
+				geometry_start_and_endpoints_flipped = get_boundary_sub_segment_end_points(
+						0, true, false/*include_rubber_band_points*/);
 
 		// The geometry end points if its geometry is *not* flipped.
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				geometry_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
-						0, false);
+				geometry_start_and_endpoints_not_flipped = get_boundary_sub_segment_end_points(
+						0, false, false/*include_rubber_band_points*/);
 
 		// Pick the reversal that generates the longest segment.
 		if (dot(geometry_start_and_endpoints_flipped.first.position_vector(),
@@ -3262,21 +3262,21 @@ GPlatesGui::TopologyTools::determine_topological_line_intersecting_end_section_r
 
 	// Determine the last visible section intersects its neighbour (can only intersect its previous section).
 	VisibleSection &last_visible_section = d_visible_boundary_section_seq.back();
-	if (last_visible_section.d_intersection_results.only_intersects_previous_section())
+	if (last_visible_section.d_intersection_results->only_intersects_previous_section())
 	{
 		// The geometry end points if its geometry is flipped.
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				geometry_start_and_endpoints_flipped = get_boundary_geometry_end_points(
-						d_visible_boundary_section_seq.size() - 1, true);
+				geometry_start_and_endpoints_flipped = get_boundary_sub_segment_end_points(
+						d_visible_boundary_section_seq.size() - 1, true, false/*include_rubber_band_points*/);
 
 		// The geometry end points if its geometry is *not* flipped.
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				geometry_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
-						d_visible_boundary_section_seq.size() - 1, false);
+				geometry_start_and_endpoints_not_flipped = get_boundary_sub_segment_end_points(
+						d_visible_boundary_section_seq.size() - 1, false, false/*include_rubber_band_points*/);
 
 		// Pick the reversal that generates the longest segment.
 		if (dot(geometry_start_and_endpoints_flipped.first.position_vector(),
@@ -3313,20 +3313,14 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 {
 	VisibleSection &visible_section = d_visible_boundary_section_seq[visible_section_index];
 
-	const bool reverse_flag = get_boundary_section_info(visible_section).d_table_row.get_reverse();
-
 	// Get the boundary segment for the current section.
-	// The reverse flag passed in is only used if the section did not intersect
-	// both its neighbours.
 	visible_section.d_final_boundary_segment_unreversed_geom =
-			visible_section.d_intersection_results.get_unreversed_sub_segment(reverse_flag);
+			visible_section.d_intersection_results->get_sub_segment_geometry();
 
 	// See if the reverse flag has been set by intersection processing - this
-	// happens if the visible section intersected both its neighbours otherwise it just
-	// returns the flag we passed it.
-	const bool new_reverse_flag =
-			visible_section.d_intersection_results.get_reverse_flag(reverse_flag);
-	set_boundary_section_reverse_flag(visible_section.d_section_info_index, new_reverse_flag);
+	// happens if the visible section intersected both its neighbours.
+	const bool new_reverse_flag = visible_section.d_intersection_results->get_reverse_flag();
+	set_boundary_section_reverse_flag(visible_section, new_reverse_flag);
 
 	//
 	// Now that we've determined whether to reverse the section or not we can
@@ -3369,13 +3363,9 @@ GPlatesGui::TopologyTools::assign_interior_segment(
 {
 	VisibleSection &visible_section = d_visible_interior_section_seq[visible_section_index];
 
-	const bool reverse_flag = get_interior_section_info(visible_section).d_table_row.get_reverse();
-
 	// Get the boundary segment for the current section.
-	// The reverse flag passed in is only used if the section did not intersect
-	// both its neighbours.
 	visible_section.d_final_boundary_segment_unreversed_geom =
-			visible_section.d_intersection_results.get_unreversed_sub_segment(reverse_flag);
+			visible_section.d_intersection_results->get_sub_segment_geometry();
 
 #if 0
 //
@@ -3385,7 +3375,7 @@ GPlatesGui::TopologyTools::assign_interior_segment(
 	// happens if the visible section intersected both its neighbours otherwise it just
 	// returns the flag we passed it.
 	const bool new_reverse_flag =
-			visible_section.d_intersection_results.get_reverse_flag(reverse_flag);
+			visible_section.d_intersection_results->get_reverse_flag(reverse_flag);
 	set_reverse_flag(visible_section.d_section_info_index, new_reverse_flag);
 #endif
 
@@ -3496,28 +3486,6 @@ GPlatesGui::TopologyTools::is_section_visible_interior(
 
 void
 GPlatesGui::TopologyTools::set_boundary_section_reverse_flag(
-		const section_info_seq_type::size_type section_index,
-		const bool new_reverse_flag)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			section_index < d_boundary_section_info_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
-
-	SectionInfo &section_info = d_boundary_section_info_seq[section_index];
-
-	// An optimisation that only updates the topology sections container if
-	// the reverse flag has changed - this is because the topology sections table GUI
-	// is very expensive to update and this can be visible as jerkiness when animating
-	// the reconstruction time.
-	if (new_reverse_flag != section_info.d_table_row.get_reverse())
-	{
-		flip_reverse_flag(section_index);
-	}
-}
-
-
-void
-GPlatesGui::TopologyTools::set_boundary_section_reverse_flag(
 		VisibleSection &visible_section_info,
 		const bool new_reverse_flag)
 {
@@ -3525,26 +3493,16 @@ GPlatesGui::TopologyTools::set_boundary_section_reverse_flag(
 			visible_section_info.d_section_info_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	set_boundary_section_reverse_flag(visible_section_info.d_section_info_index, new_reverse_flag);
-}
+	SectionInfo &section_info = d_boundary_section_info_seq[visible_section_info.d_section_info_index];
 
-
-void
-GPlatesGui::TopologyTools::flip_reverse_flag(
-		const section_info_seq_type::size_type section_index)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			section_index < d_boundary_section_info_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
-
-	SectionInfo &section_info = d_boundary_section_info_seq[section_index];
-
-	// Flip the reverse flag.
-	section_info.d_table_row.set_reverse(
-			!section_info.d_table_row.get_reverse());
-
-	// Let others know of the change to the reverse flag.
-	d_boundary_sections_container_ptr->update_at(section_index, section_info.d_table_row);
+	// An optimisation that only updates the topology sections container if
+	// the reverse flag has changed - this is because the topology sections table GUI
+	// is very expensive to update and this can be visible as jerkiness when animating
+	// the reconstruction time.
+	if (new_reverse_flag != section_info.d_table_row.get_reverse())
+	{
+		flip_reverse_flag(visible_section_info);
+	}
 }
 
 
@@ -3552,38 +3510,61 @@ void
 GPlatesGui::TopologyTools::flip_reverse_flag(
 		VisibleSection &visible_section_info)
 {
+	const section_info_seq_type::size_type section_index = visible_section_info.d_section_info_index;
+
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			visible_section_info.d_section_info_index < d_boundary_section_info_seq.size(),
+			section_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	flip_reverse_flag(visible_section_info.d_section_info_index);
+	SectionInfo &section_info = d_boundary_section_info_seq[section_index];
+
+	// Flip the reverse flag.
+	const bool flipped_reverse_flag = !section_info.d_table_row.get_reverse();
+
+	// Set it in the sections container and in the intersection results.
+	// It's only used in the intersection results if section does not intersect both its neighbour sections.
+	section_info.d_table_row.set_reverse(flipped_reverse_flag);
+	visible_section_info.d_intersection_results->set_reverse_hint(flipped_reverse_flag);
+
+	// Let others know of the change to the reverse flag.
+	d_boundary_sections_container_ptr->update_at(section_index, section_info.d_table_row);
 }
 
 
 std::pair<
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
-GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
+GPlatesGui::TopologyTools::get_boundary_sub_segment_end_points(
 		const visible_section_seq_type::size_type visible_section_index,
-		const bool flip_reversal_flag)
+		const bool flip_reversal_flag,
+		const bool include_rubber_band_points)
 {
 	VisibleSection &visible_section_info = d_visible_boundary_section_seq[visible_section_index];
 
-	const bool reverse_order =
-			get_boundary_section_info(visible_section_info).d_table_row.get_reverse()
-					^ flip_reversal_flag;
+	// Get the current reverse flag.
+	const bool reverse_flag = get_boundary_section_info(visible_section_info).d_table_row.get_reverse();
 
-	// NOTE: We must query the intersection results for the boundary segment
-	// using the reverse flag instead of just getting the boundary segment
-	// directly from the SectionInfo because the reverse flag determines which
-	// partitioned segment to use when there is only one intersection.
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-			geometry = visible_section_info.d_intersection_results.
-					get_unreversed_sub_segment(reverse_order);
+	// Flip the current reverse flag if requested.
+	if (flip_reversal_flag)
+	{
+		visible_section_info.d_intersection_results->set_reverse_hint(!reverse_flag);
+	}
 
-	// Return the start and end points of the current boundary subsegment.
-	return GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
-			*geometry, reverse_order);
+	// NOTE: We must query the intersection results for the boundary sub-segment
+	// using the reverse hint instead of just getting the boundary sub-segment
+	// directly from the SectionInfo because the reverse hint determines which
+	// partitioned sub-segment to use when there is only one intersection.
+	const std::pair<GPlatesMaths::PointOnSphere, GPlatesMaths::PointOnSphere> sub_segment_end_points =
+			visible_section_info.d_intersection_results
+					->get_reversed_sub_segment_end_points(include_rubber_band_points);
+
+	// Reset reverse flag back to original.
+	if (flip_reversal_flag)
+	{
+		visible_section_info.d_intersection_results->set_reverse_hint(reverse_flag);
+	}
+
+	return sub_segment_end_points;
 }
 
 
@@ -3858,22 +3839,11 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 }
 
 
-GPlatesGui::TopologyTools::VisibleSection::VisibleSection(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry_unreversed,
-		const std::size_t section_info_index) :
-	d_section_info_index(section_info_index),
-	// The section geometry is always the whole unclipped section geometry.
-	// This shouldn't change when we do neighbouring section intersection processing.
-	d_section_geometry_unreversed(section_geometry_unreversed),
-	d_intersection_results(section_geometry_unreversed)
-{
-}
-
-
 boost::optional<GPlatesGui::TopologyTools::VisibleSection>
 GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		std::size_t section_index,
 		const double &reconstruction_time,
+		bool reverse_hint,
 		const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const
 {
 	// Find the RFG, in the current Reconstruction, for the current topological section.
@@ -3909,7 +3879,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
 				section_rfg.get()->reconstructed_geometry();
 
-		return VisibleSection(section_geometry_unreversed, section_index);
+		return VisibleSection(section_geometry_unreversed, reverse_hint, section_index);
 	}
 
 	// See if topological section is an RTG.
@@ -3922,7 +3892,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
 				section_rtg.get()->resolved_topology_geometry();
 
-		return VisibleSection(section_geometry_unreversed, section_index);
+		return VisibleSection(section_geometry_unreversed, reverse_hint, section_index);
 	}
 
 	return boost::none;

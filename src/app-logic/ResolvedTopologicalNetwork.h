@@ -36,6 +36,7 @@
 #include "ReconstructionGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTriangulationNetwork.h"
+#include "ResolvedVertexSourceInfo.h"
 
 #include "maths/PolygonOnSphere.h"
 
@@ -127,6 +128,17 @@ namespace GPlatesAppLogic
 		{
 			return get_triangulation_network().get_boundary_polygon();
 		}
+
+
+		/**
+		 * Returns the boundary per-vertex source reconstructed feature geometries.
+		 *
+		 * Each vertex returned by @a boundary_polygon references a source reconstructed feature geometry.
+		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon.
+		 */
+		const resolved_vertex_source_info_seq_type &
+		get_vertex_source_infos() const;
+
 
 		/**
 		 * The triangulation network.
@@ -309,6 +321,16 @@ namespace GPlatesAppLogic
 		 */
 		ResolvedTriangulation::Network::non_null_ptr_type d_triangulation_network;
 
+
+		/**
+		 * Each point in the resolved topological line can potentially reference a different
+		 * source reconstructed feature geometry.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_vertex_source_infos;
+
+
 		/**
 		 * Instantiate a network with an optional reconstruction plate ID and
 		 * an optional time of formation.
@@ -335,6 +357,9 @@ namespace GPlatesAppLogic
 			d_boundary_sub_segment_seq(boundary_sub_segment_sequence_begin, boundary_sub_segment_sequence_end),
 			d_triangulation_network(triangulation_network)
 		{  }
+
+		void
+		calc_vertex_source_infos() const;
 	};
 }
 

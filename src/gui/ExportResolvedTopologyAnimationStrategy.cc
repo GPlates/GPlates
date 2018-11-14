@@ -100,17 +100,17 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
+	const QDir &target_dir = d_export_animation_context_ptr->target_dir();
+
 	// Figure out a filename from the template filename sequence.
-	QString basename = *filename_it++;
-	// Add the target dir to that to figure out the absolute path + name.
-	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
+	QString output_filebasename = *filename_it++;
 
 	// All that's really expected of us at this point is maybe updating
 	// the dialog status message, then calculating what we want to calculate,
 	// and writing whatever file we feel like writing.
 	d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Writing resolved topologies at frame %2 to file \"%1\"...")
-			.arg(basename)
+			QObject::tr("Writing resolved topologies at frame %2 to \"%1\"...")
+			.arg(output_filebasename)
 			.arg(frame_index) );
 
 	// Here's where we do the actual work of exporting of the resolved topologies,
@@ -119,7 +119,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	{
 
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resolved_topologies(
-			full_filename,
+			target_dir,
+			output_filebasename,
+			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+			"",
+			"_boundaries",
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_format_registry(),
 			d_loaded_files,
@@ -132,6 +136,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 			d_configuration->export_topological_lines,
 			d_configuration->export_topological_polygons,
 			d_configuration->export_topological_networks,
+			//
+			// Temporarily disable export of resolved topological *sections* until we add the option
+			// to do so in the export widget...
+			//
+			false/*d_configuration->export_topological_sections*/,
 			d_configuration->force_polygon_orientation,
 			d_configuration->wrap_to_dateline);
 
@@ -139,8 +148,8 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	catch (std::exception &exc)
 	{
 		d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Error writing reconstructed geometry file \"%1\": %2")
-					.arg(full_filename)
+			QObject::tr("Error writing resolved topological geometries\"%1\": %2")
+					.arg(output_filebasename)
 					.arg(exc.what()));
 		return false;
 	}
@@ -148,7 +157,8 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	{
 		// FIXME: Catch all proper exceptions we might get here.
 		d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Error writing reconstructed geometry file \"%1\": unknown error!").arg(full_filename));
+			QObject::tr("Error writing resolved topological geometries \"%1\": unknown error!")
+					.arg(output_filebasename));
 		return false;
 	}
 	

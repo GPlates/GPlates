@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <QDir>
 #include <QString>
 
 #include "file-io/File.h"
@@ -165,6 +166,7 @@ namespace GPlatesViewOperations
 		 * @param export_topological_lines export resolved topological lines.
 		 * @param export_topological_polygons export resolved topological polygons.
 		 * @param export_topological_networks export resolved topological networks.
+		 * @param export_topological_sections export resolved topological sections (*shared* sub-segments).
 		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		 *
@@ -173,7 +175,11 @@ namespace GPlatesViewOperations
 		 */
 		void
 		export_visible_resolved_topologies(
-				const QString &filename,
+				const QDir &target_dir,
+				const QString &file_basename,
+				const QString &placeholder_format_string,
+				const QString &placeholder_topological_geometries,
+				const QString &placeholder_topological_sections,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
@@ -186,6 +192,7 @@ namespace GPlatesViewOperations
 				bool export_topological_lines,
 				bool export_topological_polygons,
 				bool export_topological_networks,
+				bool export_topological_sections,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);

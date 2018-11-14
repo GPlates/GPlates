@@ -106,17 +106,21 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 	render_style_params.reconstruction_point_size_hint =
 			rendered_geometry_parameters.get_choose_feature_tool_point_size_hint();;
 
-	// Iterate over the reconstruction geometries of the focused features.
+	// Render the non-clicked (grey) focused geometries first so they don't occlude the clicked (white) geometries.
 	BOOST_FOREACH(
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
 			reconstruction_geometries_observing_feature)
 	{
+		// Skip the clicked (white) geometries.
+		if (reconstruction_geometry == focused_geometry.get())
+		{
+			continue;
+		}
+
 		// If the RG is the same as the focused geometry (the geometry that the
 		// user clicked on) then highlight it in a different colour.
 		const GPlatesGui::Colour &highlight_colour =
-				(reconstruction_geometry == focused_geometry.get())
-				? rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour()
-				: rendered_geometry_parameters.get_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour();
+				rendered_geometry_parameters.get_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour();
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
@@ -128,9 +132,37 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 				symbol_map);
 
 		highlighted_geometry_renderer.begin_render(render_geom_layer);
-
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
+		highlighted_geometry_renderer.end_render();
+	}
 
+	// Render the clicked (white) focused geometries last so they appear on top of the non-clicked (grey) geometries.
+	BOOST_FOREACH(
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
+			reconstruction_geometries_observing_feature)
+	{
+		// Skip the non-clicked (grey) geometries.
+		if (reconstruction_geometry != focused_geometry.get())
+		{
+			continue;
+		}
+
+		// If the RG is the same as the focused geometry (the geometry that the
+		// user clicked on) then highlight it in a different colour.
+		const GPlatesGui::Colour &highlight_colour =
+				rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour();
+
+		// This creates the RenderedGeometry's using the highlight colour.
+		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
+				render_style_params,
+				render_settings,
+				topological_sections,
+				highlight_colour, 
+				boost::none,
+				symbol_map);
+
+		highlighted_geometry_renderer.begin_render(render_geom_layer);
+		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
 		highlighted_geometry_renderer.end_render();
 	}
 }

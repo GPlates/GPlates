@@ -55,9 +55,12 @@ GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::ExportCitcomsResol
 	// passed to us.  
 	//
 
+	//
 	// polygon 
-	checkBox_export_all_plate_polygons_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_all_plate_polygons_to_a_single_file
+	//
+
+	checkBox_export_plate_polygons_to_single_file->setCheckState(
+			d_export_configuration.output_options.export_plate_polygons_to_a_single_file
 			? Qt::Checked
 			: Qt::Unchecked);
 
@@ -66,84 +69,87 @@ GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::ExportCitcomsResol
 			? Qt::Checked
 			: Qt::Unchecked);
 
-#if 0
-// No longer needed ; redundant export 
-	checkBox_export_plate_polygon_subsegments_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_plate_polygon_subsegments_to_lines
-			? Qt::Checked
-			: Qt::Unchecked);
-#endif
-
-	checkBox_export_plate_polygon_subsegments_to_type_files->setCheckState(
-			(
-					d_export_configuration.output_options.export_ridge_transforms &&
-					d_export_configuration.output_options.export_subductions &&
-					d_export_configuration.output_options.export_left_subductions &&
-					d_export_configuration.output_options.export_right_subductions
-			)
+	checkBox_export_plate_boundaries_to_type_files->setCheckState(
+			d_export_configuration.output_options.export_plate_boundaries
 			? Qt::Checked
 			: Qt::Unchecked);
 
-
-
+	//
 	// network 
+	//
+
 	checkBox_export_individual_network_polygon_files->setCheckState(
 			d_export_configuration.output_options.export_individual_network_polygon_files
 			? Qt::Checked
 			: Qt::Unchecked);
 
-	checkBox_export_all_network_polygons_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_all_network_polygons_to_a_single_file
+	checkBox_export_network_polygons_to_single_file->setCheckState(
+			d_export_configuration.output_options.export_network_polygons_to_a_single_file
 			? Qt::Checked
 			: Qt::Unchecked);
 
-#if 0
-// No longer needed ; redundant export 
-	checkBox_export_network_polygon_subsegments_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_network_polygon_subsegments_to_lines
-			? Qt::Checked
-			: Qt::Unchecked);
-#endif
-
-	checkBox_export_network_polygon_subsegments_to_type_files->setCheckState(
-			(
-					d_export_configuration.output_options.export_network_ridge_transforms &&
-					d_export_configuration.output_options.export_network_subductions &&
-					d_export_configuration.output_options.export_network_left_subductions &&
-					d_export_configuration.output_options.export_network_right_subductions
-			)
+	checkBox_export_network_boundaries_to_type_files->setCheckState(
+			d_export_configuration.output_options.export_network_boundaries
 			? Qt::Checked
 			: Qt::Unchecked);
 
+	//
 	// slab 
-	checkBox_export_all_slab_polygons_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_all_slab_polygons_to_a_single_file
-			? Qt::Checked
-			: Qt::Unchecked);
+	//
 
 	checkBox_export_individual_slab_polygon_files->setCheckState(
 			d_export_configuration.output_options.export_individual_slab_polygon_files
 			? Qt::Checked
 			: Qt::Unchecked);
 
-#if 0
-// No longer needed ; redundant export 
-	checkBox_export_slab_polygon_subsegments_to_single_file->setCheckState(
-			d_export_configuration.output_options.export_slab_polygon_subsegments_to_lines
+	checkBox_export_slab_polygons_to_single_file->setCheckState(
+			d_export_configuration.output_options.export_slab_polygons_to_a_single_file
 			? Qt::Checked
 			: Qt::Unchecked);
-#endif
 
-	checkBox_export_slab_polygon_subsegments_to_type_files->setCheckState(
-			(
-					d_export_configuration.output_options.export_slab_edge_leading &&
-					d_export_configuration.output_options.export_slab_edge_leading_left &&
-					d_export_configuration.output_options.export_slab_edge_leading_right &&
-					d_export_configuration.output_options.export_slab_edge_trench &&
-					d_export_configuration.output_options.export_slab_edge_side
-			)
+	checkBox_export_slab_boundaries_to_type_files->setCheckState(
+			d_export_configuration.output_options.export_slab_boundaries
 			? Qt::Checked
 			: Qt::Unchecked);
+
+	//
+	// all polygons
+	//
+
+	checkBox_export_plate_polygons_to_all_polygons_file->setCheckState(
+			d_export_configuration.output_options.export_plate_polygons_to_all_polygons_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	checkBox_export_network_polygons_to_all_polygons_file->setCheckState(
+			d_export_configuration.output_options.export_network_polygons_to_all_polygons_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	checkBox_export_slab_polygons_to_all_polygons_file->setCheckState(
+			d_export_configuration.output_options.export_slab_polygons_to_all_polygons_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	//
+	// all boundary segments
+	//
+
+	checkBox_export_plate_boundaries_to_all_boundaries_file->setCheckState(
+			d_export_configuration.output_options.export_plate_boundaries_to_all_boundaries_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	checkBox_export_network_boundaries_to_all_boundaries_file->setCheckState(
+			d_export_configuration.output_options.export_network_boundaries_to_all_boundaries_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	checkBox_export_slab_boundaries_to_all_boundaries_file->setCheckState(
+			d_export_configuration.output_options.export_slab_boundaries_to_all_boundaries_file
+			? Qt::Checked
+			: Qt::Unchecked);
+
 
 	make_signal_slot_connections();
 }
@@ -171,74 +177,75 @@ GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::create_export_anim
 void
 GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::make_signal_slot_connections()
 {
-	QObject::connect(
-			checkBox_export_all_plate_polygons_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
-	QObject::connect(
-			checkBox_export_all_slab_polygons_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
-	QObject::connect(
-			checkBox_export_all_network_polygons_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+	//
+	// all polygons
+	//
 
 	QObject::connect(
-			checkBox_export_individual_plate_polygon_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_plate_polygons_to_all_polygons_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 	QObject::connect(
-			checkBox_export_individual_slab_polygon_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_network_polygons_to_all_polygons_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 	QObject::connect(
-			checkBox_export_individual_network_polygon_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_slab_polygons_to_all_polygons_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 
-#if 0
-// No longer needed ; redundant export 
-	QObject::connect(
-			checkBox_export_plate_polygon_subsegments_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+	//
+	// all boundary segments
+	//
 
 	QObject::connect(
-			checkBox_export_slab_polygon_subsegments_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_plate_boundaries_to_all_boundaries_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_network_boundaries_to_all_boundaries_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_slab_boundaries_to_all_boundaries_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+
+	//
+	// plate polygon options 
+	//
 
 	QObject::connect(
-			checkBox_export_network_polygon_subsegments_to_single_file,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
-#endif
+			checkBox_export_individual_plate_polygon_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_plate_polygons_to_single_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_plate_boundaries_to_type_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+
+	//
+	// network polygon options 
+	//
 
 	QObject::connect(
-			checkBox_export_plate_polygon_subsegments_to_type_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_individual_network_polygon_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 	QObject::connect(
-			checkBox_export_slab_polygon_subsegments_to_type_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_network_polygons_to_single_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 	QObject::connect(
-			checkBox_export_network_polygon_subsegments_to_type_files,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(react_check_box_state_changed(int)));
+			checkBox_export_network_boundaries_to_type_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+
+	//
+	// slab polygon options 
+	//
+
+	QObject::connect(
+			checkBox_export_individual_slab_polygon_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_slab_polygons_to_single_file, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
+	QObject::connect(
+			checkBox_export_slab_boundaries_to_type_files, SIGNAL(stateChanged(int)),
+			this, SLOT(react_check_box_state_changed(int)));
 }
 
 
@@ -246,68 +253,68 @@ void
 GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::react_check_box_state_changed(
 		int state)
 {
-	// all plate polygons to a single file 
-	d_export_configuration.output_options.export_all_plate_polygons_to_a_single_file =
-			checkBox_export_all_plate_polygons_to_single_file->isChecked();
-	// all slab polygons to a single file 
-	d_export_configuration.output_options.export_all_slab_polygons_to_a_single_file =
-			checkBox_export_all_slab_polygons_to_single_file->isChecked();
-	// all network polygons to a single file 
-	d_export_configuration.output_options.export_all_network_polygons_to_a_single_file =
-			checkBox_export_all_network_polygons_to_single_file->isChecked();
+	//
+	// all polygons
+	//
 
-    
-	// individual plate polygon files
+	d_export_configuration.output_options.export_plate_polygons_to_all_polygons_file =
+			checkBox_export_plate_polygons_to_all_polygons_file->isChecked();
+
+	d_export_configuration.output_options.export_network_polygons_to_all_polygons_file =
+			checkBox_export_network_polygons_to_all_polygons_file->isChecked();
+
+	d_export_configuration.output_options.export_slab_polygons_to_all_polygons_file =
+			checkBox_export_slab_polygons_to_all_polygons_file->isChecked();
+
+	//
+	// all boundary segments
+	//
+
+	d_export_configuration.output_options.export_plate_boundaries_to_all_boundaries_file =
+			checkBox_export_plate_boundaries_to_all_boundaries_file->isChecked();
+
+	d_export_configuration.output_options.export_network_boundaries_to_all_boundaries_file =
+			checkBox_export_network_boundaries_to_all_boundaries_file->isChecked();
+
+	d_export_configuration.output_options.export_slab_boundaries_to_all_boundaries_file =
+			checkBox_export_slab_boundaries_to_all_boundaries_file->isChecked();
+
+	//
+	// plate polygon options 
+	//
+
 	d_export_configuration.output_options.export_individual_plate_polygon_files =
 			checkBox_export_individual_plate_polygon_files->isChecked();
-	// individual slab polygon files
-	d_export_configuration.output_options.export_individual_slab_polygon_files =
-			checkBox_export_individual_slab_polygon_files->isChecked();
-	// individual network polygon files
+
+	d_export_configuration.output_options.export_plate_polygons_to_a_single_file =
+			checkBox_export_plate_polygons_to_single_file->isChecked();
+
+	d_export_configuration.output_options.export_plate_boundaries =
+			checkBox_export_plate_boundaries_to_type_files->isChecked();
+
+	//
+	// network polygon options 
+	//
+
 	d_export_configuration.output_options.export_individual_network_polygon_files =
 			checkBox_export_individual_network_polygon_files->isChecked();
 
-#if 0
-// No longer needed ; redundant export 
-	// all sub segments , from various topology types, to a finle file 
-	d_export_configuration.output_options.export_plate_polygon_subsegments_to_lines =
-			checkBox_export_plate_polygon_subsegments_to_single_file->isChecked();
-	d_export_configuration.output_options.export_slab_polygon_subsegments_to_lines =
-			checkBox_export_slab_polygon_subsegments_to_single_file->isChecked();
-	d_export_configuration.output_options.export_network_polygon_subsegments_to_lines =
-			checkBox_export_network_polygon_subsegments_to_single_file->isChecked();
-#endif
+	d_export_configuration.output_options.export_network_polygons_to_a_single_file =
+			checkBox_export_network_polygons_to_single_file->isChecked();
 
-	// plate polygon sub segments
-	d_export_configuration.output_options.export_ridge_transforms =
-			checkBox_export_plate_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_subductions =
-			checkBox_export_plate_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_left_subductions =
-			checkBox_export_plate_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_right_subductions =
-			checkBox_export_plate_polygon_subsegments_to_type_files->isChecked();
+	d_export_configuration.output_options.export_network_boundaries =
+			checkBox_export_network_boundaries_to_type_files->isChecked();
 
-	// slab polygon sub segments 
-	d_export_configuration.output_options.export_slab_edge_leading =
-			checkBox_export_slab_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_slab_edge_leading_left =
-			checkBox_export_slab_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_slab_edge_leading_right =
-			checkBox_export_slab_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_slab_edge_trench =
-			checkBox_export_slab_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_slab_edge_side =
-			checkBox_export_slab_polygon_subsegments_to_type_files->isChecked();
+	//
+	// slab polygon options 
+	//
 
-	// network polygon sub segments 
-	d_export_configuration.output_options.export_network_ridge_transforms =
-			checkBox_export_network_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_network_subductions =
-			checkBox_export_network_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_network_left_subductions =
-			checkBox_export_network_polygon_subsegments_to_type_files->isChecked();
-	d_export_configuration.output_options.export_network_right_subductions =
-			checkBox_export_network_polygon_subsegments_to_type_files->isChecked();
+	d_export_configuration.output_options.export_individual_slab_polygon_files =
+			checkBox_export_individual_slab_polygon_files->isChecked();
 
+	d_export_configuration.output_options.export_slab_polygons_to_a_single_file =
+			checkBox_export_slab_polygons_to_single_file->isChecked();
+
+	d_export_configuration.output_options.export_slab_boundaries =
+			checkBox_export_slab_boundaries_to_type_files->isChecked();
 }

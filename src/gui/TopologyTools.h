@@ -290,9 +290,16 @@ namespace GPlatesGui
 		{
 		public:
 			VisibleSection(
-					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
-							section_geometry_unreversed,
-					const std::size_t section_info_index);
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry_unreversed,
+					bool reverse_hint,
+					const std::size_t section_info_index) :
+				d_section_info_index(section_info_index),
+				// The section geometry is always the whole unclipped section geometry.
+				// This shouldn't change when we do neighbouring section intersection processing.
+				d_section_geometry_unreversed(section_geometry_unreversed),
+				d_intersection_results(
+						GPlatesAppLogic::TopologicalIntersections::create(section_geometry_unreversed, reverse_hint))
+			{  }
 
 			/**
 			 * Index of the @a SectionInfo that 'this' object was created from.
@@ -312,7 +319,7 @@ namespace GPlatesGui
 			 * The final possibly clipped boundary segment geometry - the part of geometry of
 			 * the topological section that represents the resolved topological polygon boundary.
 			 *
-			 * This is empty until it this section been tested against both its
+			 * This is empty until this section been tested against both its
 			 * neighbours and the appropriate possibly clipped subsegment is chosen
 			 * to be part of the plate polygon boundary.
 			 *
@@ -351,7 +358,7 @@ namespace GPlatesGui
 			 * Keeps track of temporary results from intersections of this section
 			 * with its neighbours.
 			 */
-			GPlatesAppLogic::TopologicalIntersections d_intersection_results;
+			GPlatesAppLogic::TopologicalIntersections::shared_ptr_type d_intersection_results;
 		};
 
 		//! Typedef for a sequence of @a VisibleSection objects.
@@ -392,6 +399,7 @@ namespace GPlatesGui
 			reconstruct_section_info_from_table_row(
 					std::size_t section_index,
 					const double &reconstruction_time,
+					bool reverse_hint,
 					const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const;
 
 			/**
@@ -690,17 +698,8 @@ namespace GPlatesGui
 
 		void
 		set_boundary_section_reverse_flag(
-				const section_info_seq_type::size_type section_index,
-				const bool new_reverse_flag);
-
-		void
-		set_boundary_section_reverse_flag(
 				VisibleSection &visible_section_info,
 				const bool new_reverse_flag);
-
-		void
-		flip_reverse_flag(
-				const section_info_seq_type::size_type section_index);
 
 		void
 		flip_reverse_flag(
@@ -709,9 +708,10 @@ namespace GPlatesGui
 		std::pair<
 				GPlatesMaths::PointOnSphere/*start point*/,
 				GPlatesMaths::PointOnSphere/*end point*/>
-		get_boundary_geometry_end_points(
+		get_boundary_sub_segment_end_points(
 				const visible_section_seq_type::size_type visible_section_index,
-				const bool flip_reversal_flag);
+				const bool flip_reversal_flag,
+				const bool include_rubber_band_points);
 
 		/**
 		 * Find the matching topological sections given a feature reference and

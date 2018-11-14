@@ -26,8 +26,10 @@
 
 #include <algorithm>
 #include <cstddef> // For std::size_t
+#include <functional>
 #include <iterator>
 #include <map>
+#include <set>
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
@@ -36,10 +38,10 @@
 #include <QDebug>
 
 #include "AppLogicUtils.h"
-#include "GeometryUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolver.h"
@@ -50,10 +52,10 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "maths/GeometryDistance.h"
-#include "maths/PointInPolygon.h"
-#include "maths/PolygonIntersections.h"
+#include "maths/PointOnSphere.h"
 #include "maths/Real.h"
+
+#include "model/FeatureHandle.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -76,19 +78,29 @@ namespace GPlatesAppLogic
 		struct ResolvedSubSegmentInfo
 		{
 			ResolvedSubSegmentInfo(
-					const ResolvedTopologicalGeometrySubSegment &sub_segment_,
-					const ReconstructionGeometry::non_null_ptr_type &resolved_topology_) :
+					const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment_,
+					const ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology_) :
 				sub_segment(sub_segment_),
 				resolved_topology(resolved_topology_)
 			{  }
 
-			ResolvedTopologicalGeometrySubSegment sub_segment;
+			ResolvedTopologicalGeometrySubSegment::non_null_ptr_type sub_segment;
 			// The resolved topology that owns the sub-segment...
-			ReconstructionGeometry::non_null_ptr_type resolved_topology;
+			ReconstructionGeometry::non_null_ptr_to_const_type resolved_topology;
 		};
 
+		// Type used to compare reconstruction geometries.
+		//
+		// Note: We don't actually compare ReconstructionGeometry pointers because two adjacent topologies
+		// may reference different ReconstructionGeometry objects associated with the same topological section
+		// (since different topological layers may each reconstruct the same section).
+		// Instead we compare the topological section's feature reference and geometry property iterator since
+		// they should be the same (regardless of how many times the same section is reconstructed).
+		typedef std::pair<GPlatesModel::FeatureHandle::const_weak_ref, GPlatesModel::FeatureHandle::const_iterator>
+				topological_section_compare_type;
+
 		// Map of each topological section to all the resolved topologies that use it for a sub-segment.
-		typedef std::map<const ReconstructionGeometry *, std::vector<ResolvedSubSegmentInfo> >
+		typedef std::map<topological_section_compare_type, std::vector<ResolvedSubSegmentInfo> >
 				resolved_section_to_sharing_resolved_topologies_map_type;
 
 
@@ -98,7 +110,7 @@ namespace GPlatesAppLogic
 		void
 		map_resolved_topological_sections_to_resolved_topologies(
 				resolved_section_to_sharing_resolved_topologies_map_type &resolved_section_to_sharing_resolved_topologies_map,
-				const ReconstructionGeometry::non_null_ptr_type &resolved_topology,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology,
 				const sub_segment_seq_type &section_sub_segments)
 		{
 			// Iterate over the sub-segments of the current topology.
@@ -106,79 +118,506 @@ namespace GPlatesAppLogic
 			sub_segment_seq_type::const_iterator sub_segments_end = section_sub_segments.end();
 			for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
 			{
-				const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
+				const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
 
-				// Skip sub-segments that are the result of joining adjacent deforming points.
-				//
-				// Joining adjacent deforming points was meant to be a temporary hack to be removed
-				// when resolved *line* topologies were implemented. However, unfortunately it seems
-				// we need to keep this hack in place for any old data files that use the old method.
-				//
-				// The hack involves joining adjacent deforming points that are spread along a deforming zone
-				// boundary such that exported sub-segments are lines instead of a sequence of points.
-				//
-				// Skipping these sub-segments will result in missing sub-segments but the data should
-				// be using topological lines anyway (which avoids the problem). We could hack around
-				// this situation (instead of just skipping sub-segments) but each joined sub-segment
-				// only references one of (joined) point features/recon-geoms, so the whole idea of
-				// sub-segments sharing topological section feature/recon-geom doesn't really work.
-				if (sub_segment.get_joined_adjacent_deforming_points())
+				// Get the geometry property.
+				boost::optional<GPlatesModel::FeatureHandle::iterator> section_geometry_property =
+						ReconstructionGeometryUtils::get_geometry_property_iterator(
+								sub_segment->get_reconstruction_geometry());
+				if (section_geometry_property)  // This should always succeed.
 				{
-					continue;
-				}
+					const GPlatesModel::FeatureHandle::const_weak_ref section_feature_ref = sub_segment->get_feature_ref();
 
-				// Add the current resolved topology to the list of those sharing the current section.
-				resolved_section_to_sharing_resolved_topologies_map[sub_segment.get_reconstruction_geometry().get()]
-						.push_back(ResolvedSubSegmentInfo(sub_segment, resolved_topology));
+					// Add the current resolved topology to the list of those sharing the current section.
+					std::vector<ResolvedSubSegmentInfo> &sub_segment_infos =
+							resolved_section_to_sharing_resolved_topologies_map[
+									topological_section_compare_type(
+											section_feature_ref,
+											section_geometry_property.get())];
+					sub_segment_infos.push_back(ResolvedSubSegmentInfo(sub_segment, resolved_topology));
+				}
 			}
 		}
 
 
-		// The start or end point of a sub-segment (on a particular polyline segment/arc of section polyline).
+		/**
+		 * Convert a section reconstruction geometry to a pair containing section feature and geometry property iterator.
+		 *
+		 * The returned object can be used to compare sections instead of comparing reconstruction geometry pointers
+		 * (see comment for 'topological_section_compare_type').
+		 */
+		boost::optional<topological_section_compare_type>
+		get_topological_section_compare(
+				const boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> &section_reconstruction_geometry)
+		{
+			if (section_reconstruction_geometry)
+			{
+				// Get the feature ref and geometry property.
+				boost::optional<GPlatesModel::FeatureHandle::weak_ref> section_feature_ref =
+						ReconstructionGeometryUtils::get_feature_ref(
+								section_reconstruction_geometry.get());
+				boost::optional<GPlatesModel::FeatureHandle::iterator> section_geometry_property =
+						ReconstructionGeometryUtils::get_geometry_property_iterator(
+								section_reconstruction_geometry.get());
+				if (section_feature_ref &&
+					section_geometry_property)  // This should always succeed.
+				{
+					return  topological_section_compare_type(
+							section_feature_ref.get(),
+							section_geometry_property.get());
+				}
+			}
+
+			return boost::none;
+		}
+
+
+		/**
+		 * The start or end of a sub-segment within the section geometry.
+		 *
+		 * For point and multi-point sections there are no intersections, and so the sub-segments are
+		 * always the entire section.
+		 *
+		 * For section polylines there can be optional intersections (which can be on a polyline vertex
+		 * or in the middle of a segment/arc).
+		 * Note that polygons have already had their exterior rings converted to polylines.
+		 */
 		struct ResolvedSubSegmentMarker
 		{
 			ResolvedSubSegmentMarker(
-					const ReconstructionGeometry::non_null_ptr_type &resolved_topology_,
-					bool is_sub_segment_geometry_reversed_,
-					const GPlatesMaths::PointOnSphere &sub_segment_point_,
-					bool is_sub_segment_start_,
-					unsigned int section_polyline_segment_index_,
-					const GPlatesMaths::Real &dot_polyline_segment_start_point_) :
-				resolved_topology_info(resolved_topology_, is_sub_segment_geometry_reversed_),
-				sub_segment_point(sub_segment_point_),
-				is_sub_segment_start(is_sub_segment_start_),
-				section_polyline_segment_index(section_polyline_segment_index_),
-				dot_polyline_segment_start_point(dot_polyline_segment_start_point_)
-			{  }
+					const ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo &resolved_topology_info_,
+					unsigned int num_vertices_in_section_,
+					const boost::optional<ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand> &intersection_or_rubber_band_,
+					boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry_,
+					boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry_,
+					bool is_start_of_section_,
+					bool is_start_of_sub_segment_) :
+				resolved_topology_info(resolved_topology_info_),
+				num_vertices_in_section(num_vertices_in_section_),
+				intersection_or_rubber_band(intersection_or_rubber_band_),
+				prev_segment_reconstruction_geometry(prev_segment_reconstruction_geometry_),
+				next_segment_reconstruction_geometry(next_segment_reconstruction_geometry_),
+				is_start_of_section(is_start_of_section_),
+				is_start_of_sub_segment(is_start_of_sub_segment_)
+			{
+				// If marker is a rubber band then ensure previous section is at start, and next section
+				// is at end, of section. This ensures all the sub-segments with a rubber band have their
+				// previous and next sections aligned.
+				if (intersection_or_rubber_band)
+				{
+					boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> rubber_band =
+							intersection_or_rubber_band->get_rubber_band();
+					if (rubber_band)
+					{
+						if (is_start_of_section != rubber_band->adjacent_is_previous_section)
+						{
+							// Swap the previous and next sections.
+							std::swap(prev_segment_reconstruction_geometry, next_segment_reconstruction_geometry);
 
-			// The resolved topology that owns the sub-segment (and its geometry reversal flag)...
+							// Now the previous/next section is at start/end of section.
+							ResolvedSubSegmentRangeInSection::RubberBand swapped_rubber_band(rubber_band.get());
+							swapped_rubber_band.adjacent_is_previous_section = is_start_of_section;
+
+							intersection_or_rubber_band =
+									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(swapped_rubber_band);
+						}
+					}
+				}
+
+				// Initialise the object used to compare the previous segment's reconstruction geometry.
+				prev_segment_reconstruction_geometry_compare =
+						get_topological_section_compare(prev_segment_reconstruction_geometry);
+
+				// Initialise the object used to compare the next segment's reconstruction geometry.
+				next_segment_reconstruction_geometry_compare =
+						get_topological_section_compare(next_segment_reconstruction_geometry);
+			}
+
+			bool
+			is_start_rubber_band() const
+			{
+				return is_start_of_section &&
+						intersection_or_rubber_band &&
+						static_cast<bool>(intersection_or_rubber_band->get_rubber_band());
+			}
+
+			bool
+			is_end_rubber_band() const
+			{
+				return !is_start_of_section &&
+						intersection_or_rubber_band &&
+						static_cast<bool>(intersection_or_rubber_band->get_rubber_band());
+			}
+
+			/**
+			 * Compare markers.
+			 */
+			bool
+			is_equivalent_to(
+					const ResolvedSubSegmentMarker &other) const
+			{
+				if (!intersection_or_rubber_band)
+				{
+					if (!other.intersection_or_rubber_band)
+					{
+						// Neither marker is an intersection or rubber band, so each marker is either at
+						// the beginning or end of the section geometry. If they are both at the beginning,
+						// or both at the end, then they represent the same position.
+						return is_start_of_section == other.is_start_of_section;
+					}
+					else if (boost::optional<const ResolvedSubSegmentRangeInSection::Intersection &> other_intersection =
+							other.intersection_or_rubber_band->get_intersection())
+					{
+						// Our marker is not an intersection or rubber band, so it's either at the start or
+						// end of the section geometry. If the other intersection is also at the start or end
+						// then both markers represent the same position.
+						if (is_start_of_section)
+						{
+							return other_intersection->segment_index == 0 &&
+									other_intersection->on_segment_start;
+						}
+						else
+						{
+							// Test if on start of fictitious one-past-the-last segment.
+							return other_intersection->segment_index == num_vertices_in_section - 1 &&
+									other_intersection->on_segment_start;
+						}
+					}
+					else // rubber band ...
+					{
+						// A rubber band point is off the section, so cannot equal a section vertex.
+						return false;
+					}
+				}
+				else if (boost::optional<const ResolvedSubSegmentRangeInSection::Intersection &> intersection =
+						intersection_or_rubber_band->get_intersection())
+				{
+					if (!other.intersection_or_rubber_band)
+					{
+						// The other marker is not an intersection or rubber band, so it's either at the start
+						// or end of the section geometry. If our intersection is also at the start or end
+						// then both markers represent the same position.
+						if (other.is_start_of_section)
+						{
+							return intersection->segment_index == 0 &&
+									intersection->on_segment_start;
+						}
+						else
+						{
+							// Test if on start of fictitious one-past-the-last segment.
+							return intersection->segment_index == num_vertices_in_section - 1 &&
+									intersection->on_segment_start;
+						}
+					}
+					else if (boost::optional<const ResolvedSubSegmentRangeInSection::Intersection &> other_intersection =
+							other.intersection_or_rubber_band->get_intersection())
+					{
+						// Both markers are intersections, if they intersect the same segment at the same
+						// place then they represent the same position.
+						return intersection->segment_index == other_intersection->segment_index &&
+								// NOTE: This is an epsilon comparison.
+								intersection->angle_in_segment == other_intersection->angle_in_segment;
+					}
+					else // rubber band ...
+					{
+						// A rubber band point is off the section, so cannot equal a section intersection.
+						return false;
+					}
+				}
+				else // rubber band ...
+				{
+					if (!other.intersection_or_rubber_band)
+					{
+						// A rubber band point is off the section, so cannot equal a section vertex.
+						return false;
+					}
+					else if (other.intersection_or_rubber_band->get_intersection())
+					{
+						// A rubber band point is off the section, so cannot equal a section intersection.
+						return false;
+					}
+					else // rubber band ...
+					{
+						// Both markers are rubber bands, so each marker is either before the beginning or
+						// after the end of the section geometry. If they are both before the beginning,
+						// or both after the end, then they can be compared.
+						if (is_start_of_section == other.is_start_of_section)
+						{
+							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> rubber_band =
+									intersection_or_rubber_band->get_rubber_band();
+							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> other_rubber_band =
+									other.intersection_or_rubber_band->get_rubber_band();
+
+							const boost::optional<topological_section_compare_type> &adjacent_section =
+									rubber_band->adjacent_is_previous_section
+									? prev_segment_reconstruction_geometry_compare
+									: next_segment_reconstruction_geometry_compare;
+							const boost::optional<topological_section_compare_type> &other_adjacent_section =
+									other_rubber_band->adjacent_is_previous_section
+									? other.prev_segment_reconstruction_geometry_compare
+									: other.next_segment_reconstruction_geometry_compare;
+
+							// Compare the adjacent sections (using the comparison objects).
+							return adjacent_section == other_adjacent_section &&
+									// Also make sure both rubber bands are using same end of adjacent section.
+									// We could have instead compared adjacent section 'is_at_start_of_adjacent_section's
+									// but that gets tricky with *point* sections because we don't know which is the
+									// start and end of a point. So we just compare the rubber band positions instead...
+									rubber_band->position == other_rubber_band->position;
+						}
+						else
+						{
+							// One rubber band is before the beginning and the other after the end.
+							return false;
+						}
+					}
+				}
+			}
+
+
+			//! The resolved topology that owns the sub-segment (and its geometry reversal flag)...
 			ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo resolved_topology_info;
 
-			GPlatesMaths::PointOnSphere sub_segment_point;
-			bool is_sub_segment_start; // It's either the sub-segment start point or end point.
+			//! Number of vertices in the section geometry (point, multi-point or polyline).
+			unsigned int num_vertices_in_section;
 
-			// Index of section polyline segment/arc on which this marker lies.
-			unsigned int section_polyline_segment_index;
+			/**
+			 * Either (optional) start intersection/rubber-band if @a is_start_of_section is true, or
+			 * (optional) end intersection/rubber-band if @a is_start_of_section is false.
+			 */
+			boost::optional<ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand> intersection_or_rubber_band;
 
-			// The distance (dot product) of sub-segment start/end point from the start point
-			// of the polyline segment/arc that it resides in.
-			GPlatesMaths::Real dot_polyline_segment_start_point;
+			//! The reconstruction geometry of the previous section (if any).
+			boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry;
+			//! The reconstruction geometry of the next section (if any).
+			boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry;
+
+			//! The reconstruction geometry compare object of the previous section (if any).
+			boost::optional<topological_section_compare_type> prev_segment_reconstruction_geometry_compare;
+			//! The reconstruction geometry compare object of the next section (if any).
+			boost::optional<topological_section_compare_type> next_segment_reconstruction_geometry_compare;
+
+			/**
+			 * Whether this marker is the start or end of the *section*.
+			 *
+			 * Note that this is different to the start or end of a *sub-segment* in that the end of a
+			 * sub-segment can be the start of the section (this happens in some cases when the start
+			 * of the sub-segment is a rubber band, but the sub-segment ends at the start of the section
+			 * in order to distinguish from sub-segments associated with other rubber bands).
+			 *
+			 * Note: This is not needed for intersections.
+			 */
+			bool is_start_of_section;
+
+			//! This marker is either the *sub-segment* start or end.
+			bool is_start_of_sub_segment;
 		};
 
-		typedef std::vector<ResolvedSubSegmentMarker> resolved_sub_segment_marker_seq_type;
 
-		// All sub-segment markers on the same polyline segment/arc.
-		struct ResolvedSectionPolylineSegmentMarkers
+		/**
+		 * Predicate to sort @a ResolvedSubSegmentMarker from beginning to end of the section geometry.
+		 */
+		class SortResolvedSubSegmentMarkers :
+				public std::binary_function<ResolvedSubSegmentMarker, ResolvedSubSegmentMarker, bool>
 		{
-			resolved_sub_segment_marker_seq_type sub_segment_markers;
+		public:
+
+			bool
+			operator()(
+					const ResolvedSubSegmentMarker &lhs,
+					const ResolvedSubSegmentMarker &rhs) const
+			{
+				if (!lhs.intersection_or_rubber_band)
+				{
+					if (!rhs.intersection_or_rubber_band)
+					{
+						// Neither marker is an intersection or rubber band, so each marker is either at
+						// the beginning or end of the section geometry. If 'lhs' is at the beginning and
+						// 'rhs' at the end then 'lhs' is less than 'rhs'. Note that two markers at beginning
+						// (or two markers at end) compare equivalent (ie, !(lhs < rhs) && !(rhs < lhs))
+						// and so std::stable_sort will retain their original order.
+						return lhs.is_start_of_section && !rhs.is_start_of_section;
+					}
+					else if (rhs.intersection_or_rubber_band->get_intersection())
+					{
+						// The 'lhs' marker does not have an intersection or rubber band, so it's either at the start or
+						// end of the section geometry. If it's at the start then it's *before* all intersections
+						// (since we consider intersections to be *inside* the section, even if they intersect
+						// the start of the section). If it's at the end then it's *after* all intersections.
+						//
+						// Note that this gives the correct order for a zero-length sub-segment at the start
+						// of the section geometry. In other words a sub-segment that starts at the start of the
+						// section should only have an end intersection and so its start will be before its end.
+						return lhs.is_start_of_section;
+					}
+					else // rubber band ...
+					{
+						// A start/end rubber band is before/after all intersections and section vertices.
+						return !rhs.is_start_of_section;
+					}
+				}
+				else if (boost::optional<const ResolvedSubSegmentRangeInSection::Intersection &> lhs_intersection =
+						lhs.intersection_or_rubber_band->get_intersection())
+				{
+					if (!rhs.intersection_or_rubber_band)
+					{
+						// The 'rhs' marker does not have an intersection or rubber band, so it's either at the start or
+						// end of the section geometry. If it's at the start then it's *before* all intersections
+						// (since we consider intersections to be *inside* the section, even if they intersect
+						// the start of the section). If it's at the end then it's *after* all intersections.
+						//
+						// Note that this gives the correct order for a zero-length sub-segment at the end
+						// of the section geometry. In other words a sub-segment that ends at the end of the
+						// section should only have a start intersection and so its end will be after its start.
+						return !rhs.is_start_of_section;
+					}
+					else if (boost::optional<const ResolvedSubSegmentRangeInSection::Intersection &> rhs_intersection =
+							rhs.intersection_or_rubber_band->get_intersection())
+					{
+						// Both markers are intersections, if they intersect the same segment at the same
+						// place then they represent the same position.
+						return lhs_intersection->segment_index < rhs_intersection->segment_index ||
+								(lhs_intersection->segment_index == rhs_intersection->segment_index &&
+								// NOTE: This is an epsilon comparison. We want to detect equivalent markers so
+								//       that they can retain their original sort order (in 'stable_sort')...
+								lhs_intersection->angle_in_segment < rhs_intersection->angle_in_segment);
+					}
+					else // rubber band ...
+					{
+						// A start/end rubber band is before/after all intersections and section vertices.
+						return !rhs.is_start_of_section;
+					}
+				}
+				else // rubber band ...
+				{
+					if (!rhs.intersection_or_rubber_band)
+					{
+						// A start/end rubber band is before/after all intersections and section vertices.
+						return lhs.is_start_of_section;
+					}
+					else if (rhs.intersection_or_rubber_band->get_intersection())
+					{
+						// A start/end rubber band is before/after all intersections and section vertices.
+						return lhs.is_start_of_section;
+					}
+					else // rubber band ...
+					{
+						// Both markers are rubber bands, so each marker is either before the beginning or
+						// after the end of the section geometry. If they are both before the beginning,
+						// or both after the end, then we compare their adjacent segments (to group together
+						// markers with the same adjacent section).
+						if (lhs.is_start_of_section == rhs.is_start_of_section)
+						{
+							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> lhs_rubber_band =
+									lhs.intersection_or_rubber_band->get_rubber_band();
+							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> rhs_rubber_band =
+									rhs.intersection_or_rubber_band->get_rubber_band();
+
+							const boost::optional<topological_section_compare_type> &lhs_adjacent_segment =
+									lhs_rubber_band->adjacent_is_previous_section
+									? lhs.prev_segment_reconstruction_geometry_compare
+									: lhs.next_segment_reconstruction_geometry_compare;
+							const boost::optional<topological_section_compare_type> &rhs_adjacent_segment =
+									rhs_rubber_band->adjacent_is_previous_section
+									? rhs.prev_segment_reconstruction_geometry_compare
+									: rhs.next_segment_reconstruction_geometry_compare;
+
+							// Compare the adjacent sections (using the comparison objects).
+							//
+							// Note that two start rubber bands (or two end rubber bands) with the same (equal)
+							// adjacent section (end point) will compare equivalent (ie, !(lhs < rhs) && !(rhs < lhs))
+							// and so std::stable_sort will retain their original order.
+							return lhs_adjacent_segment < rhs_adjacent_segment ||
+									(lhs_adjacent_segment == rhs_adjacent_segment &&
+										// Also check whether both rubber bands are using same end of adjacent section...
+										// We could have instead compared adjacent section 'is_at_start_of_adjacent_section's
+										// but that gets tricky with *point* sections because we don't know which is the
+										// start and end of a point. So we just compare the rubber band positions instead...
+										d_point_on_sphere_predicate(lhs_rubber_band->position, rhs_rubber_band->position));
+						}
+						else
+						{
+							// If 'lhs' is at beginning and 'rhs' at end of section then 'lhs' is less than 'rhs'.
+							return lhs.is_start_of_section && !rhs.is_start_of_section;
+						}
+					}
+				}
+			}
+
+		private:
+			GPlatesMaths::PointOnSphereMapPredicate d_point_on_sphere_predicate;
 		};
 
-		typedef std::vector<ResolvedSectionPolylineSegmentMarkers> resolved_section_polyline_segment_markers_seq_type;
 
-		// Map polyline segment/arc indices into above sequence since not all polyline segments/arcs will
-		// contain markers (in fact very few will) - so this just saves a bit of memory and set up time.
-		typedef std::map<unsigned int, unsigned int>
-				resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type;
+		/**
+		 * Create and add a shared sub-segment defined by the specified start and end markers.
+		 *
+		 * This associates a uniquely shared sub-segment with those resolved topologies sharing it.
+		 */
+		void
+		add_shared_sub_segment(
+				shared_sub_segment_seq_type &shared_sub_segments,
+				const ResolvedSubSegmentMarker &start_sub_segment_marker,
+				const ResolvedSubSegmentMarker &end_sub_segment_marker,
+				const std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &sharing_resolved_topologies,
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &section_rg,
+				const GPlatesModel::FeatureHandle::const_weak_ref &section_feature_ref)
+		{
+			const ResolvedSubSegmentRangeInSection shared_sub_segment_range(
+					section_geometry,
+					// Note that the markers have had their rubber band prev/next sections
+					// ordered to all be the same (ie, start is previous and next is end)...
+					start_sub_segment_marker.intersection_or_rubber_band/*start_intersection_or_rubber_band*/,
+					end_sub_segment_marker.intersection_or_rubber_band/*end_intersection_or_rubber_band*/);
+
+			// Associate a uniquely shared sub-segment with those resolved topologies sharing it.
+			shared_sub_segments.push_back(
+					ResolvedTopologicalSharedSubSegment::create(
+							shared_sub_segment_range,
+							sharing_resolved_topologies,
+							section_feature_ref,
+							section_rg,
+							// Note that the markers have had their prev/next sections ordered
+							// to all be the same (ie, start is previous and next is end)...
+							start_sub_segment_marker.prev_segment_reconstruction_geometry/*prev_segment_reconstruction_geometry*/,
+							end_sub_segment_marker.next_segment_reconstruction_geometry/*next_segment_reconstruction_geometry*/));
+		}
+
+
+		/**
+		 * Add marker's topology to list of topologies if a start marker, otherwise remove from list.
+		 */
+		void
+		add_or_remove_marker_topology(
+				std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &sharing_resolved_topologies,
+				const ResolvedSubSegmentMarker &sub_segment_marker)
+		{
+			if (sub_segment_marker.is_start_of_sub_segment)
+			{
+				// We've reached a *start* sub-segment marker.
+				// So add the sharing resolved topology of the current sub-segment marker.
+				sharing_resolved_topologies.push_back(sub_segment_marker.resolved_topology_info);
+			}
+			else // sub-segment end point ...
+			{
+				// We've reached an *end* sub-segment marker.
+				// So remove the sharing resolved topology of the current sub-segment marker.
+				std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo>::iterator
+						sharing_resolved_topology_iter = sharing_resolved_topologies.begin();
+				const std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo>::iterator
+						sharing_resolved_topology_end = sharing_resolved_topologies.end();
+				for ( ; sharing_resolved_topology_iter != sharing_resolved_topology_end; ++sharing_resolved_topology_iter)
+				{
+					if (sharing_resolved_topology_iter->resolved_topology ==
+						sub_segment_marker.resolved_topology_info.resolved_topology)
+					{
+						sharing_resolved_topologies.erase(sharing_resolved_topology_iter);
+						break;
+					}
+				}
+			}
+		}
 
 
 		/**
@@ -186,13 +625,18 @@ namespace GPlatesAppLogic
 		 */
 		void
 		find_resolved_topological_section_sub_segment_markers(
-				resolved_section_polyline_segment_markers_seq_type &resolved_section_polyline_segment_markers_seq,
-				resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type &
-						resolved_section_polyline_segment_index_to_polyline_segment_markers_map,
+				std::vector<ResolvedSubSegmentMarker> &resolved_sub_segment_marker_seq,
 				const std::vector<ResolvedSubSegmentInfo> &section_sub_segment_infos,
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &section_polyline,
-				const GPlatesMaths::AngularExtent &minimum_distance_threshold)
+				unsigned int num_points_in_section_geometry)
 		{
+			// Special case handling of *point* sections with both start and end rubber bands.
+			typedef std::set<
+					std::pair<
+							boost::optional<topological_section_compare_type>,
+							boost::optional<topological_section_compare_type> > >
+									start_end_rubber_bands_type;
+			boost::optional<start_end_rubber_bands_type> start_end_rubber_bands;
+
 			// Iterate over the sub-segments referencing the section.
 			std::vector<ResolvedSubSegmentInfo>::const_iterator sub_segments_iter = section_sub_segment_infos.begin();
 			std::vector<ResolvedSubSegmentInfo>::const_iterator sub_segments_end = section_sub_segment_infos.end();
@@ -200,164 +644,389 @@ namespace GPlatesAppLogic
 			{
 				const ResolvedSubSegmentInfo &sub_segment_info = *sub_segments_iter;
 
-				// Get the start/end points of the current sub-segment geometry.
-				std::pair<
-						GPlatesMaths::PointOnSphere/*start point*/,
-						GPlatesMaths::PointOnSphere/*end point*/> sub_segment_end_points =
-								GeometryUtils::get_geometry_exterior_end_points(
-										*sub_segment_info.sub_segment.get_geometry());
+				const ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo resolved_topology_info(
+						sub_segment_info.resolved_topology,
+						sub_segment_info.sub_segment->get_use_reverse());
 
-				enum { START, END };
+				const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_info.sub_segment;
+				const ResolvedSubSegmentRangeInSection &sub_segment_range = sub_segment.get_sub_segment();
 
-				// Find the closest position (and segment arc) of the sub-segment start/end point to the section polyline.
-				GPlatesMaths::UnitVector3D closest_start_end_positions_on_section_polyline[2] =
+				// For *point* sections with both start and end rubber bands we don't know which is the
+				// start and which is the end of the section. This means two sections that should be
+				// shared could have swapped start and end rubber bands and hence won't get shared.
+				// To get around this we detect if one start/end rubber band pair is a swapped version
+				// of another and generate equivalent start/end rubber band markers to ensure they
+				// generate a shared sub-segment (rather than two un-shared sub-segments).
+				if (sub_segment_range.get_start_rubber_band() &&
+					sub_segment_range.get_end_rubber_band())
 				{
-					GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/,
-					GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/
-				};
-				unsigned int closest_start_end_segment_indices_in_section_polyline[2];
-				// 'minimum_distance()' should be quite efficient since internally it uses a bounding tree
-				// over its segments/arcs to make point location efficient.
-				if (minimum_distance(
-						sub_segment_end_points.first/*start point*/,
-						*section_polyline,
-						minimum_distance_threshold,
-						closest_start_end_positions_on_section_polyline[START],
-						closest_start_end_segment_indices_in_section_polyline[START])
-								== GPlatesMaths::AngularDistance::PI ||
-					minimum_distance(
-						sub_segment_end_points.second/*end point*/,
-						*section_polyline,
-						minimum_distance_threshold,
-						closest_start_end_positions_on_section_polyline[END],
-						closest_start_end_segment_indices_in_section_polyline[END])
-								== GPlatesMaths::AngularDistance::PI)
-				{
-					// We shouldn't get here - sub-segment geometry should be a subset of the section geometry.
-					qWarning() << "Expected topological sub-segment geometry to be a subset of section geometry.";
+					if (!start_end_rubber_bands)
+					{
+						start_end_rubber_bands = start_end_rubber_bands_type();
+					}
 
-					// Continue to the next sub-segment.
-					continue;
+					ResolvedSubSegmentRangeInSection::RubberBand start_rubber_band =
+							sub_segment_range.get_start_rubber_band().get();
+					ResolvedSubSegmentRangeInSection::RubberBand end_rubber_band =
+							sub_segment_range.get_end_rubber_band().get();
+
+					const boost::optional<topological_section_compare_type> start_adjacent_section =
+							get_topological_section_compare(
+									start_rubber_band.adjacent_is_previous_section
+									? sub_segment.get_prev_reconstruction_geometry()
+									: sub_segment.get_next_reconstruction_geometry());
+					const boost::optional<topological_section_compare_type> end_adjacent_section =
+							get_topological_section_compare(
+									end_rubber_band.adjacent_is_previous_section
+									? sub_segment.get_prev_reconstruction_geometry()
+									: sub_segment.get_next_reconstruction_geometry());
+
+					// See if swapping the current start/end rubber bands matches a previous start/end pair.
+					if (start_end_rubber_bands->find(std::make_pair(end_adjacent_section, start_adjacent_section)) !=
+						start_end_rubber_bands->end())
+					{
+						// End rubber band will now be a start marker (and hence should be at start of section).
+						end_rubber_band.is_at_start_of_current_section = true;
+						// Start rubber band will now be an end marker (and hence should be at end of section).
+						start_rubber_band.is_at_start_of_current_section = false;
+
+						const ResolvedSubSegmentMarker sub_segment_start_marker(
+								resolved_topology_info,
+								num_points_in_section_geometry,
+								// End rubber band is now a start marker...
+								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_rubber_band),
+								sub_segment.get_prev_reconstruction_geometry(),
+								sub_segment.get_next_reconstruction_geometry(),
+								true/*is_start_of_section*/,
+								true/*is_start_of_sub_segment*/);
+						const ResolvedSubSegmentMarker sub_segment_end_marker(
+								resolved_topology_info,
+								num_points_in_section_geometry,
+								// Start rubber band is now an end marker...
+								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_rubber_band),
+								sub_segment.get_prev_reconstruction_geometry(),
+								sub_segment.get_next_reconstruction_geometry(),
+								false/*is_start_of_section*/,
+								false/*is_start_of_sub_segment*/);
+
+						// NOTE: We add the start marker before the end marker.
+						// See 'stable_sort' comment below.
+						resolved_sub_segment_marker_seq.push_back(sub_segment_start_marker);
+						resolved_sub_segment_marker_seq.push_back(sub_segment_end_marker);
+
+						continue;
+					}
+					else
+					{
+						// Record start/end rubber band in order to detect a subsequent reversed pairs.
+						start_end_rubber_bands->insert(std::make_pair(start_adjacent_section, end_adjacent_section));
+					}
 				}
-				GPlatesMaths::PointOnSphere closest_start_end_point_on_section_polyline[2] =
-				{
-					GPlatesMaths::PointOnSphere(closest_start_end_positions_on_section_polyline[START]),
-					GPlatesMaths::PointOnSphere(closest_start_end_positions_on_section_polyline[END])
-				};
 
-				// If the sub-segment start point equals the start point of the polyline segment/arc it lies on
-				// (and its not the first polyline segment/arc) then move it to the end point of the previous segment/arc.
-				// This makes it easier to later emit shared sub-segments that avoid duplicating the start vertex.
-				if (closest_start_end_point_on_section_polyline[START] ==
-						section_polyline->get_segment(closest_start_end_segment_indices_in_section_polyline[START]).start_point() &&
-					closest_start_end_segment_indices_in_section_polyline[START] > 0)
-				{
-					--closest_start_end_segment_indices_in_section_polyline[START];
-				}
-				// If the sub-segment end point equals the end point of the polyline segment/arc it lies on
-				// (and its not the last polyline segment/arc) then move it to the start point of the next segment/arc.
-				// This makes it easier to later emit shared sub-segments that avoid duplicating the end vertex.
-				if (closest_start_end_point_on_section_polyline[END] ==
-						section_polyline->get_segment(closest_start_end_segment_indices_in_section_polyline[END]).end_point() &&
-					closest_start_end_segment_indices_in_section_polyline[END] < section_polyline->number_of_segments() - 1)
-				{
-					++closest_start_end_segment_indices_in_section_polyline[END];
-				}
+				const ResolvedSubSegmentMarker sub_segment_start_marker(
+						resolved_topology_info,
+						num_points_in_section_geometry,
+						sub_segment_range.get_start_intersection_or_rubber_band(),
+						sub_segment.get_prev_reconstruction_geometry(),
+						sub_segment.get_next_reconstruction_geometry(),
+						true/*is_start_of_section*/,
+						true/*is_start_of_sub_segment*/);
+				const ResolvedSubSegmentMarker sub_segment_end_marker(
+						resolved_topology_info,
+						num_points_in_section_geometry,
+						sub_segment_range.get_end_intersection_or_rubber_band(),
+						sub_segment.get_prev_reconstruction_geometry(),
+						sub_segment.get_next_reconstruction_geometry(),
+						false/*is_start_of_section*/,
+						false/*is_start_of_sub_segment*/);
 
-				GPlatesMaths::Real dot_sub_segment_start_end_point_and_polyline_segment_start_point[2];
-				unsigned int n;
-				for (n = 0; n < 2; ++n) // n is 'START' and 'END'
-				{
-					// The section polyline segment/arc that the sub-segment start/end point lies on.
-					const GPlatesMaths::GreatCircleArc &start_end_section_polyline_segment =
-							section_polyline->get_segment(closest_start_end_segment_indices_in_section_polyline[n]);
+				// NOTE: We add the start marker before the end marker.
+				// See 'stable_sort' comment below.
+				resolved_sub_segment_marker_seq.push_back(sub_segment_start_marker);
+				resolved_sub_segment_marker_seq.push_back(sub_segment_end_marker);
+			}
 
-					dot_sub_segment_start_end_point_and_polyline_segment_start_point[n] = dot(
-							closest_start_end_point_on_section_polyline[n].position_vector(),
-							start_end_section_polyline_segment.start_point().position_vector());
-				}
+			// Sort the markers from beginning to end of section geometry.
+			//
+			// NOTE: We use 'stable_sort' instead of 'sort' in case the start and end markers of
+			// a sub-segment range are equal (ie, a zero-length range), we want to give preference
+			// to the start marker (over the end marker) since we later add topologies when encountering
+			// start markers and remove them when encountering end markers - and so we don't want to try
+			// removing a topology that hasn't been added yet. Using 'stable_sort' guarantees the
+			// ordering of the equal start and end markers (added above) will not get changed.
+			std::stable_sort(
+					resolved_sub_segment_marker_seq.begin(),
+					resolved_sub_segment_marker_seq.end(),
+					SortResolvedSubSegmentMarkers());
+		}
 
-				// Check that the sub-segment end point is not before the start point.
-				// This shouldn't happen since all sub-segment geometries are in their un-reversed forms
-				// and so they should progress (from start point to end point) along the same direction as
-				// the section polyline.
-				// But we'll check just in case (eg, some numerical tolerances issues might pop up).
+
+		/**
+		 * Handle start/end rubber band markers.
+		 *
+		 * If any start rubber band markers are different then we need separate sub-segments
+		 * (once for each group of equivalent start rubber band markers) starting at a
+		 * start rubber band and ending at the start of the section geometry.
+		 * Otherwise we don't need to do anything (all shared sub-segments will start
+		 * at the same start rubber band).
+		 *
+		 * If any end rubber band markers are different then we need separate sub-segments
+		 * (once for each group of equivalent end rubber band markers) starting at the
+		 * end of the section geometry and ending at an end rubber band.
+		 * Otherwise we don't need to do anything (all shared sub-segments will end
+		 * at the same end rubber band).
+		 *
+		 * On input, @a markers should be sorted.
+		 * However on output, @a markers can be unsorted (if have different start rubber bands
+		 * or different end rubber bands).
+		 */
+		void
+		handle_rubber_band_sub_segment_markers(
+				std::vector<ResolvedSubSegmentMarker> &markers,
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry)
+		{
+			if (markers.empty())
+			{
+				return;
+			}
+
+			//
+			// Handle the start rubber bands.
+			//
+
+			// See if there are any start rubber bands (will be at start of sorted sequence).
+			// Usually there won't be any.
+			if (markers.front().is_start_rubber_band())
+			{
+				// Record any different start rubber band markers.
+				std::vector<unsigned int> start_marker_groups;
+
+				// Iterate over all start rubber band markers and see if any are different.
 				//
-				// Needs swapping if either:
-				// (1) the sub-segment end point polyline segment/arc index is less than the start, or
-				// (2) they are equal and the end point is closer to the start of polyline segment/arc.
-				if ((closest_start_end_segment_indices_in_section_polyline[END] <
-						closest_start_end_segment_indices_in_section_polyline[START]) ||
-					(closest_start_end_segment_indices_in_section_polyline[END] ==
-						closest_start_end_segment_indices_in_section_polyline[START] &&
-					dot_sub_segment_start_end_point_and_polyline_segment_start_point[END].dval() >
-						dot_sub_segment_start_end_point_and_polyline_segment_start_point[START].dval()))
+				// Start rubber band markers should all be at the beginning of the sorted sequence.
+				unsigned int start_marker_index = 0;
+				for ( ;
+					start_marker_index < markers.size() && markers[start_marker_index].is_start_rubber_band();
+					++start_marker_index)
 				{
-					std::swap(sub_segment_end_points.first, sub_segment_end_points.second);
-					std::swap(
-							closest_start_end_positions_on_section_polyline[START],
-							closest_start_end_positions_on_section_polyline[END]);
-					std::swap(
-							closest_start_end_point_on_section_polyline[START],
-							closest_start_end_point_on_section_polyline[END]);
-					std::swap(
-							closest_start_end_segment_indices_in_section_polyline[START],
-							closest_start_end_segment_indices_in_section_polyline[END]);
-					std::swap(
-							dot_sub_segment_start_end_point_and_polyline_segment_start_point[START],
-							dot_sub_segment_start_end_point_and_polyline_segment_start_point[END]);
+					// See if current start rubber band differs from previous one.
+					if (start_marker_index > 0 &&
+						!markers[start_marker_index - 1].is_equivalent_to(markers[start_marker_index]))
+					{
+						start_marker_groups.push_back(start_marker_index);
+					}
 				}
 
-				for (n = 0; n < 2; ++n) // n is 'START' and 'END'
+				// If any start rubber band markers are different then we need separate sub-segments
+				// (once for each group of equivalent start rubber band markers) starting at a
+				// start rubber band and ending at the start of the section geometry.
+				//
+				// Otherwise we don't need to do anything (all shared sub-segments will start
+				// at the same start rubber band).
+				if (!start_marker_groups.empty())
 				{
-					// Insert the sub-segment start/end point markers.
-					const std::pair<resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type::iterator, bool>
-							polyline_segment_index_insert_result =
-									resolved_section_polyline_segment_index_to_polyline_segment_markers_map.insert(
-											resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type::value_type(
-													closest_start_end_segment_indices_in_section_polyline[n],
-													resolved_section_polyline_segment_markers_seq.size()/*index*/));
-					if (polyline_segment_index_insert_result.second)
+					// The end of the last group of start rubber band markers.
+					start_marker_groups.push_back(start_marker_index);
+
+					const unsigned int num_original_start_markers = start_marker_index;
+
+					std::vector<ResolvedSubSegmentMarker> new_markers;
+					new_markers.reserve(2 * num_original_start_markers);
+
+					// We need to use an intersection to mark the start of a section.
+					const ResolvedSubSegmentRangeInSection::Intersection start_of_section(
+							*section_geometry,
+							true/*at_start*/);
+
+					// Each marker in each group of equivalent start rubber band markers will emit
+					// and sub-segment start and end marker.
+					unsigned int start_group_marker_index = 0;
+					for (unsigned int s = 0; s < start_marker_groups.size(); ++s)
 					{
-						// Insertion successful - first time seen polyline segment.
-						resolved_section_polyline_segment_markers_seq.push_back(ResolvedSectionPolylineSegmentMarkers());
-					}
-					ResolvedSectionPolylineSegmentMarkers &polyline_segment_markers =
-							resolved_section_polyline_segment_markers_seq[
-									polyline_segment_index_insert_result.first->second/*index*/];
+						const unsigned int end_group_marker_index = start_marker_groups[s];
 
-					// Iterate over the existing polyline segment markers (in the polyline segment/arc) and insert
-					// a new marker in the correct order (according to distance from polyline segment/arc start point).
-
-					resolved_sub_segment_marker_seq_type::iterator sub_segment_markers_iter =
-							polyline_segment_markers.sub_segment_markers.begin();
-					const resolved_sub_segment_marker_seq_type::iterator sub_segment_markers_end =
-							polyline_segment_markers.sub_segment_markers.end();
-					for ( ; sub_segment_markers_iter != sub_segment_markers_end; ++sub_segment_markers_iter)
-					{
-						const ResolvedSubSegmentMarker &sub_segment_marker = *sub_segment_markers_iter;
-
-						// Next test if dot product exceeds previously inserted sub-segment marker position.
-						//
-						// This is an *epsilon* test to ensure that subsequently added markers with the
-						// same position are inserted *after* the previously added marker (with same position).
-						// This ensures *end* markers get added after *start* markers if they have the same position.
-						if (dot_sub_segment_start_end_point_and_polyline_segment_start_point[n] >
-								sub_segment_marker.dot_polyline_segment_start_point)
+						// Add a sub-segment *start* marker for each marker in current group.
+						for (unsigned int marker_index = start_group_marker_index;
+							marker_index < end_group_marker_index;
+							++marker_index)
 						{
-							break;
+							const ResolvedSubSegmentMarker &start_marker = markers[marker_index];
+							new_markers.push_back(start_marker);
 						}
+
+						// Add a sub-segment *end* marker for each marker in current group.
+						for (unsigned int marker_index = start_group_marker_index;
+							marker_index < end_group_marker_index;
+							++marker_index)
+						{
+							// Copy the start marker.
+							ResolvedSubSegmentMarker end_marker = markers[marker_index];
+
+							// It's the end of the sub-segment.
+							end_marker.is_start_of_sub_segment = false;
+							// It's at the start of the section so add start-of-section intersection
+							// (note that 'end_marker.is_start_of_section' should be true).
+							end_marker.intersection_or_rubber_band =
+									// We need to use an intersection to mark the start of a section.
+									// It's tempting to set this to 'none' to signify *start* of section
+									// but that creates a subtle problem when we later create a
+									// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+									// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
+									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_of_section);
+
+							new_markers.push_back(end_marker);
+						}
+
+						start_group_marker_index = end_group_marker_index;
 					}
 
-					polyline_segment_markers.sub_segment_markers.insert(
-							sub_segment_markers_iter,
-							ResolvedSubSegmentMarker(
-									sub_segment_info.resolved_topology,
-									sub_segment_info.sub_segment.get_use_reverse(),
-									closest_start_end_point_on_section_polyline[n],
-									n == 0/*is_sub_segment_start*/,
-									closest_start_end_segment_indices_in_section_polyline[n],
-									dot_sub_segment_start_end_point_and_polyline_segment_start_point[n]));
+					// Modify all original start markers so that they refer to the start of the section.
+					// These will now be the start of sub-segments that start at the start of the section.
+					//
+					// Note that the new markers take care of the sub-segments from start rubber bands to start of section.
+					for (unsigned int marker_index = 0; marker_index < num_original_start_markers; ++marker_index)
+					{
+						ResolvedSubSegmentMarker &original_start_marker = markers[marker_index];
+
+						// It's at the start of the section so add start-of-section intersection
+						// (note that 'original_start_marker.is_start_of_section' should be true).
+						original_start_marker.intersection_or_rubber_band =
+								// We need to use an intersection to mark the start of a section.
+								// It's tempting to set this to 'none' to signify *start* of section
+								// but that creates a subtle problem when we later create a
+								// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+								// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
+								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_of_section);
+					}
+
+					// Insert the new markers before the original start markers.
+					markers.insert(markers.begin(), new_markers.begin(), new_markers.end());
+				}
+			}
+
+			//
+			// Handle the end rubber bands.
+			//
+
+			// See if there are any end rubber bands (will be at end of sorted sequence).
+			// Usually there won't be any.
+			if (markers.back().is_end_rubber_band())
+			{
+				// Record any different end rubber band markers.
+				std::vector<unsigned int> end_marker_groups;
+
+				// Iterate backward over all end rubber band markers to find the first one.
+				// End rubber band markers should all be at the end of the sorted sequence.
+				unsigned int first_end_marker_index = markers.size();
+				while (markers[first_end_marker_index - 1].is_end_rubber_band())
+				{
+					--first_end_marker_index;
+					if (first_end_marker_index == 0)
+					{
+						break;
+					}
+				}
+
+				// Iterate over all end rubber band markers and see if any are different.
+				//
+				// End rubber band markers should all be at the end of the sorted sequence.
+				unsigned int end_marker_index = first_end_marker_index;
+				for ( ; end_marker_index < markers.size(); ++end_marker_index)
+				{
+					// See if current end rubber band differs from previous one.
+					if (end_marker_index > first_end_marker_index &&
+						!markers[end_marker_index - 1].is_equivalent_to(markers[end_marker_index]))
+					{
+						end_marker_groups.push_back(end_marker_index);
+					}
+				}
+
+				// If any end rubber band markers are different then we need separate sub-segments
+				// (once for each group of equivalent end rubber band markers) starting at the
+				// end of the section geometry and ending at an end rubber band.
+				//
+				// Otherwise we don't need to do anything (all shared sub-segments will end
+				// at the same end rubber band).
+				if (!end_marker_groups.empty())
+				{
+					// The end of the last group of end rubber band markers.
+					end_marker_groups.push_back(end_marker_index);
+
+					const unsigned int num_original_end_markers = end_marker_index - first_end_marker_index;
+
+					std::vector<ResolvedSubSegmentMarker> new_markers;
+					new_markers.reserve(2 * num_original_end_markers);
+
+					// We need to use an intersection to mark the end of a section.
+					const ResolvedSubSegmentRangeInSection::Intersection end_of_section(
+							*section_geometry,
+							false/*at_start*/);
+
+					// Each marker in each group of equivalent end rubber band markers will emit
+					// and sub-segment start and end marker.
+					unsigned int start_group_marker_index = first_end_marker_index;
+					for (unsigned int e = 0; e < end_marker_groups.size(); ++e)
+					{
+						const unsigned int end_group_marker_index = end_marker_groups[e];
+
+						// Add a sub-segment *start* marker for each marker in current group.
+						for (unsigned int marker_index = start_group_marker_index;
+							marker_index < end_group_marker_index;
+							++marker_index)
+						{
+							// Copy the end marker.
+							ResolvedSubSegmentMarker start_marker = markers[marker_index];
+
+							// It's the start of the sub-segment.
+							start_marker.is_start_of_sub_segment = true;
+							// It's at the end of the section so add end-of-section intersection
+							// (note that 'start_marker.is_start_of_section' should be true).
+							start_marker.intersection_or_rubber_band =
+									// We need to use an intersection to mark the end of a section.
+									// It's tempting to set this to 'none' to signify *end* of section
+									// but that creates a subtle problem when we later create a
+									// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+									// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
+									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_of_section);
+
+							new_markers.push_back(start_marker);
+						}
+
+						// Add a sub-segment *end* marker for each marker in current group.
+						for (unsigned int marker_index = start_group_marker_index;
+							marker_index < end_group_marker_index;
+							++marker_index)
+						{
+							const ResolvedSubSegmentMarker &end_marker = markers[marker_index];
+							new_markers.push_back(end_marker);
+						}
+
+						start_group_marker_index = end_group_marker_index;
+					}
+
+					// Modify all original end markers so that they refer to the end of the section.
+					// These will now be the end of sub-segments that end at the end of the section.
+					//
+					// Note that the new markers take care of the sub-segments from end of section to end rubber bands.
+					for (unsigned int marker_index = markers.size() - num_original_end_markers;
+						marker_index < markers.size();
+						++marker_index)
+					{
+						ResolvedSubSegmentMarker &original_end_marker = markers[marker_index];
+
+						// It's at the end of the section so add end-of-section intersection
+						// (note that 'original_end_marker.is_start_of_section' should be false).
+						original_end_marker.intersection_or_rubber_band =
+								// We need to use an intersection to mark the end of a section.
+								// It's tempting to set this to 'none' to signify *end* of section
+								// but that creates a subtle problem when we later create a
+								// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+								// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
+								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_of_section);
+					}
+
+					// Insert the new markers after the original end markers.
+					markers.insert(markers.end(), new_markers.begin(), new_markers.end());
 				}
 			}
 		}
@@ -365,14 +1034,15 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Iterate over the resolved section polyline segment markers and emit shared sub-segments for the section.
+		 *
+		 * Note that @a resolved_sub_segment_marker_seq is not necessarily sorted
+		 * (due to the "handle_rubber_band_sub_segment_markers" function).
 		 */
 		void
 		get_resolved_topological_section_shared_sub_segments(
-				std::vector<ResolvedTopologicalSharedSubSegment> &shared_sub_segments,
-				const resolved_section_polyline_segment_markers_seq_type &resolved_section_polyline_segment_markers_seq,
-				const resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type &
-						resolved_section_polyline_segment_index_to_polyline_segment_markers_map,
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &section_polyline,
+				shared_sub_segment_seq_type &shared_sub_segments,
+				const std::vector<ResolvedSubSegmentMarker> &resolved_sub_segment_marker_seq,
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
 				const ReconstructionGeometry::non_null_ptr_to_const_type &section_rg,
 				const GPlatesModel::FeatureHandle::const_weak_ref &section_feature_ref)
 		{
@@ -382,123 +1052,45 @@ namespace GPlatesAppLogic
 
 			boost::optional<const ResolvedSubSegmentMarker &> prev_sub_segment_marker;
 
-			// Iterate over the polygon segment markers sequence (map).
-			// This iterates from high polyline segment indices to low ones (ie, from start to end of section polyline).
-			resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type::const_iterator
-					polyline_segment_index_entries_iter =
-							resolved_section_polyline_segment_index_to_polyline_segment_markers_map.begin();
-			const resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type::const_iterator
-					polyline_segment_index_entries_end =
-							resolved_section_polyline_segment_index_to_polyline_segment_markers_map.end();
+			// Iterate over the segment markers sequence (ordered from start to end of section geometry).
+			std::vector<ResolvedSubSegmentMarker>::const_iterator sub_segment_markers_iter =
+					resolved_sub_segment_marker_seq.begin();
+			std::vector<ResolvedSubSegmentMarker>::const_iterator sub_segment_markers_end =
+					resolved_sub_segment_marker_seq.end();
 			for ( ;
-				polyline_segment_index_entries_iter != polyline_segment_index_entries_end;
-				++polyline_segment_index_entries_iter)
+				sub_segment_markers_iter != sub_segment_markers_end;
+				(prev_sub_segment_marker = *sub_segment_markers_iter), ++sub_segment_markers_iter)
 			{
-				const resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type::value_type &
-						polyline_segment_index_entry = *polyline_segment_index_entries_iter;
-				const ResolvedSectionPolylineSegmentMarkers &polyline_segment_markers =
-						resolved_section_polyline_segment_markers_seq[polyline_segment_index_entry.second];
-
-				// Iterate over the sub-segment markers in the current polyline segment/arc.
-				resolved_sub_segment_marker_seq_type::const_iterator sub_segment_markers_iter =
-						polyline_segment_markers.sub_segment_markers.begin();
-				const resolved_sub_segment_marker_seq_type::const_iterator sub_segment_markers_end =
-						polyline_segment_markers.sub_segment_markers.end();
-				for ( ;
-					sub_segment_markers_iter != sub_segment_markers_end;
-					(prev_sub_segment_marker = *sub_segment_markers_iter), ++sub_segment_markers_iter)
+				const ResolvedSubSegmentMarker &sub_segment_marker = *sub_segment_markers_iter;
+	
+				//
+				// If the previous and current markers are different then there is a shared sub-segment
+				// between them that can be emitted. However there might not be any resolved topologies.
+				// This can happen if previous marker was an *end* marker and current marker is a
+				// *start* marker and there are no resolved topologies referencing the part of the
+				// section between those markers.
+				//
+				// Also if a resolved topology has a sub-segment that is a point (and not a line)
+				// then its start and end marker positions will be coincident and hence that resolved
+				// topology will not have its (point) sub-segment emitted - this is fine since it's
+				// zero length anyway and therefore doesn't really contribute as a topological section.
+				//
+				if (prev_sub_segment_marker &&
+					!prev_sub_segment_marker->is_equivalent_to(sub_segment_marker) &&
+					!sharing_resolved_topologies.empty())
 				{
-					const ResolvedSubSegmentMarker &sub_segment_marker = *sub_segment_markers_iter;
-
-					// If the previous and current marker positions are different then there is a
-					// shared sub-segment between them that can be emitted.
-					// However there might not be any resolved topologies. This can happen if last marker
-					// was an *end* marker and current marker is a *start* marker and there are no
-					// resolved topologies referencing the part of the section between those markers.
-					// Also if a resolved topology has a sub-segment that is a point (and not a line)
-					// then its start and end marker positions will be the same and hence that resolved
-					// topology will not have its (point) sub-segment emitted - this is fine since it's
-					// zero length anyway and therefore doesn't really contribute as a topological section.
-					if (prev_sub_segment_marker &&
-						sub_segment_marker.sub_segment_point != prev_sub_segment_marker->sub_segment_point &&
-						!sharing_resolved_topologies.empty())
-					{
-						std::vector<GPlatesMaths::PointOnSphere> shared_sub_segment_points;
-
-						// Add the previous sub-segment marker point unless it is equal to the
-						// end point of the polyline segment/arc that the marker lies on
-						// (because it will get added below as part of the section polyline).
-						if (prev_sub_segment_marker->sub_segment_point !=
-							section_polyline->get_vertex(prev_sub_segment_marker->section_polyline_segment_index + 1))
-						{
-							shared_sub_segment_points.push_back(prev_sub_segment_marker->sub_segment_point);
-						}
-
-						// Copy the points (if any) of the section polyline between the previous and
-						// current sub-segment markers.
-						std::copy(
-								section_polyline->vertex_begin() +
-										prev_sub_segment_marker->section_polyline_segment_index + 1,
-								section_polyline->vertex_begin() +
-										sub_segment_marker.section_polyline_segment_index + 1,
-								std::back_inserter(shared_sub_segment_points));
-
-						// Add the current sub-segment marker point unless it is equal to the
-						// start point of the polyline segment/arc that the marker lies on
-						// (because it's already been added above as part of the section polyline).
-						if (sub_segment_marker.sub_segment_point !=
-							section_polyline->get_vertex(sub_segment_marker.section_polyline_segment_index))
-						{
-							shared_sub_segment_points.push_back(sub_segment_marker.sub_segment_point);
-						}
-
-						// Due to numerical tolerance in the epsilon-point-equality tests it might be
-						// possible to end up with *one* point here (instead of the minimum two required
-						// for a polyline) if both segment markers are almost exactly the same position
-						// and almost exactly the same as a section polyline vertex.
-						if (shared_sub_segment_points.size() >= 2)
-						{
-							const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type shared_sub_segment_geometry =
-									GPlatesMaths::PolylineOnSphere::create_on_heap(
-											shared_sub_segment_points.begin(),
-											shared_sub_segment_points.end());
-
-							// Add a shared sub-segment for the current uniquely shared sub-segment geometry and
-							// those resolved topologies sharing it.
-							shared_sub_segments.push_back(
-									ResolvedTopologicalSharedSubSegment(
-											shared_sub_segment_geometry,
-											section_rg,
-											section_feature_ref,
-											sharing_resolved_topologies));
-						}
-					}
-
-					if (sub_segment_marker.is_sub_segment_start)
-					{
-						// We've reached a *start* sub-segment marker.
-						// So add the sharing resolved topology of the current sub-segment marker.
-						sharing_resolved_topologies.push_back(sub_segment_marker.resolved_topology_info);
-					}
-					else // sub-segment end point ...
-					{
-						// We've reached an *end* sub-segment marker.
-						// So remove the sharing resolved topology of the current sub-segment marker.
-						std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo>::iterator
-								sharing_resolved_topology_iter = sharing_resolved_topologies.begin();
-						const std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo>::iterator
-								sharing_resolved_topology_end = sharing_resolved_topologies.end();
-						for ( ; sharing_resolved_topology_iter != sharing_resolved_topology_end; ++sharing_resolved_topology_iter)
-						{
-							if (sharing_resolved_topology_iter->resolved_topology ==
-								sub_segment_marker.resolved_topology_info.resolved_topology)
-							{
-								sharing_resolved_topologies.erase(sharing_resolved_topology_iter);
-								break;
-							}
-						}
-					}
+					add_shared_sub_segment(
+							shared_sub_segments,
+							prev_sub_segment_marker.get()/*start_sub_segment_marker*/,
+							sub_segment_marker/*end_sub_segment_marker*/,
+							sharing_resolved_topologies,
+							section_geometry,
+							section_rg,
+							section_feature_ref);
 				}
+
+				// Add/remove marker's topology to/from list of topologies if a start/end marker.
+				add_or_remove_marker_topology(sharing_resolved_topologies, sub_segment_marker);
 			}
 		}
 	}
@@ -860,8 +1452,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 void
 GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 		std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
-		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
-		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks)
+		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
+		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks)
 {
 	//
 	// Find all topological sections referenced by the resolved topologies.
@@ -872,7 +1464,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 
 	// Iterate over the plate polygons.
 	BOOST_FOREACH(
-			const ResolvedTopologicalBoundary::non_null_ptr_type &resolved_topological_boundary,
+			const ResolvedTopologicalBoundary::non_null_ptr_to_const_type &resolved_topological_boundary,
 			resolved_topological_boundaries)
 	{
 		map_resolved_topological_sections_to_resolved_topologies(
@@ -883,7 +1475,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 
 	// Iterate over the deforming networks.
 	BOOST_FOREACH(
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network,
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_topological_network,
 			resolved_topological_networks)
 	{
 		map_resolved_topological_sections_to_resolved_topologies(
@@ -892,20 +1484,10 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 				resolved_topological_network->get_boundary_sub_segment_sequence());
 	}
 
-
 	//
 	// For each topological section (referenced by the resolved topologies) build sub-segments that are
 	// uniquely shared by one or more resolved topologies.
 	//
-
-
-	// The minimum distance threshold of sub-segment start/end points from a section's polyline.
-	// This threshold is quite relaxed compared to that used for equality of points
-	// (which currently is 'dot_product > 1 - 1e-12').
-	// If the minimum distance is exceeds this threshold then something is wrong because the
-	// sub-segment geometry should be a subset of the section geometry.
-	const GPlatesMaths::AngularExtent minimum_distance_threshold =
-			GPlatesMaths::AngularExtent::create_from_cosine(1 - 1e-6);
 
 	// Iterate over the sections referenced by resolved topologies.
 	BOOST_FOREACH(
@@ -913,126 +1495,46 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 					section_to_sharing_resolved_topologies_entry,
 			resolved_section_to_sharing_resolved_topologies_map)
 	{
-		const ReconstructionGeometry *section_rg = section_to_sharing_resolved_topologies_entry.first;
 		const std::vector<ResolvedSubSegmentInfo> &sub_segments = section_to_sharing_resolved_topologies_entry.second;
 
+		// All sub-segments share the same section feature and section geometry (so pick any sub-segment).
 		//
-		// Get the current section geometry as a polyline.
-		// The segment is either a reconstructed feature geometry or a resolved topological *line*.
-		//
-
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> section_geometry =
-				ReconstructionGeometryUtils::get_resolved_topological_boundary_section_geometry(section_rg);
-		if (!section_geometry)
-		{
-			// We shouldn't get here - topological networks and boundaries should only reference
-			// RFGs and resolved topological lines.
-			qWarning() << "Expected topological section to be either a reconstructed feature geometry "
-					"or a resolved topological line.";
-
-			// Continue to the next section.
-			continue;
-		}
-
-		// All sub-segments share the same section feature (so pick any sub-segment).
-		//
-		// Actually this doesn't apply to the old 'joined adjacent deforming points' hack where
-		// multiple point features are joined into one segment which, in turn, arbitrarily references
-		// one of the deforming point features - but that is all handled as a special case.
+		// However note that the sub-segments may have different ReconstructionGeometry's
+		// (if the layers of the topologies that they came from are different and each layer independently
+		// reconstructed the same topological section).
+		// In this case we just arbitrarily choose one of them (its attributes should all be the same anyway).
 		const GPlatesModel::FeatureHandle::const_weak_ref section_feature_ref =
-				sub_segments.front().sub_segment.get_feature_ref();
+				sub_segments.front().sub_segment->get_feature_ref();
+		const ReconstructionGeometry::non_null_ptr_to_const_type section_rg =
+				sub_segments.front().sub_segment->get_reconstruction_geometry();
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry =
+				sub_segments.front().sub_segment->get_section_geometry();
+		const unsigned int num_points_in_section_geometry =
+				sub_segments.front().sub_segment->get_sub_segment().get_num_points_in_section_geometry();
 
-		// Points and multipoints are not intersected (with neighbouring topological sections).
-		// Therefore all point/multipoint sub-segments (referencing the section) have the same (unclipped) geometry.
-		const GPlatesMaths::GeometryType::Value section_geometry_type =
-				GeometryUtils::get_geometry_type(*section_geometry.get());
-		if (section_geometry_type == GPlatesMaths::GeometryType::POINT ||
-			section_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)
-		{
-			// Gather all resolved topologies referencing section.
-			std::vector<ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> sharing_resolved_topologies;
-
-			std::vector<ResolvedSubSegmentInfo>::const_iterator sub_segments_iter = sub_segments.begin();
-			std::vector<ResolvedSubSegmentInfo>::const_iterator sub_segments_end = sub_segments.end();
-			for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
-			{
-				const ResolvedSubSegmentInfo &sub_segment_info = *sub_segments_iter;
-
-				sharing_resolved_topologies.push_back(
-						ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo(
-								sub_segment_info.resolved_topology,
-								sub_segment_info.sub_segment.get_use_reverse()));
-			}
-
-			// Add a single shared sub-segment since all resolved topologies (referencing the section)
-			// use the same (unclipped) sub-segment geometry.
-			const std::vector<ResolvedTopologicalSharedSubSegment> shared_sub_segments(
-					1,
-					ResolvedTopologicalSharedSubSegment(
-							section_geometry.get(),
-							section_rg,
-							section_feature_ref,
-							sharing_resolved_topologies));
-
-			resolved_topological_sections.push_back(
-					ResolvedTopologicalSection::create(
-							shared_sub_segments.begin(),
-							shared_sub_segments.end(),
-							section_rg,
-							section_feature_ref));
-
-			// Continue to the next section.
-			continue;
-		}
-
-		// The section geometry is either a polyline or a polygon.
-		// Convert it to a polyline (in most cases, due to intersections, it will already be a polyline).
-		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> section_polyline_opt =
-				GeometryUtils::convert_geometry_to_polyline(
-						*section_geometry.get(),
-						// We don't care if the polygon has interior rings (just using the exterior ring)...
-						false/*exclude_polygons_with_interior_rings*/);
-		// A polyline or polygon should always be convertible to a polyline.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				section_polyline_opt,
-				GPLATES_ASSERTION_SOURCE);
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type section_polyline = section_polyline_opt.get();
-
-		//
 		// Record the start/end point locations of each sub-segment within the section geometry.
-		//
-
-		resolved_section_polyline_segment_markers_seq_type resolved_section_polyline_segment_markers_seq;
-
-		// Map polyline segment/arc indices into a sequence since not all polyline segments/arcs will
-		// contain markers (in fact very few will) - so this just saves a bit of memory and set up time.
-		resolved_section_polyline_segment_index_to_polyline_segment_markers_map_type
-				resolved_section_polyline_segment_index_to_polyline_segment_markers_map;
-
+		std::vector<ResolvedSubSegmentMarker> resolved_sub_segment_marker_seq;
 		find_resolved_topological_section_sub_segment_markers(
-				resolved_section_polyline_segment_markers_seq,
-				resolved_section_polyline_segment_index_to_polyline_segment_markers_map,
+				resolved_sub_segment_marker_seq,
 				sub_segments,
-				section_polyline,
-				minimum_distance_threshold);
+				num_points_in_section_geometry);
 
-		//
-		// Iterate over the polyline segment markers and emit shared sub-segments for the current section.
-		//
+		// Handle start/end rubber band markers.
+		handle_rubber_band_sub_segment_markers(
+				resolved_sub_segment_marker_seq,
+				section_geometry);
 
-		// Each emitted shared sub-segment will get added to this.
-		std::vector<ResolvedTopologicalSharedSubSegment> shared_sub_segments;
-
+		// Iterate over the segment markers and emit shared sub-segments for the current section.
+		shared_sub_segment_seq_type shared_sub_segments;
 		get_resolved_topological_section_shared_sub_segments(
 				shared_sub_segments,
-				resolved_section_polyline_segment_markers_seq,
-				resolved_section_polyline_segment_index_to_polyline_segment_markers_map,
-				section_polyline,
+				resolved_sub_segment_marker_seq,
+				section_geometry,
 				section_rg,
 				section_feature_ref);
 
-		// Now that we've gathered all the shared sub-segments for the current section
-		// add them to a resolved topological section.
+		// Now that we've gathered all the shared sub-segments for the current section,
+		// add them to a ResolvedTopologicalSection.
 		resolved_topological_sections.push_back(
 				ResolvedTopologicalSection::create(
 						shared_sub_segments.begin(),

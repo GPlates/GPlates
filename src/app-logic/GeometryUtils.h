@@ -124,6 +124,22 @@ namespace GPlatesAppLogic
 				bool reverse_points = false);
 
 		/**
+		 * Same as @a get_geometry_points except only the points in the specified range are returned.
+		 *
+		 * Note that [@a start_vertex_index, @a end_vertex_index) is a half-range where @a end_vertex_index
+		 * is one past the last vertex to be returned (this is similar to begin/end iterators).
+		 *
+		 * If @a start_vertex_index and @a end_vertex_index are equal then no points are returned.
+		 */
+		GPlatesMaths::GeometryType::Value
+		get_geometry_points_range(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				std::vector<GPlatesMaths::PointOnSphere> &points,
+				unsigned int start_vertex_index,
+				unsigned int end_vertex_index,
+				bool reverse_points = false);
+
+		/**
 		 * Same as @a get_geometry_points except, if @a geometry_on_sphere is a polygon then only
 		 * its *exterior* ring points are copied.
 		 */
@@ -131,6 +147,22 @@ namespace GPlatesAppLogic
 		get_geometry_exterior_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				std::vector<GPlatesMaths::PointOnSphere> &points,
+				bool reverse_points = false);
+
+		/**
+		 * Same as @a get_geometry_exterior_points except only the points in the specified range are returned.
+		 *
+		 * Note that [@a start_vertex_index, @a end_vertex_index) is a half-range where @a end_vertex_index
+		 * is one past the last vertex to be returned (this is similar to begin/end iterators).
+		 *
+		 * If @a start_vertex_index and @a end_vertex_index are equal then no points are returned.
+		 */
+		GPlatesMaths::GeometryType::Value
+		get_geometry_exterior_points_range(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				std::vector<GPlatesMaths::PointOnSphere> &points,
+				unsigned int start_vertex_index,
+				unsigned int end_vertex_index,
 				bool reverse_points = false);
 
 		/**

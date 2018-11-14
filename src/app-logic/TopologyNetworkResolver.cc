@@ -53,6 +53,7 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "ResolvedVertexSourceInfo.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
 
@@ -261,12 +262,6 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_network(
 	process_topological_boundary_section_intersections();
 
 	//
-	// Now iterate over the intersection results and assign boundary segments to
-	// each section.
-	//
-	assign_boundary_segments();
-
-	//
 	// Now create the resolved topological network.
 	//
 	create_resolved_topology_network();
@@ -318,15 +313,13 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
 					gpml_toplogical_line_section.get_source_geometry()->feature_id(),
-					topological_reconstruction_geometry.get());
+					topological_reconstruction_geometry.get(),
+					gpml_toplogical_line_section.get_reverse_order());
 	if (!boundary_section)
 	{
 		// Return without adding topological section to the list of boundary sections.
 		return;
 	}
-
-	// Set reverse flag.
-	boundary_section->d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
 	// Add to boundary section sequence.
 	// NOTE: Topological sections only exist for the network *boundary*.
@@ -378,7 +371,10 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
 					gpml_toplogical_point.get_source_geometry()->feature_id(),
-					topological_reconstruction_geometry.get());
+					topological_reconstruction_geometry.get(),
+					// This topological section is a point, so cannot be intersected with its neighbours,
+					// and so has no reversal information...
+					false/*reverse_hint*/);
 	if (!boundary_section)
 	{
 		// Return without adding topological section to the list of boundary sections.
@@ -541,7 +537,8 @@ GPlatesAppLogic::TopologyNetworkResolver::is_deprecated_seed_geometry(
 boost::optional<GPlatesAppLogic::TopologyNetworkResolver::ResolvedNetwork::BoundarySection>
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_reconstructed_geometry(
 		const GPlatesModel::FeatureId &boundary_section_source_feature_id,
-		const ReconstructionGeometry::non_null_ptr_type &boundary_section_source_rg)
+		const ReconstructionGeometry::non_null_ptr_type &boundary_section_source_rg,
+		bool reverse_hint)
 {
 	//
 	// Currently, topological sections can only be reconstructed feature geometries
@@ -558,7 +555,8 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_re
 		return ResolvedNetwork::BoundarySection(
 				boundary_section_source_feature_id,
 				boundary_section_source_rfg.get(),
-				boundary_section_source_rfg.get()->reconstructed_geometry());
+				boundary_section_source_rfg.get()->reconstructed_geometry(),
+				reverse_hint);
 	}
 
 	// See if topological section is a resolved topological line.
@@ -571,7 +569,8 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_re
 		return ResolvedNetwork::BoundarySection(
 				boundary_section_source_feature_id,
 				boundary_section_source_rtl.get(),
-				boundary_section_source_rtl.get()->resolved_topology_line());
+				boundary_section_source_rtl.get()->resolved_topology_line(),
+				reverse_hint);
 	}
 
 	// If we got here then either (1) the user created a malformed GPML file somehow (eg, with a script)
@@ -719,57 +718,20 @@ GPlatesAppLogic::TopologyNetworkResolver::process_topological_section_intersecti
 	//
 	if (two_sections)
 	{
-		current_section.d_intersection_results.
+		current_section.d_intersection_results->
 				intersect_with_previous_section_allowing_two_intersections(
 						prev_section.d_intersection_results);
 	}
 	else
 	{
-		current_section.d_intersection_results.intersect_with_previous_section(
-				prev_section.d_intersection_results,
-				prev_section.d_use_reverse);
+		current_section.d_intersection_results->intersect_with_previous_section(
+				prev_section.d_intersection_results);
 	}
 
 	// NOTE: We don't need to look at the end intersection because the next topological
 	// section that we visit will have this current section as its start intersection and
 	// hence the intersection of this current section and its next section will be
 	// taken care of during that visit.
-}
-
-
-///////////
-// ASSIGMENT of segments 
-///////////
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::assign_boundary_segments()
-{
-	// Make sure all the boundary segments have been found.
-	// It is an error in the code (not in the data) if this is not the case.
-	const std::size_t num_sections = d_resolved_network.d_boundary_sections.size();
-	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
-	{
-		assign_boundary_segment_boundary(section_index);
-	}
-}
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::assign_boundary_segment_boundary(
-		const std::size_t section_index)
-{
-	ResolvedNetwork::BoundarySection &boundary_section =
-			d_resolved_network.d_boundary_sections[section_index];
-
-	// See if the reverse flag has been set by intersection processing - this
-	// happens if the visible section intersected both its neighbours otherwise it just
-	// returns the flag we passed it.
-	boundary_section.d_use_reverse =
-			boundary_section.d_intersection_results.get_reverse_flag(
-					boundary_section.d_use_reverse);
-
-	boundary_section.d_final_boundary_segment_unreversed_geom =
-			boundary_section.d_intersection_results.get_unreversed_sub_segment(
-					boundary_section.d_use_reverse);
 }
 
 
@@ -785,7 +747,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	std::vector<GPlatesMaths::PointOnSphere> boundary_points;
 
 	// Sequence of boundary subsegments of resolved topology boundary.
-	std::vector<ResolvedTopologicalGeometrySubSegment> boundary_subsegments;
+	std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> boundary_subsegments;
 
 	// A rigid block is any interior geometry that is a polygon.
 	// These are polygon regions that are inside the network but are meant to be rigid and not deforming.
@@ -804,22 +766,10 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
-	ResolvedNetwork::boundary_section_seq_type::const_iterator boundary_sections_iter =
-			d_resolved_network.d_boundary_sections.begin();
-	ResolvedNetwork::boundary_section_seq_type::const_iterator boundary_sections_end =
-			d_resolved_network.d_boundary_sections.end();
-	for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
+	const std::size_t num_boundary_sections = d_resolved_network.d_boundary_sections.size();
+	for (std::size_t boundary_section_index = 0; boundary_section_index < num_boundary_sections; ++boundary_section_index)
 	{
-		const ResolvedNetwork::BoundarySection &boundary_section = *boundary_sections_iter;
-
-		// It's possible for a valid segment to not contribute to the boundary
-		// of the network. This can happen if it contributes zero-length
-		// to the network boundary which happens when both its neighbouring
-		// boundary sections intersect it at the same point.
-		if (!boundary_section.d_final_boundary_segment_unreversed_geom)
-		{
-			continue; // to next section in topology network
-		}
+		const ResolvedNetwork::BoundarySection &boundary_section = d_resolved_network.d_boundary_sections[boundary_section_index];
 
 		// Get the subsegment feature reference.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> boundary_subsegment_feature_ref =
@@ -836,50 +786,53 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		// A network boundary section can come from a reconstructed feature geometry or a resolved topological *line*.
 		//
 
-		boost::optional<ReconstructedFeatureGeometry *> boundary_section_rfg =
-				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						ReconstructedFeatureGeometry *>(boundary_section.d_source_rg);
-		if (boundary_section_rfg)
-		{
-			// Add the boundary delaunay points from the reconstructed feature geometry.
-			add_boundary_delaunay_points_from_reconstructed_feature_geometry(
-					boundary_section_rfg.get(),
-					*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-					delaunay_points);
-		}
-		else // resolved topological *line* ...
-		{
-			boost::optional<ResolvedTopologicalLine *> boundary_section_rtl =
-					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalLine *>(boundary_section.d_source_rg);
+		// Get previous and next boundary section reconstruction geometries.
+		ReconstructionGeometry::non_null_ptr_to_const_type prev_boundary_section_source_rg =
+				// Handle wraparound where previous of first section is last section...
+				d_resolved_network.d_boundary_sections[
+						(boundary_section_index > 0) ? boundary_section_index - 1 : num_boundary_sections - 1]
+									.d_source_rg;
+		ReconstructionGeometry::non_null_ptr_to_const_type next_boundary_section_source_rg =
+				// Handle wraparound where next of last section is first section...
+				d_resolved_network.d_boundary_sections[
+						(boundary_section_index < num_boundary_sections - 1) ? boundary_section_index + 1 : 0]
+									.d_source_rg;
 
-			// Skip the current boundary section if it's not a resolved topological *line*.
-			if (!boundary_section_rtl)
-			{
-				continue;
-			}
+		// Create a subsegment that'll get used when creating the boundary of the resolved topological network.
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type boundary_subsegment =
+				ResolvedTopologicalGeometrySubSegment::create(
+						boundary_section.d_intersection_results->get_sub_segment_range_in_section(),
+						boundary_section.d_intersection_results->get_reverse_flag(),
+						boundary_subsegment_feature_const_ref,
+						boundary_section.d_source_rg,
+						prev_boundary_section_source_rg,
+						next_boundary_section_source_rg);
+		boundary_subsegments.push_back(boundary_subsegment);
 
-			// Add the boundary delaunay points from the resolved topological *line*.
-			add_boundary_delaunay_points_from_resolved_topological_line(
-					boundary_section_rtl.get(),
-					*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-					delaunay_points);
+		// Get the subsegment points and corresponding point source infos.
+		// Subsegment should be reversed if that's how it contributed to the resolved topology.
+		std::vector<GPlatesMaths::PointOnSphere> boundary_segment_points;
+		boundary_subsegment->get_reversed_sub_segment_points(boundary_segment_points);
+		resolved_vertex_source_info_seq_type boundary_segment_point_source_infos;
+		boundary_subsegment->get_reversed_sub_segment_point_source_infos(boundary_segment_point_source_infos);
+
+		// Segment should have matching number of points and point source infos.
+		const unsigned int num_boundary_segment_points = boundary_segment_points.size();
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				num_boundary_segment_points == boundary_segment_point_source_infos.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Add the delaunay points for this boundary segment.
+		for (unsigned int n = 0; n < num_boundary_segment_points; ++n)
+		{
+			delaunay_points.push_back(
+					ResolvedTriangulation::Network::DelaunayPoint(
+							boundary_segment_points[n],
+							boundary_segment_point_source_infos[n]));
 		}
 
 		// Add the points of this boundary section to the final list of boundary points (for boundary polygon).
-		GeometryUtils::get_geometry_exterior_points(
-				*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_points,
-				boundary_section.d_use_reverse);
-
-		// Create a subsegment structure that'll get used when
-		// creating the boundary of the resolved topological network.
-		const ResolvedTopologicalGeometrySubSegment boundary_subsegment(
-				boundary_section.d_final_boundary_segment_unreversed_geom.get(),
-				boundary_section.d_source_rg,
-				boundary_subsegment_feature_const_ref,
-				boundary_section.d_use_reverse);
-		boundary_subsegments.push_back(boundary_subsegment);
+		boundary_points.insert(boundary_points.end(), boundary_segment_points.begin(), boundary_segment_points.end());
 	}
 
 	// Create a polygon on sphere for the resolved boundary using 'boundary_points'.
@@ -931,6 +884,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 			continue;
 		}
 
+		// Get the points for this interior geometry.
+		std::vector<GPlatesMaths::PointOnSphere> interior_geometry_points;
+		GeometryUtils::get_geometry_exterior_points(*interior_geometry.d_geometry, interior_geometry_points);
+		const unsigned int num_interior_geometry_points = interior_geometry_points.size();
+
 		//
 		// Network interiors can come from a reconstructed feature geometry or a resolved topological *line*.
 		//
@@ -940,12 +898,39 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 						ReconstructedFeatureGeometry *>(interior_geometry.d_source_rg);
 		if (interior_rfg)
 		{
+			// Keep track of any interior static polygon regions - these are rigid blocks.
+			// These will be needed for calculating velocities since they are not part of the triangulation
+			// generated (velocities will be calculated in the normal manner for static polygons).
+			//
+			// NOTE: Since currently only RFGs and resolved topological *lines* can be referenced by
+			// networks it's only possible to have an interior *polygon* if it's an RFG - so we don't
+			// need to worry about resolved topological polygons.
+			// See if interior is a reconstructed feature geometry (or any of its derived types).
+			//
+			// If it's a polygon then add it to the list of interior rigid blocks.
+			if (GeometryUtils::get_polygon_on_sphere(*interior_rfg.get()->reconstructed_geometry()))
+			{
+				rigid_blocks.push_back(
+						ResolvedTriangulation::Network::RigidBlock(interior_rfg.get()));
+			}
+
+			//
 			// Add the interior delaunay points from the reconstructed feature geometry.
-			add_interior_delaunay_points_from_reconstructed_feature_geometry(
-					interior_rfg.get(),
-					*interior_geometry.d_geometry,
-					delaunay_points,
-					rigid_blocks);
+			//
+
+			// Reconstruct information shared by all the Delaunay points we're adding here
+			// (because all points come from the same reconstructed feature geometry).
+			const ResolvedVertexSourceInfo::non_null_ptr_to_const_type interior_geometry_shared_source_info =
+					ResolvedVertexSourceInfo::create(interior_rfg.get());
+
+			// Add the delaunay points for this interior geometry.
+			for (unsigned int n = 0; n < num_interior_geometry_points; ++n)
+			{
+				delaunay_points.push_back(
+						ResolvedTriangulation::Network::DelaunayPoint(
+								interior_geometry_points[n],
+								interior_geometry_shared_source_info));
+			}
 		}
 		else // resolved topological *line* ...
 		{
@@ -959,10 +944,23 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 				continue;
 			}
 
-			// Add the interior delaunay points from the resolved topological *line*.
-			add_interior_delaunay_points_from_resolved_topological_line(
-					interior_rtl.get(),
-					delaunay_points);
+			// Get the point source infos for this interior resolved line.
+			const resolved_vertex_source_info_seq_type &interior_point_source_infos =
+					interior_rtl.get()->get_vertex_source_infos();
+
+			// Interior resolved line should have matching number of points and point source infos.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					num_interior_geometry_points == interior_point_source_infos.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Add the delaunay points for this interior resolved line.
+			for (unsigned int n = 0; n < num_interior_geometry_points; ++n)
+			{
+				delaunay_points.push_back(
+						ResolvedTriangulation::Network::DelaunayPoint(
+								interior_geometry_points[n],
+								interior_point_source_infos[n]));
+			}
 		}
 
 #if 0 // Not currently using being used...
@@ -985,17 +983,6 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					rigid_blocks.end(),
 					d_topology_network_params);
 
-	// Join adjacent deforming points that are spread along a deforming zone boundary.
-	//
-	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
-	// implemented. However, unfortunately it seems we need to keep this hack in place for any
-	// old data files that use the old method.
-	std::vector<ResolvedTopologicalGeometrySubSegment> joined_boundary_subsegments;
-	TopologyInternalUtils::join_adjacent_deforming_points(
-			joined_boundary_subsegments,
-			boundary_subsegments,
-			d_reconstruction_time);
-
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
@@ -1003,393 +990,13 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					triangulation_network,
 					*(current_top_level_propiter()->handle_weak_ref()),
 					*(current_top_level_propiter()),
-					joined_boundary_subsegments.begin(),
-					joined_boundary_subsegments.end(),
+					boundary_subsegments.begin(),
+					boundary_subsegments.end(),
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance(),
 					d_reconstruct_handle/*identify where/when this RTN was resolved*/);
 
 	d_resolved_topological_networks.push_back(network);
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reconstructed_feature_geometry(
-		const ReconstructedFeatureGeometry::non_null_ptr_type &boundary_section_rfg,
-		const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
-		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points)
-{
-	// Reconstruct information shared by all the Delaunay points we're adding here.
-	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruct_info =
-			ResolvedTriangulation::VertexSharedReconstructInfo::create(boundary_section_rfg);
-
-	// Get the points for this boundary section.
-	// The section reversal order doesn't matter here - we're just adding independent points.
-	std::vector<GPlatesMaths::PointOnSphere> boundary_section_points;
-	GeometryUtils::get_geometry_exterior_points(boundary_section_geometry, boundary_section_points);
-
-	// Create the delaunay points for this boundary section.
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_iter =
-			boundary_section_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_end =
-			boundary_section_points.end();
-	for ( ; boundary_section_points_iter != boundary_section_points_end; ++boundary_section_points_iter)
-	{
-		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-				*boundary_section_points_iter,
-				shared_reconstruct_info);
-		delaunay_points.push_back(delaunay_point);
-	}
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_resolved_topological_line(
-		const ResolvedTopologicalLine::non_null_ptr_type &boundary_section_rtl,
-		const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
-		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points)
-{
-	//
-	// FIXME: This function is very fragile and will most likely break in some cases.
-	// FIXME: It needs to be done in a completely different way where we're not trying
-	// FIXME: to match sub-segment points and all the assumptions about how the boundary section
-	// FIXME: and its sub-segments are built (such as duplicate points at intersections, etc).
-	//
-
-	// Get the sub-segments of the boundary section so we can access their plate ids and reconstruction trees.
-	const sub_segment_seq_type &sub_segments = boundary_section_rtl->get_sub_segment_sequence();
-
-	// Get the points for the (potentially clipped) boundary section geometry.
-	// Note that we do *not* take into account its reversal because we want to proceed in the same
-	// order its sub-segment components (although each of those will need appropriate reversal).
-	std::vector<GPlatesMaths::PointOnSphere> boundary_section_points;
-	GeometryUtils::get_geometry_exterior_points(boundary_section_geometry, boundary_section_points);
-
-	const std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_begin =
-			boundary_section_points.begin();
-	const std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_end =
-			boundary_section_points.end();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator boundary_section_points_iter =
-			boundary_section_points_begin;
-
-	// Need to find first matching point between boundary section and its sub-segments.
-	bool initialised_start_of_boundary_section = false;
-
-	// Iterate over the sub-segments.
-	const sub_segment_seq_type::const_iterator sub_segments_begin = sub_segments.begin();
-	const sub_segment_seq_type::const_iterator sub_segments_end = sub_segments.end();
-	sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments_begin;
-	for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
-	{
-		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
-
-		ReconstructionGeometry::non_null_ptr_to_const_type sub_segment_rg =
-				sub_segment.get_reconstruction_geometry();
-
-		// Reconstruct information shared by all the Delaunay points of the current sub-segment.
-		const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
-				sub_segment_shared_reconstruct_info =
-						ResolvedTriangulation::VertexSharedReconstructInfo::create(sub_segment_rg);
-
-		// Get the points for this sub-segment.
-		// Note that we *do* take into account sub-segment reversal to keep the order of points
-		// aligned with the (un-reversed) boundary section geometry.
-		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-		GeometryUtils::get_geometry_exterior_points(
-				*sub_segment.get_geometry(),
-				sub_segment_points,
-				sub_segment.get_use_reverse());
-
-		const std::vector<GPlatesMaths::PointOnSphere>::const_iterator sub_segment_points_begin =
-				sub_segment_points.begin();
-		const std::vector<GPlatesMaths::PointOnSphere>::const_iterator sub_segment_points_end =
-				sub_segment_points.end();
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator sub_segment_points_iter =
-				sub_segment_points_begin;
-
-		// Initialise the beginning of the boundary section to get things started.
-		if (!initialised_start_of_boundary_section)
-		{
-			// The first boundary point might not match if it was clipped to an adjacent
-			// network boundary section thus introducing a new (intersection) point that doesn't
-			// exist in the original un-clipped boundary geometry (and its sub-segments).
-			if (boundary_section_points_iter == boundary_section_points_begin &&
-				*boundary_section_points_iter != *sub_segment_points_iter)
-			{
-				// Move to the second boundary section point.
-				++boundary_section_points_iter;
-				if (boundary_section_points_iter == boundary_section_points_end)
-				{
-					// Boundary section only contains one point but we still can't find a match.
-					qWarning() << "TopologyNetworkResolver: Unexpected mis-match between a single "
-						"point network boundary section and its component sub-segment.";
-
-					// Output the single delaunay point.
-					const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-							boundary_section_points.front()/*first point*/,
-							sub_segment_shared_reconstruct_info);
-					delaunay_points.push_back(delaunay_point);
-
-					return;
-				}
-			}
-
-			// Iterate along the sub-segment until we find a point that matches the second
-			// boundary section point. If we're at the first boundary section point this will
-			// match the first sub-segment point (already tested above).
-			while (*boundary_section_points_iter != *sub_segment_points_iter)
-			{
-				++sub_segment_points_iter;
-				if (sub_segment_points_iter == sub_segment_points_end)
-				{
-					// Reached end of current sub-segment.
-					break;
-				}
-			}
-
-			// If we didn't find a matching point on the current sub-segment then keep looking
-			// at the next sub-segment - it could be that the clipping of the boundary section
-			// has essentially removed one or more of its sub-segments completely.
-			if (sub_segment_points_iter == sub_segment_points_end)
-			{
-				continue;
-			}
-
-			// If we skipped the first boundary section point then go back and fill it in with
-			// information from the current sub-segment.
-			if (boundary_section_points_iter != boundary_section_points_begin)
-			{
-				const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-						boundary_section_points.front()/*first point*/,
-						sub_segment_shared_reconstruct_info);
-				delaunay_points.push_back(delaunay_point);
-			}
-
-			initialised_start_of_boundary_section = true;
-		}
-
-		// For the 2nd, 3rd, etc sub-segments the sub-segment begin point matches the previous
-		// sub-segment end point, but there might not be a duplicate point in the boundary section.
-		if (sub_segments_iter != sub_segments_begin)
-		{
-			// Advance to the second sub-segment point if it doesn't match
-			// (it's a duplicate of the previous sub-segment end point).
-			if (*boundary_section_points_iter != *sub_segment_points_iter)
-			{
-				++sub_segment_points_iter;
-				if (sub_segment_points_iter == sub_segment_points_end)
-				{
-					// There's only one point in the current sub-segment.
-					// We'll stay at that one point even though it doesn't match because
-					// it's possible it's the point past the end of the clipped boundary section
-					// and hence it will get ignored.
-					--sub_segment_points_iter;
-				}
-			}
-		}
-
-		// Keep adding delaunay points while we have matching points.
-		while (*boundary_section_points_iter == *sub_segment_points_iter)
-		{
-			const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-					*boundary_section_points_iter,
-					sub_segment_shared_reconstruct_info);
-			delaunay_points.push_back(delaunay_point);
-
-			++boundary_section_points_iter;
-			++sub_segment_points_iter;
-
-			if (boundary_section_points_iter == boundary_section_points_end)
-			{
-				// Finished with all boundary section points.
-				//
-				// It's fine to finish the boundary section before finishing the sub-segments
-				// because the boundary section is clipped (to its adjacent neighbours on the
-				// network boundary) whereas the sub-segments represent the entire un-clipped
-				// resolved line geometry.
-				return;
-			}
-
-			if (sub_segment_points_iter == sub_segment_points_end)
-			{
-				// Finished with the current sub-segment.
-				break;
-			}
-		}
-
-		// If the entire sub-segment didn't match (and note that we can only get here if we've not
-		// yet reached the end of the boundary section) then either:
-		//
-		//  (1) we've reached the last boundary section point and it intersects the next network
-		//      boundary section neighbour and hence is a new point that doesn't exist in the
-		//      un-clipped boundary geometry (consisting of its sub-segments), or
-		//
-		//  (2) there was an unexpected mismatch between the boundary section points and the
-		//      sub-segment points, so we log a warning and return.
-		//
-		// For case (1) we assign the current sub-segment parameters (plate id, etc) to the last point.
-		//
-		// FIXME: This could be problematic for resolved topological lines made from points
-		// (rather than intersecting lines) because the intersection point is not on an existing
-		// geometry (its between two point geometries) and hence the plate id is essentially undefined.
-		//
-		if (sub_segment_points_iter != sub_segment_points_end)
-		{
-			// Are we at the last boundary section point (it might be an intersection point).
-			if (boundary_section_points_iter == boundary_section_points_end - 1)
-			{
-				const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-						boundary_section_points.back()/*last point*/,
-						sub_segment_shared_reconstruct_info);
-				delaunay_points.push_back(delaunay_point);
-
-				return;
-			}
-			else
-			{
-				qWarning() << "TopologyNetworkResolver: Unexpected mis-match between a network "
-					"boundary section and its component sub-segments - "
-					"some boundary section points may have incorrect plate ids / velocities.";
-
-				// Add the remaining boundary section points using the current sub-segment parameters.
-				for ( ;
-					boundary_section_points_iter != boundary_section_points_end;
-					++boundary_section_points_iter)
-				{
-					const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-							*boundary_section_points_iter,
-							sub_segment_shared_reconstruct_info);
-					delaunay_points.push_back(delaunay_point);
-				}
-
-				return;
-			}
-		}
-	}
-
-	qWarning() << "TopologyNetworkResolver: Reached end of a network boundary section's "
-		"sub-segments before reaching end of the boundary section - some boundary section points "
-		"not using sub-segment plate ids - probably will give incorrect velocities.";
-
-	// Resort to using the plate id and reconstruction trees of the boundary section itself
-	// rather than its sub-segments. This will probably give incorrect velocities at these points.
-
-	// Reconstruct information shared by all the Delaunay points of the current sub-segment.
-	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
-			boundary_section_shared_reconstruct_info =
-					ResolvedTriangulation::VertexSharedReconstructInfo::create(boundary_section_rtl);
-
-	// It's possible we didn't even find a point matching the first boundary section point.
-	if (!initialised_start_of_boundary_section)
-	{
-		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-				boundary_section_points.front()/*first point*/,
-				boundary_section_shared_reconstruct_info);
-		delaunay_points.push_back(delaunay_point);
-
-		initialised_start_of_boundary_section = true;
-
-		// 'boundary_section_points_iter' points at the second boundary section point.
-	}
-
-	// Add the remaining boundary section points.
-	for ( ; boundary_section_points_iter != boundary_section_points_end; ++boundary_section_points_iter)
-	{
-		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-				*boundary_section_points_iter,
-				boundary_section_shared_reconstruct_info);
-		delaunay_points.push_back(delaunay_point);
-	}
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_reconstructed_feature_geometry(
-		const ReconstructedFeatureGeometry::non_null_ptr_type &interior_rfg,
-		const GPlatesMaths::GeometryOnSphere &interior_geometry,
-		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points,
-		std::vector<ResolvedTriangulation::Network::RigidBlock> &rigid_blocks)
-{
-	// Keep track of any interior static polygon regions - these are rigid blocks.
-	// These will be needed for calculating velocities since they are not part of the triangulation
-	// generated (velocities will be calculated in the normal manner for static polygons).
-	//
-	// NOTE: Since currently only RFGs and resolved topological *lines* can be referenced by
-	// networks it's only possible to have an interior *polygon* if it's an RFG - so we don't
-	// need to worry about resolved topological geometries just yet.
-	// See if interior is a reconstructed feature geometry (or any of its derived types).
-	//
-	// If it's a polygon then add it to the list of interior rigid blocks.
-	if (GeometryUtils::get_polygon_on_sphere(*interior_rfg->reconstructed_geometry()))
-	{
-		rigid_blocks.push_back(
-				ResolvedTriangulation::Network::RigidBlock(interior_rfg));
-	}
-
-	// Reconstruct information shared by all the Delaunay points we're adding here.
-	const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
-			interior_geometry_shared_reconstruct_info =
-					ResolvedTriangulation::VertexSharedReconstructInfo::create(interior_rfg);
-
-	// Get the points for this interior geometry.
-	std::vector<GPlatesMaths::PointOnSphere> interior_geometry_points;
-	GeometryUtils::get_geometry_exterior_points(interior_geometry, interior_geometry_points);
-
-	// Create the delaunay points for this interior geometry.
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator interior_geometry_points_iter =
-			interior_geometry_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator interior_geometry_points_end =
-			interior_geometry_points.end();
-	for ( ; interior_geometry_points_iter != interior_geometry_points_end; ++interior_geometry_points_iter)
-	{
-		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-				*interior_geometry_points_iter,
-				interior_geometry_shared_reconstruct_info);
-		delaunay_points.push_back(delaunay_point);
-	}
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_resolved_topological_line(
-		const ResolvedTopologicalLine::non_null_ptr_type &interior_rtl,
-		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points)
-{
-	// Get the sub-segments of the resolved line so we can access their plate ids and reconstruction trees.
-	const sub_segment_seq_type &resolved_line_sub_segments = interior_rtl->get_sub_segment_sequence();
-
-	// Iterate over the sub-segments.
-	sub_segment_seq_type::const_iterator sub_segments_iter = resolved_line_sub_segments.begin();
-	sub_segment_seq_type::const_iterator sub_segments_end = resolved_line_sub_segments.end();
-	for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
-	{
-		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
-
-		ReconstructionGeometry::non_null_ptr_to_const_type sub_segment_rg =
-				sub_segment.get_reconstruction_geometry();
-
-		// Gather the reconstruct information shared by all the Delaunay points of the current sub-segment.
-		const ResolvedTriangulation::VertexSharedReconstructInfo::non_null_ptr_to_const_type
-				sub_segment_shared_reconstruct_info =
-						ResolvedTriangulation::VertexSharedReconstructInfo::create(sub_segment_rg);
-
-		// Get the points for this sub-segment.
-		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-		GeometryUtils::get_geometry_exterior_points(*sub_segment.get_geometry(), sub_segment_points);
-
-		// Create the delaunay points for this sub-segment.
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator sub_segment_points_iter =
-				sub_segment_points.begin();
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator sub_segment_points_end =
-				sub_segment_points.end();
-		for ( ; sub_segment_points_iter != sub_segment_points_end; ++sub_segment_points_iter)
-		{
-			const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
-					*sub_segment_points_iter,
-					sub_segment_shared_reconstruct_info);
-			delaunay_points.push_back(delaunay_point);
-		}
-	}
 }
 
 
@@ -1487,19 +1094,6 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_source_featur
 }
 
 #endif // ...not currently using being used.
-
-
-GPlatesAppLogic::TopologyNetworkResolver::ResolvedNetwork::BoundarySection::BoundarySection(
-		const GPlatesModel::FeatureId &source_feature_id,
-		const ReconstructionGeometry::non_null_ptr_type &source_rg,
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &source_geometry) :
-	d_source_feature_id(source_feature_id),
-	d_source_rg(source_rg),
-	d_source_geometry(source_geometry),
-	d_use_reverse(false),
-	d_intersection_results(source_geometry)
-{
-}
 
 
 GPlatesAppLogic::TopologyNetworkResolver::ResolvedNetwork::InteriorGeometry::InteriorGeometry(

@@ -26,6 +26,10 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <boost/foreach.hpp>
+#include <QDir>
+#include <QFileInfo>
+#include <QString>
 
 #include "VisibleReconstructionGeometryExport.h"
 
@@ -36,6 +40,7 @@
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/TopologyUtils.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
@@ -43,23 +48,67 @@
 #include "file-io/ResolvedTopologicalGeometryExport.h"
 
 
-namespace
+namespace GPlatesViewOperations
 {
-	//! Convenience typedef for sequence of RFGs.
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
-			reconstructed_feature_geom_seq_type;
+	namespace VisibleReconstructionGeometryExport
+	{
+		namespace
+		{
+			//! Convenience typedef for sequence of RFGs.
+			typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstructed_feature_geom_seq_type;
 
-	//! Convenience typedef for sequence of reconstructed flowline geometries.
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFlowline *>
-			reconstructed_flowline_seq_type;
+			//! Convenience typedef for sequence of reconstructed flowline geometries.
+			typedef std::vector<const GPlatesAppLogic::ReconstructedFlowline *> reconstructed_flowline_seq_type;
 
-	//! Convenience typedef for sequence of reconstructed motion track geometries.
-	typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *>
-			reconstructed_motion_path_seq_type;
+			//! Convenience typedef for sequence of reconstructed motion track geometries.
+			typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> reconstructed_motion_path_seq_type;
 
-	//! Convenience typedef for sequence of resolved topologies.
-	typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *>
-			resolved_topologies_seq_type;
+			//! Convenience typedef for sequence of resolved topologies.
+			typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topologies_seq_type;
+
+
+			QString
+			append_suffix_to_template_filebasename(
+					const QFileInfo &original_template_filename,
+					QString suffix)
+			{
+				const QString ext = original_template_filename.suffix();
+				if (ext.isEmpty())
+				{
+					// Shouldn't really happen.
+					return original_template_filename.fileName() + suffix;
+				}
+
+				// Remove any known file suffix from the template filename.
+				const QString template_filebasename = original_template_filename.completeBaseName();
+
+				return template_filebasename + suffix + '.' + ext;
+			}
+
+			QString
+			substitute_placeholder(
+					const QString &output_filebasename,
+					const QString &placeholder,
+					const QString &placeholder_replacement)
+			{
+				return QString(output_filebasename).replace(placeholder, placeholder_replacement);
+			}
+
+
+			const QString
+			get_full_output_filename(
+					const QDir &target_dir,
+					const QString &filebasename,
+					const QString &placeholder_string,
+					const QString &placeholder_replacement)
+			{
+				const QString output_basename = substitute_placeholder(filebasename,
+						placeholder_string, placeholder_replacement);
+
+				return target_dir.absoluteFilePath(output_basename);
+			}
+		}
+	}
 }
 
 
@@ -201,7 +250,11 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 
 void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resolved_topologies(
-		const QString &filename,
+		const QDir &target_dir,
+		const QString &file_basename,
+		const QString &placeholder_format_string,
+		const QString &placeholder_topological_geometries,
+		const QString &placeholder_topological_sections,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		const files_collection_type &active_files,
@@ -214,6 +267,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		bool export_topological_lines,
 		bool export_topological_polygons,
 		bool export_topological_networks,
+		bool export_topological_sections,
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
@@ -231,49 +285,67 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 	// Get the ResolvedTopologicalLine objects (if requested)...
 	if (export_topological_lines)
 	{
-		std::vector<const GPlatesAppLogic::ResolvedTopologicalLine *> resolved_topological_lines;
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalLine *> resolved_topological_line_ptrs;
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 				reconstruction_geom_seq.begin(),
 				reconstruction_geom_seq.end(),
-				resolved_topological_lines);
+				resolved_topological_line_ptrs);
 		std::copy(
-				resolved_topological_lines.begin(),
-				resolved_topological_lines.end(),
+				resolved_topological_line_ptrs.begin(),
+				resolved_topological_line_ptrs.end(),
 				std::back_inserter(resolved_topologies_seq));
 	}
 
 	// Get the ResolvedTopologicalBoundary objects (if requested)...
+	std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_topological_boundaries;
 	if (export_topological_polygons)
 	{
-		std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundary_ptrs;
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 				reconstruction_geom_seq.begin(),
 				reconstruction_geom_seq.end(),
-				resolved_topological_boundaries);
+				resolved_topological_boundary_ptrs);
 		std::copy(
-				resolved_topological_boundaries.begin(),
-				resolved_topological_boundaries.end(),
+				resolved_topological_boundary_ptrs.begin(),
+				resolved_topological_boundary_ptrs.end(),
 				std::back_inserter(resolved_topologies_seq));
+
+		resolved_topological_boundaries.assign(
+				resolved_topological_boundary_ptrs.begin(),
+				resolved_topological_boundary_ptrs.end());
 	}
 
 	// Get the ResolvedTopologicalNetwork objects (if requested)...
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> resolved_topological_networks;
 	if (export_topological_networks)
 	{
-		std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_network_ptrs;
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 				reconstruction_geom_seq.begin(),
 				reconstruction_geom_seq.end(),
-				resolved_topological_networks);
+				resolved_topological_network_ptrs);
 		std::copy(
-				resolved_topological_networks.begin(),
-				resolved_topological_networks.end(),
+				resolved_topological_network_ptrs.begin(),
+				resolved_topological_network_ptrs.end(),
 				std::back_inserter(resolved_topologies_seq));
+
+		resolved_topological_networks.assign(
+				resolved_topological_network_ptrs.begin(),
+				resolved_topological_network_ptrs.end());
 	}
+
+	const QString topological_geometries_filename = get_full_output_filename(
+			target_dir,
+			file_basename,
+			placeholder_format_string,
+			placeholder_topological_geometries);
 
 	// Export the RTGs to a file format based on the filename extension.
 	GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
-			filename,
-			GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(filename, file_format_registry),
+			topological_geometries_filename,
+			GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
+					topological_geometries_filename,
+					file_format_registry),
 			resolved_topologies_seq,
 			active_files,
 			active_reconstruction_files,
@@ -284,4 +356,44 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 			export_separate_output_directory_per_input_file,
 			force_polygon_orientation,
 			wrap_to_dateline);
+
+	if (export_topological_sections)
+	{
+		// Find the resolved topological sections (and their associated shared sub-segments) from the resolved boundaries/networks.
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections;
+		GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
+				resolved_topological_sections,
+				resolved_topological_boundaries,
+				resolved_topological_networks);
+
+		// Convert to raw pointers.
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> resolved_topological_section_ptrs;
+		BOOST_FOREACH(
+				GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type resolved_topological_section,
+				resolved_topological_sections)
+		{
+			resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+		}
+
+		const QString topological_sections_filename = get_full_output_filename(
+				target_dir,
+				file_basename,
+				placeholder_format_string,
+				placeholder_topological_sections);
+
+		GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_sections(
+				topological_sections_filename,
+				GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
+						topological_sections_filename,
+						file_format_registry),
+				resolved_topological_section_ptrs,
+				active_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				export_single_output_file,
+				export_per_input_file,
+				export_separate_output_directory_per_input_file,
+				wrap_to_dateline);
+	}
 }

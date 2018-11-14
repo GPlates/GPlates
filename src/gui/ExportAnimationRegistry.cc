@@ -598,9 +598,10 @@ namespace GPlatesGui
 			const ExportOptionsUtils::ExportFileOptions default_resolved_topology_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
-			const bool default_resolved_topology_export_lines = true;
+			const bool default_resolved_topology_export_lines = false;
 			const bool default_resolved_topology_export_polygons = true;
 			const bool default_resolved_topology_export_networks = true;
+			const bool default_resolved_topology_export_sections = true;
 			const boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 					default_resolved_topology_export_force_polygon_orientation = boost::none;
 			const bool default_resolved_topology_wrap_to_dateline = true;
@@ -611,12 +612,13 @@ namespace GPlatesGui
 							ExportAnimationType::GMT),
 					ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 							new ExportResolvedTopologyAnimationStrategy::Configuration(
-									add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::GMT),
+									add_export_filename_extension("topology%P_%0.2fMa", ExportAnimationType::GMT),
 									ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
 									default_resolved_topology_file_export_options,
 									default_resolved_topology_export_lines,
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
+									default_resolved_topology_export_sections,
 									default_resolved_topology_export_force_polygon_orientation,
 									default_resolved_topology_wrap_to_dateline)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -627,7 +629,7 @@ namespace GPlatesGui
 									bool>,
 							// The 'false' prevents user from turning on/off dateline wrapping of geometries...
 							_1, _2, _3, false),
-					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
@@ -635,12 +637,13 @@ namespace GPlatesGui
 							ExportAnimationType::SHAPEFILE),
 					ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 							new ExportResolvedTopologyAnimationStrategy::Configuration(
-									add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::SHAPEFILE),
+									add_export_filename_extension("topology%P_%0.2fMa", ExportAnimationType::SHAPEFILE),
 									ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
 									default_resolved_topology_file_export_options,
 									default_resolved_topology_export_lines,
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
+									default_resolved_topology_export_sections,
 									default_resolved_topology_export_force_polygon_orientation,
 									default_resolved_topology_wrap_to_dateline)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -651,7 +654,7 @@ namespace GPlatesGui
 									bool>,
 							// The 'true' allows the user to turn on/off dateline wrapping of geometries...
 							_1, _2, _3, true),
-					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
@@ -659,12 +662,13 @@ namespace GPlatesGui
 							ExportAnimationType::OGRGMT),
 					ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 							new ExportResolvedTopologyAnimationStrategy::Configuration(
-									add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::OGRGMT),
+									add_export_filename_extension("topology%P_%0.2fMa", ExportAnimationType::OGRGMT),
 									ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 									default_resolved_topology_file_export_options,
 									default_resolved_topology_export_lines,
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
+									default_resolved_topology_export_sections,
 									default_resolved_topology_export_force_polygon_orientation,
 									default_resolved_topology_wrap_to_dateline)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -675,7 +679,7 @@ namespace GPlatesGui
 									bool>,
 							// The 'false' prevents user from turning on/off dateline wrapping of geometries...
 							_1, _2, _3, false),
-					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 		}
 
 
@@ -690,44 +694,45 @@ namespace GPlatesGui
 			const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 					default_citcoms_resolved_topology_export_options(
 							/*wrap_geometries_to_the_dateline*/true,
-							/*non_overlapping_sub_segments*/true,
+
+							//
+							// all polygon options
+							//
+
+							/*export_plate_polygons_to_all_polygons_file*/true,
+							/*export_network_polygons_to_all_polygons_file*/true,
+							/*export_slab_polygons_to_all_polygons_file*/false,
+
+							/*export_plate_boundaries_to_all_boundaries_file*/true,
+							/*export_network_boundaries_to_all_boundaries_file*/true,
+							/*export_slab_boundaries_to_all_boundaries_file*/false,
+
+							//
+							// plate polygon options
+							//
 
 							/*export_individual_plate_polygon_files*/false,
-							/*export_all_plate_polygons_to_a_single_file*/true,
-							/*export_plate_polygon_subsegments_to_lines*/false,
+							/*export_plate_polygons_to_a_single_file*/true,
 
-							// NOTE: all of these must be set to true to enable the check box on the gui: 
-							// checkBox_export_plate_polygon_subsegments_to_type_files 
+							/*export_plate_boundaries*/true,
 
-							/*export_ridge_transforms*/true,
-							/*export_subductions*/true,
-							/*export_left_subductions*/true,
-							/*export_right_subductions*/true,
+							//
+							// network polygon options 
+							//
 
-							/*export_individual_network_boundary_files*/false,
-							/*export_all_network_boundaries_to_a_single_file*/true,
-							/*export_network_polygon_subsegments_to_lines*/false,
+							/*export_individual_network_polygon_files*/false,
+							/*export_network_polygons_to_a_single_file*/true,
 
-							// NOTE: all of these must be set to true to enable the check box on the gui: 
-							// checkBox_export_networks_polygon_subsegments_to_type_files 
+							/*export_network_boundaries*/true,
 
-							/*export_network_ridge_transforms*/true,
-							/*export_network_subductions*/true,
-							/*export_network_left_subductions*/true,
-							/*export_network_right_subductions*/true,
+							//
+							// slab polygon options 
+							//
 
 							/*export_individual_slab_polygon_files*/false,
-							/*export_all_slab_polygons_to_a_single_file*/true,
-							/*export_slab_polygon_subsegments_to_lines*/false,
+							/*export_slab_polygons_to_a_single_file*/true,
 
-							// NOTE: all of these must be set to true to enable the check box on the gui: 
-							// checkBox_export_slab_polygon_subsegments_to_type_files 
-
-							/*export_slab_edge_leading*/true,
-							/*export_slab_edge_leading_left*/true,
-							/*export_slab_edge_leading_right*/true,
-							/*export_slab_edge_trench*/true,
-							/*export_slab_edge_side*/true
+							/*export_slab_boundaries*/true
 						);
 
 			registry.register_exporter(

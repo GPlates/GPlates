@@ -355,6 +355,18 @@ const GPlatesMaths::FiniteRotation
 GPlatesMaths::interpolate(
 		const FiniteRotation &r1,
 		const FiniteRotation &r2,
+		const real_t &interpolate_ratio)
+{
+	UnitQuaternion3D res_uq = ::slerp(r1.unit_quat(), r2.unit_quat(), interpolate_ratio);
+
+	return FiniteRotation::create(res_uq, boost::none);
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::interpolate(
+		const FiniteRotation &r1,
+		const FiniteRotation &r2,
 		const FiniteRotation &r3,
 		const real_t &w1,
 		const real_t &w2,

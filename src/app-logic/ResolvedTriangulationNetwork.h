@@ -43,6 +43,7 @@
 #include "ResolvedTriangulationConstrainedDelaunay2.h"
 #include "ResolvedTriangulationDelaunay2.h"
 #include "ResolvedTriangulationDelaunay3.h"
+#include "ResolvedVertexSourceInfo.h"
 #include "TopologyNetworkParams.h"
 #include "VelocityDeltaTime.h"
 
@@ -132,16 +133,16 @@ namespace GPlatesAppLogic
 
 				DelaunayPoint(
 						const GPlatesMaths::PointOnSphere &point_,
-						const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruct_info_) :
+						const ResolvedVertexSourceInfo::non_null_ptr_to_const_type &shared_source_info_) :
 					point(point_),
-					shared_reconstruct_info(shared_reconstruct_info_)
+					shared_source_info(shared_source_info_)
 				{  }
 
 				//! The reconstructed point-on-sphere associated with the delaunay vertex.
 				GPlatesMaths::PointOnSphere point;
 
 				// Shared information used to reconstruct geometry that this point came from.
-				VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruct_info;
+				ResolvedVertexSourceInfo::non_null_ptr_to_const_type shared_source_info;
 			};
 
 

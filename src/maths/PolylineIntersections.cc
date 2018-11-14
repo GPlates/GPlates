@@ -98,7 +98,7 @@ namespace GPlatesMaths
 				const VertexIteratorType vertices_end,
 				const unsigned int num_segments,
 				const unsigned int GeometryIntersect::Intersection::*segment_index_ptr,
-				const double GeometryIntersect::Intersection::*angle_in_segment_ptr,
+				const AngularDistance GeometryIntersect::Intersection::*angle_in_segment_ptr,
 				// This is either SEGMENT1_START_ON_SEGMENT2 or SEGMENT2_START_ON_SEGMENT1 depending
 				// on whether we're handling the first or second geometry...
 				const GeometryIntersect::Intersection::Type enum_segment_starts_on_other_segment,
@@ -266,7 +266,7 @@ namespace GPlatesMaths
 				const GeometryIntersect::Graph &intersection_graph,
 				const std::vector<unsigned int> GeometryIntersect::Graph::*geometry_intersections_ptr,
 				const unsigned int GeometryIntersect::Intersection::*segment_index_ptr,
-				const double GeometryIntersect::Intersection::*angle_in_segment_ptr,
+				const AngularDistance GeometryIntersect::Intersection::*angle_in_segment_ptr,
 				// This is either SEGMENT1_START_ON_SEGMENT2 or SEGMENT2_START_ON_SEGMENT1 depending
 				// on whether we're handling the first or second geometry...
 				const GeometryIntersect::Intersection::Type enum_segment_starts_on_other_segment)

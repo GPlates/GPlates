@@ -99,7 +99,7 @@ namespace GPlatesMaths
 			SortGeometryIntersection(
 					const intersection_seq_type &intersections,
 					const unsigned int Intersection::*segment_index_ptr,
-					const double Intersection::*angle_in_segment_ptr) :
+					const AngularDistance Intersection::*angle_in_segment_ptr) :
 				d_intersections(&intersections),
 				d_segment_index_ptr(segment_index_ptr),
 				d_angle_in_segment_ptr(angle_in_segment_ptr)
@@ -128,17 +128,17 @@ namespace GPlatesMaths
 					return false;
 				}
 
-				const double lhs_angle_in_segment = lhs_intersection.*d_angle_in_segment_ptr;
-				const double rhs_angle_in_segment = rhs_intersection.*d_angle_in_segment_ptr;
+				const AngularDistance &lhs_angle_in_segment = lhs_intersection.*d_angle_in_segment_ptr;
+				const AngularDistance &rhs_angle_in_segment = rhs_intersection.*d_angle_in_segment_ptr;
 
 				// Sort by angle closest to start of segment when both intersections are within the same segment.
-				return lhs_angle_in_segment < rhs_angle_in_segment;
+				return lhs_angle_in_segment.is_precisely_less_than(rhs_angle_in_segment);
 			}
 
 		private:
 			const intersection_seq_type *d_intersections;
 			const unsigned int Intersection::*d_segment_index_ptr;
-			const double Intersection::*d_angle_in_segment_ptr;
+			const AngularDistance Intersection::*d_angle_in_segment_ptr;
 		};
 
 		/**
@@ -182,31 +182,26 @@ namespace GPlatesMaths
 				unsigned int segment2_index)
 		{
 			// Calculate the angle from start point to intersection point in each segment.
-			//
-			// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
-			// dot product is just outside the range [-1,1] which would result in NaN.
-			double angle_in_segment1;
-			double angle_in_segment2;
+			AngularDistance angle_in_segment1(AngularDistance::ZERO);
+			AngularDistance angle_in_segment2(AngularDistance::ZERO);
 			if (intersection_type == Intersection::SEGMENTS_CROSS)
 			{
-				angle_in_segment1 = acos(dot(intersection_position, segment1_start_point)).dval();
-				angle_in_segment2 = acos(dot(intersection_position, segment2_start_point)).dval();
+				angle_in_segment1 = AngularDistance::create_from_cosine(
+						dot(intersection_position, segment1_start_point));
+				angle_in_segment2 = AngularDistance::create_from_cosine(
+						dot(intersection_position, segment2_start_point));
 			}
 			else if (intersection_type == Intersection::SEGMENT1_START_ON_SEGMENT2)
 			{
-				angle_in_segment1 = 0.0;
-				angle_in_segment2 = acos(dot(intersection_position, segment2_start_point)).dval();
+				angle_in_segment2 = AngularDistance::create_from_cosine(
+						dot(intersection_position, segment2_start_point));
 			}
 			else if (intersection_type == Intersection::SEGMENT2_START_ON_SEGMENT1)
 			{
-				angle_in_segment1 = acos(dot(intersection_position, segment1_start_point)).dval();
-				angle_in_segment2 = 0.0;
+				angle_in_segment1 = AngularDistance::create_from_cosine(
+						dot(intersection_position, segment1_start_point));
 			}
-			else // Intersection::SEGMENT_START_ON_SEGMENT_START ...
-			{
-				angle_in_segment1 = 0.0;
-				angle_in_segment2 = 0.0;
-			}
+			// else Intersection::SEGMENT_START_ON_SEGMENT_START ...
 
 			const Intersection intersection(
 					intersection_type,

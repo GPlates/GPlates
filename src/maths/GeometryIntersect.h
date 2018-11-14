@@ -28,6 +28,7 @@
 
 #include <vector>
 
+#include "AngularDistance.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
@@ -104,8 +105,8 @@ namespace GPlatesMaths
 					const PointOnSphere &position_,
 					unsigned int segment_index1_,
 					unsigned int segment_index2_,
-					double angle_in_segment1_ = 0.0,
-					double angle_in_segment2_ = 0.0) :
+					const AngularDistance &angle_in_segment1_ = AngularDistance::ZERO,
+					const AngularDistance &angle_in_segment2_ = AngularDistance::ZERO) :
 				type(type_),
 				position(position_),
 				segment_index1(segment_index1_),
@@ -115,8 +116,26 @@ namespace GPlatesMaths
 			{  }
 
 
+			//! Is this intersection *on* the start point of segment1 ?
+			bool
+			is_on_segment1_start() const
+			{
+				return type == SEGMENT_START_ON_SEGMENT_START ||
+						type == SEGMENT1_START_ON_SEGMENT2;
+			}
+
+			//! Is this intersection *on* the start point of segment2 ?
+			bool
+			is_on_segment2_start() const
+			{
+				return type == SEGMENT_START_ON_SEGMENT_START ||
+						type == SEGMENT2_START_ON_SEGMENT1;
+			}
+
+
 			Type type;
 			PointOnSphere position;
+
 
 			//
 			// A segment index can be equal to the number of segments in the respective geometry.
@@ -134,10 +153,16 @@ namespace GPlatesMaths
 			//! Segment index within the second geometry.
 			unsigned int segment_index2;
 
+
+			//
+			// If @a type indicates an intersection *on* a start vertex for a segment then that
+			// segment's angle will be AngularDistance::ZERO.
+			//
+
 			//! Angle (radians) from segment start point to intersection along segment in first geometry.
-			double angle_in_segment1;
+			AngularDistance angle_in_segment1;
 			//! Angle (radians) from segment start point to intersection along segment in second geometry.
-			double angle_in_segment2;
+			AngularDistance angle_in_segment2;
 		};
 
 		//! Typedef for a sequence of @a Intersection.

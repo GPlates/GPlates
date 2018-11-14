@@ -233,12 +233,6 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_polygon(
 	process_resolved_boundary_topological_section_intersections();
 
 	//
-	// Now iterate over the intersection results and assign boundary sub-segments to
-	// each section.
-	//
-	assign_segments();
-
-	//
 	// Now create the resolved topological boundary.
 	//
 	create_resolved_topological_boundary();
@@ -282,12 +276,6 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line(
 	process_resolved_line_topological_section_intersections();
 
 	//
-	// Now iterate over the intersection results and assign sub-segments to
-	// each section.
-	//
-	assign_segments();
-
-	//
 	// Now create the resolved topological line.
 	//
 	create_resolved_topological_line();
@@ -325,15 +313,13 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line_section(
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_topological_line_section.get_source_geometry());
+					*gpml_topological_line_section.get_source_geometry(),
+					gpml_topological_line_section.get_reverse_order());
 	if (!section)
 	{
 		// Return without adding topological section to the list of sections.
 		return;
 	}
-
-	// Set reverse flag.
-	section->d_use_reverse = gpml_topological_line_section.get_reverse_order();
 
 	// Add to internal sequence.
 	d_resolved_geometry.d_sections.push_back(*section);
@@ -350,15 +336,15 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_toplogical_point.get_source_geometry());
+					*gpml_toplogical_point.get_source_geometry(),
+					// This topological section is a point, so cannot be intersected with its neighbours,
+					// and so has no reversal information...
+					false/*reverse_hint*/);
 	if (!section)
 	{
 		// Return without adding topological section to the list of sections.
 		return;
 	}
-
-	// No other information to collect since this topological section is a point and
-	// hence cannot intersect with neighbouring sections.
 
 	// Add to internal sequence.
 	d_resolved_geometry.d_sections.push_back(*section);
@@ -368,7 +354,8 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
 boost::optional<GPlatesAppLogic::TopologyGeometryResolver::ResolvedGeometry::Section>
 GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstructed_geometry(
 		const GPlatesModel::FeatureId &source_feature_id,
-		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
+		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
+		bool reverse_hint)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
 	// The referenced RGs must be in our sequence of reconstructed/resolved topological sections.
@@ -414,7 +401,8 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstruc
 		return ResolvedGeometry::Section(
 				source_feature_id,
 				source_rfg.get(),
-				source_rfg.get()->reconstructed_geometry());
+				source_rfg.get()->reconstructed_geometry(),
+				reverse_hint);
 	}
 
 	if (d_current_resolved_geometry_type == RESOLVE_BOUNDARY)
@@ -429,7 +417,8 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstruc
 			return ResolvedGeometry::Section(
 					source_feature_id,
 					source_rtl.get(),
-					source_rtl.get()->resolved_topology_line());
+					source_rtl.get()->resolved_topology_line(),
+					reverse_hint);
 		}
 	}
 
@@ -499,8 +488,7 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_boundary_topological
 
 	const std::size_t num_sections = d_resolved_geometry.d_sections.size();
 
-	ResolvedGeometry::Section &current_section =
-			d_resolved_geometry.d_sections[current_section_index];
+	ResolvedGeometry::Section &current_section = d_resolved_geometry.d_sections[current_section_index];
 
 	//
 	// We get the start intersection geometry the previous section in the topological geometry's
@@ -512,8 +500,7 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_boundary_topological
 			? num_sections - 1
 			: current_section_index - 1;
 
-	ResolvedGeometry::Section &prev_section =
-			d_resolved_geometry.d_sections[prev_section_index];
+	ResolvedGeometry::Section &prev_section = d_resolved_geometry.d_sections[prev_section_index];
 
 	// If both sections refer to the same geometry then don't intersect.
 	// This can happen when the same geometry is added more than once to the topology
@@ -535,15 +522,14 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_boundary_topological
 	//
 	if (two_sections)
 	{
-		current_section.d_intersection_results.
+		current_section.d_intersection_results->
 				intersect_with_previous_section_allowing_two_intersections(
 						prev_section.d_intersection_results);
 	}
 	else
 	{
-		current_section.d_intersection_results.intersect_with_previous_section(
-				prev_section.d_intersection_results,
-				prev_section.d_use_reverse);
+		current_section.d_intersection_results->intersect_with_previous_section(
+				prev_section.d_intersection_results);
 	}
 
 	// NOTE: We don't need to look at the end intersection because the next topological
@@ -588,8 +574,7 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_line_topological_sec
 	// Intersect the current section with the previous section.
 	//
 
-	ResolvedGeometry::Section &current_section =
-			d_resolved_geometry.d_sections[current_section_index];
+	ResolvedGeometry::Section &current_section = d_resolved_geometry.d_sections[current_section_index];
 
 	//
 	// We get the start intersection geometry from the previous section in the topological geometry's
@@ -605,19 +590,18 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_line_topological_sec
 
 	const std::size_t prev_section_index = current_section_index - 1;
 
-	ResolvedGeometry::Section &prev_section =
-			d_resolved_geometry.d_sections[prev_section_index];
+	ResolvedGeometry::Section &prev_section = d_resolved_geometry.d_sections[prev_section_index];
 
 	// If both sections refer to the same geometry then don't intersect.
 	// This can happen when the same geometry is added more than once to the topology
 	// when it forms different parts of the resolved topological geometry - normally there
 	// are other geometries in between but when building topologies it's possible to
 	// add the geometry as first section, then add another geometry as second section,
-	// then add the first geometry again as the third section and then add another
-	// geometry as the fourth section - before the fourth section is added the
-	// first and third sections are adjacent and they are the same geometry - and if
-	// the topology build/edit tool creates the topology when only three sections are
-	// added then we have to deal with it here in the topology resolver.
+	// then add the first geometry again as the third section and then remove the second section
+	// and then remove the first section - before the first section is removed (after second section
+	// removed) the first and third sections are adjacent and they are the same geometry - and if
+	// the topology build/edit tool creates the topology before the first section is removed then
+	// we have to deal with it here in the topology resolver.
 	if (prev_section.d_source_rg.get() == current_section.d_source_rg.get())
 	{
 		return;
@@ -626,43 +610,13 @@ GPlatesAppLogic::TopologyGeometryResolver::process_resolved_line_topological_sec
 	//
 	// Process the actual intersection.
 	//
-	current_section.d_intersection_results.intersect_with_previous_section(
-			prev_section.d_intersection_results,
-			prev_section.d_use_reverse);
+	current_section.d_intersection_results->intersect_with_previous_section(
+			prev_section.d_intersection_results);
 
 	// NOTE: We don't need to look at the end intersection because the next topological
 	// section that we visit will have this current section as its start intersection and
 	// hence the intersection of this current section and its next section will be
 	// taken care of during that visit.
-}
-
-
-void
-GPlatesAppLogic::TopologyGeometryResolver::assign_segments()
-{
-	// Make sure all the boundary segments have been found.
-	// It is an error in the code (not in the data) if this is not the case.
-	const std::size_t num_sections = d_resolved_geometry.d_sections.size();
-	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
-	{
-		assign_segment(section_index);
-	}
-}
-
-
-void
-GPlatesAppLogic::TopologyGeometryResolver::assign_segment(
-		const std::size_t section_index)
-{
-	ResolvedGeometry::Section &section = d_resolved_geometry.d_sections[section_index];
-
-	// See if the reverse flag has been set by intersection processing - this
-	// happens if the visible section intersected both its neighbours otherwise it just
-	// returns the flag we passed it.
-	section.d_use_reverse = section.d_intersection_results.get_reverse_flag(section.d_use_reverse);
-
-	section.d_final_segment_unreversed_geom =
-			section.d_intersection_results.get_unreversed_sub_segment(section.d_use_reverse);
 }
 
 
@@ -675,26 +629,14 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 	std::vector<GPlatesMaths::PointOnSphere> polygon_points;
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
-	std::vector<ResolvedTopologicalGeometrySubSegment> output_subsegments;
+	std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
-	ResolvedGeometry::section_seq_type::const_iterator section_iter =
-			d_resolved_geometry.d_sections.begin();
-	const ResolvedGeometry::section_seq_type::const_iterator section_end =
-			d_resolved_geometry.d_sections.end();
-	for ( ; section_iter != section_end; ++section_iter)
+	const std::size_t num_sections = d_resolved_geometry.d_sections.size();
+	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
 	{
-		const ResolvedGeometry::Section &section = *section_iter;
-
-		// It's possible for a valid segment to not contribute to the boundary
-		// of the plate polygon. This can happen if it contributes zero-length
-		// to the plate boundary which happens when both its neighbouring
-		// boundary sections intersect it at the same point.
-		if (!section.d_final_segment_unreversed_geom)
-		{
-			continue;
-		}
+		const ResolvedGeometry::Section &section = d_resolved_geometry.d_sections[section_index];
 
 		// Get the subsegment feature reference.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> subsegment_feature_ref =
@@ -707,20 +649,28 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
 				subsegment_feature_ref.get());
 
-		// Create a subsegment structure that'll get used when
-		// creating the resolved topological geometry.
-		const ResolvedTopologicalGeometrySubSegment output_subsegment(
-				section.d_final_segment_unreversed_geom.get(),
-				section.d_source_rg,
-				subsegment_feature_const_ref,
-				section.d_use_reverse);
+		// Get previous and next section reconstruction geometries.
+		ReconstructionGeometry::non_null_ptr_to_const_type prev_section_source_rg =
+				// Handle wraparound where previous of first section is last section...
+				d_resolved_geometry.d_sections[(section_index > 0) ? section_index - 1 : num_sections - 1].d_source_rg;
+		ReconstructionGeometry::non_null_ptr_to_const_type next_section_source_rg =
+				// Handle wraparound where next of last section is first section...
+				d_resolved_geometry.d_sections[(section_index < num_sections - 1) ? section_index + 1 : 0].d_source_rg;
+
+		// Create a subsegment structure that'll get used when creating the resolved topological boundary.
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type output_subsegment =
+				ResolvedTopologicalGeometrySubSegment::create(
+						section.d_intersection_results->get_sub_segment_range_in_section(),
+						section.d_intersection_results->get_reverse_flag(),
+						subsegment_feature_const_ref,
+						section.d_source_rg,
+						prev_section_source_rg,
+						next_section_source_rg);
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
-				*section.d_final_segment_unreversed_geom.get(),
-				polygon_points,
-				section.d_use_reverse);
+		// Subsegment should be reversed if that's how it contributed to the resolved topology.
+		output_subsegment->get_reversed_sub_segment_points(polygon_points);
 	}
 
 	// Create a polygon on sphere for the resolved boundary using 'polygon_points'.
@@ -746,20 +696,6 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		return;
 	}
 
-	// Join adjacent deforming points that are spread along a deforming zone boundary.
-	// Note that even though we are creating a resolved topological *boundary*, and not a
-	// resolved topological deforming *network*, the boundary can still be deforming
-	// (via independentally moving points).
-	//
-	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
-	// implemented. However, unfortunately it seems we need to keep this hack in place for any
-	// old data files that use the old method.
-	std::vector<ResolvedTopologicalGeometrySubSegment> joined_output_subsegments;
-	TopologyInternalUtils::join_adjacent_deforming_points(
-			joined_output_subsegments,
-			output_subsegments,
-			d_reconstruction_tree->get_reconstruction_time());
-
 	//
 	// Create the RTB for the plate polygon.
 	//
@@ -770,8 +706,8 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
-			joined_output_subsegments.begin(),
-			joined_output_subsegments.end(),
+			output_subsegments.begin(),
+			output_subsegments.end(),
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance(),
 			d_reconstruct_handle/*identify where/when this RTG was resolved*/);
@@ -792,25 +728,14 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	std::vector<GPlatesMaths::PointOnSphere> resolved_line_points;
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalLine.
-	std::vector<ResolvedTopologicalGeometrySubSegment> output_subsegments;
+	std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> output_subsegments;
 
 	// Iterate over the sections of the resolved line and construct
 	// the resolved polyline and its subsegments.
-	ResolvedGeometry::section_seq_type::const_iterator section_iter =
-			d_resolved_geometry.d_sections.begin();
-	const ResolvedGeometry::section_seq_type::const_iterator section_end =
-			d_resolved_geometry.d_sections.end();
-	for ( ; section_iter != section_end; ++section_iter)
+	const std::size_t num_sections = d_resolved_geometry.d_sections.size();
+	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
 	{
-		const ResolvedGeometry::Section &section = *section_iter;
-
-		// It's possible for a valid segment to not contribute to the resolved line.
-		// This can happen if it contributes zero-length to the resolved line which happens when
-		// both its neighbouring sections intersect it at the same point.
-		if (!section.d_final_segment_unreversed_geom)
-		{
-			continue;
-		}
+		const ResolvedGeometry::Section &section = d_resolved_geometry.d_sections[section_index];
 
 		// Get the subsegment feature reference.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> subsegment_feature_ref =
@@ -823,20 +748,33 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
 				subsegment_feature_ref.get());
 
-		// Create a subsegment structure that'll get used when
-		// creating the resolved topological geometry.
-		const ResolvedTopologicalGeometrySubSegment output_subsegment(
-				section.d_final_segment_unreversed_geom.get(),
-				section.d_source_rg,
-				subsegment_feature_const_ref,
-				section.d_use_reverse);
+		// Get previous and next section reconstruction geometries.
+		// Note that there's no wraparound from first to last section (and vice versa) for *lines*.
+		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_section_source_rg;
+		if (section_index > 0)
+		{
+			prev_section_source_rg = d_resolved_geometry.d_sections[section_index - 1].d_source_rg;
+		}
+		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_section_source_rg;
+		if (section_index < num_sections - 1)
+		{
+			next_section_source_rg = d_resolved_geometry.d_sections[section_index + 1].d_source_rg;
+		}
+
+		// Create a subsegment structure that'll get used when creating the resolved topological line.
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type output_subsegment =
+				ResolvedTopologicalGeometrySubSegment::create(
+						section.d_intersection_results->get_sub_segment_range_in_section(),
+						section.d_intersection_results->get_reverse_flag(),
+						subsegment_feature_const_ref,
+						section.d_source_rg,
+						prev_section_source_rg,
+						next_section_source_rg);
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the resolved line points.
-		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
-				*section.d_final_segment_unreversed_geom.get(),
-				resolved_line_points,
-				section.d_use_reverse);
+		// Subsegment should be reversed if that's how it contributed to the resolved topology.
+		output_subsegment->get_reversed_sub_segment_points(resolved_line_points);
 	}
 
 	// Create a polyline on sphere for the resolved line using 'resolved_line_points'.

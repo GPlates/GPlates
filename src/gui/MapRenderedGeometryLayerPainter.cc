@@ -53,7 +53,6 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
-#include "maths/PolylineIntersections.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/SphericalArea.h"
 

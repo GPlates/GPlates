@@ -68,6 +68,37 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 }
 
 
+const GPlatesAppLogic::resolved_vertex_source_info_seq_type &
+GPlatesAppLogic::ResolvedTopologicalNetwork::get_vertex_source_infos() const
+{
+	// Cache all vertex source infos on first call.
+	if (!d_vertex_source_infos)
+	{
+		calc_vertex_source_infos();
+	}
+
+	return d_vertex_source_infos.get();
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalNetwork::calc_vertex_source_infos() const
+{
+	d_vertex_source_infos = resolved_vertex_source_info_seq_type();
+	resolved_vertex_source_info_seq_type &vertex_source_infos = d_vertex_source_infos.get();
+
+	// Copy source infos from points in each boundary subsegment.
+	sub_segment_seq_type::const_iterator boundary_sub_segments_iter = d_boundary_sub_segment_seq.begin();
+	sub_segment_seq_type::const_iterator boundary_sub_segments_end = d_boundary_sub_segment_seq.end();
+	for ( ; boundary_sub_segments_iter != boundary_sub_segments_end; ++boundary_sub_segments_iter)
+	{
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &boundary_sub_segment = *boundary_sub_segments_iter;
+		// Subsegment should be reversed if that's how it contributed to the resolved topological network...
+		boundary_sub_segment->get_reversed_sub_segment_point_source_infos(vertex_source_infos);
+	}
+}
+
+
 void
 GPlatesAppLogic::ResolvedTopologicalNetwork::accept_visitor(
 		ConstReconstructionGeometryVisitor &visitor) const
@@ -89,4 +120,3 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::accept_weak_observer_visitor(
 {
 	visitor.visit_resolved_topological_network(*this);
 }
-

@@ -260,12 +260,15 @@ namespace GPlatesAppLogic
 		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks
 		 * which will overlap each other (eg, two plate polygons share parts of their boundary
 		 * leading to duplication).
+		 *
+		 * Each @a ResolvedTopologicalSection gathers the shared sub-segments associated with a
+		 * single topological section.
 		 */
 		void
 		find_resolved_topological_sections(
 				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
-				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
-				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks);
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks);
 	}
 }
 
