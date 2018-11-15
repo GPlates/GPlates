@@ -925,7 +925,6 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 (rt for rt in resolved_topologies)))
         for bss in resolved_topologies_dict['topology1'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
-        # Sections 9 and 10 are points that have been joined into a single sub-segment (a hack) but either could get selected as the representative section.
         for bss in resolved_topologies_dict['topology2'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
         for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
@@ -938,12 +937,14 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 # We know all sections except 'section14' are ReconstructedFeatureGeometry's (not ResolvedTopologicalLine's)...
                 self.assertTrue(pygplates.PolylineOnSphere(bss.get_topological_section().get_reconstructed_geometry()) == bss.get_topological_section_geometry())
         
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        # Sections 9 and 10 are points that now are separate sub-segments (each point is a rubber-banded line).
+        # Previously they were joined into a single sub-segment (a hack).
+        self.assertTrue(len(resolved_topological_sections) == 11)
         resolved_topological_sections_dict = dict(zip(
                 (rts.get_topological_section_feature().get_name() for rts in resolved_topological_sections),
                 (rts for rts in resolved_topological_sections)))
         for rts in resolved_topological_sections:
-            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section14'))
+            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section9', 'section10', 'section14'))
         
         section1_shared_sub_segments = resolved_topological_sections_dict['section1'].get_shared_sub_segments()
         self.assertTrue(len(section1_shared_sub_segments) == 1)
@@ -994,6 +995,18 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology3']))
         
+        section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
+        self.assertTrue(len(section9_shared_sub_segments) == 1)
+        for sss in section9_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+        
+        section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
+        self.assertTrue(len(section10_shared_sub_segments) == 1)
+        for sss in section10_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+        
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 2)
         for sss in section14_shared_sub_segments:
@@ -1011,7 +1024,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topologies) == 3)
-        self.assertTrue(len(resolved_topological_sections) == 7)
+        self.assertTrue(len(resolved_topological_sections) == 9)
 
         # This time exclude networks from the topologies (but not the topological sections).
         resolved_topologies = []
@@ -1025,7 +1038,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolve_topology_types = pygplates.ResolveTopologyType.boundary,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
         self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        self.assertTrue(len(resolved_topological_sections) == 11)
 
         # This time exclude networks from both the topologies and the topological sections.
         resolved_topologies = []
@@ -1038,7 +1051,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections,
             resolve_topology_types = pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 7)
+        self.assertTrue(len(resolved_topological_sections) == 9)
 
 
 class ReconstructionTreeCase(unittest.TestCase):

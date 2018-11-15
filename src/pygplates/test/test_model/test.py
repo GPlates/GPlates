@@ -128,7 +128,7 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['Test flowline1', 'Test flowline2'])
         self.assertTrue(feature.get_description() == 'a flowline feature')
         self.assertTrue(feature.get_valid_time() == (30, 0))
-        self.assertTrue(feature.get_reconstruction_method() == 'HalfStageRotationVersion2')
+        self.assertTrue(feature.get_reconstruction_method() == 'HalfStageRotationVersion3')
         self.assertTrue(feature.get_left_plate() == 201)
         self.assertTrue(feature.get_right_plate() == 701)
         
