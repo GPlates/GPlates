@@ -225,6 +225,11 @@ if(APPLE)
 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(-D__APPLE__)
+
+    # Avoid a bunch of OpenGL deprecation warnings when compiling on macOS mojave (10.14).
+    # We will eventually replace OpenGL with Vulkan, but not for a while since
+    # Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
+    add_definitions(-DGL_SILENCE_DEPRECATION)
 endif(APPLE)
 
 # The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.

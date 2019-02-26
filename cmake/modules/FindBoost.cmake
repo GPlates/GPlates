@@ -601,18 +601,28 @@ ELSE (_boost_IN_CACHE)
       else()
         set (_boost_COMPILER "-il")
       endif()
-    elseif (MSVC90)
-      SET (_boost_COMPILER "-vc90")
-    elseif (MSVC10)
-      SET (_boost_COMPILER "-vc100")
-    elseif (MSVC80)
-      SET (_boost_COMPILER "-vc80")
-    elseif (MSVC71)
-      SET (_boost_COMPILER "-vc71")
-    elseif (MSVC70) # Good luck!
-      SET (_boost_COMPILER "-vc7") # yes, this is correct
-    elseif (MSVC60) # Good luck!
-      SET (_boost_COMPILER "-vc6") # yes, this is correct
+    elseif("x${CMAKE_CXX_COMPILER_ID}" STREQUAL "xMSVC")
+      if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.10)
+        set(_boost_COMPILER "-vc141")
+      elseif (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
+        set(_boost_COMPILER "-vc140")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18)
+        set(_boost_COMPILER "-vc120")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17)
+        set(_boost_COMPILER "-vc110")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+        set(_boost_COMPILER "-vc100")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
+        set(_boost_COMPILER "-vc90")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+        set(_boost_COMPILER "-vc80")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.10)
+        set(_boost_COMPILER "-vc71")
+      elseif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13) # Good luck!
+        set(_boost_COMPILER "-vc7") # yes, this is correct
+      else() # VS 6.0 Good luck!
+        set(_boost_COMPILER "-vc6") # yes, this is correct
+      endif()
     elseif (BORLAND)
       SET (_boost_COMPILER "-bcb")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "SunPro")
@@ -687,6 +697,37 @@ ELSE (_boost_IN_CACHE)
       "_boost_ABI_TAG = ${_boost_ABI_TAG}")
   endif()
 
+  #  -x86     Architecture and address model tag
+  #           First character is the architecture, then word-size, either 32 or 64
+  #           Only used in 'versioned' layout, added in Boost 1.66.0
+  set(_boost_ARCHITECTURE_TAG "")
+  # {CMAKE_CXX_COMPILER_ARCHITECTURE_ID} is not currently set for all compilers
+  if(NOT "x${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}" STREQUAL "x" AND NOT Boost_VERSION VERSION_LESS 106600)
+    string(APPEND _boost_ARCHITECTURE_TAG "-")
+    # This needs to be kept in-sync with the section of CMakePlatformId.h.in
+    # inside 'defined(_WIN32) && defined(_MSC_VER)'
+    if(${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} STREQUAL "IA64")
+      string(APPEND _boost_ARCHITECTURE_TAG "i")
+    elseif(${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} STREQUAL "X86"
+              OR ${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+      string(APPEND _boost_ARCHITECTURE_TAG "x")
+    elseif(${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} MATCHES "^ARM")
+      string(APPEND _boost_ARCHITECTURE_TAG "a")
+    elseif(${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} STREQUAL "MIPS")
+      string(APPEND _boost_ARCHITECTURE_TAG "m")
+    endif()
+  
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      string(APPEND _boost_ARCHITECTURE_TAG "64")
+    else()
+      string(APPEND _boost_ARCHITECTURE_TAG "32")
+    endif()
+  endif()
+  if(Boost_DEBUG)
+    message(STATUS "[ ${CMAKE_CURRENT_LIST_FILE}:${CMAKE_CURRENT_LIST_LINE} ] "
+      "_boost_ARCHITECTURE_TAG = ${_boost_ARCHITECTURE_TAG}")
+  endif()
+
   # ------------------------------------------------------------------------
   #  Begin finding boost libraries
   # ------------------------------------------------------------------------
@@ -738,23 +779,36 @@ ELSE (_boost_IN_CACHE)
 
     FIND_LIBRARY(Boost_${UPPERCOMPONENT}_LIBRARY_RELEASE
         NAMES  ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}${_boost_STATIC_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_ARCHITECTURE_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ARCHITECTURE_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}
         HINTS  ${_boost_LIBRARIES_SEARCH_DIRS}
     )
 
     FIND_LIBRARY(Boost_${UPPERCOMPONENT}_LIBRARY_DEBUG
         NAMES  ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}-${_boost_ABI_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}-${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_COMPILER}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${_boost_ABI_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}-${Boost_LIB_VERSION}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}-${Boost_LIB_VERSION}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${_boost_ABI_TAG}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}-${_boost_ABI_TAG}
+               ${Boost_LIB_PREFIX}boost_${COMPONENT}-${_boost_ABI_TAG}${_boost_ARCHITECTURE_TAG}
         HINTS  ${_boost_LIBRARIES_SEARCH_DIRS}
     )
 
