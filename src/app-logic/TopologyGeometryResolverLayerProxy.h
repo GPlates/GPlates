@@ -33,12 +33,16 @@
 #include "DependentTopologicalSectionLayers.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
 #include "TopologyReconstruct.h"
+#include "VelocityDeltaTime.h"
+
+#include "maths/types.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
@@ -213,6 +217,115 @@ namespace GPlatesAppLogic
 				const TimeSpanUtils::TimeRange &time_range);
 
 
+		//
+		// Getting a sequence of velocities (@a MultiPointVectorField objects) corresponding
+		// to the resolved topological geometries of @a get_resolved_topological_geometries.
+		//
+		// NOTE: It actually makes more sense to calculate velocities here rather than in
+		// VelocityFieldCalculatorLayerProxy since the velocities are so closely coupled to the
+		// resolving of topological geometries.
+		// However VelocityFieldCalculatorLayerProxy is more suitable for calculating velocities
+		// at positions where geometries overlap surfaces (eg, static polygons, and topological
+		// plates/network) from another layer.
+		//
+
+
+		/**
+		 * Returns the velocities associated with the resolved topological geometries (polygons and polylines),
+		 * for the current reconstruction time, by appending them to them to @a resolved_topological_velocities.
+		 *
+		 * If @a reconstruct_handles is specified then reconstruct handles for the resolved topological
+		 * boundary and line velocities are appended to it.
+		 */
+		void
+		get_resolved_topological_geometry_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0,
+				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none)
+		{
+			return get_resolved_topological_geometry_velocities(
+					resolved_topological_velocities,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time,
+					reconstruct_handles);
+		}
+
+		/**
+		 * Returns the velocities associated with the resolved topological geometries (polygons and polylines),
+		 * for the specified reconstruction time, by appending them to @a resolved_topological_velocities.
+		 *
+		 * If @a reconstruct_handles is specified then reconstruct handles for the resolved topological
+		 * boundary and line velocities are appended to it.
+		 */
+		void
+		get_resolved_topological_geometry_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_velocities,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0,
+				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
+
+
+		/**
+		 * Returns the velocities associated with the resolved topological lines (polylines),
+		 * for the current reconstruction time, by appending them to them to @a resolved_topological_line_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_line_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
+		{
+			return get_resolved_topological_line_velocities(
+					resolved_topological_line_velocities,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
+		}
+
+		/**
+		 * Returns the velocities associated with the resolved topological boundaries (polygons),
+		 * for the specified reconstruction time, by appending them to @a resolved_topological_boundary_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_boundary_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0);
+
+
+		/**
+		 * Returns the velocities associated with the resolved topological boundaries (polygons),
+		 * for the current reconstruction time, by appending them to them to @a resolved_topological_boundary_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_boundary_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0)
+		{
+			return get_resolved_topological_boundary_velocities(
+					resolved_topological_boundary_velocities,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
+		}
+
+		/**
+		 * Returns the velocities associated with the resolved topological lines (polylines),
+		 * for the specified reconstruction time, by appending them to @a resolved_topological_line_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_line_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				const double &velocity_delta_time = 1.0);
+
+
 		/**
 		 * Returns only the topological geometry subset (topological lines and boundaries) of features
 		 * set by @a add_topological_geometry_feature_collection, etc.
@@ -351,10 +464,20 @@ namespace GPlatesAppLogic
 			void
 			invalidate()
 			{
+				cached_reconstruction_time = boost::none;
+
 				cached_reconstruct_handle = boost::none;
 				cached_resolved_topological_boundaries = boost::none;
-				cached_reconstruction_time = boost::none;
+
+				cached_velocities_handle = boost::none;
+				cached_velocity_delta_time_params = boost::none;
+				cached_resolved_topological_boundary_velocities = boost::none;
 			}
+
+			/**
+			 * Cached reconstruction time.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
 
 			/**
 			 * The reconstruct handle that identifies all cached resolved topological boundary geometries
@@ -368,10 +491,27 @@ namespace GPlatesAppLogic
 			boost::optional< std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> >
 					cached_resolved_topological_boundaries;
 
+			//
+			// Velocities.
+			//
+
 			/**
-			 * Cached reconstruction time.
+			 * The reconstruct handle that identifies all cached resolved topological boundary *velocities*
+			 * in this structure.
 			 */
-			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+			boost::optional<ReconstructHandle::type> cached_velocities_handle;
+
+			/**
+			 * Cached velocity delta time.
+			 */
+			boost::optional< std::pair<VelocityDeltaTime::Type, GPlatesMaths::real_t> >
+					cached_velocity_delta_time_params;
+
+			/**
+			 * The cached resolved topological boundary velocities.
+			 */
+			boost::optional< std::vector<MultiPointVectorField::non_null_ptr_type> >
+					cached_resolved_topological_boundary_velocities;
 		};
 
 		/**
@@ -382,10 +522,20 @@ namespace GPlatesAppLogic
 			void
 			invalidate()
 			{
+				cached_reconstruction_time = boost::none;
+
 				cached_reconstruct_handle = boost::none;
 				cached_resolved_topological_lines = boost::none;
-				cached_reconstruction_time = boost::none;
+
+				cached_velocities_handle = boost::none;
+				cached_velocity_delta_time_params = boost::none;
+				cached_resolved_topological_line_velocities = boost::none;
 			}
+
+			/**
+			 * Cached reconstruction time.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
 
 			/**
 			 * The reconstruct handle that identifies all cached resolved topological line geometries
@@ -399,10 +549,27 @@ namespace GPlatesAppLogic
 			boost::optional< std::vector<ResolvedTopologicalLine::non_null_ptr_type> >
 					cached_resolved_topological_lines;
 
+			//
+			// Velocities.
+			//
+
 			/**
-			 * Cached reconstruction time.
+			 * The reconstruct handle that identifies all cached resolved topological line *velocities*
+			 * in this structure.
 			 */
-			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+			boost::optional<ReconstructHandle::type> cached_velocities_handle;
+
+			/**
+			 * Cached velocity delta time.
+			 */
+			boost::optional< std::pair<VelocityDeltaTime::Type, GPlatesMaths::real_t> >
+					cached_velocity_delta_time_params;
+
+			/**
+			 * The cached resolved topological line velocities.
+			 */
+			boost::optional< std::vector<MultiPointVectorField::non_null_ptr_type> >
+					cached_resolved_topological_line_velocities;
 		};
 
 		/**
@@ -566,6 +733,37 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 				const double &reconstruction_time);
+
+		/**
+		 * Creates resolved topological boundary velocities for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_boundary_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				const double &velocity_delta_time);
+
+		/**
+		 * Creates resolved topological line velocities for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_line_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
+				const std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				const double &velocity_delta_time);
+
+		void
+		create_resolved_topological_sub_segment_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_sub_segment_velocities,
+				const sub_segment_seq_type &sub_segments,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				const double &velocity_delta_time,
+				const ReconstructHandle::type &reconstruct_handle);
 	};
 }
 

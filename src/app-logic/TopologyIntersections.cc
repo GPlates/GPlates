@@ -79,8 +79,10 @@ namespace GPlatesAppLogic
 
 
 GPlatesAppLogic::TopologicalIntersections::TopologicalIntersections(
+		const ReconstructionGeometry::non_null_ptr_to_const_type &section_reconstruction_geometry,
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
 		bool reverse_hint) :
+	d_section_reconstruction_geometry(section_reconstruction_geometry),
 	d_section_geometry(section_geometry),
 	d_reverse_hint(reverse_hint),
 	d_intersectable_section_polyline(get_intersectable_section_polyline(section_geometry))
@@ -412,21 +414,19 @@ GPlatesAppLogic::TopologicalIntersections::backward_compatible_multiple_intersec
 				d_intersectable_section_polyline &&
 						previous_section->d_intersectable_section_polyline,
 				GPLATES_ASSERTION_SOURCE);
-		const GPlatesMaths::PolylineOnSphere &section_geometry1 = *previous_section->d_intersectable_section_polyline.get();
-		const GPlatesMaths::PolylineOnSphere &section_geometry2 = *d_intersectable_section_polyline.get();
+		const GPlatesMaths::PolylineOnSphere &section_polyline1 = *previous_section->d_intersectable_section_polyline.get();
+		const GPlatesMaths::PolylineOnSphere &section_polyline2 = *d_intersectable_section_polyline.get();
 
-		const ResolvedSubSegmentRangeInSection::Intersection intersection_in_previous(
-				intersection.position,
-				intersection.segment_index1,
-				intersection.is_on_segment1_start(),
-				intersection.angle_in_segment1,
-				section_geometry1);
-		const ResolvedSubSegmentRangeInSection::Intersection intersection_in_current(
-				intersection.position,
-				intersection.segment_index2,
-				intersection.is_on_segment2_start(),
-				intersection.angle_in_segment2,
-				section_geometry2);
+		const ResolvedSubSegmentRangeInSection::Intersection intersection_in_previous =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						intersection,
+						section_polyline1,
+						true/*section_polyline_is_first_geometry*/);
+		const ResolvedSubSegmentRangeInSection::Intersection intersection_in_current =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						intersection,
+						section_polyline2,
+						false/*section_polyline_is_first_geometry*/);
 
 		//
 		// Note that in each segment at most one of its two end points can be non-none.
@@ -626,33 +626,29 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section_allow
 				intersection_graph.unordered_intersections[
 						intersection_graph.geometry1_ordered_intersections[1]];
 
-		const GPlatesMaths::PolylineOnSphere &section_geometry1 = *previous_section->d_intersectable_section_polyline.get();
-		const GPlatesMaths::PolylineOnSphere &section_geometry2 = *d_intersectable_section_polyline.get();
+		const GPlatesMaths::PolylineOnSphere &section_polyline1 = *previous_section->d_intersectable_section_polyline.get();
+		const GPlatesMaths::PolylineOnSphere &section_polyline2 = *d_intersectable_section_polyline.get();
 
-		const ResolvedSubSegmentRangeInSection::Intersection first_intersection_in_previous(
-				first_intersection.position,
-				first_intersection.segment_index1,
-				first_intersection.is_on_segment1_start(),
-				first_intersection.angle_in_segment1,
-				section_geometry1);
-		const ResolvedSubSegmentRangeInSection::Intersection first_intersection_in_current(
-				first_intersection.position,
-				first_intersection.segment_index2,
-				first_intersection.is_on_segment2_start(),
-				first_intersection.angle_in_segment2,
-				section_geometry2);
-		const ResolvedSubSegmentRangeInSection::Intersection second_intersection_in_previous(
-				second_intersection.position,
-				second_intersection.segment_index1,
-				second_intersection.is_on_segment1_start(),
-				second_intersection.angle_in_segment1,
-				section_geometry1);
-		const ResolvedSubSegmentRangeInSection::Intersection second_intersection_in_current(
-				second_intersection.position,
-				second_intersection.segment_index2,
-				second_intersection.is_on_segment2_start(),
-				second_intersection.angle_in_segment2,
-				section_geometry2);
+		const ResolvedSubSegmentRangeInSection::Intersection first_intersection_in_previous =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						first_intersection,
+						section_polyline1,
+						true/*section_polyline_is_first_geometry*/);
+		const ResolvedSubSegmentRangeInSection::Intersection first_intersection_in_current =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						first_intersection,
+						section_polyline2,
+						false/*section_polyline_is_first_geometry*/);
+		const ResolvedSubSegmentRangeInSection::Intersection second_intersection_in_previous =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						second_intersection,
+						section_polyline1,
+						true/*section_polyline_is_first_geometry*/);
+		const ResolvedSubSegmentRangeInSection::Intersection second_intersection_in_current =
+				ResolvedSubSegmentRangeInSection::Intersection::create(
+						second_intersection,
+						section_polyline2,
+						false/*section_polyline_is_first_geometry*/);
 
 		const GPlatesMaths::PointOnSphere first_intersection_position =
 				set_intersection_with_previous_section(
@@ -889,12 +885,14 @@ GPlatesAppLogic::TopologicalIntersections::get_rubber_band(
 		const boost::optional<weak_ptr_type> &adjacent_section_weak_ptr,
 		bool adjacent_is_previous_section) const
 {
-	// We should always have adjacent sections unless they were not tested for intersection by our client
+	// We should always have adjacent sections except for the first and last sections of a topological *line*
+	// (since it does not wraparound like a topological *polygon*).
+	// Another situation (where we don't have adjacent sections) is when they're not yet intersected by our client
 	// (this can happen when topologies are resolving while a user is building a new topology and adding
 	// the same section feature more than once to the same topology - there can be a time during building
-	// when the same section feature is adajcent to itself and hence cannot be intersected with itself).
+	// when the same section feature is adjacent to itself and hence cannot be intersected with itself).
 	//
-	// If there's no adjacent section then we'll get no rubber banding to it.
+	// If there's no adjacent section then we'll get no rubber banding for it.
 	if (adjacent_section_weak_ptr)
 	{
 		shared_ptr_type adjacent_section = adjacent_section_weak_ptr->lock();
@@ -917,20 +915,13 @@ GPlatesAppLogic::TopologicalIntersections::get_rubber_band(
 					? adjacent_section_end_points.first
 					: adjacent_section_end_points.second;
 
-			// Rubber band point is the mid-point between the start/end of the current section and
-			// start/end of the adjacent section.
-			const GPlatesMaths::Vector3D rubber_band_point =
-					GPlatesMaths::Vector3D(curr_section_rubber_band.position_vector()) +
-					GPlatesMaths::Vector3D(adjacent_section_rubber_band.position_vector());
-
-			if (!rubber_band_point.is_zero_magnitude())
-			{
-				return ResolvedSubSegmentRangeInSection::RubberBand(
-						GPlatesMaths::PointOnSphere(rubber_band_point.get_normalisation()),
-						is_at_start_of_current_section,
-						is_at_start_of_adjacent_section,
-						adjacent_is_previous_section);
-			}
+			return ResolvedSubSegmentRangeInSection::RubberBand::create(
+					curr_section_rubber_band,
+					adjacent_section_rubber_band,
+					is_at_start_of_current_section,
+					is_at_start_of_adjacent_section,
+					d_section_reconstruction_geometry,
+					adjacent_section->d_section_reconstruction_geometry);
 		}
 	}
 
@@ -948,21 +939,19 @@ GPlatesAppLogic::TopologicalIntersections::set_intersection_with_previous_sectio
 			d_intersectable_section_polyline &&
 					previous_section->d_intersectable_section_polyline,
 			GPLATES_ASSERTION_SOURCE);
-	const GPlatesMaths::PolylineOnSphere &section_geometry1 = *previous_section->d_intersectable_section_polyline.get();
-	const GPlatesMaths::PolylineOnSphere &section_geometry2 = *d_intersectable_section_polyline.get();
+	const GPlatesMaths::PolylineOnSphere &section_polyline1 = *previous_section->d_intersectable_section_polyline.get();
+	const GPlatesMaths::PolylineOnSphere &section_polyline2 = *d_intersectable_section_polyline.get();
 
-	const ResolvedSubSegmentRangeInSection::Intersection intersection_in_previous(
-			intersection.position,
-			intersection.segment_index1,
-			intersection.is_on_segment1_start(),
-			intersection.angle_in_segment1,
-			section_geometry1);
-	const ResolvedSubSegmentRangeInSection::Intersection intersection_in_current(
-			intersection.position,
-			intersection.segment_index2,
-			intersection.is_on_segment2_start(),
-			intersection.angle_in_segment2,
-			section_geometry2);
+	const ResolvedSubSegmentRangeInSection::Intersection intersection_in_previous =
+			ResolvedSubSegmentRangeInSection::Intersection::create(
+					intersection,
+					section_polyline1,
+					true/*section_polyline_is_first_geometry*/);
+	const ResolvedSubSegmentRangeInSection::Intersection intersection_in_current =
+			ResolvedSubSegmentRangeInSection::Intersection::create(
+					intersection,
+					section_polyline2,
+					false/*section_polyline_is_first_geometry*/);
 
 	return set_intersection_with_previous_section(
 			previous_section,

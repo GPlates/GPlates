@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>539</width>
-    <height>358</height>
+    <height>313</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -58,15 +58,22 @@
       <item>
        <widget class="QCheckBox" name="export_resolved_networks_checkbox">
         <property name="text">
-         <string>Export resolved topological networks</string>
+         <string>Export resolved topological networks (boundary polygons)</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="polygon_options" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout_3">
+       <widget class="QCheckBox" name="export_resolved_boundary_segments_checkbox">
+        <property name="text">
+         <string>Export boundary segments (of polygons/networks)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="boundary_segments_widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <property name="spacing">
-          <number>0</number>
+          <number>1</number>
          </property>
          <property name="leftMargin">
           <number>18</number>
@@ -81,44 +88,19 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QWidget" name="non_shapefile_polygon_options" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <property name="spacing">
-             <number>6</number>
-            </property>
-            <property name="margin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QCheckBox" name="force_polygon_orientation_checkbox">
-              <property name="text">
-               <string>Force polygon orientation:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="polygon_orientation_combobox"/>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
+          <widget class="QLabel" name="boundary_segments_description_label">
+           <property name="text">
+            <string>Note: duplication removed (each segment shared by its two adjacent areas)</string>
+           </property>
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="shapefile_polygon_options_label">
+          <widget class="QLabel" name="boundary_segments_placeholder_label">
            <property name="text">
-            <string>Polygon orientation is clockwise for Shapefiles.</string>
+            <string>(%P='_boundaries')</string>
+           </property>
+           <property name="indent">
+            <number>-1</number>
            </property>
           </widget>
          </item>
@@ -128,7 +110,75 @@
      </layout>
     </widget>
    </item>
+   <item>
+    <widget class="QGroupBox" name="polygon_options">
+     <property name="title">
+      <string>Polygon Options</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="non_shapefile_polygon_options" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="force_polygon_orientation_checkbox">
+           <property name="text">
+            <string>Force polygon orientation:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="polygon_orientation_combobox"/>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="shapefile_polygon_options_label">
+        <property name="text">
+         <string>Polygon orientation is clockwise for Shapefiles.</string>
+        </property>
+        <property name="indent">
+         <number>18</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
   </layout>
+  <zorder>widget_shapefile_dateline_wrap</zorder>
+  <zorder>widget_file_options</zorder>
+  <zorder>resolved_geometry_options</zorder>
+  <zorder>polygon_options</zorder>
+  <zorder>polygon_options</zorder>
  </widget>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc"/>

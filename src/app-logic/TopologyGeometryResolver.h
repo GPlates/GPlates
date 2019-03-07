@@ -189,7 +189,7 @@ namespace GPlatesAppLogic
 						bool reverse_hint) :
 					d_source_feature_id(source_feature_id),
 					d_source_rg(source_rg),
-					d_intersection_results(TopologicalIntersections::create(section_geometry, reverse_hint))
+					d_intersection_results(TopologicalIntersections::create(source_rg, section_geometry, reverse_hint))
 				{  }
 
 				//! The feature id of the feature referenced by this topological section.

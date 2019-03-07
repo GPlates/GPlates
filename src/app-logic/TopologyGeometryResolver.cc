@@ -646,26 +646,14 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		{
 			continue;
 		}
-		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
-				subsegment_feature_ref.get());
-
-		// Get previous and next section reconstruction geometries.
-		ReconstructionGeometry::non_null_ptr_to_const_type prev_section_source_rg =
-				// Handle wraparound where previous of first section is last section...
-				d_resolved_geometry.d_sections[(section_index > 0) ? section_index - 1 : num_sections - 1].d_source_rg;
-		ReconstructionGeometry::non_null_ptr_to_const_type next_section_source_rg =
-				// Handle wraparound where next of last section is first section...
-				d_resolved_geometry.d_sections[(section_index < num_sections - 1) ? section_index + 1 : 0].d_source_rg;
 
 		// Create a subsegment structure that'll get used when creating the resolved topological boundary.
 		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type output_subsegment =
 				ResolvedTopologicalGeometrySubSegment::create(
 						section.d_intersection_results->get_sub_segment_range_in_section(),
 						section.d_intersection_results->get_reverse_flag(),
-						subsegment_feature_const_ref,
-						section.d_source_rg,
-						prev_section_source_rg,
-						next_section_source_rg);
+						subsegment_feature_ref.get(),
+						section.d_source_rg);
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
@@ -745,31 +733,14 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 		{
 			continue;
 		}
-		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
-				subsegment_feature_ref.get());
-
-		// Get previous and next section reconstruction geometries.
-		// Note that there's no wraparound from first to last section (and vice versa) for *lines*.
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_section_source_rg;
-		if (section_index > 0)
-		{
-			prev_section_source_rg = d_resolved_geometry.d_sections[section_index - 1].d_source_rg;
-		}
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_section_source_rg;
-		if (section_index < num_sections - 1)
-		{
-			next_section_source_rg = d_resolved_geometry.d_sections[section_index + 1].d_source_rg;
-		}
 
 		// Create a subsegment structure that'll get used when creating the resolved topological line.
 		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type output_subsegment =
 				ResolvedTopologicalGeometrySubSegment::create(
 						section.d_intersection_results->get_sub_segment_range_in_section(),
 						section.d_intersection_results->get_reverse_flag(),
-						subsegment_feature_const_ref,
-						section.d_source_rg,
-						prev_section_source_rg,
-						next_section_source_rg);
+						subsegment_feature_ref.get(),
+						section.d_source_rg);
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the resolved line points.

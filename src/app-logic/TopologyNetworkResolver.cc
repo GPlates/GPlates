@@ -779,34 +779,18 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		{
 			continue;
 		}
-		const GPlatesModel::FeatureHandle::const_weak_ref boundary_subsegment_feature_const_ref(
-				boundary_subsegment_feature_ref.get());
 
 		//
 		// A network boundary section can come from a reconstructed feature geometry or a resolved topological *line*.
 		//
-
-		// Get previous and next boundary section reconstruction geometries.
-		ReconstructionGeometry::non_null_ptr_to_const_type prev_boundary_section_source_rg =
-				// Handle wraparound where previous of first section is last section...
-				d_resolved_network.d_boundary_sections[
-						(boundary_section_index > 0) ? boundary_section_index - 1 : num_boundary_sections - 1]
-									.d_source_rg;
-		ReconstructionGeometry::non_null_ptr_to_const_type next_boundary_section_source_rg =
-				// Handle wraparound where next of last section is first section...
-				d_resolved_network.d_boundary_sections[
-						(boundary_section_index < num_boundary_sections - 1) ? boundary_section_index + 1 : 0]
-									.d_source_rg;
 
 		// Create a subsegment that'll get used when creating the boundary of the resolved topological network.
 		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type boundary_subsegment =
 				ResolvedTopologicalGeometrySubSegment::create(
 						boundary_section.d_intersection_results->get_sub_segment_range_in_section(),
 						boundary_section.d_intersection_results->get_reverse_flag(),
-						boundary_subsegment_feature_const_ref,
-						boundary_section.d_source_rg,
-						prev_boundary_section_source_rg,
-						next_boundary_section_source_rg);
+						boundary_subsegment_feature_ref.get(),
+						boundary_section.d_source_rg);
 		boundary_subsegments.push_back(boundary_subsegment);
 
 		// Get the subsegment points and corresponding point source infos.

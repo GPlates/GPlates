@@ -42,9 +42,7 @@ GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_sub_segment_point_so
 		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_infos(
 				d_point_source_infos.get(),
 				d_sub_segment,
-				d_segment_reconstruction_geometry,
-				d_prev_segment_reconstruction_geometry,
-				d_next_segment_reconstruction_geometry);
+				d_segment_reconstruction_geometry);
 	}
 
 	std::copy(
@@ -65,9 +63,7 @@ GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_reversed_sub_segment
 		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_infos(
 				d_point_source_infos.get(),
 				d_sub_segment,
-				d_segment_reconstruction_geometry,
-				d_prev_segment_reconstruction_geometry,
-				d_next_segment_reconstruction_geometry);
+				d_segment_reconstruction_geometry);
 	}
 
 	if (d_use_reverse)
@@ -84,4 +80,21 @@ GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_reversed_sub_segment
 				d_point_source_infos->end(),
 				std::back_inserter(point_source_infos));
 	}
+}
+
+
+const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &
+GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_sub_sub_segments() const
+{
+	if (!d_calculated_sub_sub_segments)
+	{
+		ResolvedTopologicalSubSegmentImpl::get_sub_sub_segments(
+				d_sub_sub_segments,
+				d_sub_segment,
+				d_segment_reconstruction_geometry);
+
+		d_calculated_sub_sub_segments = true;
+	}
+
+	return d_sub_sub_segments;
 }

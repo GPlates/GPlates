@@ -31,6 +31,7 @@
 
 #include "ReconstructionGeometry.h"
 #include "ResolvedSubSegmentRangeInSection.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedVertexSourceInfo.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -88,18 +89,14 @@ namespace GPlatesAppLogic
 				const ResolvedSubSegmentRangeInSection &shared_sub_segment,
 				const std::vector<ResolvedTopologyInfo> &sharing_resolved_topologies,
 				const GPlatesModel::FeatureHandle::const_weak_ref &shared_segment_feature_ref,
-				const ReconstructionGeometry::non_null_ptr_to_const_type &shared_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_shared_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_shared_segment_reconstruction_geometry)
+				const ReconstructionGeometry::non_null_ptr_to_const_type &shared_segment_reconstruction_geometry)
 		{
 			return non_null_ptr_type(
 					new ResolvedTopologicalSharedSubSegment(
 							shared_sub_segment,
 							sharing_resolved_topologies,
 							shared_segment_feature_ref,
-							shared_segment_reconstruction_geometry,
-							prev_shared_segment_reconstruction_geometry,
-							next_shared_segment_reconstruction_geometry));
+							shared_segment_reconstruction_geometry));
 		}
 
 
@@ -245,6 +242,33 @@ namespace GPlatesAppLogic
 				resolved_vertex_source_info_seq_type &point_source_infos,
 				bool use_reverse) const;
 
+
+		/**
+		* Return any sub-segments of the resolved topological section that this sub-segment came from.
+		*
+		* If topological section is a ResolvedTopologicalLine then returns sub-segments, otherwise returns none.
+		*
+		* If this sub-segment came from a ResolvedTopologicalLine then it will have its own sub-segments, otherwise
+		* if from a ReconstructedFeatureGeometry then there will be no sub-segments.
+		*
+		* Some, or all, of those sub-segments (belong to the ResolvedTopologicalLine) will contribute to this sub-segment.
+		* And part, or all, of the first and last contributing sub-segments will contribute to this sub-segment
+		* (due to intersection/clipping).
+		*
+		* NOTE: These are not *shared* sub-segments. They simply represent the child sub-segments that contribute
+		* to this shared parent sub-segment (part of resolved topological line).
+		* The information of which topologies share the parent sub-segment, and hence its child sub-sub-segments,
+		* still comes from @a get_sharing_resolved_topologies.
+		*
+		* Note: Each child sub-sub-segment also has its own reverse flag (whether it was reversed when contributing
+		* to parent sub-segment), and the parent sub-segment also has a reverse flag for each topology that shares it
+		* (which determines whether parent sub-segment was reversed when contributing to that topology).
+		* So to determine whether a child sub-sub-segment was effectively reversed when contributing to a particular final
+		* topology depends on both reverse flags (the child sub-sub-segment and parent sub-segment reverse flags).
+		*/
+		const boost::optional<sub_segment_seq_type> &
+		get_sub_sub_segments() const;
+
 	private:
 
 		//! The shared sub-segment.
@@ -270,11 +294,6 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionGeometry::non_null_ptr_to_const_type d_shared_segment_reconstruction_geometry;
 
-		//! The reconstruction geometry of the previous section (if any).
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> d_prev_shared_segment_reconstruction_geometry;
-		//! The reconstruction geometry of the next section (if any).
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> d_next_shared_segment_reconstruction_geometry;
-
 
 		/**
 		 * Each point in the shared subsegment geometry can potentially reference a different
@@ -289,20 +308,23 @@ namespace GPlatesAppLogic
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_point_source_infos;
 
+		/**
+		* Sub-segments of our ResolvedTopologicalLine topological section (if one) than contribute to this shared sub-segment.
+		*/
+		mutable boost::optional< std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> > d_sub_sub_segments;
+		mutable bool d_calculated_sub_sub_segments;
+
 
 		ResolvedTopologicalSharedSubSegment(
 				const ResolvedSubSegmentRangeInSection &shared_sub_segment,
 				const std::vector<ResolvedTopologyInfo> &sharing_resolved_topologies,
 				const GPlatesModel::FeatureHandle::const_weak_ref &shared_segment_feature_ref,
-				const ReconstructionGeometry::non_null_ptr_to_const_type &shared_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_shared_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_shared_segment_reconstruction_geometry) :
+				const ReconstructionGeometry::non_null_ptr_to_const_type &shared_segment_reconstruction_geometry) :
 			d_shared_sub_segment(shared_sub_segment),
 			d_sharing_resolved_topologies(sharing_resolved_topologies),
 			d_shared_segment_feature_ref(shared_segment_feature_ref),
 			d_shared_segment_reconstruction_geometry(shared_segment_reconstruction_geometry),
-			d_prev_shared_segment_reconstruction_geometry(prev_shared_segment_reconstruction_geometry),
-			d_next_shared_segment_reconstruction_geometry(next_shared_segment_reconstruction_geometry)
+			d_calculated_sub_sub_segments(false)
 		{  }
 	};
 

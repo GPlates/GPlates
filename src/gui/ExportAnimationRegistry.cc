@@ -596,8 +596,8 @@ namespace GPlatesGui
 				ExportAnimationRegistry &registry)
 		{
 			const ExportOptionsUtils::ExportFileOptions default_resolved_topology_file_export_options(
-					/*export_to_a_single_file_*/false,
-					/*export_to_multiple_files_*/true);
+					/*export_to_a_single_file_*/true,
+					/*export_to_multiple_files_*/false);
 			const bool default_resolved_topology_export_lines = false;
 			const bool default_resolved_topology_export_polygons = true;
 			const bool default_resolved_topology_export_networks = true;

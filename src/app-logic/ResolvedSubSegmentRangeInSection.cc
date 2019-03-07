@@ -34,6 +34,11 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/GreatCircleArc.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+
 
 GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSection(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry,
@@ -88,6 +93,16 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 	if (d_start_intersection &&
 		d_end_intersection)
 	{
+		// Make sure the caller passed an end intersection that is equal to or greater than the start intersection.
+		//
+		// Note: This uses an epsilon test of angle (when both intersections on same segment).
+		// In other words, a little more forgiving than Intersection::operator<().
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_start_intersection->segment_index < d_end_intersection->segment_index ||
+					(d_start_intersection->segment_index == d_end_intersection->segment_index &&
+						d_start_intersection->angle_in_segment <= d_end_intersection->angle_in_segment),
+				GPLATES_ASSERTION_SOURCE);
+
 		// Start at the end point of the segment containing the start intersection
 		// (the "+1" increments from start of segment to end of segment, which is also start of next segment).
 		//
@@ -127,9 +142,23 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 	else if (!d_start_intersection &&
 		!d_end_intersection)
 	{
-		// There are no intersections so just set the full section geometry as the sub-segment.
-		d_start_section_vertex_index = 0;
-		d_end_section_vertex_index = d_num_points_in_section_geometry;
+		// If there is a start and end rubber band and they're both at the start or both at the end of the
+		// current section then handle this as a special case by excluding all vertices of the section geometry.
+		if (d_start_rubber_band &&
+			d_end_rubber_band &&
+			d_start_rubber_band->is_at_start_of_current_section == d_end_rubber_band->is_at_start_of_current_section)
+		{
+			// No section geometry vertices. Just the two rubber band points (both at start or both at end).
+			d_start_section_vertex_index = d_num_points_in_section_geometry;
+			d_end_section_vertex_index = d_num_points_in_section_geometry;
+		}
+		else
+		{
+			// There are no intersections (and if there is a start and end rubber band then they're on opposite
+			// ends of the section geometry) so just set the full section geometry as the sub-segment.
+			d_start_section_vertex_index = 0;
+			d_end_section_vertex_index = d_num_points_in_section_geometry;
+		}
 	}
 	else if (d_start_intersection)
 	{
@@ -139,8 +168,8 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 		// There's no end intersection so end at the end of the section.
 		d_end_section_vertex_index = num_vertices_in_section;
 
-		// If start intersection is *on* the last vertex of the section geometry then the intersection
-		// is a T-junction, so return sub-segment as a point geometry (the intersection point).
+		// If start intersection is *on* the last vertex of the section geometry then the intersection is a T-junction
+		// (if there's no end rubber band), so return sub-segment as a point geometry (the intersection point).
 		//
 		// Note that we are testing for the fictitious one-past-the-last segment which is equivalent
 		// to the last vertex of the section geometry (end point of last segment).
@@ -162,8 +191,8 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 		// There's no start intersection so start at the start of the section.
 		d_start_section_vertex_index = 0;
 
-		// If end intersection is *on* the first vertex of the section geometry then the intersection
-		// is a T-junction, so return sub-segment as a point geometry (the intersection point).
+		// If end intersection is *on* the first vertex of the section geometry then the intersection is a T-junction
+		// (if there's no start rubber band), so return sub-segment as a point geometry (the intersection point).
 		if (d_end_intersection->segment_index == 0 &&
 			d_end_intersection->on_segment_start)
 		{
@@ -423,57 +452,333 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_end_intersection_or_rubbe
 }
 
 
-GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::Intersection(
-		const GPlatesMaths::PointOnSphere &position_,
-		unsigned int segment_index_,
-		bool on_segment_start_,
-		GPlatesMaths::AngularDistance angle_in_segment_,
-		const GPlatesMaths::PolylineOnSphere &section_polyline) :
-	position(position_),
-	segment_index(segment_index_),
-	on_segment_start(on_segment_start_),
-	angle_in_segment(angle_in_segment_),
-	interpolate_ratio_in_segment(0.0)
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::create(
+		const GPlatesMaths::GeometryIntersect::Intersection &intersection,
+		const GPlatesMaths::PolylineOnSphere &section_polyline,
+		bool section_polyline_is_first_geometry)
 {
-	if (segment_index == section_polyline.number_of_segments())
+	const unsigned int segment_index = section_polyline_is_first_geometry
+			? intersection.segment_index1
+			: intersection.segment_index2;
+	const bool on_segment_start = section_polyline_is_first_geometry
+			? intersection.is_on_segment1_start()
+			: intersection.is_on_segment2_start();
+	const GPlatesMaths::AngularDistance &angle_in_segment =
+			section_polyline_is_first_geometry
+			? intersection.angle_in_segment1
+			: intersection.angle_in_segment2;
+
+	//
+	// Note: We delay the calculation of interpolation ratio until needed since it's relatively
+	// expensive (with two 'acos()' calls and a division).
+	//
+
+	return Intersection(
+			intersection.position,
+			segment_index,
+			on_segment_start,
+			angle_in_segment);
+}
+
+
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+		const GPlatesMaths::GeometryOnSphere &section_geometry,
+		bool at_start)
+{
+	//
+	// Section geometry can be a point, multi-point or polyline. But not a polygon.
+	//
+	if (boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> section_polyline_opt =
+		GeometryUtils::get_polyline_on_sphere(section_geometry))
 	{
-		// Don't dereference the fictitious one-past-the-last segment, it represents the last vertex.
-		// And don't decrement the segment index to make it valid as this will mess things up when
-		// retrieving sub-segment ranges (which can result in sub-segments missing a couple of vertices).
-		// We can just leave the interpolate ratio as 0.0 since 'on_segment_start' should be true and
-		// the last vertex is essentially the start of the fictitious one-past-the-last segment.
+		const GPlatesMaths::PolylineOnSphere &section_polyline = *section_polyline_opt.get();
+
+		return Intersection(
+				at_start ? section_polyline.start_point() : section_polyline.end_point(),
+				at_start ? 0 : section_polyline.number_of_segments()/*segment_index*/,
+				true/*on_segment_start*/,
+				GPlatesMaths::AngularDistance::ZERO/*angle_in_segment*/,
+				0.0/*interpolate_ratio_in_segment*/);
+	}
+	else if (boost::optional<const GPlatesMaths::PointOnSphere &> section_point_opt =
+			GeometryUtils::get_point_on_sphere(section_geometry))
+	{
+		const GPlatesMaths::PointOnSphere &section_point = section_point_opt.get();
+
+		return Intersection(
+				section_point,
+				0/*segment_index*/,
+				true/*on_segment_start*/,
+				GPlatesMaths::AngularDistance::ZERO/*angle_in_segment*/,
+				0.0/*interpolate_ratio_in_segment*/);
 	}
 	else
 	{
-		const GPlatesMaths::GreatCircleArc &segment = section_polyline.get_segment(segment_index);
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> section_multi_point_opt =
+				GeometryUtils::get_multi_point_on_sphere(section_geometry);
 
-		if (!on_segment_start &&
-			!segment.is_zero_length())
-		{
-			// Calculate the ratio of distance from intersection point to segment start point divided by
-			// distance between segment start and end points.
-			interpolate_ratio_in_segment =
-					acos(dot(position.position_vector(), segment.start_point().position_vector())).dval() /
-						acos(segment.dot_of_endpoints()).dval();
-		}
+		// Section geometry must be a multi-point (or point, polyline). But not a polygon.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				section_multi_point_opt,
+				GPLATES_ASSERTION_SOURCE);
+
+		const GPlatesMaths::MultiPointOnSphere &section_multi_point = *section_multi_point_opt.get();
+
+		return Intersection(
+				at_start ? section_multi_point.start_point() : section_multi_point.end_point(),
+				// If we consider the multi-point to be consecutively connected with GCA segments
+				// between its points then it has one less segment than number of points, and
+				// this represents the fictitious one-past-the-last segment...
+				at_start ? 0 : section_multi_point.number_of_points() - 1/*segment_index*/,
+				true/*on_segment_start*/,
+				GPlatesMaths::AngularDistance::ZERO/*angle_in_segment*/,
+				0.0/*interpolate_ratio_in_segment*/);
 	}
 }
 
 
-GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::Intersection(
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::create_from_inner_segment(
+		const GPlatesMaths::PointOnSphere &intersection_position,
 		const GPlatesMaths::GeometryOnSphere &section_geometry,
-		bool at_start) :
-	position(
-			at_start
-			? GeometryUtils::get_geometry_exterior_end_points(section_geometry).first
-			: GeometryUtils::get_geometry_exterior_end_points(section_geometry).second),
-	segment_index(
-			at_start
-			? 0
-			// For polylines this is the same as the fictitous one-past-the-last segment...
-			: GeometryUtils::get_num_geometry_exterior_points(section_geometry) - 1),
-	on_segment_start(true),
-	angle_in_segment(GPlatesMaths::AngularDistance::ZERO),
-	interpolate_ratio_in_segment(0.0)
+		unsigned int segment_index,
+		const double &start_inner_segment_interpolate_ratio_in_segment,
+		const double &end_inner_segment_interpolate_ratio_in_segment,
+		const double &interpolate_ratio_in_inner_segment)
 {
+	boost::optional<GPlatesMaths::GreatCircleArc> segment = get_segment(section_geometry, segment_index);
+	if (!segment)
+	{
+		// Segment index represents the fictitious one-past-the-last segment.
+		// So must represent the last vertex of the section geometry.
+		return Intersection(
+				intersection_position,
+				segment_index,
+				true/*on_segment_start*/,
+				GPlatesMaths::AngularDistance::ZERO/*angle_in_segment*/,
+				0.0/*interpolate_ratio_in_segment*/);
+	}
+
+	// Determine if intersection position is "on" segment *end* point
+	// using the same threshold used for geometry intersections.
+	const bool on_segment_end = dot(intersection_position.position_vector(), segment->end_point().position_vector()).dval() >=
+			GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine();
+	if (on_segment_end)
+	{
+		// Increment the segment index so that the intersection position is "on" the segment *start* point
+		// (not *end* point) since we're keeping to the same standard as the GeometryIntersect code and
+		// only allowing intersection to lie on the *start* of a segment (not the *end*).
+		//
+		// Note that incrementing may take us to the fictitious one-past-the-last segment.
+		return Intersection(
+				intersection_position,
+				segment_index + 1,
+				true/*on_segment_start*/,
+				GPlatesMaths::AngularDistance::ZERO/*angle_in_segment*/,
+				0.0/*interpolate_ratio_in_segment*/);
+	}
+
+	const GPlatesMaths::Real dot_intersection_and_segment_start =
+			dot(intersection_position.position_vector(), segment->start_point().position_vector());
+	const GPlatesMaths::AngularDistance angle_in_segment =
+			GPlatesMaths::AngularDistance::create_from_cosine(dot_intersection_and_segment_start);
+
+	// Determine if intersection position is "on" segment start point
+	// using the same threshold used for geometry intersections.
+	const bool on_segment_start = dot_intersection_and_segment_start.dval() >=
+			GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine();
+
+	// Interpolate the interpolate ratios (of the inner segment) to get the final interpolation ratio
+	// in the outer segment.
+	const double interpolate_ratio_in_segment =
+			start_inner_segment_interpolate_ratio_in_segment + interpolate_ratio_in_inner_segment *
+				(end_inner_segment_interpolate_ratio_in_segment - start_inner_segment_interpolate_ratio_in_segment);
+
+	return Intersection(
+			intersection_position,
+			segment_index,
+			on_segment_start,
+			angle_in_segment,
+			interpolate_ratio_in_segment);
+}
+
+
+boost::optional<GPlatesMaths::GreatCircleArc>
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::get_segment(
+		const GPlatesMaths::GeometryOnSphere &section_geometry,
+		unsigned int segment_index)
+{
+	//
+	// Section geometry can be a point, multi-point or polyline. But not a polygon.
+	//
+	if (boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> section_polyline_opt =
+		GeometryUtils::get_polyline_on_sphere(section_geometry))
+	{
+		const GPlatesMaths::PolylineOnSphere &section_polyline = *section_polyline_opt.get();
+
+		if (segment_index == section_polyline.number_of_segments())
+		{
+			// Fictitious one-past-the-last segment.
+			return boost::none;
+		}
+
+		return section_polyline.get_segment(segment_index);
+	}
+	else if (boost::optional<const GPlatesMaths::PointOnSphere &> section_point_opt =
+			GeometryUtils::get_point_on_sphere(section_geometry))
+	{
+		// Only one point, so segment index must be zero.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				segment_index == 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Only one point, not enough for a GCA segment.
+		return boost::none;
+	}
+	else
+	{
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> section_multi_point_opt =
+				GeometryUtils::get_multi_point_on_sphere(section_geometry);
+
+		// Section geometry must be a multi-point (or point, polyline). But not a polygon.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				section_multi_point_opt,
+				GPLATES_ASSERTION_SOURCE);
+
+		const GPlatesMaths::MultiPointOnSphere &section_multi_point = *section_multi_point_opt.get();
+
+		// If we consider the multi-point to be consecutively connected with GCA segments between its
+		// points then it has one less segment than number of points.
+		const unsigned int number_of_segments = section_multi_point.number_of_points() - 1;
+
+		if (segment_index == number_of_segments)
+		{
+			// Fictitious one-past-the-last segment.
+			// Also handles the case of only one point in multi-point.
+			return boost::none;
+		}
+
+		// Note that we create a GCA segment between adjacent points (starting at 'segment_index')
+		// even though the section geometry is a multi-point.
+		return GPlatesMaths::GreatCircleArc::create(
+				section_multi_point.get_point(segment_index),
+				section_multi_point.get_point(segment_index + 1));
+	}
+}
+
+
+double
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::get_interpolate_ratio_in_segment(
+		const GPlatesMaths::GeometryOnSphere &section_geometry) const
+{
+	if (!d_interpolate_ratio_in_segment)
+	{
+		d_interpolate_ratio_in_segment = 0.0;
+
+		if (!on_segment_start)
+		{
+			boost::optional<GPlatesMaths::GreatCircleArc> segment = get_segment(section_geometry, segment_index);
+			if (segment)
+			{
+				if (!segment->is_zero_length())
+				{
+					// Calculate the ratio of distance from intersection point to segment start point divided by
+					// distance between segment start and end points.
+					d_interpolate_ratio_in_segment =
+							acos(dot(position.position_vector(), segment->start_point().position_vector())).dval() /
+								acos(segment->dot_of_endpoints()).dval();
+				}
+			}
+			else // fictitious one-past-the-last segment ...
+			{
+				// Don't dereference the fictitious one-past-the-last segment, it represents the last vertex.
+				// And don't decrement the segment index to make it valid as this will mess things up when
+				// retrieving sub-segment ranges (which can result in sub-segments missing a couple of vertices).
+				// We can just leave the interpolate ratio as 0.0 since 'on_segment_start' should be true and
+				// the last vertex is essentially the start of the fictitious one-past-the-last segment.
+			}
+		}
+	}
+
+	return d_interpolate_ratio_in_segment.get();
+}
+
+
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand::create(
+		const GPlatesMaths::PointOnSphere &current_section_position,
+		const GPlatesMaths::PointOnSphere &adjacent_section_position,
+		bool is_at_start_of_current_section,
+		bool is_at_start_of_adjacent_section,
+		const ReconstructionGeometry::non_null_ptr_to_const_type &current_section_reconstruction_geometry,
+		const ReconstructionGeometry::non_null_ptr_to_const_type &adjacent_section_reconstruction_geometry)
+{
+	// Rubber band point is the mid-point between the start/end of the current section and
+	// start/end of the adjacent section.
+	const GPlatesMaths::Vector3D mid_point =
+			GPlatesMaths::Vector3D(current_section_position.position_vector()) +
+			GPlatesMaths::Vector3D(adjacent_section_position.position_vector());
+	const GPlatesMaths::UnitVector3D rubber_band_position = mid_point.is_zero_magnitude()
+			// Current and adjacent section positions are antipodal, so just generate any point midway between them...
+			? generate_perpendicular(current_section_position.position_vector())
+			: mid_point.get_normalisation();
+
+	return RubberBand(
+		GPlatesMaths::PointOnSphere(rubber_band_position),
+		0.5/*interpolate_ratio*/,
+		current_section_position,
+		adjacent_section_position,
+		is_at_start_of_current_section,
+		is_at_start_of_adjacent_section,
+		current_section_reconstruction_geometry,
+		adjacent_section_reconstruction_geometry);
+}
+
+
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+		const RubberBand &rubber_band,
+		const GPlatesMaths::PointOnSphere &intersection_position)
+{
+	//
+	// Intersected rubber band position at 'interpolate_ratio' along the great circle arc segment
+	// between the start/end of the rubber band's current section and start/end of its adjacent section.
+	//
+
+	const GPlatesMaths::GreatCircleArc rubber_band_segment =
+			GPlatesMaths::GreatCircleArc::create(
+					rubber_band.current_section_position,
+					rubber_band.adjacent_section_position);
+	if (rubber_band_segment.is_zero_length())
+	{
+		// The current and adjacent section positions are (close to) equal.
+		return RubberBand(
+				// Choose the start of rubber band segment - we're assuming intersection position is (close to) the same...
+				rubber_band_segment.start_point()/*rubber band position*/,
+				0.0/*interpolate_ratio*/,
+				rubber_band.current_section_position,
+				rubber_band.adjacent_section_position,
+				rubber_band.is_at_start_of_current_section,
+				rubber_band.is_at_start_of_adjacent_section,
+				rubber_band.current_section_reconstruction_geometry,
+				rubber_band.adjacent_section_reconstruction_geometry);
+	}
+
+	// Calculate the ratio of distance from intersection point to rubber band segment's start point
+	// divided by distance between rubber band segment's start and end points.
+	const double interpolate_ratio_in_rubber_segment =
+			acos(dot(intersection_position.position_vector(), rubber_band_segment.start_point().position_vector())).dval() /
+				acos(rubber_band_segment.dot_of_endpoints()).dval();
+
+	return RubberBand(
+			intersection_position,
+			interpolate_ratio_in_rubber_segment,
+			rubber_band.current_section_position,
+			rubber_band.adjacent_section_position,
+			rubber_band.is_at_start_of_current_section,
+			rubber_band.is_at_start_of_adjacent_section,
+			rubber_band.current_section_reconstruction_geometry,
+			rubber_band.adjacent_section_reconstruction_geometry);
 }

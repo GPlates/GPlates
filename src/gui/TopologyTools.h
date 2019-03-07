@@ -290,6 +290,7 @@ namespace GPlatesGui
 		{
 		public:
 			VisibleSection(
+					const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &section_reconstruction_geometry,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry_unreversed,
 					bool reverse_hint,
 					const std::size_t section_info_index) :
@@ -298,7 +299,10 @@ namespace GPlatesGui
 				// This shouldn't change when we do neighbouring section intersection processing.
 				d_section_geometry_unreversed(section_geometry_unreversed),
 				d_intersection_results(
-						GPlatesAppLogic::TopologicalIntersections::create(section_geometry_unreversed, reverse_hint))
+						GPlatesAppLogic::TopologicalIntersections::create(
+								section_reconstruction_geometry,
+								section_geometry_unreversed,
+								reverse_hint))
 			{  }
 
 			/**

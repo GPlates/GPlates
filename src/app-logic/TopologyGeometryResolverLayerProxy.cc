@@ -31,10 +31,14 @@
 
 #include "TopologyGeometryResolverLayerProxy.h"
 
+#include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/MathsUtils.h"
 
@@ -197,7 +201,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 		d_cached_resolved_lines.invalidate();
 
 		// Note that observers don't need to be updated when the time changes - if they
-		// have resolved boundaries for a different time they don't need
+		// have resolved lines for a different time they don't need
 		// to be updated just because some other client requested a different time.
 		d_cached_resolved_lines.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
 	}
@@ -346,6 +350,174 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_boundary_time_
 	}
 
 	return d_cached_resolved_boundary_time_span.cached_resolved_boundary_time_span.get();
+}
+
+
+void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_geometry_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_velocities,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time,
+		boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles)
+{
+	const ReconstructHandle::type resolved_line_velocities_reconstruct_handle =
+			get_resolved_topological_line_velocities(
+					resolved_topological_velocities,
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
+
+	const ReconstructHandle::type resolved_boundary_velocities_reconstruct_handle =
+			get_resolved_topological_boundary_velocities(
+					resolved_topological_velocities,
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
+
+	if (reconstruct_handles)
+	{
+		reconstruct_handles->push_back(resolved_line_velocities_reconstruct_handle);
+		reconstruct_handles->push_back(resolved_boundary_velocities_reconstruct_handle);
+	}
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_line_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// See if the reconstruction time has changed.
+	if (d_cached_resolved_lines.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	{
+		// The resolved lines are now invalid.
+		d_cached_resolved_lines.invalidate();
+
+		// Note that observers don't need to be updated when the time changes - if they
+		// have resolved line velocities for a different time they don't need
+		// to be updated just because some other client requested a different time.
+		d_cached_resolved_lines.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	// See if any input layer proxies have changed.
+	//
+	// Note that we don't check the resolved line topological section layer inputs because
+	// resolved lines cannot reference other resolved lines (like resolved boundaries can).
+	// This also avoids an infinite recursion.
+	check_input_layer_proxies(false/*check_resolved_line_topological_sections*/);
+
+	// If the velocity delta time parameters have changed then remove the velocities from the cache.
+	if (d_cached_resolved_lines.cached_velocity_delta_time_params !=
+		std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time)))
+	{
+		d_cached_resolved_lines.cached_resolved_topological_line_velocities = boost::none;
+
+		d_cached_resolved_lines.cached_velocity_delta_time_params =
+				std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time));
+	}
+
+	if (!d_cached_resolved_lines.cached_resolved_topological_line_velocities)
+	{
+		// First get/create the resolved topological lines.
+		if (!d_cached_resolved_lines.cached_resolved_topological_lines)
+		{
+			// Create empty vector of resolved topological lines.
+			d_cached_resolved_lines.cached_resolved_topological_lines =
+					std::vector<ResolvedTopologicalLine::non_null_ptr_type>();
+
+			// Resolve our topological line features into our sequence of resolved topological lines.
+			d_cached_resolved_lines.cached_reconstruct_handle =
+					create_resolved_topological_lines(
+							d_cached_resolved_lines.cached_resolved_topological_lines.get(),
+							d_current_topological_line_features,
+							reconstruction_time);
+		}
+
+		// Create empty vector of resolved topological line velocities.
+		d_cached_resolved_lines.cached_resolved_topological_line_velocities =
+				std::vector<MultiPointVectorField::non_null_ptr_type>();
+
+		// Create our topological line velocities.
+		d_cached_resolved_lines.cached_velocities_handle =
+				create_resolved_topological_line_velocities(
+						d_cached_resolved_lines.cached_resolved_topological_line_velocities.get(),
+						d_cached_resolved_lines.cached_resolved_topological_lines.get(),
+						reconstruction_time,
+						velocity_delta_time_type,
+						velocity_delta_time);
+	}
+
+	// Append our cached resolved topological line velocities to the caller's sequence.
+	resolved_topological_line_velocities.insert(
+			resolved_topological_line_velocities.end(),
+			d_cached_resolved_lines.cached_resolved_topological_line_velocities->begin(),
+			d_cached_resolved_lines.cached_resolved_topological_line_velocities->end());
+
+	return d_cached_resolved_lines.cached_velocities_handle.get();
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_boundary_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// See if the reconstruction time has changed.
+	if (d_cached_resolved_boundaries.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	{
+		// The resolved boundaries are now invalid.
+		d_cached_resolved_boundaries.invalidate();
+
+		// Note that observers don't need to be updated when the time changes - if they
+		// have resolved boundary velocities for a different time they don't need
+		// to be updated just because some other client requested a different time.
+		d_cached_resolved_boundaries.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
+
+	// If the velocity delta time parameters have changed then remove the velocities from the cache.
+	if (d_cached_resolved_boundaries.cached_velocity_delta_time_params !=
+		std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time)))
+	{
+		d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities = boost::none;
+
+		d_cached_resolved_boundaries.cached_velocity_delta_time_params =
+				std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time));
+	}
+
+	if (!d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities)
+	{
+		// First get/create the resolved topological boundaries.
+		cache_resolved_topological_boundaries(reconstruction_time);
+
+		// Create empty vector of resolved topological boundary velocities.
+		d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities =
+				std::vector<MultiPointVectorField::non_null_ptr_type>();
+
+		// Create our topological boundary velocities.
+		d_cached_resolved_boundaries.cached_velocities_handle =
+				create_resolved_topological_boundary_velocities(
+						d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities.get(),
+						d_cached_resolved_boundaries.cached_resolved_topological_boundaries.get(),
+						reconstruction_time,
+						velocity_delta_time_type,
+						velocity_delta_time);
+	}
+
+	// Append our cached resolved topological boundary velocities to the caller's sequence.
+	resolved_topological_boundary_velocities.insert(
+			resolved_topological_boundary_velocities.end(),
+			d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities->begin(),
+			d_cached_resolved_boundaries.cached_resolved_topological_boundary_velocities->end());
+
+	return d_cached_resolved_boundaries.cached_velocities_handle.get();
 }
 
 
@@ -1129,4 +1301,174 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 			d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
 			reconstruction_time,
 			topological_sections_reconstruct_handles);
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological_boundary_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// Get the next global reconstruct handle - it'll be stored in each velocity field.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Iterate over the resolved topological boundaries.
+	BOOST_FOREACH(
+			const ResolvedTopologicalBoundary::non_null_ptr_type &resolved_topological_boundary,
+			resolved_topological_boundaries)
+	{
+		create_resolved_topological_sub_segment_velocities(
+				resolved_topological_boundary_velocities,
+				resolved_topological_boundary->get_sub_segment_sequence(),
+				reconstruction_time,
+				velocity_delta_time_type,
+				velocity_delta_time,
+				reconstruct_handle);
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological_line_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
+		const std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// Get the next global reconstruct handle - it'll be stored in each velocity field.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Iterate over the resolved topological lines.
+	BOOST_FOREACH(
+			const ResolvedTopologicalLine::non_null_ptr_type &resolved_topological_line,
+			resolved_topological_lines)
+	{
+		create_resolved_topological_sub_segment_velocities(
+				resolved_topological_line_velocities,
+				resolved_topological_line->get_sub_segment_sequence(),
+				reconstruction_time,
+				velocity_delta_time_type,
+				velocity_delta_time,
+				reconstruct_handle);
+	}
+
+	return reconstruct_handle;
+}
+
+
+void
+GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological_sub_segment_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_sub_segment_velocities,
+		const sub_segment_seq_type &sub_segments,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time,
+		const ReconstructHandle::type &reconstruct_handle)
+{
+	// Iterate over the sub-segments.
+	sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments.begin();
+	sub_segment_seq_type::const_iterator sub_segments_end = sub_segments.end();
+	for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
+	{
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
+
+		// If the sub-segment has any of its own sub-segments in turn, then process those instead of the parent sub-segment.
+		// This essentially is the same as simply using the parent sub-segment except that the plate ID and
+		// reconstruction geometry (used for velocity colouring) will match the actual underlying reconstructed
+		// feature geometries (when the parent sub-segment belongs to a resolved topological *line* which can
+		// happen when the resolved topology is a resolved topological *boundary*).
+		const boost::optional<sub_segment_seq_type> &sub_sub_segments = sub_segment->get_sub_sub_segments();
+		if (sub_sub_segments)
+		{
+			// Iterate over the sub-sub-segments and create velocities from them.
+			create_resolved_topological_sub_segment_velocities(
+					resolved_topological_sub_segment_velocities,
+					sub_sub_segments.get(),
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time,
+					reconstruct_handle);
+
+			// Continue onto the next sub-segment.
+			continue;
+		}
+
+		boost::optional<GPlatesModel::FeatureHandle::iterator> sub_segment_geometry_property =
+					ReconstructionGeometryUtils::get_geometry_property_iterator(
+							sub_segment->get_reconstruction_geometry());
+		if (!sub_segment_geometry_property)
+		{
+			// This shouldn't happen.
+			continue;
+		}
+
+		// Note that we're not interested in the reversal flag of sub-segment (ie, how it contributed
+		// to this resolved topological geometry, or to a resolved topological line that in turn
+		// contributed to this resolved topological geometry if sub-segment is a sub-sub-segment).
+		// This is because we're just putting velocities on points (so their order doesn't matter).
+		std::vector<GPlatesMaths::PointOnSphere> sub_segment_geometry_points;
+		sub_segment->get_sub_segment_points(sub_segment_geometry_points);
+		resolved_vertex_source_info_seq_type sub_segment_point_source_infos;
+		sub_segment->get_sub_segment_point_source_infos(sub_segment_point_source_infos);
+
+		// We should have the same number of points as velocities.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				sub_segment_geometry_points.size() == sub_segment_point_source_infos.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+		// that stores a multi-point domain and a corresponding velocity field but the
+		// geometry property iterator (referenced by the MultiPointVectorField) could be a
+		// non-multi-point geometry.
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type sub_segment_velocity_domain =
+				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+						sub_segment_geometry_points.begin(),
+						sub_segment_geometry_points.end());
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = sub_segment_velocity_domain->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = sub_segment_velocity_domain->end();
+
+		MultiPointVectorField::non_null_ptr_type vector_field =
+				MultiPointVectorField::create_empty(
+						reconstruction_time,
+						sub_segment_velocity_domain,
+						*sub_segment->get_feature_ref(),
+						sub_segment_geometry_property.get(),
+						reconstruct_handle);
+		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
+
+		const ReconstructionGeometry::maybe_null_ptr_to_const_type sub_segment_plate_id_reconstruction_geometry(
+				sub_segment->get_reconstruction_geometry().get());
+		boost::optional<GPlatesModel::integer_plate_id_type> sub_segment_plate_id =
+				ReconstructionGeometryUtils::get_plate_id(sub_segment->get_reconstruction_geometry());
+
+		// Iterate over the domain points and calculate their velocities.
+		unsigned int velocity_index = 0;
+		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter, ++velocity_index)
+		{
+			// Calculate the velocity.
+			const GPlatesMaths::Vector3D vector_xyz =
+					sub_segment_point_source_infos[velocity_index]->get_velocity_vector(
+							*domain_iter,
+							reconstruction_time,
+							velocity_delta_time,
+							velocity_delta_time_type);
+
+			*field_iter = MultiPointVectorField::CodomainElement(
+					vector_xyz,
+					// Even though it's a resolved topological geometry it's still essentially a reconstructed geometry
+					// in that the velocities come from the reconstructed sections that make up the topology...
+					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
+					sub_segment_plate_id,
+					sub_segment_plate_id_reconstruction_geometry);
+		}
+
+		resolved_topological_sub_segment_velocities.push_back(vector_field);
+	}
 }

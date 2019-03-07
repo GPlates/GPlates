@@ -425,6 +425,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	d_accum.current_pole().time = gpml_time_sample.valid_time()->time_position().value();
 	d_accum.current_pole().is_disabled = gpml_time_sample.is_disabled();
 	
+	d_accum.d_is_expecting_a_time_sample = true;
+
 	// Visit the finite rotation inside this time sample.
 	gpml_time_sample.value()->accept_visitor(*this);
 
@@ -433,6 +435,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	{
 		gpml_time_sample.description()->accept_visitor(*this);
 	}
+	
+	d_accum.d_is_expecting_a_time_sample = false;
 }
 
 
@@ -440,5 +444,11 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	d_accum.current_pole().comment = xs_string.value().get();
+	// We could get here either by visiting the 'gml:name' or 'gml:description' property, or
+	// the description field of a time sample. We actually want the latter, so avoid crashing
+	// if we encounter the former (and 'd_accum.reconstruction_poles' is empty).
+	if (d_accum.d_is_expecting_a_time_sample)
+	{
+		d_accum.current_pole().comment = xs_string.value().get();
+	}
 }

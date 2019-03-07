@@ -137,7 +137,7 @@ namespace GPlatesAppLogic
 		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon.
 		 */
 		const resolved_vertex_source_info_seq_type &
-		get_vertex_source_infos() const;
+		get_boundary_vertex_source_infos() const;
 
 
 		/**
@@ -323,12 +323,12 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Each point in the resolved topological line can potentially reference a different
-		 * source reconstructed feature geometry.
+		 * Each point in the boundary of the resolved topological network can potentially reference
+		 * a different source reconstructed feature geometry.
 		 *
 		 * As an optimisation, this is only created when first requested.
 		 */
-		mutable boost::optional<resolved_vertex_source_info_seq_type> d_vertex_source_infos;
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_vertex_source_infos;
 
 
 		/**
@@ -359,7 +359,7 @@ namespace GPlatesAppLogic
 		{  }
 
 		void
-		calc_vertex_source_infos() const;
+		calc_boundary_vertex_source_infos() const;
 	};
 }
 

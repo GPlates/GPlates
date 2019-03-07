@@ -344,7 +344,8 @@ GPlatesAppLogic::ResolvedTriangulation::calculate_face_deformation_info(
 	//
 	// This is the velocity spatial gradient tensor L in
 	// chapter 4 of "Introduction to the mechanics of a continuous medium" by Malvern)
-	// which is defined in spherical coordinates in appendix II in equation (II.4.S8).
+	// which is defined in spherical coordinates in appendix II in equation
+	// (equation II.4.S8 - but note it has a typo - incorrectly specifies cot(phi) instead of cot(theta)).
 	const double ugrad_theta_theta = INVERSE_EARTH_RADIUS_METRES * dutheta_dtheta;
 	const double ugrad_theta_phi = INVERSE_EARTH_RADIUS_METRES * inv_sin_theta_centroid * (
 			dutheta_dphi -
