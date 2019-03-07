@@ -9,13 +9,27 @@ set(Boost_USE_STATIC_LIBS FALSE)
 set(boost_components program_options thread system)
 
 if(NOT GPLATES_NO_PYTHON)
-
-	if(NOT GPLATES_PYTHON_3)
-        set(boost_components ${boost_components} python)
-    else(NOT GPLATES_PYTHON_3)
-        set(boost_components ${boost_components} python3)
-    endif(NOT GPLATES_PYTHON_3)
-
+	# Boost 1.67 and later require that boost python components have a Python version suffix, e.g. ``python27``.
+	# But first we need to determine the boost library version.
+	# To do this we do the simplest boost library find which is just to find the headers.
+	find_package("Boost" 1.34.1)
+	if (NOT Boost_FOUND)
+		message(FATAL_ERROR "Boost headers not found - please make sure Boost library is installed.")
+	endif ()
+	if(NOT Boost_VERSION VERSION_LESS 106700)
+		if(NOT GPLATES_PYTHON_3)
+			set(boost_components ${boost_components} python27)
+		else(NOT GPLATES_PYTHON_3)
+			set(boost_components ${boost_components} python3)
+		endif(NOT GPLATES_PYTHON_3)
+	else()
+		if(NOT GPLATES_PYTHON_3)
+			set(boost_components ${boost_components} python)
+		else(NOT GPLATES_PYTHON_3)
+			set(boost_components ${boost_components} python3)
+		endif(NOT GPLATES_PYTHON_3)
+		set(boost_components ${boost_components} python)
+	endif()
 endif(NOT GPLATES_NO_PYTHON)
 
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})

@@ -5,7 +5,7 @@ Table of Contents
  1. Introduction
  2. Using Microsoft Visual C++
      1. Version requirements
-     2. Visual C++ Express Edition
+     2. Visual Studio Community
      3. Note before starting
      4. Program and library dependencies
  3. Creating Visual Studio solution and project files with CMake
@@ -14,71 +14,59 @@ Table of Contents
 
 Introduction
 
-This will be a guide to building pygplates with various Windows development
+This will be a guide to building pyGPlates with various Windows development
 environments. 
 
 Using Microsoft Visual C++
 
 The Visual C++ set of development tools is part of the Microsoft Visual Studio
-suite. More information can be found at http://msdn.microsoft.com/visualc - the 
-MSDN product page for Visual C++. 
+suite. More information can be found at https://visualstudio.microsoft.com/ - the 
+product page for Visual Studio.
 
 Version requirements
 
-pygplates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8).
-pygplates also builds under MSVC9 (2008). Older versions of the environment
-are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
-which are not standard-conforming enough, and do not properly support many of the 
-C++ features that pygplates and its dependencies (especially Boost) use. 
-pygplates is also known to build under MSVC10 (2010), although newer versions of
-the dependencies will be required; if in doubt, for each dependency, download
+PyGPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015).
+PyGPlates also builds under older versions, however Visual Studio 2015 is required to
+support the C++11 standard. Currently pyGPlates does not use C++11, however the
+dependency library GDAL does require it for versions 2.3 and above (see DEPS.Windows).
+As newer versions of Visual Studio are released, newer versions of the
+dependencies will likely be required; if in doubt, for each dependency, download
 the latest version instead of the version stated in DEPS.Windows.
 
-Visual C++ Express Edition
+Visual Studio Community
 
-The Express edition of Visual C++ is freely available (although Microsoft's support
-for the 2005 edition is coming to an end and the 2008 edition may have issues
-with the boost library). The steps for building pygplates with the Express edition
-are the same as those for the Standard or Professional editions, with one
-additional requirement. The Platform SDK must be downloaded and installed,
-and integrated with the version of Visual C++ Express installed. 
+The Community edition of Visual Studio is freely available.
+The steps for building pyGPlates with the Community edition are the
+same as those for the other editions (such as Professional edition).
 
 Note before starting
 
-For any activities requiring the command line, remember to use the "Visual 
-Studio 200X Command Prompt" shortcut available in the "Start > Programs > 
-Microsoft Visual Studio 200X > Visual Studio Tools" menu. This starts a command 
-prompt and sets up environment variables, allowing use of VC command line 
-applications (such as the compiler, linker, and make tool).
+For any activities requiring the command line, remember to use the
+"Developer Command Prompt for VS201X" shortcut available in the Windows "Start" menu.
+This starts a command prompt and sets up environment variables, allowing use of VC command line 
+applications (such as the compiler, linker, make and build tools).
 
 Program and library dependencies
 
-Firstly, you should ensure that you have installed the dependencies as described
-in "DEPS.Windows".
+Firstly, you should ensure that you have installed the dependencies as described in "DEPS.Windows".
 
 Creating Visual Studio solution and project files with CMake
 
-  1.  Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
-      Boost, GDAL, and GLEW packages you've installed.
-      For example add the following to 'CMAKE_INCLUDE_PATH':
-         "C:/Libraries/Boost"
-         "C:/Libraries/FWTools/include"
-		 "C:/Libraries/glew-1.5.4/include"
-      The corresponding library directories will be found relative to these include directories.
-      If, for some reason, the include directories are found but not the libraries then you can
-      edit 'CMAKE_LIBRARY_PATH' in a similar manner to 'CMAKE_INCLUDE_PATH'.
+  1.  Install the library dependencies by following the instructions in "DEPS.Windows".
+      Note that the 'CMAKE_INCLUDE_PATH' and 'CMAKE_LIBRARY_PATH' environment variables are used
+      to help find some of these libraries (see "DEPS.Windows").
   2.  The Gzip package should be found automatically if it's installed in
       'C:/Program Files/GnuWin32/' otherwise you'll need to tell CMake where it is by editing
       either the 'CMAKE_PROGRAM_PATH' variable or 'PATH' environment variable.
-  3.  Run the CMake program ('CMakeSetup.exe'). CMake 2.4.8 and above is fine.
+  3.  Run the CMake GUI program ('cmake-gui.exe').
           Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
           right-click->properties->compatibility(tab)->check "run this program as an administrator".
-  4.  Set the 'source' directory to the root GPlates source directory (the one that has
-      'src' as a sub-directory).
+  4.  Set the 'source' directory to the root GPlates source directory
+      (the one that has 'src' as a sub-directory).
   5.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
       to a different directory for out-of-place builds (recommended for developers).
   6.  Click 'configure'.
-  6.  Specify 'Visual Studio 2005'.
+  6.  Specify 'Visual Studio 14 2015'.
   7.  Once configuration finished you should get no popup messages.
       If you do then most likely the 'CMAKE_INCLUDE_PATH' environment variable is not referring
       to the correct locations.
@@ -86,22 +74,22 @@ Creating Visual Studio solution and project files with CMake
       to click 'configure' once more.
   9.  Click 'OK' or 'Generate' - NOTE: you might get multiple warning messages that look like..
       "WARNING: Target "gplates" requests linking to directory..." referring to the CGAL library location.
-	  This is ok and can be ignored.
+      This is OK and can be ignored.
   10. The CMake GUI closes or stays open and says 'Generating done'.
   11. You should now have a 'gplates.sln' file in your root GPlates directory.
 
-Building pygplates via the IDE
+Building pyGPlates via the IDE
 
-  1. Open GPlates.sln with the VS IDE.
-  2. Select 'release' build from the "Build->Configuration Manager..." menu.
+  1. Open GPlates.sln with the Visual Studio IDE.
+  2. Select 'Release' build from the "Build->Configuration Manager..." menu.
   3. Rebuild All from the Build menu.
+     Or right-click on the 'pygplates' project and select 'Rebuild' to only build the pyGPlates library.
 
-Building pygplates via the Command Line (MSVC2005+ only)
+Building pyGPlates via the Command Line
 
-  1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the
-     appropriate environment variables:
-       * PATH: for Executable file paths 
-  2. Run the Visual Studio 2005 Command Prompt. 
-  3. Go to the root GPlates build directory. 
-  4. Type the following on the command-line to build a release version of pygplates:
-       vcbuild gplates.sln "Release|Win32"
+  1. Run the Visual Studio 2015 Command Prompt.
+     * This is "Developer Command Prompt for VS2015" for Visual Studio 2015.
+  2. Go to the root GPlates build directory. 
+  3. Type the following on the command-line to build a release version of pyGPlates:
+       msbuild gplates.sln /m /t:pygplates /p:Configuration=Release /v:quiet
+     ...where '/m' uses all CPUs, and '/t:pygplates' just builds the pyGPlates library.
