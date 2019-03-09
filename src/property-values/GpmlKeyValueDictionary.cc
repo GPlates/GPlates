@@ -57,7 +57,7 @@ GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator iterator_type;
 	for (iterator_type iter = d_elements.begin(); iter != d_elements.end(); ++iter)
 	{
-		os << *iter;
+		os << *iter << ", ";
 	}
 
 	return os << " ]";

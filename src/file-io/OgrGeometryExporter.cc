@@ -141,7 +141,7 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 	{
 		if (d_point_geometries.size() == 1)
 		{
-			d_ogr_writer->write_point_feature(d_point_geometries.front(), d_key_value_dictionary);
+			d_ogr_writer->write_point_feature(d_point_geometries.front(), d_key_value_dictionary, d_key_value_dictionary);
 		}
 		else
 		{
@@ -150,6 +150,7 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 					GPlatesMaths::MultiPointOnSphere::create_on_heap(
 							d_point_geometries.begin(),
 							d_point_geometries.end()),
+					d_key_value_dictionary,
 					d_key_value_dictionary);
 		}
 	}
@@ -159,7 +160,7 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point,
 			d_multi_point_geometries)
 	{
-		d_ogr_writer->write_multi_point_feature(multi_point, d_key_value_dictionary);
+		d_ogr_writer->write_multi_point_feature(multi_point, d_key_value_dictionary, d_key_value_dictionary);
 	}
 
 	// Write the polyline geometries.
@@ -167,11 +168,11 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 	{
 		if (d_polyline_geometries.size() == 1)
 		{
-			d_ogr_writer->write_polyline_feature(d_polyline_geometries.front(), d_key_value_dictionary);
+			d_ogr_writer->write_polyline_feature(d_polyline_geometries.front(), d_key_value_dictionary, d_key_value_dictionary);
 		}
 		else
 		{
-			d_ogr_writer->write_multi_polyline_feature(d_polyline_geometries, d_key_value_dictionary);
+			d_ogr_writer->write_multi_polyline_feature(d_polyline_geometries, d_key_value_dictionary, d_key_value_dictionary);
 		}
 	}
 
@@ -180,11 +181,11 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 	{
 		if (d_polygon_geometries.size() == 1)
 		{
-			d_ogr_writer->write_polygon_feature(d_polygon_geometries.front(), d_key_value_dictionary);
+			d_ogr_writer->write_polygon_feature(d_polygon_geometries.front(), d_key_value_dictionary, d_key_value_dictionary);
 		}
 		else
 		{
-			d_ogr_writer->write_multi_polygon_feature(d_polygon_geometries, d_key_value_dictionary);
+			d_ogr_writer->write_multi_polygon_feature(d_polygon_geometries, d_key_value_dictionary, d_key_value_dictionary);
 		}
 	}
 }

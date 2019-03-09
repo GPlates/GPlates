@@ -54,7 +54,7 @@ GPlatesPropertyValues::SpatialReferenceSystem::SpatialReferenceSystem(
 			// See http://lists.osgeo.org/pipermail/gdal-dev/2006-March/008204.html
 			//
 			static_cast<OGRSpatialReference *>(OSRNewSpatialReference(NULL)),
-			OGRSpatialReferenceDeleter())
+			OGRSpatialReferenceReleaser())
 {
 	*d_ogr_srs = ogr_srs; // Assignment operator clones SRS.
 }
@@ -86,8 +86,11 @@ GPlatesPropertyValues::SpatialReferenceSystem::is_wgs84() const
 
 
 void
-GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceDeleter::operator()(
+GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceReleaser::operator()(
 		OGRSpatialReference *ogr_srs)
 {
-	OSRDestroySpatialReference(ogr_srs);
+	// Decrement reference count (which destroys if count reaches zero).
+	// Our clients may have incremented reference count when our OGRSpatialReference was
+	// exposed via 'SpatialReferenceSystem::get_ogr_srs()'.
+	OSRRelease(ogr_srs);
 }

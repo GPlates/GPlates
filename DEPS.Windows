@@ -202,6 +202,13 @@ NetCDF
        o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
     5. This library will get compiled into GDAL (see GDAL below).
 
+SQLite3
+
+    1. Download sqlite-amalgamation zip file from "https://www.sqlite.org/download.html".
+    2. Compile:
+       o "cl sqlite3.c -DSQLITE_ENABLE_RTREE -DSQLITE_API=__declspec(dllexport) -link -dll -out:sqlite3.dll -implib:sqlite3_i.lib"
+       o From https://protyposis.net/blog/compiling-sqlite-as-dll-with-msvc/
+
 GDAL
 
     1. Get GDAL 2.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
@@ -226,22 +233,27 @@ GDAL
        o This helps to avoid a dynamic library loading error (for PROJ4) if the PROJ4 DLL is not in the PATH when
          a raster with an inbuilt spatial reference system (eg, a projection) is loaded into GPlates.
        o Also note that 'proj.lib' (static lib) should be specified and not 'proj_i.lib' (DLL interface lib).
-    5. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
-    6. Generate a new Visual Studio solution file by following instructions at https://trac.osgeo.org/gdal/wiki/GeneratingVisualStudioProject
+    5. Edit the "nmake.opt" file under the section labelled 
+       o Uncomment the following two lines and specify the location of the SQLite3 library (see SQLite3 above).
+       o For example, after editing, you might have something like:
+         SQLITE_INC=-Ic:\SDK\sqlite3\sqlite-amalgamation-3250200
+         SQLITE_LIB=c:\SDK\sqlite3\sqlite-amalgamation-3250200\sqlite3_i.lib
+    6. Uncomment "#WIN64=YES" in "nmake.opt" if compiling a 64-bit build.
+    7. Generate a new Visual Studio solution file by following instructions at https://trac.osgeo.org/gdal/wiki/GeneratingVisualStudioProject
        o For example, run "generate_vcxproj.bat 14.0 32 gdal_vs2015" if you are using Visual Studio 2015.
-    7. Use Visual Studio to build GDAL.
+    8. Use Visual Studio to build GDAL.
        o For example, by opening the 'gdal_vs2015.vcxproj' project file with Visual Studio 2015.
        o Selecting 'Release' as the build type.
        o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
          Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
-    8. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
+    9. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
          nmake /f makefile.vc MSVC_VER=1900
        o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015) for GDAL 2.3.
        o If you want a debug build then add 'DEBUG=1'.
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
-    9. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-2.3.3").
-    10. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-2.3.3").
+    11. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
   
 CGAL
