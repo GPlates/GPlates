@@ -155,6 +155,7 @@ namespace GPlatesModel
 		 *
 		 * This constructor will not throw.
 		 */
+		explicit
 		RevisionAwareIterator(
 				handle_type &handle,
 				index_type index_ = 0);
