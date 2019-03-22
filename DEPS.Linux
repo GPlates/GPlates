@@ -75,8 +75,8 @@ CGAL            libcgal-dev
 PROJ.4          libproj-dev
 Qwt             libqwt-dev
 
-Started from Ubuntu 14.04 Trusty Tahr, the following additional libraries are required libxrender-dev, 
-libice-dev, libsm-dev, libfreetype6-dev and libfontconfig1-dev.
+Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
+
 
 The command to install the dependencies on Ubuntu is:
 
