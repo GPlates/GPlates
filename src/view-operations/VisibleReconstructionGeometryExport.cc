@@ -42,10 +42,19 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/TopologyUtils.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
 #include "file-io/ReconstructedMotionPathExport.h"
 #include "file-io/ResolvedTopologicalGeometryExport.h"
+
+#include "model/FeatureHandle.h"
+#include "model/FeatureType.h"
+#include "model/PropertyName.h"
+
+#include "property-values/EnumerationContent.h"
+#include "property-values/EnumerationType.h"
 
 
 namespace GPlatesViewOperations
@@ -106,6 +115,128 @@ namespace GPlatesViewOperations
 						placeholder_string, placeholder_replacement);
 
 				return target_dir.absoluteFilePath(output_basename);
+			}
+
+
+			//! Export type of resolved topological sections.
+			enum ExportTopologicalSectionType
+			{
+				EXPORT_TOPOLOGICAL_SECTIONS_ALL,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_LEFT,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_RIGHT,
+				EXPORT_TOPOLOGICAL_SECTIONS_RIDGE_TRANFORM
+			};
+
+			void
+			export_resolved_topological_sections(
+					const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+					const QDir &target_dir,
+					const QString &file_basename,
+					const QString &placeholder_format_string,
+					const QString &placeholder_topological_sections,
+					ExportTopologicalSectionType export_topological_section_type,
+					const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
+					const files_collection_type &active_files,
+					const files_collection_type &active_reconstruction_files,
+					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+					const double &reconstruction_time,
+					bool export_single_output_file,
+					bool export_per_input_file,
+					bool export_separate_output_directory_per_input_file,
+					bool wrap_to_dateline)
+			{
+				// Filter out the resolved topological sections we want to export and convert them to raw pointers.
+				std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> filtered_resolved_topological_section_ptrs;
+				BOOST_FOREACH(
+						GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type resolved_topological_section,
+						resolved_topological_sections)
+				{
+					if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_ALL)
+					{
+						filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+					}
+					else // export a subset of sections (ie, not all sections)...
+					{
+						static const GPlatesModel::FeatureType subduction_zone_type =
+								GPlatesModel::FeatureType::create_gpml("SubductionZone");
+
+						// If something is not a subduction zone then it is considering a ridge/transform.
+						if (resolved_topological_section->get_feature_ref()->feature_type() == subduction_zone_type)
+						{
+							if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION)
+							{
+								filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+							}
+							else // exporting a left or right subduction zone...
+							{
+								static const GPlatesModel::PropertyName subduction_polarity_property_name =
+										GPlatesModel::PropertyName::create_gpml("subductionPolarity");
+
+								// Check for subduction polarity enumeration.
+								boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_enum =
+										GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+												resolved_topological_section->get_feature_ref(),
+												subduction_polarity_property_name,
+												reconstruction_time);
+								if (subduction_polarity_enum)
+								{
+									static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+											GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
+
+									if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_enum.get()->type()))
+									{
+										static const GPlatesPropertyValues::EnumerationContent left("Left");
+										static const GPlatesPropertyValues::EnumerationContent right("Right");
+
+										if (left.is_equal_to(subduction_polarity_enum.get()->value()))
+										{
+											if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_LEFT)
+											{
+												filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+											}
+										}
+										else if (right.is_equal_to(subduction_polarity_enum.get()->value()))
+										{
+											if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_RIGHT)
+											{
+												filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+											}
+										}
+									}
+								}
+							}
+						}
+						else // not a subduction zone...
+						{
+							if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_RIDGE_TRANFORM)
+							{
+								filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
+							}
+						}
+					}
+				}
+
+				const QString topological_sections_filename = get_full_output_filename(
+						target_dir,
+						file_basename,
+						placeholder_format_string,
+						placeholder_topological_sections);
+
+				GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_sections(
+						topological_sections_filename,
+						GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
+								topological_sections_filename,
+								file_format_registry),
+						filtered_resolved_topological_section_ptrs,
+						active_files,
+						active_reconstruction_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						export_single_output_file,
+						export_per_input_file,
+						export_separate_output_directory_per_input_file,
+						wrap_to_dateline);
 			}
 		}
 	}
@@ -255,6 +386,10 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		const QString &placeholder_format_string,
 		const QString &placeholder_topological_geometries,
 		const QString &placeholder_topological_sections,
+		const QString &placeholder_topological_sections_subduction,
+		const QString &placeholder_topological_sections_subduction_left,
+		const QString &placeholder_topological_sections_subduction_right,
+		const QString &placeholder_topological_sections_ridge_transform,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		const files_collection_type &active_files,
@@ -366,27 +501,87 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				resolved_topological_boundaries,
 				resolved_topological_networks);
 
-		// Convert to raw pointers.
-		std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> resolved_topological_section_ptrs;
-		BOOST_FOREACH(
-				GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type resolved_topological_section,
-				resolved_topological_sections)
-		{
-			resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
-		}
-
-		const QString topological_sections_filename = get_full_output_filename(
+		// All sections.
+		export_resolved_topological_sections(
+				resolved_topological_sections,
 				target_dir,
 				file_basename,
 				placeholder_format_string,
-				placeholder_topological_sections);
+				placeholder_topological_sections,
+				EXPORT_TOPOLOGICAL_SECTIONS_ALL,
+				file_format_registry,
+				active_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				export_single_output_file,
+				export_per_input_file,
+				export_separate_output_directory_per_input_file,
+				wrap_to_dateline);
 
-		GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_sections(
-				topological_sections_filename,
-				GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
-						topological_sections_filename,
-						file_format_registry),
-				resolved_topological_section_ptrs,
+		// Subduction sections.
+		export_resolved_topological_sections(
+				resolved_topological_sections,
+				target_dir,
+				file_basename,
+				placeholder_format_string,
+				placeholder_topological_sections_subduction,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION,
+				file_format_registry,
+				active_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				export_single_output_file,
+				export_per_input_file,
+				export_separate_output_directory_per_input_file,
+				wrap_to_dateline);
+
+		// Left subduction sections.
+		export_resolved_topological_sections(
+				resolved_topological_sections,
+				target_dir,
+				file_basename,
+				placeholder_format_string,
+				placeholder_topological_sections_subduction_left,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_LEFT,
+				file_format_registry,
+				active_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				export_single_output_file,
+				export_per_input_file,
+				export_separate_output_directory_per_input_file,
+				wrap_to_dateline);
+
+		// Right subduction sections.
+		export_resolved_topological_sections(
+				resolved_topological_sections,
+				target_dir,
+				file_basename,
+				placeholder_format_string,
+				placeholder_topological_sections_subduction_right,
+				EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_RIGHT,
+				file_format_registry,
+				active_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				export_single_output_file,
+				export_per_input_file,
+				export_separate_output_directory_per_input_file,
+				wrap_to_dateline);
+
+		// Ridge/transform sections.
+		export_resolved_topological_sections(
+				resolved_topological_sections,
+				target_dir,
+				file_basename,
+				placeholder_format_string,
+				placeholder_topological_sections_ridge_transform,
+				EXPORT_TOPOLOGICAL_SECTIONS_RIDGE_TRANFORM,
+				file_format_registry,
 				active_files,
 				active_reconstruction_files,
 				reconstruction_anchor_plate_id,

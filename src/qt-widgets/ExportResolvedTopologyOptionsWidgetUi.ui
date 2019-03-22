@@ -97,7 +97,8 @@
          <item>
           <widget class="QLabel" name="boundary_segments_placeholder_label">
            <property name="text">
-            <string>(%P='_boundaries')</string>
+            <string>(%P='_boundaries', '_ridge_transform_boundaries', '_subduction_boundaries',
+'_subduction_boundaries_sL', '_subduction_boundaries_sR')</string>
            </property>
            <property name="indent">
             <number>-1</number>
@@ -174,11 +175,6 @@
     </widget>
    </item>
   </layout>
-  <zorder>widget_shapefile_dateline_wrap</zorder>
-  <zorder>widget_file_options</zorder>
-  <zorder>resolved_geometry_options</zorder>
-  <zorder>polygon_options</zorder>
-  <zorder>polygon_options</zorder>
  </widget>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc"/>

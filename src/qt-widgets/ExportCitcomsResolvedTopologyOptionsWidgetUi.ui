@@ -62,7 +62,7 @@
       <item>
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>(%P='plate_boundaries', %P='plate_ridge_transform_boundaries', 'plate_subduction_boundaries',
+         <string>(%P='plate_boundaries', 'plate_ridge_transform_boundaries', 'plate_subduction_boundaries',
 'plate_subduction_boundaries_sL', 'plate_subduction_boundaries_sR')</string>
         </property>
        </widget>
@@ -109,7 +109,7 @@
       <item>
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>(%P='network_boundaries', %P='network_ridge_transform_boundaries', 'network_subduction_boundaries',
+         <string>(%P='network_boundaries', 'network_ridge_transform_boundaries', 'network_subduction_boundaries',
 'network_subduction_boundaries_sL', 'network_subduction_boundaries_sR')</string>
         </property>
        </widget>
@@ -156,7 +156,7 @@
       <item>
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>(%P='slab_edges', %P='slab_edges_leading', 'slab_edges_leading_sL', 'slab_edges_leading_sR',
+         <string>(%P='slab_edges', 'slab_edges_leading', 'slab_edges_leading_sL', 'slab_edges_leading_sR',
 'slab_edges_trench', 'slab_edge_side')</string>
         </property>
        </widget>
@@ -235,7 +235,7 @@
       <item>
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>(%P='boundaries', %P='ridge_transform_boundaries', 'subduction_boundaries',
+         <string>(%P='boundaries', 'ridge_transform_boundaries', 'subduction_boundaries',
 'subduction_boundaries_sL', 'subduction_boundaries_sR')</string>
         </property>
        </widget>
