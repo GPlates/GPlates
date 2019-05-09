@@ -30,7 +30,7 @@
 #include "GpmlOldPlatesHeader.h"
 
 
-std::string
+GPlatesUtils::UnicodeString
 GPlatesPropertyValues::GpmlOldPlatesHeader::old_feature_id() const
 {
 	std::ostringstream oss;
@@ -91,7 +91,7 @@ GPlatesPropertyValues::GpmlOldPlatesHeader::old_feature_id() const
 
 	oss << "_";
 
-	return oss.str();
+	return GPlatesUtils::UnicodeString(oss.str().c_str());
 }
 
 

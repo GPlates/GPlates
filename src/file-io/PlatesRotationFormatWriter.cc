@@ -75,7 +75,7 @@ namespace
 			os << "999 0.0 0.0 0.0 0.0 999 !";
 		}
 
-		os << line.toUtf8().data() << endl;
+		os << line << endl;
 	}
 
 
@@ -168,6 +168,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 	}
 
 	d_output_stream.reset( new QTextStream(d_output_file.get()) );
+
+	// Write output to text file as UTF8 encoded (which includes the ASCII character set).
+	// If we don't specify this then (in Qt4) QTextCodec::codecForLocale() will get used
+	// during encoding, which is likely to not be UTF8.
+	d_output_stream->setCodec("UTF-8");
 }
 
 
@@ -296,15 +301,15 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 		BOOST_FOREACH(const GPlatesModel::Metadata::shared_ptr_to_const_type& data, single_line_attributes)
 		{
 			os << " @"
-				<< data->get_name().toUtf8().data()
+				<< data->get_name()
 				<< "\""
-				<< data->get_content().toUtf8().data()
+				<< data->get_content()
 				<< "\"";
 		}
 	}
 	else if (reconstruction_pole_data.comment)
 	{
-		os << reconstruction_pole_data.comment.get();
+		os << reconstruction_pole_data.comment->qstring();
 	}
 
 
