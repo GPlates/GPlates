@@ -110,10 +110,21 @@ namespace
 	{
 		using namespace GPlatesFileIO;
 
-		// Read rest of line and remove whitespace from start and end.
-		const QString remainder = line_stream.readAll().trimmed();
+		// Read rest of line.
+		const QString remainder = line_stream.readAll();
 
-		if (remainder.isEmpty())
+		// Find the first non-whitespace character in 'remainder'.
+		const int remainder_size = remainder.size();
+		int index_of_first_non_whitespace = 0;
+		for (; index_of_first_non_whitespace < remainder_size; ++index_of_first_non_whitespace)
+		{
+			if (!remainder.at(index_of_first_non_whitespace).isSpace())
+			{
+				break;
+			}
+		}
+
+		if (index_of_first_non_whitespace == remainder_size)
 		{
 			// No non-whitespace characters were found in the remainder, not even an
 			// exclamation mark.  Let's handle the problem by creating an empty comment
@@ -129,7 +140,7 @@ namespace
 			// Non-whitespace characters were found.  We'll assume these are intended
 			// to be the start of the comment.  Is the first character an exclamation
 			// mark?
-			if (remainder[0] != '!')
+			if (remainder[index_of_first_non_whitespace] != '!')
 			{
 				// No, it's not an exclamation mark.  Let's handle the problem by
 				// pretending that the first character *was* an exclamation mark.
@@ -139,12 +150,12 @@ namespace
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
 				read_errors.d_warnings.push_back(read_error);
 
-				comment = remainder;
+				comment = remainder.mid(index_of_first_non_whitespace);
 			}
 			else
 			{
 				// Remove the exclamation mark.
-				comment = remainder.mid(1);
+				comment = remainder.mid(index_of_first_non_whitespace + 1);
 			}
 		}
 	}
