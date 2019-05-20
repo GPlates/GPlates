@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
 #include <vector>
 
 #include <QDebug>
@@ -30,8 +31,11 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/NetRotationUtils.h"
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ResolvedTriangulationNetwork.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
 #include "file-io/File.h"
@@ -52,6 +56,9 @@ namespace
 {
 	//! Convenience typedef for sequence of resolved topological geometries.
 	typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> resolved_topological_geom_seq_type;
+
+	//! Convenience typedef for sequence of resolved topological networks.
+	typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_network_seq_type;
 
 	typedef	std::vector<GPlatesGui::CsvExport::LineDataType> csv_data_type;
 
@@ -80,25 +87,30 @@ namespace
 			const double &delta_time,
 			const double &current_time,
 			double &time_older,
-			double &time_younger)
+			double &time_younger,
+			GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type)
 	{
 		switch(velocity_method)
 		{
 		case GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT:
 			time_older = current_time;
 			time_younger = current_time - delta_time;
+			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
 			break;
 		case GPlatesQtWidgets::VelocityMethodWidget::T_PLUS_DT_TO_T:
 			time_older = current_time + delta_time;
 			time_younger = current_time;
+			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
 			break;
 		case GPlatesQtWidgets::VelocityMethodWidget::T_PLUS_MINUS_HALF_DT:
 			time_older = current_time + delta_time/2.;
 			time_younger = current_time - delta_time/2.;
+			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T;
 			break;
 		default:
 			time_older = current_time;
 			time_younger = current_time - delta_time;
+			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
 		}
 	}
 
@@ -267,7 +279,7 @@ namespace
 	void
 	write_net_rotation_to_csv_data(
 			csv_data_type &csv_data,
-			const pole_type &net_rotation)
+			const GPlatesGui::ExportNetRotationAnimationStrategy::pole_type &net_rotation)
 	{
 		GPlatesGui::CsvExport::LineDataType data_line;
 		data_line.clear();
@@ -403,10 +415,6 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration_using_existing_
 		for (; it != net_rotation_output.end(); ++it)
 		{
 			GPlatesAppLogic::NetRotationUtils::NetRotationResult result = it->second;
-			if (it->first == 0)
-			{
-				continue;
-			}
 			if (GPlatesMaths::are_almost_exactly_equal(result.d_weighting_factor,0.))
 			{
 				qDebug() << "Zero weighting factor...leaving ENRAS::do_export_iteration";
@@ -489,7 +497,9 @@ bool
 GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 		std::size_t frame_index)
 {
-	d_stage_poles.clear();
+	// A map for storing stage poles (relative to anchor) per plate id.
+	typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> stage_pole_map_type;
+	stage_pole_map_type non_deforming_stage_poles;
 
 	GPlatesAppLogic::ApplicationState &application_state =
 		d_export_animation_context_ptr->view_state().get_application_state();
@@ -529,6 +539,7 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 
 	double t_older;
 	double t_younger;
+	GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type;
 
 	// Check the time settings required by the user through the configuration widget.
 	get_older_and_younger_times(
@@ -536,7 +547,8 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				d_configuration->d_options.delta_time,
 				time,
 				t_older,
-				t_younger);
+				t_younger,
+				velocity_delta_time_type);
 
 	// Skip times if if we get beyond the present day.
 	if (t_younger < 0.)
@@ -564,11 +576,26 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 					reconstruction_geom_seq.end(),
 					resolved_topological_geom_seq);
 
-		// Attempt to find files associated with our topological geometries
+		// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalNetwork.
+		resolved_topological_network_seq_type resolved_topological_network_seq;
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+					reconstruction_geom_seq.begin(),
+					reconstruction_geom_seq.end(),
+					resolved_topological_network_seq);
+
+		// Attempt to find files associated with our topological geometries and networks.
 		feature_handle_to_collection_map_type feature_to_collection_map;
 		std::vector<const GPlatesFileIO::File::Reference *> referenced_files;
-		GPlatesFileIO::ReconstructionGeometryExportImpl::get_files_referenced_by_geometries(
-				referenced_files, resolved_topological_geom_seq, d_loaded_files,
+		GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
+				feature_to_collection_map,
+				d_loaded_files);
+		GPlatesFileIO::ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
+				referenced_files,
+				resolved_topological_geom_seq,
+				feature_to_collection_map);
+		GPlatesFileIO::ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
+				referenced_files,
+				resolved_topological_network_seq,
 				feature_to_collection_map);
 
 		BOOST_FOREACH(const GPlatesFileIO::File::Reference *ref,referenced_files)
@@ -583,7 +610,7 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 
 		GPlatesAppLogic::NetRotationUtils::net_rotation_map_type net_rotations;
 
-		// Build up map of stage-poles per plate-id
+		// Build up map of stage-poles per plate-id of *non-deforming* plates.
 		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometry *geom_ptr, resolved_topological_geom_seq)
 		{
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_opt =
@@ -600,6 +627,7 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				}
 
 
+#if 1
 				//Get the stage pole for this plate-id
 				GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree1 =
 						geom_ptr->get_reconstruction_tree_creator().get_reconstruction_tree(
@@ -610,8 +638,16 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 							t_younger);
 
 				const GPlatesMaths::FiniteRotation stage_pole = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree1,*tree2,*plate_id_opt,0);
+#else // Doesn't appear to affect the results...
+				const GPlatesMaths::FiniteRotation stage_pole = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+						*plate_id_opt,
+						geom_ptr->get_reconstruction_tree_creator(),
+						time,
+						t_older - t_younger/*velocity_delta_time*/,
+						velocity_delta_time_type);
+#endif
 
-				d_stage_poles.insert(stage_pole_map_type::value_type(*plate_id_opt,stage_pole));
+				non_deforming_stage_poles.insert(stage_pole_map_type::value_type(*plate_id_opt,stage_pole));
 			}
 		}
 
@@ -623,7 +659,50 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				GPlatesMaths::LatLonPoint llp(lat,lon);
 				GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(llp);
 
-				// For each point, check which plate (if any) it lies in
+				bool found_topology_containing_point = false;
+
+				// For each point, check which deforming network (if any) it lies in.
+				BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalNetwork *network_ptr, resolved_topological_network_seq)
+				{
+					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type network_boundary = network_ptr->boundary_polygon();
+
+					// See if point is in network boundary and if so, return the stage rotation.
+					boost::optional< std::pair<
+							GPlatesMaths::FiniteRotation,
+							GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> > point_stage_rotation =
+									network_ptr->get_triangulation_network().calculate_stage_rotation(
+											pos,
+											t_older - t_younger/*velocity_delta_time*/,
+											velocity_delta_time_type);
+					if (point_stage_rotation)
+					{
+						GPlatesAppLogic::NetRotationUtils::NetRotationResult net_rotation_result =
+								GPlatesAppLogic::NetRotationUtils::calc_net_rotation_contribution(
+									pos,
+									point_stage_rotation->first,
+									t_older - t_younger);
+
+						GPlatesAppLogic::NetRotationUtils::net_rotation_map_type::value_type net_rotation = std::make_pair(
+								// Networks are no longer required to have a plate ID because it doesn't make sense
+								// (network is deforming, not rigidly rotated by plate ID), in which case we use plate ID zero.
+								//
+								// TODO: We need to fix all this because currently all/most networks will get grouped under plate ID zero.
+								network_ptr->plate_id() ? network_ptr->plate_id().get() : 0,
+								net_rotation_result);
+
+						GPlatesAppLogic::NetRotationUtils::sum_net_rotations(net_rotation,net_rotations);
+
+						found_topology_containing_point = true;
+						break;  // Found network containing point, no need to search remaining networks.
+					}
+				}
+
+				if (found_topology_containing_point)
+				{
+					continue;  // Found network containing point, no need to search plates.
+				}
+
+				// For each point, check which non-deforming plate (if any) it lies in.
 				BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometry *geom_ptr, resolved_topological_geom_seq)
 				{
 					boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_opt =
@@ -633,8 +712,8 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 
 					if (boundary_opt && plate_id_opt) // i.e. if we have a polygon geometry, and there's a plate-id associated with it
 					{
-						stage_pole_map_type::const_iterator it =  d_stage_poles.find(*plate_id_opt);
-						if (it == d_stage_poles.end())
+						stage_pole_map_type::const_iterator it =  non_deforming_stage_poles.find(plate_id_opt.get());
+						if (it == non_deforming_stage_poles.end())
 						{
 							continue;
 						}
@@ -648,10 +727,14 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 										(*it).second, // stage_pole
 										t_older - t_younger);
 
-							GPlatesAppLogic::NetRotationUtils::net_rotation_map_type::value_type net_rotation =
-									std::make_pair(*plate_id_opt,result);
+							GPlatesAppLogic::NetRotationUtils::net_rotation_map_type::value_type net_rotation = std::make_pair(
+									plate_id_opt.get(),
+									result);
 
 							GPlatesAppLogic::NetRotationUtils::sum_net_rotations(net_rotation,net_rotations);
+
+							found_topology_containing_point = true;
+							break;  // Found plate containing point, no need to search remaining plates.
 						}
 					}
 				}
@@ -668,72 +751,47 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 		for (; it != net_rotations.end(); ++it)
 		{
 			GPlatesAppLogic::NetRotationUtils::NetRotationResult result = it->second;
-			if (it->first == 0)
-			{
-				qDebug() << "Zero plate id. Skipping plate.";
-				continue;
-			}
 			if (GPlatesMaths::are_almost_exactly_equal(result.d_weighting_factor,0.))
 			{
 				qDebug() << "Zero weighting factor for plate " << it->first << ". Skipping plate.";
 				continue;
 			}
 
+			GPlatesMaths::Vector3D plate_net_rotation_xyz(
+					result.d_rotation_component.x()/result.d_weighting_factor,
+					result.d_rotation_component.y()/result.d_weighting_factor,
+					result.d_rotation_component.z()/result.d_weighting_factor);
+			pole_type plate_net_rotation_pole =
+					GPlatesAppLogic::NetRotationUtils::convert_net_rotation_xyz_to_pole(plate_net_rotation_xyz);
+
+			// Force positive angle
+			if (plate_net_rotation_pole.second < 0.)
+			{
+				plate_net_rotation_pole.second = std::abs(plate_net_rotation_pole.second);
+				double lat = plate_net_rotation_pole.first.latitude();
+				double lon = plate_net_rotation_pole.first.longitude();
+
+				lat *= -1.;
+				lon += 180.;
+				lon = (lon > 360.)? (lon - 360.) : lon;
+				plate_net_rotation_pole.first = GPlatesMaths::LatLonPoint(lat,lon);
+			}
+
+			data_line.clear();
+
+			data_line.push_back(QString::number(it->first));
+			data_line.push_back(QString::number(plate_net_rotation_pole.first.latitude()));
+			data_line.push_back(QString::number(plate_net_rotation_pole.first.longitude()));
+			data_line.push_back(QString::number(plate_net_rotation_pole.second));
+
+			// Get area from the net_rotations map;
+			double area = result.d_plate_area_component;
+			data_line.push_back(QString::number(area*area_conversion_to_km2));
+
+			data.push_back(data_line);
+
 			total_rotation = total_rotation + result.d_rotation_component;
 			total_weighting_factor += result.d_weighting_factor;
-		}
-
-		// Export the stage pole and area of each plate
-		BOOST_FOREACH(stage_pole_map_type::value_type value,d_stage_poles)
-		{
-			data_line.clear();
-			data_line.push_back(QString::number(value.first));
-
-			using namespace GPlatesMaths;
-			const UnitQuaternion3D uq = value.second.unit_quat();
-
-			if (!represents_identity_rotation(uq))
-			{
-				const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint = value.second.axis_hint();
-				UnitQuaternion3D::RotationParams params = uq.get_rotation_params(axis_hint);
-
-				// Angle from quaternion is radians
-				// Convert angle to degrees per Ma.
-				double angle = convert_rad_to_deg(params.angle).dval()/(t_older-t_younger);
-				LatLonPoint llp = make_lat_lon_point(PointOnSphere(params.axis));
-				double lat = llp.latitude();
-				double lon = llp.longitude();
-
-
-				// Force positive angle, and adjust lat/lon accordingly.
-				if (angle < 0.)
-				{
-					angle = std::abs(angle);
-					lat *= -1.;
-					lon += 180.;
-					lon = (lon > 360.)? (lon - 360.) : lon;
-				}
-
-				data_line.push_back(QString::number(lat));
-				data_line.push_back(QString::number(lon));
-				data_line.push_back(QString::number(angle));
-			}
-			else
-			{
-				data_line.push_back(QString());
-				data_line.push_back(QString());
-				data_line.push_back(QString::number(0.));
-			}
-			// Get area from the net_rotations map;
-			double area = 0;
-			GPlatesAppLogic::NetRotationUtils::net_rotation_map_type::const_iterator it_ = net_rotations.find(value.first);
-			if (it_ != net_rotations.end())
-			{
-				area = it_->second.d_plate_area_component;
-			}
-
-			data_line.push_back(QString::number(area*area_conversion_to_km2));
-			data.push_back(data_line);
 		}
 
 		// Finally, export the net rotation

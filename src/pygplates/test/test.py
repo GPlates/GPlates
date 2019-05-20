@@ -16,12 +16,12 @@ import unittest
 #PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'bin')
 
 # An example path used for linux/MacOS CMake builds where the source and builds directories differ...
-PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build', 'bin')
+#PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build', 'bin')
 #PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build-python2', 'bin')
 #PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build-python3', 'bin')
 
 # An example path used for Windows CMake builds...
-#PYGPLATES_PATH = "C:\\Users\\John\\Subversion\\GPlates\\build\\python-api-2013-jul-25-merge\\bin\\profilegplates"
+PYGPLATES_PATH = "E:\\Users\\John\\Subversion\\GPlates\\build\\python-api-merge\\bin\\Release"
 
 sys.path.insert(1, PYGPLATES_PATH)
 import pygplates

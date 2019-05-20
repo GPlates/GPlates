@@ -124,6 +124,10 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 			"",
 			"_boundaries",
+			"_subduction_boundaries",
+			"_subduction_boundaries_sL",
+			"_subduction_boundaries_sR",
+			"_ridge_transform_boundaries",
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_format_registry(),
 			d_loaded_files,
@@ -136,11 +140,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 			d_configuration->export_topological_lines,
 			d_configuration->export_topological_polygons,
 			d_configuration->export_topological_networks,
-			//
-			// Temporarily disable export of resolved topological *sections* until we add the option
-			// to do so in the export widget...
-			//
-			false/*d_configuration->export_topological_sections*/,
+			d_configuration->export_topological_sections,
 			d_configuration->force_polygon_orientation,
 			d_configuration->wrap_to_dateline);
 

@@ -28,14 +28,14 @@
 
 #include "PlatesLineFormatReader.h"
 
-#include <sstream>
-#include <string>
 #include <list>
 #include <vector>
 #include <boost/bind.hpp>
 
 #include <QDebug>
 #include <QFile>
+#include <QString>
+#include <QTextStream>
 
 #include "ReadErrors.h"
 #include "LineReader.h"
@@ -115,7 +115,7 @@ namespace
 	/**
 	 * Typedef for map from old GP8 id to GP9 feature id 
 	*/ 
-	typedef std::map<std::string, GPlatesModel::FeatureId> old_id_to_new_id_map_type;
+	typedef std::map<QString, GPlatesModel::FeatureId> old_id_to_new_id_map_type;
 	typedef old_id_to_new_id_map_type::const_iterator old_id_to_new_id_map_const_iterator;
 	old_id_to_new_id_map_type id_map;
 
@@ -157,7 +157,7 @@ namespace
 	//
 	GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
 	create_gpml_topological_point( 
-		std::string old_fid)
+		QString old_fid)
 	{
 		// FIXME: what to do if the old_fid is not found?
 		const GPlatesModel::FeatureId fid = (id_map.find( old_fid ) )->second; 
@@ -184,7 +184,7 @@ namespace
 	//
 	GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
 	create_gpml_topological_line_section(
-		std::string old_fid,
+		QString old_fid,
 		bool use_reverse)
 	{
 		// Create a sourceGeometry property delegate
@@ -218,41 +218,41 @@ namespace
 	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 	create_gpml_topological_sections_vector(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref, 
-		std::vector<std::string> boundary_strings)
+		const std::vector<QString> &boundary_strings)
 	{
 		// vars to hold working data 
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 			topo_section_ptrs_vector;
 
 		// iterator for the list of strings
-		std::vector<std::string>::iterator iter = boundary_strings.begin(); 
+		std::vector<QString>::const_iterator iter = boundary_strings.begin();
 
 		// loop over the list of strings
 		for (int i = 0; iter != boundary_strings.end() ; ++iter, ++i) 
 		{
 			// the string to parse 
-			std::string node_str = *iter;
+			QString node_str = *iter;
 
 #if 0
 // FIXME : remove diagnostic 
-std::cout << "size = " << boundary_strings.size() << std::endl; 
-std::cout << "iter = " << node_str << std::endl; 
+qDebug() << "size = " << boundary_strings.size();
+qDebug() << "iter = " << node_str;
 #endif
 
 			// tmp place to hold parsed sub-strings
-			std::vector<std::string> tokens;
+			std::vector<QString> tokens;
 
 			// loop over the string finding hash delimiters
-			while (node_str.find("#", 0) != std::string::npos)
+			while (node_str.indexOf("#", 0) >= 0)
 			{ 
 				// store the position of the delimiter
-				size_t pos = node_str.find("#", 0);
+				const int pos = node_str.indexOf("#", 0);
 
 				// get the token
-				std::string temp = node_str.substr(0, pos);
+				const QString temp = node_str.mid(0, pos);
 
 				// erase it from the source 
-				node_str.erase(0, pos + 1);
+				node_str.remove(0, pos + 1);
 
 				// and put it into the array
 				tokens.push_back(temp);
@@ -265,47 +265,34 @@ std::cout << "iter = " << node_str << std::endl;
 			// Error checking on number of tokens found
 			if ( tokens.size() != 11 )
 			{
-				std::ostringstream oss;
-				oss << "Cannot parse boundary feature node line: "
+				qWarning() << "ERROR: Cannot parse boundary feature node line: "
 					<< "expected 10 comma delimited tokens, "
-					<< "got: " << tokens.size() << " tokens."
-					<< std::endl;
-				std::cerr << "ERROR: " << oss.str() << std::endl;
+					<< "got: " << tokens.size() << " tokens.";
 				continue;
 			}
 
 			// convert token strings into topology parameters
-			int type;
-			float lat;
-			float lon;
-			float closeness;
-			bool use_reverse;
-			bool use_head_prev;
-			bool use_tail_prev;
-			bool use_head_next;
-			bool use_tail_next;
-
-			std::string old_fid 	  = tokens[0];
-			std::istringstream iss_type(tokens[1]) ; iss_type >> type;
-			std::istringstream iss_lat( tokens[2] ); iss_lat >> lat;
-			std::istringstream iss_lon( tokens[3] ); iss_lon >> lon;
-			std::istringstream iss_clo( tokens[4] ); iss_clo >> closeness; 
-			std::istringstream iss_rev( tokens[5] ); iss_rev >> use_reverse; 
-			std::istringstream iss_uhp( tokens[6] ); iss_uhp >> use_head_prev; 
-			std::istringstream iss_utp( tokens[7] ); iss_utp >> use_tail_prev; 
-			std::istringstream iss_uhn( tokens[8] ); iss_uhn >> use_head_next; 
-			std::istringstream iss_utn( tokens[9] ); iss_utn >> use_tail_next;
+			QString old_fid = tokens[0];
+			int type = tokens[1].toInt();
+			float lat = tokens[2].toFloat();
+			float lon = tokens[3].toFloat();
+			float closeness = tokens[4].toFloat();
+			bool use_reverse = tokens[5].toInt();
+			bool use_head_prev = tokens[6].toInt();
+			bool use_tail_prev = tokens[7].toInt();
+			bool use_head_next = tokens[8].toInt();
+			bool use_tail_next = tokens[9].toInt();
 
 #if 0
 // FIXME : remove diagnostic 
-std::cout << "old_fid = " << old_fid << std::endl;
-std::cout << "lat = " << lat << std::endl;
-std::cout << "lon = " << lon << std::endl;
-std::cout << "use_reverse = " << use_reverse << std::endl;
-std::cout << "use_head_prev = " << use_head_prev << std::endl;
-std::cout << "use_tail_prev = " << use_tail_prev << std::endl;
-std::cout << "use_head_next = " << use_head_next << std::endl;
-std::cout << "use_tail_next = " << use_tail_next << std::endl;
+qDebug() << "old_fid = " << old_fid;
+qDebug() << "lat = " << lat;
+qDebug() << "lon = " << lon;
+qDebug() << "use_reverse = " << use_reverse;
+qDebug() << "use_head_prev = " << use_head_prev;
+qDebug() << "use_tail_prev = " << use_tail_prev;
+qDebug() << "use_head_next = " << use_head_next;
+qDebug() << "use_tail_next = " << use_tail_next;
 #endif
 
 			// Make sure Feature referenced by old_fid can be located 
@@ -313,8 +300,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			find_iter = id_map.find( old_fid );
 			if ( find_iter == id_map.end() ) 
 			{
-				std::cerr << "WARNING: feature '" << old_fid << "' is missing." << std::endl;
-				std::cerr << "WARNING: a GpmlTopologicalSection will NOT be created" << std::endl;
+				qWarning() << "WARNING: feature '" << old_fid << "' is missing.";
+				qWarning() << "WARNING: a GpmlTopologicalSection will NOT be created";
 				// DO NOT create a GpmlTopologicalSection
 				continue; // to next item on boundary list; 
 			}
@@ -359,7 +346,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 	create_gpml_piecewise_aggregation( 
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		std::vector<std::string> boundary_strings )
+		const std::vector<QString> &boundary_strings )
 	{
 		// vars to hold working data 
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
@@ -680,9 +667,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					header->clone()));
 
 		// file the map with id data 
-		std::string s = header->old_feature_id(); // GP8 
+		GPlatesUtils::UnicodeString s = header->old_feature_id(); // GP8 
 		const GPlatesModel::FeatureId &fid = feature_handle->feature_id();
-		id_map.insert( std::make_pair(s, fid) );
+		id_map.insert( std::make_pair(s.qstring(), fid) );
 
 
 		return feature_handle;
@@ -1694,52 +1681,100 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 	read_old_plates_header(
 			GPlatesFileIO::LineReader &in,
-			const std::string &first_line)
+			const QString &first_line)
 	{
-		std::string second_line;
+		QString second_line;
 		if ( ! in.peekline(second_line)) {
 			throw GPlatesFileIO::ReadErrors::MissingPlatesHeaderSecondLine;
 		}
 
 		typedef GPlatesModel::integer_plate_id_type plate_id_type;
-		
+
+		bool ok;
+
+		const unsigned int region_number = first_line.mid(0, 2).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber;
+		}
+		const unsigned int reference_number = first_line.mid(2, 2).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesReferenceNumber;
+		}
+		const unsigned int string_number = first_line.mid(5, 4).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesStringNumber;
+		}
+		const GPlatesUtils::UnicodeString geographic_description(first_line.mid(10));
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesGeographicDescription;
+		}
+		// We now read the plate-id from the zeroth column, to accommodate a
+		// possible 4-th plate-id digit.
+		const plate_id_type plate_id_number = second_line.mid(0, 4).toULong(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesPlateIdNumber;
+		}
+		const double age_of_appearance = second_line.mid(5, 6).toDouble(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfAppearance;
+		}
+		const double age_of_disappearance = second_line.mid(12, 6).toDouble(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfDisappearance;
+		}
+		const GPlatesUtils::UnicodeString data_type_code(second_line.mid(19, 2));
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCode;
+		}
+		const unsigned int data_type_code_number = second_line.mid(21, 4).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumber;
+		}
+		// We don't read in a "DataTypeCodeNumberAdditional" field now, but we need
+		// to pass something to the header constructor, so we'll pass an empty string.
+		const GPlatesUtils::UnicodeString data_type_code_number_additional;
+		// We now read the conjugate plate-id from column 25, to accommodate a
+		// possible 4th conjugate plate-id digit.
+		const plate_id_type conjugate_plate_id_number = second_line.mid(25, 4).toULong(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesConjugatePlateIdNumber;
+		}
+		const unsigned int colour_code = second_line.mid(30, 3).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesColourCode;
+		}
+		const unsigned int number_of_points = second_line.mid(34, 5).toUInt(&ok);
+		if (!ok)
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesNumberOfPoints;
+		}
+
 		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 			gpml_old_plates_header = GPlatesPropertyValues::GpmlOldPlatesHeader::create(
-				GPlatesUtils::slice_string<unsigned int>(first_line, 0, 2, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber),
-				GPlatesUtils::slice_string<unsigned int>(first_line, 2, 4, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesReferenceNumber),
-				GPlatesUtils::slice_string<unsigned int>(first_line, 5, 9, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesStringNumber),
-				GPlatesUtils::slice_string<std::string>(first_line, 10, std::string::npos, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesGeographicDescription).c_str(),
-				// We now read the plate-id from the zeroeth column, to accommodate a possible
-				// 4-th plate-id digit.
-				GPlatesUtils::slice_string<plate_id_type>(second_line, 0, 4, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesPlateIdNumber),
-				GPlatesUtils::slice_string<double>(second_line, 5, 11, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfAppearance),
-				GPlatesUtils::slice_string<double>(second_line, 12, 18, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfDisappearance),
-				GPlatesUtils::slice_string<std::string>(second_line, 19, 21, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCode).c_str(),
-				GPlatesUtils::slice_string<unsigned int>(second_line, 21, 25, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumber),
-#if 0					
-				GPlatesUtils::slice_string<std::string>(second_line, 25, 26, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional).c_str(),
-#endif
-				// We don't read in a "DataTypeCodeNumberAdditional" field now, but we need
-				// to pass something to the header constructor, so we'll pass an empty string.
-				"",
-				// We now read the conjugate plate-id from column 25, to accommodate a
-				// possible 4th conjugate plate-id digit.
-				GPlatesUtils::slice_string<plate_id_type>(second_line, 25, 29, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesConjugatePlateIdNumber),
-				GPlatesUtils::slice_string<unsigned int>(second_line, 30, 33, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesColourCode),
-				GPlatesUtils::slice_string<unsigned int>(second_line, 34, 39, 
-					GPlatesFileIO::ReadErrors::InvalidPlatesNumberOfPoints));
+				region_number,
+				reference_number,
+				string_number,
+				geographic_description,
+				plate_id_number,
+				age_of_appearance,
+				age_of_disappearance,
+				data_type_code,
+				data_type_code_number,
+				data_type_code_number_additional,
+				conjugate_plate_id_number,
+				colour_code,
+				number_of_points);
 
 		// If we get here then no exception has been thrown parsing first two lines
 		// so we can commit to having read the second line.
@@ -1758,7 +1793,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			point_seq_type &points,
 			PlotterCodes::PlotterCode expected_code)
 	{
-		std::string line;
+		QString line;
 		if ( ! in.getline(line)) {
 			// Since we're in this function, we're expecting to read a point.  But we
 			// couldn't find one.  So, let's complain.
@@ -1768,9 +1803,15 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		int plotter;
 		double latitude, longitude;
 
-		std::istringstream iss(line);
-		iss >> latitude >> longitude >> plotter;
-		if ( ! iss) { 
+		QTextStream line_stream(&line, QIODevice::ReadOnly);
+		// By default QTextStream attempts to detect the base of integers.
+		// We turn this off and set base to decimal since we don't want numbers
+		// like 012 being interpreted as octal (since has an '0' at front).
+		line_stream.setIntegerBase(10);
+
+		line_stream >> latitude >> longitude >> plotter;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			throw GPlatesFileIO::ReadErrors::InvalidPlatesPolylinePoint;
 		}
 
@@ -1811,13 +1852,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	// This function reads a series of lines from the input file
 	// and copies the data to a list of strings
-	std::string 
+	QString
 	read_platepolygon_boundary_feature(
 			GPlatesFileIO::LineReader &in,
-			std::vector<std::string> &boundary_strings,
-			std::string code)
+			std::vector<QString> &boundary_strings,
+			QString code)
 	{
-		std::string line;
+		QString line;
 
 		if ( ! in.getline(line)) 
 		{
@@ -1996,7 +2037,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
-		std::string first_line;
+		QString first_line;
 		if ( ! in.getline(first_line)) {
 			return; // Do not want to throw here: end of file reached
 		}
@@ -2034,11 +2075,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 			// a list of boundary feature lines to populate from 
 			// read_platepolygon_boundary_feature()
-			std::vector<std::string> boundary_strings;
+			std::vector<QString> boundary_strings;
 
 			// read the first platepolygon boundary feature and 
 			// set the terminator code to CONTINUE
-			std::string code = "CONTINUE";
+			QString code = "CONTINUE";
 			read_platepolygon_boundary_feature(in, boundary_strings, code);
 
 			// Loop over the platepolygon's boundary features, and build a list of strings

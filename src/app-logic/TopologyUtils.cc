@@ -120,6 +120,22 @@ namespace GPlatesAppLogic
 			{
 				const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
 
+				//
+				// NOTE: We do not get the sub-sub-segments of the current sub-segment.
+				//
+				// Currently the code in this module assumes that, when there is both a start and an end rubber band, the
+				// start rubber band is at the *start* and the end rubber band is at the *end* (in which case the entire
+				// section geometry also contributes to the sub-segment). This is always the case with sub-segments
+				// (due to intersecting topological section geometries).
+				//
+				// However, if we were to include sub-sub-segments (of those sub-segments) then we'd need to update our handling
+				// of rubber bands since it would then be possible to have both rubber bands at the start or both at the end
+				// (in which case the section geometry is excluded from the sub-segment). This represents just a part of the
+				// start (or end) rubber-band segment which usually only happens when a (resolved line) sub-segment is split
+				// into its component sub-sub-segments (in which case any arbitrary part of a sub-sub-segment could contribute
+				// to its parent sub-segment).
+				//
+
 				// Get the geometry property.
 				boost::optional<GPlatesModel::FeatureHandle::iterator> section_geometry_property =
 						ReconstructionGeometryUtils::get_geometry_property_iterator(
@@ -188,50 +204,14 @@ namespace GPlatesAppLogic
 					const ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo &resolved_topology_info_,
 					unsigned int num_vertices_in_section_,
 					const boost::optional<ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand> &intersection_or_rubber_band_,
-					boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry_,
-					boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry_,
 					bool is_start_of_section_,
 					bool is_start_of_sub_segment_) :
 				resolved_topology_info(resolved_topology_info_),
 				num_vertices_in_section(num_vertices_in_section_),
 				intersection_or_rubber_band(intersection_or_rubber_band_),
-				prev_segment_reconstruction_geometry(prev_segment_reconstruction_geometry_),
-				next_segment_reconstruction_geometry(next_segment_reconstruction_geometry_),
 				is_start_of_section(is_start_of_section_),
 				is_start_of_sub_segment(is_start_of_sub_segment_)
-			{
-				// If marker is a rubber band then ensure previous section is at start, and next section
-				// is at end, of section. This ensures all the sub-segments with a rubber band have their
-				// previous and next sections aligned.
-				if (intersection_or_rubber_band)
-				{
-					boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> rubber_band =
-							intersection_or_rubber_band->get_rubber_band();
-					if (rubber_band)
-					{
-						if (is_start_of_section != rubber_band->adjacent_is_previous_section)
-						{
-							// Swap the previous and next sections.
-							std::swap(prev_segment_reconstruction_geometry, next_segment_reconstruction_geometry);
-
-							// Now the previous/next section is at start/end of section.
-							ResolvedSubSegmentRangeInSection::RubberBand swapped_rubber_band(rubber_band.get());
-							swapped_rubber_band.adjacent_is_previous_section = is_start_of_section;
-
-							intersection_or_rubber_band =
-									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(swapped_rubber_band);
-						}
-					}
-				}
-
-				// Initialise the object used to compare the previous segment's reconstruction geometry.
-				prev_segment_reconstruction_geometry_compare =
-						get_topological_section_compare(prev_segment_reconstruction_geometry);
-
-				// Initialise the object used to compare the next segment's reconstruction geometry.
-				next_segment_reconstruction_geometry_compare =
-						get_topological_section_compare(next_segment_reconstruction_geometry);
-			}
+			{  }
 
 			bool
 			is_start_rubber_band() const
@@ -348,17 +328,13 @@ namespace GPlatesAppLogic
 							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> other_rubber_band =
 									other.intersection_or_rubber_band->get_rubber_band();
 
-							const boost::optional<topological_section_compare_type> &adjacent_section =
-									rubber_band->adjacent_is_previous_section
-									? prev_segment_reconstruction_geometry_compare
-									: next_segment_reconstruction_geometry_compare;
-							const boost::optional<topological_section_compare_type> &other_adjacent_section =
-									other_rubber_band->adjacent_is_previous_section
-									? other.prev_segment_reconstruction_geometry_compare
-									: other.next_segment_reconstruction_geometry_compare;
+							const boost::optional<topological_section_compare_type> adjacent_section_cmp =
+									get_topological_section_compare(rubber_band->adjacent_section_reconstruction_geometry);
+							const boost::optional<topological_section_compare_type> other_adjacent_section_cmp =
+									get_topological_section_compare(other_rubber_band->adjacent_section_reconstruction_geometry);
 
 							// Compare the adjacent sections (using the comparison objects).
-							return adjacent_section == other_adjacent_section &&
+							return adjacent_section_cmp == other_adjacent_section_cmp &&
 									// Also make sure both rubber bands are using same end of adjacent section.
 									// We could have instead compared adjacent section 'is_at_start_of_adjacent_section's
 									// but that gets tricky with *point* sections because we don't know which is the
@@ -386,16 +362,6 @@ namespace GPlatesAppLogic
 			 * (optional) end intersection/rubber-band if @a is_start_of_section is false.
 			 */
 			boost::optional<ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand> intersection_or_rubber_band;
-
-			//! The reconstruction geometry of the previous section (if any).
-			boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry;
-			//! The reconstruction geometry of the next section (if any).
-			boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry;
-
-			//! The reconstruction geometry compare object of the previous section (if any).
-			boost::optional<topological_section_compare_type> prev_segment_reconstruction_geometry_compare;
-			//! The reconstruction geometry compare object of the next section (if any).
-			boost::optional<topological_section_compare_type> next_segment_reconstruction_geometry_compare;
 
 			/**
 			 * Whether this marker is the start or end of the *section*.
@@ -513,22 +479,18 @@ namespace GPlatesAppLogic
 							boost::optional<const ResolvedSubSegmentRangeInSection::RubberBand &> rhs_rubber_band =
 									rhs.intersection_or_rubber_band->get_rubber_band();
 
-							const boost::optional<topological_section_compare_type> &lhs_adjacent_segment =
-									lhs_rubber_band->adjacent_is_previous_section
-									? lhs.prev_segment_reconstruction_geometry_compare
-									: lhs.next_segment_reconstruction_geometry_compare;
-							const boost::optional<topological_section_compare_type> &rhs_adjacent_segment =
-									rhs_rubber_band->adjacent_is_previous_section
-									? rhs.prev_segment_reconstruction_geometry_compare
-									: rhs.next_segment_reconstruction_geometry_compare;
+							const boost::optional<topological_section_compare_type> lhs_adjacent_segment_cmp =
+									get_topological_section_compare(lhs_rubber_band->adjacent_section_reconstruction_geometry);
+							const boost::optional<topological_section_compare_type> rhs_adjacent_segment_cmp =
+									get_topological_section_compare(rhs_rubber_band->adjacent_section_reconstruction_geometry);
 
 							// Compare the adjacent sections (using the comparison objects).
 							//
 							// Note that two start rubber bands (or two end rubber bands) with the same (equal)
 							// adjacent section (end point) will compare equivalent (ie, !(lhs < rhs) && !(rhs < lhs))
 							// and so std::stable_sort will retain their original order.
-							return lhs_adjacent_segment < rhs_adjacent_segment ||
-									(lhs_adjacent_segment == rhs_adjacent_segment &&
+							return lhs_adjacent_segment_cmp < rhs_adjacent_segment_cmp ||
+									(lhs_adjacent_segment_cmp == rhs_adjacent_segment_cmp &&
 										// Also check whether both rubber bands are using same end of adjacent section...
 										// We could have instead compared adjacent section 'is_at_start_of_adjacent_section's
 										// but that gets tricky with *point* sections because we don't know which is the
@@ -566,8 +528,6 @@ namespace GPlatesAppLogic
 		{
 			const ResolvedSubSegmentRangeInSection shared_sub_segment_range(
 					section_geometry,
-					// Note that the markers have had their rubber band prev/next sections
-					// ordered to all be the same (ie, start is previous and next is end)...
 					start_sub_segment_marker.intersection_or_rubber_band/*start_intersection_or_rubber_band*/,
 					end_sub_segment_marker.intersection_or_rubber_band/*end_intersection_or_rubber_band*/);
 
@@ -577,11 +537,7 @@ namespace GPlatesAppLogic
 							shared_sub_segment_range,
 							sharing_resolved_topologies,
 							section_feature_ref,
-							section_rg,
-							// Note that the markers have had their prev/next sections ordered
-							// to all be the same (ie, start is previous and next is end)...
-							start_sub_segment_marker.prev_segment_reconstruction_geometry/*prev_segment_reconstruction_geometry*/,
-							end_sub_segment_marker.next_segment_reconstruction_geometry/*next_segment_reconstruction_geometry*/));
+							section_rg));
 		}
 
 
@@ -635,7 +591,7 @@ namespace GPlatesAppLogic
 							boost::optional<topological_section_compare_type>,
 							boost::optional<topological_section_compare_type> > >
 									start_end_rubber_bands_type;
-			boost::optional<start_end_rubber_bands_type> start_end_rubber_bands;
+			boost::optional<start_end_rubber_bands_type> point_section_start_end_rubber_bands;
 
 			// Iterate over the sub-segments referencing the section.
 			std::vector<ResolvedSubSegmentInfo>::const_iterator sub_segments_iter = section_sub_segment_infos.begin();
@@ -657,12 +613,13 @@ namespace GPlatesAppLogic
 				// To get around this we detect if one start/end rubber band pair is a swapped version
 				// of another and generate equivalent start/end rubber band markers to ensure they
 				// generate a shared sub-segment (rather than two un-shared sub-segments).
-				if (sub_segment_range.get_start_rubber_band() &&
+				if (sub_segment_range.get_num_points_in_section_geometry() == 1 &&
+					sub_segment_range.get_start_rubber_band() &&
 					sub_segment_range.get_end_rubber_band())
 				{
-					if (!start_end_rubber_bands)
+					if (!point_section_start_end_rubber_bands)
 					{
-						start_end_rubber_bands = start_end_rubber_bands_type();
+						point_section_start_end_rubber_bands = start_end_rubber_bands_type();
 					}
 
 					ResolvedSubSegmentRangeInSection::RubberBand start_rubber_band =
@@ -671,19 +628,13 @@ namespace GPlatesAppLogic
 							sub_segment_range.get_end_rubber_band().get();
 
 					const boost::optional<topological_section_compare_type> start_adjacent_section =
-							get_topological_section_compare(
-									start_rubber_band.adjacent_is_previous_section
-									? sub_segment.get_prev_reconstruction_geometry()
-									: sub_segment.get_next_reconstruction_geometry());
+							get_topological_section_compare(start_rubber_band.adjacent_section_reconstruction_geometry);
 					const boost::optional<topological_section_compare_type> end_adjacent_section =
-							get_topological_section_compare(
-									end_rubber_band.adjacent_is_previous_section
-									? sub_segment.get_prev_reconstruction_geometry()
-									: sub_segment.get_next_reconstruction_geometry());
+							get_topological_section_compare(end_rubber_band.adjacent_section_reconstruction_geometry);
 
 					// See if swapping the current start/end rubber bands matches a previous start/end pair.
-					if (start_end_rubber_bands->find(std::make_pair(end_adjacent_section, start_adjacent_section)) !=
-						start_end_rubber_bands->end())
+					if (point_section_start_end_rubber_bands->find(std::make_pair(end_adjacent_section, start_adjacent_section)) !=
+						point_section_start_end_rubber_bands->end())
 					{
 						// End rubber band will now be a start marker (and hence should be at start of section).
 						end_rubber_band.is_at_start_of_current_section = true;
@@ -695,8 +646,6 @@ namespace GPlatesAppLogic
 								num_points_in_section_geometry,
 								// End rubber band is now a start marker...
 								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_rubber_band),
-								sub_segment.get_prev_reconstruction_geometry(),
-								sub_segment.get_next_reconstruction_geometry(),
 								true/*is_start_of_section*/,
 								true/*is_start_of_sub_segment*/);
 						const ResolvedSubSegmentMarker sub_segment_end_marker(
@@ -704,8 +653,6 @@ namespace GPlatesAppLogic
 								num_points_in_section_geometry,
 								// Start rubber band is now an end marker...
 								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_rubber_band),
-								sub_segment.get_prev_reconstruction_geometry(),
-								sub_segment.get_next_reconstruction_geometry(),
 								false/*is_start_of_section*/,
 								false/*is_start_of_sub_segment*/);
 
@@ -719,7 +666,7 @@ namespace GPlatesAppLogic
 					else
 					{
 						// Record start/end rubber band in order to detect a subsequent reversed pairs.
-						start_end_rubber_bands->insert(std::make_pair(start_adjacent_section, end_adjacent_section));
+						point_section_start_end_rubber_bands->insert(std::make_pair(start_adjacent_section, end_adjacent_section));
 					}
 				}
 
@@ -727,16 +674,12 @@ namespace GPlatesAppLogic
 						resolved_topology_info,
 						num_points_in_section_geometry,
 						sub_segment_range.get_start_intersection_or_rubber_band(),
-						sub_segment.get_prev_reconstruction_geometry(),
-						sub_segment.get_next_reconstruction_geometry(),
 						true/*is_start_of_section*/,
 						true/*is_start_of_sub_segment*/);
 				const ResolvedSubSegmentMarker sub_segment_end_marker(
 						resolved_topology_info,
 						num_points_in_section_geometry,
 						sub_segment_range.get_end_intersection_or_rubber_band(),
-						sub_segment.get_prev_reconstruction_geometry(),
-						sub_segment.get_next_reconstruction_geometry(),
 						false/*is_start_of_section*/,
 						false/*is_start_of_sub_segment*/);
 
@@ -834,12 +777,13 @@ namespace GPlatesAppLogic
 					new_markers.reserve(2 * num_original_start_markers);
 
 					// We need to use an intersection to mark the start of a section.
-					const ResolvedSubSegmentRangeInSection::Intersection start_of_section(
-							*section_geometry,
-							true/*at_start*/);
+					const ResolvedSubSegmentRangeInSection::Intersection start_of_section =
+							ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+									*section_geometry,
+									true/*at_start*/);
 
 					// Each marker in each group of equivalent start rubber band markers will emit
-					// and sub-segment start and end marker.
+					// a sub-segment start and end marker.
 					unsigned int start_group_marker_index = 0;
 					for (unsigned int s = 0; s < start_marker_groups.size(); ++s)
 					{
@@ -958,12 +902,13 @@ namespace GPlatesAppLogic
 					new_markers.reserve(2 * num_original_end_markers);
 
 					// We need to use an intersection to mark the end of a section.
-					const ResolvedSubSegmentRangeInSection::Intersection end_of_section(
-							*section_geometry,
-							false/*at_start*/);
+					const ResolvedSubSegmentRangeInSection::Intersection end_of_section =
+							ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+									*section_geometry,
+									false/*at_start*/);
 
 					// Each marker in each group of equivalent end rubber band markers will emit
-					// and sub-segment start and end marker.
+					// a sub-segment start and end marker.
 					unsigned int start_group_marker_index = first_end_marker_index;
 					for (unsigned int e = 0; e < end_marker_groups.size(); ++e)
 					{
@@ -1481,6 +1426,8 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 		map_resolved_topological_sections_to_resolved_topologies(
 				resolved_section_to_sharing_resolved_topologies_map,
 				resolved_topological_network,
+				// Only interested in boundary (not interior) since only boundary sub-segments
+				// are shared with adjacent plate/network topologies...
 				resolved_topological_network->get_boundary_sub_segment_sequence());
 	}
 
@@ -1510,7 +1457,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry =
 				sub_segments.front().sub_segment->get_section_geometry();
 		const unsigned int num_points_in_section_geometry =
-				sub_segments.front().sub_segment->get_sub_segment().get_num_points_in_section_geometry();
+				sub_segments.front().sub_segment->get_num_points_in_section_geometry();
 
 		// Record the start/end point locations of each sub-segment within the section geometry.
 		std::vector<ResolvedSubSegmentMarker> resolved_sub_segment_marker_seq;

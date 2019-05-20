@@ -60,6 +60,10 @@ GPlatesQtWidgets::ManageFeatureCollections::register_default_edit_configurations
 	manage_feature_collections_dialog.register_edit_configuration(
 				GPlatesFileIO::FeatureCollectionFileFormat::GEOJSON,
 				ShapefileEditConfiguration::shared_ptr_type(new ShapefileEditConfiguration(model)));
+
+	manage_feature_collections_dialog.register_edit_configuration(
+				GPlatesFileIO::FeatureCollectionFileFormat::GEOPACKAGE,
+				ShapefileEditConfiguration::shared_ptr_type(new ShapefileEditConfiguration(model)));
 }
 
 

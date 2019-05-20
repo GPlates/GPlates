@@ -30,7 +30,9 @@
 
 #include "ReconstructionGeometry.h"
 #include "ResolvedSubSegmentRangeInSection.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedVertexSourceInfo.h"
+
 
 
 namespace GPlatesAppLogic
@@ -58,9 +60,24 @@ namespace GPlatesAppLogic
 		get_sub_segment_vertex_source_infos(
 				resolved_vertex_source_info_seq_type &vertex_source_infos,
 				const ResolvedSubSegmentRangeInSection &sub_segment,
-				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_section_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_section_reconstruction_geometry);
+				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry);
+
+
+		/**
+		 * Returns the sub-sub-segments that contribute to the specified @a sub_segment of the specified reconstruction geometry.
+		 *
+		 * If the specified reconstruction geometry is not a resolved topological line then @a sub_sub_segments is set to none.
+		 *
+		 * The resolved topological line sub-segment can be a result of intersecting or rubber-banding with adjacent topological
+		 * sections of a boundary topological polygon, for example). In this case the start and end sub-sub-segments of the
+		 * sub-segment are newly created to reflect the intersection or rubber band, whereas the original sub-sub-segments
+		 * between the start and end are returned unmodified.
+		 */
+		void
+		get_sub_sub_segments(
+				boost::optional<sub_segment_seq_type> &sub_sub_segments,
+				const ResolvedSubSegmentRangeInSection &sub_segment,
+				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry);
 	}
 }
 

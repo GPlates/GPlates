@@ -161,8 +161,7 @@ namespace GPlatesGui
 		/**
 		 * The list of currently loaded files.
 		 */
-		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
-				d_loaded_files;
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_loaded_files;
 
 		/**
 		 * The active and loaded reconstruction file(s) used in the reconstruction.

@@ -551,8 +551,7 @@ namespace GPlatesFileIO
 						return;
 					}
 
-					const QString old_feature_id =
-							QString(gpml_old_plates_header->old_feature_id().c_str());
+					const QString old_feature_id = gpml_old_plates_header->old_feature_id().qstring();
 
 					d_header_line = ' ' + name + ';' + old_feature_id;
 				}

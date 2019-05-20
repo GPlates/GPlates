@@ -3879,7 +3879,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
 				section_rfg.get()->reconstructed_geometry();
 
-		return VisibleSection(section_geometry_unreversed, reverse_hint, section_index);
+		return VisibleSection(section_rg.get(), section_geometry_unreversed, reverse_hint, section_index);
 	}
 
 	// See if topological section is an RTG.
@@ -3892,7 +3892,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
 				section_rtg.get()->resolved_topology_geometry();
 
-		return VisibleSection(section_geometry_unreversed, reverse_hint, section_index);
+		return VisibleSection(section_rg.get(), section_geometry_unreversed, reverse_hint, section_index);
 	}
 
 	return boost::none;

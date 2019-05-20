@@ -75,24 +75,20 @@ namespace GPlatesAppLogic
 		create(
 				const ResolvedSubSegmentRangeInSection &sub_segment,
 				bool use_reverse,
-				const GPlatesModel::FeatureHandle::const_weak_ref &segment_feature_ref,
-				const ReconstructionGeometry::non_null_ptr_to_const_type &segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry)
+				const GPlatesModel::FeatureHandle::weak_ref &segment_feature_ref,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &segment_reconstruction_geometry)
 		{
 			return non_null_ptr_type(
 					new ResolvedTopologicalGeometrySubSegment(
 							sub_segment,
 							use_reverse,
 							segment_feature_ref,
-							segment_reconstruction_geometry,
-							prev_segment_reconstruction_geometry,
-							next_segment_reconstruction_geometry));
+							segment_reconstruction_geometry));
 		}
 
 
 		//! Reference to the feature referenced by the topological section.
-		const GPlatesModel::FeatureHandle::const_weak_ref &
+		const GPlatesModel::FeatureHandle::weak_ref &
 		get_feature_ref() const
 		{
 			return d_segment_feature_ref;
@@ -109,20 +105,6 @@ namespace GPlatesAppLogic
 			return d_segment_reconstruction_geometry;
 		}
 
-		//! The reconstruction geometry of the previous sub-segment.
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
-		get_prev_reconstruction_geometry() const
-		{
-			return d_prev_segment_reconstruction_geometry;
-		}
-
-		//! The reconstruction geometry of the next sub-segment.
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
-		get_next_reconstruction_geometry() const
-		{
-			return d_next_segment_reconstruction_geometry;
-		}
-
 		/**
 		 * Returns the full (un-clipped) section geometry.
 		 *
@@ -132,6 +114,15 @@ namespace GPlatesAppLogic
 		get_section_geometry() const
 		{
 			return d_sub_segment.get_section_geometry();
+		}
+
+		/**
+		 * Returns the number of points in @a get_section_geoemtry.
+		 */
+		unsigned int
+		get_num_points_in_section_geometry() const
+		{
+			return d_sub_segment.get_num_points_in_section_geometry();
 		}
 
 
@@ -167,6 +158,15 @@ namespace GPlatesAppLogic
 		get_sub_segment_geometry() const
 		{
 			return d_sub_segment.get_geometry();
+		}
+
+		/**
+		 * Return the number of points in the sub-segment geometry.
+		 */
+		unsigned int
+		get_num_points_in_sub_segment() const
+		{
+			return d_sub_segment.get_num_points();
 		}
 
 		/**
@@ -228,6 +228,28 @@ namespace GPlatesAppLogic
 		get_reversed_sub_segment_point_source_infos(
 				resolved_vertex_source_info_seq_type &point_source_infos) const;
 
+
+		/**
+		 * Return any sub-segments of the resolved topological section that this sub-segment came from.
+		 *
+		 * If topological section is a ResolvedTopologicalLine then returns sub-segments, otherwise returns none.
+		 *
+		 * If this sub-segment came from a ResolvedTopologicalLine then it will have its own sub-segments, otherwise
+		 * if from a ReconstructedFeatureGeometry then there will be no sub-segments.
+		 *
+		 * Some, or all, of those sub-segments (belong to the ResolvedTopologicalLine) will contribute to this sub-segment.
+		 * And part, or all, of the first and last contributing sub-segments will contribute to this sub-segment
+		 * (due to intersection/clipping).
+		 *
+		 * Note: Each child sub-sub-segment has its own reverse flag (whether it was reversed when contributing to this
+		 * parent sub-segment), and this parent sub-segment also has a reverse flag (which determines whether it was
+		 * reversed when contributing to the final topology).
+		 * So to determine whether a child sub-sub-segment was effectively reversed when contributing to the final
+		 * topology depends on both reverse flags (the child sub-sub-segment and parent sub-segment reverse flags).
+		 */
+		const boost::optional< std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> > &
+		get_sub_sub_segments() const;
+
 	private:
 
 		//! The sub-segment.
@@ -237,7 +259,7 @@ namespace GPlatesAppLogic
 		bool d_use_reverse;
 
 		//! Reference to the source feature handle of the topological section.
-		GPlatesModel::FeatureHandle::const_weak_ref d_segment_feature_ref;
+		GPlatesModel::FeatureHandle::weak_ref d_segment_feature_ref;
 
 		/**
 		 * The section reconstruction geometry.
@@ -245,11 +267,6 @@ namespace GPlatesAppLogic
 		 * This is either a reconstructed feature geometry or a resolved topological *line*.
 		 */
 		ReconstructionGeometry::non_null_ptr_to_const_type d_segment_reconstruction_geometry;
-
-		//! The reconstruction geometry of the previous section (if any).
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> d_prev_segment_reconstruction_geometry;
-		//! The reconstruction geometry of the next section (if any).
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> d_next_segment_reconstruction_geometry;
 
 
 		/**
@@ -265,20 +282,23 @@ namespace GPlatesAppLogic
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_point_source_infos;
 
+		/**
+		 * Sub-segments of our ResolvedTopologicalLine topological section (if one) than contribute to this sub-segment.
+		 */
+		mutable boost::optional< std::vector<ResolvedTopologicalGeometrySubSegment::non_null_ptr_type> > d_sub_sub_segments;
+		mutable bool d_calculated_sub_sub_segments;
+
 
 		ResolvedTopologicalGeometrySubSegment(
 				const ResolvedSubSegmentRangeInSection &sub_segment,
 				bool use_reverse,
-				const GPlatesModel::FeatureHandle::const_weak_ref &segment_feature_ref,
-				const ReconstructionGeometry::non_null_ptr_to_const_type &segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> prev_segment_reconstruction_geometry,
-				boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type> next_segment_reconstruction_geometry) :
+				const GPlatesModel::FeatureHandle::weak_ref &segment_feature_ref,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &segment_reconstruction_geometry) :
 			d_sub_segment(sub_segment),
 			d_use_reverse(use_reverse),
 			d_segment_feature_ref(segment_feature_ref),
 			d_segment_reconstruction_geometry(segment_reconstruction_geometry),
-			d_prev_segment_reconstruction_geometry(prev_segment_reconstruction_geometry),
-			d_next_segment_reconstruction_geometry(next_segment_reconstruction_geometry)
+			d_calculated_sub_sub_segments(false)
 		{  }
 	};
 

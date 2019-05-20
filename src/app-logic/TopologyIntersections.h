@@ -33,6 +33,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/weak_ptr.hpp>
 
+#include "ReconstructionGeometry.h"
 #include "ResolvedSubSegmentRangeInSection.h"
 
 #include "maths/GeometryIntersect.h"
@@ -82,10 +83,11 @@ namespace GPlatesAppLogic
 		static
 		const shared_ptr_type
 		create(
+				const ReconstructionGeometry::non_null_ptr_to_const_type &section_reconstruction_geometry,
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
 				bool reverse_hint)
 		{
-			return shared_ptr_type(new TopologicalIntersections(section_geometry, reverse_hint));
+			return shared_ptr_type(new TopologicalIntersections(section_reconstruction_geometry, section_geometry, reverse_hint));
 		}
 
 
@@ -101,6 +103,18 @@ namespace GPlatesAppLogic
 				bool reverse_hint)
 		{
 			d_reverse_hint = reverse_hint;
+		}
+
+
+		/**
+		 * Returns the original reconstruction geometry that the section geometry came from.
+		 *
+		 * This is the reconstruction geometry passed into the constructor.
+		 */
+		ReconstructionGeometry::non_null_ptr_to_const_type
+		get_section_reconstruction_geometry() const
+		{
+			return d_section_reconstruction_geometry;
 		}
 
 
@@ -280,6 +294,11 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * The original reconstruction geometry that the section geometry came from.
+		 */
+		ReconstructionGeometry::non_null_ptr_to_const_type d_section_reconstruction_geometry;
+
+		/**
 		 * The original section geometry before it was partitioned by intersections.
 		 *
 		 * Note: For polygons this is actually the exterior ring of the polygon (in the form of a polyline).
@@ -322,6 +341,7 @@ namespace GPlatesAppLogic
 
 
 		TopologicalIntersections(
+				const ReconstructionGeometry::non_null_ptr_to_const_type &section_reconstruction_geometry,
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry,
 				bool reverse_hint);
 

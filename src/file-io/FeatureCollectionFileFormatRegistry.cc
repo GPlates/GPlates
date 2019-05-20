@@ -134,6 +134,7 @@ namespace GPlatesFileIO
 			const QString FILE_FORMAT_EXT_OGRGMT = "gmt";
 			const QString FILE_FORMAT_EXT_GEOJSON = "geojson";
 			const QString FILE_FORMAT_EXT_GEOJSON_ALTERNATIVE = "json";
+			const QString FILE_FORMAT_EXT_GEOPACKAGE = "gpkg";
 			const QString FILE_FORMAT_EXT_WRITE_ONLY_XY_GMT = "xy";
 			const QString FILE_FORMAT_EXT_GMAP = "vgp";
 			const QString FILE_FORMAT_EXT_GSML = "gsml";
@@ -904,6 +905,27 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 					boost::bind(&create_ogr_feature_collection_writer,
 								_1, boost::cref(*this), GEOJSON)),
 				geojson_default_configuration);
+
+	classifications_type geopackage_classification;
+	geopackage_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+	geopackage_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	std::vector<QString> geopackage_filename_extensions;
+	geopackage_filename_extensions.push_back(FILE_FORMAT_EXT_GEOPACKAGE);
+	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
+	Configuration::shared_ptr_to_const_type geopackage_default_configuration(new OGRConfiguration(GEOPACKAGE));
+	register_file_format(
+				GEOPACKAGE,
+				"GeoPackage",
+				geopackage_filename_extensions,
+				geopackage_classification,
+				&file_name_ends_with,
+				Registry::read_feature_collection_function_type(
+					boost::bind(&ogr_read_feature_collection,
+								_1, boost::cref(*this), _2, _3)),
+				Registry::create_feature_collection_writer_function_type(
+					boost::bind(&create_ogr_feature_collection_writer,
+								_1, boost::cref(*this), GEOPACKAGE)),
+				geopackage_default_configuration);
 
 	classifications_type write_only_gmt_classification;
 	write_only_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);

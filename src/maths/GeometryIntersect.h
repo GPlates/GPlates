@@ -100,6 +100,26 @@ namespace GPlatesMaths
 				SEGMENT2_START_ON_SEGMENT1
 			};
 
+
+			/**
+			 * Return the cosine (dot product of two points) of maximum angular distance used for "on segment start".
+			 *
+			 * This is only provided in case a client wants to determine "on segment start" in a modified configuration.
+			 */
+			static
+			double
+			get_on_segment_start_threshold_cosine();
+
+			/**
+			 * Return the sine (dot product of point and GCA plane) of maximum angular distance used for "on segment start".
+			 *
+			 * This is only provided in case a client wants to determine "on segment start" in a modified configuration.
+			 */
+			static
+			double
+			get_on_segment_start_threshold_sine();
+
+
 			Intersection(
 					Type type_,
 					const PointOnSphere &position_,

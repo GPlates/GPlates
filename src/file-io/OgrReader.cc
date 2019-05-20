@@ -500,21 +500,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			int plate_id_as_int = attribute.toInt(&ok);
-			if (ok){
-				append_plate_id_to_feature(feature,plate_id_as_int);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-					GPlatesFileIO::ReadErrors::NoPlateIdCreatedForFeature));
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				int plate_id_as_int = attribute.toInt(&ok);
+				if (ok)
+				{
+					append_plate_id_to_feature(feature, plate_id_as_int);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+								GPlatesFileIO::ReadErrors::NoPlateIdCreatedForFeature));
+				}
 			}
-
 		}
 
 
@@ -526,19 +531,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			double age = attribute.toDouble(&ok);
-			if (ok){
-				age_of_appearance = age;
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfAppearance,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				double age = attribute.toDouble(&ok);
+				if (ok)
+				{
+					age_of_appearance = age;
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfAppearance,
+								GPlatesFileIO::ReadErrors::AttributeIgnored));
+
+				}
 			}
 		}
 
@@ -547,18 +559,25 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			double age = attribute.toDouble(&ok);
-			if (ok){
-				age_of_disappearance = age;
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfDisappearance,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
+
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				double age = attribute.toDouble(&ok);
+				if (ok)
+				{
+					age_of_disappearance = age;
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfDisappearance,
+								GPlatesFileIO::ReadErrors::AttributeIgnored));
+				}
 			}
 		}
 
@@ -570,8 +589,13 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			QString name = attribute.toString();
-			append_name_to_feature(feature,name);
+
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				const QString name = attribute.toString();
+				append_name_to_feature(feature, name);
+			}
 		}
 
 		it = model_to_attribute_map.find(
@@ -579,8 +603,13 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			QString description = attribute.toString();
-			append_description_to_feature(feature,description);
+
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				const QString description = attribute.toString();
+				append_description_to_feature(feature, description);
+			}
 		}
 
 
@@ -591,20 +620,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			int conjugate_plate_id_as_int = attribute.toInt(&ok);
-			if (ok){
-				append_conjugate_plate_id_to_feature(feature,conjugate_plate_id_as_int);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-					GPlatesFileIO::ReadErrors::NoConjugatePlateIdCreatedForFeature));
-			}
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				int conjugate_plate_id_as_int = attribute.toInt(&ok);
+				if (ok)
+				{
+					append_conjugate_plate_id_to_feature(feature, conjugate_plate_id_as_int);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+								GPlatesFileIO::ReadErrors::NoConjugatePlateIdCreatedForFeature));
+				}
+			}
 		}		
 
 		it = model_to_attribute_map.find(
@@ -614,23 +649,28 @@ namespace
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
 
-			QString recon_method = attribute.toString();
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				QString recon_method = attribute.toString();
 
-			if ( recon_method_is_valid(recon_method)){
-				append_recon_method_to_feature(feature,recon_method);
-			}
-			else{
-				if (!recon_method.isEmpty()) // suppress warning messages for empty strings.
+				if (recon_method_is_valid(recon_method))
 				{
-					read_errors.d_warnings.push_back(
+					append_recon_method_to_feature(feature, recon_method);
+				}
+				else
+				{
+					if (!recon_method.isEmpty()) // suppress warning messages for empty strings.
+					{
+						read_errors.d_warnings.push_back(
 								GPlatesFileIO::ReadErrorOccurrence(
-									source,
-									location,
-									GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
-									GPlatesFileIO::ReadErrors::AttributeIgnored));
+										source,
+										location,
+										GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
+										GPlatesFileIO::ReadErrors::AttributeIgnored));
+					}
 				}
 			}
-
 		}
 
 		it = model_to_attribute_map.find(
@@ -639,20 +679,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			double spreading_asymmetry = attribute.toDouble(&ok);
-			if (ok){
-				append_spreading_asymmetry_to_feature(feature,spreading_asymmetry);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileSpreadingAsymmetry,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
-			}
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				double spreading_asymmetry = attribute.toDouble(&ok);
+				if (ok)
+				{
+					append_spreading_asymmetry_to_feature(feature, spreading_asymmetry);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefileSpreadingAsymmetry,
+								GPlatesFileIO::ReadErrors::AttributeIgnored));
+				}
+			}
 		}
 
 		it = model_to_attribute_map.find(
@@ -661,20 +707,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			int left_plate_id_as_int = attribute.toInt(&ok);
-			if (ok){
-				append_left_plate_id_to_feature(feature,left_plate_id_as_int);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-					GPlatesFileIO::ReadErrors::NoLeftPlateIdCreatedForFeature));
-			}
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				int left_plate_id_as_int = attribute.toInt(&ok);
+				if (ok)
+				{
+					append_left_plate_id_to_feature(feature, left_plate_id_as_int);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+								GPlatesFileIO::ReadErrors::NoLeftPlateIdCreatedForFeature));
+				}
+			}
 		}
 
 
@@ -684,20 +736,26 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			int right_plate_id_as_int = attribute.toInt(&ok);
-			if (ok){
-				append_right_plate_id_to_feature(feature,right_plate_id_as_int);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-							GPlatesFileIO::ReadErrorOccurrence(
-								source,
-								location,
-								GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-								GPlatesFileIO::ReadErrors::NoRightPlateIdCreatedForFeature));
-			}
 
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				int right_plate_id_as_int = attribute.toInt(&ok);
+				if (ok)
+				{
+					append_right_plate_id_to_feature(feature, right_plate_id_as_int);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+							GPlatesFileIO::ReadErrorOccurrence(
+									source,
+									location,
+									GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+									GPlatesFileIO::ReadErrors::NoRightPlateIdCreatedForFeature));
+				}
+			}
 		}
 
 		it = model_to_attribute_map.find(
@@ -706,18 +764,25 @@ namespace
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
-			bool ok;
-			double geometry_import_time = attribute.toDouble(&ok);
-			if (ok){
-				append_geometry_import_time_to_feature(feature,geometry_import_time);
-			}
-			else{
-				read_errors.d_warnings.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
+
+			// A null attribute means the feature has no attribute (which is OK)...
+			if (!attribute.isNull())
+			{
+				bool ok;
+				double geometry_import_time = attribute.toDouble(&ok);
+				if (ok)
+				{
+					append_geometry_import_time_to_feature(feature, geometry_import_time);
+				}
+				else
+				{
+					read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+								GPlatesFileIO::ReadErrors::AttributeIgnored));
+				}
 			}
 		}
 	}
@@ -1421,34 +1486,82 @@ GPlatesFileIO::OgrReader::get_attributes()
 	}
 	OGRFeatureDefn *feature_def_ptr = d_layer_ptr->GetLayerDefn();
 	int num_fields = feature_def_ptr->GetFieldCount();
+
+	//
+	// In the following, when compiled with GDAL >= 2.2, a null field value can be detected
+	// (if written by a new version of GPlates also compiled with GDAL >= 2.2) in which case
+	// the attribute QVariant will be null and, later on, the attribute will *not* get added
+	// to the feature's kvd (and hence not added as a mapped property to the feature).
+	//
+	// Otherwise, if compiled with GDAL < 2.2, or attribute written by an old version of GPlates
+	// (that does not writes nulls) or a new version compiled with GDAL < 2.2 (that also does
+	// not write nulls, but does 'unset' the field), then attribute will be interpreted as a non-null
+	// QVariant (and hence later added to the feature's kvd and mapped feature properties).
+	// Although I'm not sure what happens when field is 'unset' (but compiled with GDAL < 2.2) since
+	// 'IsFieldSet()' is then called (and returns false) and so might actually get a null QVariant.
+	//
+	// Either way we get non-default QVariant, a default (eg, zero, "") QVariant or a null QVariant.
+	// But only the null QVariant prevents the attribute getting added to kvd and feature.
+	//
+
 	int count;
 	for (count=0; count < num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
 		QVariant value_variant;
 		if (field_def_ptr->GetType()==OFTInteger){
-			value_variant =  d_feature_ptr->IsFieldSet(count) ?
-							QVariant(d_feature_ptr->GetFieldAsInteger(count)) :
-							QVariant(QVariant::Int);
+			value_variant =
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					d_feature_ptr->IsFieldSetAndNotNull(count)
+#else
+					d_feature_ptr->IsFieldSet(count)
+#endif
+							? QVariant(d_feature_ptr->GetFieldAsInteger(count))
+							: QVariant(QVariant::Int);
 		}
 		else if (field_def_ptr->GetType()==OFTReal){
-			value_variant =  d_feature_ptr->IsFieldSet(count) ?
-							QVariant(d_feature_ptr->GetFieldAsDouble(count)) :
-							QVariant(QVariant::Double);
+			value_variant =
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					d_feature_ptr->IsFieldSetAndNotNull(count)
+#else
+					d_feature_ptr->IsFieldSet(count)
+#endif
+							? QVariant(d_feature_ptr->GetFieldAsDouble(count))
+							: QVariant(QVariant::Double);
 		}
 		else if (field_def_ptr->GetType()==OFTDate)
 		{
 			// Store this as a string. It's possible to extract the various year/month/day
 			// fields separately if it becomes necessary.
-			value_variant =  d_feature_ptr->IsFieldSet(count) ?
-							QVariant(d_feature_ptr->GetFieldAsString(count)) :
-							QVariant(QVariant::String);
+			value_variant =
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					d_feature_ptr->IsFieldSetAndNotNull(count)
+#else
+					d_feature_ptr->IsFieldSet(count)
+#endif
+							? QVariant(d_feature_ptr->GetFieldAsString(count))
+							: QVariant(QVariant::String);
 		}
 		else
 		{ // If string or other type.
-			value_variant =  d_feature_ptr->IsFieldSet(count) ?
-							QVariant(d_feature_ptr->GetFieldAsString(count)) :
-							QVariant(QVariant::String);
+			value_variant =
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					d_feature_ptr->IsFieldSetAndNotNull(count)
+#else
+					d_feature_ptr->IsFieldSet(count)
+#endif
+							? QVariant(d_feature_ptr->GetFieldAsString(count))
+							: QVariant(QVariant::String);
 		}
+
+#if 0
+		if (value_variant.isNull())
+		{
+			qDebug() << "Null field: " << field_def_ptr->GetNameRef()
+					<< "IsFieldSetAndNotNull: " << d_feature_ptr->IsFieldSetAndNotNull(count)
+					<< "IsFieldSet: " << d_feature_ptr->IsFieldSet(count)
+					<< "IsFieldNull: " << d_feature_ptr->IsFieldNull(count);
+		}
+#endif
 
 		d_attributes.push_back(value_variant);
 	}
@@ -1479,6 +1592,14 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	for (int count = 0; count < n ; count++){
 		QString fieldname = d_field_names[count];
 		QVariant attribute = d_attributes[count];
+
+		// A null attribute means the feature has no attribute (which is OK),
+		// we just don't add the attribute to the key/value dictionary
+		// (and hence it also doesn't later get mapped to a feature property).
+		if (attribute.isNull())
+		{
+			continue;
+		}
 
 		QVariant::Type type_ = attribute.type();
 

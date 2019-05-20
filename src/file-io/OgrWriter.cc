@@ -63,14 +63,14 @@ namespace{
 	file_type_does_not_support_mixing_single_and_multi_line_strings_in_layer(
 			const QString &extension)
 	{
-		return ((extension == "GMT") || (extension == "gmt"));
+		return ((extension == "GMT") || (extension == "gmt") || (extension == "gpkg"));
 	}
 
 	bool
 	file_type_does_not_support_mixing_single_and_multi_polygons_in_layer(
 			const QString &extension)
 	{
-		return ((extension == "GMT") || (extension == "gmt"));
+		return ((extension == "GMT") || (extension == "gmt") || (extension == "gpkg"));
 	}
 
 	bool
@@ -106,7 +106,7 @@ namespace{
 		// GDAL2 changed the driver name from "GMT" to "OGR_GMT".
 		// This was done when the GDAL/OGR drivers were unified,
 		// see https://trac.osgeo.org/gdal/changeset?reponame=&old=27384%40trunk%2Fgdal%2Fogr%2Fogrsf_frmts%2Fgmt%2Fogrgmtdriver.cpp&new=27384%40trunk%2Fgdal%2Fogr%2Fogrsf_frmts%2Fgmt%2Fogrgmtdriver.cpp
-		gmt_driver << "OGR_GMT" << "OGR_GMT";
+		gmt_driver << "GMT" << "OGR_GMT";
 #else
 		gmt_driver << "GMT" << "GMT";
 #endif
@@ -115,6 +115,10 @@ namespace{
 		QStringList geojson_driver;
 		geojson_driver << "GeoJSON" << "GeoJSON";
 		map["geojson"] = geojson_driver;
+
+		QStringList gpkg_driver;
+		gpkg_driver << "GeoPackage" << "GPKG";
+		map["gpkg"] = gpkg_driver;
 
 		return map;
 	}
@@ -130,7 +134,7 @@ namespace{
 		file_to_driver_map_type::const_iterator iter = map.find(file_extension);
 		if (iter != map.end())
 		{
-			return iter->second.at(FORMAT_NAME);
+			return iter->second.at(CODE);
 		}
 		return QString();
 	}
@@ -162,10 +166,10 @@ namespace{
 	void
 	set_layer_field_names(
 		OGRLayer *ogr_layer,
-		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &key_value_dictionary)
+		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &field_names_key_value_dictionary)
 	{
 		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
-				key_value_dictionary->elements();
+				field_names_key_value_dictionary->elements();
 		if (elements.empty())
 		{
 			qDebug() << "No elements in dictionary...";
@@ -215,45 +219,51 @@ namespace{
 	set_feature_field_values(
 		OGRLayer *ogr_layer,
 		OGRFeature *ogr_feature,
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type key_value_dictionary)
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type field_values_key_value_dictionary)
 	{
 		if ((ogr_layer != NULL) && (ogr_feature != NULL))
 		{
-			int num_attributes_in_layer = ogr_layer->GetLayerDefn()->GetFieldCount();			
-			int num_attributes_in_dictionary = key_value_dictionary->elements().size();
+			// The number of fields created in 'set_layer_field_names()'.
+			const int num_attributes_in_layer = ogr_layer->GetLayerDefn()->GetFieldCount();			
 
-			if (num_attributes_in_layer != num_attributes_in_dictionary)
+			for (int field = 0; field < num_attributes_in_layer; ++field)
 			{
-				// This shouldn't really happen.
-				qDebug() << "OGR Writer: Mismatch in number of fields.";
-				qDebug() << "Layer has " << num_attributes_in_layer << " fields, kvd has " <<
-							num_attributes_in_dictionary << " fields";
-			}
+				const QString field_name = QString::fromStdString(
+						ogr_layer->GetLayerDefn()->GetFieldDefn(field)->GetNameRef());
 
-			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
-					key_value_dictionary->elements();
-			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-					iter = elements.begin(),
-					end = elements.end();
-
-			int initial_count = 0;
-
-			for (int count = initial_count; (count < num_attributes_in_layer) && (iter != end) ; count++, ++iter)
-			{
-				QString model_string = GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get());
-				QString layer_string = QString::fromStdString(
-					ogr_layer->GetLayerDefn()->GetFieldDefn(count)->GetNameRef());
-
-				if (QString::compare(model_string,layer_string) != 0)
+				// Search the kvd for the attribute with same name as current field name.
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
+						field_values_key_value_dictionary->elements();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+						iter = elements.begin(),
+						end = elements.end();
+				for ( ; iter != end; ++iter)
 				{
-					// This shouldn't really happen.
-					qDebug() << "Mismatch in field names: model: " << model_string << ", layer : " << layer_string;
+					const QString attribute_name = GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get());
+
+					if (QString::compare(attribute_name, field_name) == 0)
+					{
+						break;
+					}
+				}
+
+				// Skip the current feature (and mark it's cell as unset or null) if it does not have
+				// an attribute for the current field name.
+				if (iter == end)
+				{
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					ogr_feature->SetFieldNull(field);
+#else
+					ogr_feature->UnsetField(field);
+#endif
+
+					continue;
 				}
 
 				// FIXME: do I really need to put this in variant form first?
 				QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(*iter->get());
 
-				OGRFieldType layer_type = ogr_layer->GetLayerDefn()->GetFieldDefn(count)->GetType();	
+				OGRFieldType layer_type = ogr_layer->GetLayerDefn()->GetFieldDefn(field)->GetType();	
 				OGRFieldType model_type  = get_ogr_field_type_from_qvariant(value_variant);
 
 				if (layer_type != model_type)
@@ -272,7 +282,7 @@ namespace{
 						int value = value_variant.toInt(&ok);
 						if (ok)
 						{
-							ogr_feature->SetField(count,value);					
+							ogr_feature->SetField(field,value);					
 						}
 					}
 					break;
@@ -281,22 +291,28 @@ namespace{
 						double value = value_variant.toDouble(&ok);
 						if (ok)
 						{
-							ogr_feature->SetField(count,value);					
+							ogr_feature->SetField(field,value);					
 						}
 					}
 					break;
 				case OFTString:
 				default:
-					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
+					ogr_feature->SetField(field,value_variant.toString().toStdString().c_str());
 					break;
 				}
+
 				if (!ok)
 				{
+					// Mark the current feature's cell as unset or null.
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(2,2,0)
+					ogr_feature->SetFieldNull(field);
+#else
+					ogr_feature->UnsetField(field);
+#endif
+
 					qWarning() << "The QVariant containing the property value could not be converted to a type.";
 				}
-
 			}
-
 		}
 	}
 
@@ -310,7 +326,7 @@ namespace{
 		boost::optional<OGRLayer*>& ogr_layer,
 		OGRwkbGeometryType wkb_type,
 		const QString &layer_name,
-		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary,
+		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
 		const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &original_srs,
 		const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour &ogr_srs_behaviour)
 	{
@@ -332,15 +348,31 @@ namespace{
 				spatial_reference.SetWellKnownGeogCS("WGS84");
 			}
 
+			// We can't just pass the address of 'spatial_reference' into 'GDALDataset::CreateLayer()'
+			// because some drivers (such as GeoPackage) increment the reference count instead of clone,
+			// but 'spatial_reference' is on the stack and hence its destructor ignores the incremented
+			// reference count and just destroys the OGRSpatialReference object leaving the 'GDALDataset'
+			// with a dangling reference (which can cause a crash when it attempts to decrement the
+			// reference count and delete the stack object).
+			//
+			// So instead we pass a clone into 'GDALDataset::CreateLayer()' and subsequently
+			// 'Release()' the clone (this just decrements its reference count which shouldn't do
+			// anything if the reference count was incremented by 'GDALDataset::CreateLayer()', but
+			// will destroy object if 'GDALDataset::CreateLayer()' cloned our clone).
+			OGRSpatialReference *cloned_spatial_reference = spatial_reference.Clone();
+
 			ogr_layer.reset(ogr_data_source_ptr->CreateLayer(
 				// FIXME: Layer name should probably be UTF-8 (ie, "layer_name.toUtf8().constData()")
 				// instead of Latin-1 since the latter does not support all character sets.
 				// Although it probably doesn't matter currently because the layer name is not
 				// really used anyway (it only needs to be unique with the data source)...
 				layer_name.toStdString().c_str(),
-				&spatial_reference,
+				cloned_spatial_reference,
 				wkb_type,
 				0));
+
+			cloned_spatial_reference->Release();
+
 			if (*ogr_layer == NULL)
 			{
 				// Set to none to avoid NULL pointer dereference if try to write another feature
@@ -348,9 +380,9 @@ namespace{
 				ogr_layer = boost::none;
 				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR layer.");
 			}
-			if (key_value_dictionary && !(key_value_dictionary.get()->elements().empty()))
+			if (field_names_key_value_dictionary && !(field_names_key_value_dictionary.get()->elements().empty()))
 			{
-				set_layer_field_names(*ogr_layer, key_value_dictionary.get());
+				set_layer_field_names(*ogr_layer, field_names_key_value_dictionary.get());
 			}
 		}
 	}
@@ -370,6 +402,21 @@ namespace{
 		if (data_source_ptr == NULL)
 		{
 			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
+		}
+	}
+
+	void
+	destroy_ogr_data_source(
+			GPlatesFileIO::GdalUtils::vector_data_source_type *&ogr_data_source)
+	{
+		if (ogr_data_source)
+		{
+			try
+			{
+				GPlatesFileIO::GdalUtils::close_vector(ogr_data_source);
+			}
+			catch (...)
+			{ }
 		}
 	}
 
@@ -396,6 +443,7 @@ namespace{
 			ogr_data_source_ptr->DeleteLayer(0);
 		}
 
+		destroy_ogr_data_source(ogr_data_source_ptr);
 	}
 
 	/**
@@ -450,21 +498,6 @@ namespace{
 					remove_OGR_layers(driver,full_name);
 				}
 			}
-		}
-	}
-
-	void
-	destroy_ogr_data_source(
-			GPlatesFileIO::GdalUtils::vector_data_source_type *&ogr_data_source)
-	{
-		if (ogr_data_source)
-		{
-			try
-			{
-				GPlatesFileIO::GdalUtils::close_vector(ogr_data_source);
-			}
-			catch(...)
-			{ }
 		}
 	}
 
@@ -986,7 +1019,8 @@ GPlatesFileIO::OgrWriter::~OgrWriter()
 void
 GPlatesFileIO::OgrWriter::write_point_feature(
 	const GPlatesMaths::PointOnSphere &point_on_sphere,
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {
 	// Create point data source if it doesn't already exist.
 	if (d_ogr_point_data_source_ptr == NULL)
@@ -1006,7 +1040,7 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 				d_ogr_point_layer,
 				wkbPoint,
 				QString(d_layer_basename + "_point"),
-				key_value_dictionary,
+				field_names_key_value_dictionary,
 				d_original_srs,
 				d_ogr_srs_write_behaviour);
 
@@ -1017,9 +1051,9 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
-	if (key_value_dictionary && !(key_value_dictionary.get()->elements().empty()))
+	if (field_values_key_value_dictionary && !(field_values_key_value_dictionary.get()->elements().empty()))
 	{
-		set_feature_field_values(*d_ogr_point_layer, ogr_feature, key_value_dictionary.get());
+		set_feature_field_values(*d_ogr_point_layer, ogr_feature, field_values_key_value_dictionary.get());
 	}
 
 	// Create the point feature from the point_on_sphere
@@ -1046,7 +1080,8 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 void
 GPlatesFileIO::OgrWriter::write_multi_point_feature(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {
 #if 0
 	// Check that we have a valid data_source.
@@ -1074,7 +1109,7 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 				d_ogr_multi_point_layer,
 				wkbMultiPoint,
 				QString(d_layer_basename + "_multi_point"),
-				key_value_dictionary,
+				field_names_key_value_dictionary,
 				d_original_srs,
 				d_ogr_srs_write_behaviour);
 
@@ -1085,9 +1120,9 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
-	if (key_value_dictionary && !(key_value_dictionary.get()->elements().empty()))
+	if (field_values_key_value_dictionary && !(field_values_key_value_dictionary.get()->elements().empty()))
 	{
-		set_feature_field_values(*d_ogr_multi_point_layer, ogr_feature, key_value_dictionary.get());
+		set_feature_field_values(*d_ogr_multi_point_layer, ogr_feature, field_values_key_value_dictionary.get());
 	}
 
 	OGRMultiPoint ogr_multi_point;
@@ -1123,26 +1158,29 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 void
 GPlatesFileIO::OgrWriter::write_polyline_feature(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {	
 	// It's one polyline but if dateline wrapping is enabled it could end up being multiple polylines.
 	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polylines(1, polyline_on_sphere);
-	write_single_or_multi_polyline_feature(polylines, key_value_dictionary);
+	write_single_or_multi_polyline_feature(polylines, field_names_key_value_dictionary, field_values_key_value_dictionary);
 }
 
 
 void
 GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
 	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {
-	write_single_or_multi_polyline_feature(polylines, key_value_dictionary);
+	write_single_or_multi_polyline_feature(polylines, field_names_key_value_dictionary, field_values_key_value_dictionary);
 }
 
 void
 GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {
 #if 0
 	// Check that we have a valid data_source.
@@ -1167,7 +1205,18 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 	}
 	convert_polylines_to_lat_lon(lat_lon_polylines, polylines, dateline_wrapper);
 
-	const bool is_multi_line_string = lat_lon_polylines.size() > 1;
+	// Multiple polylines or a single polyline...
+	//
+	// Shapefiles support mixing single/multi line strings per layer but other formats,
+	// like GMT and GeoPackage, do not (specifying single line string as layer geom type will
+	// result in OGR reader loading only the first line string per feature). Also we don't yet
+	// know what the next line string type (single/multi) will be since dateline wrapping can
+	// turn a single into a multi. So we just treat them all as multi line strings.
+	//
+	// FIXME: There's probably a better solution that this such as determining if any
+	// multi line strings up front.
+	const bool is_multi_line_string = (lat_lon_polylines.size() > 1) ||
+			file_type_does_not_support_mixing_single_and_multi_line_strings_in_layer(d_extension);
 
 	// Create line data source if it doesn't already exist.
 	if (d_ogr_line_data_source_ptr == NULL)
@@ -1186,20 +1235,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 	setup_layer(
 			d_ogr_line_data_source_ptr,
 			d_ogr_polyline_layer,
-			// Multiple polylines or a single polyline...
-			// Shapefiles support mixing single/multi line strings per layer but other formats,
-			// like GMT, do not (specifying single line string as layer geom type will result in
-			// OGR reader loading only the first line string per feature). Also we don't yet know
-			// what the next line string type (single/multi) will be since dateline wrapping can
-			// turn a single into a multi. So we just treat them all as multi line strings.
-			//
-			// FIXME: There's probably a better solution that this such as determining if any
-			// multi line strings up front.
-			file_type_does_not_support_mixing_single_and_multi_line_strings_in_layer(d_extension)
-					? wkbMultiLineString
-					: (is_multi_line_string ? wkbMultiLineString : wkbLineString),
+			(is_multi_line_string ? wkbMultiLineString : wkbLineString),
 			QString(d_layer_basename + "_polyline"),
-			key_value_dictionary,
+			field_names_key_value_dictionary,
 			d_original_srs,
 			d_ogr_srs_write_behaviour);
 
@@ -1210,9 +1248,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
-	if (key_value_dictionary && !(key_value_dictionary.get()->elements().empty()))
+	if (field_values_key_value_dictionary && !(field_values_key_value_dictionary.get()->elements().empty()))
 	{
-		set_feature_field_values(*d_ogr_polyline_layer, ogr_feature, key_value_dictionary.get());
+		set_feature_field_values(*d_ogr_polyline_layer, ogr_feature, field_values_key_value_dictionary.get());
 	}
 
 	if (is_multi_line_string)
@@ -1237,27 +1275,30 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 void
 GPlatesFileIO::OgrWriter::write_polygon_feature(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {	
 	// It's one polygon but if dateline wrapping is enabled it could end up being multiple polygons.
 	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygons(1, polygon_on_sphere);
-	write_single_or_multi_polygon_feature(polygons, key_value_dictionary);
+	write_single_or_multi_polygon_feature(polygons, field_names_key_value_dictionary, field_values_key_value_dictionary);
 }
 
 
 void
 GPlatesFileIO::OgrWriter::write_multi_polygon_feature(
 	const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {
-	write_single_or_multi_polygon_feature(polygons, key_value_dictionary);
+	write_single_or_multi_polygon_feature(polygons, field_names_key_value_dictionary, field_values_key_value_dictionary);
 }
 
 
 void
 GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 	const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 {	
 	if (polygons.empty())
 	{
@@ -1273,7 +1314,18 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 	}
 	convert_polygons_to_lat_lon(lat_lon_polygons, polygons, dateline_wrapper);
 
-	const bool is_multi_polygon = lat_lon_polygons.size() > 1;
+	// Multiple polygons or a single polygon...
+	//
+	// Shapefiles support mixing single/multi polygons per layer but other formats,
+	// like GMT and GeoPackage, do not (specifying single polygon as layer geom type will
+	// result in OGR reader loading only the first polygon per feature). Also we don't yet
+	// know what the next polygon type (single/multi) will be since dateline wrapping can
+	// turn a single into a multi. So we just treat them all as multi polygons.
+	//
+	// FIXME: There's probably a better solution that this such as determining if any
+	// multi polygons up front.
+	const bool is_multi_polygon = (lat_lon_polygons.size() > 1) ||
+			file_type_does_not_support_mixing_single_and_multi_polygons_in_layer(d_extension);
 
 	// Create polygon data source if it doesn't already exist.
 	if (d_ogr_polygon_data_source_ptr == NULL)
@@ -1292,20 +1344,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 	setup_layer(
 			d_ogr_polygon_data_source_ptr,
 			d_ogr_polygon_layer,
-			// Multiple polygons or a single polygon...
-			// Shapefiles support mixing single/multi polygons per layer but other formats,
-			// like GMT, do not (specifying single polygon as layer geom type will result in
-			// OGR reader loading only the first polygon per feature). Also we don't yet know
-			// what the next polygon type (single/multi) will be since dateline wrapping can
-			// turn a single into a multi. So we just treat them all as multi polygons.
-			//
-			// FIXME: There's probably a better solution that this such as determining if any
-			// multi polygons up front.
-			file_type_does_not_support_mixing_single_and_multi_polygons_in_layer(d_extension)
-					? wkbMultiPolygon
-					: (is_multi_polygon ? wkbMultiPolygon : wkbPolygon),
+			(is_multi_polygon ? wkbMultiPolygon : wkbPolygon),
 			QString(d_layer_basename + "_polygon"),
-			key_value_dictionary,
+			field_names_key_value_dictionary,
 			d_original_srs,
 			d_ogr_srs_write_behaviour);
 
@@ -1316,9 +1357,9 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
-	if (key_value_dictionary && !(key_value_dictionary.get()->elements().empty()))
+	if (field_values_key_value_dictionary && !(field_values_key_value_dictionary.get()->elements().empty()))
 	{
-		set_feature_field_values(*d_ogr_polygon_layer, ogr_feature, key_value_dictionary.get());
+		set_feature_field_values(*d_ogr_polygon_layer, ogr_feature, field_values_key_value_dictionary.get());
 	}
 
 	if (is_multi_polygon)

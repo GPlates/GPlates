@@ -115,8 +115,14 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		//! Delete OGRSpatialReference objects using 'OSRDestroySpatialReference()'.
-		struct OGRSpatialReferenceDeleter
+		/**
+		 * Release our reference count (ie, decrement OGR reference count in OGRSpatialReference)
+		 * when all our boost 'd_ogr_srs' references to the OGRSpatialReference object are destroyed.
+		 *
+		 * Our clients may also hold OGR references, so the OGRSpatialReference object won't
+		 * necessarily get destroyed until those reference are also released.
+		 */
+		struct OGRSpatialReferenceReleaser
 		{
 			void
 			operator()(

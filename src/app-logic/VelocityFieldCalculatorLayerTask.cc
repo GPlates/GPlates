@@ -66,13 +66,20 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 
 	// Channel definition for velocity domain geometries.
 	// NOTE: Previously only accepted "MeshNode" features but now accept anything containing
-	// non-topological geometries (points, multi-points, polylines and polygons).
+	// non-topological geometries (points, multi-points, polylines and polygons), and now
+	// even topological geometries and network boundaries.
 	std::vector<LayerInputChannelType::InputLayerType> domain_input_channel_types;
 	domain_input_channel_types.push_back(
 			LayerInputChannelType::InputLayerType(
 					LayerTaskType::RECONSTRUCT,
 					// Auto-connect to the domain (local means associated with same input file)...
 					LayerInputChannelType::LOCAL_AUTO_CONNECT));
+	domain_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER));
+	domain_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_NETWORK_RESOLVER));
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::VELOCITY_DOMAIN_LAYERS,
@@ -150,12 +157,28 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct.
 
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> domain_reconstruct_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (domain_reconstruct_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->add_velocity_domain_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->add_domain_reconstruct_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyGeometryResolverLayerProxy *> domain_topological_geometry_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
+		if (domain_topological_geometry_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->add_domain_topological_geometry_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_topological_geometry_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> domain_topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (domain_topological_network_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->add_domain_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_topological_network_resolver_layer_proxy.get()));
 		}
 	}
 	else if (input_channel_name == LayerInputChannelName::VELOCITY_SURFACE_LAYERS)
@@ -165,28 +188,28 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 		// - topological geometry resolver,
 		// - topological network resolver.
 
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> surface_reconstruct_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (surface_reconstruct_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->add_reconstructed_polygons_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->add_surface_reconstructed_polygons_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> surface_topological_geometry_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (surface_topological_geometry_resolver_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->add_topological_boundary_resolver_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->add_surface_topological_geometry_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_topological_geometry_resolver_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+		boost::optional<TopologyNetworkResolverLayerProxy *> surface_topological_network_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
-		if (topological_network_resolver_layer_proxy)
+		if (surface_topological_network_resolver_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->add_topological_network_resolver_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->add_surface_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_topological_network_resolver_layer_proxy.get()));
 		}
 	}
 }
@@ -202,12 +225,28 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct.
 
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> domain_reconstruct_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (domain_reconstruct_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->remove_velocity_domain_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->remove_domain_reconstruct_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyGeometryResolverLayerProxy *> domain_topological_geometry_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
+		if (domain_topological_geometry_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->remove_domain_topological_geometry_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_topological_geometry_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> domain_topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (domain_topological_network_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->remove_domain_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(domain_topological_network_resolver_layer_proxy.get()));
 		}
 	}
 	else if (input_channel_name == LayerInputChannelName::VELOCITY_SURFACE_LAYERS)
@@ -217,28 +256,28 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 		// - topological geometry resolver,
 		// - topological network resolver.
 
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> surface_reconstruct_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (surface_reconstruct_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->remove_reconstructed_polygons_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->remove_surface_reconstructed_polygons_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> surface_topological_geometry_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
-		if (topological_boundary_resolver_layer_proxy)
+		if (surface_topological_geometry_resolver_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->remove_topological_boundary_resolver_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->remove_surface_topological_geometry_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_topological_geometry_resolver_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+		boost::optional<TopologyNetworkResolverLayerProxy *> surface_topological_network_resolver_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
-		if (topological_network_resolver_layer_proxy)
+		if (surface_topological_network_resolver_layer_proxy)
 		{
-			d_velocity_field_calculator_layer_proxy->remove_topological_network_resolver_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+			d_velocity_field_calculator_layer_proxy->remove_surface_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(surface_topological_network_resolver_layer_proxy.get()));
 		}
 	}
 }

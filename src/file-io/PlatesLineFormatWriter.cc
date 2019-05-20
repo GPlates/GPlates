@@ -143,6 +143,11 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 	}
 
 	d_output_stream.reset( new QTextStream(d_output_file.get()) );
+
+	// Write output to text file as UTF8 encoded (which includes the ASCII character set).
+	// If we don't specify this then (in Qt4) QTextCodec::codecForLocale() will get used
+	// during encoding, which is likely to not be UTF8.
+	d_output_stream->setCodec("UTF-8");
 }
 
 

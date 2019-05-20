@@ -29,13 +29,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <sstream>
-#include <string>
 #include <boost/ref.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <loki/ScopeGuard.h>
 #include <QFile>
+#include <QString>
+#include <QTextStream>
 
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
@@ -102,23 +102,19 @@ namespace
 	 */
 	void
 	extract_comment(
-			std::istringstream &iss,
-			std::string &comment,
+			QTextStream &line_stream,
+			QString &comment,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
 
-		std::string remainder;
+		// Read rest of line and remove whitespace from start and end.
+		const QString remainder = line_stream.readAll().trimmed();
 
-		// This function is provided by the standard string classes (see Josuttis,  11.2.10
-		// and 11.3.10).  It reads all characters until the line delimiter or end-of-file
-		// is reached.
-		std::getline(iss, remainder);
-		std::string::size_type index_of_first_non_whitespace =
-				remainder.find_first_not_of(" \t");
-		if (index_of_first_non_whitespace == std::string::npos) {
+		if (remainder.isEmpty())
+		{
 			// No non-whitespace characters were found in the remainder, not even an
 			// exclamation mark.  Let's handle the problem by creating an empty comment
 			// for the user.
@@ -127,11 +123,14 @@ namespace
 			ReadErrors::Result res = ReadErrors::EmptyCommentCreated;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
 			read_errors.d_warnings.push_back(read_error);
-		} else {
+		}
+		else
+		{
 			// Non-whitespace characters were found.  We'll assume these are intended
 			// to be the start of the comment.  Is the first character an exclamation
 			// mark?
-			if (remainder[index_of_first_non_whitespace] != '!') {
+			if (remainder[0] != '!')
+			{
 				// No, it's not an exclamation mark.  Let's handle the problem by
 				// pretending that the first character *was* an exclamation mark.
 				boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
@@ -140,9 +139,12 @@ namespace
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
 				read_errors.d_warnings.push_back(read_error);
 
-				comment = remainder.substr(index_of_first_non_whitespace);
-			} else {
-				comment = remainder.substr(index_of_first_non_whitespace + 1);
+				comment = remainder;
+			}
+			else
+			{
+				// Remove the exclamation mark.
+				comment = remainder.mid(1);
 			}
 		}
 	}
@@ -159,7 +161,7 @@ namespace
 	 */
 	GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	parse_pole(
-			std::istringstream &iss,
+			QTextStream &line_stream,
 			GPlatesModel::integer_plate_id_type &fixed_plate_id,
 			GPlatesModel::integer_plate_id_type &moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -178,7 +180,9 @@ namespace
 		double pole_longitude;
 		double rotation_angle;
 
-		if ( ! (iss >> moving_plate_id)) {
+		line_stream >> moving_plate_id;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingMovingPlateId;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -187,7 +191,9 @@ namespace
 
 			throw PoleParsingException();
 		}
-		if ( ! (iss >> geo_time)) {
+		line_stream >> geo_time;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingGeoTime;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -196,7 +202,9 @@ namespace
 
 			throw PoleParsingException();
 		}
-		if ( ! (iss >> pole_latitude)) {
+		line_stream >> pole_latitude;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingPoleLatitude;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -205,7 +213,9 @@ namespace
 
 			throw PoleParsingException();
 		}
-		if ( ! (iss >> pole_longitude)) {
+		line_stream >> pole_longitude;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingPoleLongitude;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -214,7 +224,9 @@ namespace
 
 			throw PoleParsingException();
 		}
-		if ( ! (iss >> rotation_angle)) {
+		line_stream >> rotation_angle;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingRotationAngle;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -223,7 +235,9 @@ namespace
 
 			throw PoleParsingException();
 		}
-		if ( ! (iss >> fixed_plate_id)) {
+		line_stream >> fixed_plate_id;
+		if (line_stream.status() != QTextStream::Ok)
+		{
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingFixedPlateId;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
@@ -234,8 +248,8 @@ namespace
 		}
 
 		// Now, from the remainder of the input line, extract the comment.
-		std::string comment;
-		extract_comment(iss, comment, data_source, line_num, read_errors);
+		QString comment;
+		extract_comment(line_stream, comment, data_source, line_num, read_errors);
 
 		// Did the pole have valid lat and lon?
 		if ( ! GPlatesMaths::LatLonPoint::is_valid_latitude(pole_latitude))
@@ -269,8 +283,8 @@ namespace
 				ModelUtils::create_gml_time_instant(geo_time_instant);
 
 		boost::optional<XsString::non_null_ptr_type> description;
-		if ( ! comment.empty()) {
-			description = XsString::create(comment.c_str());
+		if ( ! comment.isEmpty()) {
+			description = XsString::create(GPlatesUtils::UnicodeString(comment));
 		}
 
 		StructuralType value_type = 
@@ -278,9 +292,12 @@ namespace
 
 		// Finally, as we're creating the GpmlTimeSample, don't forget to check whether the
 		// sample should be disabled.
-		if (moving_plate_id == 999) {
+		if (moving_plate_id == 999)
+		{
 			return GpmlTimeSample::create(value, valid_time, description, value_type, true);
-		} else {
+		}
+		else
+		{
 			return GpmlTimeSample::create(value, valid_time, description, value_type);
 		}
 	}
@@ -724,18 +741,25 @@ namespace
 			GPlatesFileIO::ReadErrorAccumulation &read_errors,
 			bool &contains_unsaved_changes)
 	{
-		std::string line_of_input;
+		QString line_of_input;
 
 		// When this iterator is default-constructed, it is not valid for dereferencing.
 		GPlatesModel::FeatureHandle::weak_ref current_total_recon_seq;
 
 		TotalReconSeqProperties props_in_current_trs;
 
-		while (line_buffer.getline(line_of_input)) {
-			std::istringstream line_stream(line_of_input);
+		while (line_buffer.getline(line_of_input))
+		{
+			QTextStream line_stream(&line_of_input, QIODevice::ReadOnly);
+			// By default QTextStream attempts to detect the base of integers.
+			// We turn this off and set base to decimal since we don't want plate IDs
+			// like 012 being interpreted as octal (since has an '0' at front).
+			line_stream.setIntegerBase(10);
+
 			GPlatesModel::integer_plate_id_type fixed_plate_id, moving_plate_id;
 
-			try {
+			try
+			{
 				GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type time_sample =
 						parse_pole(line_stream, fixed_plate_id, moving_plate_id,
 								data_source, line_buffer.line_number(),
@@ -745,7 +769,9 @@ namespace
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
 						line_buffer.line_number(), read_errors, contains_unsaved_changes);
-			} catch (PoleParsingException &) {
+			}
+			catch (PoleParsingException &)
+			{
 				// The argument name in the above expression was removed to
 				// prevent "unreferenced local variable" compiler warnings under MSVC
 
