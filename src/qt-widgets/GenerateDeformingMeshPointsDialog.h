@@ -236,6 +236,13 @@ namespace GPlatesQtWidgets
 		 * The polygon geometry of the focused feature (topological plate/network or static polygon).
 		 */
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_focused_boundary_polygon;
+		/**
+		 * Same as @a d_focused_boundary_polygon but including rigid block holes as interiors.
+		 *
+		 * This actually means that points will *not* be generated inside rigid blocks because they are actually
+		 * outside the *filled* polygon (they are not filled).
+		 */
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_focused_boundary_polygon_with_rigid_block_holes;
 
 		/**
 		 * Is true when inside @a handle_create, so we know when a new layer is created as a result of creating a new feature.

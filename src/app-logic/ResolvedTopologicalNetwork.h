@@ -129,6 +129,18 @@ namespace GPlatesAppLogic
 			return get_triangulation_network().get_boundary_polygon();
 		}
 
+		/**
+		 * Access the boundary polygon (including rigid block holes) of this resolved topology network.
+		 *
+		 * The outlines of interior rigid block holes (if any) in the network form interiors of the returned polygon.
+		 */
+		const boundary_polygon_ptr_type
+		boundary_polygon_with_rigid_block_holes() const
+		{
+			return get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
+		}
+
+
 
 		/**
 		 * Returns the boundary per-vertex source reconstructed feature geometries.

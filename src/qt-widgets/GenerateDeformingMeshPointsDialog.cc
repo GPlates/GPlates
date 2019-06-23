@@ -211,7 +211,12 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise()
 		// can still specify a lat/lon extent.
 		d_focused_boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
-						d_feature_focus.associated_reconstruction_geometry());
+						d_feature_focus.associated_reconstruction_geometry(),
+						false/*include_network_rigid_block_holes*/),
+		d_focused_boundary_polygon_with_rigid_block_holes =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
+						d_feature_focus.associated_reconstruction_geometry(),
+						true/*include_network_rigid_block_holes*/);
 	}
 
 	initialise_widgets();
@@ -337,14 +342,19 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_create()
 		if (focused_feature_radio_button->isChecked())
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_focused_boundary_polygon,
+					d_focused_boundary_polygon &&
+						d_focused_boundary_polygon_with_rigid_block_holes,
 					GPLATES_ASSERTION_SOURCE);
 
 			GPlatesMaths::GeneratePoints::create_uniform_points_in_polygon(
 						domain_points,
 						point_density_level,
 						point_random_offset,
-						*d_focused_boundary_polygon.get());
+						include_points_in_rigid_blocks_checkbox->isChecked()
+								? *d_focused_boundary_polygon.get()
+								// Points will *not* be generated inside rigid blocks because they are
+								// actually outside the *filled* polygon (they are not filled)...
+								: *d_focused_boundary_polygon_with_rigid_block_holes.get());
 		}
 		else // points in lat/lon extent ...
 		{
@@ -514,6 +524,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 {
 	// Radio buttons to select focus feature boundary or lat/lon extent.
 	focused_feature_radio_button->setEnabled(false);
+	include_points_in_rigid_blocks_checkbox->setEnabled(false);
 	lat_lon_extent_radio_button->setChecked(true);
 	points_region_lat_lon_group_box->setEnabled(true);
 	QObject::connect(
@@ -522,6 +533,9 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 	QObject::connect(
 			lat_lon_extent_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_points_region_mode_button(bool)));
+
+	// Don't generate points inside network interior rigid blocks (by default).
+	include_points_in_rigid_blocks_checkbox->setChecked(false);
 
 	//
 	// Lat/lon extent.
@@ -677,6 +691,10 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_points_region_mode_b
 	// Enable focused feature button only if a focused feature (with a polygon) is selected.
 	focused_feature_radio_button->setEnabled(
 			static_cast<bool>(d_focused_boundary_polygon));
+
+	// Include-rigid-blocks only enabled when focused feature button checked.
+	include_points_in_rigid_blocks_checkbox->setEnabled(
+			focused_feature_radio_button->isChecked());
 
 	// Lat/lon extents only enabled when lat/lon extent button checked.
 	points_region_lat_lon_group_box->setEnabled(
