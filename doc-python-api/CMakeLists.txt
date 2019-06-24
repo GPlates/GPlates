@@ -54,6 +54,8 @@ if (SPHINX_FOUND)
 		# NOTE: If using Visual Studio, then manually change PYGPLATES_MSVC_BUILD_TYPE if you're not doing a 'release' build.
 		set(PYGPLATES_MSVC_BUILD_TYPE release)
 		string(REPLACE "$(OutDir)" "${PYGPLATES_MSVC_BUILD_TYPE}" PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}")
+		# Visual Studio 2015 uses '$(Configuration)' instead of '$(Outdir)'.
+		string(REPLACE "$(Configuration)" "${PYGPLATES_MSVC_BUILD_TYPE}" PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}")
 	endif(MSVC)
 
 	# Configure the Sphinx configuration file using 'PYGPLATES_LIBRARY_LOCATION' (and any other CMake variables we've put in that file).
