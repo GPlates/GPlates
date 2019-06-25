@@ -49,6 +49,7 @@
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
+#include "model/RevisionedVector.h"
 
 #include "property-values/GpmlTopologicalSection.h"
 
@@ -148,7 +149,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit_gpml_topological_polygon(
-			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon);
 
 		void
 		visit_gpml_topological_line(
@@ -157,12 +158,12 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
 	private:
 		/**
@@ -282,11 +283,10 @@ namespace GPlatesAppLogic
 		void
 		create_resolved_topological_line();
 
-		template <typename TopologicalSectionsIterator>
 		void
 		record_topological_sections(
-				const TopologicalSectionsIterator &sections_begin,
-				const TopologicalSectionsIterator &sections_end);
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator sections_begin,
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator sections_end);
 
 		boost::optional<ResolvedGeometry::Section>
 		record_topological_section_reconstructed_geometry(

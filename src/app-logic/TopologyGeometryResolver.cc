@@ -227,10 +227,9 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_polygon(
 	// Visit the topological sections to gather needed information and store
 	// it internally in 'd_resolved_geometry'.
 	//
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type exterior_sections =
-			gpml_topological_polygon.get_exterior_sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &
+			exterior_sections = gpml_topological_polygon.exterior_sections();
 	record_topological_sections(exterior_sections.begin(), exterior_sections.end());
-	gpml_topological_polygon.set_exterior_sections(exterior_sections);
 
 	//
 	// Now iterate over our internal structure 'd_resolved_geometry' and
@@ -271,10 +270,9 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line(
 	// Visit the topological sections to gather needed information and store
 	// it internally in 'd_resolved_geometry'.
 	//
-	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type sections =
-			gpml_topological_line.get_sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &
+			sections = gpml_topological_line.sections();
 	record_topological_sections(sections.begin(), sections.end());
-	gpml_topological_line.set_sections(sections);
 
 	//
 	// Now iterate over our internal structure 'd_resolved_geometry' and
@@ -293,20 +291,17 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line(
 }
 
 
-template <typename TopologicalSectionsIterator>
 void
 GPlatesAppLogic::TopologyGeometryResolver::record_topological_sections(
-		const TopologicalSectionsIterator &sections_begin,
-		const TopologicalSectionsIterator &sections_end)
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator sections_begin,
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator sections_end)
 {
 	// loop over all the sections
-	for (TopologicalSectionsIterator sections_iter = sections_begin;
+	for (GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator sections_iter = sections_begin;
 		sections_iter != sections_end;
 		++sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
-				sections_iter->get_source_section();
-
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = sections_iter->get();
 		topological_section->accept_visitor(*this);
 	}
 }
@@ -337,15 +332,15 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line_section(
 
 void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
-		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_toplogical_point.get_source_geometry()->get_feature_id();
+			gpml_topological_point.get_source_geometry()->get_feature_id();
 
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_toplogical_point.get_source_geometry(),
+					*gpml_topological_point.get_source_geometry(),
 					// This topological section is a point, so cannot be intersected with its neighbours,
 					// and so has no reversal information...
 					false/*reverse_hint*/);

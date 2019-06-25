@@ -93,11 +93,11 @@ namespace GPlatesDataMining
 
 		void visit_gpml_revision_id(gpml_revision_id_type &gpml_revision_id){}
 
-		void visit_gpml_topological_polygon(gpml_topological_polygon_type &gpml_toplogical_polygon){}
+		void visit_gpml_topological_polygon(gpml_topological_polygon_type &gpml_topological_polygon){}
 		
-		void visit_gpml_topological_line_section(gpml_topological_line_section_type &gpml_toplogical_line_section){}
+		void visit_gpml_topological_line_section(gpml_topological_line_section_type &gpml_topological_line_section){}
 
-		void visit_gpml_topological_point(gpml_topological_point_type &gpml_toplogical_point){}
+		void visit_gpml_topological_point(gpml_topological_point_type &gpml_topological_point){}
 
 		void visit_uninterpreted_property_value(uninterpreted_property_value_type &uninterpreted_prop_val){}
 

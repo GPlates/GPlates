@@ -57,6 +57,7 @@
 #include "model/PropertyValue.h"
 
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalSection.h"
 
@@ -767,7 +768,7 @@ namespace GPlatesGui
 		 */
 		void
 		create_topological_interiors(
-				std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors);
+				std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors);
 
 		void
 		clear_widgets_and_data();

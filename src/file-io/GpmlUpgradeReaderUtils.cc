@@ -46,6 +46,7 @@
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -664,8 +665,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	//
 
 	//! Typedef for a sequence of topological interiors.
-	typedef std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
-			topological_interiors_seq_type;
+	typedef std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> topological_interiors_seq_type;
 
 	boost::optional<topological_interiors_seq_type> topological_interiors;
 
@@ -705,8 +705,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				if (topological_line_section)
 				{
 					topological_interiors->push_back(
-							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_line_section.get()->get_source_geometry()->clone()));
+							topological_line_section.get()->get_source_geometry()->clone());
 				}
 				else
 				{
@@ -717,8 +716,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 					if (topological_point)
 					{
 						topological_interiors->push_back(
-								GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-										topological_point.get()->get_source_geometry()->clone()));
+								topological_point.get()->get_source_geometry()->clone());
 					}
 				}
 			}

@@ -48,16 +48,6 @@
 #include "property-values/StructuralType.h"
 
 
-namespace GPlatesMaths
-{
-	class PointOnSphere;
-}
-
-namespace GPlatesPropertyValues
-{
-	class GpmlPropertyDelegate;
-}
-
 namespace GPlatesAppLogic
 {
 	class ReconstructionTree;
@@ -115,7 +105,7 @@ namespace GPlatesAppLogic
 		 * same property name inside a single feature) then the properties iterator
 		 * might refer to something that has a unique property id.
 		 */
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 		create_gpml_topological_network_interior(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property);
 

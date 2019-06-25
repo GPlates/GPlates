@@ -299,27 +299,27 @@ namespace GPlatesFileIO
 		virtual
 		void
 		visit_gpml_topological_network(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network);
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network);
 
 		virtual
 		void
 		visit_gpml_topological_polygon(
-			 	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+			 	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon);
 
 		virtual
 		void
 		visit_gpml_topological_line(
-				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line);
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line);
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
 		virtual
 		void
@@ -356,10 +356,6 @@ namespace GPlatesFileIO
 		void
 		write_gpml_key_value_dictionary_element(
 				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
-
-		void
-		write_gpml_topological_network_interior(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior);
 
 		/**
 		 * Keeps track of the file currently being written to.

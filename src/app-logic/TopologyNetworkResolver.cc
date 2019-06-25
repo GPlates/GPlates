@@ -70,6 +70,7 @@
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -276,34 +277,26 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_sections(
 		GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type boundary_sections =
-			gpml_topological_network.get_boundary_sections();
-
-	// Loop over all the boundary sections.
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator iter =
-			boundary_sections.begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator end =
-			boundary_sections.end();
-	for ( ; iter != end; ++iter)
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &boundary_sections = gpml_topological_network.boundary_sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator boundary_sections_iter = boundary_sections.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator boundary_sections_end = boundary_sections.end();
+	for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
-				iter->get_source_section();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = boundary_sections_iter->get();
 
 		topological_section->accept_visitor(*this);
 	}
-
-	gpml_topological_network.set_boundary_sections(boundary_sections);
 }
 
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
-		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	// Get the reconstruction geometry referenced by the topological line property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
 			find_topological_reconstruction_geometry(
-					*gpml_toplogical_line_section.get_source_geometry());
+					*gpml_topological_line_section.get_source_geometry());
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -321,9 +314,9 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_line_section.get_source_geometry()->get_feature_id(),
+					gpml_topological_line_section.get_source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get(),
-					gpml_toplogical_line_section.get_reverse_order());
+					gpml_topological_line_section.get_reverse_order());
 	if (!boundary_section)
 	{
 		// Return without adding topological section to the list of boundary sections.
@@ -339,12 +332,12 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
-		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	// Get the reconstruction geometry referenced by the topological point property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
 			find_topological_reconstruction_geometry(
-					*gpml_toplogical_point.get_source_geometry());
+					*gpml_topological_point.get_source_geometry());
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -379,7 +372,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_point.get_source_geometry()->get_feature_id(),
+					gpml_topological_point.get_source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get(),
 					// This topological section is a point, so cannot be intersected with its neighbours,
 					// and so has no reversal information...
@@ -404,31 +397,26 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometries(
 		GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type interior_geometries =
-			gpml_topological_network.get_interior_geometries();
-
-	// Loop over all the interior geometries.
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator iter =
-			interior_geometries.begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator end =
-			interior_geometries.end();
-	for ( ; iter != end; ++iter)
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate> &interior_geometries = gpml_topological_network.interior_geometries();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::iterator interior_geometries_iter = interior_geometries.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::iterator interior_geometries_end = interior_geometries.end();
+	// Loop over the interior geometries.
+	for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 	{
-		record_topological_interior_geometry(*iter);
-	}
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior_geometry = interior_geometries_iter->get();
 
-	gpml_topological_network.set_interior_geometries(interior_geometries);
+		record_topological_interior_geometry(*interior_geometry);
+	}
 }
 
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometry(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_interior)
+		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_interior)
 {
 	// Get the reconstruction geometry referenced by the topological interior property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
-			find_topological_reconstruction_geometry(
-					*gpml_topological_interior.get_source_geometry());
+			find_topological_reconstruction_geometry(gpml_topological_interior);
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -456,7 +444,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometry(
 
 	boost::optional<ResolvedNetwork::InteriorGeometry> interior_geometry =
 			record_topological_interior_reconstructed_geometry(
-					gpml_topological_interior.get_source_geometry()->get_feature_id(),
+					gpml_topological_interior.get_feature_id(),
 					topological_reconstruction_geometry.get());
 	if (!interior_geometry)
 	{

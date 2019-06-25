@@ -204,7 +204,7 @@ namespace
 	GPlatesModel::PropertyValue::non_null_ptr_type
 	create_topological_network_property_value(
 			const std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_boundary_sections,
-			const std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors)
+			const std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors)
 	{
 		if (topological_interiors.empty())
 		{
@@ -452,7 +452,7 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 		if (topological_sections.size() >= 1)
 		{
 			// Create the topological interiors (if any).
-			std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> topological_interiors;
+			std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> topological_interiors;
 			create_topological_interiors(topological_interiors);
 
 			return create_topological_network_property_value(topological_sections, topological_interiors);
@@ -3603,7 +3603,7 @@ GPlatesGui::TopologyTools::create_topological_sections(
 
 void
 GPlatesGui::TopologyTools::create_topological_interiors(
-		std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors)
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors)
 {
 	// Iterate over our interior (sections) and create a vector of GpmlTopologicalNetwork::Interior objects.
 	//
@@ -3616,7 +3616,7 @@ GPlatesGui::TopologyTools::create_topological_interiors(
 		const SectionInfo &interior_section_info = d_interior_section_info_seq[interior_section_index];
 
 		// Create the GpmlTopologicalNetwork::Interior for the current interior.
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 				topological_interior =
 						GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_network_interior(
 								interior_section_info.d_table_row.get_geometry_property());

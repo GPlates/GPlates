@@ -591,7 +591,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 }
 
 
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior
+GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_topological_network_interior(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
@@ -610,7 +610,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_topological_network_in
 		find_and_create_one(elem, &create_gpml_property_delegate,
 				SOURCE_GEOMETRY, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(source_geometry);
+	return source_geometry;
 }
 
 
