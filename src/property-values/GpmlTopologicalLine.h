@@ -39,6 +39,7 @@
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -63,72 +64,18 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLine> non_null_ptr_to_const_type;
 
 
-		/**
-		 * Topological reference to a section of the topological line.
-		 */
-		class Section :
-				// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-				public GPlatesUtils::QtStreamable<Section>,
-				public boost::equality_comparable<Section>
-		{
-		public:
-
-			/**
-			 * Section has value semantics where each @a Section instance has its own state.
-			 * So if you create a copy and modify the copy's state then it will not modify the state
-			 * of the original object.
-			 *
-			 * The constructor first clones the property delegate and then copy-on-write is used to allow
-			 * multiple @a Section objects to share the same state (until the state is modified).
-			 */
-			Section(
-					GpmlTopologicalSection::non_null_ptr_type source_section) :
-				d_source_section(source_section)
-			{  }
-
-			/**
-			 * Returns the 'const' source section.
-			 */
-			GpmlTopologicalSection::non_null_ptr_to_const_type
-			get_source_section() const
-			{
-				return d_source_section.get();
-			}
-
-			/**
-			 * Returns the 'non-const' source section.
-			 */
-			GpmlTopologicalSection::non_null_ptr_type
-			get_source_section()
-			{
-				return d_source_section.get();
-			}
-
-			/**
-			 * Value equality comparison operator.
-			 *
-			 * Inequality provided by boost equality_comparable.
-			 */
-			bool
-			operator==(
-					const Section &other) const
-			{
-				return *d_source_section == *other.d_source_section;
-			}
-
-		private:
-
-			GpmlTopologicalSection::non_null_ptr_type d_source_section;
-		};
-
-		//! Typedef for a sequence of topological sections.
-		typedef std::vector<Section> sections_seq_type;
-
-
 		virtual
 		~GpmlTopologicalLine()
 		{  }
 
+
+		static
+		const non_null_ptr_type
+		create(
+				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &topological_sections_)
+		{
+			return create(topological_sections_.begin(), topological_sections_.end());
+		}
 
 		/**
 		 * Create a @a GpmlTopologicalLine instance from the specified sequence of topological sections.
@@ -141,7 +88,12 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &sections_end_)
 		{
 			GPlatesModel::ModelTransaction transaction;
-			non_null_ptr_type ptr(new GpmlTopologicalLine(transaction, sections_begin_, sections_end_));
+			non_null_ptr_type ptr(
+					new GpmlTopologicalLine(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTopologicalSection>::create(
+									sections_begin_,
+									sections_end_)));
 			transaction.commit();
 			return ptr;
 		}
@@ -153,28 +105,22 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the topological sections.
-		 *
-		 * To modify any topological sections:
-		 * (1) make additions/removals/modifications to a copy of the returned vector, and
-		 * (2) use @a set_sections to set them.
-		 *
-		 * The returned topological sections implement copy-on-write to promote resource sharing (until write)
-		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 * Returns the 'const' vector of members.
 		 */
-		const sections_seq_type &
-		get_sections() const
+		const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		sections() const
 		{
-			return get_current_revision<Revision>().sections;
+			return *get_current_revision<Revision>().sections.get_revisionable();
 		}
 
 		/**
-		 * Set the sequence of topological sections.
+		 * Returns the 'non-const' vector of members.
 		 */
-		void
-		set_sections(
-				const sections_seq_type &sections);
-
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		sections()
+		{
+			return *get_current_revision<Revision>().sections.get_revisionable();
+		}
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -229,14 +175,10 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		template <typename TopologicalSectionsIterator>
 		GpmlTopologicalLine(
 				GPlatesModel::ModelTransaction &transaction_,
-				const TopologicalSectionsIterator &sections_begin_,
-				const TopologicalSectionsIterator &sections_end_) :
-			PropertyValue(
-					Revision::non_null_ptr_type(
-							new Revision(transaction_, *this, sections_begin_, sections_end_)))
+				GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, sections_)))
 		{  }
 
 		//! Constructor used when cloning.
@@ -286,13 +228,14 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public PropertyValue::Revision
 		{
-			template <typename TopologicalSectionsIterator>
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					const TopologicalSectionsIterator &sections_begin_,
-					const TopologicalSectionsIterator &sections_end_) :
-				sections(sections_begin_, sections_end_)
+					GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_) :
+				sections(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTopologicalSection> >::attach(
+										transaction_, child_context_, sections_))
 			{  }
 
 			//! Deep-clone constructor.
@@ -304,6 +247,7 @@ namespace GPlatesPropertyValues
 				sections(other_.sections)
 			{
 				// Clone data members that were not deep copied.
+				sections.clone(child_context_);
 			}
 
 			//! Shallow-clone constructor.
@@ -326,19 +270,18 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const GPlatesModel::Revision &other) const;
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-			sections_seq_type sections;
+				return *sections.get_revisionable() == *other_revision.sections.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTopologicalSection> > sections;
 		};
 
 	};
-
-
-	// operator<< for GpmlTopologicalLine::Section.
-	std::ostream &
-	operator<<(
-			std::ostream &os,
-			const GpmlTopologicalLine::Section &topological_line_section);
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALLINE_H
