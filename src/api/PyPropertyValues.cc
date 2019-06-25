@@ -83,6 +83,9 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalSection.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -3954,6 +3957,188 @@ export_gpml_time_window()
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeWindow>();
 }
 
+void
+export_gpml_topological_section()
+{
+	// Use the 'non-const' overload so GpmlTopologicalSection can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalSection::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalSection::get_source_geometry;
+
+	/*
+	 * GpmlTopologicalSection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	 *
+	 * Base class for topological section property values.
+	 *
+	 * Enables 'isinstance(obj, GpmlTopologicalSection)' in python - not that it's that useful.
+	 */
+	bp::class_<
+			GPlatesPropertyValues::GpmlTopologicalSection,
+			GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlTopologicalSection",
+					"The base class inherited by all derived *topological section* property value classes.\n"
+					"\n"
+					"The list of derived topological section property value classes includes:\n"
+					"\n"
+					"* :class:`GpmlTopologicalPoint`\n"
+					"* :class:`GpmlTopologicalLineSection`\n",
+					bp::no_init)
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("get_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalSection::get_reverse_order,
+			"get_reverse_orientation()\n"
+			"  Returns ``True`` if this topological section is a :class:`line <GpmlTopologicalLineSection>` "
+			"and it was reversed when contributing to the parent topology.\n"
+			"\n"
+			"  :rtype: bool\n"
+			"\n"
+			"  .. note:: If this topological section is a :class:`point <GpmlTopologicalPoint>` "
+			"then ``False`` will always be returned.\n")
+	;
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalSection>();
+}
+
+void
+export_gpml_topological_line_section()
+{
+	// Use the 'non-const' overload so GpmlTopologicalLineSection can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalLineSection::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalLineSection::get_source_geometry;
+
+	//
+	// GpmlTopologicalLineSection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalLineSection,
+		GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type,
+		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
+		boost::noncopyable>(
+			"GpmlTopologicalLineSection",
+			"A topological section referencing a line geometry.\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesPropertyValues::GpmlTopologicalLineSection::create,
+				bp::default_call_policies(),
+				(bp::arg("gpml_property_delegate"),
+					bp::arg("reverse_orientation"))),
+			"__init__(gpml_property_delegate, reverse_orientation)\n"
+			"  Create a topological point property value that references a feature property containing a line geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the line (polyline) property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
+			"  :type reverse_orientation: bool\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_line_section = pygplates.GpmlTopologicalLineSection(line_property_delegate, false)\n")
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("set_property_delegate",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry,
+			(bp::arg("gpml_property_delegate")),
+			"set_property_delegate(gpml_property_delegate)\n"
+			"  Sets the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the line (polyline) delegate property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+		.def("get_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::get_reverse_order,
+			"get_reverse_orientation()\n"
+			"  Returns ``True`` if the line was reversed when contributing to the parent topology.\n"
+			"\n"
+			"  :rtype: bool\n")
+		.def("set_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::set_reverse_order,
+			(bp::arg("reverse_orientation")),
+			"set_reverse_orientation(reverse_orientation)\n"
+			"  Sets the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
+			"  :type reverse_orientation: bool\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLineSection>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalLineSection>();
+}
+
+void
+export_gpml_topological_point()
+{
+	// Use the 'non-const' overload so GpmlTopologicalPoint can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalPoint::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalPoint::get_source_geometry;
+
+	//
+	// GpmlTopologicalPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalPoint,
+		GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type,
+		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
+		boost::noncopyable>(
+			"GpmlTopologicalPoint",
+			"A topological section referencing a point geometry.\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesPropertyValues::GpmlTopologicalPoint::create,
+				bp::default_call_policies(),
+				(bp::arg("gpml_property_delegate"))),
+			"__init__(gpml_property_delegate)\n"
+			"  Create a topological point property value that references a feature property containing a point geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the point geometry property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_point_section = pygplates.GpmlTopologicalPoint(point_property_delegate)\n")
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source point geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("set_property_delegate",
+			&GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry,
+			(bp::arg("gpml_property_delegate")),
+			"set_property_delegate(gpml_property_delegate)\n"
+			"  Sets the property value that references/delegates the source point geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the point geometry property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPoint>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalPoint>();
+}
 
 void
 export_xs_boolean()
@@ -4232,6 +4417,12 @@ export_property_values()
 
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.
+
+	// GpmlTopologicalSection and its derived classes.
+	// Since GpmlTopologicalSection is the base class it must be registered first to avoid runtime error.
+	export_gpml_topological_section();
+	export_gpml_topological_line_section();
+	export_gpml_topological_point();
 
 	export_xs_boolean();
 	export_xs_double();

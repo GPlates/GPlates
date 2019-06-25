@@ -956,10 +956,10 @@ void
 export_structural_type()
 {
 #if 1
-	// Registers the python *from* converter *only* for GPlatesPropertyValues::StructuralType.
+	// Enables GPlatesPropertyValues::StructuralType to be passed to and from python.
 	//
-	// Unlike other converters, this one converts from a Python class (not instance).
-	// For example, it converts from 'pygplates.GpmlPlateId'
+	// Unlike other converters, this one converts to/from a Python class (not an instance).
+	// For example, it converts to/from 'pygplates.GpmlPlateId'
 	// (rather than something like 'pygplates.GpmlPlateId(plate_id)').
 	GPlatesApi::ConversionStructuralType();
 #else

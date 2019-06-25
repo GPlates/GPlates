@@ -29,7 +29,10 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALSECTION_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALSECTION_H
 
+#include "GpmlPropertyDelegate.h"
+
 #include "model/PropertyValue.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -64,6 +67,33 @@ namespace GPlatesPropertyValues
 		clone() const
 		{
 			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalSection>(clone_impl());
+		}
+
+		/**
+		 * Returns the 'const' property delegate.
+		 */
+		virtual
+		GpmlPropertyDelegate::non_null_ptr_to_const_type
+		get_source_geometry() const = 0;
+
+		/**
+		 * Returns the 'non-const' property delegate.
+		 */
+		virtual
+		GpmlPropertyDelegate::non_null_ptr_type
+		get_source_geometry() = 0;
+
+		/**
+		 * Returns the reverse order.
+		 *
+		 * NOTE: For @a GpmlTopologicalPoint instances this always returns false since
+		 * only @a GpmlTopologicalLineSection instances are reversible.
+		 */
+		virtual
+		bool
+		get_reverse_order() const
+		{
+			return false;
 		}
 
 		virtual

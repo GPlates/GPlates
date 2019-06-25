@@ -79,6 +79,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'const' property delegate.
 		 */
+		virtual
 		GpmlPropertyDelegate::non_null_ptr_to_const_type
 		get_source_geometry() const
 		{
@@ -88,6 +89,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'non-const' property delegate.
 		 */
+		virtual
 		GpmlPropertyDelegate::non_null_ptr_type
 		get_source_geometry()
 		{
@@ -102,6 +104,7 @@ namespace GPlatesPropertyValues
 				GpmlPropertyDelegate::non_null_ptr_type source_geometry_);
 
 		//! Returns the reverse order.
+		virtual
 		bool
 		get_reverse_order() const
 		{

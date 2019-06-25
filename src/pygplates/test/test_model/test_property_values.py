@@ -938,6 +938,47 @@ class GpmlTimeWindowCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_window == self.gpml_time_window2)
 
 
+class GpmlTopologicalSectionCase(unittest.TestCase):
+    def setUp(self):
+        self.line_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString)
+        self.topological_line_section = pygplates.GpmlTopologicalLineSection(
+                self.line_property_delegate,
+                True)
+        
+        self.point_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint)
+        self.topological_point_section = pygplates.GpmlTopologicalPoint(self.point_property_delegate)
+
+    def test_get(self):
+        self.assertTrue(self.topological_line_section.get_property_delegate() == self.line_property_delegate)
+        self.assertTrue(self.topological_line_section.get_reverse_orientation() == True)
+        
+        self.assertTrue(self.topological_point_section.get_property_delegate() == self.point_property_delegate)
+        self.assertTrue(self.topological_point_section.get_reverse_orientation() == False)
+
+    def test_set(self):
+        self.topological_line_section.set_reverse_orientation(False)
+        self.assertTrue(self.topological_line_section.get_reverse_orientation() == False)
+        new_line_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlLineString)
+        self.topological_line_section.set_property_delegate(new_line_property_delegate)
+        self.assertTrue(self.topological_line_section.get_property_delegate() == new_line_property_delegate)
+        
+        new_point_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint)
+        self.topological_point_section.set_property_delegate(new_point_property_delegate)
+        self.assertTrue(self.topological_point_section.get_property_delegate() == new_point_property_delegate)
+
+
 class XsBooleanCase(unittest.TestCase):
     def setUp(self):
         self.boolean = True
@@ -1026,6 +1067,7 @@ def suite():
             GpmlPropertyDelegateCase,
             GpmlTimeSampleCase,
             GpmlTimeWindowCase,
+            GpmlTopologicalSectionCase,
             XsBooleanCase,
             XsDoubleCase,
             XsIntegerCase,

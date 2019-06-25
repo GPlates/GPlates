@@ -229,6 +229,9 @@ Feature property value
    pygplates.GpmlPlateId
    pygplates.GpmlPolarityChronId
    pygplates.GpmlPropertyDelegate
+   pygplates.GpmlTopologicalLineSection
+   pygplates.GpmlTopologicalPoint
+   pygplates.GpmlTopologicalSection
    pygplates.XsBoolean
    pygplates.XsDouble
    pygplates.XsInteger
