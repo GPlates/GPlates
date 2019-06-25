@@ -38,6 +38,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PyQualifiedXmlNames.h"
 #include "PyRevisionedVector.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -417,6 +418,11 @@ export_enumeration()
 				"\n"
 				"    dip_slip_enum.set_content('Extension')\n")
 	;
+
+#if 0  // Not registering Enumeration because it represents many different structural types (it stores an EnumerationType).
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::Enumeration>();
+#endif
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::Enumeration>();
@@ -894,6 +900,9 @@ export_gml_data_block()
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlDataBlock>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlDataBlock>();
 }
@@ -944,6 +953,9 @@ export_gml_line_string()
 				"  :param polyline: the polyline geometry\n"
 				"  :type polyline: :class:`PolylineOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlLineString>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlLineString>();
@@ -1005,6 +1017,9 @@ export_gml_multi_point()
 				"  :param multi_point: the multi-point geometry\n"
 				"  :type multi_point: :class:`MultiPointOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlMultiPoint>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlMultiPoint>();
@@ -1080,6 +1095,9 @@ export_gml_orientable_curve()
 				"  :type base_curve: :class:`GmlLineString`\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlOrientableCurve>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlOrientableCurve>();
 }
@@ -1146,6 +1164,9 @@ export_gml_point()
 				", in degrees, or tuple (x,y,z)\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlPoint>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPoint>();
 }
@@ -1209,6 +1230,9 @@ export_gml_polygon()
 				"  :param polygon: the polygon geometry\n"
 				"  :type polygon: :class:`PolygonOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlPolygon>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPolygon>();
@@ -1277,6 +1301,9 @@ export_gml_time_instant()
 				"  :param time_position: the time position\n"
 				"  :type time_position: float or :class:`GeoTimeInstant`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlTimeInstant>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimeInstant>();
@@ -1432,6 +1459,9 @@ export_gml_time_period()
 				"coincides with the :meth:`begin<get_begin_time>` or :meth:`end<get_end_time>` time.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlTimePeriod>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimePeriod>();
 }
@@ -1563,6 +1593,9 @@ export_gpml_array()
 			&GPlatesApi::gpml_array_get_revisioned_vector>(
 					gpml_array_class,
 					gpml_array_class_name);
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlArray>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlArray>();
@@ -1744,6 +1777,9 @@ export_gpml_finite_rotation()
 				"  :type finite_rotation: :class:`FiniteRotation`\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlFiniteRotation>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlFiniteRotation>();
 }
@@ -1792,11 +1828,11 @@ export_gpml_finite_rotation_slerp()
 				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class GpmlInterpolationFunction.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlFiniteRotationSlerp,
-			GPlatesPropertyValues::GpmlInterpolationFunction>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlFiniteRotationSlerp>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlFiniteRotationSlerp>();
 #endif
 }
 
@@ -1828,11 +1864,11 @@ export_gpml_hot_spot_trail_mark()
 		.def("get_measured_age", measured_age)
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlHotSpotTrailMark,
-			GPlatesModel::PropertyValue>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlHotSpotTrailMark>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlHotSpotTrailMark>();
 #endif
 }
 
@@ -1864,11 +1900,11 @@ export_gpml_interpolation_function()
 					bp::no_init)
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlInterpolationFunction,
-			GPlatesModel::PropertyValue>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlInterpolationFunction>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlInterpolationFunction>();
 #endif
 }
 
@@ -2755,6 +2791,9 @@ export_gpml_key_value_dictionary()
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlKeyValueDictionary>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlKeyValueDictionary>();
 
@@ -3028,6 +3067,9 @@ export_gpml_old_plates_header()
 				"  :type number_of_points: int\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlOldPlatesHeader>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlOldPlatesHeader>();
 }
@@ -3255,6 +3297,9 @@ export_gpml_plate_id()
 				"  :type plate_id: int\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPlateId>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPlateId>();
 }
@@ -3419,6 +3464,9 @@ export_gpml_polarity_chron_id()
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
 				"  :type minor_region: string\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPolarityChronId>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPolarityChronId>();
@@ -3881,6 +3929,9 @@ export_xs_boolean()
 				"  :type boolean_value: bool\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsBoolean>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsBoolean>();
 }
@@ -3935,6 +3986,9 @@ export_xs_double()
 				"  :type float_value: float\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsDouble>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsDouble>();
 }
@@ -3987,6 +4041,9 @@ export_xs_integer()
 				"  :param integer_value: the integer value\n"
 				"  :type integer_value: int\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsInteger>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsInteger>();
@@ -4051,6 +4108,9 @@ export_xs_string()
 				"  :param string: the string\n"
 				"  :type string: string\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsString>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsString>();
