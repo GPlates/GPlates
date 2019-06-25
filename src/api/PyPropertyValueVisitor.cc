@@ -48,6 +48,12 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
+#include "property-values/GpmlPropertyDelegate.h"
+#include "property-values/GpmlTopologicalLine.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -519,6 +525,144 @@ namespace GPlatesApi
 
 		virtual
 		void
+		visit_gpml_property_delegate(
+				gpml_property_delegate_type &gpml_property_delegate)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_property_delegate"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_property_delegate_type::non_null_ptr_type(&gpml_property_delegate));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_property_delegate(gpml_property_delegate);
+		}
+
+		void
+		default_visit_gpml_property_delegate(
+				gpml_property_delegate_type &gpml_property_delegate)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_property_delegate(gpml_property_delegate);
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				gpml_topological_line_type &gpml_topological_line)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_topological_line"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_topological_line_type::non_null_ptr_type(&gpml_topological_line));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_topological_line(gpml_topological_line);
+		}
+
+		void
+		default_visit_gpml_topological_line(
+				gpml_topological_line_type &gpml_topological_line)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_topological_line(gpml_topological_line);
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				gpml_topological_line_section_type &gpml_topological_line_section)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_topological_line_section"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_topological_line_section_type::non_null_ptr_type(&gpml_topological_line_section));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_topological_line_section(gpml_topological_line_section);
+		}
+
+		void
+		default_visit_gpml_topological_line_section(
+				gpml_topological_line_section_type &gpml_topological_line_section)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_topological_line_section(gpml_topological_line_section);
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_network(
+				gpml_topological_network_type &gpml_topological_network)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_topological_network"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_topological_network_type::non_null_ptr_type(&gpml_topological_network));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_topological_network(gpml_topological_network);
+		}
+
+		void
+		default_visit_gpml_topological_network(
+				gpml_topological_network_type &gpml_topological_network)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_topological_network(gpml_topological_network);
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				gpml_topological_point_type &gpml_topological_point)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_topological_point"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_topological_point_type::non_null_ptr_type(&gpml_topological_point));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_topological_point(gpml_topological_point);
+		}
+
+		void
+		default_visit_gpml_topological_point(
+				gpml_topological_point_type &gpml_topological_point)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_topological_point(gpml_topological_point);
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				gpml_topological_polygon_type &gpml_topological_polygon)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_topological_polygon"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_topological_polygon_type::non_null_ptr_type(&gpml_topological_polygon));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_topological_polygon(gpml_topological_polygon);
+		}
+
+		void
+		default_visit_gpml_topological_polygon(
+				gpml_topological_polygon_type &gpml_topological_polygon)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_topological_polygon(gpml_topological_polygon);
+		}
+
+
+		virtual
+		void
 		visit_xs_boolean(
 				xs_boolean_type &xs_boolean)
 		{
@@ -779,6 +923,36 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_polarity_chron_id,
 				"visit_gpml_polarity_chron_id(gpml_polarity_chron_id)\n"
 				"  Visits a :class:`GpmlPolarityChronId` property value.\n")
+		.def("visit_gpml_property_delegate",
+				&GPlatesModel::FeatureVisitor::visit_gpml_property_delegate,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_property_delegate,
+				"visit_gpml_property_delegate(gpml_property_delegate)\n"
+				"  Visits a :class:`GpmlPropertyDelegate` property value.\n")
+		.def("visit_gpml_topological_line",
+				&GPlatesModel::FeatureVisitor::visit_gpml_topological_line,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_line,
+				"visit_gpml_topological_line(gpml_topological_line)\n"
+				"  Visits a :class:`GpmlTopologicalLine` property value.\n")
+		.def("visit_gpml_topological_line_section",
+				&GPlatesModel::FeatureVisitor::visit_gpml_topological_line_section,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_line_section,
+				"visit_gpml_topological_line_section(gpml_topological_line_section)\n"
+				"  Visits a :class:`GpmlTopologicalLineSection` property value.\n")
+		.def("visit_gpml_topological_point",
+				&GPlatesModel::FeatureVisitor::visit_gpml_topological_point,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_point,
+				"visit_gpml_topological_point(gpml_topological_point)\n"
+				"  Visits a :class:`GpmlTopologicalPoint` property value.\n")
+		.def("visit_gpml_topological_network",
+				&GPlatesModel::FeatureVisitor::visit_gpml_topological_network,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_network,
+				"visit_gpml_topological_network(gpml_topological_network)\n"
+				"  Visits a :class:`GpmlTopologicalNetwork` property value.\n")
+		.def("visit_gpml_topological_polygon",
+				&GPlatesModel::FeatureVisitor::visit_gpml_topological_polygon,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_polygon,
+				"visit_gpml_topological_polygon(gpml_topological_polygon)\n"
+				"  Visits a :class:`GpmlTopologicalPolygon` property value.\n")
 		.def("visit_xs_boolean",
 				&GPlatesModel::FeatureVisitor::visit_xs_boolean,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_boolean,
