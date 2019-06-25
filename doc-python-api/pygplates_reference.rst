@@ -228,6 +228,7 @@ Feature property value
    pygplates.GpmlOldPlatesHeader
    pygplates.GpmlPlateId
    pygplates.GpmlPolarityChronId
+   pygplates.GpmlPropertyDelegate
    pygplates.XsBoolean
    pygplates.XsDouble
    pygplates.XsInteger

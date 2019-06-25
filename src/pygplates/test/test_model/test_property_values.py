@@ -811,6 +811,20 @@ class GpmlPolarityChronIdCase(unittest.TestCase):
         self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId.set_era, self.gpml_polarity_chron_id, 'UnknownEra')
 
 
+class GpmlPropertyDelegateCase(unittest.TestCase):
+    def setUp(self):
+        self.feature_id = pygplates.FeatureId.create_unique_id()
+        self.property_name = pygplates.PropertyName.gpml_center_line_of
+        self.property_type = pygplates.GmlLineString
+        self.gpml_property_delegate = pygplates.GpmlPropertyDelegate(
+                self.feature_id, self.property_name, self.property_type)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_property_delegate.get_feature_id() == self.feature_id)
+        self.assertTrue(self.gpml_property_delegate.get_property_name() == self.property_name)
+        self.assertTrue(self.gpml_property_delegate.get_property_type() == self.property_type)
+
+
 class GpmlTimeSampleCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -1009,6 +1023,7 @@ def suite():
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
             GpmlPolarityChronIdCase,
+            GpmlPropertyDelegateCase,
             GpmlTimeSampleCase,
             GpmlTimeWindowCase,
             XsBooleanCase,

@@ -80,6 +80,7 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/TextContent.h"
@@ -3472,6 +3473,79 @@ export_gpml_polarity_chron_id()
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPolarityChronId>();
 }
 
+void
+export_gpml_property_delegate()
+{
+	//
+	// GpmlPropertyDelegate - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlPropertyDelegate,
+			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlPropertyDelegate",
+					"A property value that represents a reference, or delegation, to a property in another feature.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::GpmlPropertyDelegate::create,
+						bp::default_call_policies(),
+						(bp::arg("feature_id"),
+							bp::arg("property_name"),
+							bp::arg("property_type"))),
+				"__init__(feature_id, property_name, property_type)\n"
+				"  Create a reference, or delegation, to a property in another feature.\n"
+				"\n"
+				"  :param feature_id: the referenced feature\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param property_name: the name of the referenced property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_type: the type of the referenced property\n"
+				"  :type property_type: a class object of a property type (derived from :class:`PropertyValue`) "
+			"except :class:`Enumeration` and time-dependent wrappers :class:`GpmlConstantValue`, "
+			":class:`GpmlIrregularSampling` and :class:`GpmlPiecewiseAggregation`.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    property_delegate = pygplates.GpmlPropertyDelegate(\n"
+				"        referenced_feature.get_feature_id(),\n"
+				"        pygplates.PropertyName.gpml_center_line_of,\n"
+				"        pygplates.GmlLineString)\n")
+		.def("get_feature_id",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_feature_id,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_feature_id()\n"
+				"  Returns the feature ID of the feature containing the delegated property.\n"
+				"\n"
+				"  :rtype: :class:`FeatureId`\n")
+		.def("get_property_name",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_target_property_name,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_property_name()\n"
+				"  Returns the property name of the delegated property.\n"
+				"\n"
+				"  :rtype: :class:`PropertyName`\n")
+		.def("get_property_type",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_property_type()\n"
+				"  Returns the property type of the delegated property.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPropertyDelegate>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPropertyDelegate>();
+}
+
 
 namespace GPlatesApi
 {
@@ -4152,8 +4226,10 @@ export_property_values()
 	export_gpml_key_value_dictionary();
 	export_gpml_old_plates_header();
 	export_gpml_piecewise_aggregation();
-	export_gpml_polarity_chron_id();
 	export_gpml_plate_id();
+	export_gpml_polarity_chron_id();
+	export_gpml_property_delegate();
+
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.
 
