@@ -258,7 +258,9 @@ Strictly speaking they are not actually :class:`property values<pygplates.Proper
    :toctree: generated
 
    pygplates.GpmlTimeSample
+   pygplates.GpmlTimeSampleList
    pygplates.GpmlTimeWindow
+   pygplates.GpmlTimeWindowList
 
 Geometry
 --------

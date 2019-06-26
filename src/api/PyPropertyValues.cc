@@ -1587,7 +1587,7 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
 
-	// Used 'GPlatesApi::gpml_array_get_revisioned_vector()' to make 'GpmlArray' look like a python list (RevisionedVector).
+	// Make 'GpmlArray' look like a python list (RevisionedVector).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue,
@@ -2182,8 +2182,7 @@ export_gpml_irregular_sampling()
 #endif
 	;
 
-	// Used 'GPlatesApi::gpml_irregular_sampling_get_time_samples()' to make 'GpmlIrregularSampling'
-	// look like a python list (RevisionedVector).
+	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesPropertyValues::GpmlTimeSample,
@@ -2193,6 +2192,9 @@ export_gpml_irregular_sampling()
 			&GPlatesApi::gpml_irregular_sampling_get_revisioned_vector>(
 					gpml_irregular_sampling_class,
 					gpml_irregular_sampling_class_name);
+	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.
+	// This enables the RevisionedVector<GpmlTimeSample> returned by 'GpmlIrregularSampling.get_time_samples()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeSample>("GpmlTimeSample");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling>();
@@ -3236,8 +3238,7 @@ export_gpml_piecewise_aggregation()
 				"    piecewise_aggregation.sort(key = lambda tw: tw.get_begin_time())\n")
 	;
 
-	// Used 'GPlatesApi::gpml_piecewise_aggregation_get_time_windows()' to make 'GpmlPiecewiseAggregation'
-	// look like a python list (RevisionedVector).
+	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlPiecewiseAggregation,
 			GPlatesPropertyValues::GpmlTimeWindow,
@@ -3247,6 +3248,9 @@ export_gpml_piecewise_aggregation()
 			&GPlatesApi::gpml_piecewise_aggregation_get_revisioned_vector>(
 					gpml_piecewise_aggregation_class,
 					gpml_piecewise_aggregation_class_name);
+	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.
+	// This enables the RevisionedVector<GpmlTimeWindow> returned by 'GpmlPiecewiseAggregation.get_time_windows()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeWindow>("GpmlTimeWindow");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPiecewiseAggregation>();

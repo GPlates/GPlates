@@ -64,7 +64,6 @@ void export_old_feature_collection();
 void export_property_values();
 void export_property_value_visitor();
 void export_qualified_xml_names();
-void export_revisioned_vector();
 void export_top_level_property();
 
 // app-logic namespace
@@ -172,7 +171,6 @@ export_cpp_python_api()
 	export_old_feature_collection();
 	export_property_values();
 	export_property_value_visitor();
-	export_revisioned_vector();
 	export_top_level_property();
 
 	// app-logic namespace
