@@ -229,13 +229,39 @@ Feature property value
    pygplates.GpmlPlateId
    pygplates.GpmlPolarityChronId
    pygplates.GpmlPropertyDelegate
-   pygplates.GpmlTopologicalLineSection
-   pygplates.GpmlTopologicalPoint
-   pygplates.GpmlTopologicalSection
    pygplates.XsBoolean
    pygplates.XsDouble
    pygplates.XsInteger
    pygplates.XsString
+
+The following subset of property value classes represent *topological* lines, polygons and networks.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GpmlTopologicalLine
+   pygplates.GpmlTopologicalPolygon
+   pygplates.GpmlTopologicalNetwork
+
+The following subset of property value classes represent the *topological* sections that topologies are created from.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GpmlTopologicalSection
+   pygplates.GpmlTopologicalPoint
+   pygplates.GpmlTopologicalLineSection
+
+The following classes support *topological* properties.
+Strictly speaking they are not actually :class:`property values<pygplates.PropertyValue>`.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GpmlTopologicalSectionList
 
 The following subset of property value classes are time-dependent wrappers.
 These are what enable the above :class:`property values<pygplates.PropertyValue>` to vary over geological time.

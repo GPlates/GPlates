@@ -71,6 +71,33 @@ namespace GPlatesPropertyValues
 		~GpmlTopologicalNetwork()
 		{  }
 
+
+		/**
+		 * Create a @a GpmlTopologicalNetwork instance which contains a boundary only (no interior geometries).
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &boundary_sections_)
+		{
+			return create(boundary_sections_.begin(), boundary_sections_.end());
+		}
+
+		/**
+		 * Create a @a GpmlTopologicalNetwork instance which contains a boundary and interior geometries.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &boundary_sections_,
+				const std::vector<GpmlPropertyDelegate::non_null_ptr_type> &interior_geometries_)
+		{
+			return create(
+				boundary_sections_.begin(), boundary_sections_.end(),
+				interior_geometries_.begin(), interior_geometries_.end());
+		}
+
+
 		/**
 		 * Create a @a GpmlTopologicalNetwork instance which contains a boundary only (no interior geometries).
 		 */
@@ -137,7 +164,7 @@ namespace GPlatesPropertyValues
 		 * Returns the 'non-const' vector of members.
 		 */
 		GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
-			boundary_sections()
+		boundary_sections()
 		{
 			return *get_current_revision<Revision>().boundary_sections.get_revisionable();
 		}

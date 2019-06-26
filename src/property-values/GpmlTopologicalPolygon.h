@@ -72,6 +72,13 @@ namespace GPlatesPropertyValues
 		{  }
 
 
+		/**
+		 * Create a @a GpmlTopologicalPolygon instance from the specified sequence of
+		 * topological sections representing the exterior of the topological polygon.
+		 *
+		 * TODO: Add support for topological interiors where each interior is a reference
+		 * to a topological polygon exterior and represents an interior hole region.
+		 */
 		static
 		const non_null_ptr_type
 		create(

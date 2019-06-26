@@ -83,8 +83,11 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
@@ -169,6 +172,12 @@ export_property_value()
 					"* :class:`XsDouble`\n"
 					"* :class:`XsInteger`\n"
 					"* :class:`XsString`\n"
+					"\n"
+					"The following subset of derived property value classes are topological geometries:\n"
+					"\n"
+					"* :class:`GpmlTopologicalLine`\n"
+					"* :class:`GpmlTopologicalPolygon`\n"
+					"* :class:`GpmlTopologicalNetwork`\n"
 					"\n"
 					"The following subset of derived property value classes are time-dependent wrappers:\n"
 					"\n"
@@ -2122,12 +2131,11 @@ export_gpml_irregular_sampling()
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
 				"get_time_samples()\n"
-				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``.\n"
+				"  Returns the :class:`time samples<GpmlTimeSample>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeSampleList`\n"
 				"\n"
-				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
-				"instance:\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
@@ -2192,9 +2200,6 @@ export_gpml_irregular_sampling()
 			&GPlatesApi::gpml_irregular_sampling_get_revisioned_vector>(
 					gpml_irregular_sampling_class,
 					gpml_irregular_sampling_class_name);
-	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.
-	// This enables the RevisionedVector<GpmlTimeSample> returned by 'GpmlIrregularSampling.get_time_samples()' to be treated as a list.
-	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeSample>("GpmlTimeSample");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling>();
@@ -3217,12 +3222,11 @@ export_gpml_piecewise_aggregation()
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
 				"get_time_windows()\n"
-				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``.\n"
+				"  Returns the :class:`time windows<GpmlTimeWindow>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeWindowList`\n"
 				"\n"
-				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
-				"instance:\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_windows = piecewise_aggregation.get_time_windows()\n"
@@ -3248,9 +3252,6 @@ export_gpml_piecewise_aggregation()
 			&GPlatesApi::gpml_piecewise_aggregation_get_revisioned_vector>(
 					gpml_piecewise_aggregation_class,
 					gpml_piecewise_aggregation_class_name);
-	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.
-	// This enables the RevisionedVector<GpmlTimeWindow> returned by 'GpmlPiecewiseAggregation.get_time_windows()' to be treated as a list.
-	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeWindow>("GpmlTimeWindow");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPiecewiseAggregation>();
@@ -3546,6 +3547,11 @@ export_gpml_property_delegate()
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
 		;
 
+	// Create a python class "GpmlPropertyDelegateList" for RevisionedVector<GpmlPropertyDelegate> that behaves like a list of GpmlPropertyDelegate.
+	//
+	// This enables the RevisionedVector<GpmlPropertyDelegate> returned by 'GpmlTopologicalNetwork.get_interiors()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlPropertyDelegate>("GpmlPropertyDelegate");
+
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPropertyDelegate>();
 
@@ -3783,6 +3789,11 @@ export_gpml_time_sample()
 		.def(bp::self != bp::self)
 	;
 
+	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.
+	//
+	// This enables the RevisionedVector<GpmlTimeSample> returned by 'GpmlIrregularSampling.get_time_samples()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeSample>("GpmlTimeSample");
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeSample>();
 }
@@ -3957,6 +3968,11 @@ export_gpml_time_window()
 		.def(bp::self != bp::self)
 	;
 
+	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.
+	//
+	// This enables the RevisionedVector<GpmlTimeWindow> returned by 'GpmlPiecewiseAggregation.get_time_windows()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeWindow>("GpmlTimeWindow");
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeWindow>();
 }
@@ -4007,8 +4023,92 @@ export_gpml_topological_section()
 			"then ``False`` will always be returned.\n")
 	;
 
+	// Create a python class "GpmlTopologicalSectionList" for RevisionedVector<GpmlTopologicalSection> that behaves like a list of GpmlTopologicalSection.
+	//
+	// This enables the RevisionedVector<GpmlTopologicalSection> returned by 'GpmlTopologicalLine.get_sections()',
+	// 'GpmlTopologicalPolygon.get_exterior_sections()' and 'GpmlTopologicalNetwork.get_boundary_sections()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTopologicalSection>("GpmlTopologicalSection");
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalSection>();
+}
+
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
+	gpml_topological_line_create(
+			bp::object sections) // Any python sequence (eg, list, tuple).
+	{
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections_vector;
+		PythonExtractUtils::extract_iterable(
+				sections_vector,
+				sections,
+				"Expected a sequence of sections (GpmlTopologicalSection)");
+
+		return GPlatesPropertyValues::GpmlTopologicalLine::create(sections_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_line_get_sections(
+			GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+	{
+		return &gpml_topological_line.sections();
+	}
+}
+
+void
+export_gpml_topological_line()
+{
+	//
+	// GpmlTopologicalLine - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalLine,
+		GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalLine",
+			"A topological line geometry that is resolved from topological sections.\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_line_create,
+				bp::default_call_policies(),
+				(bp::arg("sections"))),
+			"__init__(sections)\n"
+			"  Create a topological line made from topological sections.\n"
+			"\n"
+			"  :param sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_line = pygplates.GpmlTopologicalLine(topological_sections)\n")
+		.def("get_sections",
+			&GPlatesApi::gpml_topological_line_get_sections,
+			"get_sections()\n"
+			"  Returns the :class:`sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalLine* instance:\n"
+			"  ::\n"
+			"\n"
+			"    sections = topological_line.get_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    sections.append(pygplates.GpmlTopologicalPoint(...))\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLine>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalLine>();
 }
 
 void
@@ -4039,7 +4139,7 @@ export_gpml_topological_line_section()
 				(bp::arg("gpml_property_delegate"),
 					bp::arg("reverse_orientation"))),
 			"__init__(gpml_property_delegate, reverse_orientation)\n"
-			"  Create a topological point property value that references a feature property containing a line geometry.\n"
+			"  Create a topological point section property value that references a feature property containing a line geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the line (polyline) property value\n"
 			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
@@ -4086,6 +4186,122 @@ export_gpml_topological_line_section()
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalLineSection>();
 }
 
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type
+	gpml_topological_network_create(
+			bp::object boundary_sections,   // Any python sequence (eg, list, tuple).
+			bp::object interiors) // Any python sequence (eg, list, tuple).
+	{
+		// Copy boundary sections into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> boundary_sections_vector;
+		PythonExtractUtils::extract_iterable(
+				boundary_sections_vector,
+				boundary_sections,
+				"Expected a sequence of boundary sections (GpmlTopologicalSection)");
+
+		// Interior geometries are optional.
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> interiors_vector;
+		if (interiors != bp::object()/*Py_None*/)
+		{
+			// Copy interior geometries into a vector.
+			PythonExtractUtils::extract_iterable(
+					interiors_vector,
+					interiors,
+					"Expected a sequence of interior geometries (GpmlPropertyDelegate)");
+		}
+
+		return GPlatesPropertyValues::GpmlTopologicalNetwork::create(boundary_sections_vector, interiors_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_network_get_boundary_sections(
+			GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+	{
+		return &gpml_topological_network.boundary_sections();
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::non_null_ptr_type
+	gpml_topological_network_get_interiors(
+			GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+	{
+		return &gpml_topological_network.interior_geometries();
+	}
+}
+
+void
+export_gpml_topological_network()
+{
+	//
+	// GpmlTopologicalNetwork - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalNetwork,
+		GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalNetwork",
+			"A topological deforming network that is resolved from boundary topological sections and interior geometries.\n"
+			"\n"
+			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_network_create,
+				bp::default_call_policies(),
+				(bp::arg("boundary_sections"),
+					bp::arg("interiors") = bp::object()/*Py_None*/)),
+			"__init__(boundary_sections, [interiors=None])\n"
+			"  Create a topological network made from boundary topological sections and interior geometries.\n"
+			"\n"
+			"  :param boundary_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type boundary_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :param interiors: A sequence of :class:`GpmlPropertyDelegate` elements\n"
+			"  :type interiors: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_network = pygplates.GpmlTopologicalNetwork(boundary_sections, interiors)\n")
+		.def("get_boundary_sections",
+			&GPlatesApi::gpml_topological_network_get_boundary_sections,
+			"get_boundary_sections()\n"
+			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
+			"  ::\n"
+			"\n"
+			"    boundary_sections = topological_network.get_boundary_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
+		.def("get_interiors",
+			&GPlatesApi::gpml_topological_network_get_interiors,
+			"get_interiors()\n"
+			"  Returns the :class:`boundary sections<GpmlPropertyDelegate>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegateList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
+			"  ::\n"
+			"\n"
+			"    interiors = topological_network.get_interiors()\n"
+			"\n"
+			"    # Append an interior\n"
+			"    interiors.append(pygplates.GpmlPropertyDelegate(...))\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalNetwork>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalNetwork>();
+}
+
 void
 export_gpml_topological_point()
 {
@@ -4113,7 +4329,7 @@ export_gpml_topological_point()
 				bp::default_call_policies(),
 				(bp::arg("gpml_property_delegate"))),
 			"__init__(gpml_property_delegate)\n"
-			"  Create a topological point property value that references a feature property containing a point geometry.\n"
+			"  Create a topological point section property value that references a feature property containing a point geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the point geometry property value\n"
 			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
@@ -4142,6 +4358,84 @@ export_gpml_topological_point()
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalPoint>();
+}
+
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
+	gpml_topological_polygon_create(
+			bp::object exterior_sections) // Any python sequence (eg, list, tuple).
+	{
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> exterior_sections_vector;
+		PythonExtractUtils::extract_iterable(
+				exterior_sections_vector,
+				exterior_sections,
+				"Expected a sequence of exterior sections (GpmlTopologicalSection)");
+
+		return GPlatesPropertyValues::GpmlTopologicalPolygon::create(exterior_sections_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_polygon_get_exterior_sections(
+			GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+	{
+		return &gpml_topological_polygon.exterior_sections();
+	}
+}
+
+void
+export_gpml_topological_polygon()
+{
+	//
+	// GpmlTopologicalPolygon - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalPolygon,
+		GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalPolygon",
+			"A topological polygon geometry that is resolved from topological sections.\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_polygon_create,
+				bp::default_call_policies(),
+				(bp::arg("exterior_sections"))),
+			"__init__(exterior_sections)\n"
+			"  Create a topological polygon made from topological sections.\n"
+			"\n"
+			"  :param exterior_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type exterior_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_polygon = pygplates.GpmlTopologicalPolygon(topological_sections)\n")
+		.def("get_exterior_sections",
+			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
+			"get_exterior_sections()\n"
+			"  Returns the :class:`exterior sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalPolygon* instance:\n"
+			"  ::\n"
+			"\n"
+			"    exterior_sections = topological_polygon.get_exterior_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    exterior_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPolygon>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalPolygon>();
 }
 
 void
@@ -4427,6 +4721,11 @@ export_property_values()
 	export_gpml_topological_section();
 	export_gpml_topological_line_section();
 	export_gpml_topological_point();
+
+	// Topological line, polygon and network.
+	export_gpml_topological_line();
+	export_gpml_topological_polygon();
+	export_gpml_topological_network();
 
 	export_xs_boolean();
 	export_xs_double();

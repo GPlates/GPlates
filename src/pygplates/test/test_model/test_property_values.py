@@ -979,6 +979,115 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(self.topological_point_section.get_property_delegate() == new_point_property_delegate)
 
 
+class GpmlTopologicalGeometryCase(unittest.TestCase):
+    def setUp(self):
+        # Topological line.
+        self.line_topological_sections = [
+            pygplates.GpmlTopologicalPoint(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_position,
+                    pygplates.GmlPoint)),
+            pygplates.GpmlTopologicalPoint(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlPoint))]
+        self.topological_line = pygplates.GpmlTopologicalLine(self.line_topological_sections)
+        
+        # Topological polygon.
+        self.polygon_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlLineString),
+                True)]
+        self.topological_polygon = pygplates.GpmlTopologicalPolygon(self.polygon_topological_sections)
+        
+        # Topological network.
+        self.network_boundary_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlLineString),
+                False)]
+        self.network_interiors = [
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint),
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint)]
+        self.topological_network = pygplates.GpmlTopologicalNetwork(
+            self.network_boundary_sections,
+            self.network_interiors)
+
+    def test_get(self):
+        self.assertTrue(list(self.topological_line.get_sections()) == self.line_topological_sections)
+        self.assertTrue(list(self.topological_polygon.get_exterior_sections()) == self.polygon_topological_sections)
+        self.assertTrue(list(self.topological_network.get_boundary_sections()) == self.network_boundary_sections)
+        self.assertTrue(list(self.topological_network.get_interiors()) == self.network_interiors)
+
+    def test_set(self):
+        new_line_topological_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint),
+            False)
+        self.topological_line.get_sections().append(new_line_topological_section)
+        self.assertTrue(self.topological_line.get_sections()[-1] == new_line_topological_section)
+        
+        new_polygon_topological_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString),
+            True)
+        self.topological_polygon.get_exterior_sections().insert(1, new_polygon_topological_section)
+        self.assertTrue(self.topological_polygon.get_exterior_sections()[1] == new_polygon_topological_section)
+        
+        new_network_boundary_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString),
+            False)
+        self.topological_network.get_boundary_sections().insert(1, new_network_boundary_section)
+        self.topological_network.get_boundary_sections().pop(0)
+        self.assertTrue(self.topological_network.get_boundary_sections()[0] == new_network_boundary_section)
+        self.assertTrue(len(self.topological_network.get_boundary_sections()) == 2)
+        new_network_interior = pygplates.GpmlPropertyDelegate(
+            pygplates.FeatureId.create_unique_id(),
+            pygplates.PropertyName.gpml_unclassified_geometry,
+            pygplates.GmlPoint)
+        del self.topological_network.get_interiors()[-1]
+        self.topological_network.get_interiors().insert(0, new_network_interior)
+        self.assertTrue(self.topological_network.get_interiors()[0] == new_network_interior)
+        self.assertTrue(len(self.topological_network.get_interiors()) == 2)
+        
+        # Should be able to create a network without interiors.
+        topological_network_with_no_interiors = pygplates.GpmlTopologicalNetwork(self.network_boundary_sections)
+        self.assertTrue(list(topological_network_with_no_interiors.get_boundary_sections()) == self.network_boundary_sections)
+        self.assertFalse(topological_network_with_no_interiors.get_interiors())
+
+
 class XsBooleanCase(unittest.TestCase):
     def setUp(self):
         self.boolean = True
@@ -1068,6 +1177,7 @@ def suite():
             GpmlTimeSampleCase,
             GpmlTimeWindowCase,
             GpmlTopologicalSectionCase,
+            GpmlTopologicalGeometryCase,
             XsBooleanCase,
             XsDoubleCase,
             XsIntegerCase,

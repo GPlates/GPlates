@@ -69,6 +69,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 
+		/**
+		 * Create a @a GpmlTopologicalLine instance from the specified sequence of topological sections.
+		 */
 		static
 		const non_null_ptr_type
 		create(
