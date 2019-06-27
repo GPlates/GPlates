@@ -531,6 +531,7 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_center_line_of = GPlatesModel::PropertyName::create_gpml("centerLineOf");
 	const GPlatesModel::PropertyName gpml_error_bounds = GPlatesModel::PropertyName::create_gpml("errorBounds");
 	const GPlatesModel::PropertyName gpml_multi_position = GPlatesModel::PropertyName::create_gpml("multiPosition");
+	const GPlatesModel::PropertyName gpml_network = GPlatesModel::PropertyName::create_gpml("network");
 	const GPlatesModel::PropertyName gpml_outline_of = GPlatesModel::PropertyName::create_gpml("outlineOf");
 	const GPlatesModel::PropertyName gpml_pole_position = GPlatesModel::PropertyName::create_gpml("polePosition");
 	const GPlatesModel::PropertyName gpml_position = GPlatesModel::PropertyName::create_gpml("position");
@@ -600,6 +601,7 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_\n"
 			"* `pygplates.PropertyName.gpml_error_bounds <http://www.gplates.org/docs/gpgim/#gpml:errorBounds>`_\n"
 			"* `pygplates.PropertyName.gpml_multi_position <http://www.gplates.org/docs/gpgim/#gpml:multiPosition>`_\n"
+			"* `pygplates.PropertyName.gpml_network <http://www.gplates.org/docs/gpgim/#gpml:network>`_\n"
 			"* `pygplates.PropertyName.gpml_outline_of <http://www.gplates.org/docs/gpgim/#gpml:outlineOf>`_\n"
 			"* `pygplates.PropertyName.gpml_pole_position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_\n"
 			"* `pygplates.PropertyName.gpml_position <http://www.gplates.org/docs/gpgim/#gpml:position>`_\n"
@@ -653,6 +655,7 @@ export_property_name()
 	property_name_class.def_readonly("gpml_center_line_of", GPlatesApi::gpml_center_line_of);
 	property_name_class.def_readonly("gpml_error_bounds", GPlatesApi::gpml_error_bounds);
 	property_name_class.def_readonly("gpml_multi_position", GPlatesApi::gpml_multi_position);
+	property_name_class.def_readonly("gpml_network", GPlatesApi::gpml_network);
 	property_name_class.def_readonly("gpml_outline_of", GPlatesApi::gpml_outline_of);
 	property_name_class.def_readonly("gpml_pole_position", GPlatesApi::gpml_pole_position);
 	property_name_class.def_readonly("gpml_position", GPlatesApi::gpml_position);
