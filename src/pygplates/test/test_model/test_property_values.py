@@ -528,6 +528,7 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         # is just extra baggage for the python API user (we can add it later though)...
         #self.assertTrue(isinstance(self.gpml_irregular_sampling.get_interpolation_function(), pygplates.GpmlInterpolationFunction))
         
+        self.assertTrue(self.gpml_irregular_sampling.get_value_type() == pygplates.XsInteger)
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == self.original_time_samples)
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
@@ -726,6 +727,7 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(self.original_time_windows)
 
     def test_get(self):
+        self.assertTrue(self.gpml_piecewise_aggregation.get_value_type() == pygplates.XsInteger)
         self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == self.original_time_windows)
         self.assertTrue(list(self.gpml_piecewise_aggregation) == self.original_time_windows)
         self.assertTrue([time_window for time_window in self.gpml_piecewise_aggregation] == self.original_time_windows)
@@ -840,11 +842,13 @@ class GpmlTimeSampleCase(unittest.TestCase):
 
     def test_get(self):
         self.assertTrue(self.gpml_time_sample1.get_value() == self.property_value1)
+        self.assertTrue(self.gpml_time_sample1.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_sample1.get_time() == self.time1)
         self.assertTrue(self.gpml_time_sample1.get_description() == self.description1)
         self.assertTrue(self.gpml_time_sample1.is_disabled())
         
         self.assertTrue(self.gpml_time_sample2.get_value() == self.property_value2)
+        self.assertTrue(self.gpml_time_sample2.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_sample2.get_time() == self.time2)
         self.assertTrue(self.gpml_time_sample2.get_description() is None)
         self.assertTrue(not self.gpml_time_sample2.is_disabled())
@@ -898,6 +902,7 @@ class GpmlTimeWindowCase(unittest.TestCase):
 
     def test_get(self):
         self.assertTrue(self.gpml_time_window.get_value() == self.property_value)
+        self.assertTrue(self.gpml_time_window.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_window.get_begin_time() == self.begin_time)
         self.assertTrue(self.gpml_time_window.get_end_time() == self.end_time)
 

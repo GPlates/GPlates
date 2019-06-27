@@ -1596,7 +1596,7 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
 
-	// Make 'GpmlArray' look like a python list (RevisionedVector).
+	// Make 'GpmlArray' look like a python list (RevisionedVector<PropertyValue>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue,
@@ -2168,6 +2168,15 @@ export_gpml_irregular_sampling()
 				"  hence modifications to the ``list`` such as ``list.sort`` (as opposed to modifications to the list\n"
 				"  *elements*) will **not** modify the internal state of the :class:`GpmlIrregularSampling` instance\n"
 				"  (it only modifies the returned ``list``).\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlIrregularSampling::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -2190,7 +2199,7 @@ export_gpml_irregular_sampling()
 #endif
 	;
 
-	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector).
+	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector<GpmlTimeSample>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesPropertyValues::GpmlTimeSample,
@@ -3240,9 +3249,18 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"    # Sort windows by begin time.\n"
 				"    piecewise_aggregation.sort(key = lambda tw: tw.get_begin_time())\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlPiecewiseAggregation::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
 	;
 
-	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector).
+	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlPiecewiseAggregation,
 			GPlatesPropertyValues::GpmlTimeWindow,
@@ -3704,6 +3722,15 @@ export_gpml_time_sample()
 				"  Returns the property value of this time sample.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlTimeSample::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
@@ -3911,6 +3938,15 @@ export_gpml_time_window()
 				"  Returns the property value of this time window.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlTimeWindow::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
@@ -4282,7 +4318,7 @@ export_gpml_topological_network()
 		.def("get_interiors",
 			&GPlatesApi::gpml_topological_network_get_interiors,
 			"get_interiors()\n"
-			"  Returns the :class:`boundary sections<GpmlPropertyDelegate>` in a sequence that behaves as a python ``list``.\n"
+			"  Returns the :class:`interior geometries<GpmlPropertyDelegate>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
 			"  :rtype: :class:`GpmlPropertyDelegateList`\n"
 			"\n"
