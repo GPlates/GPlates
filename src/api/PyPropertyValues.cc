@@ -2176,7 +2176,9 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -3257,7 +3259,9 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 	;
 
 	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
@@ -3511,7 +3515,9 @@ export_gpml_property_delegate()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GpmlPropertyDelegate",
-					"A property value that represents a reference, or delegation, to a property in another feature.\n",
+					"A property value that represents a reference, or delegation, to a property in another feature.\n"
+					"\n"
+					"  .. versionadded:: 21\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3730,7 +3736,9 @@ export_gpml_time_sample()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
@@ -3946,7 +3954,9 @@ export_gpml_time_window()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
@@ -4039,7 +4049,9 @@ export_gpml_topological_section()
 					"The list of derived topological section property value classes includes:\n"
 					"\n"
 					"* :class:`GpmlTopologicalPoint`\n"
-					"* :class:`GpmlTopologicalLineSection`\n",
+					"* :class:`GpmlTopologicalLineSection`\n"
+					"\n"
+					"  .. versionadded:: 21\n",
 					bp::no_init)
 		.def("get_property_delegate",
 			get_property_delegate,
@@ -4106,7 +4118,9 @@ export_gpml_topological_line()
 		bp::bases<GPlatesModel::PropertyValue>,
 		boost::noncopyable>(
 			"GpmlTopologicalLine",
-			"A topological line geometry that is resolved from topological sections.\n",
+			"A topological line geometry that is resolved from topological sections.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4164,7 +4178,9 @@ export_gpml_topological_line_section()
 		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
 		boost::noncopyable>(
 			"GpmlTopologicalLineSection",
-			"A topological section referencing a line geometry.\n",
+			"A topological section referencing a line geometry.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4280,7 +4296,9 @@ export_gpml_topological_network()
 			"GpmlTopologicalNetwork",
 			"A topological deforming network that is resolved from boundary topological sections and interior geometries.\n"
 			"\n"
-			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n",
+			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4355,7 +4373,9 @@ export_gpml_topological_point()
 		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
 		boost::noncopyable>(
 			"GpmlTopologicalPoint",
-			"A topological section referencing a point geometry.\n",
+			"A topological section referencing a point geometry.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4433,7 +4453,9 @@ export_gpml_topological_polygon()
 		bp::bases<GPlatesModel::PropertyValue>,
 		boost::noncopyable>(
 			"GpmlTopologicalPolygon",
-			"A topological polygon geometry that is resolved from topological sections.\n",
+			"A topological polygon geometry that is resolved from topological sections.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)

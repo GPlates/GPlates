@@ -228,7 +228,6 @@ Feature property value
    pygplates.GpmlOldPlatesHeader
    pygplates.GpmlPlateId
    pygplates.GpmlPolarityChronId
-   pygplates.GpmlPropertyDelegate
    pygplates.XsBoolean
    pygplates.XsDouble
    pygplates.XsInteger
@@ -253,15 +252,8 @@ The following subset of property value classes represent the *topological* secti
    pygplates.GpmlTopologicalSection
    pygplates.GpmlTopologicalPoint
    pygplates.GpmlTopologicalLineSection
+   pygplates.GpmlPropertyDelegate
 
-The following classes support *topological* properties.
-Strictly speaking they are not actually :class:`property values<pygplates.PropertyValue>`.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.GpmlTopologicalSectionList
 
 The following subset of property value classes are time-dependent wrappers.
 These are what enable the above :class:`property values<pygplates.PropertyValue>` to vary over geological time.
@@ -276,17 +268,19 @@ These are what enable the above :class:`property values<pygplates.PropertyValue>
    pygplates.GpmlIrregularSampling
    pygplates.GpmlPiecewiseAggregation
 
-The following classes support *time-dependent* properties.
-Strictly speaking they are not actually :class:`property values<pygplates.PropertyValue>`.
+The following support classes are closed related to property values
+(but are not actual :class:`property values<pygplates.PropertyValue>`).
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
+   pygplates.GpmlPropertyDelegateList
    pygplates.GpmlTimeSample
    pygplates.GpmlTimeSampleList
    pygplates.GpmlTimeWindow
    pygplates.GpmlTimeWindowList
+   pygplates.GpmlTopologicalSectionList
 
 Geometry
 --------
