@@ -49,6 +49,33 @@ Property.get_value = get_value
 del get_value
 
 
+def get_time_dependent_value(property):
+    """get_time_dependent_value()
+    Returns the property value for all times (unlike :meth:`get_value` which returns for a specific time).
+    
+    :rtype: :class:`PropertyValue`
+    
+    Alternatively you can use :meth:`get_value` for extracting a contained property value at a specific time.
+    
+    .. note:: The returned :class:`property value<PropertyValue>` could be a time-dependent property value *container*
+              (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`)
+              or just a regular property value.
+    
+    This method is useful if you want to access the time-dependent property value container directly.
+    An example is :class:`visiting<PropertyValueVisitor>` the time windows in a :class:`GpmlPiecewiseAggregation`.
+    Otherwise :meth:`get_value` is generally more useful since it extracts a value from the container (at a specific time).
+    """
+    
+    # Get the top-level property value using a private method.
+    return property._get_value();
+
+
+# Add the module function as a class method.
+Property.get_time_dependent_value = get_time_dependent_value
+# Delete the module reference to the function - we only keep the class method.
+del get_time_dependent_value
+
+
 def get_time_dependent_container(property):
     """get_time_dependent_container()
     Returns the time-dependent property value container.
@@ -57,11 +84,11 @@ def get_time_dependent_container(property):
     
     Returns a time-dependent property value (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or
     :class:`GpmlPiecewiseAggregation`), or ``None`` if the property value is not actually time-dependent.
-    Alternatively you can use :meth:`get_value` for extracting a contained property value at a reconstruction time.
     
-    This method is useful if you want to access the time-dependent property value container directly.
-    An example is inspecting or modifying the time samples in a :class:`GpmlIrregularSampling`.
-    Otherwise :meth:`get_value` is generally more useful since it extracts a value from the container.
+    .. deprecated:: 21
+       Use :meth:`get_time_dependent_value` instead, which differs slightly in that it returns
+       a property value even if it's not wrapped in a :class:`GpmlConstantValue`,
+       :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`.
     """
     
     # Get the property value using a private method.
