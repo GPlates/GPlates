@@ -869,6 +869,107 @@ class PropertyValueCase(unittest.TestCase):
         self.assertAlmostEqual(end_time, 0.0)
 
 
+class TopologyFeatureCase(unittest.TestCase):
+
+    def setUp(self):
+        self.topology_features = pygplates.FeatureCollection(
+            os.path.join(FIXTURES, 'topologies.gpml'))
+
+    def test_property_delegates(self):
+        topologies_tested = 0
+        for feature in self.topology_features:
+            if feature.get_feature_id().get_string() == 'GPlates-93c09f1d-80b3-44e8-9c52-f50b4deffdaa':
+                topologies_tested += 1
+                topological_line = feature.get_value(pygplates.PropertyName.gpml_unclassified_geometry)
+                sections = topological_line.get_sections()
+                property_delegate0 = sections[0].get_property_delegate()
+                self.assertTrue(property_delegate0.get_feature_id().get_string() == 'GPlates-84be6d41-6c32-4184-9c44-c38e399090a0')
+                self.assertTrue(property_delegate0.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate0.get_property_type() == pygplates.GmlPoint)
+                property_delegate1 = sections[1].get_property_delegate()
+                self.assertTrue(property_delegate1.get_feature_id().get_string() == 'GPlates-3df7a9df-aefc-403e-a16c-faf203776fd1')
+                self.assertTrue(property_delegate1.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate1.get_property_type() == pygplates.GmlPoint)
+                property_delegate2 = sections[2].get_property_delegate()
+                self.assertTrue(property_delegate2.get_feature_id().get_string() == 'GPlates-56f22e61-ddd5-4c2f-ae41-54e5f66f47ec')
+                self.assertTrue(property_delegate2.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate2.get_property_type() == pygplates.GmlPoint)
+            elif feature.get_feature_id().get_string() == 'GPlates-a6054d82-6e6d-4f59-9d24-4ab255ece477':
+                topologies_tested += 1
+                topological_polygon = feature.get_value(pygplates.PropertyName.gpml_boundary)
+                exterior_sections = topological_polygon.get_exterior_sections()
+                property_delegate0 = exterior_sections[0].get_property_delegate()
+                self.assertTrue(property_delegate0.get_feature_id().get_string() == 'GPlates-aa1d0d5a-0445-4380-a516-d2bc66e477a7')
+                self.assertTrue(property_delegate0.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate0.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(exterior_sections[0].get_reverse_orientation() == False)
+                property_delegate1 = exterior_sections[1].get_property_delegate()
+                self.assertTrue(property_delegate1.get_feature_id().get_string() == 'GPlates-0bfc4f2b-c672-47e1-a29e-7214bea0521e')
+                self.assertTrue(property_delegate1.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate1.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(exterior_sections[1].get_reverse_orientation() == False)
+                property_delegate2 = exterior_sections[2].get_property_delegate()
+                self.assertTrue(property_delegate2.get_feature_id().get_string() == 'GPlates-48bd0e0f-e7c8-4dea-9e0a-4bc0e1403db6')
+                self.assertTrue(property_delegate2.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate2.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(exterior_sections[2].get_reverse_orientation() == False)
+                property_delegate3 = exterior_sections[3].get_property_delegate()
+                self.assertTrue(property_delegate3.get_feature_id().get_string() == 'GPlates-5369725b-5ca6-49b2-83c6-0417dbb5fca2')
+                self.assertTrue(property_delegate3.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate3.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(exterior_sections[3].get_reverse_orientation() == False)
+                property_delegate4 = exterior_sections[4].get_property_delegate()
+                self.assertTrue(property_delegate4.get_feature_id().get_string() == 'GPlates-e184b54d-abb0-465b-8820-c73c543d2562')
+                self.assertTrue(property_delegate4.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate4.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(exterior_sections[4].get_reverse_orientation() == True)
+            elif feature.get_feature_id().get_string() == 'GPlates-4fe56a89-d041-4494-ab07-3abead642b8e':
+                topologies_tested += 1
+                topological_network = feature.get_value(pygplates.PropertyName.gpml_network)
+                boundary_sections = topological_network.get_boundary_sections()
+                property_delegate0 = boundary_sections[0].get_property_delegate()
+                self.assertTrue(property_delegate0.get_feature_id().get_string() == 'GPlates-aa1d0d5a-0445-4380-a516-d2bc66e477a7')
+                self.assertTrue(property_delegate0.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate0.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(boundary_sections[0].get_reverse_orientation() == False)
+                property_delegate1 = boundary_sections[1].get_property_delegate()
+                self.assertTrue(property_delegate1.get_feature_id().get_string() == 'GPlates-e184b54d-abb0-465b-8820-c73c543d2562')
+                self.assertTrue(property_delegate1.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate1.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(boundary_sections[1].get_reverse_orientation() == False)
+                property_delegate2 = boundary_sections[2].get_property_delegate()
+                self.assertTrue(property_delegate2.get_feature_id().get_string() == 'GPlates-5369725b-5ca6-49b2-83c6-0417dbb5fca2')
+                self.assertTrue(property_delegate2.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate2.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(boundary_sections[2].get_reverse_orientation() == False)
+                property_delegate3 = boundary_sections[3].get_property_delegate()
+                self.assertTrue(property_delegate3.get_feature_id().get_string() == 'GPlates-56f3c23d-1ee5-47a9-a46e-006d2aa463c3')
+                self.assertTrue(property_delegate3.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate3.get_property_type() == pygplates.GmlPoint)
+                self.assertTrue(boundary_sections[3].get_reverse_orientation() == False)
+                property_delegate4 = boundary_sections[4].get_property_delegate()
+                self.assertTrue(property_delegate4.get_feature_id().get_string() == 'GPlates-0ba4c93d-474e-4d9b-8f1b-618cb21024de')
+                self.assertTrue(property_delegate4.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate4.get_property_type() == pygplates.GmlPoint)
+                self.assertTrue(boundary_sections[4].get_reverse_orientation() == False)
+                property_delegate5 = boundary_sections[5].get_property_delegate()
+                self.assertTrue(property_delegate5.get_feature_id().get_string() == 'GPlates-93c09f1d-80b3-44e8-9c52-f50b4deffdaa')
+                self.assertTrue(property_delegate5.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate5.get_property_type() == pygplates.GpmlTopologicalLine)
+                self.assertTrue(boundary_sections[5].get_reverse_orientation() == False)
+                property_delegate6 = boundary_sections[6].get_property_delegate()
+                self.assertTrue(property_delegate6.get_feature_id().get_string() == 'GPlates-cc5b9027-d227-4e97-bb06-df26786fd1ec')
+                self.assertTrue(property_delegate6.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate6.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(boundary_sections[6].get_reverse_orientation() == True)
+                property_delegate7 = boundary_sections[7].get_property_delegate()
+                self.assertTrue(property_delegate7.get_feature_id().get_string() == 'GPlates-63b81b91-b7a0-4ad7-908d-16db3c70e6ed')
+                self.assertTrue(property_delegate7.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+                self.assertTrue(property_delegate7.get_property_type() == pygplates.GmlLineString)
+                self.assertTrue(boundary_sections[7].get_reverse_orientation() == True)
+        self.assertTrue(topologies_tested == 3)
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -881,7 +982,8 @@ def suite():
             GeoTimeInstantCase,
             PropertyCase,
             PropertyNameCase,
-            PropertyValueCase
+            PropertyValueCase,
+            TopologyFeatureCase
         ]
 
     for test_case in test_cases:
