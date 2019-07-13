@@ -1691,6 +1691,32 @@ namespace GPlatesApi
 				resolved_topological_geometry_sub_segment->get_reconstruction_geometry());
 	}
 
+	/**
+	 * Get the sub-sub-segments if this sub-segment is a topological line (for passing to Python), or None.
+	 */
+	bp::object
+	resolved_topological_geometry_sub_segment_get_sub_segments(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
+	{
+		const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
+				resolved_topological_geometry_sub_segment->get_sub_sub_segments();
+		if (!sub_sub_segments)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		bp::list sub_sub_segments_list;
+
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_sub_segment,
+				sub_sub_segments.get())
+		{
+			sub_sub_segments_list.append(sub_sub_segment);
+		}
+
+		return sub_sub_segments_list;
+	}
+
 	bp::object
 	ResolvedTopologicalGeometrySubSegmentWrapper::get_resolved_feature() const
 	{
@@ -1879,6 +1905,27 @@ export_resolved_topological_sub_segment()
 				"``sub_segment.get_resolved_geometry().get_points()[::-1]``.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_resolved_geometry`\n")
+		.def("get_sub_segments",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_sub_segments,
+				"get_sub_segments()\n"
+				"  If this sub-segment is from a topological line then return the :class:`sub-segments<ResolvedTopologicalSubSegment>` "
+				"of the topological line contributing to this sub-segment, otherwise return ``None``.\n"
+				"\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`, or ``None``\n"
+				"\n"
+				"  To see if a shared sub-segment is from a topological line and then iterate over its sub-sub-segments:\n"
+				"  ::\n"
+				"\n"
+				"    sub_segments_of_topological_line_sub_segment = sub_segment.get_sub_segments()\n"
+				"    if sub_segments_of_topological_line_sub_segment:\n"
+				"        for sub_sub_segment in sub_segments_of_topological_line_sub_segment:\n"
+				"            sub_segment_geometry = sub_sub_segment.get_resolved_geometry()\n"
+				"            sub_segment_plate_id = sub_sub_segment.get_feature().get_reconstruction_plate_id()\n"
+				"    else:\n"
+				"        sub_segment_geometry = sub_segment.get_resolved_geometry()\n"
+				"        sub_segment_geometry = sub_segment.get_feature().get_reconstruction_plate_id()\n"
+				"\n"
+				"  .. versionadded:: 22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -1961,6 +2008,33 @@ namespace GPlatesApi
 		}
 
 		return geometry_reversal_flags_list;
+	}
+
+
+	/**
+	 * Get the sub-sub-segments if this sub-segment is a topological line (for passing to Python), or None.
+	 */
+	bp::object
+	resolved_topological_shared_sub_segment_get_sub_segments(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
+	{
+		const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
+				resolved_topological_shared_sub_segment->get_sub_sub_segments();
+		if (!sub_sub_segments)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		bp::list sub_sub_segments_list;
+
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_sub_segment,
+				sub_sub_segments.get())
+		{
+			sub_sub_segments_list.append(sub_sub_segment);
+		}
+
+		return sub_sub_segments_list;
 	}
 
 
@@ -2215,6 +2289,27 @@ export_resolved_topological_shared_sub_segment()
 				"           geometry_reversal_flag = geometry_reversal_flags[index]\n"
 				"\n"
 				"  .. seealso:: :meth:`get_sharing_resolved_topologies`\n")
+		.def("get_sub_segments",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_sub_segments,
+				"get_sub_segments()\n"
+				"  If this sub-segment is from a topological line then return the :class:`sub-segments<ResolvedTopologicalSubSegment>` "
+				"of the topological line contributing to this sub-segment, otherwise return ``None``.\n"
+				"\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`, or ``None``\n"
+				"\n"
+				"  To see if a shared sub-segment is from a topological line and then iterate over its sub-sub-segments:\n"
+				"  ::\n"
+				"\n"
+				"    sub_segments_of_topological_line_sub_segment = shared_sub_segment.get_sub_segments()\n"
+				"    if sub_segments_of_topological_line_sub_segment:\n"
+				"        for sub_sub_segment in sub_segments_of_topological_line_sub_segment:\n"
+				"            sub_segment_geometry = sub_sub_segment.get_resolved_geometry()\n"
+				"            sub_segment_plate_id = sub_sub_segment.get_feature().get_reconstruction_plate_id()\n"
+				"    else:\n"
+				"        sub_segment_geometry = shared_sub_segment.get_resolved_geometry()\n"
+				"        sub_segment_geometry = shared_sub_segment.get_feature().get_reconstruction_plate_id()\n"
+				"\n"
+				"  .. versionadded:: 22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

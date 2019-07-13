@@ -64,6 +64,8 @@ def get_time_dependent_value(property):
     This method is useful if you want to access the time-dependent property value container directly.
     An example is :class:`visiting<PropertyValueVisitor>` the time windows in a :class:`GpmlPiecewiseAggregation`.
     Otherwise :meth:`get_value` is generally more useful since it extracts a value from the container (at a specific time).
+    
+    .. versionadded:: 21
     """
     
     # Get the top-level property value using a private method.

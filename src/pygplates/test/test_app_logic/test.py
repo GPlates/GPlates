@@ -925,17 +925,32 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 (rt for rt in resolved_topologies)))
         for bss in resolved_topologies_dict['topology1'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
+            self.assertFalse(bss.get_sub_segments()) # No topological lines in 'topology1'.
         for bss in resolved_topologies_dict['topology2'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
+            if bss.get_topological_section_feature().get_name() == 'section14':
+                self.assertTrue(set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in bss.get_sub_segments()) == set(['section11', 'section12']))
+                # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
+                for sub_sub_segment in bss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
+            else:
+                self.assertFalse(bss.get_sub_segments()) # Not from a topological line.
         for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
             self.assertTrue(bss.get_resolved_feature().get_geometry() == bss.get_resolved_geometry())
             if bss.get_topological_section_feature().get_name() == 'section14':
                 # We know 'section14' is a ResolvedTopologicalLine...
                 self.assertTrue(bss.get_topological_section().get_resolved_line() == bss.get_topological_section_geometry())
+                self.assertTrue(set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in bss.get_sub_segments()) == set(['section11', 'section12', 'section13']))
+                for sub_sub_segment in bss.get_sub_segments():
+                    if sub_sub_segment.get_feature().get_name() == 'section13':
+                        self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
+                    else:
+                        self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
             else:
                 # We know all sections except 'section14' are ReconstructedFeatureGeometry's (not ResolvedTopologicalLine's)...
                 self.assertTrue(pygplates.PolylineOnSphere(bss.get_topological_section().get_reconstructed_geometry()) == bss.get_topological_section_geometry())
+                self.assertFalse(bss.get_sub_segments()) # Not from a topological line.
         
         # Sections 9 and 10 are points that now are separate sub-segments (each point is a rubber-banded line).
         # Previously they were joined into a single sub-segment (a hack).
@@ -952,66 +967,87 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
         self.assertTrue(len(section2_shared_sub_segments) == 2)
         for sss in section2_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
         self.assertTrue(len(section3_shared_sub_segments) == 1)
         for sss in section3_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
         self.assertTrue(len(section4_shared_sub_segments) == 2)
         for sss in section4_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
         self.assertTrue(len(section5_shared_sub_segments) == 1)
         for sss in section5_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
         self.assertTrue(len(section6_shared_sub_segments) == 1)
         for sss in section6_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
         self.assertTrue(len(section7_shared_sub_segments) == 2)
         for sss in section7_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
         self.assertTrue(len(section8_shared_sub_segments) == 1)
         for sss in section8_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
         self.assertTrue(len(section9_shared_sub_segments) == 1)
         for sss in section9_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
         self.assertTrue(len(section10_shared_sub_segments) == 1)
         for sss in section10_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
         
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 2)
         for sss in section14_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']) or sharing_topologies == set(['topology2', 'topology3']))
+            sub_sub_segments = set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in sss.get_sub_segments())
+            if sharing_topologies == set(['topology3']):
+                self.assertTrue(sub_sub_segments == set(['section12', 'section13']))
+                # All sub-sub-segments in this shared sub-segment happen to have 2 vertices.
+                for sub_sub_segment in sss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
+            else:
+                self.assertTrue(sub_sub_segments == set(['section11', 'section12']))
+                # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
+                for sub_sub_segment in sss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
 
         # This time exclude networks from the topological sections (but not the topologies).
         resolved_topologies = []
