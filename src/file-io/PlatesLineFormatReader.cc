@@ -274,14 +274,14 @@ qDebug() << "iter = " << node_str;
 			// convert token strings into topology parameters
 			QString old_fid = tokens[0];
 			int type = tokens[1].toInt();
-			float lat = tokens[2].toFloat();
-			float lon = tokens[3].toFloat();
-			float closeness = tokens[4].toFloat();
+			//float lat = tokens[2].toFloat();
+			//float lon = tokens[3].toFloat();
+			//float closeness = tokens[4].toFloat();
 			bool use_reverse = tokens[5].toInt();
-			bool use_head_prev = tokens[6].toInt();
-			bool use_tail_prev = tokens[7].toInt();
-			bool use_head_next = tokens[8].toInt();
-			bool use_tail_next = tokens[9].toInt();
+			//bool use_head_prev = tokens[6].toInt();
+			//bool use_tail_prev = tokens[7].toInt();
+			//bool use_head_next = tokens[8].toInt();
+			//bool use_tail_next = tokens[9].toInt();
 
 #if 0
 // FIXME : remove diagnostic 
