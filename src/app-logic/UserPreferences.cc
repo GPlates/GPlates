@@ -182,7 +182,7 @@ namespace
 				}
 			}
 #if defined(Q_WS_MAC)
-		else{//network no good, skip network proxy query and print a warning message.
+		}else{//network no good, skip network proxy query and print a warning message.
 			qWarning() << "No available network has been detected! Will not query network proxy.";
 		}
 #endif
