@@ -162,7 +162,9 @@ namespace
 		// Without this workaround, GPlates will fail to launch and hang indefinitely during startup.
 		// With this workaround, GPlates will wait the "network timeout" and decide there is really
 		// no valid network connection, skip "proxy querying" and launch normally. 
-		// Although the startup will be slower than normal, GPlates will launch successfully eventually. 
+		// Although the startup will be slower than normal, GPlates will launch successfully eventually.
+		// Note: The finished() signal will be emitted immediately if the network interface is not active.
+		// GPlates will wait the "network timeout" only when the network seems active but in fact not really working.  
 #if defined(Q_WS_MAC)
 		QNetworkAccessManager nam;
 		QNetworkRequest req(gplates_url);
@@ -185,6 +187,12 @@ namespace
 		}else{//network no good, skip network proxy query and print a warning message.
 			qWarning() << "No available network has been detected! Will not query network proxy.";
 		}
+		// Note: After the request has finished, it is the responsibility of the user to delete 
+		// the QNetworkReply object at an appropriate time. 
+		// Do not directly delete it inside the slot connected to finished(). 
+		// You can use the deleteLater() function.
+		// https://doc.qt.io/archives/qt-4.8/qnetworkaccessmanager.html#get
+		reply->deleteLater();
 #endif
 #endif
 		
