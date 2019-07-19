@@ -2227,7 +2227,7 @@ export_resolved_topological_shared_sub_segment()
 				"            | The resolved topologies that share the topological section can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  .. seealso:: :class:`get_topological_section_feature`\n")
+				"  .. seealso:: :meth:`get_topological_section_feature`\n")
 		.def("get_topological_section_geometry",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_topological_section_geometry,
 				"get_topological_section_geometry()\n"
@@ -2491,7 +2491,7 @@ export_resolved_topological_section()
 				"            | The resolved topologies that share the topological section can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  .. seealso:: :class:`get_topological_section_feature`\n")
+				"  .. seealso:: :meth:`get_topological_section_feature`\n")
 		.def("get_topological_section_geometry",
 				&GPlatesApi::resolved_topological_section_get_topological_section_geometry,
 				"get_topological_section_geometry()\n"

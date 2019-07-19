@@ -968,6 +968,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
         self.assertTrue(len(section2_shared_sub_segments) == 2)
@@ -975,6 +976,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
         self.assertTrue(len(section3_shared_sub_segments) == 1)
@@ -982,6 +984,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
         self.assertTrue(len(section4_shared_sub_segments) == 2)
@@ -989,6 +992,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
         self.assertTrue(len(section5_shared_sub_segments) == 1)
@@ -996,6 +1000,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
         self.assertTrue(len(section6_shared_sub_segments) == 1)
@@ -1003,6 +1008,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
         self.assertTrue(len(section7_shared_sub_segments) == 2)
@@ -1010,6 +1016,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
         self.assertTrue(len(section8_shared_sub_segments) == 1)
@@ -1017,6 +1024,11 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates()
+            overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+            self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 2)
+            self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
+            self.assertTrue(subduction_polarity == 'Left')
         
         section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
         self.assertTrue(len(section9_shared_sub_segments) == 1)
@@ -1024,6 +1036,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
         self.assertTrue(len(section10_shared_sub_segments) == 1)
@@ -1031,6 +1044,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 2)
@@ -1043,11 +1057,16 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 # All sub-sub-segments in this shared sub-segment happen to have 2 vertices.
                 for sub_sub_segment in sss.get_sub_segments():
                     self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
+                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
             else:
                 self.assertTrue(sub_sub_segments == set(['section11', 'section12']))
                 # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
                 for sub_sub_segment in sss.get_sub_segments():
                     self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
+                overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+                self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 0)
+                self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 1)
+                self.assertTrue(subduction_polarity == 'Right')
 
         # This time exclude networks from the topological sections (but not the topologies).
         resolved_topologies = []
