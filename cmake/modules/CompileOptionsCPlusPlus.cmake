@@ -65,6 +65,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	# Increase pre-compiled header memory allocation limit to avoid compile error.
 	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
+	
+	# Some C++ object files (like "PyPropertyValues.obj") contain a lot of sections (enough to require increasing the limit).
+   	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 
     # Build configuration-specific flags.
     # The defaults look reasonable...
