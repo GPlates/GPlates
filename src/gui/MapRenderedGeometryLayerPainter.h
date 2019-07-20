@@ -32,12 +32,13 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <proj_api.h>
 
 #include "Colour.h"
 #include "ColourProxy.h"
 #include "ColourScheme.h"
 #include "LayerPainter.h"
+
+#include "file-io/Proj.h"
 
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"

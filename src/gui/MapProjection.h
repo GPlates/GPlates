@@ -30,7 +30,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <proj_api.h>
+
+#include "file-io/Proj.h"
 
 #include "gui/ProjectionException.h"
 

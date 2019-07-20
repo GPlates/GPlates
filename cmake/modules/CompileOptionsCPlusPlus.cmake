@@ -243,6 +243,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 # So we'll default to using the old relaxed (run-time) method.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 
+# Temporarily accept use of deprecated Proj4 library header ("proj_api.h").
+# It'll be removed after a few minor versions of Proj6 have been released, so we'll need to switch over soon.
+# TODO: Remove this once we've switched over to using Proj6 header ("proj.h").
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DACCEPT_USE_OF_DEPRECATED_PROJ_API_H")
+
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile
 # build environment and activate 'CMAKE_CXX_FLAGS_PROFILEGPLATES' (note: 'CMAKE_CXX_FLAGS' will get used too).
