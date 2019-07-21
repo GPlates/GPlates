@@ -243,6 +243,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 # So we'll default to using the old relaxed (run-time) method.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 
+# Temporary avoidance of warning in Boost due to bug in version 1.69 caused by using deprecated "boost/pending/integer_log2.hpp".
+# Apparently it wasn't fixed in 1.69 (only 1.70 and above).
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ALLOW_DEPRECATED_HEADERS")
+
 # Temporarily accept use of deprecated Proj4 library header ("proj_api.h").
 # It'll be removed after a few minor versions of Proj6 have been released, so we'll need to switch over soon.
 # TODO: Remove this once we've switched over to using Proj6 header ("proj.h").
