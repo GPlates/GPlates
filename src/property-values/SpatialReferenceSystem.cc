@@ -28,6 +28,8 @@
 
 #include "SpatialReferenceSystem.h"
 
+#include "global/GdalVersion.h"
+
 
 GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type
 GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84()
@@ -38,6 +40,11 @@ GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84()
 	{
 		OGRSpatialReference wgs84;
 		wgs84.SetWellKnownGeogCS("WGS84");
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(3,0,0)
+		// GDAL >= 3.0 introduced a data-axis-to-CRS-axis mapping (that breaks backward compatibility).
+		// We need to set it to behave the same as before GDAL 3.0 (ie, longitude first, latitude second).
+		wgs84.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+#endif
 		OGR_WGS84 = create(wgs84);
 	}
 
