@@ -38,8 +38,6 @@
 #include "ColourScheme.h"
 #include "LayerPainter.h"
 
-#include "file-io/Proj.h"
-
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
 

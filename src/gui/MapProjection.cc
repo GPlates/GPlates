@@ -60,7 +60,7 @@ namespace
 
 	static ProjectionParameters projection_table[] = {
 		{GPlatesGui::MapProjection::ORTHOGRAPHIC,"","",0.,false},
-		{GPlatesGui::MapProjection::RECTANGULAR,"proj=latlong","ellps=WGS84",RAD_TO_DEG,true},
+		{GPlatesGui::MapProjection::RECTANGULAR,"proj=latlong","ellps=WGS84",(180.0 / GPlatesMaths::PI)/*RAD_TO_DEG*/,true},
 		{GPlatesGui::MapProjection::MERCATOR,"proj=merc","ellps=WGS84",0.0000070,true},
 		{GPlatesGui::MapProjection::MOLLWEIDE,"proj=moll","ellps=WGS84",0.0000095,true},
 		{GPlatesGui::MapProjection::ROBINSON,"proj=robin","ellps=WGS84",0.0000095,true},
@@ -71,7 +71,12 @@ namespace
 
 
 GPlatesGui::MapProjection::MapProjection():
+#if defined(GPLATES_USING_PROJ4)
 	d_projection(0),
+#else // using proj5+...
+	d_transformation(0),
+	d_proj_info(proj_info()),
+#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_llp(0,0),
@@ -82,8 +87,13 @@ GPlatesGui::MapProjection::MapProjection():
 
 GPlatesGui::MapProjection::MapProjection(
 		MapProjection::Type projection_type_):
+#if defined(GPLATES_USING_PROJ4)
 	d_projection(0),
 	d_latlon_projection(0),
+#else // using proj5+...
+	d_transformation(0),
+	d_proj_info(proj_info()),
+#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_llp(0,0),
@@ -94,8 +104,13 @@ GPlatesGui::MapProjection::MapProjection(
 
 GPlatesGui::MapProjection::MapProjection(
 		const MapProjectionSettings &projection_settings):
+#if defined(GPLATES_USING_PROJ4)
 	d_projection(0),
 	d_latlon_projection(0),
+#else // using proj5+...
+	d_transformation(0),
+	d_proj_info(proj_info()),
+#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_llp(projection_settings.get_central_llp()),
@@ -109,10 +124,21 @@ GPlatesGui::MapProjection::MapProjection(
 
 GPlatesGui::MapProjection::~MapProjection()
 {
+#if defined(GPLATES_USING_PROJ4)
 	if (d_projection)
 	{
 		pj_free(d_projection);
 	}
+	if (d_latlon_projection)
+	{
+		pj_free(d_latlon_projection);
+	}
+#else // using proj5+...
+	if (d_transformation)
+	{
+		proj_destroy(d_transformation);
+	}
+#endif
 }
 
 
@@ -148,10 +174,23 @@ GPlatesGui::MapProjection::set_projection_type(
 	projection_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
 	projection_args[2] = strdup(lon_string.toStdString().c_str());
 
+	// Set up a zero central longitude string.
+	lon_string = QString("lon_0=");
+	lon = 0.;
+	lon_string += QString("%1").arg(lon);
+
+	latlon_args[0] = strdup("proj=latlong");
+	latlon_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
+	latlon_args[2] = strdup(lon_string.toStdString().c_str());
+
+#if defined(GPLATES_USING_PROJ4)
+
 	if (d_projection)
 	{
 		pj_free(d_projection);
 		pj_free(d_latlon_projection);
+		d_projection = 0;
+		d_latlon_projection = 0;
 	}
 
 	if (!(d_projection = pj_init(num_projection_args,projection_args)))
@@ -161,16 +200,6 @@ GPlatesGui::MapProjection::set_projection_type(
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
 	}
 
-	// Set up a zero central longitude string.
-	lon_string = QString("lon_0=");
-	lon = 0.;
-	lon_string += QString("%1").arg(lon);
-
-
-	latlon_args[0] = strdup("proj=latlong");
-	latlon_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
-	latlon_args[2] = strdup(lon_string.toStdString().c_str());
-
 	if (!(d_latlon_projection = pj_init(num_latlon_args,latlon_args)))
 	{
 		QString message = QString("Proj4 initialisation failed. ");
@@ -178,6 +207,73 @@ GPlatesGui::MapProjection::set_projection_type(
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
 	}
 
+#else // using proj5+...
+
+	if (d_transformation)
+	{
+		proj_destroy(d_transformation);
+		d_transformation = 0;
+	}
+
+	// For proj5+, concatenate the separate strings and insert '+' in front of each string.
+	QString projection_args_string;
+	for (unsigned int i = 0; i < num_projection_args; ++i)
+	{
+		projection_args_string += QString(" +%1").arg(projection_args[i]);
+	}
+	projection_args_string = projection_args_string.trimmed();
+	QString latlon_args_string;
+	for (unsigned int i = 0; i < num_latlon_args; ++i)
+	{
+		latlon_args_string += QString(" +%1").arg(latlon_args[i]);
+	}
+	latlon_args_string = latlon_args_string.trimmed();
+
+	// Create a single transformation object that converts between the two projections.
+	// This is a fundamental difference compared to Proj4.
+	if (d_proj_info.major == 5)
+	{
+		// Transformation between 'latlong' and the selected projection.
+		// No need for source 'latlong' CRS since destination CRS accepts geodetic input.
+		if (!(d_transformation = proj_create(PJ_DEFAULT_CTX, projection_args_string.toStdString().c_str())))
+		{
+			QString message = QString("Proj initialisation failed: %1: %2")
+				.arg(projection_args[0])
+				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
+			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+		}
+	}
+	else // proj6+...
+	{
+		// Transformation between 'latlong' and the selected projection.
+		if (!(d_transformation = proj_create_crs_to_crs(PJ_DEFAULT_CTX,
+				latlon_args_string.toStdString().c_str(),
+				projection_args_string.toStdString().c_str(),
+				NULL)))
+		{
+			QString message = QString("Proj initialisation failed: %1: %2")
+				.arg(projection_args[0])
+				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
+			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+		}
+
+#if 0 // For proj6.1+, to get a consistent longitude/latitude ordering, but we don't need this...
+		PJ* transformation_for_GIS = proj_normalize_for_visualization(PJ_DEFAULT_CTX, d_transformation);
+		if (0 == transformation_for_GIS)
+		{
+			proj_destroy(d_transformation);
+
+			QString message = QString("Proj initialisation failed: %1: %2")
+				.arg(projection_args[0])
+				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
+			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+		}
+		proj_destroy(d_transformation);
+		d_transformation = transformation_for_GIS;
+#endif
+	}
+
+#endif
 
 	d_scale = projection_table[projection_type_].scaling_factor;
 	if (d_scale < MIN_SCALE_FACTOR)
@@ -186,12 +282,6 @@ GPlatesGui::MapProjection::set_projection_type(
 	}
 
 	d_projection_type = projection_type_;
-
-#if 0
-	free(args[0]);
-	free(args[1]);
-	free(args[2]);
-#endif
 }
 
 
@@ -215,10 +305,17 @@ GPlatesGui::MapProjection::forward_transform(
 	 double &latitude) const
 {
 
+#if defined(GPLATES_USING_PROJ4)
 	if (!d_projection)
 	{
 		return;
 	}
+#else // using proj5+...
+	if (!d_transformation)
+	{
+		return;
+	}
+#endif
 
 	if (d_projection_type == RECTANGULAR)
 	{
@@ -248,25 +345,57 @@ GPlatesGui::MapProjection::forward_transform(
 	if (latitude <= -90.) latitude = -89.999;
 	if (latitude >= 90.) latitude = 89.999;
 
+#if defined(GPLATES_USING_PROJ4)
 
+	// Convert degrees to radians.
 	// DEG_TO_RAD is defined in the <proj_api.h> header. 
 	longitude *= DEG_TO_RAD;
 	latitude *= DEG_TO_RAD;
 
-	int result = pj_transform(d_latlon_projection,d_projection,1,0,&longitude,&latitude,NULL);
-
-	if (result != 0)
+	// Projection transformation.
+	if (0 != pj_transform(d_latlon_projection, d_projection, 1, 0, &longitude, &latitude, NULL))
 	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"Error in pj_transform.");
+		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "Error in pj_transform.");
 	}
+
+#else // using proj5+...
+
+	if (d_proj_info.major == 5)
+	{
+		// Convert degrees to radians.
+		latitude = proj_torad(latitude);
+		longitude = proj_torad(longitude);
+	}
+	else // proj6+...
+	{
+		// NOTE: There's no need to convert degrees to radians since Proj6+ recognises "+proj=latlong" as degrees.
+	}
+
+	// Projection transformation.
+	PJ_COORD c;
+	c.lp.lam = longitude;
+	c.lp.phi = latitude;
+	c = proj_trans(d_transformation, PJ_FWD, c);
+	longitude = c.lp.lam;
+	latitude = c.lp.phi;
+
+	// Debugging...
+	//
+	//int err = proj_errno(d_transformation);
+	//if (err != 0)
+	//{
+	//	qDebug() << proj_errno_string(err);
+	//}
+
+#endif
+
 	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"HUGE_VAL returned from pj_transform.");
+		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "HUGE_VAL returned from proj transform.");
 	}
 
 	longitude *= d_scale;
 	latitude *= d_scale;
-
 }
 
 
@@ -275,10 +404,17 @@ GPlatesGui::MapProjection::inverse_transform(
 	double &longitude,
 	double &latitude) const
 {
+#if defined(GPLATES_USING_PROJ4)
 	if (!d_projection)
 	{
 		return boost::none;
 	}
+#else // using proj5+...
+	if (!d_transformation)
+	{
+		return boost::none;
+	}
+#endif
 
 	if (d_projection_type == RECTANGULAR)
 	{
@@ -322,19 +458,54 @@ GPlatesGui::MapProjection::inverse_transform(
 		return boost::none;
 	}
 
-	int result = pj_transform(d_projection,d_latlon_projection,1,0,&longitude,&latitude,NULL);
+#if defined(GPLATES_USING_PROJ4)
 
-	if (result != 0)
+	// Projection inverse transformation.
+	if (0 != pj_transform(d_projection,d_latlon_projection,1,0,&longitude,&latitude,NULL))
 	{
 		return boost::none;
 	}
+
+	// Convert radians to degrees.
+	// RAD_TO_DEG is defined in the <proj_api.h> header. 
+	longitude *= RAD_TO_DEG;
+	latitude *= RAD_TO_DEG;
+
+#else // using proj5+...
+
+	// Projection inverse transformation.
+	PJ_COORD c;
+	c.lp.lam = longitude;
+	c.lp.phi = latitude;
+	c = proj_trans(d_transformation, PJ_INV, c);
+	longitude = c.lp.lam;
+	latitude = c.lp.phi;
+
+	if (d_proj_info.major == 5)
+	{
+		// Output is in radians - convert to degrees.
+		longitude = proj_todeg(longitude);
+		latitude = proj_todeg(latitude);
+	}
+	else // proj6+...
+	{
+		// NOTE: There's no need to convert radians to degrees since Proj6+ recognises "+proj=latlong" as degrees.
+	}
+
+	// Debugging...
+	//
+	//int err = proj_errno(d_transformation);
+	//if (err != 0)
+	//{
+	//	qDebug() << proj_errno_string(err);
+	//}
+
+#endif
+
 	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
 		return boost::none;
 	}
-
-	longitude *= RAD_TO_DEG;
-	latitude *= RAD_TO_DEG;
 	
 	if (GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) && 
 		(GPlatesMaths::LatLonPoint::is_valid_longitude(longitude)))
