@@ -24,7 +24,6 @@
  */
 
 #include <boost/optional.hpp>
-#include <ogr_spatialref.h>
 
 #include "SpatialReferenceSystem.h"
 
