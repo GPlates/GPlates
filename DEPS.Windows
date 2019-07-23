@@ -176,16 +176,33 @@ Boost
     }
   ...since this is the only location it seems to be happening currently.
 
-Proj4
+SQLite3
 
-  1. Get Proj4 source code from http://trac.osgeo.org/proj/
-  2. Read the README file and build Proj4.
-     o This typically includes editing the INSTDIR variable in the "nmake.opt" file in Proj4 source code
-       to point to the install location,
-     o You can install it to the same location where you extracted the source code (eg, "INSTDIR=C:\SDK\proj\proj-4.9.3").
-  3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-4.9.3\include").
-  4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-4.9.3\lib").
-  5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-4.9.3\bin").
+    1. Download sqlite-amalgamation zip file from "https://www.sqlite.org/download.html".
+    2. Compile the DLL:
+       o "cl sqlite3.c -DSQLITE_ENABLE_RTREE -DSQLITE_API=__declspec(dllexport) -link -dll -out:sqlite3.dll -implib:sqlite3_i.lib"
+       o From https://protyposis.net/blog/compiling-sqlite-as-dll-with-msvc/
+    3. Compile the binary:
+       o "cl shell.c sqlite3.c -Fesqlite3.exe"
+       o It appears the binary is required by the Proj6 cmake build stage (otherwise it'll produce a cmake error).
+
+Proj6
+
+  1. Get Proj6 source code from https://proj.org/
+  2. Read the README file and build Proj6.
+     o This involves using cmake.
+       For example, creating a 'build/' sub-directory inside your extracted proj6 source directory.
+       Then running the CMake GUI and setting source and binary directories (eg, "C:\SDK\proj\proj-6.1.1" and "C:\SDK\proj\proj-6.1.1\build").
+       Then clicking 'Configure' once (or twice) and selecting Visual Studio, then clicking 'Generate' to create a Visual Studio solution.
+     o If cmake cannot find the location of sqlite3 then you'll need to either set it manually in the CMake GUI (after the first 'Configure' stage), or
+       specify it on the cmake command-line as covered in the Proj6 README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
+     o Change the install location from "C:/OSGeo4W" to your Proj6 directory (eg, "C:/SDK/proj/proj-6.1.1"):
+       By changing the CMAKE_INSTALL_PREFIX variable (eg, in the CMake GUI after the first 'Configure' stage).
+       NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling proj.
+     o Open the Visual Studio solution, select "Release" build and then build the "INSTALL" project.
+  3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\include").
+  4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\lib").
+  5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\bin").
 
 NetCDF
 
@@ -202,17 +219,10 @@ NetCDF
        o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
     5. This library will get compiled into GDAL (see GDAL below).
 
-SQLite3
-
-    1. Download sqlite-amalgamation zip file from "https://www.sqlite.org/download.html".
-    2. Compile:
-       o "cl sqlite3.c -DSQLITE_ENABLE_RTREE -DSQLITE_API=__declspec(dllexport) -link -dll -out:sqlite3.dll -implib:sqlite3_i.lib"
-       o From https://protyposis.net/blog/compiling-sqlite-as-dll-with-msvc/
-
 GDAL
 
     1. Get GDAL 2.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
-    2. Extract to a location on your hard drive (eg, "").
+    2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.0.1").
     3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
        o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
        o For example, after editing, you might have something like:
@@ -224,15 +234,11 @@ GDAL
        o This enables NetCDF version 4 support (which uses HDF5).
        o For example, after editing, you should have:
          NETCDF_HAS_NC4 = yes
-    5. Edit the "nmake.opt" file under the section labelled "# Uncomment the following lines to link PROJ library statically.",
-       o Uncomment the following three lines and specify the location of the PROJ4 library (see PROJ4 above).
+    5. Edit the "nmake.opt" file under the section labelled "# PROJ stuff (required dependency: PROJ >= 6)",
+       o Uncomment the following two lines and specify the location of the PROJ6 library (see PROJ6 above).
        o For example, after editing, you might have something like:
-         PROJ_FLAGS = -DPROJ_STATIC -DPROJ_VERSION=4
-         PROJ_INCLUDE = -Ic:\SDK\proj\proj-4.9.3\include
-         PROJ_LIBRARY = c:\SDK\proj\proj-4.9.3\lib\proj.lib
-       o This helps to avoid a dynamic library loading error (for PROJ4) if the PROJ4 DLL is not in the PATH when
-         a raster with an inbuilt spatial reference system (eg, a projection) is loaded into GPlates.
-       o Also note that 'proj.lib' (static lib) should be specified and not 'proj_i.lib' (DLL interface lib).
+         PROJ_INCLUDE = -IC:\SDK\proj\proj-6.1.1\include
+         PROJ_LIBRARY = C:\SDK\proj\proj-6.1.1\lib\proj_6_1.lib
     5. Edit the "nmake.opt" file under the section labelled 
        o Uncomment the following two lines and specify the location of the SQLite3 library (see SQLite3 above).
        o For example, after editing, you might have something like:
@@ -252,7 +258,7 @@ GDAL
        o If you want a debug build then add 'DEBUG=1'.
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
-    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-2.3.3").
+    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-3.0.1").
     11. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
   

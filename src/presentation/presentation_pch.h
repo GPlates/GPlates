@@ -164,7 +164,6 @@ extern "C" {
 #endif // __WINDOWS__
 #include <QPointF>
 #include <QFont>
-#include <proj_api.h>
 #include <cstddef>
 #ifdef __WINDOWS__
 #include <boost/scoped_array.hpp>

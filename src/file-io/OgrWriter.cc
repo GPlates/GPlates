@@ -346,6 +346,11 @@ namespace{
 			else
 			{
 				spatial_reference.SetWellKnownGeogCS("WGS84");
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(3,0,0)
+				// GDAL >= 3.0 introduced a data-axis-to-CRS-axis mapping (that breaks backward compatibility).
+				// We need to set it to behave the same as before GDAL 3.0 (ie, longitude first, latitude second).
+				spatial_reference.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+#endif
 			}
 
 			// We can't just pass the address of 'spatial_reference' into 'GDALDataset::CreateLayer()'

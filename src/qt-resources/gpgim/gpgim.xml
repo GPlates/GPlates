@@ -1214,9 +1214,10 @@
 			<Multiplicity>1..*</Multiplicity>
 		</Property>
 		
-		<Property>
+		<Property gpgim:defaultType="gml:MultiPoint">
 			<Name>gpml:meshPoints</Name>
 			<Description>Global positions to calculate plate velocities at.</Description>
+			<Type>gml:Point</Type>
 			<Type>gml:MultiPoint</Type>
 			<Multiplicity>1</Multiplicity>
 		</Property>

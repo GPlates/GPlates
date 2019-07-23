@@ -664,8 +664,6 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				// For each point, check which deforming network (if any) it lies in.
 				BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalNetwork *network_ptr, resolved_topological_network_seq)
 				{
-					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type network_boundary = network_ptr->boundary_polygon();
-
 					// See if point is in network boundary and if so, return the stage rotation.
 					boost::optional< std::pair<
 							GPlatesMaths::FiniteRotation,

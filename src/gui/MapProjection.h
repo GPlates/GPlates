@@ -30,7 +30,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <proj_api.h>
+
+#include "file-io/Proj.h"
 
 #include "gui/ProjectionException.h"
 
@@ -194,17 +195,33 @@ namespace GPlatesGui
 
 		static const int MIN_PROJECTION_INDEX = RECTANGULAR;
 
+#if defined(GPLATES_USING_PROJ4)
+
 		/**
-		 * The proj4 projection. 
+		 * The proj4 projection.
 		 */ 
 		projPJ d_projection;
 
 		/**
 		 * A proj4 latlon projection.
-		 * 
-		 * This is used in the pw_transform function. 
-		 */ 
+		 *
+		 * This is used in the pw_transform function.
+		 */
 		projPJ d_latlon_projection;
+
+#else // using proj5+...
+
+		/**
+		 * The proj5+ transformation between a configurable projection and lat/lon. 
+		 */ 
+		PJ *d_transformation;
+
+		/**
+		 * Information about the current instance of PROJ.
+		 */
+		PJ_INFO d_proj_info;
+
+#endif
 
 		/**
 		 * The scale factor for the projection.

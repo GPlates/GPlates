@@ -38,6 +38,7 @@
 #include "GsmlPropertyHandlers.h"
 #include "GpmlPropertyStructuralTypeReaderUtils.h"
 
+#include "global/GdalVersion.h"
 #include "global/LogException.h"
 
 #include "model/Gpgim.h"
@@ -259,6 +260,11 @@ namespace
 #if 0
 			OGRSpatialReference from_srs;
 			from_srs.SetWellKnownGeogCS(srs_name.toStdString().c_str());
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(3,0,0)
+			// GDAL >= 3.0 introduced a data-axis-to-CRS-axis mapping (that breaks backward compatibility).
+			// We need to set it to behave the same as before GDAL 3.0 (ie, longitude first, latitude second).
+			from_srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+#endif
 			boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type>
 					coordinate_transformation = GPlatesPropertyValues::CoordinateTransformation::create(
 							GPlatesPropertyValues::SpatialReferenceSystem::create(from_srs));

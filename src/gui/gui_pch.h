@@ -134,7 +134,6 @@
 #include <QAction>
 #include <cstring>
 #include <QAbstractListModel>
-#include <proj_api.h>
 #ifdef __WINDOWS__
 #include <boost/cstdint.hpp>
 #endif // __WINDOWS__
