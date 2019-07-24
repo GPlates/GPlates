@@ -147,7 +147,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
             # gcc 4.7 onwards reports maybe-uninitialized warning when the default
             # boost::optional<> declaration is present.
-            # It has been used widely throughout gplates, so supress the error for now.
+            # It has been used widely throughout gplates, so suppress the warning for now.
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
         endif ()
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
