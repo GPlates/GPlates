@@ -25,6 +25,12 @@ message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} compiler ${CMAKE_CXX_COMPILER_VER
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
+    
+    # Disable warning C4503: 'identifier' : decorated name length exceeded, name was truncated
+	# Apparently a hash is applied to truncated names, so program correctness is unaffected.
+	# However debugging and linking are possibly affected.
+	# But this warning no longer occurs in Visual Studio 2017 and later compilers.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
 
     # Flags common to all build types.
     #       The default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
