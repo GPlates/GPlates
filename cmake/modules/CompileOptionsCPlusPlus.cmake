@@ -42,7 +42,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NO_WARNINGS} /w")
 		add_definitions(/DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     endif (GPLATES_PUBLIC_RELEASE)
     
     # If we've been asked to output a list of header files included by source files.
@@ -113,14 +113,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
         # Headers in system include paths (and '-isystem' paths) should not generate warnings.
-        # However on OSX they do and because we have '-Werror' they become errors.
         # FIXME: temporary solution is to turn off warnings for OSX.
         # All GPlates developers currently use Linux or Windows.
         set(warnings_flags_list )
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
         set(warnings_flags_list
-            -W -Wall -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -W -Wall -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
  	
