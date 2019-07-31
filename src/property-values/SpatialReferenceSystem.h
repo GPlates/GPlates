@@ -29,12 +29,15 @@
 #include <memory>
 #include <boost/shared_ptr.hpp>
 
+#include "global/CompilerWarnings.h"
+PUSH_MSVC_WARNINGS
+// Avoid warning: "needs to have dll-interface to be used by clients of class" OGRSpatialReference and OGRCoordinateTransformationOptions.
+DISABLE_MSVC_WARNING(4251)
+#include <ogr_spatialref.h>
+POP_MSVC_WARNINGS
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
-
-
-// Forward declarations.
-class OGRSpatialReference;
 
 
 namespace GPlatesPropertyValues

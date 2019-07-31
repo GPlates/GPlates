@@ -24,7 +24,6 @@
  */
 
 #include <boost/scoped_array.hpp>
-#include <ogr_spatialref.h>
 
 #include "CoordinateTransformation.h"
 

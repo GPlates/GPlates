@@ -21,8 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <ogr_spatialref.h>
 #include "OgrSrsWriteOptionDialog.h"
+
 
 GPlatesQtWidgets::OgrSrsWriteOptionDialog::OgrSrsWriteOptionDialog(
 	QWidget *parent_):
