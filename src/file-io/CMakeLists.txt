@@ -182,6 +182,7 @@ set(srcs
     PlatesRotationFormatReader.h
     PlatesRotationFormatWriter.cc
     PlatesRotationFormatWriter.h
+    Proj.h
     PropertyMapper.h
     RasterBandReader.cc
     RasterBandReader.h
