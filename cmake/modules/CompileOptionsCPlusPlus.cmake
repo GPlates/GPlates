@@ -100,9 +100,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
                 "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
     endif ()
 
-    # Use C++11 standard for g++ 4.8.1 and above (these vesions all have full support).
+    # Use C++11 standard for g++ 4.8.1 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
-    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1"))
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+        # '-ansi' is equivalent to '-std=c++98'
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi")
+    else()
         message(STATUS "...using C++11")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     endif ()
@@ -128,7 +131,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(warnings_flags "${warnings_flags} ${warning}")
     endforeach(warning ${warnings_flags_list})
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi -fno-strict-aliasing")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 
     # Flags common to all build types.
     if (GPLATES_PUBLIC_RELEASE)
@@ -195,7 +198,7 @@ endif()
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
-    # Use C++11 standard for Clang 3.3 and above (these vesions all have full support).
+    # Use C++11 standard for Clang 3.3 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
     if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3"))
         message(STATUS "...using C++11")
