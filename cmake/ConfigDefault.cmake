@@ -105,7 +105,7 @@ set(GPLATES_QT_PLUGINS_LINUX
 set(GPLATES_BINARY_INSTALL_EXTRAS "")
 
 # Set to 'true' if this is a public code release (to non-developers).
-# Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
+# Currently disables all warnings.
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
 set(GPLATES_PUBLIC_RELEASE false)
 
