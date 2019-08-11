@@ -108,6 +108,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     else()
         message(STATUS "...using C++11")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+		#
+		# TODO: Remove when using C++11 as a minimum requirement for GPlates.
+		#
+        # Temporariy disable deprecated declaration warnings.
+        # Since removing "-ansi" (when using "-std=c++11") we get a ton of warnings
+        # about deprecated std::auto_ptr, which we'll switch over to std::unique_ptr
+        # in the next release or two when we have C++11 as a minimum requirement.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
     endif ()
 
     if(APPLE)
