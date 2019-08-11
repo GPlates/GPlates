@@ -73,6 +73,7 @@ namespace
 GPlatesGui::MapProjection::MapProjection():
 #if defined(GPLATES_USING_PROJ4)
 	d_projection(0),
+	d_latlon_projection(0),
 #else // using proj5+...
 	d_transformation(0),
 	d_proj_info(proj_info()),
