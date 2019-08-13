@@ -221,8 +221,7 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry(
-		bool include_rubber_band_points) const
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry() const
 {
 	// If no intersections or rubber bands.
 	if (!d_start_intersection &&
@@ -240,7 +239,14 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry(
 
 	// The points that will form the sub-segment polyline.
 	std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-	get_geometry_points(sub_segment_points, include_rubber_band_points);
+
+	// Note that we always include rubber band points to avoid retrieving no points.
+	//
+	// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
+	// start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
+	// is only made up of two rubber band points which, if excluded, would result in no points).
+	// Note that this only applies when both rubber band points are on the same side of the section geometry.
+	get_geometry_points(sub_segment_points, true/*include_rubber_band_points*/);
 
 	// If we don't have enough points for a polyline then just return a point geometry.
 	// We should at least have a point (if section geometry was a point).
@@ -413,6 +419,27 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_reversed_end_points(
 	{
 		return get_end_points(include_rubber_band_points);
 	}
+}
+
+
+unsigned int
+GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_num_points(
+		bool include_rubber_band_points) const
+{
+	unsigned int num_points = d_end_section_vertex_index - d_start_section_vertex_index;
+
+	if (d_start_intersection ||
+		(include_rubber_band_points && d_start_rubber_band))
+	{
+		++num_points;
+	}
+	if (d_end_intersection ||
+		(include_rubber_band_points && d_end_rubber_band))
+	{
+		++num_points;
+	}
+
+	return num_points;
 }
 
 

@@ -35,6 +35,8 @@
 #include "model/GpgimFeatureClass.h"
 #include "model/GpgimProperty.h"
 
+#include "utils/UnicodeStringUtils.h"
+
 
 GPlatesFileIO::GpmlFeatureReaderFactory::GpmlFeatureReaderFactory(
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
@@ -275,6 +277,13 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_feature_reader_impl(
 	// Hence we don't need to chain them together, so if an upgrade reader is found it is returned
 	// immediately, otherwise we look for the next upgrade reader.
 	//
+	// For example, there are two upgrade versions for the feature type 'gpml:TopologicalNetwork'.
+	// These versions are 1.6.319 and 1.6.339. If the version in the GPML file is less than 1.6.319 then
+	// only the 1.6.319 upgrade reader is used, however it must also include the upgrade implemented
+	// in version 1.6.339. But if the version in the GPML file satisfies '1.6.319 <= gpml_version < 1.6.339'
+	// then only the 1.6.339 upgrade reader is used (and it does not need to implement the 1.6.319 upgrade
+	// since the GPML file is already up-to-date with respect to that upgrade because 'gpml_version >= 1.6.319').
+	//
 
 	static const GPlatesModel::GpgimVersion GPGIM_VERSION_1_6_318(1, 6, 318);
 	if (d_gpml_version < GPGIM_VERSION_1_6_318)
@@ -324,6 +333,18 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_feature_reader_impl(
 		// Fall through to check for a more recent GPML file...
 	}
 
+	static const GPlatesModel::GpgimVersion GPGIM_VERSION_1_6_339(1, 6, 339);
+	if (d_gpml_version < GPGIM_VERSION_1_6_339)
+	{
+		boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type> feature_reader_impl =
+				create_upgrade_1_6_339_feature_reader_impl(feature_type);
+		if (feature_reader_impl)
+		{
+			return feature_reader_impl.get();
+		}
+		// Fall through to check for a more recent GPML file...
+	}
+
 	// No upgrade necessary.
 	return boost::none;
 }
@@ -347,7 +368,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_318_feature_reader_i
 		static const GPlatesModel::PropertyName TO_ABSOLUTE_REFERENCE_FRAME_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("absoluteReferenceFrame");
 
-		return create_upgrade_property_name_feature_reader_impl(
+		return create_property_rename_feature_reader_impl(
 				feature_type,
 				FROM_ABSOLUTE_REFERENCE_FRAME_PROPERTY_NAME,
 				TO_ABSOLUTE_REFERENCE_FRAME_PROPERTY_NAME);
@@ -363,7 +384,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_318_feature_reader_i
 		static const GPlatesModel::PropertyName TO_CRUST_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("crust");
 
-		return create_upgrade_property_name_feature_reader_impl(
+		return create_property_rename_feature_reader_impl(
 				feature_type,
 				FROM_CRUST_PROPERTY_NAME,
 				TO_CRUST_PROPERTY_NAME);
@@ -385,27 +406,6 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 			GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
 	if (feature_type == TOPOLOGICAL_NETWORK_FEATURE_TYPE)
 	{
-		// Rename some properties.
-		std::vector<GpmlUpgradeReaderUtils::PropertyRename> property_rename_pairs;
-
-		// Rename 'gpml:shapeFactor' to 'gpml:networkShapeFactor'.
-		static const GPlatesModel::PropertyName FROM_SHAPE_FACTOR_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("shapeFactor");
-		static const GPlatesModel::PropertyName TO_SHAPE_FACTOR_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("networkShapeFactor");
-		property_rename_pairs.push_back(GpmlUpgradeReaderUtils::PropertyRename(
-				FROM_SHAPE_FACTOR_PROPERTY_NAME,
-				TO_SHAPE_FACTOR_PROPERTY_NAME));
-
-		// Rename 'gpml:maxEdge' to 'gpml:networkMaxEdge'.
-		static const GPlatesModel::PropertyName FROM_MAX_EDGE_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("maxEdge");
-		static const GPlatesModel::PropertyName TO_MAX_EDGE_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("networkMaxEdge");
-		property_rename_pairs.push_back(GpmlUpgradeReaderUtils::PropertyRename(
-				FROM_MAX_EDGE_PROPERTY_NAME,
-				TO_MAX_EDGE_PROPERTY_NAME));
-
 		// Query the GPGIM for the GPGIM feature class associated with the feature type.
 		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type>
 				original_gpgim_feature_class =
@@ -415,11 +415,48 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 			return boost::none;
 		}
 
-		// Copy the GPGIM feature class but change the GPGIM property with the matching property name(s).
+		// Remove some properties.
+		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> remove_properties;
+		std::vector<GPlatesModel::PropertyName> remove_property_names;
+
+		// Remove 'gpml:shapeFactor' property.
+		static const GPlatesModel::PropertyName SHAPE_FACTOR_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("shapeFactor");
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type shape_factor_gpgim_property =
+				GPlatesModel::GpgimProperty::create(
+						SHAPE_FACTOR_PROPERTY_NAME,
+						GPlatesUtils::make_qstring_from_icu_string(SHAPE_FACTOR_PROPERTY_NAME.get_name()),
+						"",
+						GPlatesModel::GpgimProperty::ZERO_OR_ONE,
+						GPlatesModel::GpgimStructuralType::create(
+								GPlatesPropertyValues::StructuralType::create_xsi("double"),
+								""),
+						GPlatesModel::GpgimProperty::time_dependent_flags_type());
+		remove_properties.push_back(shape_factor_gpgim_property);
+		remove_property_names.push_back(SHAPE_FACTOR_PROPERTY_NAME);
+
+		// Remove 'gpml:maxEdge' property.
+		static const GPlatesModel::PropertyName MAX_EDGE_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("maxEdge");
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type max_edge_gpgim_property =
+				GPlatesModel::GpgimProperty::create(
+						MAX_EDGE_PROPERTY_NAME,
+						GPlatesUtils::make_qstring_from_icu_string(MAX_EDGE_PROPERTY_NAME.get_name()),
+						"",
+						GPlatesModel::GpgimProperty::ZERO_OR_ONE,
+						GPlatesModel::GpgimStructuralType::create(
+								GPlatesPropertyValues::StructuralType::create_xsi("double"),
+								""),
+						GPlatesModel::GpgimProperty::time_dependent_flags_type());
+		remove_properties.push_back(max_edge_gpgim_property);
+		remove_property_names.push_back(MAX_EDGE_PROPERTY_NAME);
+
+		// Copy the GPGIM feature class but add GPGIM properties (that are no longer in the GPGIM) so
+		// we can read them from old version GPML file.
 		const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type gpgim_feature_class =
-				GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
+				GpmlUpgradeReaderUtils::add_gpgim_feature_class_properties(
 						original_gpgim_feature_class.get(),
-						property_rename_pairs);
+						remove_properties);
 
 		// Feature reader associated with the parent GPGIM feature class.
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type> parent_feature_reader_impl =
@@ -445,11 +482,11 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 			return boost::none;
 		}
 
-		// For each property rename pair, chain a new rename property feature reader impl
+		// For each property name to remove, chain a new rename property feature reader impl
 		// onto the list of readers.
-		return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
+		return GpmlUpgradeReaderUtils::create_property_remove_feature_reader_impl(
 				feature_reader_impl.get(),
-				property_rename_pairs);
+				remove_property_names);
 	}
 
 	return boost::none;
@@ -526,7 +563,59 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_338_feature_reader_i
 
 
 boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
-GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_reader_impl(
+GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_339_feature_reader_impl(
+		const GPlatesModel::FeatureType &feature_type) const
+{
+	//
+	// This upgrade handles changes made in GPGIM version 1.6.339
+	//
+
+	static const GPlatesModel::FeatureType TOPOLOGICAL_NETWORK_FEATURE_TYPE =
+			GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+	if (feature_type == TOPOLOGICAL_NETWORK_FEATURE_TYPE)
+	{
+		// Remove some properties.
+		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> remove_properties;
+
+		// Remove 'gpml:shapeFactor' property.
+		static const GPlatesModel::PropertyName NETWORK_SHAPE_FACTOR_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("networkShapeFactor");
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type network_shape_factor_gpgim_property =
+				GPlatesModel::GpgimProperty::create(
+						NETWORK_SHAPE_FACTOR_PROPERTY_NAME,
+						GPlatesUtils::make_qstring_from_icu_string(NETWORK_SHAPE_FACTOR_PROPERTY_NAME.get_name()),
+						"",
+						GPlatesModel::GpgimProperty::ZERO_OR_ONE,
+						GPlatesModel::GpgimStructuralType::create(
+								GPlatesPropertyValues::StructuralType::create_xsi("double"),
+								""),
+						GPlatesModel::GpgimProperty::time_dependent_flags_type());
+		remove_properties.push_back(network_shape_factor_gpgim_property);
+
+		// Remove 'gpml:maxEdge' property.
+		static const GPlatesModel::PropertyName NETWORK_MAX_EDGE_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("networkMaxEdge");
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type network_max_edge_gpgim_property =
+				GPlatesModel::GpgimProperty::create(
+						NETWORK_MAX_EDGE_PROPERTY_NAME,
+						GPlatesUtils::make_qstring_from_icu_string(NETWORK_MAX_EDGE_PROPERTY_NAME.get_name()),
+						"",
+						GPlatesModel::GpgimProperty::ZERO_OR_ONE,
+						GPlatesModel::GpgimStructuralType::create(
+								GPlatesPropertyValues::StructuralType::create_xsi("double"),
+								""),
+						GPlatesModel::GpgimProperty::time_dependent_flags_type());
+		remove_properties.push_back(network_max_edge_gpgim_property);
+
+		return create_property_remove_feature_reader_impl(feature_type, remove_properties);
+	}
+
+	return boost::none;
+}
+
+
+boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
+GPlatesFileIO::GpmlFeatureReaderFactory::create_property_rename_feature_reader_impl(
 		const GPlatesModel::FeatureType &feature_type,
 		const GPlatesModel::PropertyName &from_property_name,
 		const GPlatesModel::PropertyName &to_property_name) const
@@ -535,14 +624,14 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_re
 			from_property_name,
 			to_property_name);
 
-	return create_upgrade_property_name_feature_reader_impl(
+	return create_property_rename_feature_reader_impl(
 			feature_type,
 			std::vector<GpmlUpgradeReaderUtils::PropertyRename>(1, property_rename_pair));
 }
 
 
 boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
-GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_reader_impl(
+GPlatesFileIO::GpmlFeatureReaderFactory::create_property_rename_feature_reader_impl(
 		const GPlatesModel::FeatureType &feature_type,
 		const std::vector<GpmlUpgradeReaderUtils::PropertyRename> &property_rename_pairs) const
 {
@@ -575,4 +664,61 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_re
 	return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 			feature_reader_impl.get(),
 			property_rename_pairs);
+}
+
+
+boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
+GPlatesFileIO::GpmlFeatureReaderFactory::create_property_remove_feature_reader_impl(
+		const GPlatesModel::FeatureType &feature_type,
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &property) const
+{
+	return create_property_remove_feature_reader_impl(
+			feature_type,
+			std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>(1, property));
+}
+
+
+boost::optional<GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type>
+GPlatesFileIO::GpmlFeatureReaderFactory::create_property_remove_feature_reader_impl(
+		const GPlatesModel::FeatureType &feature_type,
+		const std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &properties) const
+{
+	// Query the GPGIM for the GPGIM feature class associated with the specified feature type.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> original_gpgim_feature_class =
+			GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
+	if (!original_gpgim_feature_class)
+	{
+		return boost::none;
+	}
+
+	// Copy the GPGIM feature class but add GPGIM properties (that are no longer in the GPGIM) so
+	// we can read them from old version GPML file. If we don't add them here then they cannot be
+	// read properly and will just end up getting read by the un-interpreted property reader which
+	// will add them as un-interpreted (XML) properties.
+	const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type gpgim_feature_class =
+			GpmlUpgradeReaderUtils::add_gpgim_feature_class_properties(
+					original_gpgim_feature_class.get(),
+					properties);
+
+	// Create a feature reader implementation that reads the properties to be subsequently removed.
+	boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type> feature_reader_impl =
+			create_feature_reader_impl(gpgim_feature_class);
+	if (!feature_reader_impl)
+	{
+		return boost::none;
+	}
+
+	// Get the property names to remove from the specified GPGIM properties.
+	std::vector<GPlatesModel::PropertyName> property_names;
+	const unsigned int num_properties = properties.size();
+	for (unsigned int n = 0; n < num_properties; ++n)
+	{
+		property_names.push_back(properties[n]->get_property_name());
+	}
+
+	// For each removed property name, chain a new remove property feature reader impl
+	// onto the list of readers.
+	return GpmlUpgradeReaderUtils::create_property_remove_feature_reader_impl(
+			feature_reader_impl.get(),
+			property_names);
 }

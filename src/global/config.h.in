@@ -146,9 +146,6 @@
 /* Whether GPlates is not built with Python support */
 #cmakedefine GPLATES_NO_PYTHON
 
-/* Check CGAL-3.7 patch in src/system-fixes/cgal/Constrained_Delaunay_triangulation_2.h */
-#cmakedefine HAVE_GCAL_PATCH_CDT2_H
-
 /* Whether GPlates is not built with Symbol stuff */
 #cmakedefine GPLATES_NO_SYMBOL
 

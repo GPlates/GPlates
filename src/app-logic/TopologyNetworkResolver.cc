@@ -24,6 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <cstddef> // For std::size_t
 #include <map>
 #include <vector>
@@ -65,11 +66,14 @@
 #include "global/PreconditionViolationError.h"
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/MathsUtils.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/PropertyName.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -114,65 +118,39 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	// Keep track of the feature we're visiting - used for debug/error messages.
 	d_currently_visited_feature = feature_handle.reference();
 
+	// Prepare for a new topological network.
+	// There can only be one topological network property per feature.
+	d_current_resolved_network.reset();
+
+	// Reset rift parameters.
+	d_current_rift_params.reset();
+
 	// Collect some reconstruction properties from the feature such as reconstruction
 	// plate ID and time of appearance/disappearance.
-	d_reconstruction_params.visit_feature(d_currently_visited_feature);
+	d_current_reconstruction_params.visit_feature(d_currently_visited_feature);
 
 	// If the feature is not defined at the reconstruction time then don't visit the properties.
-	if ( ! d_reconstruction_params.is_feature_defined_at_recon_time(d_reconstruction_time))
+	if ( ! d_current_reconstruction_params.is_feature_defined_at_recon_time(d_reconstruction_time))
 	{
 		return false;
 	}
 
-	
-#if 0 // Not currently using being used...
-
-	// visit a few specific props
-	//
-	{
-		static const GPlatesModel::PropertyName property_name =
-			GPlatesModel::PropertyName::create_gpml("networkShapeFactor");
-		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
-						feature_handle.reference(),
-						property_name);
-		if (!property_value)
-		{
-			d_shape_factor = 0.125;
-		}
-		else
-		{
-			d_shape_factor = property_value.get()->value();
-		}
-	}
-	// 
-	{
-		static const GPlatesModel::PropertyName property_name =
-			GPlatesModel::PropertyName::create_gpml("networkMaxEdge");
-		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
-						feature_handle.reference(),
-						property_name);
-		if (!property_value)
-		{
-			d_max_edge = 300000000.0;
-		}
-		else
-		{
-			d_max_edge = property_value.get()->value();
-// FIXME: this is to account for older files with values like 3.0 
-			if (d_max_edge < 10000)
-			{
-				d_max_edge *= 100000000;
-			}
-		}
-	}
-
-#endif // ...not currently using being used.
-
-
 	// Now visit each of the properties in turn.
 	return true;
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolver::finalise_post_feature_properties(
+		GPlatesModel::FeatureHandle &feature_handle)
+{
+	//
+	// Finally create the resolved topological network.
+	//
+	if (d_current_resolved_network.has_resolved_network())
+	{
+		create_resolved_topology_network();
+	}
 }
 
 
@@ -238,14 +216,15 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_time_window(
 	gpml_time_window.time_dependent_value()->accept_visitor(*this);
 }
 
+
 void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_network(
 		GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
 	PROFILE_FUNC();
 
-	// Prepare for a new topological network.
-	d_resolved_network.reset();
+	// Record the topological network property, we'll need it later when create ResolvedTopologicalNetwork.
+	d_current_resolved_network.initialise(current_top_level_propiter().get());
 
 	//
 	// Visit the topological boundary sections and topological interiors to gather needed
@@ -260,11 +239,6 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_network(
 	// generate the resolved boundary subsegments.
 	//
 	process_topological_boundary_section_intersections();
-
-	//
-	// Now create the resolved topological network.
-	//
-	create_resolved_topology_network();
 }
 
 
@@ -324,7 +298,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 	// Add to boundary section sequence.
 	// NOTE: Topological sections only exist for the network *boundary*.
 	// The interior geometries are not topological sections.
-	d_resolved_network.d_boundary_sections.push_back(boundary_section.get());
+	d_current_resolved_network.boundary_sections.push_back(boundary_section.get());
 }
 
 
@@ -387,7 +361,55 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 	// Add to boundary section sequence.
 	// NOTE: Topological sections only exist for the network *boundary*.
 	// The interior geometries are not topological sections.
-	d_resolved_network.d_boundary_sections.push_back(boundary_section.get());
+	d_current_resolved_network.boundary_sections.push_back(boundary_section.get());
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_plate_id(
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+{
+	static const GPlatesModel::PropertyName RIFT_LEFT_PLATE_PROPERTY_NAME =
+			GPlatesModel::PropertyName::create_gpml("riftLeftPlate");
+	static const GPlatesModel::PropertyName RIFT_RIGHT_PLATE_PROPERTY_NAME =
+			GPlatesModel::PropertyName::create_gpml("riftRightPlate");
+
+	if (current_top_level_propname() == RIFT_LEFT_PLATE_PROPERTY_NAME)
+	{
+		d_current_rift_params.left_plate_id = gpml_plate_id.value();
+	}
+	else if (current_top_level_propname() == RIFT_RIGHT_PLATE_PROPERTY_NAME)
+	{
+		d_current_rift_params.right_plate_id = gpml_plate_id.value();
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolver::visit_xs_double(
+		GPlatesPropertyValues::XsDouble& xs_double)
+{
+	static const GPlatesModel::PropertyName RIFT_EXPONENTIAL_STRETCHING_CONSTANT_PROPERTY_NAME =
+			GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant");
+	static const GPlatesModel::PropertyName RIFT_EDGE_LENGTH_THRESHOLD_DEGREES_PROPERTY_NAME =
+			GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees");
+	static const GPlatesModel::PropertyName RIFT_STRAIN_RATE_RESOLUTION_LOG_10_PROPERTY_NAME =
+			GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10");
+
+	if (current_top_level_propname() == RIFT_EXPONENTIAL_STRETCHING_CONSTANT_PROPERTY_NAME)
+	{
+		d_current_rift_params.exponential_stretching_constant = xs_double.value();
+	}
+	else if (current_top_level_propname() == RIFT_EDGE_LENGTH_THRESHOLD_DEGREES_PROPERTY_NAME)
+	{
+		d_current_rift_params.edge_length_threshold =
+				GPlatesMaths::AngularExtent::create_from_angle(
+						GPlatesMaths::convert_deg_to_rad(xs_double.value()));
+	}
+	else if (current_top_level_propname() == RIFT_STRAIN_RATE_RESOLUTION_LOG_10_PROPERTY_NAME)
+	{
+		d_current_rift_params.strain_rate_resolution = std::pow(10.0, xs_double.value());
+	}
 }
 
 
@@ -453,7 +475,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometry(
 	// Add to interior geometries sequence.
 	// NOTE: The interior geometries are not topological sections because
 	// they don't intersect with each other.
-	d_resolved_network.d_interior_geometries.push_back(interior_geometry.get());
+	d_current_resolved_network.interior_geometries.push_back(interior_geometry.get());
 }
 
 
@@ -641,7 +663,7 @@ GPlatesAppLogic::TopologyNetworkResolver::process_topological_boundary_section_i
 {
 	// Iterate over our internal sequence of sections that we built up by
 	// visiting the topological sections of a topological polygon.
-	const std::size_t num_sections = d_resolved_network.d_boundary_sections.size();
+	const std::size_t num_sections = d_current_resolved_network.boundary_sections.size();
 
 	// If there's only one section then don't try to intersect it with itself.
 	if (num_sections < 2)
@@ -681,10 +703,10 @@ GPlatesAppLogic::TopologyNetworkResolver::process_topological_section_intersecti
 	// Intersect the current section with the previous section.
 	//
 
-	const std::size_t num_sections = d_resolved_network.d_boundary_sections.size();
+	const std::size_t num_sections = d_current_resolved_network.boundary_sections.size();
 
 	ResolvedNetwork::BoundarySection &current_section =
-			d_resolved_network.d_boundary_sections[current_section_index];
+			d_current_resolved_network.boundary_sections[current_section_index];
 
 	//
 	// We get the start intersection geometry from previous section in the topological polygon's
@@ -696,7 +718,7 @@ GPlatesAppLogic::TopologyNetworkResolver::process_topological_section_intersecti
 			: current_section_index - 1;
 
 	ResolvedNetwork::BoundarySection &prev_section =
-			d_resolved_network.d_boundary_sections[prev_section_index];
+			d_current_resolved_network.boundary_sections[prev_section_index];
 
 	// If both sections refer to the same geometry then don't intersect.
 	// This can happen when the same geometry is added more than once to the topology
@@ -754,22 +776,13 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	// All points in the polygon will have the same plate ID so they can only really be rigid.
 	std::vector<ResolvedTriangulation::Network::RigidBlock> rigid_blocks;
 
-#if 0 // Not currently using being used...
-	// 2D + constraints
-	// This vector holds the geometry constraints to pass to the constrained delaunay triangulation.
-	std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> constrained_delaunay_geometries;
-
-	// Points from multple single point sections 
-	std::vector<GPlatesMaths::PointOnSphere> scattered_points;
-#endif // ...not currently using being used.
-
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
-	const std::size_t num_boundary_sections = d_resolved_network.d_boundary_sections.size();
+	const std::size_t num_boundary_sections = d_current_resolved_network.boundary_sections.size();
 	for (std::size_t boundary_section_index = 0; boundary_section_index < num_boundary_sections; ++boundary_section_index)
 	{
-		const ResolvedNetwork::BoundarySection &boundary_section = d_resolved_network.d_boundary_sections[boundary_section_index];
+		const ResolvedNetwork::BoundarySection &boundary_section = d_current_resolved_network.boundary_sections[boundary_section_index];
 
 		// Get the subsegment feature reference.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> boundary_subsegment_feature_ref =
@@ -796,9 +809,13 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		// Get the subsegment points and corresponding point source infos.
 		// Subsegment should be reversed if that's how it contributed to the resolved topology.
 		std::vector<GPlatesMaths::PointOnSphere> boundary_segment_points;
-		boundary_subsegment->get_reversed_sub_segment_points(boundary_segment_points);
+		boundary_subsegment->get_reversed_sub_segment_points(
+				boundary_segment_points,
+				ResolvedTopologicalNetwork::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_NETWORK_BOUNDARY/*include_rubber_band_points*/);
 		resolved_vertex_source_info_seq_type boundary_segment_point_source_infos;
-		boundary_subsegment->get_reversed_sub_segment_point_source_infos(boundary_segment_point_source_infos);
+		boundary_subsegment->get_reversed_sub_segment_point_source_infos(
+				boundary_segment_point_source_infos,
+				ResolvedTopologicalNetwork::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_NETWORK_BOUNDARY/*include_rubber_band_points*/);
 
 		// Segment should have matching number of points and point source infos.
 		const unsigned int num_boundary_segment_points = boundary_segment_points.size();
@@ -843,21 +860,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	}
 
 
-#if 0 // Not currently using being used...
-	// 2D + C
-	// add boundary_points as contrained ; do contrain begin and end
-	constrained_delaunay_geometries.push_back(
-			ResolvedTriangulation::Network::ConstrainedDelaunayGeometry(
-					boundary_polygon.get(),
-					true)); // do constrain begin and end points
-#endif // ...not currently using being used.
-
-
 	// Iterate over the interior geometries.
 	ResolvedNetwork::interior_geometry_seq_type::const_iterator interior_geometry_iter =
-			d_resolved_network.d_interior_geometries.begin();
+			d_current_resolved_network.interior_geometries.begin();
 	ResolvedNetwork::interior_geometry_seq_type::const_iterator interior_geometry_end =
-			d_resolved_network.d_interior_geometries.end();
+			d_current_resolved_network.interior_geometries.end();
 	for ( ; interior_geometry_iter != interior_geometry_end; ++interior_geometry_iter)
 	{
 		const ResolvedNetwork::InteriorGeometry &interior_geometry = *interior_geometry_iter;
@@ -946,14 +953,20 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 								interior_point_source_infos[n]));
 			}
 		}
+	}
 
-#if 0 // Not currently using being used...
-		// Add the interior constrained delaunay points.
-		add_interior_constrained_delaunay_points(
-				interior_geometry,
-				constrained_delaunay_geometries,
-				scattered_points);
-#endif // ...not currently using being used.
+	// Initialise rift parameters if this network is a rift.
+	// We only need the left and right plate IDs to be a rift.
+	boost::optional<ResolvedTriangulation::Network::Rift> rift;
+	if (d_current_rift_params.left_plate_id &&
+		d_current_rift_params.right_plate_id)
+	{
+		rift = ResolvedTriangulation::Network::Rift(
+				d_current_rift_params.left_plate_id.get(),
+				d_current_rift_params.right_plate_id.get(),
+				d_current_rift_params.exponential_stretching_constant,
+				d_current_rift_params.strain_rate_resolution,
+				d_current_rift_params.edge_length_threshold);
 	}
 
 	// Now that we've gathered all the triangulation information we can create the triangulation network.
@@ -965,127 +978,21 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					delaunay_points.end(),
 					rigid_blocks.begin(),
 					rigid_blocks.end(),
-					d_topology_network_params);
+					d_topology_network_params,
+					rift);
 
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
 					d_reconstruction_time,
 					triangulation_network,
-					*(current_top_level_propiter()->handle_weak_ref()),
-					*(current_top_level_propiter()),
+					*d_currently_visited_feature,
+					d_current_resolved_network.topological_network_property.get(),
 					boundary_subsegments.begin(),
 					boundary_subsegments.end(),
-					d_reconstruction_params.get_recon_plate_id(),
-					d_reconstruction_params.get_time_of_appearance(),
+					d_current_reconstruction_params.get_recon_plate_id(),
+					d_current_reconstruction_params.get_time_of_appearance(),
 					d_reconstruct_handle/*identify where/when this RTN was resolved*/);
 
 	d_resolved_topological_networks.push_back(network);
-}
-
-
-#if 0 // Not currently using being used...
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::add_interior_constrained_delaunay_points(
-		const ResolvedNetwork::InteriorGeometry &interior_geometry,
-		std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> &constrained_delaunay_geometries,
-		std::vector<GPlatesMaths::PointOnSphere> &scattered_points)
-{
-	const GPlatesMaths::GeometryType::Value interior_geometry_type =
-			GeometryUtils::get_geometry_type(*interior_geometry.d_geometry);
-
-	// Check for single point
-	if (interior_geometry_type == GPlatesMaths::GeometryType::POINT)
-	{
-		// this is probably one of a collection of points; 
-		// save and add to constrained triangulation later
-		GeometryUtils::get_geometry_exterior_points(
-				*interior_geometry.d_geometry,
-				scattered_points);
-
-		return;
-	}
-
-	// Check multipoint 
-	if (interior_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)
-	{
-		// 2D + C
-		// add multipoint with all connections between points constrained 
-		constrained_delaunay_geometries.push_back(
-				ResolvedTriangulation::Network::ConstrainedDelaunayGeometry(
-						interior_geometry.d_geometry,
-						true)); // do constrain begin and end points
-
-		return;
-	}
-
-	// Check for polyline geometry
-	if (interior_geometry_type == GPlatesMaths::GeometryType::POLYLINE)
-	{
-		// 2D + C
-		// add as a constrained line segment ; do not constrain begin and end
-		constrained_delaunay_geometries.push_back(
-				ResolvedTriangulation::Network::ConstrainedDelaunayGeometry(
-						interior_geometry.d_geometry,
-						false)); // do not constrain begin and end points
-
-		return;
-	}
-
-	// Check for polygon geometry
-	if (interior_geometry_type == GPlatesMaths::GeometryType::POLYGON)
-	{
-		// 2D + C
-		// add as a constrained line segment ; do constrain begin and end
-		constrained_delaunay_geometries.push_back(
-				ResolvedTriangulation::Network::ConstrainedDelaunayGeometry(
-						interior_geometry.d_geometry,
-						true)); // do constrain begin and end points
-		return;
-	}
-
-	// Shouldn't be able to get here.
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-}
-
-
-void
-GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_source_feature(
-		const GPlatesModel::FeatureId &source_feature_id)
-{
-	QString s;
-
-	// get the fearture ref
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-	source_feature_id.find_back_ref_targets(GPlatesModel::append_as_weak_refs(back_ref_targets));
-	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_ref_targets.front();
-
-	// get the name
-	s.append ( "SOURCE name = '" );
-	static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(feature_ref, prop);
- 	if (name) {
-		s.append(GPlatesUtils::make_qstring( name.get()->value() ));
- 	} else {
- 		s.append("UNKNOWN");
- 	}
- 	s.append("'; id = ");
-	s.append ( GPlatesUtils::make_qstring_from_icu_string( source_feature_id.get() ) );
-
-	qDebug() << s;
-}
-
-#endif // ...not currently using being used.
-
-
-GPlatesAppLogic::TopologyNetworkResolver::ResolvedNetwork::InteriorGeometry::InteriorGeometry(
-		const GPlatesModel::FeatureId &source_feature_id,
-		const ReconstructionGeometry::non_null_ptr_type &source_rg,
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry) :
-	d_source_feature_id(source_feature_id),
-	d_source_rg(source_rg),
-	d_geometry(geometry)
-{
 }

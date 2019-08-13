@@ -60,14 +60,7 @@ namespace GPlatesAppLogic
 				public boost::less_than_comparable<StrainRateClamping>,
 				public boost::equality_comparable<StrainRateClamping>
 		{
-			StrainRateClamping(
-					// Strain rate clamping is disabled by default...
-					bool enable_clamping_ = false,
-					// Default maximum strain rate (if clamping is enabled)...
-					const double &max_total_strain_rate_ = 5e-15) :
-				enable_clamping(enable_clamping_),
-				max_total_strain_rate(max_total_strain_rate_)
-			{  }
+			StrainRateClamping();
 
 			//! Equality comparison operator.
 			bool
@@ -79,15 +72,49 @@ namespace GPlatesAppLogic
 			operator<(
 					const StrainRateClamping &rhs) const;
 
+			//! Is strain rate clamping enabled.
 			bool enable_clamping;
+			//! Maximum strain rate (if clamping is enabled).
 			double max_total_strain_rate;
 
-		private:
-			/**
-			 * Strain rates (units 1/second) are typically much smaller than GPlatesMaths::EPSILON and
-			 * so we need to scale them before using the comparison functionality of GPlatesMaths::Real.
-			 */
-			static const double COMPARE_STRAIN_RATE_SCALE;
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+		};
+
+
+		/**
+		 * Rift parameters for networks that are rifts.
+		 *
+		 * A network is a rift if the network feature has rift left/right plate IDs.
+		 */
+		struct RiftParams :
+				public boost::less_than_comparable<RiftParams>,
+				public boost::equality_comparable<RiftParams>
+		{
+			RiftParams();
+
+			//! Equality comparison operator.
+			bool
+			operator==(
+					const RiftParams &rhs) const;
+
+			//! Less than comparison operator.
+			bool
+			operator<(
+					const RiftParams &rhs) const;
+
+			//! An edge should not be subdivided if it is shorter than this length.
+			double exponential_stretching_constant;
+			//! Default stretching profile is exp(exponential_stretching_constant * x).
+			double strain_rate_resolution;
+			//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
+			double edge_length_threshold_degrees;
 
 		private: // Transcribe for sessions/projects...
 
@@ -131,6 +158,20 @@ namespace GPlatesAppLogic
 		}
 
 
+		const RiftParams &
+		get_rift_params() const
+		{
+			return d_rift_params;
+		}
+
+		void
+		set_rift_params(
+				const RiftParams &rift_params)
+		{
+			d_rift_params = rift_params;
+		}
+
+
 		//! Equality comparison operator.
 		bool
 		operator==(
@@ -144,6 +185,12 @@ namespace GPlatesAppLogic
 	private:
 
 		/**
+		 * Strain rates (units 1/second) are typically much smaller than GPlatesMaths::EPSILON and
+		 * so we need to scale them before using the comparison functionality of GPlatesMaths::Real.
+		 */
+		static const double COMPARE_STRAIN_RATE_SCALE;
+
+		/**
 		 * Whether, and how, to smooth the deformation strain rates.
 		 */
 		StrainRateSmoothing d_strain_rate_smoothing;
@@ -152,6 +199,11 @@ namespace GPlatesAppLogic
 		 * Whether, and how much, to clamp the deformation strain rates.
 		 */
 		StrainRateClamping d_strain_rate_clamping;
+
+		/**
+		 * Rift parameters for networks that are rifts.
+		 */
+		RiftParams d_rift_params;
 
 	private: // Transcribe for sessions/projects...
 

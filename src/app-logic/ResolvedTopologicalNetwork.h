@@ -292,6 +292,18 @@ namespace GPlatesAppLogic
 		accept_weak_observer_visitor(
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
 
+
+		/**
+		* Whether rubber band points of this resolved topological network's boundary sub-segments contributed to its boundary geometry.
+		*
+		* They're not really needed since they don't change the shape of the boundary geometry (because they're halfway between
+		* adjacent sub-segments), but they are needed for the individual sub-segments that make up the boundary geometry
+		* (in order to delineate the individual sub-segments).
+		*
+		* Note that boundary sub-segments can be resolved topological *lines* (as well as reconstructed feature geometries).
+		*/
+		static const bool INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_NETWORK_BOUNDARY = false;
+
 	private:
 		/**
 		 * This is an iterator to the (topological-geometry-valued) property from which

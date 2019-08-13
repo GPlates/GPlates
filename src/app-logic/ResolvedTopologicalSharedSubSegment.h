@@ -187,9 +187,10 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_shared_sub_segment_points(
-				std::vector<GPlatesMaths::PointOnSphere> &geometry_points) const
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+				bool include_rubber_band_points = true) const
 		{
-			d_shared_sub_segment.get_geometry_points(geometry_points);
+			d_shared_sub_segment.get_geometry_points(geometry_points, include_rubber_band_points);
 		}
 
 		/**
@@ -206,9 +207,10 @@ namespace GPlatesAppLogic
 		void
 		get_reversed_shared_sub_segment_points(
 				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
-				bool use_reverse) const
+				bool use_reverse,
+				bool include_rubber_band_points = true) const
 		{
-			d_shared_sub_segment.get_reversed_geometry_points(geometry_points, use_reverse);
+			d_shared_sub_segment.get_reversed_geometry_points(geometry_points, use_reverse, include_rubber_band_points);
 		}
 
 
@@ -225,7 +227,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_shared_sub_segment_point_source_infos(
-				resolved_vertex_source_info_seq_type &point_source_infos) const;
+				resolved_vertex_source_info_seq_type &point_source_infos,
+				bool include_rubber_band_points = true) const;
 
 		/**
 		 * Same as @a get_shared_sub_segment_point_source_infos but reverses them if necessary such that
@@ -240,7 +243,8 @@ namespace GPlatesAppLogic
 		void
 		get_reversed_shared_sub_segment_point_source_infos(
 				resolved_vertex_source_info_seq_type &point_source_infos,
-				bool use_reverse) const;
+				bool use_reverse,
+				bool include_rubber_band_points = true) const;
 
 
 		/**

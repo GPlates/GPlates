@@ -203,6 +203,16 @@ namespace GPlatesAppLogic
 			visitor.visit_resolved_topological_line(*this);
 		}
 
+
+		/**
+		 * Whether rubber band points of this resolved topological line's sub-segments contributed to its line geometry.
+		 *
+		 * They're not really needed since they don't change the shape of the line geometry (because they're halfway between
+		 * adjacent sub-segments), but they are needed for the individual sub-segments that make up the line geometry
+		 * (in order to delineate the individual sub-segments).
+		 */
+		static const bool INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE = false;
+
 	private:
 
 		/**

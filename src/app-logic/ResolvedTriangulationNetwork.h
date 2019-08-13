@@ -27,6 +27,7 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONNETWORK_H
 #define GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONNETWORK_H
 
+#include <cmath>
 #include <functional>
 #include <map>
 #include <utility>
@@ -40,18 +41,20 @@
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTriangulationConstrainedDelaunay2.h"
 #include "ResolvedTriangulationDelaunay2.h"
-#include "ResolvedTriangulationDelaunay3.h"
 #include "ResolvedVertexSourceInfo.h"
 #include "TopologyNetworkParams.h"
 #include "VelocityDeltaTime.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
+
+#include "model/types.h"
 
 #include "utils/Earth.h"
 #include "utils/KeyValueCache.h"
@@ -147,25 +150,36 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Geometry that forms the constraints of the constrained delaunay triangulation.
+			 * Feature properties if this network is a rift.
+			 *
+			 * A network is a rift if the network feature has rift left/right plate IDs.
 			 */
-			struct ConstrainedDelaunayGeometry
+			struct Rift
 			{
 			public:
 
-				ConstrainedDelaunayGeometry(
-						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
-						bool constrain_begin_and_end_points_) :
-					geometry(geometry_),
-					constrain_begin_and_end_points(constrain_begin_and_end_points_)
+				Rift(
+						GPlatesModel::integer_plate_id_type left_plate_id_,
+						GPlatesModel::integer_plate_id_type right_plate_id_,
+						boost::optional<double> exponential_stretching_constant_ = boost::none,
+						boost::optional<double> strain_rate_resolution_ = boost::none,
+						boost::optional<GPlatesMaths::AngularExtent> edge_length_threshold_ = boost::none) :
+					left_plate_id(left_plate_id_),
+					right_plate_id(right_plate_id_),
+					exponential_stretching_constant(exponential_stretching_constant_),
+					strain_rate_resolution(strain_rate_resolution_),
+					edge_length_threshold(edge_length_threshold_)
 				{  }
 
-				//! The geometry that forms the constraints of the constrained delaunay triangulation.
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry;
+				//! The plate IDs of the rigid un-stretched crust on either side of the rift.
+				GPlatesModel::integer_plate_id_type left_plate_id;
+				GPlatesModel::integer_plate_id_type right_plate_id;
 
-				//! Whether to close the loop between begin and end points by forming a constraint.
-				bool constrain_begin_and_end_points;
+				boost::optional<double> exponential_stretching_constant;
+				boost::optional<double> strain_rate_resolution;
+				boost::optional<GPlatesMaths::AngularExtent> edge_length_threshold;
 			};
+
 
 			/**
 			 * Creates a @a Network.
@@ -180,7 +194,8 @@ namespace GPlatesAppLogic
 					DelaunayPointIter delaunay_points_end,
 					RigidBlockIter rigid_blocks_begin,
 					RigidBlockIter rigid_blocks_end,
-					const TopologyNetworkParams &topology_network_params)
+					const TopologyNetworkParams &topology_network_params,
+					boost::optional<Rift> rift = boost::none)
 			{
 				return non_null_ptr_type(
 						new Network(
@@ -188,7 +203,8 @@ namespace GPlatesAppLogic
 								network_boundary_polygon,
 								delaunay_points_begin, delaunay_points_end,
 								rigid_blocks_begin, rigid_blocks_end,
-								topology_network_params));
+								topology_network_params,
+								rift));
 			}
 
 
@@ -536,6 +552,19 @@ namespace GPlatesAppLogic
 			/**
 			 * Calculates the stage rotation at @a point in the network interpolated using barycentric coordinates.
 			 *
+			 * Note that generally it is better to use @a calculate_velocity, rather than @a calculate_stage_rotation
+			 * and then calculating velocity from that (eg, using GPlatesMaths::calculate_velocity_vector).
+			 * In most situations both approaches appear to give the same results, but there are situations where they don't.
+			 * For example, picture a line between two vertices V1 and V2, and the stage rotation pole R1 (of V1)
+			 * is on the line and close to V1, and R1 is such that the velocity at V1 is towards North and R2 is such
+			 * that the velocity at V2 is also towards North. Hence we expect the interpolated velocity at any point
+			 * between V1 and V2 to also point towards North. However as we move our position from V1 to V2, and also
+			 * interpolate between R1 and R2, the interpolated position will pass through the pole of R1. Since the pole
+			 * of R1 is close to V1, the interpolated rotation will be similar to R1. And so the interpolated position will
+			 * also pass through the pole of the interpolated rotation, and the direction that the position rotates around the
+			 * interpolated rotation pole will invert from Northwards to Southwards. Therefore if we calculated the velocity
+			 * from this interpolated stage rotation it would give an unexpected result (a Southwards velocity direction).
+			 *
 			 * If the point is inside the deforming region it will be interpolated using the delaunay triangulation
 			 * (and the delaunay face will be returned along with the stage rotation).
 			 * And if the point is inside an interior rigid block then the stage rotation will be
@@ -625,38 +654,6 @@ namespace GPlatesAppLogic
 			const Delaunay_2 &
 			get_delaunay_2() const;
 
-
-#if 0 // Not currently using being used...
-
-			/**
-			 * Gets, or creates, 2D constrained delaunay triangulation.
-			 *
-			 * The returned triangulation is *const* so that it cannot be modified such as
-			 * inserting more vertices.
-			 *
-			 * NOTE: Creates constrained delaunay triangulation if it hasn't yet been created.
-			 * This enables the optimisation whereby the triangulation is not generated
-			 * if it is never needed (accessed).
-			 */
-			const ConstrainedDelaunay_2 &
-			get_constrained_delaunay_2() const;
-
-
-			/**
-			 * Gets, or creates, 3D delaunay triangulation.
-			 *
-			 * The returned triangulation is *const* so that it cannot be modified such as
-			 * inserting more vertices.
-			 *
-			 * NOTE: Creates constrained delaunay triangulation if it hasn't yet been created.
-			 * This enables the optimisation whereby the triangulation is not generated
-			 * if it is never needed (accessed).
-			 */
-			const Delaunay_3 &
-			get_delaunay_3() const;
-
-#endif // ...not currently using being used.
-
 		private:
 
 			/**
@@ -667,17 +664,68 @@ namespace GPlatesAppLogic
 			 */
 			struct BuildInfo
 			{
+				/**
+				 * Parameters to use when this network is a rift.
+				 *
+				 * A network is a rift if the network feature has special rift plate IDs.
+				 */
+				struct RiftParams
+				{
+					/**
+					 * Whether either/both Delaunay edge vertices are on an un-stretched side of the rift.
+					 */
+					enum EdgeType
+					{
+						ONLY_FIRST_EDGE_VERTEX_ON_UNSTRETCHED_SIDE,
+						ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE,
+						BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES
+					};
+
+					RiftParams(
+							const Rift &rift,
+							const TopologyNetworkParams &topology_network_params) :
+						left_plate_id(rift.left_plate_id),
+						right_plate_id(rift.right_plate_id),
+						edge_length_threshold(rift.edge_length_threshold
+								? rift.edge_length_threshold.get()
+								: GPlatesMaths::AngularExtent::create_from_angle(
+										GPlatesMaths::convert_deg_to_rad(
+												topology_network_params.get_rift_params().edge_length_threshold_degrees))),
+						strain_rate_resolution(rift.strain_rate_resolution
+								? rift.strain_rate_resolution.get()
+								: topology_network_params.get_rift_params().strain_rate_resolution),
+						exponential_stretching_constant(rift.exponential_stretching_constant
+								? rift.exponential_stretching_constant.get()
+								: topology_network_params.get_rift_params().exponential_stretching_constant)
+					{  }
+
+					GPlatesModel::integer_plate_id_type left_plate_id;
+					GPlatesModel::integer_plate_id_type right_plate_id;
+
+					GPlatesMaths::AngularExtent edge_length_threshold;
+					double strain_rate_resolution;
+					double exponential_stretching_constant;
+				};
+
+
 				template <typename DelaunayPointIter>
 				BuildInfo(
 						DelaunayPointIter delaunay_points_begin_,
 						DelaunayPointIter delaunay_points_end_,
-						const TopologyNetworkParams &topology_network_params_) :
+						const TopologyNetworkParams &topology_network_params_,
+						boost::optional<Rift> rift_) :
 					delaunay_points(delaunay_points_begin_, delaunay_points_end_),
 					topology_network_params(topology_network_params_)
-				{  }
+				{
+					if (rift_)
+					{
+						rift_params = RiftParams(rift_.get(), topology_network_params);
+					}
+				}
 
 				std::vector<DelaunayPoint> delaunay_points;
 				TopologyNetworkParams topology_network_params;
+				boost::optional<RiftParams> rift_params;
 			};
 
 
@@ -916,21 +964,6 @@ namespace GPlatesAppLogic
 			mutable velocity_delta_time_to_deformed_point_map_type d_velocity_delta_time_to_deformed_point_map;
 
 
-#if 0 // Not currently using being used...
-
-			/**
-			 * 2D constrained delaunay triangulation is only built if it's needed.
-			 */
-			mutable boost::optional<ConstrainedDelaunay_2> d_constrained_delaunay_2;
-
-			/**
-			 * 3D delaunay triangulation is only built if it's needed.
-			 */
-			mutable boost::optional<Delaunay_3> d_delaunay_3;
-
-#endif // ...not currently using being used.
-
-
 			template <typename DelaunayPointIter, typename RigidBlockIter>
 			Network(
 					const double &reconstruction_time,
@@ -939,14 +972,15 @@ namespace GPlatesAppLogic
 					DelaunayPointIter delaunay_points_end,
 					RigidBlockIter rigid_blocks_begin_,
 					RigidBlockIter rigid_blocks_end_,
-					const TopologyNetworkParams &topology_network_params) :
+					const TopologyNetworkParams &topology_network_params,
+					boost::optional<Rift> rift) :
 				d_reconstruction_time(reconstruction_time),
 				d_network_boundary_polygon(network_boundary_polygon),
 				d_rigid_blocks(rigid_blocks_begin_, rigid_blocks_end_),
 				d_projection(
 						GPlatesMaths::PointOnSphere(network_boundary_polygon->get_boundary_centroid()),
 						1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS/*Earth radius in metres*/),
-				d_build_info(delaunay_points_begin, delaunay_points_end, topology_network_params),
+				d_build_info(delaunay_points_begin, delaunay_points_end, topology_network_params, rift),
 				// Set the number of cached velocity maps (eg, for different velocity delta time parameters).
 				//
 				// A value of 2 is suitable since a network layer will typically be asked to use one
@@ -960,34 +994,37 @@ namespace GPlatesAppLogic
 			void
 			create_delaunay_2() const;
 
-
-#if 0 // Not currently using being used...
+			void
+			refine_rift_delaunay_2(
+					const BuildInfo::RiftParams &rift_params,
+					unsigned int vertex_index) const;
 
 			void
-			create_constrained_delaunay_2() const;
-
-			void
-			insert_geometries_into_constrained_delaunay_2() const;
-
-			void
-			insert_scattered_points_into_constrained_delaunay_2(
-					bool constrain_all_points) const;
-
-			void
-			insert_vertex_into_constrained_delaunay_2(
-					const GPlatesMaths::PointOnSphere &point_on_sphere,
-					std::vector<ConstrainedDelaunay_2::Vertex_handle> &vertex_handles) const;
-
-			bool
-			refine_constrained_delaunay_2() const;
-
-			void
-			make_conforming_constrained_delaunay_2() const;
-
-			void
-			create_delaunay_3() const;
-
-#endif // ...not currently using being used.
+			refine_rift_delaunay_edge(
+					std::vector<DelaunayPoint> &delaunay_edge_point_seq,
+					const GPlatesMaths::PointOnSphere &first_subdivided_edge_vertex_point,
+					const GPlatesMaths::PointOnSphere &second_subdivided_edge_vertex_point,
+					const GPlatesMaths::real_t &first_subdivided_edge_vertex_interpolation,
+					const GPlatesMaths::real_t &second_subdivided_edge_vertex_interpolation,
+					const GPlatesMaths::real_t &first_subdivided_edge_vertex_twist_interpolation,
+					const GPlatesMaths::real_t &second_subdivided_edge_vertex_twist_interpolation,
+					const GPlatesMaths::UnitVector3D &first_edge_vertex_stage_rotation_axis,
+					const GPlatesMaths::UnitVector3D &second_edge_vertex_stage_rotation_axis,
+					const GPlatesMaths::real_t &first_edge_vertex_stage_rotation_angle,
+					const GPlatesMaths::real_t &second_edge_vertex_stage_rotation_angle,
+					const GPlatesMaths::real_t &first_edge_vertex_twist_angle,
+					const GPlatesMaths::real_t &second_edge_vertex_twist_angle,
+					const GPlatesMaths::UnitVector3D &edge_rotation_axis,
+					const GPlatesMaths::real_t &edge_angular_extent,
+					const GPlatesMaths::real_t &subdivided_edge_angular_extent,
+					const GPlatesMaths::UnitVector3D &twist_axis,
+					const GPlatesMaths::UnitVector3D &twist_frame_x,
+					const GPlatesMaths::UnitVector3D &twist_frame_y,
+					const GPlatesMaths::real_t &inv_twist_angle_between_edge_vertices,
+					const GPlatesMaths::real_t &twist_velocity_gradient,
+					const BuildInfo::RiftParams::EdgeType rift_edge_type,
+					const BuildInfo::RiftParams &rift_params,
+					const ReconstructionTreeCreator &reconstruction_tree_creator) const;
 
 
 			const delaunay_point_2_to_vertex_handle_map_type &

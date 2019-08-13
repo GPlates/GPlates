@@ -48,8 +48,10 @@ namespace GPlatesAppLogic
 		 * rubber band points at either/both ends) will share that same source reconstructed feature geometry.
 		 *
 		 * If a resolved topological line then each point in the subsegment geometry (except the optional
-		 * rubber band points at either/both ends)will come from a subsegment of that resolved topological line
+		 * rubber band points at either/both ends) will come from a subsegment of that resolved topological line
 		 * (where those subsegments, in turn, are reconstructed feature geometries).
+		 *
+		 * If @a include_rubber_band_points is false then the optional rubber band points are excluded.
 		 *
 		 * If the specified section did not intersect its previous and/or next sections (not even touching them)
 		 * then there will be an extra rubber band point for each adjacent section not intersected that is an equal
@@ -60,7 +62,8 @@ namespace GPlatesAppLogic
 		get_sub_segment_vertex_source_infos(
 				resolved_vertex_source_info_seq_type &vertex_source_infos,
 				const ResolvedSubSegmentRangeInSection &sub_segment,
-				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry);
+				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
+				bool include_rubber_band_points = true);
 
 
 		/**

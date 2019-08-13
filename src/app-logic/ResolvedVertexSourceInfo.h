@@ -114,6 +114,18 @@ namespace GPlatesAppLogic
 					new ResolvedVertexSourceInfo(source_info1, source_info2, interpolate_ratio));
 		}
 
+		/**
+		 * Create from a pre-calculated stage rotation.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const GPlatesMaths::FiniteRotation &stage_rotation,
+				const ReconstructionTreeCreator &reconstruction_tree_creator)
+		{
+			return non_null_ptr_type(new ResolvedVertexSourceInfo(stage_rotation, reconstruction_tree_creator));
+		}
+
 
 		/**
 		 * Get the stage rotation for the specified reconstruction time and velocity delta time.
@@ -142,6 +154,15 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type) const;
+
+		/**
+		 * Return the ReconstructionTreeCreator associated with this vertex.
+		 *
+		 * Note that in the case of an interpolation between two source infos the
+		 * ReconstructionTreeCreator of the first source info is returned.
+		 */
+		ReconstructionTreeCreator
+		get_reconstruction_tree_creator() const;
 
 		/**
 		 * Equality operator - operator != provided by boost::equality_comparable.
@@ -238,6 +259,19 @@ namespace GPlatesAppLogic
 			double interpolate_ratio;
 		};
 
+		struct StageRotation
+		{
+			StageRotation(
+					const GPlatesMaths::FiniteRotation &stage_rotation_,
+					const ReconstructionTreeCreator &reconstruction_tree_creator_) :
+				stage_rotation(stage_rotation_),
+				reconstruction_tree_creator(reconstruction_tree_creator_)
+			{  }
+
+			GPlatesMaths::FiniteRotation stage_rotation;
+			ReconstructionTreeCreator reconstruction_tree_creator;
+		};
+
 
 		/**
 		 * Vertex source is one of the above types.
@@ -246,7 +280,8 @@ namespace GPlatesAppLogic
 				PlateIdProperties,
 				HalfStageRotationProperties,
 				FixedPointVelocityAdapter,
-				InterpolateVertexSourceInfos>
+				InterpolateVertexSourceInfos,
+				StageRotation>
 						source_type;
 
 
@@ -280,6 +315,13 @@ namespace GPlatesAppLogic
 			GPlatesMaths::FiniteRotation
 			operator()(
 					const InterpolateVertexSourceInfos &source) const;
+
+			GPlatesMaths::FiniteRotation
+			operator()(
+					const StageRotation &source) const
+			{
+				return source.stage_rotation;
+			}
 
 			double reconstruction_time;
 			double velocity_delta_time;
@@ -338,8 +380,15 @@ namespace GPlatesAppLogic
 			/**
 			 * When interpolating, avoid interpolating the stage rotations, instead interpolate the velocity vectors.
 			 *
-			 * It's appears to give the same results as interpolating the stage rotation and calculating velocity
-			 * from that, but we'll interpolate velocities just to be sure.
+			 * It either source info is a @a FixedPointVelocityAdapter then 'point' should actually be ignored
+			 * (in preference to the source info's fixed point). However if we interpolated stage rotations and
+			 * then calculated velocity (at 'point') we would not be using either source info's fixed point.
+			 *
+			 * Conversely if neither source info is a @a FixedPointVelocityAdapter then 'point' should be used.
+			 * In this case since the point position does not change during interpolation we would get pretty much
+			 * the same result interpolating stage rotations versus interpolating velocities.
+			 *
+			 * See ResolvedTriangulation::Network::calculate_stage_rotation() for more reasons.
 			 */
 			GPlatesMaths::Vector3D
 			operator()(
@@ -367,6 +416,49 @@ namespace GPlatesAppLogic
 			double reconstruction_time;
 			double velocity_delta_time;
 			VelocityDeltaTime::Type velocity_delta_time_type;
+		};
+
+		/**
+		* Variant visitor to retrieve a @a ReconstructionTreeCreator.
+		*/
+		struct GetReconstructionTreeCreatorVisitor :
+				public boost::static_visitor<ReconstructionTreeCreator>
+		{
+			ReconstructionTreeCreator
+			operator()(
+					const PlateIdProperties &source) const
+			{
+				return source.reconstruction_tree_creator;
+			}
+
+			ReconstructionTreeCreator
+			operator()(
+					const HalfStageRotationProperties &source) const
+			{
+				return source.reconstruction_tree_creator;
+			}
+
+			ReconstructionTreeCreator
+			operator()(
+					const FixedPointVelocityAdapter &source) const
+			{
+				return source.source_info->get_reconstruction_tree_creator();
+			}
+
+			ReconstructionTreeCreator
+			operator()(
+					const InterpolateVertexSourceInfos &source) const
+			{
+				// It's arbitrary whether we choose source 1 or source 2.
+				return source.source_info1->get_reconstruction_tree_creator();
+			}
+
+			ReconstructionTreeCreator
+			operator()(
+					const StageRotation &source) const
+			{
+				return source.reconstruction_tree_creator;
+			}
 		};
 
 		/**
@@ -403,6 +495,11 @@ namespace GPlatesAppLogic
 			operator()(
 					const InterpolateVertexSourceInfos &lhs,
 					const InterpolateVertexSourceInfos &rhs) const;
+
+			bool
+			operator()(
+					const StageRotation &lhs,
+					const StageRotation &rhs) const;
 		};
 
 
@@ -457,6 +554,12 @@ namespace GPlatesAppLogic
 				ResolvedVertexSourceInfo::non_null_ptr_to_const_type source_info2,
 				const double &interpolate_ratio) :
 			d_source(InterpolateVertexSourceInfos(source_info1, source_info2, interpolate_ratio))
+		{  }
+
+		ResolvedVertexSourceInfo(
+				const GPlatesMaths::FiniteRotation &stage_rotation,
+				const ReconstructionTreeCreator &reconstruction_tree_creator) :
+			d_source(StageRotation(stage_rotation, reconstruction_tree_creator))
 		{  }
 
 

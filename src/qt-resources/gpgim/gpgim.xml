@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="gpgim.xsl" type="text/xsl"?>
 <GPGIM
-	gpgim:version="1.6.0338"
+	gpgim:version="1.6.0339"
 	xmlns="http://www.gplates.org/gpgim"
 	xmlns:gpgim="http://www.gplates.org/gpgim"
 	xmlns:gpml="http://www.gplates.org/gplates"
@@ -1293,22 +1293,6 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
-		
-		<Property>
-			<Name>gpml:networkMaxEdge</Name>
-			<Description>Another parameter to control triangulation quality in a topological network.</Description>
-			<Type>xsi:double</Type>
-			<Multiplicity>0..1</Multiplicity>
-			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>
-		</Property>
-		
-		<Property>
-			<Name>gpml:networkShapeFactor</Name>
-			<Description>Determines the shape (or closeness to being equilateral) the triangles in a topological network triangulation should be.</Description>
-			<Type>xsi:double</Type>
-			<Multiplicity>0..1</Multiplicity>
-			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>
-		</Property>
 
 		<!-- O -->
 
@@ -1517,6 +1501,59 @@
 			<Description>Rhea fault.</Description>
 			<Type>xsi:string</Type>
 			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		
+		<Property>
+			<Name>gpml:riftExponentialStretchingConstant</Name>
+			<Description>Controls exponential variation of stretching across rift profile in network triangulation.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<SeeAlso>gpml:riftEdgeLengthThresholdDegrees</SeeAlso>
+			<SeeAlso>gpml:riftStrainRateResolutionLog10</SeeAlso>
+			<Comment>The strain rate in the rift stretching direction varies exponentially from un-stretched side of rift towards the rift axis.</Comment>
+			<Comment>The spatial variation in strain rate is SR(x) = SR_constant * [C * exp(C*x) / (exp(C) - 1)] where SR_constant is un-subdivided strain rate, C is stretching constant and x=0 at un-stretched side and x=1 at stretched point. Therefore SR(0) is less than SR_constant which is less than SR(1). </Comment>
+		</Property>
+		
+		<Property>
+			<Name>gpml:riftLeftPlate</Name>
+			<Description>One of the two conjugate rigid plates bounding a rift topological network.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<SeeAlso>gpml:riftRightPlate</SeeAlso>
+			<Comment>The presence of riftLeftPlate and riftRightPlate triggers the generation of an exponential strain rate rift profile in GPlates.</Comment>
+			<Comment>This should only be defined, along with riftRightPlate, when a topological network is a rift.</Comment>
+		</Property>
+		
+		<Property>
+			<Name>gpml:riftEdgeLengthThresholdDegrees</Name>
+			<Description>Rift edges in network triangulation shorter than this length, in degrees, will not be further sub-divided.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<SeeAlso>gpml:riftExponentialStretchingConstant</SeeAlso>
+			<SeeAlso>gpml:riftStrainRateResolutionLog10</SeeAlso>
+			<Comment>Rifts edges in network triangulation are sub-divided to fit an exponential strain rate profile in the rift stretching direction.</Comment>
+			<Comment>Sub-division is also limited by riftStrainRateResolutionLog10.</Comment>
+		</Property>
+		
+		<Property>
+			<Name>gpml:riftRightPlate</Name>
+			<Description>One of the two conjugate rigid plates bounding a rift topological network.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<SeeAlso>gpml:riftLeftPlate</SeeAlso>
+			<Comment>The presence of riftLeftPlate and riftRightPlate triggers the generation of an exponential strain rate rift profile in GPlates.</Comment>
+			<Comment>This should only be defined, along with riftLeftPlate, when a topological network is a rift.</Comment>
+		</Property>
+		
+		<Property>
+			<Name>gpml:riftStrainRateResolutionLog10</Name>
+			<Description>Rift edges in network triangulation are sub-divided until strain rate matches exponential curve within this tolerance (10^resolution, in units of 1/second).</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<SeeAlso>gpml:riftExponentialStretchingConstant</SeeAlso>
+			<SeeAlso>gpml:riftEdgeLengthThresholdDegrees</SeeAlso>
+			<Comment>To set riftStrainRateResolutionLog10, take your strain rate threshold (in units of 1/second) and then take log10 of that. For example, a strain rate resolution of 2e-17 gets converted to -16.7.</Comment>
+			<Comment>Sub-division is also limited by riftEdgeLengthThresholdDegrees.</Comment>
 		</Property>
 		
 		<Property>
@@ -3044,8 +3081,11 @@
 			<!-- NOTE: this might change to effectivePlateId -->
 			<Property>gpml:reconstructionPlateId</Property>
 			<Property>gpml:network</Property>
-			<Property>gpml:networkShapeFactor</Property>
-			<Property>gpml:networkMaxEdge</Property>
+			<Property>gpml:riftExponentialStretchingConstant</Property>
+			<Property>gpml:riftLeftPlate</Property>
+			<Property>gpml:riftEdgeLengthThresholdDegrees</Property>
+			<Property>gpml:riftRightPlate</Property>
+			<Property>gpml:riftStrainRateResolutionLog10</Property>
 		</FeatureClass>
 		
 		<FeatureClass>

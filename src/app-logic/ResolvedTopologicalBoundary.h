@@ -203,6 +203,18 @@ namespace GPlatesAppLogic
 			visitor.visit_resolved_topological_boundary(*this);
 		}
 
+
+		/**
+		 * Whether rubber band points of this resolved topological boundary's sub-segments contributed to its boundary geometry.
+		 *
+		 * They're not really needed since they don't change the shape of the boundary geometry (because they're halfway between
+		 * adjacent sub-segments), but they are needed for the individual sub-segments that make up the boundary geometry
+		 * (in order to delineate the individual sub-segments).
+		 *
+		 * Note that sub-segments can be resolved topological *lines* (as well as reconstructed feature geometries).
+		 */
+		static const bool INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_BOUNDARY = false;
+
 	private:
 
 		/**

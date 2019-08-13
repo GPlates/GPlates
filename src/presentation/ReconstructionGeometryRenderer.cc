@@ -28,7 +28,6 @@
 #include <cstddef> // For std::size_t
 #include <utility>
 #include <boost/foreach.hpp>
-#include <CGAL/centroid.h>
 
 #include "ReconstructionGeometryRenderer.h"
 
@@ -1806,7 +1805,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			}
 
 			// Get the area of the face triangle.
-			face_area[t] = std::fabs(delaunay_triangulation_2.triangle(face_handle[t]).area());
+			face_area[t] = std::fabs(CGAL::to_double(delaunay_triangulation_2.triangle(face_handle[t]).area()));
 
 			if (!d_colour && // no override colour
 				d_render_params.topological_network_triangulation_colour_palette)

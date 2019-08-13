@@ -1326,7 +1326,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 				reconstruction_time,
 				velocity_delta_time_type,
 				velocity_delta_time,
-				reconstruct_handle);
+				reconstruct_handle,
+				ResolvedTopologicalBoundary::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_BOUNDARY);
 	}
 
 	return reconstruct_handle;
@@ -1355,7 +1356,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 				reconstruction_time,
 				velocity_delta_time_type,
 				velocity_delta_time,
-				reconstruct_handle);
+				reconstruct_handle,
+				ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE);
 	}
 
 	return reconstruct_handle;
@@ -1369,7 +1371,8 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 		const double &reconstruction_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
 		const double &velocity_delta_time,
-		const ReconstructHandle::type &reconstruct_handle)
+		const ReconstructHandle::type &reconstruct_handle,
+		bool include_sub_segment_rubber_band_points)
 {
 	// Iterate over the sub-segments.
 	sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments.begin();
@@ -1393,7 +1396,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 					reconstruction_time,
 					velocity_delta_time_type,
 					velocity_delta_time,
-					reconstruct_handle);
+					reconstruct_handle,
+					// Note the sub-sub-segments must belong to a resolved topological *line* since
+					// a topological *boundary* can be used as a topological section...
+					ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE);
 
 			// Continue onto the next sub-segment.
 			continue;
@@ -1413,14 +1419,29 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 		// contributed to this resolved topological geometry if sub-segment is a sub-sub-segment).
 		// This is because we're just putting velocities on points (so their order doesn't matter).
 		std::vector<GPlatesMaths::PointOnSphere> sub_segment_geometry_points;
-		sub_segment->get_sub_segment_points(sub_segment_geometry_points);
+		sub_segment->get_sub_segment_points(
+				sub_segment_geometry_points,
+				// We only need points that match the resolved topological geometry...
+				include_sub_segment_rubber_band_points/*include_rubber_band_points*/);
 		resolved_vertex_source_info_seq_type sub_segment_point_source_infos;
-		sub_segment->get_sub_segment_point_source_infos(sub_segment_point_source_infos);
+		sub_segment->get_sub_segment_point_source_infos(
+				sub_segment_point_source_infos,
+				// We only need points that match the resolved topological geometry...
+				include_sub_segment_rubber_band_points/*include_rubber_band_points*/);
 
 		// We should have the same number of points as velocities.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				sub_segment_geometry_points.size() == sub_segment_point_source_infos.size(),
 				GPLATES_ASSERTION_SOURCE);
+
+		// It's possible to have no sub-segment points if rubber band points were excluded.
+		// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely
+		// within the start or end rubber band region of the sub-sub-segment (and hence the
+		// sub-sub-segment geometry is only made up of two rubber band points, which then get excluded).
+		if (sub_segment_geometry_points.empty())
+		{
+			continue;
+		}
 
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the

@@ -61,6 +61,7 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/Interpolation_gradient_fitting_traits_2.h>
 #include <CGAL/Interpolation_traits_2.h>
 #include <CGAL/natural_neighbor_coordinates_2.h>
+#include <CGAL/number_utils.h>
 #include <CGAL/sibson_gradient_fitting.h>
 #include <CGAL/Triangulation_face_base_2.h>
 #include <CGAL/Triangulation_hierarchy_2.h>
@@ -77,6 +78,7 @@ POP_MSVC_WARNINGS
 
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/CalculateVelocity.h"
+#include "maths/Centroid.h"
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -372,6 +374,16 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
+			//! Return Delaunay triangulation containg this vertex.
+			const Delaunay_2 &
+			get_delaunay_2() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->delaunay_2;
+			}
+
 		private:
 
 			/**
@@ -407,15 +419,6 @@ namespace GPlatesAppLogic
 			// Compute the deformation info for this vertex.
 			DeformationInfo
 			calculate_deformation_info() const;
-
-			const Delaunay_2 &
-			get_delaunay_2() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->delaunay_2;
-			}
 
 			Vertex_handle
 			get_handle() const
@@ -486,34 +489,20 @@ namespace GPlatesAppLogic
 			{ }
 
 
-			/**
-			 * Set all essential face information in one go.
-			 *
-			 * Any derived information can be calculated as needed.
-			 */
-			void
-			initialise(
-					const Delaunay_2 &delaunay_2,
-					unsigned int face_index,
-					bool is_in_deforming_region_)
-			{
-				// Make sure only gets initialised once.
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						!d_face_info,
-						GPLATES_ASSERTION_SOURCE);
+			//
+			// NOTE: We do not need to initialise faces (like we do vertices).
+			//
+			// This makes it easier to incrementally modify the Delaunay triangulation
+			// (such as adaptive subdivision of its edges) without having to subsequently iterate
+			// over all the faces and initialise those that haven't already been initialised.
+			//
+			// The Delaunay triangulation (required for face initialisation) is obtained from one
+			// of the vertices of a face. Also a face can detect when it has been modified due to a
+			// modification in the Delaunay triangulation (such as a vertex insertion splitting a
+			// face into 3 faces, two of which are new and the third being the existing face modified
+			// to reference the newly inserted vertex).
+			//
 
-				d_face_info = boost::in_place(delaunay_2, face_index, is_in_deforming_region_);
-			}
-
-			//! Returns index of this face within all faces in the delaunay triangulation.
-			unsigned int
-			get_face_index() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->face_index;
-			}
 
 			/**
 			 * Returns true if face is inside the deforming region.
@@ -532,10 +521,14 @@ namespace GPlatesAppLogic
 			bool
 			is_in_deforming_region() const
 			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->is_in_deforming_region;
+				check_face_vertices();
+
+				if (!d_is_in_deforming_region)
+				{
+					d_is_in_deforming_region = calculate_is_in_deforming_region();
+				}
+
+				return d_is_in_deforming_region.get();
 			}
 
 			/**
@@ -546,6 +539,8 @@ namespace GPlatesAppLogic
 			const DeformationInfo &
 			get_deformation_info() const
 			{
+				check_face_vertices();
+
 				if (!d_deformation_info)
 				{
 					d_deformation_info = calculate_deformation_info();
@@ -554,46 +549,139 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-		private:
-			
-			/**
-			 * All information passed into @a initialise goes here.
-			 */
-			struct FaceInfo
+			//! Return Delaunay triangulation containg this face.
+			const Delaunay_2 &
+			get_delaunay_2() const
 			{
-				FaceInfo(
-						const Delaunay_2 &delaunay_2_,
-						unsigned int face_index_,
-						bool is_in_deforming_region_) :
-					delaunay_2(delaunay_2_),
-					face_index(face_index_),
-					is_in_deforming_region(is_in_deforming_region_)
-				{  }
+				// Delegate to one of our vertices so we don't have to initialise this face with any info.
+				if (!d_delaunay_2)
+				{
+					// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+					// until instantiation - otherwise we get a compile error.
+					d_delaunay_2 = this->vertex(0)->get_delaunay_2();
+				}
 
-				const Delaunay_2 &delaunay_2;
-				unsigned int face_index;
-				bool is_in_deforming_region;
+				return d_delaunay_2.get();
+			}
+
+		private:
+
+			/**
+			 * Information to determine whether this face has been modified when the Delaunay
+			 * triangulation is modified.
+			 *
+			 * An example is inserting a new vertex into triangulation, which can split a face into
+			 * three faces with two new faces and one existing face that has one of its three vertices
+			 * changed to be the newly inserted vertex.
+			 *
+			 * The easiest way to detect this is to check the three vertex indices of this face because
+			 * we never modify a vertex once it is inserted into the triangulation
+			 */
+			struct CheckFaceVertices
+			{
+				/**
+				 * Constructor.
+				 *
+				 * Default constructor sets all vertex indices to zero which should not
+				 * correspond to any existing face.
+				 */
+				CheckFaceVertices(
+						unsigned int vertex_index_0 = 0,
+						unsigned int vertex_index_1 = 0,
+						unsigned int vertex_index_2 = 0)
+				{
+					vertex_indices[0] = vertex_index_0;
+					vertex_indices[1] = vertex_index_1;
+					vertex_indices[2] = vertex_index_2;
+				}
+
+				bool
+				operator==(
+						const CheckFaceVertices &other) const
+				{
+					return vertex_indices[0] == other.vertex_indices[0] &&
+							vertex_indices[1] == other.vertex_indices[1] &&
+							vertex_indices[2] == other.vertex_indices[2];
+				}
+
+				bool
+				operator!=(
+						const CheckFaceVertices &other) const
+				{
+					return !(*this == other);
+				}
+
+				unsigned int vertex_indices[3];
 			};
 
+			mutable CheckFaceVertices d_check_face_vertices;
 
-			// The extra info for the face
-			boost::optional<FaceInfo> d_face_info;
+			//! Delaunay triangulation containing this face.
+			mutable boost::optional<const Delaunay_2 &> d_delaunay_2;
+
+			//! Whether this face is inside the deforming region.
+			mutable boost::optional<bool> d_is_in_deforming_region;
 
 			// Derived values - these are mutable since they are calculated on first call.
 			mutable boost::optional<DeformationInfo> d_deformation_info;
 
+
+			/**
+			 * Reset any cached information for this face (except reference to Delaunay triangulation)
+			 * if any vertices of this face have changed (when the Delaunay triangulation is modified).
+			 */
+			void
+			check_face_vertices() const
+			{
+				const CheckFaceVertices current_check_face_vertices(
+						// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+						// until instantiation - otherwise we get a compile error.
+						this->vertex(0)->get_vertex_index(),
+						this->vertex(1)->get_vertex_index(),
+						this->vertex(2)->get_vertex_index());
+				if (current_check_face_vertices != d_check_face_vertices)
+				{
+					d_check_face_vertices = current_check_face_vertices;
+
+					// Reset cached information (that needs to be re-calculated).
+					d_is_in_deforming_region = boost::none;
+					d_deformation_info = boost::none;
+				}
+			}
+
+			bool
+			calculate_is_in_deforming_region() const
+			{
+				// Determine whether current face is inside the deforming region.
+				//
+				// The delaunay triangulation is the convex hull around the network boundary,
+				// so it includes faces outside the network boundary (and also faces inside any
+				// non-deforming interior blocks).
+				//
+				// If the centroid of this face is inside the deforming region then true is returned.
+				//
+				// TODO: Note that the delaunay triangulation is *not* constrained which means some
+				// delaunay faces can cross over network boundary edges or interior block edges.
+				// This is something that perhaps needs to be dealt with, but currently doesn't appear
+				// to be too much of a problem with current topological network datasets.
+				// Compute centroid of face.
+				const GPlatesMaths::PointOnSphere face_points[3] =
+				{
+					// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+					// until instantiation - otherwise we get a compile error.
+					this->vertex(0)->get_point_on_sphere(),
+					this->vertex(1)->get_point_on_sphere(),
+					this->vertex(2)->get_point_on_sphere()
+				};
+				const GPlatesMaths::PointOnSphere face_centroid(
+						GPlatesMaths::Centroid::calculate_points_centroid(face_points, face_points + 3));
+
+				return get_delaunay_2().is_point_in_deforming_region(face_centroid);
+			}
+
 			// Compute the deformation info for this face.
 			DeformationInfo
 			calculate_deformation_info() const;
-
-			const Delaunay_2 &
-			get_delaunay_2() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->delaunay_2;
-			}
 		};
 
 
@@ -648,6 +736,9 @@ namespace GPlatesAppLogic
 						delaunay_triangulation_data_structure_2_type;
 
 
+		// Forward declaration of class owning Delaunay_2.
+		class Network;
+
 		/**
 		 * 2D Delaunay triangulation.
 		 */
@@ -660,13 +751,8 @@ namespace GPlatesAppLogic
 		public:
 
 			Delaunay_2(
-					const GPlatesMaths::AzimuthalEqualAreaProjection &projection,
-					const double &reconstruction_time,
-					boost::optional<double> clamp_total_strain_rate = boost::none) :
-				d_projection(projection),
-				d_reconstruction_time(reconstruction_time),
-				d_clamp_total_strain_rate(clamp_total_strain_rate)
-			{  }
+					const Network &network,
+					const double &reconstruction_time);
 
 			/**
 			 * Returns the natural neighbor coordinates of @a point in the triangulation
@@ -725,10 +811,7 @@ namespace GPlatesAppLogic
 			 * 2D points and vice versa.
 			 */
 			const GPlatesMaths::AzimuthalEqualAreaProjection &
-			get_projection() const
-			{
-				return d_projection;
-			}
+			get_projection() const;
 
 			/**
 			 * Returns the reconstruction time.
@@ -748,11 +831,37 @@ namespace GPlatesAppLogic
 				return d_clamp_total_strain_rate;
 			}
 
+			/**
+			 * Delegates to the Network that owns this Delaunay triangulation.
+			 */
+			bool
+			is_point_in_deforming_region(
+					const GPlatesMaths::PointOnSphere &point) const;
+
 		private:
 
-			GPlatesMaths::AzimuthalEqualAreaProjection d_projection;
+			//! The Network that owns this Delaunay triangulation.
+			const Network &d_network;
+
 			double d_reconstruction_time;
 			boost::optional<double> d_clamp_total_strain_rate;
+
+		public: // Used by class Network...
+
+			void
+			set_finished_modifying_triangulation()
+			{
+				d_finished_modifying_triangulation = true;
+			}
+
+			bool
+			is_finished_modifying_triangulation() const
+			{
+				return d_finished_modifying_triangulation;
+			}
+
+		private:
+			bool d_finished_modifying_triangulation;
 		};
 	}
 
@@ -773,6 +882,18 @@ namespace GPlatesAppLogic
 		DelaunayVertex_2<GT, Vb>::calculate_deformation_info() const
 		{
 			const Delaunay_2 &delaunay_2 = get_delaunay_2();
+
+			// Make sure all triangulation modifications have completed.
+			// We will be averaging the strain rates of the triangles incident to this vertex and
+			// caching that value, so we don't want to cache a value that uses triangles of an
+			// intermediate triangulation.
+			//
+			// Note that each face (triangle) can calculate strain rate (from its vertices) in an intermediate
+			// triangulation because each face (unlike each vertex) detects whether it has changed in the
+			// triangulation (eg, has a new vertex due to a vertex insertion in triangulation).
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					delaunay_2.is_finished_modifying_triangulation(),
+					GPLATES_ASSERTION_SOURCE);
 
 			DeformationInfo vertex_deformation_info;
 			double area_sum = 0.0;
@@ -805,7 +926,7 @@ namespace GPlatesAppLogic
 				}
 
 				// Get the area of the face triangle.
-				const double area = std::fabs(delaunay_2.triangle(incident_face_circulator).area());
+				const double area = std::fabs(CGAL::to_double(delaunay_2.triangle(incident_face_circulator).area()));
 
 				// Get the deformation data for the current face.
 				const DeformationInfo &face_deformation_info = incident_face_circulator->get_deformation_info();
@@ -833,7 +954,7 @@ namespace GPlatesAppLogic
 		DeformationInfo
 		DelaunayFace_2<GT, Fb>::calculate_deformation_info() const
 		{
-			if (!d_face_info->is_in_deforming_region)
+			if (!is_in_deforming_region())
 			{
 				// Not in the deforming region so return zero strain rates.
 				return DeformationInfo();
@@ -877,8 +998,8 @@ namespace GPlatesAppLogic
 
 			// Face centroid.
 			const double inv_3 = 1.0 / 3.0;
-			const double x_centroid = inv_3 * (v1->point().x() + v2->point().x() + v3->point().x());
-			const double y_centroid = inv_3 * (v1->point().y() + v2->point().y() + v3->point().y());
+			const double x_centroid = inv_3 * CGAL::to_double(v1->point().x() + v2->point().x() + v3->point().x());
+			const double y_centroid = inv_3 * CGAL::to_double(v1->point().y() + v2->point().y() + v3->point().y());
 
 			const GPlatesMaths::AzimuthalEqualAreaProjection &projection = delaunay_2.get_projection();
 

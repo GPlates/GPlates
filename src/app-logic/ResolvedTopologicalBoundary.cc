@@ -52,6 +52,8 @@ GPlatesAppLogic::ResolvedTopologicalBoundary::calc_vertex_source_infos() const
 	{
 		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
 		// Subsegment should be reversed if that's how it contributed to this resolved topological boundary...
-		sub_segment->get_reversed_sub_segment_point_source_infos(vertex_source_infos);
+		sub_segment->get_reversed_sub_segment_point_source_infos(
+				vertex_source_infos,
+				INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_BOUNDARY/*include_rubber_band_points*/);
 	}
 }
