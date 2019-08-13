@@ -69,7 +69,7 @@ GLEW            libglew-dev
 Python          python-dev
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
                 libboost-test-dev libboost-system-dev (See note below)
-Qt              libqt4-gui libqt4-dev (See note below.)
+Qt              libqt4-opengl-dev libqt4-dev (See note below.)
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev
 PROJ.4          libproj-dev
@@ -80,7 +80,7 @@ Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconf
 
 The command to install the dependencies on Ubuntu is:
 
-sudo apt-get update; sudo apt-get install libglew-dev python-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt4-gui libqt4-dev libgdal-dev libcgal-dev libproj-dev libqwt-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install libglew-dev python-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt4-opengl-dev libqt4-dev libgdal-dev libcgal-dev libproj-dev libqwt-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 (For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
 
 How to install via a GUI (recommended)
