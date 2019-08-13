@@ -308,8 +308,7 @@ namespace GPlatesAppLogic
 					ResolvedVertexSourceInfo::create(section_reconstructed_feature_geometry.get());
 
 			// Add the start intersection, if one.
-			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection =
-				sub_segment_range.get_start_intersection())
+			if (sub_segment_range.get_start_intersection())
 			{
 				vertex_source_infos.push_back(section_source_info);
 			}
@@ -342,8 +341,7 @@ namespace GPlatesAppLogic
 					section_source_info);
 
 			// Add the end intersection, if one.
-			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_intersection =
-				sub_segment_range.get_end_intersection())
+			if (sub_segment_range.get_end_intersection())
 			{
 				vertex_source_infos.push_back(section_source_info);
 			}
