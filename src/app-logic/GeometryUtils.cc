@@ -48,6 +48,7 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
+#include "maths/SmallCircleBounds.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureVisitor.h"
