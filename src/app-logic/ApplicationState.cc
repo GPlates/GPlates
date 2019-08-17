@@ -120,20 +120,17 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 	// Need destructor defined in ".cc" file because boost::scoped_ptr destructor
 	// needs complete type.
 
-	// Disconnect from the file state remove file signal because we delegate to ReconstructGraph
-	// which is one of our data members and if we don't disconnect then it's possible
-	// that we'll delegate to an already destroyed ReconstructGraph as our other
+	// Disconnect from the file state signals.
+	//
+	// One reason is we need to disconnect from the file state 'remove file' signal because
+	// we delegate to ReconstructGraph which is one of our data members and if we don't disconnect
+	// then it's possible that we'll delegate to an already destroyed ReconstructGraph as our other
 	// data member, FeatureCollectionFileState, is being destroyed.
-	QObject::disconnect(
-			&get_feature_collection_file_state(),
-			SIGNAL(file_state_file_about_to_be_removed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
-			this,
-			SLOT(handle_file_state_file_about_to_be_removed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-
+	//
+	// Another reason is we need to disconnect from the file state 'state changed' signal because
+	// it resets 'd_current_topological_sections' which is also destroyed by the time this happens and
+	// (on some systems such as Ubuntu 18.04+) this results in attempting to free the same memory twice.
+	QObject::disconnect(&get_feature_collection_file_state(), 0, this, 0);
 }
 
 
