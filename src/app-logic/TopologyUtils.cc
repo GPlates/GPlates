@@ -35,6 +35,7 @@
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
 #include "AppLogicUtils.h"
@@ -810,13 +811,13 @@ namespace GPlatesAppLogic
 							end_marker.is_start_of_sub_segment = false;
 							// It's at the start of the section so add start-of-section intersection
 							// (note that 'end_marker.is_start_of_section' should be true).
-							end_marker.intersection_or_rubber_band =
-									// We need to use an intersection to mark the start of a section.
-									// It's tempting to set this to 'none' to signify *start* of section
-									// but that creates a subtle problem when we later create a
-									// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
-									// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
-									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_of_section);
+							//
+							// We need to use an intersection to mark the start of a section.
+							// It's tempting to set this to 'none' to signify *start* of section
+							// but that creates a subtle problem when we later create a
+							// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+							// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
+							end_marker.intersection_or_rubber_band = boost::in_place(start_of_section);
 
 							new_markers.push_back(end_marker);
 						}
@@ -834,13 +835,13 @@ namespace GPlatesAppLogic
 
 						// It's at the start of the section so add start-of-section intersection
 						// (note that 'original_start_marker.is_start_of_section' should be true).
-						original_start_marker.intersection_or_rubber_band =
-								// We need to use an intersection to mark the start of a section.
-								// It's tempting to set this to 'none' to signify *start* of section
-								// but that creates a subtle problem when we later create a
-								// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
-								// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
-								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_of_section);
+						//
+						// We need to use an intersection to mark the start of a section.
+						// It's tempting to set this to 'none' to signify *start* of section
+						// but that creates a subtle problem when we later create a
+						// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+						// ResolvedSubSegmentRangeInSection will think it's the *end* of section...
+						original_start_marker.intersection_or_rubber_band = boost::in_place(start_of_section);
 					}
 
 					// Insert the new markers before the original start markers.
@@ -926,13 +927,13 @@ namespace GPlatesAppLogic
 							start_marker.is_start_of_sub_segment = true;
 							// It's at the end of the section so add end-of-section intersection
 							// (note that 'start_marker.is_start_of_section' should be true).
-							start_marker.intersection_or_rubber_band =
-									// We need to use an intersection to mark the end of a section.
-									// It's tempting to set this to 'none' to signify *end* of section
-									// but that creates a subtle problem when we later create a
-									// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
-									// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
-									ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_of_section);
+							//
+							// We need to use an intersection to mark the end of a section.
+							// It's tempting to set this to 'none' to signify *end* of section
+							// but that creates a subtle problem when we later create a
+							// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+							// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
+							start_marker.intersection_or_rubber_band = boost::in_place(end_of_section);
 
 							new_markers.push_back(start_marker);
 						}
@@ -961,13 +962,13 @@ namespace GPlatesAppLogic
 
 						// It's at the end of the section so add end-of-section intersection
 						// (note that 'original_end_marker.is_start_of_section' should be false).
-						original_end_marker.intersection_or_rubber_band =
-								// We need to use an intersection to mark the end of a section.
-								// It's tempting to set this to 'none' to signify *end* of section
-								// but that creates a subtle problem when we later create a
-								// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
-								// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
-								ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_of_section);
+						//
+						// We need to use an intersection to mark the end of a section.
+						// It's tempting to set this to 'none' to signify *end* of section
+						// but that creates a subtle problem when we later create a
+						// ResolvedSubSegmentRangeInSection (for a shared sub-segment) in that the
+						// ResolvedSubSegmentRangeInSection will think it's the *start* of section...
+						original_end_marker.intersection_or_rubber_band = boost::in_place(end_of_section);
 					}
 
 					// Insert the new markers after the original end markers.
