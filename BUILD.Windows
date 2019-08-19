@@ -9,8 +9,8 @@ Table of Contents
      3. Note before starting
      4. Program and library dependencies
  3. Creating Visual Studio solution and project files with CMake
-     1. Building GPlates via the IDE	
-     2. Building GPlates via the Command Line (MSVC2005+ only)
+     1. Building GPlates via the IDE
+     2. Building GPlates via the Command Line
 
 Introduction
 
@@ -45,6 +45,10 @@ For any activities requiring the command line, remember to use the
 "Developer Command Prompt for VS201X" shortcut available in the Windows "Start" menu.
 This starts a command prompt and sets up environment variables, allowing use of VC command line 
 applications (such as the compiler, linker, make and build tools).
+Note that this is 32-bit. For a 64-bit version of GPlates you'll need a command prompt with a
+64-bit Visual Studio toolset enabled. To do this:
+* Start a standard command prompt, and run the following in it (keeping the double quotes intact):
+  "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 
 Program and library dependencies
 
@@ -66,7 +70,8 @@ Creating Visual Studio solution and project files with CMake
   5.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
       to a different directory for out-of-place builds (recommended for developers).
   6.  Click 'configure'.
-  6.  Specify 'Visual Studio 14 2015'.
+  6.  Specify 'Visual Studio 14 2015' for 32-bit or 'Visual Studio 14 2015 Win64' for 64-bit.
+      Note that the library dependencies should be compiled as 32-bit or 64-bit respectively.
   7.  Once configuration finished you should get no popup messages.
       If you do then most likely the 'CMAKE_INCLUDE_PATH' environment variable is not referring
       to the correct locations.
@@ -89,6 +94,10 @@ Building GPlates via the Command Line
 
   1. Run the Visual Studio 2015 Command Prompt.
      * This is "Developer Command Prompt for VS2015" for Visual Studio 2015.
+       Note that this is 32-bit. To build a 64-bit version of GPlates you'll need a
+       command prompt with a 64-bit Visual Studio toolset enabled. To do this:
+       * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
+         "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
   2. Go to the root GPlates build directory. 
   3. Type the following on the command-line to build a release version of GPlates:
        msbuild gplates.sln /m /t:gplates /p:Configuration=Release /v:quiet
