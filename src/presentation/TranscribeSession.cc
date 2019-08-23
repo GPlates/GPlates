@@ -71,6 +71,7 @@
 #include "global/GPlatesException.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/AnimationController.h"
 #include "gui/Colour.h"
 #include "gui/ColourPaletteUtils.h"
 #include "gui/Dialogs.h"
@@ -2946,6 +2947,41 @@ namespace GPlatesPresentation
 
 
 		void
+		save_animation_configuration(
+				const GPlatesScribe::ObjectTag &animation_configuration_tag,
+				GPlatesScribe::Scribe &scribe,
+				const GPlatesGui::AnimationController &animation_controller)
+		{
+			// Only save the animation start and end times.
+			scribe.save(TRANSCRIBE_SOURCE, animation_controller.start_time(), animation_configuration_tag("start_time"));
+			scribe.save(TRANSCRIBE_SOURCE, animation_controller.end_time(), animation_configuration_tag("end_time"));
+		}
+
+		void
+		load_animation_configuration(
+				const GPlatesScribe::ObjectTag &animation_configuration_tag,
+				GPlatesScribe::Scribe &scribe,
+				GPlatesGui::AnimationController &animation_controller)
+		{
+			//
+			// Only transcribe the animation start and end times.
+			//
+
+			double start_time;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, start_time, animation_configuration_tag("start_time")))
+			{
+				animation_controller.set_start_time(start_time);
+			}
+
+			double end_time;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, end_time, animation_configuration_tag("end_time")))
+			{
+				animation_controller.set_end_time(end_time);
+			}
+		}
+
+
+		void
 		save_reconstruction_layer_geometry_parameters(
 				const GPlatesScribe::ObjectTag &reconstruction_layer_geometry_parameters_tag,
 				GPlatesScribe::Scribe &scribe,
@@ -3060,6 +3096,13 @@ namespace GPlatesPresentation
 			// applying them individually to each layer (ie, each layer should have its own settings).
 			save_geometry_visibility(session_state_tag("geometry_visibility"), scribe, view_state.get_render_settings());
 
+			// Animation configuration is transcribed because rotation models have a time span and
+			// so it makes sense that it should be preserved when the rotation model is loaded.
+			save_animation_configuration(
+					session_state_tag("animation_configuration"),
+					scribe,
+					view_state.get_animation_controller());
+
 			// Reconstruction layer line/point sizes are only transcribed because in future we should be
 			// applying them individually to each layer (ie, each layer should have its own symbology).
 			save_reconstruction_layer_geometry_parameters(
@@ -3110,6 +3153,13 @@ namespace GPlatesPresentation
 			{
 				view_state.get_feature_type_symbol_map() = symbol_map;
 			}
+
+			// Animation configuration is transcribed because rotation models have a time span and
+			// so it makes sense that it should be preserved when the rotation model is loaded.
+			load_animation_configuration(
+				session_state_tag("animation_configuration"),
+				scribe,
+				view_state.get_animation_controller());
 
 			// Geometry visibility settings are only transcribed because in future we should be
 			// applying them individually to each layer (ie, each layer should have its own settings).
