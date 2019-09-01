@@ -1,3 +1,112 @@
+GPlates 2.2
+===========
+
+Changes since 2.1:
+
+ * Deformation:
+   * Option to generate 'exponential' stretching profiles across rifts (instead of default constant stretching).
+     * More points are added to interior of deforming network and velocities distributed so strain rate varies exponentially.
+       * Variation is along stretching direction from un-stretched side of rift towards rift centre.
+     * Activated by adding 'rift' left/right plate IDs to any deforming network.
+     * Optionally specify three control parameters:
+       * Specify in deforming network feature or layer (with feature parameters taking precedence over layer parameters):
+       * One parameter controls the exponential constant.
+       * The other two parameters control how closely to approximate exponential curve (with better approximations running slower).
+   * Calculate, visualize and export strain rate "style":
+     * A unit-less quantity defined in Kreemer et al. 2014, categorizing extension, contraction and strike-slip.
+   * Support deforming networks in Net Rotation export (in addition to rigid plates).
+     * Although deforming networks with zero (or no) plate ID will all get grouped together as a single entry/plate,
+     * but only in the files for individual times (that list the plate contributions to total net rotation).
+   * Added option to generate deforming mesh points inside interior rigid blocks of networks (by default they're not generated there).
+ * Topologies:
+   * Updated CitcomS topology export:
+     * Added option to export all (plate/network/slab) polygons and all (plate/network/slab) boundary segments.
+     * Added extra boundary segments export for each of plate/network/slab type.
+     * Exported 'plate' boundary segment filenames now use 'plate_' prefix, so that 'all' boundary segments can use their previous filenames.
+     * Fixed missing 'plate's (that were not of type TopologicalClosedPlateBoundary; eg, OceanicCrust).
+   * Updated General topology export:
+     * Added option to export boundary segments.
+       * Including separate subduction, subduction left/right, ridge/transform files (similar to CitcomS topology export).
+     * Boundary segments are unique.
+       * Not duplicated like in CitcomS export where GMT header outputs plate/slab/network name and reversal flag (and hence tied to specific topology).
+     * When a boundary segment comes from a resolved topological *line*, export the sub-segments contributing to the resolved *line* segment:
+       * Ensures the correct plate IDs get exported,
+       * ie, plate IDs of actual reconstructed features that contribute to resolved topological line (rather than resolved topological line itself).
+   * Much more robust determination of which points contribute to a topological sub-segment of a topological boundary:
+     * Including sub-segments made from topological *lines* (that, in turn, contribute to a topological boundary).
+     * Robust determination of velocities along topological boundary.
+       * Results in robust strain rates inside topological networks.
+     * Use average of velocities of two adjacent intersecting topological sections (eg, at corners of topological network boundaries).
+       * Avoids randomly switching the velocity from one section to the other between reconstruction times (and subsequent effects on strain rate).
+     * Interpolate velocities when clipping a resolved topological line (used as a section of a topological boundary) in the middle of a segment/arc.
+       * There can be differing plate IDs on either end of the segment/arc (eg, if topological line is made from points and is deforming).
+   * When individual points are used as topological sections in a topology their sub-segments become small polylines:
+     * Each polyline essentially expands the point to two new points halfway to its adjacent neighbours (topological sections).
+     * The same applies to *lines* that rubber-band instead of intersect.
+     * This fills in gaps a topological boundary (eg, when exporting topological boundary segments).
+ * Projects and recent sessions:
+   * Save time slider range to project/session.
+     * Also extend default time range to 410Ma (from 200Ma) since rotation model goes back to 410Ma.
+ * File formats:
+   * Added support for reading/writing GeoPackage geometry files.
+   * Support null attributes for OGR vector formats (Shapefile, etc).
+     * Eg, not all features in file will have a conjugate plate ID or left/right plate IDs.
+     * Avoids assigning a property to a feature that it shouldn't have.
+   * Support UTF8 when reading (and writing) PLATES4 line and rotation formats.
+     * Useful when rotation comments contain some non-ASCII characters.
+ * Rendering:
+   * User can show/hide topological lines, polygons and networks.
+     * Can also show/hide topological "sections" (those geometries referenced in topological boundaries/interiors).
+     * GPlates now hides these dangling bits on topologies by default (so novice users don’t get confused when loading public data).
+   * User can show/hide rasters, 3D scalar fields and scalar coverages.
+   * Velocity layers can calculate velocities on *domains* that are topology layers (as opposed to *surfaces*).
+     * This calculates velocities at the *vertices* of topological lines, polygons and networks.
+   * Render clicked (white) geometries on top of non-clicked (grey) geometries (belonging to the same feature).
+     * Useful when the feature's geometries overlap.
+ * GPlates Geological Information Model (GPGIM):
+   * Added new GPGIM feature type "DeformingRegionEdge" that is edge of a deforming region that is also not a plate boundary.
+   * Allow a gpml:MeshNode feature to contain a point geometry (previously only allowed a multi-point).
+     * Enables single point to automatically create a velocity layer (because only MeshNode features do this).
+   * Added properties for rift exponential stretching:
+     * 'gpml:riftLeftPlate' and 'gpml:riftRightPlate' - conjugate rigid plates bounding a rift topological network.
+     * 'gpml:riftExponentialStretchingConstant' - controls exponential variation across rift stretching profile.
+     * 'gpml:riftEdgeLengthThresholdDegrees' and 'gpml:riftStrainRateResolutionLog10' - control approximation to true exponential curve.
+   * Removed no-longer-used network properties 'gpml:networkMaxEdge' and 'gpml:networkShapeFactor'.
+ * Polyline intersections:
+   * More robust polyline intersections code, and significantly faster.
+   * Assigning plate IDs is much faster (especially dense geometry like coastlines).
+     * And resolving topologies is a little faster.
+   * Distances to polygons (from another geometry) now take into account any interior rings of the polygon.
+     * Includes polygon-to-polygon distances (where both polygons have interior rings).
+ * Bug fixes:
+   * Fixed hang on start up on Mac systems where network interface appears active but network is unavailable.
+   * Fixed crash triggered when exporting total strains.
+   * Fixed crash on exiting on some Ubuntu versions (due to freeing same memory twice).
+   * Fixed time-dependent raster import (and 3D scalar field import) not accepting filenames with uppercase extensions.
+   * Fixed crash when saving a rotation feature with a 'gml:name' or 'gml:description' property to a PLATES4 rotation file.
+     * Most rotation features don't have these properties (but they're usually created this way via pyGPlates).
+   * Fix crash loading a GPML file containing a feature property that cannot be interpreted using any property defined in the GPGIM.
+   * Workaround CGAL bug causing natural neighbor interpolation to get stuck in an infinite loop for some Delaunay triangulations:
+     * Such as South Atlantic deforming networks at 120Ma.
+     * The bug is fixed in CGAL 4.12.2, 4.13.1 and 4.14.
+   * Fixed parallel build compile errors "Cannot open include file: '<...>Ui.h': No such file or directory".
+ * Build:
+   * Support Visual Studio 2015/2017 (GDAL 2.3 uses C++11 which requires VS2015), and update Windows build docs accordingly.
+   * Document how to build a 64-bit version of GPlates on Windows (including dependency libraries).
+   * Fixed issue introduced by GDAL 3.0:
+     * Data-axis-to-CRS-axis mapping breaks backward compatibility.
+     * Restore to GIS-friendly order (longitude first, latitude second) like previous GDAL versions.
+     * Fixes incorrect 90 degree rotation in lat-lon space in rasters with inbuilt projections (eg, Lambert Conformal Conic).
+   * Upgraded support to new Proj6 API (but also support deprecated Proj4 API).
+   * Added SQLite3 dependency library (due to adding support for GeoPackage vector format).
+   * Support Boost 1.66 - adds an architecture tag (eg, x32 or x64) in the library filename.
+   * Support Boost 1.67 - adds a Python version suffix (e.g. ``python27``) to the boost python components.
+   * Fixed CMake error finding GMP library on Windows (recent CGAL versions already link to GMP, so GPlates doesn't need to).
+   * Work around internal compiler error (gcc 5.4) on Ubuntu Xenial (16.04).
+   * No longer combine '-ansi' (equivalent to '-std=c++98') and '-std=c++11' flags (first noticed on gcc 9.1).
+   * No longer turn warnings into errors:
+     * There are lots of warnings generated by dependency libraries (that we can't easily fix) and new compilers.
+
 GPlates 2.1
 ===========
 

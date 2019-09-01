@@ -20,7 +20,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "2")
-set(GPLATES_PACKAGE_VERSION_MINOR "1")
+set(GPLATES_PACKAGE_VERSION_MINOR "2")
 set(GPLATES_PACKAGE_VERSION_PATCH "0")
 
 # The GPlates package version.
