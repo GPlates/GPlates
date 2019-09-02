@@ -26,24 +26,25 @@
 
 #include <algorithm>
 #include <cfloat>
-#include <csetjmp> // Sometimes CGal segfaults, trap it
-#include <csignal>
+#include <cmath>
 #include <cstring> // for memset
 #include <exception>
 #include <limits>
 #include <boost/bind.hpp>
 #include <boost/utility/in_place_factory.hpp>
+// Seems we need this to avoid compile problems on some CGAL versions
+// (eg, 4.0.2 on Mac 10.6) for subsequent <CGAL/number_utils.h> include...
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/number_utils.h>
 #include <CGAL/spatial_sort.h>
 #include <CGAL/squared_distance_2.h>
 #include <CGAL/Triangulation_2.h>
-#include <CGAL/Triangulation_conformer_2.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/Triangle_2.h>
 #include <QDebug>
 
 #include "ResolvedTriangulationNetwork.h"
+#include "RotationUtils.h"
 
 #include "GeometryUtils.h"
 #include "PlateVelocityUtils.h"
@@ -53,8 +54,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/CalculateVelocity.h"
-#include "maths/Centroid.h"
 #include "maths/FiniteRotation.h"
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
@@ -70,6 +71,20 @@
 
 namespace GPlatesAppLogic
 {
+	const double VELOCITY_DELTA_TIME = 1.0;
+	const double INV_VELOCITY_DELTA_TIME = 1.0 / VELOCITY_DELTA_TIME;
+
+	// Scale velocity values from kms/my to m/s.
+	//const double VELOCITY_SCALE_KMS_MY_TO_M_S =
+	//		1e-1/* kms/my -> cm/yr */ *
+	//		(1.0 / 3.1536e+9)/* cm/yr to m/s */;
+
+	// Scale 1/my -> 1/s.
+	const double SCALE_PER_MY_TO_PER_SECOND =
+			1e-6/* 1/my -> 1/yr */ *
+			(1.0 / 3.1536e+7)/* 1/yr to 1/s */;
+
+
 	//
 	// CGAL typedefs.
 	//
@@ -79,16 +94,16 @@ namespace GPlatesAppLogic
 
 	/**
 	 * Same as ResolvedTriangulation::Network::DelaunayPoint but stores a 2D point (instead of 3D)
-	 * so can be spatialy sorted by CGAL.
+	 * so can be spatially sorted by CGAL.
 	 */
 	struct DelaunayPoint2
 	{
 
 		DelaunayPoint2(
-				const ResolvedTriangulation::Network::DelaunayPoint &delaunay_point_,
+				const ResolvedTriangulation::Network::DelaunayPoint *delaunay_point_,
 				const GPlatesMaths::LatLonPoint &lat_lon_point_,
 				const ResolvedTriangulation::Delaunay_2::Point &point_2_) :
-			delaunay_point(&delaunay_point_),
+			delaunay_point(delaunay_point_),
 			lat_lon_point(lat_lon_point_),
 			point_2(point_2_)
 		{  }
@@ -193,33 +208,6 @@ namespace GPlatesAppLogic
 				(reverse_deform ? vertex_stage_rotation : get_reverse(vertex_stage_rotation)) *
 						vertex_handle->get_point_on_sphere());
 	}
-
-
-#if 0 // Not currently using being used...
-	namespace
-	{
-	#if !defined(__WINDOWS__)
-		// The old sigaction for SIGSEGV before we called sigaction().
-		struct sigaction old_action;
-
-		// Holds the data necessary for setjmp/longjmp to work.
-		jmp_buf buf;
-
-
-		/**
- 		* Handles the SIGSEGV signal.
- 		*/
-		void
-		handler(int signum)
-		{
-			// Jump past the problem call.
-			/* non-zero value so that the problem call doesn't get called again */
-			//qDebug() << "handler";
-			longjmp( buf, 1);
-		}
-	#endif
-	}
-#endif // ...not currently using being used.
 }
 
 
@@ -501,9 +489,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation_in_deform
 						start_face_hint);
 
 		// Interpolate the deformation infos at the vertices of the triangle using the interpolation coordinates.
-		return barycentric_coord_vertex_1 * delaunay_face->vertex(0)->get_deformation_info() +
-				barycentric_coord_vertex_2 * delaunay_face->vertex(1)->get_deformation_info() +
-				barycentric_coord_vertex_3 * delaunay_face->vertex(2)->get_deformation_info();
+		return CGAL::to_double(barycentric_coord_vertex_1) * delaunay_face->vertex(0)->get_deformation_info() +
+				CGAL::to_double(barycentric_coord_vertex_2) * delaunay_face->vertex(1)->get_deformation_info() +
+				CGAL::to_double(barycentric_coord_vertex_3) * delaunay_face->vertex(2)->get_deformation_info();
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -736,12 +724,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 
 	// Interpolate the vertex deformed positions.
 	const QPointF interpolated_deformed_point(
-			barycentric_coord_vertex_1 * deformed_point_1.x() +
-			barycentric_coord_vertex_2 * deformed_point_2.x() +
-			barycentric_coord_vertex_3 * deformed_point_3.x(),
-			barycentric_coord_vertex_1 * deformed_point_1.y() +
-			barycentric_coord_vertex_2 * deformed_point_2.y() +
-			barycentric_coord_vertex_3 * deformed_point_3.y());
+			CGAL::to_double(
+					barycentric_coord_vertex_1 * deformed_point_1.x() +
+					barycentric_coord_vertex_2 * deformed_point_2.x() +
+					barycentric_coord_vertex_3 * deformed_point_3.x()),
+			CGAL::to_double(
+					barycentric_coord_vertex_1 * deformed_point_1.y() +
+					barycentric_coord_vertex_2 * deformed_point_2.y() +
+					barycentric_coord_vertex_3 * deformed_point_3.y()));
 
 	return std::make_pair(
 			d_projection.unproject_to_point_on_sphere(interpolated_deformed_point),
@@ -864,9 +854,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 					stage_rotation_1,
 					stage_rotation_2,
 					stage_rotation_3,
-					barycentric_coord_vertex_1,
-					barycentric_coord_vertex_2,
-					barycentric_coord_vertex_3);
+					CGAL::to_double(barycentric_coord_vertex_1),
+					CGAL::to_double(barycentric_coord_vertex_2),
+					CGAL::to_double(barycentric_coord_vertex_3));
 
 	return std::make_pair(
 			interpolated_stage_rotation,
@@ -963,6 +953,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_delaunay_2() const
 	{
 		create_delaunay_2();
 
+		// We've finished inserting vertices into the Delaunay triangulation.
+		// Each vertex can now compute its deformation strain rate by area averaging the strain rates
+		// of the triangles that surround it...
+		d_delaunay_2->set_finished_modifying_triangulation();
+
 		// Release some build data memory since we don't need it anymore.
 		std::vector<DelaunayPoint> empty_delaunay_points;
 		d_build_info.delaunay_points.swap(empty_delaunay_points);
@@ -977,24 +972,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 {
 	PROFILE_FUNC();
 
-	// See if strain rate clamping requested.
-	boost::optional<double> clamp_total_strain_rate;
-	if (get_strain_rate_clamping().enable_clamping)
-	{
-		clamp_total_strain_rate = get_strain_rate_clamping().max_total_strain_rate;
-	}
+	d_delaunay_2 = boost::in_place(*this, d_reconstruction_time);
 
-	d_delaunay_2 = boost::in_place(d_projection, d_reconstruction_time, clamp_total_strain_rate);
-
-	// Improve performance by spatially sorting the delaunay points.
-	// This is what is done by the CGAL overload that inserts a *range* of points into a delauany triangulation.
-	//
 	// Project the points to 2D space and insert into array to be spatially sorted.
 	std::vector<DelaunayPoint2> delaunay_point_2_seq;
 	delaunay_point_2_seq.reserve(d_build_info.delaunay_points.size());
 	std::vector<DelaunayPoint>::const_iterator delaunay_points_iter = d_build_info.delaunay_points.begin();
 	std::vector<DelaunayPoint>::const_iterator delaunay_points_end = d_build_info.delaunay_points.end();
-	for ( ; delaunay_points_iter != delaunay_points_end; ++delaunay_points_iter)
+	for (; delaunay_points_iter != delaunay_points_end; ++delaunay_points_iter)
 	{
 		const DelaunayPoint &delaunay_point = *delaunay_points_iter;
 
@@ -1004,39 +989,41 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 
 		// Project point-on-sphere to x,y space.
 		const delaunay_point_2_type point_2 =
-				d_projection.project_from_lat_lon<delaunay_point_2_type>(lat_lon_point);
+			d_projection.project_from_lat_lon<delaunay_point_2_type>(lat_lon_point);
 
-		delaunay_point_2_seq.push_back(DelaunayPoint2(delaunay_point, lat_lon_point, point_2));
+		delaunay_point_2_seq.push_back(DelaunayPoint2(&delaunay_point, lat_lon_point, point_2));
 	}
 
+	// Improve performance by spatially sorting the delaunay points.
+	// This is what is done by the CGAL overload that inserts a *range* of points into a delauany triangulation.
 	CGAL::spatial_sort(
-			delaunay_point_2_seq.begin(),
-			delaunay_point_2_seq.end(),
-			DelaunayPoint2SpatialSortingTraits());
+		delaunay_point_2_seq.begin(),
+		delaunay_point_2_seq.end(),
+		DelaunayPoint2SpatialSortingTraits());
 
 	// Insert the points into the delaunay triangulation.
 	unsigned int vertex_index = 0;
 	std::vector<DelaunayPoint2>::const_iterator delaunay_points_2_iter = delaunay_point_2_seq.begin();
 	std::vector<DelaunayPoint2>::const_iterator delaunay_points_2_end = delaunay_point_2_seq.end();
 	Delaunay_2::Face_handle insert_start_face;
-	for ( ; delaunay_points_2_iter != delaunay_points_2_end; ++delaunay_points_2_iter)
+	for (; delaunay_points_2_iter != delaunay_points_2_end; ++delaunay_points_2_iter)
 	{
 		const DelaunayPoint2 &delaunay_point_2 = *delaunay_points_2_iter;
 		const DelaunayPoint &delaunay_point = *delaunay_point_2.delaunay_point;
 
 		// Insert into the triangulation.
 		Delaunay_2::Vertex_handle vertex_handle =
-				d_delaunay_2->insert(delaunay_point_2.point_2, insert_start_face);
+			d_delaunay_2->insert(delaunay_point_2.point_2, insert_start_face);
 
 		if (!vertex_handle->is_initialised())
 		{
 			// Set the extra info for this vertex.
 			vertex_handle->initialise(
-					d_delaunay_2.get(),
-					vertex_index,
-					delaunay_point.point,
-					delaunay_point_2.lat_lon_point,
-					delaunay_point.shared_source_info);
+				d_delaunay_2.get(),
+				vertex_index,
+				delaunay_point.point,
+				delaunay_point_2.lat_lon_point,
+				delaunay_point.shared_source_info);
 
 			// Increment vertex index since vertex handle does not refer to an existing vertex position.
 			++vertex_index;
@@ -1059,503 +1046,893 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 			// Create a source info that equally interpolates between the source info of the
 			// existing vertex and the source info of the vertex we're attempting to add.
 			const ResolvedVertexSourceInfo::non_null_ptr_to_const_type interpolated_source_info =
-					ResolvedVertexSourceInfo::create(
-							// Source info of existing vertex...
-							get_non_null_pointer(&vertex_handle->get_shared_source_info()),
-							// Source info of new vertex...
-							delaunay_point.shared_source_info,
-							0.5);  // equal blending
+				ResolvedVertexSourceInfo::create(
+					// Source info of existing vertex...
+					get_non_null_pointer(&vertex_handle->get_shared_source_info()),
+					// Source info of new vertex...
+					delaunay_point.shared_source_info,
+					0.5);  // equal blending
 
 			// Reset the extra info for this vertex.
 			vertex_handle->initialise(
-					d_delaunay_2.get(),
-					// Note: This is an existing vertex position so re-use the vertex index previously assigned...
-					vertex_handle->get_vertex_index(),
-					delaunay_point.point,
-					delaunay_point_2.lat_lon_point,
-					// Replace source info with the interpolated source info...
-					interpolated_source_info);
+				d_delaunay_2.get(),
+				// Note: This is an existing vertex position so re-use the vertex index previously assigned...
+				vertex_handle->get_vertex_index(),
+				delaunay_point.point,
+				delaunay_point_2.lat_lon_point,
+				// Replace source info with the interpolated source info...
+				interpolated_source_info);
 		}
 
 		// The next insert vertex will start searching at the face of the last inserted vertex.
 		insert_start_face = vertex_handle->face();
 	}
 
-	// Now that we've finished inserting vertices into the delaunay triangulation, and hence
-	// finished generating triangulation faces, we can now initialise each face.
-	unsigned int face_index = 0;
-	Delaunay_2::Finite_faces_iterator finite_faces_2_iter = d_delaunay_2->finite_faces_begin();
-	Delaunay_2::Finite_faces_iterator finite_faces_2_end = d_delaunay_2->finite_faces_end();
-	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter, ++face_index)
+	//
+	// Note that we don't need to initialise the faces.
+	//
+	// They get initialised when/if they are first accessed.
+	//
+
+	// If this deforming network represents a rift then adaptively refine the
+	// Delaunay triangulation by inserting new vertices along subdivided edges with
+	// velocities that result in a non-uniform strain rate profile across the rift
+	// (instead of a uniform/constant strain rate that would lead to constant crustal
+	// thinning right across the entire rift).
+	if (d_build_info.rift_params)
 	{
-		// Determine whether current face is inside the deforming region.
-		//
-		// The delaunay triangulation is the convex hull around the network boundary,
-		// so it includes faces outside the network boundary (and also faces inside any
-		// non-deforming interior blocks).
-		//
-		// If the centroid of this face is inside the deforming region then true is returned.
-		//
-		// TODO: Note that the delaunay triangulation is *not* constrained which means some
-		// delaunay faces can cross over network boundary edges or interior block edges.
-		// This is something that perhaps needs to be dealt with, but currently doesn't appear
-		// to be too much of a problem with current topological network datasets.
-		// Compute centroid of face.
-		const GPlatesMaths::PointOnSphere face_points[3] =
+		refine_rift_delaunay_2(d_build_info.rift_params.get(), vertex_index);
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_2(
+		const BuildInfo::RiftParams &rift_params,
+		unsigned int vertex_index) const
+{
+	PROFILE_FUNC();
+
+	//qDebug() << "Num faces before rift refinement:" << d_delaunay_2->number_of_faces();
+
+	// Obtain a ReconstructionTreeCreator from the first vertex in the triangulation.
+	//
+	// It's possible that the various topological sections making up this topological network
+	// were reconstructed using different rotation layers (and hence ReconstructionTreeCreator's).
+	// However that really shouldn't be the case, and if the user has set up the layers like that
+	// then it is most likely been setup incorrectly. In any case it becomes ambiguous as to which
+	// ReconstructionTreeCreator to use to calculate the rift stage pole.
+	//
+	if (d_delaunay_2->number_of_vertices() == 0)
+	{
+		return;
+	}
+	const ReconstructionTreeCreator reconstruction_tree_creator =
+			d_delaunay_2->finite_vertices_begin()->get_shared_source_info().get_reconstruction_tree_creator();
+
+	const GPlatesMaths::FiniteRotation right_plate_stage_rotation =
+			PlateVelocityUtils::calculate_stage_rotation(
+					rift_params.right_plate_id,
+					reconstruction_tree_creator,
+					d_reconstruction_time,
+					VELOCITY_DELTA_TIME,
+					VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
+
+	const GPlatesMaths::FiniteRotation left_plate_stage_rotation =
+			PlateVelocityUtils::calculate_stage_rotation(
+					rift_params.left_plate_id,
+					reconstruction_tree_creator,
+					d_reconstruction_time,
+					VELOCITY_DELTA_TIME,
+					VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
+
+	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
+			reconstruction_tree_creator.get_reconstruction_tree(
+					d_reconstruction_time);
+	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
+			reconstruction_tree_creator.get_reconstruction_tree(
+					d_reconstruction_time + 1);
+
+	// Get the stage pole for the rift stage rotation (from left to right plate over delta time).
+	//
+	// The stage pole is from 't1' to 't2', where 't1' is 't+1' and 't2' is 't'.
+	const GPlatesMaths::FiniteRotation stage_pole =
+			RotationUtils::get_stage_pole(
+					*reconstruction_tree_2, // t1
+					*reconstruction_tree_1, // t2
+					rift_params.right_plate_id,
+					rift_params.left_plate_id);
+
+	// Get stage pole axis.
+	if (represents_identity_rotation(stage_pole.unit_quat()))
+	{
+		// There's no rift stretching, so no need for rift triangulation refinement.
+		return;
+	}
+
+	const GPlatesMaths::UnitVector3D stage_pole_axis =
+			stage_pole.unit_quat().get_rotation_params(boost::none).axis;
+
+	//
+	// We can write "R(0->t2,A->R)" in terms of the stage rotation "R(t1->t2,L->R)" as:
+	//             
+	//     R(0->t2,A->R) = R(0->t2,A->L) * R(0->t2,L->R)
+	//                 = R(0->t2,A->L) * R(t1->t2,L->R) * R(0->t1,L->R)
+	//                 = R(0->t2,A->L) * stage_rotation * R(0->t1,L->R)
+	//             
+	// ...where 't1' is 't+1' and 't2' is 't' (ie, from 't1' to 't2').
+	//             
+	// So to get the stage pole axis of the stage rotation into the reference frame of
+	// *reconstructed* geometries we need to rotate it by "R(0->t2,A->L)":
+	//             
+	//     reconstructed_geometry = R(0->t2,A->L) * stage_rotation * R(0->t1,L->R) * present_day_geometry
+	//
+	// Only then can be compare the stage pole axis with the reconstructed rift geometries in the network.
+	//
+	const GPlatesMaths::FiniteRotation left_plate_rotation =
+			reconstruction_tree_1->get_composed_absolute_rotation(rift_params.left_plate_id).first;
+	const GPlatesMaths::UnitVector3D twist_axis = left_plate_rotation * stage_pole_axis;
+
+
+	//
+	// Iterate over the edges of the Delaunay triangulation and recursively sub-divide to create
+	// new triangulation vertices.
+	//
+
+	std::vector<DelaunayPoint> delaunay_edge_point_seq;
+
+	Delaunay_2::Finite_edges_iterator finite_edges_2_iter = d_delaunay_2->finite_edges_begin();
+	Delaunay_2::Finite_edges_iterator finite_edges_2_end = d_delaunay_2->finite_edges_end();
+	for ( ; finite_edges_2_iter != finite_edges_2_end; ++finite_edges_2_iter)
+	{
+		// Get the two faces adjoining the current edge.
+		const Delaunay_2::Face_handle face_handle[2] =
 		{
-			finite_faces_2_iter->vertex(0)->get_point_on_sphere(),
-			finite_faces_2_iter->vertex(1)->get_point_on_sphere(),
-			finite_faces_2_iter->vertex(2)->get_point_on_sphere()
+			finite_edges_2_iter->first,
+			finite_edges_2_iter->first->neighbor(finite_edges_2_iter->second)
 		};
-		const GPlatesMaths::PointOnSphere face_centroid(
-				GPlatesMaths::Centroid::calculate_points_centroid(face_points, face_points + 3));
 
-		// Note that we don't actually calculate the deformation strains here.
-		// They'll get calculated if and when they are needed.
-		finite_faces_2_iter->initialise(
+		// Iterate over both faces adjoining the current edge.
+		unsigned int num_valid_faces = 0;
+		for (unsigned int t = 0; t < 2; ++t)
+		{
+			// Skip infinite faces. These occur on convex hull edges.
+			// Also skip faces with centroid outside deforming region.
+			if (d_delaunay_2->is_infinite(face_handle[t]) ||
+				!face_handle[t]->is_in_deforming_region())
+			{
+				continue;
+			}
+
+			++num_valid_faces;
+		}
+
+		// If both triangles (adjoining current edge) are outside deforming region (or an infinite face)
+		// then the skip the current edge.
+		if (num_valid_faces == 0)
+		{
+			continue;
+		}
+
+		// Get the edge vertices.
+		const Delaunay_2::Vertex_handle first_edge_vertex_handle =
+				finite_edges_2_iter->first->vertex(d_delaunay_2->cw(finite_edges_2_iter->second));
+		const Delaunay_2::Vertex_handle second_edge_vertex_handle =
+				finite_edges_2_iter->first->vertex(d_delaunay_2->ccw(finite_edges_2_iter->second));
+
+		// Get the edge vertex positions.
+		const GPlatesMaths::PointOnSphere &first_edge_vertex_point = first_edge_vertex_handle->get_point_on_sphere();
+		const GPlatesMaths::PointOnSphere &second_edge_vertex_point = second_edge_vertex_handle->get_point_on_sphere();
+
+		// If edge length is shorter than threshold distance then don't subdivide edge.
+		const GPlatesMaths::AngularExtent edge_angular_extent =
+				GPlatesMaths::AngularExtent::create_from_cosine(
+						dot(first_edge_vertex_point.position_vector(), second_edge_vertex_point.position_vector()));
+		if (edge_angular_extent.is_precisely_less_than(rift_params.edge_length_threshold))
+		{
+			continue;
+		}
+		const GPlatesMaths::UnitVector3D edge_rotation_axis = cross(
+				first_edge_vertex_point.position_vector(),
+				second_edge_vertex_point.position_vector()).get_normalisation();
+
+		const ResolvedVertexSourceInfo::non_null_ptr_to_const_type first_edge_vertex_source_info =
+				get_non_null_pointer(&first_edge_vertex_handle->get_shared_source_info());
+		const ResolvedVertexSourceInfo::non_null_ptr_to_const_type second_edge_vertex_source_info =
+				get_non_null_pointer(&second_edge_vertex_handle->get_shared_source_info());
+
+		// Stage rotations used to generate velocities at the two edge vertices.
+		const GPlatesMaths::FiniteRotation first_edge_vertex_stage_rotation =
+				first_edge_vertex_source_info->get_stage_rotation(
+						d_reconstruction_time, VELOCITY_DELTA_TIME, VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
+		const GPlatesMaths::FiniteRotation second_edge_vertex_stage_rotation =
+				second_edge_vertex_source_info->get_stage_rotation(
+						d_reconstruction_time, VELOCITY_DELTA_TIME, VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
+
+		//
+		// Find out if either/both edge vertices are on an un-stretched side of the rift.
+		//
+		// This happens if one vertex has a stage rotation that matches either plate (left or right)
+		// of the rift, and the other vertex does not match. The matching vertex has minimal stretching
+		// (since near un-stretched side of rift) and un-matching vertex has maximal stretching
+		// (since it is presumed to be near the centre of rifting).
+		// 
+		// However if both edge vertices match opposing sides of the rift then we need to create maximal
+		// stretching in the *middle* of edge and minimal at either side (not yet handled below).
+		// This happens when the edge crosses the entire rift and there are no vertices in the centre of the rift.
+		//
+		// We want minimal stretching rate at rift edge (un-stretched side of rift) and
+		// maximal stretching at rift centre (that could eventually form mid-ocean ridge).
+		//
+
+		BuildInfo::RiftParams::EdgeType rift_edge_type;
+		if (first_edge_vertex_stage_rotation.unit_quat() == right_plate_stage_rotation.unit_quat())
+		{
+			if (second_edge_vertex_stage_rotation.unit_quat() == left_plate_stage_rotation.unit_quat())
+			{
+				// Both edge vertices are on opposite un-stretched sides of rift.
+				rift_edge_type = BuildInfo::RiftParams::BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES;
+			}
+			else if (second_edge_vertex_stage_rotation.unit_quat() == right_plate_stage_rotation.unit_quat())
+			{
+				// Both edge vertices are on same un-stretched side of rift.
+				// Ignore edge.
+				continue;
+			}
+			else
+			{
+				// Only first edge vertex is on an un-stretched side of rift.
+				rift_edge_type = BuildInfo::RiftParams::ONLY_FIRST_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
+			}
+		}
+		else if (first_edge_vertex_stage_rotation.unit_quat() == left_plate_stage_rotation.unit_quat())
+		{
+			if (second_edge_vertex_stage_rotation.unit_quat() == right_plate_stage_rotation.unit_quat())
+			{
+				// Both edge vertices are on opposite un-stretched sides of rift.
+				rift_edge_type = BuildInfo::RiftParams::BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES;
+			}
+			else if (second_edge_vertex_stage_rotation.unit_quat() == left_plate_stage_rotation.unit_quat())
+			{
+				// Both edge vertices are on same un-stretched side of rift.
+				// Ignore edge.
+				continue;
+			}
+			else
+			{
+				// Only first edge vertex is on an un-stretched side of rift.
+				rift_edge_type = BuildInfo::RiftParams::ONLY_FIRST_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
+			}
+		}
+		else if (second_edge_vertex_stage_rotation.unit_quat() == right_plate_stage_rotation.unit_quat())
+		{
+			// Only second edge vertex is on an un-stretched side of rift.
+			rift_edge_type = BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
+		}
+		else if (second_edge_vertex_stage_rotation.unit_quat() == left_plate_stage_rotation.unit_quat())
+		{
+			// Only second edge vertex is on an un-stretched side of rift.
+			rift_edge_type = BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
+		}
+		else
+		{
+			// Neither vertex is on an un-stretched side of rift.
+			//
+			// This topological network has likely been well-constrained in this region.
+			// We only want to control the strain rate in un-constrained regions that join directly
+			// to the un-stretched side of rift (eg, a row of vertices along un-stretched side and
+			// a row of vertices along rift axis, with no vertices/constraints in between).
+			//
+			// So ignore this edge.
+			continue;
+		}
+
+		//
+		// Decompose each vertex stage rotation into a twist component around the rift stage rotation axis and
+		// a swing component around an axis orthogonal to that axis.
+		//
+		// This is using a modification of the twist-swing decomposition of a quaternion, see:
+		//
+		//   https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis/22401169#22401169
+		//   http://www.euclideanspace.com/maths/geometry/rotations/for/decomposition/
+		//   http://allenchou.net/2018/05/game-math-swing-twist-interpolation-sterp/
+		//
+		// ...where a modification is needed because the above twist-swing decomposition only guarantees
+		// that the swing rotation *axis* is orthogonal to the twist rotation *axis*. However at any particular point
+		// on the sphere the actual *directions/velocities* of the twist and swing rotations are not
+		// guaranteed to be orthogonal which can result in the twist stage rotation being larger than we want.
+		// Picture the twist rotation as the horizontal base of a triangle and the swing rotation as the second edge
+		// and the actual combined twist-swing rotation as the third edge.
+		// We actually want the swing edge of triangle to be vertical (orthogonal to twist edge), but with the
+		// twist-swing decomposition we can get a slanted swing edge, which means the twist base edge
+		// needs to be longer to result in the same third edge (combined rotation).
+		//
+		// So the modification to the twist-swing decomposition ensures the *angle* of the twist rotation will
+		// place a rotated edge vertex on the meridian (line of constant longitude) of the twist pole at that
+		// same angle. The swing component rotation then takes care of the latitude direction (of twist pole).
+		//
+
+		// Find the twist orthonormal frame where the z-axis is the rift stage pole axis and
+		// the x-z plane contains the *first* edge vertex.
+		const GPlatesMaths::UnitVector3D &twist_frame_z = twist_axis;
+		const GPlatesMaths::UnitVector3D &first_edge_vertex = first_edge_vertex_point.position_vector();
+		const GPlatesMaths::Vector3D twist_frame_y_non_normalised = cross(twist_frame_z, first_edge_vertex);
+		if (twist_frame_y_non_normalised.is_zero_magnitude())
+		{
+			// First vertex coincides with twist axis, skip the current edge.
+			continue;
+		}
+		const GPlatesMaths::UnitVector3D twist_frame_y = twist_frame_y_non_normalised.get_normalisation();
+		const GPlatesMaths::UnitVector3D twist_frame_x = cross(twist_frame_y, twist_frame_z).get_normalisation();
+
+		// Find the twist angle (about twist z-axis) between the two edge vertices.
+		// This is the twist angle of the second vertex in the twist orthonormal frame of the first vertex.
+		const GPlatesMaths::UnitVector3D &second_edge_vertex = second_edge_vertex_point.position_vector();
+		const GPlatesMaths::real_t second_vertex_twist_x = dot(second_edge_vertex, twist_frame_x);
+		const GPlatesMaths::real_t second_vertex_twist_y = dot(second_edge_vertex, twist_frame_y);
+		if (second_vertex_twist_x == 0.0 &&
+			second_vertex_twist_y == 0.0)
+		{
+			// Second vertex coincides with twist axis, skip the current edge.
+			continue;
+		}
+		const GPlatesMaths::real_t twist_angle_between_edge_vertices =
+				std::atan2(second_vertex_twist_y.dval(), second_vertex_twist_x.dval());
+
+		if (twist_angle_between_edge_vertices == 0)
+		{
+			// There's no twist between the two edge vertices.
+			// The edge is orthogonal to the rift stage pole rotation.
+			// Skip the current edge.
+			continue;
+		}
+		const GPlatesMaths::real_t inv_twist_angle_between_edge_vertices = 1.0 / twist_angle_between_edge_vertices;
+
+		// Find the x, y and z coordinates of the *rotated* first edge vertex in the twist orthonormal frame.
+		const GPlatesMaths::UnitVector3D rotated_first_edge_vertex = first_edge_vertex_stage_rotation * first_edge_vertex;
+		const GPlatesMaths::real_t rotated_first_edge_vertex_twist_x = dot(rotated_first_edge_vertex, twist_frame_x);
+		const GPlatesMaths::real_t rotated_first_edge_vertex_twist_y = dot(rotated_first_edge_vertex, twist_frame_y);
+
+		// Find the twist angle (about twist z-axis) that rotates the twist frame x-z plane such that the
+		// rotated x-z plane contains the *rotated* first edge vertex.
+		if (rotated_first_edge_vertex_twist_x == 0.0 &&
+			rotated_first_edge_vertex_twist_y == 0.0)
+		{
+			// Rotated first vertex coincides with twist axis, skip the current edge.
+			continue;
+		}
+		// Note that the twist angle of the *un-rotated* first edge vertex is zero, so we don't need to subtract it.
+		const GPlatesMaths::real_t first_edge_vertex_twist_angle =
+				std::atan2(rotated_first_edge_vertex_twist_y.dval(), rotated_first_edge_vertex_twist_x.dval());
+
+		// Find the x, y and z coordinates of the *rotated* second edge vertex in the twist orthonormal frame.
+		const GPlatesMaths::UnitVector3D rotated_second_edge_vertex = second_edge_vertex_stage_rotation * second_edge_vertex;
+		const GPlatesMaths::real_t rotated_second_edge_vertex_twist_x = dot(rotated_second_edge_vertex, twist_frame_x);
+		const GPlatesMaths::real_t rotated_second_edge_vertex_twist_y = dot(rotated_second_edge_vertex, twist_frame_y);
+
+		// Find the twist angle (about twist z-axis) that rotates the twist frame x-z plane such that the
+		// rotated x-z plane contains the *rotated* second edge vertex.
+		if (rotated_second_edge_vertex_twist_x == 0.0 &&
+			rotated_second_edge_vertex_twist_y == 0.0)
+		{
+			// Rotated second vertex coincides with twist axis, skip the current edge.
+			continue;
+		}
+		GPlatesMaths::real_t second_edge_vertex_twist_angle =
+				std::atan2(rotated_second_edge_vertex_twist_y.dval(), rotated_second_edge_vertex_twist_x.dval()) -
+					// Need to subtract the twist angle of the second *un-rotated* edge vertex to get the twist
+					// angle between *un-rotated* and *rotated* second edge vertex.
+					// The twist angle of the second edge vertex is also the twist angle between the edge vertices
+					// (since the first edge vertex has a zero twist angle).
+					twist_angle_between_edge_vertices;
+		// Handle wraparound between -PI and PI (in atan2 angle).
+		// This can happen when the *un-rotated* twist angle is near PI and the *rotated* twist angle
+		// is near -PI (or vice versa) introducing an offset of 2*PI or -2*PI that must be removed.
+		//
+		// Normally the magnitude of the difference in angles should be less than PI since it is highly unlikely
+		// that a rotation over 1My would produce such a large rotation (plates just don't move that fast).
+		// If the absolute difference is greater, then we've detected wraparound. Typically a wraparound
+		// difference is closer to 2*PI or -2*PI (so a threshold of PI is a good middle ground for detection).
+		if (second_edge_vertex_twist_angle.is_precisely_greater_than(GPlatesMaths::PI))
+		{
+			second_edge_vertex_twist_angle -= 2 * GPlatesMaths::PI;
+		}
+		else if (second_edge_vertex_twist_angle.is_precisely_less_than(-GPlatesMaths::PI))
+		{
+			second_edge_vertex_twist_angle += 2 * GPlatesMaths::PI;
+		}
+
+		// Calculate the twist velocity gradient between the two edge vertices.
+		// In units of (1/second) since that's our units of strain rate.
+		const GPlatesMaths::real_t twist_velocity_gradient =
+				INV_VELOCITY_DELTA_TIME * SCALE_PER_MY_TO_PER_SECOND/* 1/my -> 1/s */ *
+				abs((second_edge_vertex_twist_angle - first_edge_vertex_twist_angle) * inv_twist_angle_between_edge_vertices);
+
+		// Get stage rotation axis/angle at each vertex of edge.
+		//
+		// Note: If a rotation is identity then we'll just use any arbitrary axis and zero angle
+		//       (all arbitrary axes will result in the same quaternion when the angle is zero).
+		const GPlatesMaths::UnitQuaternion3D::RotationParams first_edge_vertex_stage_rotation_axis_angle =
+				represents_identity_rotation(first_edge_vertex_stage_rotation.unit_quat())
+				? GPlatesMaths::UnitQuaternion3D::RotationParams(GPlatesMaths::UnitVector3D::zBasis(), 0.0)
+				: first_edge_vertex_stage_rotation.unit_quat().get_rotation_params(boost::none/*axis_hint*/);
+		const GPlatesMaths::UnitQuaternion3D::RotationParams second_edge_vertex_stage_rotation_axis_angle =
+				represents_identity_rotation(second_edge_vertex_stage_rotation.unit_quat())
+				? GPlatesMaths::UnitQuaternion3D::RotationParams(GPlatesMaths::UnitVector3D::zBasis(), 0.0)
+				: second_edge_vertex_stage_rotation.unit_quat().get_rotation_params(boost::none/*axis_hint*/);
+
+		// Recursively sub-divide current Delaunay edge.
+		refine_rift_delaunay_edge(
+				delaunay_edge_point_seq,
+				first_edge_vertex_point,
+				second_edge_vertex_point,
+				0.0/*first_subdivided_edge_vertex_interpolation*/,
+				1.0/*second_subdivided_edge_vertex_interpolation*/,
+				0.0/*first_subdivided_edge_vertex_twist_interpolation*/,
+				1.0/*second_subdivided_edge_vertex_twist_interpolation*/,
+				first_edge_vertex_stage_rotation_axis_angle.axis,
+				second_edge_vertex_stage_rotation_axis_angle.axis,
+				first_edge_vertex_stage_rotation_axis_angle.angle,
+				second_edge_vertex_stage_rotation_axis_angle.angle,
+				first_edge_vertex_twist_angle,
+				second_edge_vertex_twist_angle,
+				edge_rotation_axis,
+				edge_angular_extent.get_angle()/*edge_angular_extent*/,
+				edge_angular_extent.get_angle()/*subdivided_edge_angular_extent*/,
+				twist_axis,
+				twist_frame_x,
+				twist_frame_y,
+				inv_twist_angle_between_edge_vertices,
+				twist_velocity_gradient,
+				rift_edge_type,
+				rift_params,
+				reconstruction_tree_creator);
+	}
+
+	if (delaunay_edge_point_seq.empty())
+	{
+		return;
+	}
+
+	// Project the points to 2D space and insert into array to be spatially sorted.
+	std::vector<DelaunayPoint2> delaunay_edge_point_2_seq;
+	delaunay_edge_point_2_seq.reserve(delaunay_edge_point_seq.size());
+	std::vector<DelaunayPoint>::const_iterator delaunay_edge_points_iter = delaunay_edge_point_seq.begin();
+	std::vector<DelaunayPoint>::const_iterator delaunay_edge_points_end = delaunay_edge_point_seq.end();
+	for (; delaunay_edge_points_iter != delaunay_edge_points_end; ++delaunay_edge_points_iter)
+	{
+		const DelaunayPoint &delaunay_edge_point = *delaunay_edge_points_iter;
+
+		// Cache our lat/lon coordinates - otherwise the projection needs to convert to lat/lon
+		// internally - and so might as well only do the lat/lon conversion once for efficiency.
+		const GPlatesMaths::LatLonPoint delaunay_edge_lat_lon_point = make_lat_lon_point(delaunay_edge_point.point);
+
+		// Project point-on-sphere to x,y space.
+		const delaunay_point_2_type delaunay_edge_point_2 =
+				d_projection.project_from_lat_lon<delaunay_point_2_type>(delaunay_edge_lat_lon_point);
+
+		delaunay_edge_point_2_seq.push_back(
+				DelaunayPoint2(&delaunay_edge_point, delaunay_edge_lat_lon_point, delaunay_edge_point_2));
+	}
+
+	// Improve performance by spatially sorting the delaunay points.
+	// This is what is done by the CGAL overload that inserts a *range* of points into a delauany triangulation.
+	CGAL::spatial_sort(
+			delaunay_edge_point_2_seq.begin(),
+			delaunay_edge_point_2_seq.end(),
+			DelaunayPoint2SpatialSortingTraits());
+
+	// Insert the points into the delaunay triangulation.
+	std::vector<DelaunayPoint2>::const_iterator delaunay_edge_points_2_iter = delaunay_edge_point_2_seq.begin();
+	std::vector<DelaunayPoint2>::const_iterator delaunay_edge_points_2_end = delaunay_edge_point_2_seq.end();
+	Delaunay_2::Face_handle insert_start_face;
+	for (; delaunay_edge_points_2_iter != delaunay_edge_points_2_end; ++delaunay_edge_points_2_iter)
+	{
+		const DelaunayPoint2 &delaunay_edge_point_2 = *delaunay_edge_points_2_iter;
+		const DelaunayPoint &delaunay_edge_point = *delaunay_edge_point_2.delaunay_point;
+
+		// Insert into the triangulation.
+		Delaunay_2::Vertex_handle delaunay_point_vertex_handle =
+				d_delaunay_2->insert(delaunay_edge_point_2.point_2, insert_start_face);
+
+		if (delaunay_point_vertex_handle->is_initialised())
+		{
+			// Vertex handle refers to an existing vertex position.
+			// Most likely the edge length is too small - which really shouldn't happen if
+			// edge subdivision has a distance threshold.
+			// Just ignore the current vertex.
+			continue;
+		}
+
+		// Set the extra info for this vertex.
+		delaunay_point_vertex_handle->initialise(
 				d_delaunay_2.get(),
-				face_index,
-				is_point_in_deforming_region(face_centroid));
+				vertex_index,
+				delaunay_edge_point.point,
+				delaunay_edge_point_2.lat_lon_point,
+				delaunay_edge_point.shared_source_info);
+
+		// Increment vertex index since vertex handle does not refer to an existing vertex position.
+		++vertex_index;
+
+		// The next insert vertex will start searching at the face of the last inserted vertex.
+		insert_start_face = delaunay_point_vertex_handle->face();
 	}
+
+	//qDebug() << "          after rift refinement:" << d_delaunay_2->number_of_faces();
 }
 
 
-#if 0 // Not currently using being used...
-
-const GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2 &
-GPlatesAppLogic::ResolvedTriangulation::Network::get_constrained_delaunay_2() const
+void
+GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_edge(
+		std::vector<DelaunayPoint> &delaunay_edge_point_seq,
+		const GPlatesMaths::PointOnSphere &first_subdivided_edge_vertex_point,
+		const GPlatesMaths::PointOnSphere &second_subdivided_edge_vertex_point,
+		const GPlatesMaths::real_t &first_subdivided_edge_vertex_interpolation,
+		const GPlatesMaths::real_t &second_subdivided_edge_vertex_interpolation,
+		const GPlatesMaths::real_t &first_subdivided_edge_vertex_twist_interpolation,
+		const GPlatesMaths::real_t &second_subdivided_edge_vertex_twist_interpolation,
+		const GPlatesMaths::UnitVector3D &first_edge_vertex_stage_rotation_axis,
+		const GPlatesMaths::UnitVector3D &second_edge_vertex_stage_rotation_axis,
+		const GPlatesMaths::real_t &first_edge_vertex_stage_rotation_angle,
+		const GPlatesMaths::real_t &second_edge_vertex_stage_rotation_angle,
+		const GPlatesMaths::real_t &first_edge_vertex_twist_angle,
+		const GPlatesMaths::real_t &second_edge_vertex_twist_angle,
+		const GPlatesMaths::UnitVector3D &edge_rotation_axis,
+		const GPlatesMaths::real_t &edge_angular_extent,
+		const GPlatesMaths::real_t &subdivided_edge_angular_extent,
+		const GPlatesMaths::UnitVector3D &twist_axis,
+		const GPlatesMaths::UnitVector3D &twist_frame_x,
+		const GPlatesMaths::UnitVector3D &twist_frame_y,
+		const GPlatesMaths::real_t &inv_twist_angle_between_edge_vertices,
+		const GPlatesMaths::real_t &twist_velocity_gradient,
+		const BuildInfo::RiftParams::EdgeType rift_edge_type,
+		const BuildInfo::RiftParams &rift_params,
+		const ReconstructionTreeCreator &reconstruction_tree_creator) const
 {
-	if (!d_constrained_delaunay_2)
+	// Get mid-point of subdivided edge.
+	const GPlatesMaths::Vector3D sum_subdivided_edge_vertex_points =
+			GPlatesMaths::Vector3D(first_subdivided_edge_vertex_point.position_vector()) +
+			GPlatesMaths::Vector3D(second_subdivided_edge_vertex_point.position_vector());
+	if (sum_subdivided_edge_vertex_points.is_zero_magnitude())
 	{
-		create_constrained_delaunay_2();
+		// Edge vertices are antipodal - shouldn't be possible though.
+		// Skip subdividing current edge.
+		return;
+	}
+	const GPlatesMaths::PointOnSphere subdivided_edge_mid_point(
+			sum_subdivided_edge_vertex_points.get_normalisation());
 
-		// Emit a warning if triangulation is invalid, otherwise refine the triangulation.
-		if (d_constrained_delaunay_2->is_valid())
+	const GPlatesMaths::real_t subdivided_edge_mid_point_vertex_twist_x =
+			dot(subdivided_edge_mid_point.position_vector(), twist_frame_x);
+	const GPlatesMaths::real_t subdivided_edge_mid_point_vertex_twist_y =
+			dot(subdivided_edge_mid_point.position_vector(), twist_frame_y);
+	if (subdivided_edge_mid_point_vertex_twist_x == 0.0 &&
+		subdivided_edge_mid_point_vertex_twist_y == 0.0)
+	{
+		// Subdivided edge mid-point vertex coincides with twist axis, skip the current edge.
+		return;
+	}
+	const GPlatesMaths::real_t subdivided_edge_mid_point_twist_interpolation =
+			inv_twist_angle_between_edge_vertices *
+			std::atan2(subdivided_edge_mid_point_vertex_twist_y.dval(), subdivided_edge_mid_point_vertex_twist_x.dval());
+
+	if (rift_edge_type != BuildInfo::RiftParams::BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES)
+	{
+		// Interpolate from second edge vertex (instead of first edge vertex) if second edge vertex
+		// is on un-stretched crust (and not first edge vertex).
+		GPlatesMaths::real_t subdivided_edge_mid_point_twist_interpolation_from_unstretched_side;
+		GPlatesMaths::real_t first_subdivided_edge_vertex_twist_interpolation_from_unstretched_side;
+		GPlatesMaths::real_t second_subdivided_edge_vertex_twist_interpolation_from_unstretched_side;
+		if (rift_edge_type == BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE)
 		{
-			if (refine_constrained_delaunay_2())
-			{
-				// Only make conforming if the refinement step succeeded.
-				make_conforming_constrained_delaunay_2();
-			}
+			subdivided_edge_mid_point_twist_interpolation_from_unstretched_side = 1.0 - subdivided_edge_mid_point_twist_interpolation;
+			first_subdivided_edge_vertex_twist_interpolation_from_unstretched_side = 1.0 - first_subdivided_edge_vertex_twist_interpolation;
+			second_subdivided_edge_vertex_twist_interpolation_from_unstretched_side = 1.0 - second_subdivided_edge_vertex_twist_interpolation;
 		}
 		else
 		{
-			qWarning() << "ResolvedTriangulation::Network: Constrained delaunay triangulation is invalid.";
+			subdivided_edge_mid_point_twist_interpolation_from_unstretched_side = subdivided_edge_mid_point_twist_interpolation;
+			first_subdivided_edge_vertex_twist_interpolation_from_unstretched_side = first_subdivided_edge_vertex_twist_interpolation;
+			second_subdivided_edge_vertex_twist_interpolation_from_unstretched_side = second_subdivided_edge_vertex_twist_interpolation;
 		}
 
-		// Release some build data memory since we don't need it anymore.
-		std::vector<ConstrainedDelaunayGeometry> empty_constrained_delaunay_geometries;
-		d_build_info.constrained_delaunay_geometries.swap(empty_constrained_delaunay_geometries);
-
-		std::vector<GPlatesMaths::PointOnSphere> empty_scattered_points;
-		d_build_info.scattered_points.swap(empty_scattered_points);
-
-		std::vector<GPlatesMaths::PointOnSphere> empty_seed_points;
-		d_build_info.seed_points.swap(empty_seed_points);
-	}
-
-	return d_constrained_delaunay_2.get();
-}
-
-
-const GPlatesAppLogic::ResolvedTriangulation::Delaunay_3 &
-GPlatesAppLogic::ResolvedTriangulation::Network::get_delaunay_3() const
-{
-	if (!d_delaunay_3)
-	{
-		create_delaunay_3();
-	}
-
-	return d_delaunay_3.get();
-}
-
-
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::create_constrained_delaunay_2() const
-{
-	PROFILE_FUNC();
-
-	d_constrained_delaunay_2 = ConstrainedDelaunay_2();
-
-	// Insert the geometries forming linear constraints along their length.
-	insert_geometries_into_constrained_delaunay_2();
-
-	// 2D + C
-	// Do NOT constrain every point to ever other point.
-	insert_scattered_points_into_constrained_delaunay_2(false/*constrain_all_points*/);
-
-#if 0
-// NOTE : these are examples of how to add points to all the triangulation types
-// 2D ; 2D + C ; 3D , using all_network_points ; save them for reference
-	
-	// 2D + C
-	d_constrained_delaunay_2->insert_points(
-		all_network_points.begin(), 
-		all_network_points.end(),
-		true);
-#endif
-}
-
-
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::insert_geometries_into_constrained_delaunay_2() const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_constrained_delaunay_2,
-			GPLATES_ASSERTION_SOURCE);
-
-	if (d_build_info.constrained_delaunay_geometries.empty())
-	{
-		return;
-	}
-
-	// Iterate over the constraint geometries.
-	std::vector<ConstrainedDelaunayGeometry>::const_iterator constrained_delaunay_geometries_iter =
-			d_build_info.constrained_delaunay_geometries.begin();
-	std::vector<ConstrainedDelaunayGeometry>::const_iterator constrained_delaunay_geometries_end =
-			d_build_info.constrained_delaunay_geometries.end();
-	for ( ;
-		constrained_delaunay_geometries_iter != constrained_delaunay_geometries_end;
-		++constrained_delaunay_geometries_iter)
-	{
-		const ConstrainedDelaunayGeometry &constrained_delaunay_geometry =
-				*constrained_delaunay_geometries_iter;
-
-		// Get the points in the current geometry.
-		std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-		GeometryUtils::get_geometry_exterior_points(
-				*constrained_delaunay_geometry.geometry,
-				geometry_points);
-
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_begin = geometry_points.begin();
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_end = geometry_points.end();
-
-		// If no points then skip to the next geometry.
-		if (points_begin == points_end)
+		// The linear interpolation of twist interpolation at subdivided edge mid-point (between two subdivided edge vertices).
+		GPlatesMaths::real_t interpolation_within_subdivided_edge;
+		if (second_subdivided_edge_vertex_twist_interpolation != first_subdivided_edge_vertex_twist_interpolation)
 		{
-			continue;
-		}
-
-		std::vector<ConstrainedDelaunay_2::Vertex_handle> vertex_handles;
-
-		// Double check for identical start and end points 
-		if ( *points_begin == *(points_end - 1) )
-		{
-			points_end = points_end - 1; // disregard duplicate point
-		}
-
-		// Loop over the points, project them, and add them to the triangulation
-		for (std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_iter = points_begin;
-			points_iter != points_end;
-			++points_iter)
-		{
-			insert_vertex_into_constrained_delaunay_2(*points_iter, vertex_handles);
-		}
-		//qDebug() << "after loop vertex_handles.size() " << vertex_handles.size();
-
-		// Now work out the constraints 
-		// Do not add a constraint for a single point
-		if ( points_begin == (points_end - 1) )
-		{
-			//qDebug() << "Cannot insert a constraint for a single point";
-			continue;
-		}
-
-		std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v_end;
-
-		// set the end bound of the loop
-		if (constrained_delaunay_geometry.constrain_begin_and_end_points)
-		{
-			// loop all the way to the end of the list; 
-			// v2 will be reset to vertex_handles.begin() below
-			v_end = vertex_handles.end();
+			interpolation_within_subdivided_edge =
+					(subdivided_edge_mid_point_twist_interpolation - first_subdivided_edge_vertex_twist_interpolation) /
+					(second_subdivided_edge_vertex_twist_interpolation - first_subdivided_edge_vertex_twist_interpolation);
 		}
 		else
 		{
-			// loop to one less than the end
-			v_end = --(vertex_handles.end());
+			interpolation_within_subdivided_edge = 0.5; // Any value in range [0,1] will do.
 		}
 
-		// qDebug() << "Loop over the vertex handles, insert constrained edges";
-
-		// Loop over the vertex handles, insert constrained edges
-		for (std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v1_iter = vertex_handles.begin();
-			v1_iter != v_end;
-			++v1_iter)
+		// Adaptively sub-divide edge only if the difference between the linear interpolation of twist component of
+		// strain rates (at the two edge vertices) and the actual twist component of strain rate at edge mid-point would
+		// be larger than a threshold resolution (in order to adaptively fit the exponential strain rate curve across the rift).
+		const GPlatesMaths::real_t delta_twist_velocity_gradient = twist_velocity_gradient *
+				rift_params.exponential_stretching_constant *
+				(((1 - interpolation_within_subdivided_edge) *
+						std::exp(rift_params.exponential_stretching_constant * first_subdivided_edge_vertex_twist_interpolation_from_unstretched_side.dval()) +
+					interpolation_within_subdivided_edge *
+						std::exp(rift_params.exponential_stretching_constant * second_subdivided_edge_vertex_twist_interpolation_from_unstretched_side.dval())) -
+					std::exp(rift_params.exponential_stretching_constant * subdivided_edge_mid_point_twist_interpolation_from_unstretched_side.dval())) /
+				(std::exp(rift_params.exponential_stretching_constant) - 1.0);
+		if (abs(delta_twist_velocity_gradient).dval() < rift_params.strain_rate_resolution)
 		{
-			// get the next vertex handle
-			std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v2_iter = v1_iter + 1;
-
-			// Check for constraint on begin and end points
-			if ( constrained_delaunay_geometry.constrain_begin_and_end_points )
-			{
-				// close the loop
-				if (v2_iter == vertex_handles.end() ) 
-				{ 
-					//qDebug() << "Close the loop: v2_iter == vertex_handles.end()";
-					v2_iter = vertex_handles.begin(); 
-				} 
-			}
-			// else no need to reset v2
-
-			// get the vertex handles and insert the constraint 
-			ConstrainedDelaunay_2::Vertex_handle v1 = *v1_iter;
-			ConstrainedDelaunay_2::Vertex_handle v2 = *v2_iter;
-
-			// Double check on constraining the same point to itself 
-			if (v1 == v2) 
-			{
-				// qDebug() << "Cannot insert_constraint: v1 == v2";
-				continue;
-			}
-
-			try
-			{
-				//qDebug() << "before insert_constraint(v1,v2)";
-				d_constrained_delaunay_2->insert_constraint(v1, v2);
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << exc.what();
-			}
-			catch (...)
-			{
-				qWarning() << "insert_points: Unknown error";
-				qWarning() << "insert_constraint(v1,v2) failed!";
-			}
+			return;
 		}
 	}
-}
 
+	const GPlatesMaths::real_t subdivided_edge_mid_point_interpolation =
+			0.5 * (first_subdivided_edge_vertex_interpolation + second_subdivided_edge_vertex_interpolation);
 
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::insert_scattered_points_into_constrained_delaunay_2(
-		bool constrain_all_points) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_constrained_delaunay_2,
-			GPLATES_ASSERTION_SOURCE);
+	const GPlatesMaths::real_t rotate_first_edge_vertex_stage_rotation_angle =
+			subdivided_edge_mid_point_interpolation * edge_angular_extent;
+	const GPlatesMaths::real_t rotate_second_edge_vertex_stage_rotation_angle =
+			-(1 - subdivided_edge_mid_point_interpolation) * edge_angular_extent;
 
-	if (d_build_info.scattered_points.empty())
+	const GPlatesMaths::FiniteRotation rotate_first_edge_vertex_stage_rotation =
+			GPlatesMaths::FiniteRotation::create(
+					GPlatesMaths::UnitQuaternion3D::create_rotation(
+							edge_rotation_axis,
+							rotate_first_edge_vertex_stage_rotation_angle),
+					boost::none);
+	const GPlatesMaths::UnitVector3D rotated_first_edge_vertex_stage_rotation_axis =
+			rotate_first_edge_vertex_stage_rotation * first_edge_vertex_stage_rotation_axis;
+	const GPlatesMaths::FiniteRotation rotated_first_edge_vertex_stage_rotation =
+			GPlatesMaths::FiniteRotation::create(
+					GPlatesMaths::UnitQuaternion3D::create_rotation(
+							rotated_first_edge_vertex_stage_rotation_axis,
+							first_edge_vertex_stage_rotation_angle),
+					boost::none);
+
+	const GPlatesMaths::FiniteRotation rotate_second_edge_vertex_stage_rotation =
+			GPlatesMaths::FiniteRotation::create(
+					GPlatesMaths::UnitQuaternion3D::create_rotation(
+							edge_rotation_axis,
+							rotate_second_edge_vertex_stage_rotation_angle),
+					boost::none);
+	const GPlatesMaths::UnitVector3D rotated_second_edge_vertex_stage_rotation_axis =
+			rotate_second_edge_vertex_stage_rotation * second_edge_vertex_stage_rotation_axis;
+	const GPlatesMaths::FiniteRotation rotated_second_edge_vertex_stage_rotation =
+			GPlatesMaths::FiniteRotation::create(
+					GPlatesMaths::UnitQuaternion3D::create_rotation(
+							rotated_second_edge_vertex_stage_rotation_axis,
+							second_edge_vertex_stage_rotation_angle),
+					boost::none);
+
+	// Interpolate the edge vertex stage rotations at the subdivided edge mid-point.
+	GPlatesMaths::FiniteRotation subdivided_edge_mid_point_stage_rotation =
+			interpolate(
+					rotated_first_edge_vertex_stage_rotation,
+					rotated_second_edge_vertex_stage_rotation,
+					subdivided_edge_mid_point_interpolation);
+
+	// Both edge vertices are on opposite un-stretched sides of the rift.
+	// We don't have a velocity constraint in the middle (axis) of the rift so
+	// we just generate one ourselves. We do this by simply interpolating the velocities
+	// of the two edge vertices. The two new child edges will only have one of each edge's vertices
+	// on un-stretched crust and subsequent adaptive sub-division will proceed as normal.
+	if (rift_edge_type != BuildInfo::RiftParams::BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES)
+	{
+		//
+		// Convert the interpolated edge mid-point stage rotation from a small circle to a great circle rotation.
+		//
+		// This avoids issues when the small circle has a small radius and is near the edge mid-point.
+		// In this case a small circle rotation would cause the stage-rotated edge mid-point to bend
+		// quite tightly around that small circle causing the swing component calculation to be off.
+		// We really want the point to rotate in the direction of the velocity (tangent to the small circle)
+		// which means it rotates around a great circle (with rotation axis perpendicular to the point).
+		//
+
+		if (!represents_identity_rotation(subdivided_edge_mid_point_stage_rotation.unit_quat()))
+		{
+			GPlatesMaths::UnitQuaternion3D::RotationParams subdivided_edge_mid_point_stage_rotation_axis_angle =
+					subdivided_edge_mid_point_stage_rotation.unit_quat().get_rotation_params(boost::none/*axis_hint*/);
+
+			const GPlatesMaths::Vector3D subdivided_edge_mid_point_stage_rotation_great_circle_div_angle =
+					cross(subdivided_edge_mid_point_stage_rotation_axis_angle.axis, subdivided_edge_mid_point.position_vector());
+			if (subdivided_edge_mid_point_stage_rotation_great_circle_div_angle.is_zero_magnitude())
+			{
+				// First vertex coincides with interpolated stage rotation axis, skip the current edge.
+				return;
+			}
+			subdivided_edge_mid_point_stage_rotation_axis_angle.angle *=
+					subdivided_edge_mid_point_stage_rotation_great_circle_div_angle.magnitude();
+			subdivided_edge_mid_point_stage_rotation_axis_angle.axis = cross(
+					subdivided_edge_mid_point.position_vector(),
+					subdivided_edge_mid_point_stage_rotation_great_circle_div_angle).get_normalisation();
+			subdivided_edge_mid_point_stage_rotation = 
+					GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_rotation(
+									subdivided_edge_mid_point_stage_rotation_axis_angle.axis,
+									subdivided_edge_mid_point_stage_rotation_axis_angle.angle),
+							boost::none);
+		}
+
+		//
+		// Determine the swing component of the interpolated stage rotation.
+		//
+
+		const GPlatesMaths::Vector3D subdivided_edge_mid_point_swing_rotation_axis_non_normalised =
+				cross(subdivided_edge_mid_point.position_vector(), twist_axis);
+		if (subdivided_edge_mid_point_swing_rotation_axis_non_normalised.is_zero_magnitude())
+		{
+			// First vertex coincides with twist axis, skip the current edge.
+			return;
+		}
+		const GPlatesMaths::UnitVector3D subdivided_edge_mid_point_swing_rotation_axis =
+				subdivided_edge_mid_point_swing_rotation_axis_non_normalised.get_normalisation();
+
+		const GPlatesMaths::PointOnSphere rotated_subdivided_edge_mid_point =
+				subdivided_edge_mid_point_stage_rotation * subdivided_edge_mid_point;
+
+		const GPlatesMaths::real_t subdivided_edge_mid_point_twist_z =
+				dot(subdivided_edge_mid_point.position_vector(), twist_axis);
+		const GPlatesMaths::real_t rotated_subdivided_edge_mid_point_twist_z =
+				dot(rotated_subdivided_edge_mid_point.position_vector(), twist_axis);
+		const GPlatesMaths::real_t subdivided_edge_mid_point_swing_rotation_angle =
+				asin(rotated_subdivided_edge_mid_point_twist_z) -
+				asin(subdivided_edge_mid_point_twist_z);
+
+		const GPlatesMaths::FiniteRotation subdivided_edge_mid_point_swing_rotation =
+				GPlatesMaths::FiniteRotation::create(
+						GPlatesMaths::UnitQuaternion3D::create_rotation(
+								subdivided_edge_mid_point_swing_rotation_axis,
+								subdivided_edge_mid_point_swing_rotation_angle),
+						boost::none);
+
+		// Interpolate from second edge vertex (instead of first edge vertex) if second edge vertex
+		// is on un-stretched crust (and not first edge vertex).
+		GPlatesMaths::real_t subdivided_edge_mid_point_twist_interpolation_from_unstretched_side;
+		if (rift_edge_type == BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE)
+		{
+			subdivided_edge_mid_point_twist_interpolation_from_unstretched_side = 1.0 - subdivided_edge_mid_point_twist_interpolation;
+		}
+		else
+		{
+			subdivided_edge_mid_point_twist_interpolation_from_unstretched_side = subdivided_edge_mid_point_twist_interpolation;
+		}
+
+		// Use exponential interpolation for twist angle to simulate non-uniform strain rate across rift profile
+		// since the twist component is around the rift stage rotation axis.
+		const GPlatesMaths::real_t subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side =
+				(std::exp(rift_params.exponential_stretching_constant * subdivided_edge_mid_point_twist_interpolation_from_unstretched_side.dval()) - 1.0) /
+				(std::exp(rift_params.exponential_stretching_constant) - 1.0);
+
+		// Interpolate from second edge vertex (instead of first edge vertex) if second edge vertex
+		// is on un-stretched crust (and not first edge vertex).
+		GPlatesMaths::real_t subdivided_edge_mid_point_twist_angle;
+		if (rift_edge_type == BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE)
+		{
+			subdivided_edge_mid_point_twist_angle =
+					(1 - subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side) * second_edge_vertex_twist_angle +
+					subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side * first_edge_vertex_twist_angle;
+		}
+		else
+		{
+			subdivided_edge_mid_point_twist_angle =
+					(1 - subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side) * first_edge_vertex_twist_angle +
+					subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side * second_edge_vertex_twist_angle;
+		}
+
+		const GPlatesMaths::FiniteRotation subdivided_edge_mid_point_twist_rotation =
+				GPlatesMaths::FiniteRotation::create(
+						GPlatesMaths::UnitQuaternion3D::create_rotation(
+								twist_axis,
+								subdivided_edge_mid_point_twist_angle),
+						boost::none);
+
+		// Combine the interpolated twist and swing components into the final interpolated stage rotation.
+		//
+		// Do the swing rotation first since that rotates towards the twist axis, and then rotates around the twist axis.
+		subdivided_edge_mid_point_stage_rotation =
+				compose(subdivided_edge_mid_point_twist_rotation, subdivided_edge_mid_point_swing_rotation);
+	}
+
+	// Create a vertex source info using the interpolated stage rotation.
+	// This will be used to generate the velocity at the new vertex.
+	const ResolvedVertexSourceInfo::non_null_ptr_to_const_type subdivided_edge_mid_point_source_info =
+			ResolvedVertexSourceInfo::create(subdivided_edge_mid_point_stage_rotation, reconstruction_tree_creator);
+
+	// Add new vertex position and source info at edge mid-point.
+	delaunay_edge_point_seq.push_back(
+			DelaunayPoint(subdivided_edge_mid_point, subdivided_edge_mid_point_source_info));
+
+	// If child edge length is shorter than threshold distance then don't recurse into child edges.
+	const GPlatesMaths::real_t child_subdivided_edge_angular_extent = 0.5 * subdivided_edge_angular_extent;
+	if (child_subdivided_edge_angular_extent.is_precisely_less_than(rift_params.edge_length_threshold.get_angle().dval()))
 	{
 		return;
 	}
 
-	//qDebug() << "insert_scattered_points";
-	//qDebug() << "Constrain all points? " << constrain_all_points;
-
-	std::vector<ConstrainedDelaunay_2::Vertex_handle> vertex_handles;
-
-	// Loop over the points, project them, and add them to the triangulation.
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator scattered_points_iter =
-			d_build_info.scattered_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator scattered_points_end =
-			d_build_info.scattered_points.end();
-	for ( ; scattered_points_iter != scattered_points_end; ++scattered_points_iter)
+	// Sub-divide current edges into two child edges.
+	for (unsigned int child_index = 0; child_index < 2; ++child_index)
 	{
-		insert_vertex_into_constrained_delaunay_2(*scattered_points_iter, vertex_handles);
-	}
-	//qDebug() << "insert_scattered_points: vertex_handles.size() " << vertex_handles.size();
+		const GPlatesMaths::PointOnSphere &first_child_subdivided_edge_vertex_point =
+				(child_index == 0) ? first_subdivided_edge_vertex_point : subdivided_edge_mid_point;
+		const GPlatesMaths::PointOnSphere &second_child_subdivided_edge_vertex_point =
+				(child_index == 0) ? subdivided_edge_mid_point : second_subdivided_edge_vertex_point;
 
-	if (!constrain_all_points) 
-	{
-		//qDebug() << "do not insert_constraints:";
-		return;
-	}
-
-	// Now work out the constraints 
-	//qDebug() << "insert_constraints:";
-
-	std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v_end = vertex_handles.end();
-
-	// Loop over the vertex handles, insert constrained edges
-	for (std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v1_iter = vertex_handles.begin();
-		v1_iter != v_end;
-		++v1_iter)
-	{
-		ConstrainedDelaunay_2::Vertex_handle v1 = *v1_iter;
-
-		for (std::vector<ConstrainedDelaunay_2::Vertex_handle>::iterator v2_iter = vertex_handles.begin();
-			v2_iter != v_end;
-			++v2_iter)
+		BuildInfo::RiftParams::EdgeType child_rift_edge_type;
+		GPlatesMaths::real_t first_child_subdivided_edge_vertex_interpolation;
+		GPlatesMaths::real_t second_child_subdivided_edge_vertex_interpolation;
+		GPlatesMaths::real_t first_child_subdivided_edge_vertex_twist_interpolation;
+		GPlatesMaths::real_t second_child_subdivided_edge_vertex_twist_interpolation;
+		if (rift_edge_type == BuildInfo::RiftParams::BOTH_EDGE_VERTICES_ON_OPPOSITE_UNSTRETCHED_SIDES)
 		{
-			// get the vertex handles and insert the constraint 
-			ConstrainedDelaunay_2::Vertex_handle v2 = *v2_iter;
-
-			// Double check on constraining the same point to itself 
-			if (v1 == v2) 
+			// Both edge vertices of parent edge are on opposite un-stretched sides of rift.
+			if (child_index == 0)
 			{
-				//qDebug() << "Cannot insert_constraint: v1 == v2";
-				continue;
+				child_rift_edge_type = BuildInfo::RiftParams::ONLY_FIRST_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
+			}
+			else
+			{
+				child_rift_edge_type = BuildInfo::RiftParams::ONLY_SECOND_EDGE_VERTEX_ON_UNSTRETCHED_SIDE;
 			}
 
-			try
+			first_child_subdivided_edge_vertex_interpolation = 0.0;
+			second_child_subdivided_edge_vertex_interpolation = 1.0;
+
+			first_child_subdivided_edge_vertex_twist_interpolation = 0.0;
+			second_child_subdivided_edge_vertex_twist_interpolation = 1.0;
+		}
+		else
+		{
+			// Only one edge vertex of parent edge is on un-stretched side of rift.
+			// The same child edge vertex *index* will be on un-stretched side as parent edge vertex *index*.
+			// So we just propagate this down to the child.
+			child_rift_edge_type = rift_edge_type;
+
+			if (child_index == 0)
 			{
-				//qDebug() << "before insert_constraint: v1 != v2";
-				d_constrained_delaunay_2->insert_constraint(v1, v2);
+				first_child_subdivided_edge_vertex_interpolation = first_subdivided_edge_vertex_interpolation;
+				second_child_subdivided_edge_vertex_interpolation = subdivided_edge_mid_point_interpolation;
+
+				first_child_subdivided_edge_vertex_twist_interpolation = first_subdivided_edge_vertex_twist_interpolation;
+				second_child_subdivided_edge_vertex_twist_interpolation = subdivided_edge_mid_point_twist_interpolation;
 			}
-			catch (std::exception &exc)
+			else
 			{
-				qWarning() << exc.what();
-			}
-			catch (...)
-			{
-				qWarning() << "insert_scattered_points: Unknown error";
-				qWarning() << "insert_constraint(v1,v2) failed!";
+				first_child_subdivided_edge_vertex_interpolation = subdivided_edge_mid_point_interpolation;
+				second_child_subdivided_edge_vertex_interpolation = second_subdivided_edge_vertex_interpolation;
+
+				first_child_subdivided_edge_vertex_twist_interpolation = subdivided_edge_mid_point_twist_interpolation;
+				second_child_subdivided_edge_vertex_twist_interpolation = second_subdivided_edge_vertex_twist_interpolation;
 			}
 		}
+
+		refine_rift_delaunay_edge(
+				delaunay_edge_point_seq,
+				first_child_subdivided_edge_vertex_point,
+				second_child_subdivided_edge_vertex_point,
+				first_child_subdivided_edge_vertex_interpolation,
+				second_child_subdivided_edge_vertex_interpolation,
+				first_child_subdivided_edge_vertex_twist_interpolation,
+				second_child_subdivided_edge_vertex_twist_interpolation,
+				first_edge_vertex_stage_rotation_axis,
+				second_edge_vertex_stage_rotation_axis,
+				first_edge_vertex_stage_rotation_angle,
+				second_edge_vertex_stage_rotation_angle,
+				first_edge_vertex_twist_angle,
+				second_edge_vertex_twist_angle,
+				edge_rotation_axis,
+				edge_angular_extent,
+				child_subdivided_edge_angular_extent,
+				twist_axis,
+				twist_frame_x,
+				twist_frame_y,
+				inv_twist_angle_between_edge_vertices,
+				twist_velocity_gradient,
+				child_rift_edge_type,
+				rift_params,
+				reconstruction_tree_creator);
 	}
 }
-
-
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::insert_vertex_into_constrained_delaunay_2(
-		const GPlatesMaths::PointOnSphere &point_on_sphere,
-		std::vector<ConstrainedDelaunay_2::Vertex_handle> &vertex_handles) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_constrained_delaunay_2,
-			GPLATES_ASSERTION_SOURCE);
-
-	const constrained_delaunay_point_2_type point_2 =
-			d_projection.project_from_point_on_sphere<constrained_delaunay_point_2_type>(point_on_sphere);
-
-	//const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point_on_sphere);
-	//qDebug() << "before insert_vertex llp = " << llp;
-	//qDebug() << "before insert_vertex vertex_handles.size() " << vertex_handles.size();
-	//qDebug() << "before insert_vertex point = " << point.x() << "," << point.y();
-
-#if !defined(__WINDOWS__)
-	// Set a handler for SIGSEGV in case the call does a segfault.
-	struct sigaction action;
-	std::memset(&action, 0, sizeof(action)); // sizeof(struct sigaction) is platform dependent.
-	action.sa_handler = &handler;
-	sigaction(SIGSEGV, &action, &old_action);
-
-	// Try and call 
-	if (!setjmp( buf ))
-	{
-#endif
-		// The first time setjmp() is called, it returns 0. If call segfaults,
-		// we longjmp back to the if statement, but with a non-zero value.
-		//qDebug() << " call insert ";
-		ConstrainedDelaunay_2::Vertex_handle vh = d_constrained_delaunay_2->insert( point_2 );
-		vertex_handles.push_back( vh );
-	
-#if !defined(__WINDOWS__)
-	}
-	//qDebug() << " after insert ";
-	// Restore the old sigaction whether or not we segfaulted.
-	sigaction(SIGSEGV, &old_action, NULL);
-#endif
-}
-
-
-bool
-GPlatesAppLogic::ResolvedTriangulation::Network::refine_constrained_delaunay_2() const
-{
-	PROFILE_FUNC();
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_constrained_delaunay_2,
-			GPLATES_ASSERTION_SOURCE);
-
-	// 2D + C + Mesh
-	ConstrainedDelaunayMesher_2 constrained_mesher(d_constrained_delaunay_2.get());
-	ConstrainedDelaunayMesher_2::Criteria constrained_criteria(
-			d_build_info.refined_mesh_shape_factor,
-			d_build_info.refined_mesh_max_edge);
-	constrained_mesher.set_criteria(constrained_criteria);
-
-	// Insert the mesh seed points.
-	if (!d_build_info.seed_points.empty())
-	{
-		// Project the seed points.
-		std::vector<constrained_delaunay_point_2_type> seed_point_2_seq;
-		seed_point_2_seq.reserve(d_build_info.seed_points.size());
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator seed_points_iter =
-				d_build_info.seed_points.begin();
-		std::vector<GPlatesMaths::PointOnSphere>::const_iterator seed_points_end =
-				d_build_info.seed_points.end();
-		for ( ; seed_points_iter != seed_points_end; ++seed_points_iter)
-		{
-			seed_point_2_seq.push_back(
-					d_projection.project_from_point_on_sphere<constrained_delaunay_point_2_type>(
-							*seed_points_iter));
-		}
-
-		// Only mesh those bounded connected components that do not include a seed point.
-		constrained_mesher.clear_seeds();
-		constrained_mesher.set_seeds(
-			seed_point_2_seq.begin(), 
-			seed_point_2_seq.end(),
-			false/*mark*/);
-	}
-
-	// Try to refine the triangulation.
-	try 
-	{
-		constrained_mesher.refine_mesh();
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "ResolvedTriangulation::Network: unable to refine constrained delaunay triangulation: "
-			<< exc.what();
-		return false;
-	}
-	catch ( ... )
-	{
-		qWarning() << "ResolvedTriangulation::Network: unable to refine  constrained delaunay triangulation: "
-				<< "unknown error";
-		return false;
-	}
-
-	return true;
-}
-
-
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::make_conforming_constrained_delaunay_2() const
-{
-	PROFILE_FUNC();
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_constrained_delaunay_2,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Make it conforming Delaunay.
-	CGAL::make_conforming_Delaunay_2(d_constrained_delaunay_2.get());
-
-	// Then make it conforming Gabriel.
-	CGAL::make_conforming_Gabriel_2(d_constrained_delaunay_2.get());
-}
-
-
-void
-GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_3() const
-{
-	d_delaunay_3 = Delaunay_3();
-
-#if 0
-// NOTE : these are examples of how to add points to all the triangulation types
-// 2D ; 2D + C ; 3D , using all_network_points ; save them for reference
-
-	std::vector<point_3_type> cgal_points;
-
-	// Loop over the points and convert them.
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_iter = d_build_info.points.begin();
-	std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_end = d_build_info.points.end();
-	for ( ; points_iter != points_end; ++points_iter)
-	{
-		cgal_points.push_back(convert_point_on_sphere_to_point_3(*points_iter));
-	}
-
-	// Build the Triangulation.
-	d_delaunay_3->insert( cgal_points.begin(), cgal_points.end() );
-#endif
-}
-
-#endif // ...not currently using being used.
 
 
 const GPlatesAppLogic::ResolvedTriangulation::Network::delaunay_point_2_to_vertex_handle_map_type &
@@ -1635,9 +2012,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_natural_neighbor_
 		// Calculate the interpolation coefficients of the nearest and next nearest vertices
 		// relative to the test point (this assumes the test point is relatively close to the edge).
 		const delaunay_coord_2_type closest_vertex_distance =
-				CGAL::sqrt(CGAL::squared_distance(point_2, closest_vertex->point()));
+				CGAL::sqrt(
+						CGAL::to_double(CGAL::squared_distance(point_2, closest_vertex->point())));
 		const delaunay_coord_2_type closest_edge_end_vertex_distance =
-				CGAL::sqrt(CGAL::squared_distance(point_2, closest_edge_end_vertex.get()->point()));
+				CGAL::sqrt(
+						CGAL::to_double(CGAL::squared_distance(point_2, closest_edge_end_vertex.get()->point())));
 
 		// Note that the distances are swapped relative to their vertices so that interpolation
 		// coefficients are largest when distance to respective vertex is smallest.
@@ -1664,7 +2043,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_natural_neighbor_
 		// This will probably never happen but emit a debug message to at least record the
 		// fact that this event has happened in case someone checks the logs.
 		qDebug() << "The point "
-			<< d_projection.unproject_to_lat_lon(point_2)
+			<< d_projection.unproject_to_lat_lon(QPointF(CGAL::to_double(point_2.x()), CGAL::to_double(point_2.y())))
 			<< " slipped through the cracks between the topological network boundary on 3D sphere "
 			<< "and the 2D projected delaunay triangulation - and could not find nearest delaunay edge "
 			<< "- so using nearest delaunay vertex for natural neighbour coordinates.";
@@ -1750,9 +2129,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_barycentric_coord
 			// Calculate the interpolation coefficients of the nearest and next nearest vertices
 			// relative to the test point (this assumes the test point is relatively close to the edge).
 			const delaunay_coord_2_type closest_vertex_distance =
-					CGAL::sqrt(CGAL::squared_distance(point_2, closest_vertex->point()));
+					CGAL::sqrt(
+							CGAL::to_double(CGAL::squared_distance(point_2, closest_vertex->point())));
 			const delaunay_coord_2_type closest_edge_end_vertex_distance =
-					CGAL::sqrt(CGAL::squared_distance(point_2, closest_edge_end_vertex.get()->point()));
+					CGAL::sqrt(
+							CGAL::to_double(CGAL::squared_distance(point_2, closest_edge_end_vertex.get()->point())));
 
 			// Calculate the barycentric weights (sum to 1.0).
 			const delaunay_coord_2_type closest_vertex_weight = closest_edge_end_vertex_distance /
@@ -1845,7 +2226,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_barycentric_coord
 	// This will probably never happen but emit a debug message to at least record the
 	// fact that this event has happened in case someone checks the logs.
 	qDebug() << "The point "
-		<< d_projection.unproject_to_lat_lon(point_2)
+		<< d_projection.unproject_to_lat_lon(QPointF(CGAL::to_double(point_2.x()), CGAL::to_double(point_2.y())))
 		<< " slipped through the cracks between the topological network boundary on 3D sphere "
 		<< "and the 2D projected delaunay triangulation - and could not find nearest delaunay edge "
 		<< "- so using nearest delaunay vertex for barycentric coordinates.";

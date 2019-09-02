@@ -140,12 +140,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used to describe collection sizes.
-		 */
-		typedef seq_type::size_type size_type;
-
-
-		/**
 		 * Typedef for the bounding tree of great circle arcs in a polyline.
 		 */
 		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/>
@@ -648,7 +642,7 @@ namespace GPlatesMaths
 		 */
 		const_iterator
 		segment_iterator(
-				size_type segment_index) const
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					segment_index <= number_of_segments(),
@@ -665,7 +659,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of segments in this polyline.
 		 */
-		size_type
+		unsigned int
 		number_of_segments() const
 		{
 			return d_seq.size();
@@ -677,7 +671,7 @@ namespace GPlatesMaths
 		 */
 		const GreatCircleArc &
 		get_segment(
-				size_type segment_index) const
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					segment_index < number_of_segments(),
@@ -722,7 +716,7 @@ namespace GPlatesMaths
 		 */
 		vertex_const_iterator
 		vertex_iterator(
-				size_type vertex_index) const
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					vertex_index <= number_of_vertices(),
@@ -739,7 +733,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of vertices in this polyline.
 		 */
-		size_type
+		unsigned int
 		number_of_vertices() const
 		{
 			return d_seq.size() + 1;
@@ -751,7 +745,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_vertex(
-				size_type vertex_index) const
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					vertex_index < number_of_vertices(),

@@ -662,7 +662,9 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 
 		// Append the subsegment geometry to the plate polygon points.
 		// Subsegment should be reversed if that's how it contributed to the resolved topology.
-		output_subsegment->get_reversed_sub_segment_points(polygon_points);
+		output_subsegment->get_reversed_sub_segment_points(
+				polygon_points,
+				ResolvedTopologicalBoundary::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_BOUNDARY/*include_rubber_band_points*/);
 	}
 
 	// Create a polygon on sphere for the resolved boundary using 'polygon_points'.
@@ -749,7 +751,9 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 
 		// Append the subsegment geometry to the resolved line points.
 		// Subsegment should be reversed if that's how it contributed to the resolved topology.
-		output_subsegment->get_reversed_sub_segment_points(resolved_line_points);
+		output_subsegment->get_reversed_sub_segment_points(
+				resolved_line_points,
+				ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
 	}
 
 	// Create a polyline on sphere for the resolved line using 'resolved_line_points'.

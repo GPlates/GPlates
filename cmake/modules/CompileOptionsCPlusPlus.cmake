@@ -26,7 +26,23 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
     
+    # Disable warning C4267: 'var' : conversion from 'size_t' to 'type', possible loss of data
+	#
+	# When compiling with Visual Studio in 64-bit mode this warning shows up in a very large number of places.
+	# Mostly because std::vector<Type>::size(), etc, return 'size_t' (which is 64 bits) and we store the result
+	# in an 'unsigned int' loop counter (which is 32 bits). However, in pretty much all cases we do not
+	# need more than 32 bits. We could explicitly tell the compiler this by using 'static_cast<unsigned int>()'
+	# (or use size_t for the loop counter) but it just becomes far too cumbersome to change this everywhere.
+	#
+	# Also this warning is not produced by gcc, even with "-Wall" and "-Wextra" turned on (just checked this with gcc 8.3).
+	# The only way to enable this warning with gcc is with "-Wconversion" (and then use "-W-no-float-conversion" to
+	# disable the extra 'double->float' warnings also created by this).
+	#
+	# So we'll disable it for Visual Studio also.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267")
+	
     # Disable warning C4503: 'identifier' : decorated name length exceeded, name was truncated
+	#
 	# Apparently a hash is applied to truncated names, so program correctness is unaffected.
 	# However debugging and linking are possibly affected.
 	# But this warning no longer occurs in Visual Studio 2017 and later compilers.
@@ -103,11 +119,22 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
                 "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
     endif ()
 
-    # Use C++11 standard for g++ 4.8.1 and above (these vesions all have full support).
+    # Use C++11 standard for g++ 4.8.1 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
-    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1"))
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+        # '-ansi' is equivalent to '-std=c++98'
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi")
+    else()
         message(STATUS "...using C++11")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+		#
+		# TODO: Remove when using C++11 as a minimum requirement for GPlates.
+		#
+        # Temporariy disable deprecated declaration warnings.
+        # Since removing "-ansi" (when using "-std=c++11") we get a ton of warnings
+        # about deprecated std::auto_ptr, which we'll switch over to std::unique_ptr
+        # in the next release or two when we have C++11 as a minimum requirement.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
     endif ()
 
     if(APPLE)
@@ -131,7 +158,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(warnings_flags "${warnings_flags} ${warning}")
     endforeach(warning ${warnings_flags_list})
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi -fno-strict-aliasing")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 
     # Flags common to all build types.
     if (GPLATES_PUBLIC_RELEASE)
@@ -198,7 +225,7 @@ endif()
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
-    # Use C++11 standard for Clang 3.3 and above (these vesions all have full support).
+    # Use C++11 standard for Clang 3.3 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
     if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3"))
         message(STATUS "...using C++11")

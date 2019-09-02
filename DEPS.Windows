@@ -27,7 +27,7 @@ variable is not case sensitive, so it could be called Path instead.)
         the change will affect all users on the computer. Edit the variable in
         whichever section is most suitable. If the PATH variable does not exist,
         click the New button to add it. Separate paths with semicolons.
- * Windows Vista and Windows 7 (if you have administrator access and you wish
+ * Windows Vista and Windows 7 and above (if you have administrator access and you wish
    to change the PATH variable for all users):
      1. Click on the Start button.
      2. Right-click on Computer and select Properties.
@@ -37,7 +37,7 @@ variable is not case sensitive, so it could be called Path instead.)
      6. Edit the PATH variable in the System variables section. If the PATH
         variable does not exist, click the New button to add it. Separate paths
         with semicolons.
- * Windows Vista and Windows 7 (if you do not have administrator access or you
+ * Windows Vista and Windows 7 and above (if you do not have administrator access or you
    wish to change the PATH variable only for your account):
      1. Click on the Start button.
      2. Click your account's picture at the very top of the second column.
@@ -69,6 +69,19 @@ Microsoft Visual Studio
        See https://docs.microsoft.com/en-us/cpp/porting/binary-compat-2015-2017?view=vs-2017
      * For developers, a good article on ABI compatibility can be found here:
        https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B
+  3. For any activities requiring the command line, remember to use the
+     "Developer Command Prompt for VS201X" shortcut available in the Windows "Start" menu.
+     This starts a command prompt and sets up environment variables, allowing use of VC command line 
+     applications (such as the compiler, linker, make and build tools).
+     Note that this is 32-bit. For 64-bit you'll need a command prompt with a
+     64-bit Visual Studio toolset enabled. To do this:
+     * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
+       "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+       Then you can compile the libraries dependencies from within this command prompt.
+  4. Once all library dependencies have been built, be sure to build GPlates as 64-bit (see BUILD.Windows).
+     To do this:
+     * In the CMake GUI select a 64-bit version of a Visual Studio generator such as "Visual Studio 14 2015 Win64".
+       Alternatively, when using the cmake command-line, use the "-A" option such as "cmake -G "Visual Studio 14 2015" -A x64".
 
 CMake
 
@@ -77,56 +90,57 @@ CMake
 Qt
 
   1. Download qt-everywhere-opensource-src-4.8.7.zip from: https://download.qt.io/archive/qt/
-  2. Extract it to a path containing no spaces 
-  3. Run: configure
-      * If there are errors, open the "Visual Studio 201x Command Prompt" from
-        the Start menu, and run configure from there.
-  4. Run: nmake (or 'jom' for faster parallel builds).
+  2. Extract it to a path containing no spaces.
+  3. Start a Visual Studio command prompt (see above for 32-bit versus 64-bit).
+  4. Run: configure
+  5. Run: nmake (or 'jom' for faster parallel builds).
      NOTE: If you get errors using Visual Studio 2015 (compiling Qt4) such as...
                error C2039: 'int_least8_t': is not a member of '`global namespace''
            ...then you may need to apply the patch noted at
            https://forum.qt.io/topic/56453/compiling-qt4-head-with-msvc-2015-cstdint-errors/7
            (and the patch can be applied using "python -m patch 02-fix_build_with_msvc2015-45e8f4ee.diff"
            once 'patch' has been installed in Python using 'pip install patch') and run nmake (or jom) again.
-  5. In VC access Tools, Options, Projects, Directories and add the following Qt 
-    directories: 
-      * Executable files: \bin
-  6. Add the Qt \bin directory to the PATH environment variable (see above).
+  6. Add the Qt \bin directory to the PATH environment variable.
 
 Qwt
 
-  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.1.3/
+  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.1.4/
   2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
-  3. Open a Visual Studio command prompt and navigate to your qwt location
-	(e.g. C:\SDK\qwt\qwt-6.1.3 )
-  4. At the command prompt, do 
-	qmake
-	nmake
+  3. Start a Visual Studio command prompt (see above for 32-bit versus 64-bit) and
+     navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.4 )
+  4. At the command prompt, run:
+       qmake qwt.pro
+       nmake
      You should now have a "lib" folder containing .dll and .lib files.
-  5. (If you have a preferred installation location which is different from your build location, you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
-  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the qwt header files and the qwt library respectively - for example: 
-	QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.1.3\src" 
-	and 
-	QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.1.3\lib\qwt.lib"
+  5. (If you have a preferred installation location which is different from your build location,
+      you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
+  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the
+     qwt header files and the qwt library respectively.
+     For example:
+       QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.1.4\src" 
+     and 
+       QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.1.4\lib\qwt.lib"
   7. Add the QWT_LIBRARY location to your PATH environment variable.
 
 GLEW
-  1. Download and extract glew-1.5.4-win32.zip from: http://glew.sourceforge.net/
-  2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
-  3. Add the GLEW \Bin directory to the PATH environment variable (see above).
-  4. For the latest releases (eg, version 1.10.0) you will need to copy the 'bin/Release/Win32/' files to 'bin/'
-     and the 'lib/Release/Win32/' files to 'lib/'.
+  1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/
+  2. Add the GLEW \include directory to the CMAKE_INCLUDE_PATH environment variable.
+  3. Add the GLEW \lib\Release\Win32 directory to the CMAKE_LIBRARY_PATH environment variable for a 32-bit build, or
+     add the GLEW \lib\Release\x64 directory to the CMAKE_LIBRARY_PATH environment variable for a 64-bit build.
+  4. Add the GLEW \Bin\Release\Win3 directory to the PATH environment variable for a 32-bit build, or
+     add the GLEW \Bin\Release\x64 directory to the PATH environment variable for a 64-bit build.
 
 Python
   1. Download, and install, the latest 2.7 Windows MSI installer (eg, 'http://www.python.org/downloads/').
+     * Download the 32-bit installer for a 32-bit build (eg, 'python-2.7.16.msi'), or
+       download the 64-bit installer for a 64-bit build (eg, 'python-2.7.16.amd64.msi).
      * Note that GPlates (and pygplates) currently only support the Python 2 series (not Python 3).
      * Ideally you should install 2.7.15 (or later in the Python 2 series) since it includes 'pip' by default
        which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
   2. Add the base Python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
   3. Add the base Python directory to the PYTHONHOME environment variable.
-  4. Add the 'libs/' sub-directory to the PYTHONPATH environment variable.
-  5. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
-  6. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
+  4. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
+  5. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.
 
 Boost
@@ -136,25 +150,26 @@ Boost
            However there are now binaries available at https://sourceforge.net/projects/boost/files/boost-binaries/
   2. Follow the instructions in the Getting Started guide at http://www.boost.org/doc/libs/1_69_0/more/getting_started/windows.html
      Essentially (for Visual Studio 2015) this involves:
-     * Starting a "Developer Command Prompt for VS2015" command-line window.
+     * Starting a Visual Studio command prompt (see above for 32-bit versus 64-bit).
      * Changing to the boost source code directory (eg, "cd C:\SDK\boost\boost_1_69_0").
      * Running '.\bootstrap.bat' (to create the BoostBuild tools).
      * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015.
+       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
        This installs the headers and the 'shared' libraries (DLLs and their associated ".lib"s).
        These 'shared' libraries are used by GPlates.
      * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
-       Installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
+       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
+       This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
-  2. Add the C:\SDK\boost\boost_1_xx\include\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment variable.
-  3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH environment variable.
-  4. Add C:\SDK\boost\boost_1_xx\lib directory to the PATH environment variable.
+  2. Add the boost root directory to the CMAKE_INCLUDE_PATH environment variable (eg, C:\SDK\boost\boost_1_69).
+  3. Add the boost 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, C:\SDK\boost\boost_1_69\lib).
+  4. Add the boost 'lib' directory to the PATH environment variable (eg, C:\SDK\boost\boost_1_69\lib).
   Note that if you upgrade your boost version you'll need to re-compile the CGAL library (since it uses boost thread).
   Note that the boost-python (sub)library will link against your python installation
   and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
   then, at runtime, the python DLL (version 2.7) should exist in the PATH.
   To get boost to find python at compile time you might also need to add something like...
-     using python : 2.7 : C:\\SDK\\python\\Python-2.7.6 : C:\\SDK\\python\\Python-2.7.6\\Include : C:\\SDK\\python\\Python-2.7.6\\libs ;
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.16 : C:\\SDK\\python\\Python-2.7.16\\Include : C:\\SDK\\python\\Python-2.7.16\\libs ;
   ...for example to "user-config.jam" in your home directory(see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html )
   Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
   exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
@@ -184,6 +199,7 @@ SQLite3
        o From https://protyposis.net/blog/compiling-sqlite-as-dll-with-msvc/
     3. Compile the binary:
        o "cl shell.c sqlite3.c -Fesqlite3.exe"
+    4. Add the directory to the PATH environment variable (eg, C:\SDK\sqlite3\sqlite-amalgamation-3290000).
        o It appears the binary is required by the Proj6 cmake build stage (otherwise it'll produce a cmake error).
 
 Proj6
@@ -193,43 +209,39 @@ Proj6
      o This involves using cmake.
        For example, creating a 'build/' sub-directory inside your extracted proj6 source directory.
        Then running the CMake GUI and setting source and binary directories (eg, "C:\SDK\proj\proj-6.1.1" and "C:\SDK\proj\proj-6.1.1\build").
-       Then clicking 'Configure' once (or twice) and selecting Visual Studio, then clicking 'Generate' to create a Visual Studio solution.
+       Then clicking 'Configure' once and selecting a Visual Studio generator
+       (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
+       Then changing the install location from "C:/OSGeo4W" to your Proj6 directory (eg, "C:/SDK/proj/proj-6.1.1"):
+         By changing the CMAKE_INSTALL_PREFIX variable (in the CMake GUI).
+         NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling proj.
+       Then clicking 'Configure' once more, and then 'Generate' to create a Visual Studio solution.
      o If cmake cannot find the location of sqlite3 then you'll need to either set it manually in the CMake GUI (after the first 'Configure' stage), or
        specify it on the cmake command-line as covered in the Proj6 README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
-     o Change the install location from "C:/OSGeo4W" to your Proj6 directory (eg, "C:/SDK/proj/proj-6.1.1"):
-       By changing the CMAKE_INSTALL_PREFIX variable (eg, in the CMake GUI after the first 'Configure' stage).
-       NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling proj.
-     o Open the Visual Studio solution, select "Release" build and then build the "INSTALL" project.
+     o Open the "PROJ4" Visual Studio solution , select "Release" build and then build the "INSTALL" project.
   3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\include").
   4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\lib").
   5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\bin").
 
 NetCDF
 
-    1. Download the windows pre-compiled library/DLL from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
-       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-bin.zip".
-       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.1.1").
-    2. We also need the associated "netcdf.h" header file which, unfortunately is not in the above pre-compiled collection.
-       o So download the associated source code from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
-       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-src.zip".
-    3. Copy the "netcdf.h" from step 2 into the extracted location from step 1 (eg, "C:\SDK\netcdf\netcdf-4.1.1").
-       o There appears to be two different "netcdf.h" files (in the 'libsrc/' and 'libsrc4/' subdirectories).
-       o If this is the case then copy the "netcdf.h" from the 'libsrc4' subdirectory.
-    4. Also add this location to the PATH environment variable (so the NetCDF DLL can be found at run-time).
-       o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
-    5. This library will get compiled into GDAL (see GDAL below).
+    1. Download the Windows NetCDF-4 library pre-compiled library/DLL (32-bit or 64-bit)
+       from the 'download' link at "https://www.unidata.ucar.edu/software/netcdf/".
+       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.7.0").
+    2. Also add the NetCDF 'bin' directory to the PATH environment variable (so the NetCDF DLL can be found at run-time).
+       o Eg, Add "C:\SDK\netcdf\netcdf-4.7.0\bin" to the PATH environment variable.
+    3. This library will get compiled into GDAL (see GDAL below).
 
 GDAL
 
-    1. Get GDAL 2.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
+    1. Get GDAL 3.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
     2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.0.1").
     3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
        o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
        o For example, after editing, you might have something like:
          NETCDF_PLUGIN = NO
          NETCDF_SETTING=yes
-         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
-         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
+         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.7.0\lib\netcdf.lib
+         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.7.0\include
     4. Edit the "nmake.opt" by uncommenting '#NETCDF_HAS_NC4 = yes':
        o This enables NetCDF version 4 support (which uses HDF5).
        o For example, after editing, you should have:
@@ -242,17 +254,18 @@ GDAL
     5. Edit the "nmake.opt" file under the section labelled 
        o Uncomment the following two lines and specify the location of the SQLite3 library (see SQLite3 above).
        o For example, after editing, you might have something like:
-         SQLITE_INC=-Ic:\SDK\sqlite3\sqlite-amalgamation-3250200
-         SQLITE_LIB=c:\SDK\sqlite3\sqlite-amalgamation-3250200\sqlite3_i.lib
+         SQLITE_INC=-Ic:\SDK\sqlite3\sqlite-amalgamation-3290000
+         SQLITE_LIB=c:\SDK\sqlite3\sqlite-amalgamation-3290000\sqlite3_i.lib
     6. Uncomment "#WIN64=YES" in "nmake.opt" if compiling a 64-bit build.
     7. Generate a new Visual Studio solution file by following instructions at https://trac.osgeo.org/gdal/wiki/GeneratingVisualStudioProject
-       o For example, run "generate_vcxproj.bat 14.0 32 gdal_vs2015" if you are using Visual Studio 2015.
+       o For example, run "generate_vcxproj.bat 14.0 32 gdal_vs2015" for 32-bit or
+         "generate_vcxproj.bat 14.0 64 gdal_vs2015" for 64-bit, if you are using Visual Studio 2015.
     8. Use Visual Studio to build GDAL.
        o For example, by opening the 'gdal_vs2015.vcxproj' project file with Visual Studio 2015.
-       o Selecting 'Release' as the build type.
+       o Selecting 'Release' as the build type, and building the project.
        o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
          Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
-    9. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
+    9. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt (32-bit or 64-bit) and type:
          nmake /f makefile.vc MSVC_VER=1900
        o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015) for GDAL 2.3.
        o If you want a debug build then add 'DEBUG=1'.
@@ -264,28 +277,30 @@ GDAL
   
 CGAL
 
-  1. Get and install the CGAL 4.13 source code from http://www.cgal.org/
-     * Download and run 'CGAL-4.13-Setup.exe'.
+  1. Get and install the CGAL 4.13.1 source code from http://www.cgal.org/
+     * Download and run 'CGAL-4.13.1-Setup.exe'.
      * Under 'Choose Components' untick everything except:
          * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
-     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13'.
+     * Choose '32-bits' or '64-bits'.
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.1'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
-	 * Tick 'Add CGAL/auxiliary/gmp/lib to PATH'.
+     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, D:\SDK\cgal\CGAL-4.13.1\auxiliary\gmp\lib).
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
-     * Specify the "Visual Studio 14 2015" generator (or above).
-     * Click the 'Configure' button.
-         * If an error dialog pops up and there's red text that complains it cannot find the boost library
-           boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
-           versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
+     * Click 'Configure' once and select a Visual Studio generator
+       (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
+        * If an error dialog pops up and there's red text that complains it cannot find the boost library
+          boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
+          versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
      * Untick all 'WITH_*' options except:
-	     * WITH_CGAL_Core,
-		 * WITH_GMP and
+         * WITH_CGAL_Core,
+         * WITH_GMP and
          * WITH_MPFR.
-     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-4.13').
+     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-4.13.1').
+       NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling CGAL.
      * Click the 'Configure' button again.
      * Click the 'Generate' button.
      * If this is successful then a Visual Studio solution file 'CGAL.sln'.
@@ -295,8 +310,14 @@ CGAL
      * (GPlates developers will also want to build 'Debug', etc so that similar builds in
        GPlates can find the CGAL library of the correct build type).
      * Build the 'INSTALL' project.
-  4. Add the CGAL \bin directory to the PATH environment variable.
+  4. Add the CGAL \bin directory to the PATH environment variable (eg, D:\SDK\cgal\CGAL-4.13.1\bin).
   When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
+  You may get a compile error in 'include/CGAL/Dimension.h' when (later) compiling GPlates.
+  You can workaround this by replacing:
+    const int UNKNOWN_DIMENSION=std::numeric_limits<int>::max();
+  ...with...
+    const int UNKNOWN_DIMENSION=(std::numeric_limits<int>::max)();
+  ...in 'include/CGAL/Dimension.h'
  
 
 gzip

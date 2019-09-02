@@ -91,7 +91,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_animation_controller(
 			new GPlatesGui::AnimationController(application_state)),
 	d_session_management_ptr(
-			new SessionManagement(application_state)),
+			new SessionManagement(application_state, *this)),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_feature_focus(

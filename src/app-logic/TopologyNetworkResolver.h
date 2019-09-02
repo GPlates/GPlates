@@ -46,6 +46,7 @@
 #include "TopologyIntersections.h"
 #include "TopologyNetworkParams.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/GeometryOnSphere.h"
 
 #include "model/types.h"
@@ -113,6 +114,11 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
+		finalise_post_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
@@ -140,6 +146,14 @@ namespace GPlatesAppLogic
 		visit_gpml_topological_point(
 				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
+		void
+		visit_gpml_plate_id(
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+		void
+		visit_xs_double(
+				GPlatesPropertyValues::XsDouble &xs_double);
+
 	private:
 		/**
 		 * Stores/builds information from iterating over @a GpmlTopologicalSection objects.
@@ -151,8 +165,25 @@ namespace GPlatesAppLogic
 			void
 			reset()
 			{
-				d_boundary_sections.clear();
-				d_interior_geometries.clear();
+				boundary_sections.clear();
+				interior_geometries.clear();
+				topological_network_property = boost::none;
+			}
+
+			//! Record the topological network property of the feature being visited.
+			void
+			initialise(
+					boost::optional<GPlatesModel::FeatureHandle::iterator> topological_network_property_)
+			{
+				topological_network_property = topological_network_property_;
+			}
+
+			//! Do we have a resolved network?
+			bool
+			has_resolved_network() const
+			{
+				// Must have boundary sections. Don't need interior geometries though.
+				return topological_network_property && !boundary_sections.empty();
 			}
 
 			//! Keeps track of topological boundary section information when visiting topological sections.
@@ -189,7 +220,11 @@ namespace GPlatesAppLogic
 				InteriorGeometry(
 						const GPlatesModel::FeatureId &source_feature_id,
 						const ReconstructionGeometry::non_null_ptr_type &source_rg,
-						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry) :
+					d_source_feature_id(source_feature_id),
+					d_source_rg(source_rg),
+					d_geometry(geometry)
+				{  }
 
 				//! The feature id of the feature referenced by this topological interior.
 				GPlatesModel::FeatureId d_source_feature_id;
@@ -210,10 +245,40 @@ namespace GPlatesAppLogic
 
 
 			//! Sequence of boundary sections.
-			boundary_section_seq_type d_boundary_sections;
+			boundary_section_seq_type boundary_sections;
 
 			//! Sequence of interior geometries.
-			interior_geometry_seq_type d_interior_geometries;
+			interior_geometry_seq_type interior_geometries;
+
+			//! The topological network feature property containing the boundary and interior sections.
+			boost::optional<GPlatesModel::FeatureHandle::iterator> topological_network_property;
+		};
+
+		/**
+		* Feature properties if this network is a rift.
+		*
+		* A network is a rift if the network feature has rift left/right plate IDs.
+		*/
+		struct RiftProperties
+		{
+		public:
+			void
+			reset()
+			{
+				left_plate_id = boost::none;
+				right_plate_id = boost::none;
+
+				exponential_stretching_constant = boost::none;
+				strain_rate_resolution = boost::none;
+				edge_length_threshold = boost::none;
+			}
+
+			boost::optional<GPlatesModel::integer_plate_id_type> left_plate_id;
+			boost::optional<GPlatesModel::integer_plate_id_type> right_plate_id;
+
+			boost::optional<double> exponential_stretching_constant;
+			boost::optional<double> strain_rate_resolution;
+			boost::optional<GPlatesMaths::AngularExtent> edge_length_threshold;
 		};
 
 
@@ -256,17 +321,13 @@ namespace GPlatesAppLogic
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
 
 		//! Gathers some useful reconstruction parameters.
-		ReconstructionFeatureProperties d_reconstruction_params;
+		ReconstructionFeatureProperties d_current_reconstruction_params;
+
+		//! Parameters if this network is a rift.
+		RiftProperties d_current_rift_params;
 
 		//! Used to help build the resolved network of the current topological polygon.
-		ResolvedNetwork d_resolved_network;
-
-#if 0 // Not currently using being used...
-		//! controls on the triangulation
-		double d_shape_factor;
-		//! controls on the triangulation
-		double d_max_edge;
-#endif // ...not currently using being used.
+		ResolvedNetwork d_current_resolved_network;
 
 
 		boost::optional<ReconstructionGeometry::non_null_ptr_type>
@@ -317,22 +378,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		create_resolved_topology_network();
-
-#if 0 // Not currently using being used...
-		/**
-		 * Add interior points for constrained delaunay triangulation.
-		 */
-		void
-		add_interior_constrained_delaunay_points(
-				const ResolvedNetwork::InteriorGeometry &interior_geometry,
-				std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> &constrained_delaunay_geometries,
-				std::vector<GPlatesMaths::PointOnSphere> &scattered_points);
-
-
-		void
-		debug_output_topological_source_feature(
-				const GPlatesModel::FeatureId &source_feature_id);
-#endif // ...not currently using being used.
 	};
 }
 

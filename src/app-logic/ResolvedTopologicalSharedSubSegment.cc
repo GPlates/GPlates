@@ -33,21 +33,41 @@
 
 void
 GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_shared_sub_segment_point_source_infos(
-		resolved_vertex_source_info_seq_type &point_source_infos) const
+		resolved_vertex_source_info_seq_type &point_source_infos,
+		bool include_rubber_band_points) const
 {
 	if (!d_point_source_infos)
 	{
 		d_point_source_infos = resolved_vertex_source_info_seq_type();
 
+		// Get the point source infos (including at the optional rubber band points).
 		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_infos(
 				d_point_source_infos.get(),
 				d_shared_sub_segment,
-				d_shared_segment_reconstruction_geometry);
+				d_shared_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	resolved_vertex_source_info_seq_type::const_iterator src_point_source_infos_begin = d_point_source_infos->begin();
+	resolved_vertex_source_info_seq_type::const_iterator src_point_source_infos_end = d_point_source_infos->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_shared_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_infos_begin;
+		}
+		if (d_shared_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_infos_end;
+		}
 	}
 
 	std::copy(
-			d_point_source_infos->begin(),
-			d_point_source_infos->end(),
+			src_point_source_infos_begin,
+			src_point_source_infos_end,
 			std::back_inserter(point_source_infos));
 }
 
@@ -55,30 +75,50 @@ GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_shared_sub_segment_poi
 void
 GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_reversed_shared_sub_segment_point_source_infos(
 		resolved_vertex_source_info_seq_type &point_source_infos,
-		bool use_reverse) const
+		bool use_reverse,
+		bool include_rubber_band_points) const
 {
 	if (!d_point_source_infos)
 	{
 		d_point_source_infos = resolved_vertex_source_info_seq_type();
 
+		// Get the point source infos (including at the optional rubber band points).
 		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_infos(
 				d_point_source_infos.get(),
 				d_shared_sub_segment,
-				d_shared_segment_reconstruction_geometry);
+				d_shared_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	resolved_vertex_source_info_seq_type::const_iterator src_point_source_infos_begin = d_point_source_infos->begin();
+	resolved_vertex_source_info_seq_type::const_iterator src_point_source_infos_end = d_point_source_infos->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_shared_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_infos_begin;
+		}
+		if (d_shared_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_infos_end;
+		}
 	}
 
 	if (use_reverse)
 	{
 		std::reverse_copy(
-				d_point_source_infos->begin(),
-				d_point_source_infos->end(),
+				src_point_source_infos_begin,
+				src_point_source_infos_end,
 				std::back_inserter(point_source_infos));
 	}
 	else
 	{
 		std::copy(
-				d_point_source_infos->begin(),
-				d_point_source_infos->end(),
+				src_point_source_infos_begin,
+				src_point_source_infos_end,
 				std::back_inserter(point_source_infos));
 	}
 }

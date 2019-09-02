@@ -41,86 +41,6 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
-		 * Finds the vertex source info corresponding to the specified intersection along the section polyline.
-		 */
-		ResolvedVertexSourceInfo::non_null_ptr_to_const_type
-		get_intersection_vertex_source_info(
-				const ResolvedSubSegmentRangeInSection::Intersection &intersection,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry,
-				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry)
-		{
-			boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> section_reconstructed_feature_geometry =
-					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(section_reconstruction_geometry);
-			if (section_reconstructed_feature_geometry)
-			{
-				// It doesn't matter where the intersection in the section is since all points have the same source info.
-				return ResolvedVertexSourceInfo::create(section_reconstructed_feature_geometry.get());
-			}
-			// else it's a resolved topological *line* ...
-
-			boost::optional<ResolvedTopologicalLine::non_null_ptr_to_const_type> section_resolved_topological_line_opt =
-					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalLine::non_null_ptr_to_const_type>(section_reconstruction_geometry);
-
-			// Section reconstruction geometry must either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					section_resolved_topological_line_opt,
-					GPLATES_ASSERTION_SOURCE);
-			ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line =
-					section_resolved_topological_line_opt.get();
-
-			const resolved_vertex_source_info_seq_type &section_vertex_source_infos =
-					section_resolved_topological_line->get_vertex_source_infos();
-
-			if (intersection.on_segment_start)
-			{
-				// Since intersection is on start of segment it is also a vertex index.
-				const unsigned int vertex_index = intersection.segment_index;
-
-				// Note that this can be the fictitious one-past-the-last *segment* but we can
-				// dereference as a *vertex index* since that will be the last *vertex*.
-				return section_vertex_source_infos[vertex_index];
-			}
-			// else intersection is in middle of a segment...
-
-			// Segment's start and end points.
-			// Note that the segment's *end* vertex is dereferenceable because we can't be in the middle
-			// of the fictitious *one-past-the-last* segment (since already tested not on segment start).
-			const unsigned int segment_start_vertex_index = intersection.segment_index;
-			const unsigned int segment_end_vertex_index = segment_start_vertex_index + 1;
-
-			// If the segment's start and end points have the same vertex source info then we don't
-			// need to interpolate between them.
-			//
-			// Note that we're comparing ResolvedVertexSourceInfo objects, not 'non_null_intrusive_ptr's.
-			if (*section_vertex_source_infos[segment_start_vertex_index] ==
-				*section_vertex_source_infos[segment_end_vertex_index])
-			{
-				return section_vertex_source_infos[segment_start_vertex_index];
-			}
-			// else vertex source infos are different for start and end points of intersected segment...
-
-			//
-			// This situation will be very rare because:
-			//  - If topological line consists of points, then the end points of the topological line
-			//    will usually be made to match the end points of adjacent topological sections such
-			//    that they touch (intersect at points, not in middle of segments).
-			//  - If topological line consists of intersecting static lines, then the only segments
-			//    along topological line that contain differing vertex source infos for segment start
-			//    and end points will be zero-length segments resulting from the intersection of
-			//    those static lines (ie, each static line can have a different plate ID, but they
-			//    will intersect at a point, which then becomes a zero-length segment with start point
-			//    carrying one plate ID and end point carrying the other).
-			//
-			return ResolvedVertexSourceInfo::create(
-					section_vertex_source_infos[segment_start_vertex_index],
-					section_vertex_source_infos[segment_end_vertex_index],
-					intersection.get_interpolate_ratio_in_segment(*section_geometry));
-		}
-
-
-		/**
 		 * Returns the vertex source info at either the start (if @a is_at_start_vertex is true) or end of the section.
 		 *
 		 * The returned source info is to be used for rubber banding.
@@ -233,68 +153,209 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Add the source infos for those section vertices contributing to the sub-segment.
+		 * Finds the vertex source info corresponding to the specified intersection along the
+		 * section polyline of a resolved topological line.
+		 */
+		ResolvedVertexSourceInfo::non_null_ptr_to_const_type
+		get_resolved_topological_line_intersection_vertex_source_info(
+				const ResolvedSubSegmentRangeInSection::Intersection &intersection,
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry,
+				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line)
+		{
+			const resolved_vertex_source_info_seq_type &section_vertex_source_infos =
+					section_resolved_topological_line->get_vertex_source_infos();
+
+			if (intersection.on_segment_start)
+			{
+				// Since intersection is on start of segment it is also a vertex index.
+				const unsigned int vertex_index = intersection.segment_index;
+
+				// Note that this can be the fictitious one-past-the-last *segment* but we can
+				// dereference as a *vertex index* since that will be the last *vertex*.
+				return section_vertex_source_infos[vertex_index];
+			}
+			// else intersection is in middle of a segment...
+
+			// Segment's start and end points.
+			// Note that the segment's *end* vertex is dereferenceable because we can't be in the middle
+			// of the fictitious *one-past-the-last* segment (since already tested not on segment start).
+			const unsigned int segment_start_vertex_index = intersection.segment_index;
+			const unsigned int segment_end_vertex_index = segment_start_vertex_index + 1;
+
+			// If the segment's start and end points have the same vertex source info then we don't
+			// need to interpolate between them.
+			//
+			// Note that we're comparing ResolvedVertexSourceInfo objects, not 'non_null_intrusive_ptr's.
+			if (*section_vertex_source_infos[segment_start_vertex_index] ==
+				*section_vertex_source_infos[segment_end_vertex_index])
+			{
+				return section_vertex_source_infos[segment_start_vertex_index];
+			}
+			// else vertex source infos are different for start and end points of intersected segment...
+
+			//
+			// This situation will be very rare because:
+			//  - If topological line consists of points, then the end points of the topological line
+			//    will usually be made to match the end points of adjacent topological sections such
+			//    that they touch (intersect at points, not in middle of segments).
+			//  - If topological line consists of intersecting static lines, then the only segments
+			//    along topological line that contain differing vertex source infos for segment start
+			//    and end points will be zero-length segments resulting from the intersection of
+			//    those static lines (ie, each static line can have a different plate ID, but they
+			//    will intersect at a point, which then becomes a zero-length segment with start point
+			//    carrying one plate ID and end point carrying the other).
+			//
+			return ResolvedVertexSourceInfo::create(
+					section_vertex_source_infos[segment_start_vertex_index],
+					section_vertex_source_infos[segment_end_vertex_index],
+					intersection.get_interpolate_ratio_in_segment(*section_geometry));
+		}
+
+
+		/**
+		 * Get vertex source infos for a *ResolvedTopologicalLine* sub-segment.
 		 */
 		void
-		get_section_vertex_source_info_range(
+		get_resolved_topological_line_sub_segment_vertex_source_infos(
 				resolved_vertex_source_info_seq_type &vertex_source_infos,
-				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
-				unsigned int start_vertex_index,
-				unsigned int end_vertex_index)
+				const ResolvedSubSegmentRangeInSection &sub_segment_range,
+				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line,
+				bool include_rubber_band_points)
 		{
-			// See if the section is a reconstructed feature geometry.
-			boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> section_reconstructed_feature_geometry =
-					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(section_reconstruction_geometry);
-			if (section_reconstructed_feature_geometry)
+			// Add the start intersection, if one.
+			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection =
+				sub_segment_range.get_start_intersection())
 			{
-				// Share the same source reconstructed feature geometry across all (non-rubber-band) points in this sub-segment.
-				const ResolvedVertexSourceInfo::non_null_ptr_to_const_type section_source_info =
-						ResolvedVertexSourceInfo::create(section_reconstructed_feature_geometry.get());
-
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						start_vertex_index <= end_vertex_index,
-						GPLATES_ASSERTION_SOURCE);
-				const unsigned int num_vertices_in_range = end_vertex_index - start_vertex_index;
-
-				vertex_source_infos.insert(
-						vertex_source_infos.end(),
-						num_vertices_in_range,
-						section_source_info);
+				vertex_source_infos.push_back(
+						get_resolved_topological_line_intersection_vertex_source_info(
+								start_intersection.get(),
+								sub_segment_range.get_section_geometry(),
+								section_resolved_topological_line));
 			}
-			else // it must be a resolved topological *line* ...
+			// Else add the start rubber band, if one.
+			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band =
+					sub_segment_range.get_start_rubber_band())
 			{
-				boost::optional<ResolvedTopologicalLine::non_null_ptr_to_const_type> section_resolved_topological_line_opt =
-						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-								ResolvedTopologicalLine::non_null_ptr_to_const_type>(section_reconstruction_geometry);
-
-				// Section reconstruction geometry must either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						section_resolved_topological_line_opt,
-						GPLATES_ASSERTION_SOURCE);
-				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line =
-						section_resolved_topological_line_opt.get();
-
-				//
-				// Determine which vertex sources in the unclipped resolved topological line correspond
-				// to the (potentially) clipped sub-segment of the resolved topological line.
-				//
-
-				// Vertex sources of points in the unclipped section geometry.
-				const resolved_vertex_source_info_seq_type &resolved_vertex_source_infos =
-						section_resolved_topological_line->get_vertex_source_infos();
-
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						// Can be equal since end index is actually *one-past-the-last* vertex to include...
-						end_vertex_index <= resolved_vertex_source_infos.size(),
-						GPLATES_ASSERTION_SOURCE);
-
-				// Copy the vertex source infos between the intersections (if any).
-				for (unsigned int vertex_index = start_vertex_index; vertex_index < end_vertex_index; ++vertex_index)
+				if (include_rubber_band_points)
 				{
-					vertex_source_infos.push_back(resolved_vertex_source_infos[vertex_index]);
+					vertex_source_infos.push_back(
+							get_rubber_band_vertex_source_info(start_rubber_band.get()));
 				}
 			}
+			// else no start intersection or start rubber band.
+
+			// Add the source infos for those section vertices contributing to the sub-segment.
+			// If there are start/end intersections then these are the vertices after/before those intersections.
+			//
+			// Determine which vertex sources in the unclipped resolved topological line correspond
+			// to the (potentially) clipped sub-segment of the resolved topological line.
+			//
+
+			const unsigned int start_vertex_index = sub_segment_range.get_start_section_vertex_index();
+			const unsigned int end_vertex_index = sub_segment_range.get_end_section_vertex_index();
+
+			// Vertex sources of points in the unclipped section geometry.
+			const resolved_vertex_source_info_seq_type &resolved_vertex_source_infos =
+					section_resolved_topological_line->get_vertex_source_infos();
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					// Can be equal since end index is actually *one-past-the-last* vertex to include...
+					end_vertex_index <= resolved_vertex_source_infos.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Copy the vertex source infos between the intersections (if any).
+			for (unsigned int vertex_index = start_vertex_index; vertex_index < end_vertex_index; ++vertex_index)
+			{
+				vertex_source_infos.push_back(resolved_vertex_source_infos[vertex_index]);
+			}
+
+			// Add the end intersection, if one.
+			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_intersection =
+				sub_segment_range.get_end_intersection())
+			{
+				vertex_source_infos.push_back(
+						get_resolved_topological_line_intersection_vertex_source_info(
+								end_intersection.get(),
+								sub_segment_range.get_section_geometry(),
+								section_resolved_topological_line));
+			}
+			// Else add the end rubber band, if one.
+			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &end_rubber_band =
+					sub_segment_range.get_end_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					vertex_source_infos.push_back(
+							get_rubber_band_vertex_source_info(end_rubber_band.get()));
+				}
+			}
+			// else no end intersection or end rubber band.
+		}
+
+
+		/**
+		 * Get vertex source infos for a *ReconstructedFeatureGeometry* sub-segment.
+		 */
+		void
+		get_reconstructed_feature_geometry_sub_segment_vertex_source_infos(
+				resolved_vertex_source_info_seq_type &vertex_source_infos,
+				const ResolvedSubSegmentRangeInSection &sub_segment_range,
+				ReconstructedFeatureGeometry::non_null_ptr_to_const_type section_reconstructed_feature_geometry,
+				bool include_rubber_band_points)
+		{
+			// Share the same source reconstructed feature geometry across all (non-rubber-band) points in this sub-segment.
+			const ResolvedVertexSourceInfo::non_null_ptr_to_const_type section_source_info =
+					ResolvedVertexSourceInfo::create(section_reconstructed_feature_geometry.get());
+
+			// Add the start intersection, if one.
+			if (sub_segment_range.get_start_intersection())
+			{
+				vertex_source_infos.push_back(section_source_info);
+			}
+			// Else add the start rubber band, if one.
+			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band =
+					sub_segment_range.get_start_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					vertex_source_infos.push_back(
+							get_rubber_band_vertex_source_info(start_rubber_band.get()));
+				}
+			}
+			// else no start intersection or start rubber band.
+
+			// Add the source infos for those section vertices contributing to the sub-segment.
+			// If there are start/end intersections then these are the vertices after/before those intersections.
+
+			const unsigned int start_vertex_index = sub_segment_range.get_start_section_vertex_index();
+			const unsigned int end_vertex_index = sub_segment_range.get_end_section_vertex_index();
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					start_vertex_index <= end_vertex_index,
+					GPLATES_ASSERTION_SOURCE);
+			const unsigned int num_vertices_in_range = end_vertex_index - start_vertex_index;
+
+			vertex_source_infos.insert(
+					vertex_source_infos.end(),
+					num_vertices_in_range,
+					section_source_info);
+
+			// Add the end intersection, if one.
+			if (sub_segment_range.get_end_intersection())
+			{
+				vertex_source_infos.push_back(section_source_info);
+			}
+			// Else add the end rubber band, if one.
+			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &end_rubber_band =
+					sub_segment_range.get_end_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					vertex_source_infos.push_back(
+							get_rubber_band_vertex_source_info(end_rubber_band.get()));
+				}
+			}
+			// else no end intersection or end rubber band.
 		}
 
 
@@ -344,7 +405,11 @@ namespace GPlatesAppLogic
 						unclipped_sub_sub_segments[sub_sub_segments_index];
 
 				sub_sub_segment_start_vertex_index = sub_sub_segment_end_vertex_index;
-				sub_sub_segment_end_vertex_index += unclipped_sub_sub_segment->get_num_points_in_sub_segment();
+				sub_sub_segment_end_vertex_index +=
+						unclipped_sub_sub_segment->get_num_points_in_sub_segment(
+								// If the resolved line contains rubber band points (of its sub-segments) then we must count them here
+								// to keep in sync with 'intersection.segment_index' into the resolved line...
+								ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
 
 				// Break loop if intersected GCA segment is prior to end of current sub-sub-segment.
 				if (intersection.segment_index < sub_sub_segment_end_vertex_index - 1)
@@ -386,49 +451,108 @@ namespace GPlatesAppLogic
 				//
 				--sub_sub_segments_index;
 			}
-			// Else if the intersection is at the start of an existing sub-sub-segment then it does not
-			// split the sub-sub-segment...
-			else if (intersection.segment_index == sub_sub_segment_start_vertex_index &&
-				intersection.on_segment_start)
+			else if (ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE)
 			{
-				if (sub_sub_segments_index != 0)
+				// Else if the intersection is at the start of an existing sub-sub-segment then it does not
+				// split the sub-sub-segment...
+				if (intersection.segment_index == sub_sub_segment_start_vertex_index &&
+					intersection.on_segment_start)
 				{
-					// Sub-sub-segment does not need to be split.
+					if (sub_sub_segments_index != 0)
+					{
+						// Sub-sub-segment does not need to be split.
+						//
+						// So return index to first sub-sub-segment (if intersection on *start* of resolved line sub-segment)
+						// or one-past-last sub-sub-segment (if intersection on *end*). Same index applies in both situations.
+						return sub_sub_segments_index;
+					}
+					// Else the intersection is *on* the first vertex of the resolved line (because
+					// 'sub_sub_segments_index == 0 && sub_sub_segment_start_vertex_index == 0 && intersection.on_segment_start').
+					// In this case, which is similar to the case above where the intersection is *on* the last vertex
+					// of resolved line, it's possible to have the sub-segment (of resolved line) start at start rubber band
+					// of sub-segment and end at the first vertex of resolved line.
+					// In this case we should not exclude the first sub-sub-segment (for similar reasons noted above).
+					// So we don't return early. Note that, at the end of this function, if 'intersection' is an *end*
+					// intersection then 'sub_sub_segments_index + 1' is returned instead of 'sub_sub_segments_index'
+					// which means the sub-sub-segment (at index 'sub_sub_segments_index') is not excluded whereas it
+					// would have been if we had returned 'sub_sub_segments_index' right here.
+				}
+				// Else if intersection lies on segment joining end of last sub-sub-segment with start of current sub-sub-segment
+				// then that segment is a zero-length GCA segment that is essentially between the two adjacent sub-sub-segments...
+				else if (intersection.segment_index == sub_sub_segment_start_vertex_index - 1)
+				{
+					// It's a zero-length GCA segment, so intersection must be on start (and end) of GCA segment.
 					//
-					// So return index to first sub-sub-segment (if intersection on *start* of resolved line sub-segment)
+					// NOTE: We won't actually assert this since the numerical tolerance in the intersection code might
+					// be such that an intersection could slip *between* the start and end of GCA segment since a
+					// zero-length GCA segment itself is only required to be zero length within a numerical tolerance.
+					// Currently the numerical tolerance in the intersection code is designed to prevent this
+					// but that could change in future.
+					//
+					//GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					//		intersection.on_segment_start,
+					//		GPLATES_ASSERTION_SOURCE);
+				
+					// Return index to first sub-sub-segment (if intersection on *start* of resolved line sub-segment)
 					// or one-past-last sub-sub-segment (if intersection on *end*). Same index applies in both situations.
 					return sub_sub_segments_index;
 				}
-				// Else the intersection is *on* the first vertex of the resolved line (because
-				// 'sub_sub_segments_index == 0 && sub_sub_segment_start_vertex_index == 0 && intersection.on_segment_start').
-				// In this case, which is similar to the case above where the intersection is *on* the last vertex
-				// of resolved line, it's possible to have the sub-segment (of resolved line) start at start rubber band
-				// of sub-segment and end at the first vertex of resolved line.
-				// In this case we should not exclude the first sub-sub-segment (for similar reasons noted above).
-				// So we don't return early. Note that, at the end of this function, if 'intersection' is an *end*
-				// intersection then 'sub_sub_segments_index + 1' is returned instead of 'sub_sub_segments_index'
-				// which means the sub-sub-segment (at index 'sub_sub_segments_index') is not excluded whereas it
-				// would have been if we had returned 'sub_sub_segments_index' right here.
 			}
-			// Else if intersection lies on segment joining end of last sub-sub-segment with start of current sub-sub-segment
-			// then that segment is a zero-length GCA segment that is essentially between the two adjacent sub-sub-segments...
-			else if (intersection.segment_index == sub_sub_segment_start_vertex_index - 1)
+			else // resolved line does *not* include its sub-segment rubber band points...
 			{
-				// It's a zero-length GCA segment, so intersection must be on start (and end) of GCA segment.
+				// See if intersection is either in rubber band region joining section geometries of current and previous
+				// sub-sub-segments (if they rubber band) or is right at intersection of current and previous (if they intersect).
 				//
-				// NOTE: We won't actually assert this since the numerical tolerance in the intersection code might
-				// be such that an intersection could slip *between* the start and end of GCA segment since a
-				// zero-length GCA segment itself is only required to be zero length within a numerical tolerance.
-				// Currently the numerical tolerance in the intersection code is designed to prevent this
-				// but that could change in future.
-				//
-				//GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				//		intersection.on_segment_start,
-				//		GPLATES_ASSERTION_SOURCE);
-				
-				// Return index to first sub-sub-segment (if intersection on *start* of resolved line sub-segment)
-				// or one-past-last sub-sub-segment (if intersection on *end*). Same index applies in both situations.
-				return sub_sub_segments_index;
+				// Note 'sub_sub_segment_start_vertex_index' actually refers to the first point in (reversed) sub-sub-segment *section* geometry,
+				// not its rubber band point (when resolved line does *not* include its sub-segment rubber band points), hence the '-1'...
+				if (intersection.segment_index == sub_sub_segment_start_vertex_index - 1)
+				{
+					// See if current sub-sub-segment rubber bands with previous sub-sub-segment (ie, don't intersect)...
+					if ((unclipped_sub_sub_segments[sub_sub_segments_index]->get_use_reverse() &&
+							unclipped_sub_sub_segments[sub_sub_segments_index]->get_sub_segment().get_end_rubber_band()) ||
+						(!unclipped_sub_sub_segments[sub_sub_segments_index]->get_use_reverse() &&
+							unclipped_sub_sub_segments[sub_sub_segments_index]->get_sub_segment().get_start_rubber_band()))
+					{
+						const double intersected_rubber_band_interpolate_ratio =
+								intersection.get_interpolate_ratio_in_segment(*sub_segment_range.get_section_geometry());
+
+						// If the intersection is closer to the previous sub-sub-segment then we should refer to it
+						// instead of current sub-sub-segment (since it contains the intersection).
+						if (intersected_rubber_band_interpolate_ratio < 0.5)
+						{
+							//
+							// Need to revert back to previous sub-sub-segment.
+							//
+
+							// End of previous sub-sub-segment.
+							sub_sub_segment_end_vertex_index -=
+									unclipped_sub_sub_segments[sub_sub_segments_index]->get_num_points_in_sub_segment(
+											// If the resolved line contains rubber band points (of its sub-segments) then we must count them here
+											// to keep in sync with 'intersection.segment_index' into the resolved line...
+											ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
+
+							// This should never become negative since it's not possible to get here for the first sub-sub-segment
+							// (because that would require 'intersection.segment_index' to be '-1').
+							--sub_sub_segments_index;
+
+							// Start of previous sub-sub-segment.
+							sub_sub_segment_start_vertex_index = sub_sub_segment_end_vertex_index -
+									unclipped_sub_sub_segments[sub_sub_segments_index]->get_num_points_in_sub_segment(
+											// If the resolved line contains rubber band points (of its sub-segments) then we must count them here
+											// to keep in sync with 'intersection.segment_index' into the resolved line...
+											ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
+						}
+					}
+					else // Current sub-sub-segment intersects previous sub-sub-segment (ie, no rubber banding)...
+					{
+						// Intersection lies on segment joining end of last sub-sub-segment with start of current sub-sub-segment
+						// then that segment is a zero-length GCA segment that is essentially between the two adjacent sub-sub-segments...
+						//
+						// Return index to first sub-sub-segment (if intersection on *start* of resolved line sub-segment)
+						// or one-past-last sub-sub-segment (if intersection on *end*). Same index applies in both situations.
+						return sub_sub_segments_index;
+					}
+				}
 			}
 
 			// Use the *unclipped* sub-sub-segment range when transferring 'intersection' from
@@ -467,62 +591,144 @@ namespace GPlatesAppLogic
 				new_start_or_end_of_clipped_sub_sub_segment = &end_of_clipped_sub_sub_segment;
 			}
 
-			// See if intersection is in start rubber band GCA segment (joining rubber band point and start of section geometry).
 			if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &
 				unclipped_sub_sub_segment_start_rubber_band = unclipped_sub_sub_segment_range.get_start_rubber_band())
 			{
-				if (sub_sub_segment_reversed)
+				if (ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE)
 				{
-					if (intersection.segment_index == sub_sub_segment_end_vertex_index - 2)
+					// See if intersection is in start rubber band GCA segment (joining rubber band point and start of section geometry).
+					if (sub_sub_segment_reversed)
 					{
-						// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
-						// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
-						*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
-								ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
-										unclipped_sub_sub_segment_start_rubber_band.get(),
-										intersection.position));
+						// 'sub_sub_segment_end_vertex_index - 1' refers to start rubber band point (at end of reversed sub-sub-segment),
+						// and the extra '-1' refers to the segment index *before* it.
+						if (intersection.segment_index == sub_sub_segment_end_vertex_index - 2)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_start_rubber_band.get(),
+											intersection.position));
+						}
+					}
+					else
+					{
+						// 'sub_sub_segment_start_vertex_index' refers to start rubber band point (at start of sub-sub-segment),
+						// and the index of segment *after* it.
+						if (intersection.segment_index == sub_sub_segment_start_vertex_index)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_start_rubber_band.get(),
+											intersection.position));
+						}
 					}
 				}
-				else
+				else // resolved line does *not* include its sub-segment rubber band points...
 				{
-					if (intersection.segment_index == sub_sub_segment_start_vertex_index)
+					// See if intersection is in start rubber band region joining start of section geometry and adjacent section.
+					if (sub_sub_segment_reversed)
 					{
-						// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
-						// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
-						*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+						// 'sub_sub_segment_end_vertex_index - 1' refers to the first point in section geometry (at end of reversed sub-sub-segment),
+						// not its rubber band point (because resolved line does *not* include its sub-segment rubber band points),
+						// and also refers to its start rubber band segment (at end of reversed sub-sub-segment).
+						if (intersection.segment_index == sub_sub_segment_end_vertex_index - 1)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
 								ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
-										unclipped_sub_sub_segment_start_rubber_band.get(),
-										intersection.position));
+									unclipped_sub_sub_segment_start_rubber_band.get(),
+									intersection.position));
+						}
+					}
+					else
+					{
+						// 'sub_sub_segment_start_vertex_index' refers to the first point in section geometry (at start of sub-sub-segment),
+						// not its rubber band point (because resolved line does *not* include its sub-segment rubber band points),
+						// and the '-1' refers to the segment index *before* it (start rubber band segment at start of sub-sub-segment).
+						if (intersection.segment_index == sub_sub_segment_start_vertex_index - 1)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_start_rubber_band.get(),
+											intersection.position));
+						}
 					}
 				}
 			}
 
-			// See if intersection is in end rubber band GCA segment (joining end of section geometry and rubber band point).
 			if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &
 				unclipped_sub_sub_segment_end_rubber_band = unclipped_sub_sub_segment_range.get_end_rubber_band())
 			{
-				if (sub_sub_segment_reversed)
+				if (ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE)
 				{
-					if (intersection.segment_index == sub_sub_segment_start_vertex_index)
+					// See if intersection is in end rubber band GCA segment (joining end of section geometry and rubber band point).
+					if (sub_sub_segment_reversed)
 					{
-						// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
-						// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
-						*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
-								ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
-										unclipped_sub_sub_segment_end_rubber_band.get(),
-										intersection.position));
+						// 'sub_sub_segment_start_vertex_index' refers to end rubber band point (at start of reversed sub-sub-segment),
+						// and the index of segment *after* it.
+						if (intersection.segment_index == sub_sub_segment_start_vertex_index)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_end_rubber_band.get(),
+											intersection.position));
+						}
+					}
+					else
+					{
+						// 'sub_sub_segment_end_vertex_index - 1' refers to end rubber band point (at end of sub-sub-segment),
+						// and the extra '-1' refers to the segment index *before* it.
+						if (intersection.segment_index == sub_sub_segment_end_vertex_index - 2)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_end_rubber_band.get(),
+											intersection.position));
+						}
 					}
 				}
-				else
+				else // resolved line does *not* include its sub-segment rubber band points...
 				{
-					if (intersection.segment_index == sub_sub_segment_end_vertex_index - 2)
+					// See if intersection is in end rubber band region joining end of section geometry and adjacent section.
+					if (sub_sub_segment_reversed)
 					{
-						// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
-						// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
-						*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+						// 'sub_sub_segment_start_vertex_index' refers to the last point in section geometry (at start of reversed sub-sub-segment),
+						// not its rubber band point (because resolved line does *not* include its sub-segment rubber band points),
+						// and the '-1' refers to the segment index *before* it (end rubber band segment at start of reversed sub-sub-segment).
+						if (intersection.segment_index == sub_sub_segment_start_vertex_index - 1)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+									ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
+											unclipped_sub_sub_segment_end_rubber_band.get(),
+											intersection.position));
+						}
+					}
+					else
+					{
+						// 'sub_sub_segment_end_vertex_index - 1' refers to the last point in section geometry (at end of sub-sub-segment),
+						// not its rubber band point (because resolved line does *not* include its sub-segment rubber band points),
+						// and also refers to its end rubber band segment (at end of sub-sub-segment).
+						if (intersection.segment_index == sub_sub_segment_end_vertex_index - 1)
+						{
+							// Create the rubber-band position in the sub-sub-segment. This essentially transfers the intersection
+							// from the resolved line sub-segment to a new rubber-band of one of its sub-sub-segments.
+							*new_start_or_end_of_clipped_sub_sub_segment = ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
 								ResolvedSubSegmentRangeInSection::RubberBand::create_from_intersected_rubber_band(
-										unclipped_sub_sub_segment_end_rubber_band.get(),
-										intersection.position));
+									unclipped_sub_sub_segment_end_rubber_band.get(),
+									intersection.position));
+						}
 					}
 				}
 			}
@@ -561,13 +767,16 @@ namespace GPlatesAppLogic
 					segment_index_in_sub_sub_segment_geometry = intersection.segment_index - sub_sub_segment_start_vertex_index;
 				}
 
-				// If has a start rubber band then first GCA segment belongs to that (not the actual section geometry).
-				if (unclipped_sub_sub_segment_range.get_start_rubber_band())
+				if (ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE)
 				{
-					// Note that we've already checked above that intersection is not within the start rubber band GCA segment.
-					// If it was we wouldn't be able to get here due to 'if (!*new_start_or_end_of_clipped_sub_sub_segment)' test.
-					// So this decrement shouldn't result in a negative index.
-					--segment_index_in_sub_sub_segment_geometry;
+					// If has a start rubber band then first GCA segment belongs to that (not the actual section geometry).
+					if (unclipped_sub_sub_segment_range.get_start_rubber_band())
+					{
+						// Note that we've already checked above that intersection is not within the start rubber band GCA segment.
+						// If it was we wouldn't be able to get here due to 'if (!*new_start_or_end_of_clipped_sub_sub_segment)' test.
+						// So this decrement shouldn't result in a negative index.
+						--segment_index_in_sub_sub_segment_geometry;
+					}
 				}
 
 				// The index of the GCA segment within the section geometry.
@@ -704,56 +913,42 @@ void
 GPlatesAppLogic::ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_infos(
 		resolved_vertex_source_info_seq_type &vertex_source_infos,
 		const ResolvedSubSegmentRangeInSection &sub_segment_range,
-		ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry)
+		ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
+		bool include_rubber_band_points)
 {
 	// Allocate some space (to avoid re-allocations when adding).
-	vertex_source_infos.reserve(vertex_source_infos.size() + sub_segment_range.get_num_points());
+	vertex_source_infos.reserve(
+			vertex_source_infos.size() + sub_segment_range.get_num_points(include_rubber_band_points));
 
-	// Add the start intersection, if one.
-	if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection =
-		sub_segment_range.get_start_intersection())
+	// 'section_reconstruction_geometry' is either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
+	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> section_reconstructed_feature_geometry =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(section_reconstruction_geometry);
+	if (section_reconstructed_feature_geometry)
 	{
-		vertex_source_infos.push_back(
-				get_intersection_vertex_source_info(
-						start_intersection.get(),
-						sub_segment_range.get_section_geometry(),
-						section_reconstruction_geometry));
+		get_reconstructed_feature_geometry_sub_segment_vertex_source_infos(
+				vertex_source_infos,
+				sub_segment_range,
+				section_reconstructed_feature_geometry.get(),
+				include_rubber_band_points);
 	}
-	// Else add the start rubber band, if one.
-	else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band =
-			sub_segment_range.get_start_rubber_band())
+	else // resolved topological line...
 	{
-		vertex_source_infos.push_back(
-				get_rubber_band_vertex_source_info(start_rubber_band.get()));
-	}
-	// else no start intersection or start rubber band.
+		boost::optional<ResolvedTopologicalLine::non_null_ptr_to_const_type> section_resolved_topological_line =
+				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						ResolvedTopologicalLine::non_null_ptr_to_const_type>(section_reconstruction_geometry);
 
-	// Add the source infos for those section vertices contributing to the sub-segment.
-	// If there are start/end intersections then these are the vertices after/before those intersections.
-	get_section_vertex_source_info_range(
-			vertex_source_infos,
-			section_reconstruction_geometry,
-			sub_segment_range.get_start_section_vertex_index(),
-			sub_segment_range.get_end_section_vertex_index());
+		// Section reconstruction geometry must either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				section_resolved_topological_line,
+				GPLATES_ASSERTION_SOURCE);
 
-	// Add the end intersection, if one.
-	if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_intersection =
-		sub_segment_range.get_end_intersection())
-	{
-		vertex_source_infos.push_back(
-				get_intersection_vertex_source_info(
-						end_intersection.get(),
-						sub_segment_range.get_section_geometry(),
-						section_reconstruction_geometry));
+		get_resolved_topological_line_sub_segment_vertex_source_infos(
+				vertex_source_infos,
+				sub_segment_range,
+				section_resolved_topological_line.get(),
+				include_rubber_band_points);
 	}
-	// Else add the end rubber band, if one.
-	else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &end_rubber_band =
-			sub_segment_range.get_end_rubber_band())
-	{
-		vertex_source_infos.push_back(
-				get_rubber_band_vertex_source_info(end_rubber_band.get()));
-	}
-	// else no end intersection or end rubber band.
 }
 
 

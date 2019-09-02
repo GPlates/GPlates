@@ -429,16 +429,24 @@ namespace GPlatesAppLogic
 		 * The returned data is non-null since T-junctions, V-junctions and cases like
 		 * adjacent sections intersecting this section at the same point will all return
 		 * a point geometry (intersection point).
+		 *
+		 * Note that we always include rubber band points (if any) in the returned geometry,
+		 * otherwise it would be possible to have no geometry points (see @a get_geometry_points).
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		get_geometry(
-				bool include_rubber_band_points = true) const;
+		get_geometry() const;
 
 
 		/**
 		 * Returns the (unreversed) geometry points.
 		 *
 		 * Does not clear @a geometry_points - just appends points.
+		 *
+		 * Note that it's possible to have no geometry points if @a include_rubber_band_points is false.
+		 * This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
+		 * start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
+		 * is only made up of two rubber band points which, if excluded, would result in no points).
+		 * Note that this only applies when both rubber band points are on the same side of the section geometry.
 		 */
 		void
 		get_geometry_points(
@@ -452,6 +460,8 @@ namespace GPlatesAppLogic
 		 * otherwise they are a reversed version of @a get_geometry_points.
 		 *
 		 * Does not clear @a geometry_points - just appends points.
+		 *
+		 * Note that it's possible to have no geometry points if @a include_rubber_band_points is false (see @a get_geometry_points).
 		 */
 		void
 		get_reversed_geometry_points(
@@ -464,6 +474,10 @@ namespace GPlatesAppLogic
 		 * Return the start and end points of the sub-segment range in the section.
 		 *
 		 * If there are start and/or end intersections or rubber bands then these will be start and/or end points.
+		 *
+		 * Note that if @a include_rubber_band_points is false and both rubber band points are on the same side
+		 * of the section geometry then we would normally end up with no sub-segment points. However in this case
+		 * we revert to returning the end points of the section geometry.
 		 */
 		std::pair<GPlatesMaths::PointOnSphere/*start point*/, GPlatesMaths::PointOnSphere/*end point*/>
 		get_end_points(
@@ -476,6 +490,10 @@ namespace GPlatesAppLogic
 		 *
 		 * These are @a get_end_points if @a use_reverse is false,
 		 * otherwise they are a reversed version of @a get_end_points.
+		 *
+		 * Note that if @a include_rubber_band_points is false and both rubber band points are on the same side
+		 * of the section geometry then we would normally end up with no sub-segment points. However in this case
+		 * we revert to returning the end points of the section geometry.
 		 */
 		std::pair<GPlatesMaths::PointOnSphere/*start point*/, GPlatesMaths::PointOnSphere/*end point*/>
 		get_reversed_end_points(
@@ -485,26 +503,12 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Return the number of points in the sub-segment (including optional intersection or rubber band points).
+		 *
+		 * Note that it's possible to return zero if @a include_rubber_band_points is false (see @a get_geometry_points).
 		 */
 		unsigned int
 		get_num_points(
-				bool include_rubber_band_points = true) const
-		{
-			unsigned int num_points = d_end_section_vertex_index - d_start_section_vertex_index;
-
-			if (d_start_intersection ||
-				(include_rubber_band_points && d_start_rubber_band))
-			{
-				++num_points;
-			}
-			if (d_end_intersection ||
-				(include_rubber_band_points && d_end_rubber_band))
-			{
-				++num_points;
-			}
-
-			return num_points;
-		}
+				bool include_rubber_band_points = true) const;
 
 
 		/**

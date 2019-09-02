@@ -199,10 +199,9 @@ namespace GPlatesAppLogic
 
 		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		get_sub_segment_geometry(
-				bool include_rubber_band_points = true) const
+		get_sub_segment_geometry() const
 		{
-			return get_sub_segment_range_in_section().get_geometry(include_rubber_band_points);
+			return get_sub_segment_range_in_section().get_geometry();
 		}
 
 		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.

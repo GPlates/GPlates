@@ -164,9 +164,10 @@ namespace GPlatesAppLogic
 		 * Return the number of points in the sub-segment geometry.
 		 */
 		unsigned int
-		get_num_points_in_sub_segment() const
+		get_num_points_in_sub_segment(
+				bool include_rubber_band_points = true) const
 		{
-			return d_sub_segment.get_num_points();
+			return d_sub_segment.get_num_points(include_rubber_band_points);
 		}
 
 		/**
@@ -181,9 +182,10 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_sub_segment_points(
-				std::vector<GPlatesMaths::PointOnSphere> &geometry_points) const
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+				bool include_rubber_band_points = true) const
 		{
-			d_sub_segment.get_geometry_points(geometry_points);
+			d_sub_segment.get_geometry_points(geometry_points, include_rubber_band_points);
 		}
 
 		/**
@@ -196,9 +198,10 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_reversed_sub_segment_points(
-				std::vector<GPlatesMaths::PointOnSphere> &geometry_points) const
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
+				bool include_rubber_band_points = true) const
 		{
-			d_sub_segment.get_reversed_geometry_points(geometry_points, d_use_reverse);
+			d_sub_segment.get_reversed_geometry_points(geometry_points, d_use_reverse, include_rubber_band_points);
 		}
 
 
@@ -215,7 +218,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_sub_segment_point_source_infos(
-				resolved_vertex_source_info_seq_type &point_source_infos) const;
+				resolved_vertex_source_info_seq_type &point_source_infos,
+				bool include_rubber_band_points = true) const;
 
 		/**
 		 * Same as @a get_sub_segment_point_source_infos but reverses them if necessary such that they are in the
@@ -226,7 +230,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_reversed_sub_segment_point_source_infos(
-				resolved_vertex_source_info_seq_type &point_source_infos) const;
+				resolved_vertex_source_info_seq_type &point_source_infos,
+				bool include_rubber_band_points = true) const;
 
 
 		/**

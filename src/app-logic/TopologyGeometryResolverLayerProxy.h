@@ -763,7 +763,8 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				VelocityDeltaTime::Type velocity_delta_time_type,
 				const double &velocity_delta_time,
-				const ReconstructHandle::type &reconstruct_handle);
+				const ReconstructHandle::type &reconstruct_handle,
+				bool include_sub_segment_rubber_band_points);
 	};
 }
 

@@ -420,7 +420,7 @@ GPlatesMaths::PolygonOnSphere::get_exterior_ring_arc_length() const
 
 const GPlatesMaths::real_t &
 GPlatesMaths::PolygonOnSphere::get_interior_ring_arc_length(
-		size_type interior_ring_index) const
+		unsigned int interior_ring_index) const
 {
 	if (!d_cached_calculations)
 	{
@@ -779,7 +779,7 @@ GPlatesMaths::PolygonOnSphere::get_exterior_ring_bounding_tree() const
 
 const GPlatesMaths::PolygonOnSphere::ring_bounding_tree_type &
 GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
-		size_type interior_ring_index) const
+		unsigned int interior_ring_index) const
 {
 	if (!d_cached_calculations)
 	{

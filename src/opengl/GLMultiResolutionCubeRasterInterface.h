@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTERINTERFACE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTERINTERFACE_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -229,7 +228,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension passed into constructor.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const = 0;
 
 

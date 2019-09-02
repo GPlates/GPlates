@@ -35,6 +35,7 @@
 #include <CGAL/Origin.h> // Must come before <CGAL/barycenter.h> since it uses it but doesn't define it.
 #include <CGAL/barycenter.h>
 #include <CGAL/centroid.h>
+#include <CGAL/number_utils.h>
 
 #include <QDebug>
 
@@ -213,7 +214,7 @@ namespace GPlatesAppLogic
 						value.second,
 						GPLATES_ASSERTION_SOURCE);
 
-				result = result + value.first * (coords_iter->second * inv_norm);
+				result = result + value.first * CGAL::to_double(coords_iter->second * inv_norm);
 			}
 
 			return result;

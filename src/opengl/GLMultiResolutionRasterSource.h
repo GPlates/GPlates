@@ -67,7 +67,7 @@ namespace GPlatesOpenGL
 		 * This size gives us a small enough tile region on the globe to make good use
 		 * of view frustum culling of tiles.
 		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
+		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
 
 
 		virtual

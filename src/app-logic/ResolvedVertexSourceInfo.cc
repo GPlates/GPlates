@@ -77,6 +77,13 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::get_velocity_vector(
 }
 
 
+GPlatesAppLogic::ReconstructionTreeCreator
+GPlatesAppLogic::ResolvedVertexSourceInfo::get_reconstruction_tree_creator() const
+{
+	return boost::apply_visitor(GetReconstructionTreeCreatorVisitor(), d_source);
+}
+
+
 bool
 GPlatesAppLogic::ResolvedVertexSourceInfo::operator==(
 		const ResolvedVertexSourceInfo &rhs) const
@@ -239,4 +246,12 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::EqualityVisitor::operator()(
 			(GPlatesMaths::are_almost_exactly_equal(lhs.interpolate_ratio, 1.0 - rhs.interpolate_ratio) &&
 				boost::apply_visitor(EqualityVisitor(), lhs.source_info1->d_source, rhs.source_info2->d_source) &&
 				boost::apply_visitor(EqualityVisitor(), lhs.source_info2->d_source, rhs.source_info1->d_source));
+}
+
+bool
+GPlatesAppLogic::ResolvedVertexSourceInfo::EqualityVisitor::operator()(
+		const StageRotation &lhs,
+		const StageRotation &rhs) const
+{
+	return lhs.stage_rotation.unit_quat() == rhs.stage_rotation.unit_quat();
 }

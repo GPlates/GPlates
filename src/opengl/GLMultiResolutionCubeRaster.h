@@ -27,7 +27,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTER_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTER_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -173,7 +172,7 @@ namespace GPlatesOpenGL
 		 * This size gives us a small enough tile region on the globe to make good use
 		 * of view frustum culling of tiles.
 		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
+		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
 
 
 		/**
@@ -233,7 +232,7 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &source_multi_resolution_raster,
-				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
 				bool adapt_tile_dimension_to_source_resolution = true,
 				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES)
@@ -311,7 +310,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension passed into constructor.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_tile_texel_dimension;
@@ -394,7 +393,7 @@ namespace GPlatesOpenGL
 		 * Also note that depth (of cube quad tree) and source level-of-detail (LOD) are the inverse
 		 * of each other - an LOD of zero corresponds to a depth of 'get_num_levels_of_detail() - 1'.
 		 */
-		std::size_t
+		unsigned int
 		get_num_levels_of_detail() const
 		{
 			return d_num_source_levels_of_detail_used;
@@ -559,7 +558,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
-		std::size_t d_tile_texel_dimension;
+		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * The texture filtering mode (for fixed-point textures) returned by @a get_tile_texture.
@@ -589,7 +588,7 @@ namespace GPlatesOpenGL
 		 * NOTE: This can be less than that returned by our source raster
 		 * - ie, by 'GLMultiResolutionRaster::get_num_levels_of_detail()'.
 		 */
-		std::size_t d_num_source_levels_of_detail_used;
+		unsigned int d_num_source_levels_of_detail_used;
 
 		/**
 		 * The transform to use when rendering into the cube quad tree tiles.
@@ -604,7 +603,7 @@ namespace GPlatesOpenGL
 		GLMultiResolutionCubeRaster(
 				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
-				std::size_t initial_tile_texel_dimension,
+				unsigned int initial_tile_texel_dimension,
 				bool adapt_tile_dimension_to_source_resolution,
 				FixedPointTextureFilterType fixed_point_texture_filter,
 				CacheTileTexturesType cache_tile_textures);

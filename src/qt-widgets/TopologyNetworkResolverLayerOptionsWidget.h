@@ -96,6 +96,15 @@ namespace GPlatesQtWidgets
 		handle_strain_rate_clamping_line_editing_finished();
 
 		void
+		handle_rift_exponential_stretching_constant_line_editing_finished();
+
+		void
+		handle_rift_strain_rate_resolution_line_editing_finished();
+
+		void
+		handle_rift_edge_length_threshold_line_editing_finished();
+
+		void
 		handle_fill_rigid_blocks_clicked();
 
 		void
@@ -178,6 +187,9 @@ namespace GPlatesQtWidgets
 		OpenFileDialog d_open_file_dialog;
 
 		QDoubleValidator *d_clamp_strain_rate_line_edit_double_validator;
+		QDoubleValidator *d_rift_strain_rate_resolution_line_edit_double_validator;
+		QDoubleValidator *d_rift_exponential_stretching_constant_line_edit_double_validator;
+		QDoubleValidator *d_rift_edge_length_threshold_line_edit_double_validator;
 
 		FriendlyLineEdit *d_dilatation_palette_filename_lineedit;
 		ColourScaleWidget *d_dilatation_colour_scale_widget;
@@ -195,21 +207,24 @@ namespace GPlatesQtWidgets
 
 		GPlatesQtWidgets::InformationDialog *d_help_strain_rate_smoothing_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_strain_rate_clamping_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_rift_exponential_stretching_constant_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_rift_strain_rate_resolution_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_rift_edge_length_threshold_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_triangulation_colour_mode_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_triangulation_draw_mode_dialog;
 
 
-		//! Used to scale min/max dilatation values into their spinboxes.
-		static const double DILATATION_SCALE;
-		//! Used to scale min/max second invariant values into their spinboxes.
-		static const double SECOND_INVARIANT_SCALE;
-		//! Used to scale clamped second invariant value into its line edit box.
-		static const double CLAMP_SECOND_INVARIANT_SCALE;
-		// Min/max range for scaled clamped second invariant value.
-		static const double CLAMP_SECOND_INVARIANT_SCALED_MIN;
-		static const double CLAMP_SECOND_INVARIANT_SCALED_MAX;
-		//! Number of decimal places for scaled clamped second invariant value.
-		static const int CLAMP_SECOND_INVARIANT_SCALED_DECIMAL_PLACES;
+		//! Used to scale min/max strain rate values into their spinboxes.
+		static const double STRAIN_RATE_SCALE;
+		// Min/max range for scaled strain rate values.
+		static const double SCALED_STRAIN_RATE_MIN;
+		static const double SCALED_STRAIN_RATE_MAX;
+		//! Number of decimal places for scaled strain rate values.
+		static const int SCALED_STRAIN_RATE_DECIMAL_PLACES;
+		//! Number of decimal places for rift exponential stretching constant values.
+		static const int RIFT_EXPONENTIAL_STRETCHING_CONSTANT_DECIMAL_PLACES;
+		//! Number of decimal places for rift edge length threshold values.
+		static const int RIFT_EDGE_LENGTH_THRESHOLD_DECIMAL_PLACES;
 	};
 }
 

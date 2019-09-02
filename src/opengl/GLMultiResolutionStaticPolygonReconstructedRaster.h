@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONSTATICPOLYGONRECONSTRUCTEDRASTER_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONSTATICPOLYGONRECONSTRUCTEDRASTER_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
@@ -250,7 +249,7 @@ namespace GPlatesOpenGL
 		 * See base class for more details.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_num_levels_of_detail() const
 		{
 			return d_source_raster->get_num_levels_of_detail();
@@ -313,7 +312,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension of this raster which is also the tile texel dimension
 		 * of the source cube raster.
 		 */
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_source_raster_tile_texel_dimension;

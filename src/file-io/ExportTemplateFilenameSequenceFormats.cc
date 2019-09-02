@@ -254,7 +254,7 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_fo
 		// First round the reconstruction time to the nearest integer.
 		// Note that reconstruction_time is always positive (need to know this since
 		// static_cast truncates towards zero).
-		const int reconstruction_time_int = static_cast<const int>(reconstruction_time + 0.5);
+		const int reconstruction_time_int = static_cast<int>(reconstruction_time + 0.5);
 		return QString().sprintf(d_format_string.c_str(), reconstruction_time_int);
 	}
 	else

@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERECONSTRUCTEDRASTER_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERECONSTRUCTEDRASTER_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -194,7 +193,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_tile_texel_dimension;
@@ -373,7 +372,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
-		std::size_t d_tile_texel_dimension;
+		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * Cache of tile textures.

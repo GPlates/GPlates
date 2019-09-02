@@ -1390,7 +1390,7 @@ namespace GPlatesApi
 				typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
 				PolyGeometryOnSphereVertexConstIteratorType vertex_begin,
 				PolyGeometryOnSphereVertexConstIteratorType vertex_end,
-				typename PolyGeometryOnSphereType::size_type number_of_vertices) :
+				unsigned int number_of_vertices) :
 			d_poly_geometry_on_sphere(poly_geometry_on_sphere),
 			d_vertex_begin(vertex_begin),
 			d_vertex_end(vertex_end),
@@ -1411,7 +1411,7 @@ namespace GPlatesApi
 			return d_vertex_end;
 		}
 
-		typename PolyGeometryOnSphereType::size_type
+		unsigned int
 		get_number_of_points() const
 		{
 			return d_number_of_vertices;
@@ -1501,7 +1501,7 @@ namespace GPlatesApi
 		const_iterator d_vertex_begin;
 		const_iterator d_vertex_end;
 
-		typename PolyGeometryOnSphereType::size_type d_number_of_vertices;
+		unsigned int d_number_of_vertices;
 	};
 
 	//! Typedef for PolylineOnSphere points view.
@@ -1594,7 +1594,7 @@ namespace GPlatesApi
 				typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
 				PolyGeometryOnSphereConstIteratorType begin_,
 				PolyGeometryOnSphereConstIteratorType end_,
-				typename PolyGeometryOnSphereType::size_type number_of_segments) :
+				unsigned int number_of_segments) :
 			d_poly_geometry_on_sphere(poly_geometry_on_sphere),
 			d_begin(begin_),
 			d_end(end_),
@@ -1615,7 +1615,7 @@ namespace GPlatesApi
 			return d_end;
 		}
 
-		typename PolyGeometryOnSphereType::size_type
+		unsigned int
 		get_number_of_arcs() const
 		{
 			return d_number_of_segments;
@@ -1704,7 +1704,7 @@ namespace GPlatesApi
 		const_iterator d_begin;
 		const_iterator d_end;
 
-		typename PolyGeometryOnSphereType::size_type d_number_of_segments;
+		unsigned int d_number_of_segments;
 	};
 
 	//! Typedef for PolylineOnSphere arcs view.

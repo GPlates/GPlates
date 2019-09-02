@@ -54,6 +54,9 @@
 #include "property-values/OldVersionPropertyValue.h"
 #include "property-values/StructuralType.h"
 
+#include "utils/UnicodeStringUtils.h"
+
+
 namespace GPlatesFileIO
 {
 	namespace
@@ -243,11 +246,11 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 	// Get the GPGIM feature properties associated with our feature class (and not its ancestors).
 	// The ancestor properties are taken care of by the parent feature class.
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties =
-			original_gpgim_feature_class.get()->get_feature_properties_excluding_ancestor_classes();
+			original_gpgim_feature_class->get_feature_properties_excluding_ancestor_classes();
 
 	// We'll need to update the default GPGIM geometry property.
 	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_original_gpgim_geometry_property =
-			original_gpgim_feature_class.get()->get_default_geometry_feature_property_excluding_ancestor_classes();
+			original_gpgim_feature_class->get_default_geometry_feature_property_excluding_ancestor_classes();
 	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property;
 
 	// Find GPGIM feature property(s) with matching property name(s).
@@ -290,12 +293,12 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 
 	// Create the GPGIM feature class with the old-name GPGIM property(s).
 	return GPlatesModel::GpgimFeatureClass::create(
-			original_gpgim_feature_class.get()->get_feature_type(),
-			original_gpgim_feature_class.get()->get_feature_description(),
+			original_gpgim_feature_class->get_feature_type(),
+			original_gpgim_feature_class->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
 			default_gpgim_geometry_property,
-			original_gpgim_feature_class.get()->get_parent_feature_class());
+			original_gpgim_feature_class->get_parent_feature_class());
 }
 
 
@@ -322,6 +325,36 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::create_property_rename_feature_reader_imp
 
 
 GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type
+GPlatesFileIO::GpmlUpgradeReaderUtils::add_gpgim_feature_class_properties(
+		const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &original_gpgim_feature_class,
+		const std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &properties)
+{
+	//
+	// Copy the GPGIM feature class but add the specified GPGIM properties.
+	//
+
+	// Get the GPGIM feature properties associated with our feature class (and not its ancestors).
+	// The ancestor properties are taken care of by the parent feature class.
+	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties =
+			original_gpgim_feature_class->get_feature_properties_excluding_ancestor_classes();
+
+	BOOST_FOREACH(const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &property, properties)
+	{
+		gpgim_feature_properties.push_back(property);
+	}
+
+	// Create the GPGIM feature class with the removed GPGIM property(s).
+	return GPlatesModel::GpgimFeatureClass::create(
+			original_gpgim_feature_class->get_feature_type(),
+			original_gpgim_feature_class->get_feature_description(),
+			gpgim_feature_properties.begin(),
+			gpgim_feature_properties.end(),
+			original_gpgim_feature_class->get_default_geometry_feature_property_excluding_ancestor_classes(),
+			original_gpgim_feature_class->get_parent_feature_class());
+}
+
+
+GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type
 GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 		const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &original_gpgim_feature_class,
 		const std::vector<GPlatesModel::PropertyName> &property_names)
@@ -333,10 +366,10 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 	// Get the GPGIM feature properties associated with our feature class (and not its ancestors).
 	// The ancestor properties are taken care of by the parent feature class.
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties =
-			original_gpgim_feature_class.get()->get_feature_properties_excluding_ancestor_classes();
+			original_gpgim_feature_class->get_feature_properties_excluding_ancestor_classes();
 
 	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property =
-			original_gpgim_feature_class.get()->get_default_geometry_feature_property_excluding_ancestor_classes();
+			original_gpgim_feature_class->get_default_geometry_feature_property_excluding_ancestor_classes();
 
 	// Find GPGIM feature property(s) with matching property name(s).
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type::iterator gpgim_feature_property_iter =
@@ -378,12 +411,31 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 
 	// Create the GPGIM feature class with the removed GPGIM property(s).
 	return GPlatesModel::GpgimFeatureClass::create(
-			original_gpgim_feature_class.get()->get_feature_type(),
-			original_gpgim_feature_class.get()->get_feature_description(),
+			original_gpgim_feature_class->get_feature_type(),
+			original_gpgim_feature_class->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
 			default_gpgim_geometry_property,
-			original_gpgim_feature_class.get()->get_parent_feature_class());
+			original_gpgim_feature_class->get_parent_feature_class());
+}
+
+
+GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type
+GPlatesFileIO::GpmlUpgradeReaderUtils::create_property_remove_feature_reader_impl(
+		const GpmlFeatureReaderImpl::non_null_ptr_type &parent_feature_reader_impl,
+		const std::vector<GPlatesModel::PropertyName> &property_names)
+{
+	GpmlFeatureReaderImpl::non_null_ptr_type feature_reader_impl = parent_feature_reader_impl;
+
+	// For each property rename, chain a new rename property feature reader impl into the list of readers.
+	BOOST_FOREACH(const GPlatesModel::PropertyName &property_name, property_names)
+	{
+		// Create a feature reader impl that removes feature properties matching the current property name.
+		// This also builds a chain of feature readers - one link for each property remove.
+		feature_reader_impl = RemovePropertyFeatureReaderImpl::create(property_name, feature_reader_impl);
+	}
+
+	return feature_reader_impl;
 }
 
 
@@ -431,6 +483,46 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RenamePropertyFeatureReaderImpl::read_fea
 	else
 	{
 		append_reader_errors(error_code, feature_xml_element, reader_params);
+	}
+
+	return feature;
+}
+
+
+GPlatesFileIO::GpmlUpgradeReaderUtils::RemovePropertyFeatureReaderImpl::RemovePropertyFeatureReaderImpl(
+		const GPlatesModel::PropertyName &property_name,
+		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader) :
+	d_feature_reader(feature_reader),
+	d_property_name(property_name)
+{
+}
+
+
+GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesFileIO::GpmlUpgradeReaderUtils::RemovePropertyFeatureReaderImpl::read_feature(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+		xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+		GpmlReaderUtils::ReaderParams &reader_params) const
+{
+	// Read the feature.
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+			d_feature_reader->read_feature(
+					feature_xml_element,
+					unprocessed_feature_property_xml_nodes,
+					reader_params);
+
+	// Remove all properties matching our property name.
+	GPlatesModel::FeatureHandle::iterator feature_properties_iter = feature->begin();
+	GPlatesModel::FeatureHandle::iterator feature_properties_end = feature->end();
+	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
+	{
+		if (d_property_name == (*feature_properties_iter)->get_property_name())
+		{
+			feature->remove(feature_properties_iter);
+
+			// The file we read from will not have this property removed.
+			reader_params.contains_unsaved_changes = true;
+		}
 	}
 
 	return feature;
@@ -489,7 +581,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	// We could have searched for a 'gpml:network' property name instead but property names
 	// are far more likely to change across GPGIM revisions than property types.
 	const GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type &original_gpgim_feature_properties =
-			original_gpgim_feature_class.get()->get_feature_properties_excluding_ancestor_classes();
+			original_gpgim_feature_class->get_feature_properties_excluding_ancestor_classes();
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &original_gpgim_feature_property,
 			original_gpgim_feature_properties)

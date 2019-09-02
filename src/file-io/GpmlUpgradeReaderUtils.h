@@ -63,7 +63,6 @@ namespace GPlatesFileIO
 			GPlatesModel::PropertyName new_property_name;
 		};
 
-
 		/**
 		 * Copy the specified GPGIM feature class, but change the specified property names.
 		 *
@@ -74,7 +73,6 @@ namespace GPlatesFileIO
 		rename_gpgim_feature_class_properties(
 				const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &feature_class,
 				const std::vector<PropertyRename> &property_renames);
-
 
 		/**
 		 * Creates a feature reader impl that reads a feature using @a feature_read_impl and then
@@ -87,12 +85,31 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Copy the specified GPGIM feature class, but add the specified GPGIM properties.
+		 *
+		 * This enables a feature reader to read those properties so they can later be removed from a feature.
+		 */
+		GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type
+		add_gpgim_feature_class_properties(
+				const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &feature_class,
+				const std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &properties);
+
+		/**
 		 * Copy the specified GPGIM feature class, but remove GPGIM properties matching
 		 * the specified property names.
 		 */
 		GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type
 		remove_gpgim_feature_class_properties(
 				const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &feature_class,
+				const std::vector<GPlatesModel::PropertyName> &property_names);
+
+		/**
+		 * Creates a feature reader impl that reads a feature using @a feature_read_impl and then
+		 * removes feature properties matching the specified property names.
+		 */
+		GpmlFeatureReaderImpl::non_null_ptr_type
+		create_property_remove_feature_reader_impl(
+				const GpmlFeatureReaderImpl::non_null_ptr_type &feature_reader_impl,
 				const std::vector<GPlatesModel::PropertyName> &property_names);
 
 
@@ -157,6 +174,68 @@ namespace GPlatesFileIO
 			RenamePropertyFeatureReaderImpl(
 					const GPlatesModel::PropertyName &from_property_name,
 					const GPlatesModel::PropertyName &to_property_name,
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader);
+
+		};
+
+
+		/**
+		 * A feature reader that delegates feature reading to another reader and then removes
+		 * properties, in the read feature, matching a specified property name.
+		 *
+		 * This is useful when a property of a feature type has been removed in the GPGIM and an
+		 * older version GPML file is being read in (and hence needs to have its property(s) removed).
+		 */
+		class RemovePropertyFeatureReaderImpl :
+				public GpmlFeatureReaderImpl
+		{
+		public:
+
+			//! A convenience typedef for a shared pointer to a non-const @a RemovePropertyFeatureReaderImpl.
+			typedef GPlatesUtils::non_null_intrusive_ptr<RemovePropertyFeatureReaderImpl> non_null_ptr_type;
+
+			//! A convenience typedef for a shared pointer to a const @a RemovePropertyFeatureReaderImpl.
+			typedef GPlatesUtils::non_null_intrusive_ptr<const RemovePropertyFeatureReaderImpl> non_null_ptr_to_const_type;
+
+
+			/**
+			 * Creates a @a RemovePropertyFeatureReaderImpl.
+			 *
+			 * Properties of features created by @a feature_reader, with property names matching
+			 * @a property_name, are removed.
+			 */
+			static
+			non_null_ptr_type
+			create(
+					const GPlatesModel::PropertyName &property_name,
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader)
+			{
+				return non_null_ptr_type(
+						new RemovePropertyFeatureReaderImpl(
+								property_name,
+								feature_reader));
+			}
+
+
+			virtual
+			GPlatesModel::FeatureHandle::non_null_ptr_type
+			read_feature(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+					xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+					GpmlReaderUtils::ReaderParams &reader_params) const;
+
+		private:
+
+			/**
+			 * The feature reader that we delegate all property reading to.
+			 */
+			GpmlFeatureReaderImpl::non_null_ptr_to_const_type d_feature_reader;
+
+			GPlatesModel::PropertyName d_property_name;
+
+
+			RemovePropertyFeatureReaderImpl(
+					const GPlatesModel::PropertyName &property_name,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader);
 
 		};

@@ -202,12 +202,8 @@ set(srcs
     ResolvedTopologicalSharedSubSegment.h
     ResolvedTopologicalSubSegmentImpl.cc
     ResolvedTopologicalSubSegmentImpl.h
-    ResolvedTriangulationConstrainedDelaunay2.cc
-    ResolvedTriangulationConstrainedDelaunay2.h
     ResolvedTriangulationDelaunay2.cc
     ResolvedTriangulationDelaunay2.h
-    ResolvedTriangulationDelaunay3.cc
-    ResolvedTriangulationDelaunay3.h
     ResolvedTriangulationNetwork.cc
     ResolvedTriangulationNetwork.h
     ResolvedTriangulationUtils.h

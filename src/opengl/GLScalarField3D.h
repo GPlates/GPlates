@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLSCALARFIELD3D_H
 #define GPLATES_OPENGL_GLSCALARFIELD3D_H
 
-#include <cstddef> // For std::size_t
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>

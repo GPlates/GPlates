@@ -510,7 +510,7 @@ namespace GPlatesModel
 		 *
 		 * Returns the default structural type as an iterator to the sequence @a gpgim_property_structural_types.
 		 */
-		GpgimProperty::structural_type_seq_type::size_type
+		unsigned int
 		read_feature_property_structural_types(
 				GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
 				const XmlElementNode::non_null_ptr_type &property_xml_element,

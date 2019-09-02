@@ -151,12 +151,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used to describe collection sizes.
-		 */
-		typedef std::size_t size_type;
-
-
-		/**
 		 * This class enables const_iteration over vertices in an exterior or interior ring of PolygonOnSphere.
 		 *
 		 * An instance of this class @em actually iterates over the sequence of GreatCircleArc by which
@@ -778,7 +772,7 @@ namespace GPlatesMaths
 		 */
 		const_iterator
 		segment_iterator(
-				size_type segment_index) const
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					segment_index <= number_of_segments(),
@@ -796,11 +790,11 @@ namespace GPlatesMaths
 		 *
 		 * NOTE: This includes all segments in the exterior and interior rings.
 		 */
-		size_type
+		unsigned int
 		number_of_segments() const
 		{
 			// Exterior ring.
-			size_type num_segments = d_exterior_ring.size();
+			unsigned int num_segments = d_exterior_ring.size();
 
 			// Interior rings.
 			ring_sequence_const_iterator ring_seq_iter = d_interior_rings.begin();
@@ -821,7 +815,7 @@ namespace GPlatesMaths
 		 */
 		const GreatCircleArc &
 		get_segment(
-				size_type segment_index) const
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					segment_index < number_of_segments(),
@@ -870,7 +864,7 @@ namespace GPlatesMaths
 		 */
 		vertex_const_iterator
 		vertex_iterator(
-				size_type vertex_index) const
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					vertex_index <= number_of_vertices(),
@@ -888,7 +882,7 @@ namespace GPlatesMaths
 		 *
 		 * NOTE: This includes all vertices in the exterior and interior rings.
 		 */
-		size_type
+		unsigned int
 		number_of_vertices() const
 		{
 			return number_of_segments();
@@ -902,7 +896,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_vertex(
-				size_type vertex_index) const
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					vertex_index < number_of_vertices(),
@@ -943,7 +937,7 @@ namespace GPlatesMaths
 		 */
 		ring_const_iterator
 		exterior_ring_iterator(
-				size_type exterior_segment_index) const
+				unsigned int exterior_segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					exterior_segment_index <= number_of_segments_in_exterior_ring(),
@@ -968,7 +962,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of segments in the exterior ring in this polygon.
 		 */
-		size_type
+		unsigned int
 		number_of_segments_in_exterior_ring() const
 		{
 			return d_exterior_ring.size();
@@ -979,7 +973,7 @@ namespace GPlatesMaths
 		 */
 		const GreatCircleArc &
 		get_exterior_ring_segment(
-				size_type exterior_segment_index) const
+				unsigned int exterior_segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					exterior_segment_index < number_of_segments_in_exterior_ring(),
@@ -1014,7 +1008,7 @@ namespace GPlatesMaths
 		 */
 		ring_vertex_const_iterator
 		exterior_ring_vertex_iterator(
-				size_type exterior_vertex_index) const
+				unsigned int exterior_vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					exterior_vertex_index <= number_of_vertices_in_exterior_ring(),
@@ -1030,7 +1024,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of vertices in the exterior ring in this polygon.
 		 */
-		size_type
+		unsigned int
 		number_of_vertices_in_exterior_ring() const
 		{
 			return number_of_segments_in_exterior_ring();
@@ -1041,7 +1035,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_exterior_ring_vertex(
-				size_type exterior_vertex_index) const
+				unsigned int exterior_vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					exterior_vertex_index < number_of_vertices_in_exterior_ring(),
@@ -1118,7 +1112,7 @@ namespace GPlatesMaths
 		 */
 		polyline_vertex_const_iterator
 		exterior_polyline_vertex_iterator(
-				size_type exterior_vertex_index) const
+				unsigned int exterior_vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					exterior_vertex_index <= number_of_vertices_in_exterior_polyline(),
@@ -1138,7 +1132,7 @@ namespace GPlatesMaths
 		 * of GreatCircleArc in the ring as a polyline and hence the last vertex is the end point of the
 		 * last ring segment (which is also the first vertex of ring).
 		 */
-		size_type
+		unsigned int
 		number_of_vertices_in_exterior_polyline() const
 		{
 			return number_of_vertices_in_exterior_ring() + 1;
@@ -1181,7 +1175,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of interior rings in this polygon.
 		 */
-		size_type
+		unsigned int
 		number_of_interior_rings() const
 		{
 			return d_interior_rings.size();
@@ -1193,7 +1187,7 @@ namespace GPlatesMaths
 		 */
 		ring_const_iterator
 		interior_ring_begin(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1208,7 +1202,7 @@ namespace GPlatesMaths
 		 */
 		ring_const_iterator
 		interior_ring_end(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1224,8 +1218,8 @@ namespace GPlatesMaths
 		 */
 		ring_const_iterator
 		interior_ring_iterator(
-				size_type interior_ring_index,
-				size_type segment_index) const
+				unsigned int interior_ring_index,
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1247,9 +1241,9 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of segments in the interior ring in this polygon at the specified interior ring index.
 		 */
-		size_type
+		unsigned int
 		number_of_segments_in_interior_ring(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1264,8 +1258,8 @@ namespace GPlatesMaths
 		 */
 		const GreatCircleArc &
 		get_interior_ring_segment(
-				size_type interior_ring_index,
-				size_type segment_index) const
+				unsigned int interior_ring_index,
+				unsigned int segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1287,7 +1281,7 @@ namespace GPlatesMaths
 		 */
 		ring_vertex_const_iterator
 		interior_ring_vertex_begin(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1301,7 +1295,7 @@ namespace GPlatesMaths
 		 */
 		ring_vertex_const_iterator
 		interior_ring_vertex_end(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1316,8 +1310,8 @@ namespace GPlatesMaths
 		 */
 		ring_vertex_const_iterator
 		interior_ring_vertex_iterator(
-				size_type interior_ring_index,
-				size_type vertex_index) const
+				unsigned int interior_ring_index,
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1342,9 +1336,9 @@ namespace GPlatesMaths
 		 * Return the number of vertices in the interior ring in this polygon
 		 * at the specified interior ring index.
 		 */
-		size_type
+		unsigned int
 		number_of_vertices_in_interior_ring(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			return number_of_segments_in_interior_ring(interior_ring_index);
 		}
@@ -1355,8 +1349,8 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_interior_ring_vertex(
-				size_type interior_ring_index,
-				size_type vertex_index) const
+				unsigned int interior_ring_index,
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1382,7 +1376,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		first_interior_ring_vertex(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			const GreatCircleArc &first_interior_gca = *(interior_ring_begin(interior_ring_index));
 			return first_interior_gca.start_point();
@@ -1396,7 +1390,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		last_interior_ring_vertex(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			const GreatCircleArc &last_interior_gca = *(--(interior_ring_end(interior_ring_index)));
 			return last_interior_gca.end_point();
@@ -1412,7 +1406,7 @@ namespace GPlatesMaths
 		 */
 		polyline_vertex_const_iterator
 		interior_polyline_vertex_begin(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1429,7 +1423,7 @@ namespace GPlatesMaths
 		 */
 		polyline_vertex_const_iterator
 		interior_polyline_vertex_end(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1451,8 +1445,8 @@ namespace GPlatesMaths
 		 */
 		polyline_vertex_const_iterator
 		interior_polyline_vertex_iterator(
-				size_type interior_ring_index,
-				size_type vertex_index) const
+				unsigned int interior_ring_index,
+				unsigned int vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
@@ -1480,9 +1474,9 @@ namespace GPlatesMaths
 		 * of GreatCircleArc in the ring as a polyline and hence the last vertex is the end point of the
 		 * last ring segment (which is also the first vertex of ring).
 		 */
-		size_type
+		unsigned int
 		number_of_vertices_in_interior_polyline(
-				size_type interior_ring_index) const
+				unsigned int interior_ring_index) const
 		{
 			return number_of_vertices_in_interior_ring(interior_ring_index) + 1;
 		}
@@ -1567,7 +1561,7 @@ namespace GPlatesMaths
 		 */
 		const real_t &
 		get_interior_ring_arc_length(
-				size_type interior_ring_index) const;
+				unsigned int interior_ring_index) const;
 
 
 		/**
@@ -1772,7 +1766,7 @@ namespace GPlatesMaths
 		 */
 		const ring_bounding_tree_type &
 		get_interior_ring_bounding_tree(
-				size_type interior_ring_index) const;
+				unsigned int interior_ring_index) const;
 
 	private:
 
