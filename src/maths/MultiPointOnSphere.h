@@ -99,12 +99,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used to describe collection sizes.
-		 */
-		typedef point_container_type::size_type size_type;
-
-
-		/**
 		 * The possible return values from the construction-parameter
 		 * validation function
 		 * @a evaluate_construction_parameter_validity.
@@ -299,7 +293,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of points in this multi-point.
 		 */
-		size_type
+		unsigned int
 		number_of_points() const
 		{
 			return d_points.size();
@@ -311,7 +305,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_point(
-				size_type point_index) const
+				unsigned int point_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					point_index < number_of_points(),

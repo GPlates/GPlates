@@ -263,7 +263,7 @@ namespace GPlatesOpenGL
 		 * See base class for more details.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_num_levels_of_detail() const
 		{
 			return d_level_of_detail_pyramid.size();
@@ -390,7 +390,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension of this raster which is also the tile texel dimension
 		 * of the raster source.
 		 */
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_tile_texel_dimension;

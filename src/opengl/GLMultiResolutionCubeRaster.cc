@@ -79,7 +79,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::supports_floating_point_source_raste
 GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
-		std::size_t tile_texel_dimension,
+		unsigned int tile_texel_dimension,
 		bool adapt_tile_dimension_to_source_resolution,
 		FixedPointTextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures) :
@@ -196,7 +196,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	{
 		// Round up to the next power-of-two.
 		// If it's already a power-of-two then it won't change.
-		const std::size_t new_tile_texel_dimension = GPlatesUtils::Base2::next_power_of_two(d_tile_texel_dimension);
+		const unsigned int new_tile_texel_dimension = GPlatesUtils::Base2::next_power_of_two(d_tile_texel_dimension);
 
 		// If the tile texel dimension changed then it affects the viewport dimension scale.
 		if (new_tile_texel_dimension != d_tile_texel_dimension)

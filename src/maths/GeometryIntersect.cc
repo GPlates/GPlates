@@ -204,7 +204,7 @@ namespace GPlatesMaths
 					angle_in_segment1, angle_in_segment2);
 
 			// Add the intersection.
-			const unsigned unordered_intersection_index = graph.unordered_intersections.size();
+			const unsigned int unordered_intersection_index = graph.unordered_intersections.size();
 			graph.unordered_intersections.push_back(intersection);
 
 			// Also keep track of the intersection for each geometry.

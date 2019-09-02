@@ -99,7 +99,7 @@ namespace
 	fill_coordinates_with_blank_items(
 			GPlatesGui::TreeWidgetBuilder &tree_widget_builder,
 			item_handle_seq_type &coordinate_widgets,
-			GPlatesMaths::PolylineOnSphere::size_type new_size)
+			unsigned int new_size)
 	{
 		static QLocale locale;
 		for (unsigned int i = coordinate_widgets.size(); i < new_size; ++i) {
