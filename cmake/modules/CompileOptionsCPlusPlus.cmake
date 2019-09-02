@@ -26,7 +26,23 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
     
+    # Disable warning C4267: 'var' : conversion from 'size_t' to 'type', possible loss of data
+	#
+	# When compiling with Visual Studio in 64-bit mode this warning shows up in a very large number of places.
+	# Mostly because std::vector<Type>::size(), etc, return 'size_t' (which is 64 bits) and we store the result
+	# in an 'unsigned int' loop counter (which is 32 bits). However, in pretty much all cases we do not
+	# need more than 32 bits. We could explicitly tell the compiler this by using 'static_cast<unsigned int>()'
+	# (or use size_t for the loop counter) but it just becomes far too cumbersome to change this everywhere.
+	#
+	# Also this warning is not produced by gcc, even with "-Wall" and "-Wextra" turned on (just checked this with gcc 8.3).
+	# The only way to enable this warning with gcc is with "-Wconversion" (and then use "-W-no-float-conversion" to
+	# disable the extra 'double->float' warnings also created by this).
+	#
+	# So we'll disable it for Visual Studio also.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267")
+	
     # Disable warning C4503: 'identifier' : decorated name length exceeded, name was truncated
+	#
 	# Apparently a hash is applied to truncated names, so program correctness is unaffected.
 	# However debugging and linking are possibly affected.
 	# But this warning no longer occurs in Visual Studio 2017 and later compilers.
