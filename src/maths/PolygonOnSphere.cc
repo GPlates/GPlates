@@ -1010,7 +1010,8 @@ GPlatesMaths::PolygonOnSphere::ConstIterator::distance_to(
 			GPLATES_ASSERTION_SOURCE,
 			"Attempted to compare an uninitialised iterator.");
 
-	const int ring_id_difference = other.d_current_ring_id - d_current_ring_id;
+	const int ring_id_difference =
+			static_cast<int>(other.d_current_ring_id) - static_cast<int>(d_current_ring_id);
 
 	if (ring_id_difference == 0)
 	{

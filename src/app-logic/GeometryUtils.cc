@@ -277,8 +277,8 @@ namespace
 				// Advance forward from beginning.
 				std::advance(begin_points, d_range->first);
 
-				// Note that subtracting two unsigned types can store negative in a signed type.
-				const std::ptrdiff_t diff_from_end = d_range->second - multi_point_on_sphere->number_of_points();
+				const int diff_from_end =
+						static_cast<int>(d_range->second) - static_cast<int>(multi_point_on_sphere->number_of_points());
 
 				// The range must not go past the end.
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -376,8 +376,8 @@ namespace
 				// Advance forward from beginning.
 				std::advance(begin_points, d_range->first);
 
-				// Note that subtracting two unsigned types can store negative in a signed type.
-				const std::ptrdiff_t diff_from_end = d_range->second - polyline_on_sphere->number_of_vertices();
+				const int diff_from_end =
+						static_cast<int>(d_range->second) - static_cast<int>(polyline_on_sphere->number_of_vertices());
 
 				// The range must not go past the end.
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
