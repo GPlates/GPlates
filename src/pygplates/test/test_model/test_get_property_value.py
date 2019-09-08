@@ -81,6 +81,38 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.feature.add(
                 pygplates.PropertyName.gpml_center_line_of,
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(1,0,0))))
+        # Add topological geometries.
+        self.topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlLineString),
+                True)]
+        self.feature.add(
+                pygplates.PropertyName.gpml_boundary,
+                pygplates.GpmlConstantValue(pygplates.GpmlTopologicalPolygon(self.topological_sections)))
+        self.feature.add(
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GpmlConstantValue(pygplates.GpmlTopologicalLine(self.topological_sections)))
+        self.topological_interiors = [
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint),
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint)]
+        self.feature.add(
+                pygplates.PropertyName.gpml_network,
+                pygplates.GpmlConstantValue(pygplates.GpmlTopologicalNetwork(self.topological_sections, self.topological_interiors)))
     
     def test_get_and_set_geometry(self):
         # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
@@ -344,6 +376,121 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 (spreading_rate_domain, spreading_rate_dict),
                 pygplates.PropertyName.gpml_position,
                 verify_information_model=pygplates.VerifyInformationModel.no)
+    
+    def test_get_and_set_topological_geometry(self):
+        # The topological polygon property is stored in 'gpml:boundary' property.
+        topological_boundary_properties = self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.all)
+        self.assertTrue(topological_boundary_properties == self.feature.get_topological_geometries(pygplates.PropertyName.gpml_boundary))
+        self.assertTrue(len(topological_boundary_properties) == 1)
+        self.assertTrue(isinstance(topological_boundary_properties[0], pygplates.GpmlTopologicalPolygon))
+        self.assertTrue(isinstance(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary), pygplates.GpmlTopologicalPolygon))
+        self.assertTrue(isinstance(self.feature.get_topological_geometry(
+            pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.first), pygplates.GpmlTopologicalPolygon))
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_boundary_sections()) == self.topological_sections)
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_exterior_sections()) == self.topological_sections)
+        self.assertTrue(len(self.feature.get_topological_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 3) # There are three topological geometries in total.
+        self.assertTrue(self.feature.get_topological_geometry(lambda property: True, pygplates.PropertyReturn.all) == self.feature.get_all_topological_geometries())
+        self.feature.add(
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GpmlConstantValue(pygplates.GpmlTopologicalLine(self.topological_sections)))
+        # There should now be two default topological geometry properties.
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 2)
+        # There should now be four topological geometry properties.
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 4)
+        self.feature.remove(
+                lambda property: property.get_name() == pygplates.PropertyName.gpml_unclassified_geometry and
+                     isinstance(property.get_value(), pygplates.GpmlTopologicalLine))
+        # There should now be zero default topological geometry properties.
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 0)
+        # There should now be two topological geometry properties again.
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 2)
+        # This shouldn't have removed the non-topological unclassified geometry though.
+        self.assertTrue(len(self.feature.get_geometries(pygplates.PropertyName.gpml_unclassified_geometry)) == 1)
+        self.assertFalse(self.feature.get_topological_geometry(lambda property: True)) # Only succeeds if one topological geometry.
+        self.feature.add(
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GpmlConstantValue(pygplates.GpmlTopologicalLine(self.topological_sections)))
+        # There should now be one default topological geometry property.
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 1)
+        self.assertTrue(list(self.feature.get_topological_geometry().get_sections()) == self.topological_sections)
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
+        
+        line_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False)]
+        self.feature.set_topological_geometry(pygplates.GpmlTopologicalLine(line_topological_sections))
+        # There should still be one default topological geometry property.
+        # It got overwritten.
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 1)
+        self.assertTrue(list(self.feature.get_topological_geometry().get_sections()) == line_topological_sections)
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
+        
+        self.assertTrue(isinstance(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_network), pygplates.GpmlTopologicalNetwork))
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_network).get_boundary_sections()) ==
+            self.topological_sections)
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_network).get_interiors()) ==
+            self.topological_interiors)
+        self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_network)) == 1)
+        self.feature.set_topological_geometry(
+            pygplates.GpmlTopologicalNetwork(line_topological_sections, self.topological_interiors),
+            pygplates.PropertyName.gpml_network)
+        # There should still be one topological network property.
+        # It got overwritten.
+        self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_network)) == 1)
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_network).get_boundary_sections()) == line_topological_sections)
+        self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_network).get_interiors()) == self.topological_interiors)
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
+        # Cannot set a topological *network* on a 'gpml:center_line_of' property.
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_topological_geometry,
+                pygplates.GpmlTopologicalNetwork(line_topological_sections, self.topological_interiors),
+                pygplates.PropertyName.gpml_center_line_of)
+        
+        # Set multiple topological geometries.
+        topological_geometries = self.feature.set_topological_geometry([
+                pygplates.GpmlTopologicalLine(line_topological_sections),
+                pygplates.GpmlTopologicalPolygon(self.topological_sections)])
+        self.assertTrue(len(topological_geometries) == 2)
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 4)
+        topological_network_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('TopologicalNetwork'))
+        network = pygplates.GpmlTopologicalNetwork(line_topological_sections, self.topological_interiors)
+        self.assertTrue(topological_network_feature.set_topological_geometry(network).get_value() == network)
+        # Cannot set multiple topological networks on 'gpml:network' property on a 'gpml:TopologicalNetwork' feature (or any feature but 'gpml:UnclassifiedFeature').
+        # Note that 'gpml:network' is the default geometry property on a 'gpml:TopologicalNetwork' (so we don't have to specify it).
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_topological_geometry,
+                [network, network])
+        # ...unless we don't check the information model.
+        self.assertTrue(
+                len(topological_network_feature.set_topological_geometry((network, network),
+                        verify_information_model=pygplates.VerifyInformationModel.no)) == 2)
+        # Setting multiple topological networks on 'gpml:network' property on a 'gpml:UnclassifiedFeature' feature is fine though.
+        network_properties = self.feature.set_topological_geometry((network, network), pygplates.PropertyName.gpml_network)
+        self.assertTrue(len(network_properties) == 2)
+        self.assertTrue(network_properties[0].get_value() == network)
+        self.assertTrue(network_properties[1].get_value() == network)
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 5)
+        
+        # Remove all *default* topological geometries.
+        self.feature.set_topological_geometry([])
+        # There are now no *default* topological geometries.
+        self.assertTrue(len(self.feature.get_topological_geometry(property_return=pygplates.PropertyReturn.all)) == 0)
+        self.assertFalse(self.feature.get_topological_geometry(property_return=pygplates.PropertyReturn.first))
+        self.assertFalse(self.feature.get_topological_geometry())
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
+        # However there are still two non-default topological network geometries 'gpml:network' and a topological polygon 'gpml:boundary'.
+        self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_network)) == 2)
+        self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_boundary)) == 1)
     
     def test_get_and_set_enumeration(self):
         subduction_polarity = self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
