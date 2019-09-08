@@ -4476,17 +4476,21 @@ export_gpml_topological_polygon()
 		.def("get_exterior_sections",
 			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
 			"get_exterior_sections()\n"
-			"  Returns the :class:`exterior sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"  Same as :meth:`get_boundary_sections`.\n")
+		.def("get_boundary_sections",
+			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
+			"get_boundary_sections()\n"
+			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
 			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
 			"\n"
 			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalPolygon* instance:\n"
 			"  ::\n"
 			"\n"
-			"    exterior_sections = topological_polygon.get_exterior_sections()\n"
+			"    boundary_sections = topological_polygon.get_boundary_sections()\n"
 			"\n"
 			"    # Append a section\n"
-			"    exterior_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
+			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
 		;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
