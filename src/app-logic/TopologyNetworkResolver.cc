@@ -170,7 +170,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
 			gpml_piecewise_aggregation.time_windows();
 
-	// NOTE: If there's only one tine window then we do not check its time period against the
+	// NOTE: If there's only one time window then we do not check its time period against the
 	// current reconstruction time.
 	// This is because GPML files created with old versions of GPlates set the time period,
 	// of the sole time window, to match that of the 'feature's time period (in the topology

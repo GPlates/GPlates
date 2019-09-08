@@ -30,6 +30,7 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
 #include <QString>
 
 #include "ReconstructedFeatureGeometry.h"
@@ -41,9 +42,12 @@
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
+#include "model/TopLevelProperty.h"
 
 #include "property-values/GpmlPropertyDelegate.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/StructuralType.h"
 
@@ -58,10 +62,41 @@ namespace GPlatesAppLogic
 	namespace TopologyInternalUtils
 	{
 		/**
+		 * Topological geometry property value types (topological line, polygon and network).
+		 */
+		typedef boost::variant<
+				GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type,
+				GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type,
+				GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type>
+						topological_geometry_property_value_type;
+
+
+		/**
+		 * Returns the topological geometry property value (topological line, polygon or network)
+		 * at the specified reconstruction time (only applies if property value is time-dependent).
+		 *
+		 * Returns boost::none if the specified property is not topological.
+		 */
+		boost::optional<topological_geometry_property_value_type>
+		get_topology_geometry_property_value(
+				GPlatesModel::TopLevelProperty &property,
+				const double &reconstruction_time = 0.0);
+
+		boost::optional<topological_geometry_property_value_type>
+		get_topology_geometry_property_value(
+				const GPlatesModel::FeatureHandle::iterator &property,
+				const double &reconstruction_time = 0.0);
+
+
+		/**
 		 * Determines the type of topological geometry property value.
 		 *
 		 * Returns boost::none if the specified property is not topological.
 		 */
+		boost::optional<GPlatesPropertyValues::StructuralType>
+		get_topology_geometry_property_value_type(
+				const GPlatesModel::TopLevelProperty &property);
+
 		boost::optional<GPlatesPropertyValues::StructuralType>
 		get_topology_geometry_property_value_type(
 				const GPlatesModel::FeatureHandle::const_iterator &property);
