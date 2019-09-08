@@ -69,6 +69,64 @@ class CreateFeatureCase(unittest.TestCase):
                 geometry,
                 conjugate_plate_id=201)
         self.assertTrue(feature.get_conjugate_plate_id() == 201)
+
+    def test_create_topological_feature(self):
+        line_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False)]
+        topological_line = pygplates.GpmlTopologicalLine(line_topological_sections)
+        subduction_zone_feature = pygplates.Feature.create_topological_feature(
+                pygplates.FeatureType.gpml_subduction_zone,
+                topological_line,
+                name='Andes Subduction Zone',
+                description='a subduction zone',
+                valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(len(subduction_zone_feature) == 4)
+        self.assertTrue(subduction_zone_feature.get_feature_type() == pygplates.FeatureType.gpml_subduction_zone)
+        self.assertTrue(subduction_zone_feature.get_topological_geometry() == topological_line)
+        self.assertTrue(subduction_zone_feature.get_name() == 'Andes Subduction Zone')
+        self.assertTrue(subduction_zone_feature.get_description() == 'a subduction zone')
+        self.assertTrue(subduction_zone_feature.get_valid_time() == (10, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(subduction_zone_feature.get_reconstruction_plate_id(None) is None)
+        
+        polygon_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False)]
+        topological_polygon = pygplates.GpmlTopologicalPolygon(polygon_topological_sections)
+        plate_feature = pygplates.Feature.create_topological_feature(
+                pygplates.FeatureType.gpml_topological_closed_plate_boundary,
+                topological_polygon,
+                name='SAM',
+                description='South America rigid plate',
+                valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))
+        plate_feature.set_reconstruction_plate_id(201)
+        self.assertTrue(len(plate_feature) == 5)
+        self.assertTrue(plate_feature.get_feature_type() == pygplates.FeatureType.gpml_topological_closed_plate_boundary)
+        self.assertTrue(plate_feature.get_topological_geometry() == topological_polygon)
+        self.assertTrue(plate_feature.get_name() == 'SAM')
+        self.assertTrue(plate_feature.get_description() == 'South America rigid plate')
+        self.assertTrue(plate_feature.get_valid_time() == (10, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(plate_feature.get_reconstruction_plate_id() == 201)
  
     def test_create_tectonic_section(self):
         geometry = pygplates.PolylineOnSphere([
