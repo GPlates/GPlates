@@ -50,6 +50,7 @@
 #include "app-logic/ReconstructParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
+#include "app-logic/TopologyInternalUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -74,6 +75,9 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlTopologicalLine.h"
+#include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -97,6 +101,27 @@ namespace GPlatesApi
 			const GPlatesModel::PropertyName &property_name,
 			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model);
+
+
+	/**
+	 * Enumeration to determine how properties are returned.
+	 */
+	namespace PropertyReturn
+	{
+		enum Value
+		{
+			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
+			FIRST,       // Returns the first element that matches the query.
+			ALL          // Returns all elements that matches the query.
+		};
+	};
+
+
+	/**
+	 * Topological geometry property value types (topological line, polygon and network).
+	 */
+	typedef GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type
+			topological_geometry_property_value_type;
 
 
 	namespace
@@ -130,46 +155,73 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Returns true if the specified property name supports the type of the specified geometry.
+		 * Returns property structural type associated with the specified geometry.
 		 */
-		bool
-		is_geometry_type_supported_by_property(
-				const GPlatesMaths::GeometryOnSphere &geometry,
-				const GPlatesModel::PropertyName &property_name)
+		GPlatesPropertyValues::StructuralType
+		get_geometry_structural_type(
+				const GPlatesMaths::GeometryOnSphere &geometry)
 		{
 			const GPlatesMaths::GeometryType::Value geometry_type =
 					GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
 
 			// Get the property value structural type associated with the geometry type.
-			boost::optional<GPlatesPropertyValues::StructuralType> geometry_structural_type;
 			switch (geometry_type)
 			{
 			case GPlatesMaths::GeometryType::POINT:
-				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Point");
-				break;
+				return GPlatesPropertyValues::StructuralType::create_gml("Point");
 
 			case GPlatesMaths::GeometryType::MULTIPOINT:
-				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
-				break;
+				return GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
 
 			case GPlatesMaths::GeometryType::POLYLINE:
-				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("LineString");
-				break;
+				return GPlatesPropertyValues::StructuralType::create_gml("LineString");
 
 			case GPlatesMaths::GeometryType::POLYGON:
-				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
-				break;
+				return GPlatesPropertyValues::StructuralType::create_gml("Polygon");
 
 			case GPlatesMaths::GeometryType::NONE:
 			default:
-				break;
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				// To keep compiler happy...
+				return GPlatesPropertyValues::StructuralType::create_gml("Polygon");
 			}
+		}
 
-			if (!geometry_structural_type)
+
+		/**
+		 * Returns property structural type associated with the specified topological geometry.
+		 */
+		class GetTopologicalGeometryStructuralTypeVisitor :
+				public boost::static_visitor<GPlatesPropertyValues::StructuralType>
+		{
+		public:
+			template <typename TopologicalGeometryPropertyValueType>
+			GPlatesPropertyValues::StructuralType
+			operator()(
+					TopologicalGeometryPropertyValueType gpml_topological_geometry) const
 			{
-				return false;
+				return gpml_topological_geometry->get_structural_type();
 			}
+		};
 
+		/**
+		 * Returns property structural type associated with the specified topological geometry.
+		 */
+		GPlatesPropertyValues::StructuralType
+		get_geometry_structural_type(
+				const topological_geometry_property_value_type &topological_geometry)
+		{
+			return boost::apply_visitor(GetTopologicalGeometryStructuralTypeVisitor(), topological_geometry);
+		}
+
+		/**
+		 * Returns true if the specified property name supports the specified geometry structural type.
+		 */
+		bool
+		is_geometry_type_supported_by_property(
+				const GPlatesPropertyValues::StructuralType &geometry_structural_type,
+				const GPlatesModel::PropertyName &property_name)
+		{
 			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
 
 			// Get the GPGIM property using the property name.
@@ -198,37 +250,13 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Return derived geometry type as a string.
+		 * Return geometry type as a string.
 		 */
 		QString
 		get_geometry_type_as_string(
-				const GPlatesMaths::GeometryOnSphere &geometry)
+				const GPlatesPropertyValues::StructuralType &geometry_structural_type)
 		{
-			const GPlatesMaths::GeometryType::Value geometry_type =
-					GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
-
-			switch (geometry_type)
-			{
-			case GPlatesMaths::GeometryType::POINT:
-				return QString("PointOnSphere");
-
-			case GPlatesMaths::GeometryType::MULTIPOINT:
-				return QString("MultiPointOnSphere");
-
-			case GPlatesMaths::GeometryType::POLYLINE:
-				return QString("PolylineOnSphere");
-
-			case GPlatesMaths::GeometryType::POLYGON:
-				return QString("PolygonOnSphere");
-
-			case GPlatesMaths::GeometryType::NONE:
-			default:
-				break;
-			}
-
-			// Should not be able to get here.
-			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			return QString(); // Keep compiler happy.
+			return convert_qualified_xml_name_to_qstring(geometry_structural_type);
 		}
 
 		/**
@@ -237,19 +265,19 @@ namespace GPlatesApi
 		 */
 		void
 		verify_geometry_type_supported_by_property(
-				const GPlatesMaths::GeometryOnSphere &geometry,
+				const GPlatesPropertyValues::StructuralType &geometry_structural_type,
 				const GPlatesModel::PropertyName &property_name,
 				VerifyInformationModel::Value verify_information_model)
 		{
 			// Make sure geometry type is supported by property (if requested to check).
 			if (verify_information_model == VerifyInformationModel::YES &&
-				!is_geometry_type_supported_by_property(geometry, property_name))
+				!is_geometry_type_supported_by_property(geometry_structural_type, property_name))
 			{
 				// This exception will get converted to python 'InformationModelError'.
 				throw InformationModelException(
 						GPLATES_EXCEPTION_SOURCE,
 						QString("The geometry type '") +
-								get_geometry_type_as_string(geometry) +
+								get_geometry_type_as_string(geometry_structural_type) +
 								"' is not supported by property name '" +
 								convert_qualified_xml_name_to_qstring(property_name) + "'");
 			}
@@ -554,7 +582,10 @@ namespace GPlatesApi
 			//
 
 			// Make sure geometry type is supported by property (if requested to check).
-			verify_geometry_type_supported_by_property(*geometry, geometry_property_name, verify_information_model);
+			verify_geometry_type_supported_by_property(
+					get_geometry_structural_type(*geometry),
+					geometry_property_name,
+					verify_information_model);
 
 			// If we need to reverse reconstruct the geometry.
 			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
@@ -694,7 +725,10 @@ namespace GPlatesApi
 			BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
 			{
 				// Make sure geometry type is supported by property (if requested to check).
-				verify_geometry_type_supported_by_property(*geometry, geometry_property_name, verify_information_model);
+				verify_geometry_type_supported_by_property(
+						get_geometry_structural_type(*geometry),
+						geometry_property_name,
+						verify_information_model);
 
 				// If we need to reverse reconstruct the geometry.
 				if (reverse_reconstruct_parameters)
@@ -843,21 +877,106 @@ namespace GPlatesApi
 
 			return coverage_domain_range_property_list_object;
 		}
-	}
 
-
-	/**
-	 * Enumeration to determine how properties are returned.
-	 */
-	namespace PropertyReturn
-	{
-		enum Value
+		/**
+		 * Set the topological geometry property value on the feature and check information model if requested.
+		 *
+		 * Returns the feature property containing the topological geometry.
+		 */
+		bp::object
+		set_topological_geometry(
+				GPlatesModel::FeatureHandle &feature_handle,
+				topological_geometry_property_value_type topological_geometry_property_value,
+				const GPlatesModel::PropertyName &geometry_property_name,
+				VerifyInformationModel::Value verify_information_model)
 		{
-			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
-			FIRST,       // Returns the first element that matches the query.
-			ALL          // Returns all elements that matches the query.
-		};
-	};
+			//
+			// Set the topological geometry property.
+			//
+
+			// Make sure topological geometry type is supported by property (if requested to check).
+			verify_geometry_type_supported_by_property(
+					get_geometry_structural_type(topological_geometry_property_value),
+					geometry_property_name,
+					verify_information_model);
+
+			// Set the topological geometry property value in the feature.
+			const bp::object topological_geometry_property_object = feature_handle_set_property(
+					feature_handle,
+					geometry_property_name,
+					bp::object(topological_geometry_property_value),
+					verify_information_model);
+
+			// Remove any coverages associated with the geometry property name so that the geometry
+			// is not interpreted as a coverage domain.
+			//
+			// It's not an error if a coverage is not supported for the geometry property name
+			// because the caller was not trying to set a coverage (only setting a geometry).
+			//
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(geometry_property_name);
+			if (range_property_name)
+			{
+				feature_handle.remove_properties_by_name(range_property_name.get());
+			}
+
+			return topological_geometry_property_object;
+		}
+
+		/**
+		 * Set topological geometry property values on the feature and check information model if requested.
+		 *
+		 * Returns a list of the feature properties containing the topological geometries.
+		 */
+		bp::object
+		set_topological_geometries(
+				GPlatesModel::FeatureHandle &feature_handle,
+				const std::vector<topological_geometry_property_value_type> &topological_geometries,
+				const GPlatesModel::PropertyName &geometry_property_name,
+				VerifyInformationModel::Value verify_information_model)
+		{
+			//
+			// Set the topological geometry properties.
+			//
+
+			bp::list topological_geometry_objects;
+
+			BOOST_FOREACH(topological_geometry_property_value_type topological_geometry, topological_geometries)
+			{
+				// Make sure geometry type is supported by property (if requested to check).
+				verify_geometry_type_supported_by_property(
+						get_geometry_structural_type(topological_geometry),
+						geometry_property_name,
+						verify_information_model);
+
+				topological_geometry_objects.append(topological_geometry);
+			}
+
+			// Set the topological geometry property values in the feature.
+			const bp::object topological_geometry_property_list_object = feature_handle_set_property(
+					feature_handle,
+					geometry_property_name,
+					topological_geometry_objects,
+					verify_information_model);
+
+			// Remove any coverages associated with the geometry property name so that the geometry
+			// is not interpreted as a coverage domain.
+			//
+			// It's not an error if a coverage is not supported for the geometry property name
+			// because the caller was not trying to set a coverage (only setting a geometry).
+			//
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(geometry_property_name);
+			if (range_property_name)
+			{
+				feature_handle.remove_properties_by_name(range_property_name.get());
+			}
+
+			return topological_geometry_property_list_object;
+		}
+	}
 
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -2166,6 +2285,233 @@ namespace GPlatesApi
 	}
 
 	bp::object
+	feature_handle_set_topological_geometry(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object topological_geometry_object,
+			boost::optional<GPlatesModel::PropertyName> property_name,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		// If a property name wasn't specified then determine the
+		// default geometry property name via the GPGIM.
+		if (!property_name)
+		{
+			property_name = get_default_geometry_property_name(feature_handle.feature_type());
+
+			if (!property_name)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Unable to determine the default geometry property name from the feature type '") +
+								convert_qualified_xml_name_to_qstring(feature_handle.feature_type()) + "'");
+			}
+		}
+		const GPlatesModel::PropertyName &geometry_property_name = property_name.get();
+
+		//
+		// 'topological_geometry_object' is either:
+		//   1) a topological geometry (line, polygon or network), or
+		//   2) a sequence of topological geometries.
+		//
+
+		const char *type_error_string = "Expected a GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence of them";
+
+		bp::extract<topological_geometry_property_value_type> extract_topological_geometry(topological_geometry_object);
+		if (extract_topological_geometry.check())
+		{
+			topological_geometry_property_value_type topological_geometry = extract_topological_geometry();
+
+			return set_topological_geometry(
+					feature_handle,
+					topological_geometry,
+					geometry_property_name,
+					verify_information_model);
+		}
+
+		// Attempt to extract a sequence of objects.
+		std::vector<bp::object> sequence_of_objects;
+		PythonExtractUtils::extract_iterable(sequence_of_objects, topological_geometry_object, type_error_string);
+
+		// It's possible we were given an empty sequence - which means we should remove all
+		// matching geometries (domains) and coverage ranges.
+		if (sequence_of_objects.empty())
+		{
+			// Remove any geometry properties with the geometry property name.
+			feature_handle.remove_properties_by_name(geometry_property_name);
+
+			boost::optional<GPlatesModel::PropertyName> coverage_range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+			if (coverage_range_property_name)
+			{
+				// Remove any coverage range properties associated with the geometry property name (if any).
+				feature_handle.remove_properties_by_name(coverage_range_property_name.get());
+			}
+
+			// Return an empty list since we didn't set any properties - only (potentially) removed some.
+			return bp::list();
+		}
+
+		std::vector<topological_geometry_property_value_type> topological_geometries;
+
+		// Extract the topological geometries.
+		for (unsigned int n = 0; n < sequence_of_objects.size(); ++n)
+		{
+			bp::extract<topological_geometry_property_value_type> extract_topological_geometry(sequence_of_objects[n]);
+			if (!extract_topological_geometry.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			topological_geometry_property_value_type topological_geometry = extract_topological_geometry();
+
+			topological_geometries.push_back(topological_geometry);
+		}
+
+		return set_topological_geometries(
+				feature_handle,
+				topological_geometries,
+				geometry_property_name,
+				verify_information_model);
+	}
+
+	bp::object
+	feature_handle_get_topological_geometry(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object property_query_object,
+			PropertyReturn::Value property_return)
+	{
+		// If a property name or predicate wasn't specified then determine the
+		// default geometry property name via the GPGIM.
+		if (property_query_object == bp::object()/*Py_None*/)
+		{
+			boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
+					get_default_geometry_property_name(feature_handle.feature_type());
+			if (!default_geometry_property_name)
+			{
+				return (property_return == PropertyReturn::ALL)
+						? bp::list() /*empty list*/
+						: bp::object()/*Py_None*/;
+			}
+
+			property_query_object = bp::object(default_geometry_property_name.get());
+		}
+
+		// Get the topological geometry property(s).
+		//
+		// Note that we're querying all matching properties, not the number of (topological geometry)
+		// properties requested by our caller, because the property query might match non-topological-geometry
+		// properties (which we'll later filter out the topological geometry properties and test the number of those).
+		bp::object property_list_object =
+				feature_handle_get_property(
+						feature_handle,
+						property_query_object,
+						// Query all matching property values (ie, not what user requested)...
+						PropertyReturn::ALL);
+
+		std::vector<topological_geometry_property_value_type> topological_geometries;
+
+		const unsigned int num_properties = bp::len(property_list_object);
+		for (unsigned int n = 0; n < num_properties; ++n)
+		{
+			// Extract the feature property.
+			bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_feature_property(property_list_object[n]);
+			if (!extract_feature_property.check())
+			{
+				continue;
+			}
+			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = extract_feature_property();
+
+			// Get the topological geometry property value.
+			boost::optional<topological_geometry_property_value_type> topological_geometry =
+					GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
+							*feature_property,
+							0.0/*reconstruction_time*/);
+			if (!topological_geometry)
+			{
+				continue;
+			}
+
+			// Optimisations - to return early.
+			if (property_return == PropertyReturn::FIRST)
+			{
+				// Return first object immediately.
+				return bp::object(topological_geometry.get());
+			}
+			else if (property_return == PropertyReturn::EXACTLY_ONE)
+			{
+				// If we've already found one geometry (and now we'll have two) then return Py_None.
+				if (topological_geometries.size() == 1)
+				{
+					return bp::object()/*Py_None*/;
+				}
+			}
+
+			topological_geometries.push_back(topological_geometry.get());
+		}
+
+		if (property_return == PropertyReturn::ALL)
+		{
+			bp::list topological_geometries_list;
+
+			BOOST_FOREACH(topological_geometry_property_value_type topological_geometry, topological_geometries)
+			{
+				topological_geometries_list.append(topological_geometry);
+			}
+
+			return topological_geometries_list;
+		}
+
+		if (property_return == PropertyReturn::EXACTLY_ONE)
+		{
+			return (topological_geometries.size() == 1) ? bp::object(topological_geometries.front()) : bp::object()/*Py_None*/;
+		}
+
+		// ...else PropertyReturn::FIRST
+		return !topological_geometries.empty() ? bp::object(topological_geometries.front()) : bp::object()/*Py_None*/;
+	}
+
+	bp::object
+	feature_handle_get_topological_geometries(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object property_query_object)
+	{
+		// The returned object will be a list.
+		return feature_handle_get_topological_geometry(
+				feature_handle,
+				property_query_object,
+				PropertyReturn::ALL);
+	}
+
+	bp::list
+	feature_handle_get_all_topological_geometries(
+			GPlatesModel::FeatureHandle &feature_handle)
+	{
+		bp::list topological_geometry_properties;
+
+		// Search for the topological geometry properties.
+		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+		for ( ; properties_iter != properties_end; ++properties_iter)
+		{
+			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+			// Get the topological geometry property value.
+			boost::optional<topological_geometry_property_value_type> topological_geometry =
+					GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
+							*feature_property,
+							0.0/*reconstruction_time*/);
+			if (topological_geometry)
+			{
+				topological_geometry_properties.append(topological_geometry.get());
+			}
+		}
+
+		// Returned list could be empty if there were no topological geometry properties for some reason.
+		return topological_geometry_properties;
+	}
+
+	bp::object
 	feature_handle_set_enumeration(
 			GPlatesModel::FeatureHandle &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
@@ -2934,6 +3280,11 @@ export_feature()
 			.value("geometry_only", GPlatesApi::CoverageReturn::GEOMETRY_ONLY)
 			.value("geometry_and_scalars", GPlatesApi::CoverageReturn::GEOMETRY_AND_SCALARS);
 
+	// Register the topological geometry types (topological line, polygon and network).
+	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::topological_geometry_property_value_type>();
+	// Enable boost::optional<topological_geometry_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::topological_geometry_property_value_type>();
+
 	//
 	// Feature - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -2991,6 +3342,15 @@ export_feature()
 					"* :meth:`get_geometry`\n"
 					"* :meth:`get_geometries`\n"
 					"* :meth:`get_all_geometries`\n"
+					"\n"
+					"The following methods provide a convenient way to set and get feature topological geometry "
+					"(which can be topological a :class:`line<GpmlTopologicalLine>`, :class:`polygon<GpmlTopologicalPolygon>` "
+					"or :class:`network<GpmlTopologicalNetwork>`):\n"
+					"\n"
+					"* :meth:`set_topological_geometry`\n"
+					"* :meth:`get_topological_geometry`\n"
+					"* :meth:`get_topological_geometries`\n"
+					"* :meth:`get_all_topological_geometries`\n"
 					"\n"
 					"The following methods provide a convenient way to set and get attributes imported from a Shapefile:\n"
 					"\n"
@@ -4363,6 +4723,177 @@ export_feature()
 				"  See :meth:`get_geometries` for more details.\n"
 				"\n"
 				"  .. seealso:: :meth:`set_geometry`\n")
+		.def("set_topological_geometry",
+				&GPlatesApi::feature_handle_set_topological_geometry,
+				(bp::arg("topological_geometry"),
+						bp::arg("property_name") = boost::optional<GPlatesModel::PropertyName>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_topological_geometry(topological_geometry, [property_name], [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Set the topological geometry (or geometries) of this feature.\n"
+				"\n"
+				"  :param topological_geometry: the topological geometry or geometries to set\n"
+				"  :type topological_geometry: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
+				":class:`GpmlTopologicalNetwork`, or a sequence (eg, ``list`` or ``tuple``) of them\n"
+				"  :param property_name: the optional property name of the topological geometry property or properties to set, "
+				"if not specified then the default geometry property name associated with this feature's "
+				":class:`type<FeatureType>` is used instead\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the topological geometry property (or properties) set in the feature\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *topological_geometry* "
+				"is a single topological geometry or sequence of them\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is specified but is not a recognised property name or is not supported by "
+				"this feature's :class:`type<FeatureType>`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and multiple topological geometries (if specified in *topological_geometry*) are not supported by *property_name* "
+				"(or the default geometry property name if *property_name* not specified)\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and any topological geometry type in *topological_geometry* is not supported for "
+				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
+				"  :raises: InformationModelError if *property_name* is not specified and a default geometry property "
+				"is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)\n"
+				"\n"
+				"  This is a convenience method to make setting topological geometry easier.\n"
+				"\n"
+				"  If *property_name* is not specified then the default property name is determined "
+				"from this feature's :class:`type<FeatureType>` and the geometry is set in one or more "
+				"properties of that :class:`PropertyName`.\n"
+				"\n"
+				"  Set a topological line as the default geometry on a feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_line = pygplates.GpmlTopologicalLine(...)\n"
+				"    feature.set_topological_geometry(topological_line)\n"
+				"\n"
+				"  Set a topological boundary as the default ('gpml:boundary') geometry property of a 'gpml:TopologicalClosedPlateBoundary' feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_boundary_feature = pygplates.Feature(pygplates.FeatureType.gpml_topological_closed_plate_boundary)\n"
+				"    topological_boundary_feature.set_topological_geometry(\n"
+				"        pygplates.GpmlTopologicalPolygon(...))\n"
+				"\n"
+				"  Set the topological boundary as the default ('gpml:outlineOf') geometry property of a 'gpml:ExtendedContinentalCrust' feature:\n"
+				"  ::\n"
+				"\n"
+				"    extended_continental_crust_feature = pygplates.Feature(pygplates.FeatureType.gpml_extended_continental_crust)\n"
+				"    extended_continental_crust_feature.set_topological_geometry(\n"
+				"        pygplates.GpmlTopologicalPolygon(...))\n"
+				"\n"
+				"  Set a topological network as the default ('gpml:network') geometry property of a 'gpml:TopologicalNetwork' feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_network_feature = pygplates.Feature(pygplates.FeatureType.gpml_topological_network)\n"
+				"    topological_network_feature.set_topological_geometry(\n"
+				"        pygplates.GpmlTopologicalNetwork(...))\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_geometry`, :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
+				"  .. seealso:: :meth:`set_geometry`\n")
+		.def("get_topological_geometry",
+				&GPlatesApi::feature_handle_get_topological_geometry,
+				(bp::arg("property_query") = bp::object()/*Py_None*/,
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_topological_geometry([property_query], [property_return=PropertyReturn.exactly_one])\n"
+				"  Return the topological geometry (or geometries) of this feature.\n"
+				"\n"
+				"  :param property_query: the optional property name or predicate function used to find "
+				"the topological geometry property or properties, if not specified then the default geometry property "
+				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :param property_return: whether to return exactly one topological geometry, the first geometry or all topological geometries\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`, or list of them, or None\n"
+				"\n"
+				"  This is a convenience method to make topological geometry retrieval easier.\n"
+				"\n"
+				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than one property name - see :meth:`get_geometry`. "
+				"Those geometry properties can also be *topological* geometry properties - the same principle applies here - see :meth:`get_geometry` for more details.\n"
+				"\n"
+				"  If *property_query* is not specified then the default property name is determined from this feature's :class:`type<FeatureType>` "
+				"and the topological geometry is retrieved from one or more properties of that :class:`PropertyName`. "
+				"See :meth:`get_geometry` for details on how many distinct geometries (topological or non-topological) are allowed per feature.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ===================== ==============\n"
+				"  PropertyReturn Value   Description\n"
+				"  ===================== ==============\n"
+				"  exactly_one           Returns the topological geometry if exactly one matching topological geometry property is found, "
+				"otherwise ``None`` is returned.\n"
+				"  first                 Returns the topological geometry of the first matching topological geometry property - "
+				"however note that a feature is an *unordered* collection of properties. Returns ``none`` "
+				"if there are no matching topological geometry properties.\n"
+				"  all                   Returns a ``list`` of topological geometries of matching topological geometry properties. "
+				"Returns an empty list if there are no matching topological geometry properties.\n"
+				"  ===================== ==============\n"
+				"\n"
+				"  Return the default topological geometry, in this case a :class:`GpmlTopologicalPolygon` from a "
+				"'gpml:TopologicalClosedPlateBoundary' feature. Returns ``None`` if not exactly one default topological geometry property found:\n"
+				"  ::\n"
+				"\n"
+				"    topological_polygon = topological_closed_plate_boundary_feature.get_topological_geometry()\n"
+				"    if topological_polygon:\n"
+				"        topological_boundary_sections = topological_polygon.get_boundary_sections()\n"
+				"        ...\n"
+				"\n"
+				"  Return the :class:`GpmlTopologicalNetwork` from a 'gpml:TopologicalNetwork' feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_network = topological_network_feature.get_topological_geometry()\n"
+				"    if topological_network:\n"
+				"        topological_boundary_sections = topological_network.get_boundary_sections()\n"
+				"        topological_interiors = topological_network.get_interiors()\n"
+				"        ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
+				"\n"
+				"  .. seealso:: :meth:`set_topological_geometry`\n")
+		.def("get_topological_geometries",
+				&GPlatesApi::feature_handle_get_topological_geometries,
+				(bp::arg("property_query") = bp::object()/*Py_None*/),
+				"get_topological_geometries([property_query])\n"
+				"  Return a list of topological geometries of this feature.\n"
+				"\n"
+				"  :param property_query: the optional property name or predicate function used to find "
+				"the topological geometry properties, if not specified then the default geometry property "
+				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :rtype: list of :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`\n"
+				"\n"
+				"  | This is a convenient alternative to :meth:`get_topological_geometry` that returns a ``list`` "
+				"of matching topological geometries without having to specify ``pygplates.PropertyReturn.all``.\n"
+				"  | This method is essentially equivalent to:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    def get_topological_geometries(feature, property_query):\n"
+				"        return feature.get_topological_geometry(property_query, pygplates.PropertyReturn.all)\n"
+				"\n"
+				"  See :meth:`get_topological_geometry` for more details.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_all_topological_geometries`\n"
+				"\n"
+				"  .. seealso:: :meth:`set_topological_geometry`\n")
+		.def("get_all_topological_geometries",
+				&GPlatesApi::feature_handle_get_all_topological_geometries,
+				"get_all_topological_geometries()\n"
+				"  Return a list of all topological geometries of this feature (regardless of their property names).\n"
+				"\n"
+				"  :rtype: list of :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`\n"
+				"\n"
+				"  | This is a convenient alternative to :meth:`get_topological_geometries` that returns a ``list`` "
+				"of *all* topological geometries regardless of their :class:`property names<PropertyName>`.\n"
+				"  | This method is equivalent to:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    def get_all_topological_geometries(feature):\n"
+				"        return feature.get_topological_geometries(lambda property: True)\n"
+				"\n"
+				"  See :meth:`get_topological_geometries` for more details.\n"
+				"\n"
+				"  .. seealso:: :meth:`set_topological_geometry`\n")
 		.def("set_enumeration",
 				&GPlatesApi::feature_handle_set_enumeration,
 				(bp::arg("property_name"),
