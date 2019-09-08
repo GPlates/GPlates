@@ -2999,6 +2999,51 @@ namespace GPlatesApi
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_topological_feature(
+			const GPlatesModel::FeatureType &feature_type,
+			bp::object topological_geometry,
+			bp::object name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+				feature_handle_create(feature_type, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		if (name != bp::object()/*Py_None*/)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name, verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		if (valid_time != bp::object()/*Py_None*/)
+		{
+			set_valid_time_from_tuple(feature_object, valid_time, verify_information_model);
+		}
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		// Set the topological geometry (or geometries).
+		feature_handle_set_topological_geometry(
+				*feature, topological_geometry, boost::none, verify_information_model);
+
+		return feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_tectonic_section(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
@@ -3318,6 +3363,7 @@ export_feature()
 					"The following methods provide convenient ways to create :class:`features<Feature>`:\n"
 					"\n"
 					"* :meth:`create_reconstructable_feature`\n"
+					"* :meth:`create_topological_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
 					"* :meth:`create_flowline`\n"
 					"* :meth:`create_motion_path`\n"
@@ -3709,6 +3755,87 @@ export_feature()
 				"        geometry_at_time_of_appearance,\n"
 				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
 		.staticmethod("create_reconstructable_feature")
+		.def("create_topological_feature",
+				&GPlatesApi::feature_handle_create_topological_feature,
+				(bp::arg("feature_type"),
+						bp::arg("topological_geometry"),
+						bp::arg("name") = bp::object()/*Py_None*/,
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_topological_feature(feature_type, topological_geometry, [name], [description], [valid_time], "
+				"[other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a topological feature.\n"
+				"\n"
+				"  :param feature_type: the type of feature to create\n"
+				"  :type feature_type: :class:`FeatureType`\n"
+				"  :param topological_geometry: the topological geometry or geometries\n"
+				"  :type topological_geometry: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
+				":class:`GpmlTopologicalNetwork`, or a sequence (eg, ``list`` or ``tuple``) of them\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"\n"
+				"  .. note:: A topological feature really only differs from a reconstructable feature in that it has "
+				"a *topological* geometry instead of a regular geometry (ie, internally it calls :meth:`set_topological_geometry` "
+				"instead of :meth:`set_geometry`.\n"
+				"\n"
+				"  This function calls :meth:`set_topological_geometry`. It optionally calls :meth:`set_name`, :meth:`set_description`, "
+				":meth:`set_valid_time` and :meth:`add`.\n"
+				"\n"
+				"  Create a subduction zone line feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_line = pygplates.GpmlTopologicalLine([...])\n"
+				"    subduction_zone_feature = pygplates.Feature.create_topological_feature(\n"
+				"        pygplates.FeatureType.gpml_subduction_zone,\n"
+				"        topological_line,\n"
+				"        name='Andes Subduction Zone',\n"
+				"        valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))\n"
+				"\n"
+				"  .. note:: We did not set a reconstruction plate ID on the subduction zone because it is a line "
+				"that is reconstructed by its constituent topological sections (and not using a plate ID).\n"
+				"\n"
+				"  Create a topological closed plate boundary feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_boundary = pygplates.GpmlTopologicalPolygon([...])\n"
+				"    SAM_plate_feature = pygplates.Feature.create_topological_feature(\n"
+				"        pygplates.FeatureType.gpml_topological_closed_plate_boundary,\n"
+				"        topological_boundary,\n"
+				"        name='SAM',\n"
+				"        valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))\n"
+				"    \n"
+				"    SAM_plate_feature.set_reconstruction_plate_id(201)\n"
+				"\n"
+				"  .. note:: Unlike the subduction zone we set a plate ID on the topological boundary "
+				"because it represents a rigid plate and the plate ID can be used when assigning plate IDs "
+				"to other feature geometries.\n"
+				"\n"
+				"  .. seealso:: :meth:`create_reconstructable_feature`\n")
+		.staticmethod("create_topological_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
 				(bp::arg("feature_type"),
