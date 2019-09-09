@@ -959,6 +959,51 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
                 pygplates.GmlPoint)
         self.topological_point_section = pygplates.GpmlTopologicalPoint(self.point_property_delegate)
 
+    def test_create(self):
+        # Create a topological section that references a line.
+        referenced_line_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_subduction_zone,
+                pygplates.PolylineOnSphere([(0, 20), (10, 20)]))
+        boundary_section = pygplates.GpmlTopologicalSection.create(
+            referenced_line_feature, reverse_order=True, topological_geometry_type=pygplates.GpmlTopologicalPolygon)
+        self.assertTrue(isinstance(boundary_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(boundary_section.get_property_delegate().get_feature_id() == referenced_line_feature.get_feature_id())
+        self.assertTrue(boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(boundary_section.get_property_delegate().get_property_type() == pygplates.GmlLineString)
+        self.assertTrue(boundary_section.get_reverse_orientation() == True)
+        
+        # Create a topological section that references a point.
+        referenced_point_feature = pygplates.Feature(pygplates.FeatureType.gpml_unclassified_feature)
+        referenced_point_feature.set_geometry(pygplates.PointOnSphere(10, 10))
+        line_section = pygplates.GpmlTopologicalSection.create(
+            referenced_point_feature, topological_geometry_type=pygplates.GpmlTopologicalLine)
+        self.assertTrue(isinstance(line_section, pygplates.GpmlTopologicalPoint))
+        self.assertTrue(line_section.get_property_delegate().get_feature_id() == referenced_point_feature.get_feature_id())
+        self.assertTrue(line_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        self.assertTrue(line_section.get_property_delegate().get_property_type() == pygplates.GmlPoint)
+        self.assertTrue(line_section.get_reverse_orientation() == False)
+        self.assertRaises(ValueError,
+            pygplates.GpmlTopologicalSection.create, referenced_point_feature, topological_geometry_type=pygplates.GmlLineString)
+        
+        # Cannot reference a multipoint geometry.
+        referenced_multipoint_feature = pygplates.Feature(pygplates.FeatureType.gpml_unclassified_feature)
+        referenced_multipoint_feature.set_geometry(pygplates.MultiPointOnSphere([(10, 10)]))
+        self.assertFalse(pygplates.GpmlTopologicalSection.create(
+            referenced_multipoint_feature, topological_geometry_type=pygplates.GpmlTopologicalLine))
+        
+        # Create a topological section that references a topological line.
+        topological_line = pygplates.GpmlTopologicalLine([line_section])
+        referenced_topological_line_feature = pygplates.Feature.create_topological_feature(
+                pygplates.FeatureType.gpml_subduction_zone,
+                topological_line)
+        another_boundary_section = pygplates.GpmlTopologicalSection.create(
+            referenced_topological_line_feature, reverse_order=True, topological_geometry_type=pygplates.GpmlTopologicalPolygon)
+        self.assertTrue(isinstance(another_boundary_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(another_boundary_section.get_property_delegate().get_feature_id() == referenced_topological_line_feature.get_feature_id())
+        self.assertTrue(another_boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(another_boundary_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
+        self.assertTrue(another_boundary_section.get_reverse_orientation() == True)
+
     def test_get(self):
         self.assertTrue(self.topological_line_section.get_property_delegate() == self.line_property_delegate)
         self.assertTrue(self.topological_line_section.get_reverse_orientation() == True)
