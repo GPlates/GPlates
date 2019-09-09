@@ -26,8 +26,13 @@
 #ifndef GPLATES_API_PYFEATURE_H
 #define GPLATES_API_PYFEATURE_H
 
+#include <boost/optional.hpp>
+
 #include "global/PreconditionViolationError.h"
 
+#include "app-logic/TopologyInternalUtils.h"
+
+#include "model/FeatureType.h"
 #include "model/PropertyName.h"
 
 
@@ -90,6 +95,21 @@ namespace GPlatesApi
 			GEOMETRY_AND_SCALARS // Return geometry and scalars which is the coverage domain and range.
 		};
 	};
+
+
+	/**
+	 * Topological geometry property value types (topological line, polygon and network).
+	 */
+	typedef GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type
+			topological_geometry_property_value_type;
+
+
+	/**
+	 * Returns the default geometry property name associated with the specified feature type.
+	 */
+	boost::optional<GPlatesModel::PropertyName>
+	get_default_geometry_property_name(
+			const GPlatesModel::FeatureType &feature_type);
 }
 
 #endif   // GPLATES_NO_PYTHON

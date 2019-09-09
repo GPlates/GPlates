@@ -34,6 +34,7 @@
 
 #include "PyPropertyValues.h"
 
+#include "PyFeature.h"
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -42,12 +43,15 @@
 #include "PyRevisionedVector.h"
 
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructionFeatureProperties.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 
 #include "global/python.h"
+
+#include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureVisitor.h"
 #include "model/Gpgim.h"
@@ -4023,6 +4027,163 @@ export_gpml_time_window()
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeWindow>();
 }
 
+
+namespace GPlatesApi
+{
+	namespace
+	{
+		/**
+		 * If the section is used in a topological network then it can only be reconstructable by plate ID or half-stage rotation.
+		 *
+		 * These are the only supported reconstructable types inside the deforming network code (in Delaunay vertices).
+		 */
+		bool
+		can_use_as_topological_section_of_topological_network(
+				GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle)
+		{
+			// Get the feature's reconstruction method.
+			GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_feature_properties;
+			reconstruction_feature_properties.visit_feature(feature_handle->reference());
+
+			// Note that no reconstruction method implies ByPlateId (which is allowed).
+			boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+				reconstruction_feature_properties.get_reconstruction_method();
+			if (reconstruction_method)
+			{
+				const QString reconstruction_method_string = reconstruction_method->get().qstring();
+				if (reconstruction_method_string != "ByPlateId" &&
+					!reconstruction_method_string.startsWith("HalfStageRotation"))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
+	/**
+	 * Create a topological point or line section referencing the geometry of a feature.
+	 */
+	boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
+	gpml_topological_section_create(
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle,
+			boost::optional<GPlatesModel::PropertyName> geometry_property_name,
+			bool reverse_order,
+			boost::optional<GPlatesPropertyValues::StructuralType> topological_geometry_type)
+	{
+		// Make sure topological geometry type is a topological line, polygon or network.
+		if (topological_geometry_type)
+		{
+			if (topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalPolygon::STRUCTURAL_TYPE &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE)
+			{
+				// Raise the 'ValueError' python exception if unexpected topological geometry type.
+				PyErr_SetString(
+					PyExc_ValueError,
+					"Topological geometry type should be GpmlTopologicalLine, GpmlTopologicalPolygon or GpmlTopologicalNetwork");
+				bp::throw_error_already_set();
+			}
+		}
+
+		// If a geometry property name is not specified then use the default geometry property of the feature's type.
+		if (!geometry_property_name)
+		{
+			geometry_property_name = get_default_geometry_property_name(feature_handle->feature_type());
+		}
+
+		bp::object feature_object(feature_handle);
+
+		// Find the geometry associated with the property name.
+		//
+		// Call python since Feature.get_geometry is implemented in python code...
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> feature_geometry =
+				bp::extract< boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >(
+						feature_object.attr("get_geometry")(geometry_property_name));
+		if (feature_geometry)
+		{
+			// If the section is used in a topological network then it can only be reconstructable by plate ID or half-stage rotation.
+			// These are the only supported reconstructable types inside the deforming network code (in Delaunay vertices).
+			if (topological_geometry_type &&
+				topological_geometry_type.get() == GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE)
+			{
+				if (!can_use_as_topological_section_of_topological_network(feature_handle))
+				{
+					return boost::none;
+				}
+			}
+
+			// The geometry type should be a point or a polyline.
+			//
+			// The topology build tools in GPlates will also accept a polygon (interpreted a polyline)
+			// but we won't accept that here because it's pretty confusing to have a polygon form only part
+			// of a topological boundary (intuitively you might except it could only form the entire boundary).
+			const GPlatesMaths::GeometryType::Value geometry_type =
+					GPlatesAppLogic::GeometryUtils::get_geometry_type(*feature_geometry.get());
+			if (geometry_type == GPlatesMaths::GeometryType::POLYLINE)
+			{
+				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+					GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+						GPlatesPropertyValues::GpmlPropertyDelegate::create(
+							feature_handle->feature_id(),
+							geometry_property_name.get(),
+							GPlatesPropertyValues::GmlLineString::STRUCTURAL_TYPE),
+						reverse_order);
+
+				return topological_section;
+			}
+			else if (geometry_type == GPlatesMaths::GeometryType::POINT)
+			{
+				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+					GPlatesPropertyValues::GpmlTopologicalPoint::create(
+						GPlatesPropertyValues::GpmlPropertyDelegate::create(
+							feature_handle->feature_id(),
+							geometry_property_name.get(),
+							GPlatesPropertyValues::GmlPoint::STRUCTURAL_TYPE));
+
+				return topological_section;
+			}
+		}
+		// else if a topological boundary or network was specified then we can also reference a topological line...
+		else if (topological_geometry_type &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE)
+		{
+			// Find the topological geometry associated with the property name.
+			//
+			// Call python since Feature.get_topological_geometry is implemented in python code...
+			boost::optional<topological_geometry_property_value_type> feature_topological_geometry =
+					bp::extract< boost::optional<topological_geometry_property_value_type> >(
+							feature_object.attr("get_topological_geometry")(geometry_property_name));
+			if (feature_topological_geometry)
+			{
+				// It must be a topological *line*.
+				if (boost::get<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>(&feature_topological_geometry.get()))
+				{
+					// Ideally if the topological *line* is used in a topological network then its sub-segments can only be
+					// reconstructable by plate ID or half-stage rotation (since these are the only supported reconstructable types
+					// inside the deforming network code - in Delaunay vertices).
+					// However we only have the feature IDs of these sub-segment features (not the features themselves) and so
+					// we cannot inspect the features to ensure they are reconstructable by plate ID or half-stage rotation.
+
+					// Create a topological section referencing a topological line.
+					const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+						GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+							GPlatesPropertyValues::GpmlPropertyDelegate::create(
+								feature_handle->feature_id(),
+								geometry_property_name.get(),
+								GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE),
+							reverse_order);
+
+					return topological_section;
+				}
+			}
+		}
+
+		return boost::none;
+	}
+}
+
 void
 export_gpml_topological_section()
 {
@@ -4053,6 +4214,77 @@ export_gpml_topological_section()
 					"\n"
 					"  .. versionadded:: 21\n",
 					bp::no_init)
+		.def("create",
+			&GPlatesApi::gpml_topological_section_create,
+			(bp::arg("feature"),
+					bp::arg("geometry_property_name") = boost::optional<GPlatesModel::PropertyName>(),
+					bp::arg("reverse_order") = false,
+					bp::arg("topological_geometry_type") = boost::optional<GPlatesPropertyValues::StructuralType>()),
+			"create(feature, [geometry_property_name], [topological_geometry_type])\n"
+			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+			// (like it can a pure python function) and we cannot document it in first (signature) line
+			// because it messes up Sphinx's signature recognition...
+			"  [*staticmethod*] Create a topological section referencing a feature geometry.\n"
+			"\n"
+			"  :param feature: the feature referenced by the returned topological section\n"
+			"  :type feature: :class:`Feature`\n"
+			"  :param geometry_property_name: the optional geometry property name used to find the geometry "
+			"(topological or non-topological), if not specified then the default geometry property name associated "
+			"with the feature's :class:`type<FeatureType>` is used instead\n"
+			"  :type geometry_property_name: :class:`PropertyName`, or None\n"
+			"  :param reverse_order: whether to reverse the topological section when it's used to resolve a "
+			"topological geometry, this is ignored for *point* sections and only applies to a *line* section when "
+			"it does not intersect both its neighbours (when resolving the parent topology) - defaults to False\n"
+			"  :param topological_geometry_type: optional type of topological geometry that the returned section "
+			"will be used for (if specified, then used to determine what type of feature geometry can be used as a section)\n"
+			"  :type topological_geometry_type: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
+			":class:`GpmlTopologicalNetwork`, or None\n"
+			"  :type reverse_order: bool\n"
+			"  :rtype: :class:`GpmlTopologicalSection` (:class:`GpmlTopologicalLineSection` or :class:`GpmlTopologicalPoint`), or None\n"
+			"  :raises: ValueError if *topological_geometry_type* is specified but is not one of the accepted types "
+			"(:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)\n"
+			"\n"
+			"  If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - "
+			"see :meth:`Feature.get_geometry` for more details.\n"
+			"\n"
+			"  A regular geometry can be referenced by any topological geometry (topological line, polygon or network). "
+			"However a topological *line* can only be referenced by a topological polygon or network.\n"
+			"\n"
+			"  .. note:: It's fine to ignore *reverse_order* (leave it as the default) since it is not used when resolving the topological geometry "
+			"provided it intersects both its neighbouring topological sections (in the topological geometry) - which applies only to line sections (not points). "
+			"When a line section does not intersect both neighbouring sections then its reverse flag determines its orientation when rubber-banding the topology geometry.\n"
+			"\n"
+			"  Returns ``None`` if:\n"
+			"\n"
+			"  * there is not exactly one geometry (topological or non-topological) in the property named *geometry_property_name* (or default) in *feature*, or\n"
+			"  * it's a regular geometry but it's not a point or polyline, or\n"
+			"  * it's a regular point/polyline and *topological_geometry_type* is a topological network but *feature* is not reconstructable by "
+			"plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or\n"
+			"  * it's a topological polygon or network, or\n"
+			"  * it's a topological line but *topological_geometry_type* is also a topological line (or not specified)\n"
+			"\n"
+			"  Create a topological section to be used in a :class:`GpmlTopologicalPolygon`:\n"
+			"  ::\n"
+			"\n"
+			"    boundary_sections = []\n"
+			"    \n"
+			"    boundary_section = pygplates.GpmlTopologicalSection.create(referenced_feature, "
+			"topological_geometry_type=pygplates.GpmlTopologicalPolygon)\n"
+			"    if boundary_section:\n"
+			"        boundary_sections.append(boundary_section)\n"
+			"    \n"
+			"    ...\n"
+			"    \n"
+			"    topological_boundary = pygplates.GpmlTopologicalPolygon(boundary_sections)\n"
+			"    \n"
+			"    topological_boundary_feature = pygplates.Feature(pygplates.FeatureType.gpml_topological_closed_plate_boundary)\n"
+			"    topological_boundary_feature.set_topological_geometry(topological_boundary)\n"
+			"\n"
+			"  .. seealso:: :meth:`GpmlTopologicalLine.get_sections`, :meth:`GpmlTopologicalPolygon.get_boundary_sections` and "
+			":meth:`GpmlTopologicalNetwork.get_boundary_sections`\n"
+			"\n"
+			"  .. versionadded:: 24\n")
+		.staticmethod("create")
 		.def("get_property_delegate",
 			get_property_delegate,
 			"get_property_delegate()\n"
@@ -4490,7 +4722,9 @@ export_gpml_topological_polygon()
 			"    boundary_sections = topological_polygon.get_boundary_sections()\n"
 			"\n"
 			"    # Append a section\n"
-			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
+			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
+			"\n"
+			"  .. versionadded:: 24\n")
 		;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

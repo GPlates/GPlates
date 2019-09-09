@@ -118,42 +118,36 @@ namespace GPlatesApi
 
 
 	/**
-	 * Topological geometry property value types (topological line, polygon and network).
+	 * Returns the default geometry property name associated with the specified feature type.
 	 */
-	typedef GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type
-			topological_geometry_property_value_type;
+	boost::optional<GPlatesModel::PropertyName>
+	get_default_geometry_property_name(
+			const GPlatesModel::FeatureType &feature_type)
+	{
+		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+		// Get the GPGIM feature class.
+		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+				gpgim.get_feature_class(feature_type);
+		if (!gpgim_feature_class)
+		{
+			return boost::none;
+		}
+
+		// Get the feature's default geometry property.
+		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
+				gpgim_feature_class.get()->get_default_geometry_feature_property();
+		if (!default_geometry_feature_property)
+		{
+			return boost::none;
+		}
+
+		return default_geometry_feature_property.get()->get_property_name();
+	}
 
 
 	namespace
 	{
-		/**
-		 * Returns the default geometry property name associated with the specified feature type.
-		 */
-		boost::optional<GPlatesModel::PropertyName>
-		get_default_geometry_property_name(
-				const GPlatesModel::FeatureType &feature_type)
-		{
-			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
-
-			// Get the GPGIM feature class.
-			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-					gpgim.get_feature_class(feature_type);
-			if (!gpgim_feature_class)
-			{
-				return boost::none;
-			}
-
-			// Get the feature's default geometry property.
-			boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
-					gpgim_feature_class.get()->get_default_geometry_feature_property();
-			if (!default_geometry_feature_property)
-			{
-				return boost::none;
-			}
-
-			return default_geometry_feature_property.get()->get_property_name();
-		}
-
 		/**
 		 * Returns property structural type associated with the specified geometry.
 		 */
@@ -3834,7 +3828,9 @@ export_feature()
 				"because it represents a rigid plate and the plate ID can be used when assigning plate IDs "
 				"to other feature geometries.\n"
 				"\n"
-				"  .. seealso:: :meth:`create_reconstructable_feature`\n")
+				"  .. seealso:: :meth:`create_reconstructable_feature`\n"
+				"\n"
+				"  .. versionadded:: 24\n")
 		.staticmethod("create_topological_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
@@ -4916,7 +4912,9 @@ export_feature()
 				"        pygplates.GpmlTopologicalNetwork(...))\n"
 				"\n"
 				"  .. seealso:: :meth:`get_topological_geometry`, :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
-				"  .. seealso:: :meth:`set_geometry`\n")
+				"  .. seealso:: :meth:`set_geometry`\n"
+				"\n"
+				"  .. versionadded:: 24\n")
 		.def("get_topological_geometry",
 				&GPlatesApi::feature_handle_get_topological_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -4975,7 +4973,9 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
 				"\n"
-				"  .. seealso:: :meth:`set_topological_geometry`\n")
+				"  .. seealso:: :meth:`set_topological_geometry`\n"
+				"\n"
+				"  .. versionadded:: 24\n")
 		.def("get_topological_geometries",
 				&GPlatesApi::feature_handle_get_topological_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/),
@@ -5001,7 +5001,9 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`get_all_topological_geometries`\n"
 				"\n"
-				"  .. seealso:: :meth:`set_topological_geometry`\n")
+				"  .. seealso:: :meth:`set_topological_geometry`\n"
+				"\n"
+				"  .. versionadded:: 24\n")
 		.def("get_all_topological_geometries",
 				&GPlatesApi::feature_handle_get_all_topological_geometries,
 				"get_all_topological_geometries()\n"
@@ -5020,7 +5022,9 @@ export_feature()
 				"\n"
 				"  See :meth:`get_topological_geometries` for more details.\n"
 				"\n"
-				"  .. seealso:: :meth:`set_topological_geometry`\n")
+				"  .. seealso:: :meth:`set_topological_geometry`\n"
+				"\n"
+				"  .. versionadded:: 24\n")
 		.def("set_enumeration",
 				&GPlatesApi::feature_handle_set_enumeration,
 				(bp::arg("property_name"),
