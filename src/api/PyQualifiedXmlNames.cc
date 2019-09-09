@@ -965,6 +965,9 @@ export_structural_type()
 	// For example, it converts to/from 'pygplates.GpmlPlateId'
 	// (rather than something like 'pygplates.GpmlPlateId(plate_id)').
 	GPlatesApi::ConversionStructuralType();
+
+	// Enable boost::optional<GPlatesPropertyValues::StructuralType> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::StructuralType>();
 #else
 	//
 	// StructuralType - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
