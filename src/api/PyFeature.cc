@@ -279,13 +279,23 @@ namespace GPlatesApi
 
 		/**
 		 * Throws InformationModelException if @a feature_type does not inherit directly or indirectly
-		 * from @a ancestor_feature_type.
+		 * from @a ancestor_feature_type, or is the special feature type 'gpml:UnclassifiedFeature').
 		 */
 		void
 		verify_feature_type_inherits(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureType &ancestor_feature_type)
 		{
+			// The feature type 'gpml:UnclassifiedFeature' does not inherit anything, but since it is a
+			// special feature type that supports all properties we treat it as if it inherits everything.
+			static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE =
+					GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+			if (feature_type == UNCLASSIFIED_FEATURE)
+			{
+				// Don't raise an exception.
+				return;
+			}
+
 			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
 					GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
 
@@ -982,7 +992,10 @@ namespace GPlatesApi
 		// Default to unclassified feature - since that supports any combination of properties.
 		if (!feature_type)
 		{
-			feature_type = GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+			static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE =
+					GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+
+			feature_type = UNCLASSIFIED_FEATURE;
 		}
 		else if (verify_information_model == VerifyInformationModel::YES)
 		{
