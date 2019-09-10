@@ -973,8 +973,9 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(boundary_section.get_reverse_orientation() == True)
         
         # Create a topological section that references a point.
-        referenced_point_feature = pygplates.Feature(pygplates.FeatureType.gpml_unclassified_feature)
-        referenced_point_feature.set_geometry(pygplates.PointOnSphere(10, 10))
+        referenced_point_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PointOnSphere(10, 10))
         line_section = pygplates.GpmlTopologicalSection.create(
             referenced_point_feature, topological_geometry_type=pygplates.GpmlTopologicalLine)
         self.assertTrue(isinstance(line_section, pygplates.GpmlTopologicalPoint))
@@ -1003,6 +1004,31 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(another_boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
         self.assertTrue(another_boundary_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
         self.assertTrue(another_boundary_section.get_reverse_orientation() == True)
+        
+        # Create a topological network interior that references a point.
+        network_point_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_point_feature)
+        self.assertTrue(isinstance(network_point_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_point_interior.get_feature_id() == referenced_point_feature.get_feature_id())
+        self.assertTrue(network_point_interior.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        self.assertTrue(network_point_interior.get_property_type() == pygplates.GmlPoint)
+        
+        # Create a topological network interior that references a polygon.
+        referenced_polygon_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]))
+        network_polygon_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_polygon_feature)
+        self.assertTrue(isinstance(network_polygon_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_polygon_interior.get_feature_id() == referenced_polygon_feature.get_feature_id())
+        self.assertTrue(network_polygon_interior.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        # The property type is actually 'gml:LinearRing' but we don't have a Python equivalent for that (like we do 'gml:Polygon').
+        self.assertTrue(network_polygon_interior.get_property_type() is None)
+        
+        # Create a topological network interior that references a topological line.
+        network_topological_line_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_topological_line_feature)
+        self.assertTrue(isinstance(network_topological_line_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_topological_line_interior.get_feature_id() == referenced_topological_line_feature.get_feature_id())
+        self.assertTrue(network_topological_line_interior.get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(network_topological_line_interior.get_property_type() == pygplates.GpmlTopologicalLine)
 
     def test_get(self):
         self.assertTrue(self.topological_line_section.get_property_delegate() == self.line_property_delegate)
