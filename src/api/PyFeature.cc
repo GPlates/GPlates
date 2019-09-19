@@ -433,6 +433,35 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Create a top-level property without verifying information model.
+		 */
+		GPlatesModel::TopLevelProperty::non_null_ptr_type
+		create_top_level_property_without_verifying_information_model(
+				const GPlatesModel::PropertyName &property_name,
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+		{
+			// Just create a top-level property without checking information model.
+			//
+			// NOTE: We first attempt to use 'ModelUtils::create_top_level_property()' since
+			// it will add a time-dependent wrapper around the property value if needed.
+			// If this fails (because of time-dependent GPGIM issues) then we'll just
+			// create without worrying about the time-dependent wrapper.
+			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property =
+					GPlatesModel::ModelUtils::create_top_level_property(
+							property_name,
+							property_value,
+							boost::none/*feature_type*/,
+							false/*check_property_value_type*/);
+			if (!property)
+			{
+				return GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+			}
+
+			return property.get();
+		}
+
+
+		/**
 		 * Extract the (begin, end) times from a tuple and set the valid time on the specified feature.
 		 */
 		void
@@ -1065,7 +1094,7 @@ namespace GPlatesApi
 			{
 				// Just create a top-level property without checking information model.
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+						create_top_level_property_without_verifying_information_model(property_name, property_value);
 
 				GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.add(property);
 
@@ -1113,7 +1142,7 @@ namespace GPlatesApi
 				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
 
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+						create_top_level_property_without_verifying_information_model(property_name, property_value);
 
 				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
 
@@ -1489,7 +1518,7 @@ namespace GPlatesApi
 			{
 				// Just create a top-level property without checking information model.
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+						create_top_level_property_without_verifying_information_model(property_name, property_value);
 
 				// Search for an existing property with the same name.
 				GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
@@ -1577,7 +1606,7 @@ namespace GPlatesApi
 
 						// Just create a top-level property without checking information model.
 						GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-								GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+								create_top_level_property_without_verifying_information_model(property_name, property_value);
 
 						// Change the property.
 						feature_handle.set(properties_iter, property);
@@ -1600,7 +1629,7 @@ namespace GPlatesApi
 
 				// Just create a top-level property without checking information model.
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+						create_top_level_property_without_verifying_information_model(property_name, property_value);
 
 				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
 
