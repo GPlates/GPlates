@@ -168,7 +168,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 {
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows = gpml_piecewise_aggregation.time_windows();
 
-	// NOTE: If there's only one tine window then we do not check its time period against the
+	// NOTE: If there's only one time window then we do not check its time period against the
 	// current reconstruction time.
 	// This is because GPML files created with old versions of GPlates set the time period,
 	// of the sole time window, to match that of the 'feature's time period (in the topology
@@ -263,12 +263,12 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_sections(
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
-		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	// Get the reconstruction geometry referenced by the topological line property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
 			find_topological_reconstruction_geometry(
-					*gpml_toplogical_line_section.get_source_geometry());
+					*gpml_topological_line_section.get_source_geometry());
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -286,9 +286,9 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_line_section.get_source_geometry()->feature_id(),
+					gpml_topological_line_section.get_source_geometry()->feature_id(),
 					topological_reconstruction_geometry.get(),
-					gpml_toplogical_line_section.get_reverse_order());
+					gpml_topological_line_section.get_reverse_order());
 	if (!boundary_section)
 	{
 		// Return without adding topological section to the list of boundary sections.
@@ -304,12 +304,12 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
-		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	// Get the reconstruction geometry referenced by the topological point property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
 			find_topological_reconstruction_geometry(
-					*gpml_toplogical_point.get_source_geometry());
+					*gpml_topological_point.get_source_geometry());
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -344,7 +344,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_point.get_source_geometry()->feature_id(),
+					gpml_topological_point.get_source_geometry()->feature_id(),
 					topological_reconstruction_geometry.get(),
 					// This topological section is a point, so cannot be intersected with its neighbours,
 					// and so has no reversal information...

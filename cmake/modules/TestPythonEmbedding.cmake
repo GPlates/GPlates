@@ -22,6 +22,7 @@
 # system version of Python and the version of Python installed by Macports, if
 # Boost is installed via Macports.
 
+if(NOT GPLATES_PYTHON_3)
 FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
 	"#include <boost/python.hpp>\n"
 	"using namespace boost::python;\n"
@@ -43,6 +44,30 @@ FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embe
 	"	}\n"
 	"	return 0;\n"
 	"}\n")
+else(NOT GPLATES_PYTHON_3)
+FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
+    "#include <boost/python.hpp>\n"
+    "using namespace boost::python;\n"
+    "struct TestStruct {  };\n"
+    "BOOST_PYTHON_MODULE(testmodule) {\n"
+    "   class_<TestStruct>(\"TestStruct\");\n"
+    "}\n"
+    "int main() {\n"
+    "   try {\n"
+    "       char MODULE_NAME[] = \"testmodule\";\n"
+    "       PyImport_AppendInittab(MODULE_NAME, &PyInit_testmodule);\n"
+    "       Py_Initialize();\n"
+    "       object main_module(handle<>(borrowed(PyImport_AddModule(\"__main__\"))));\n"
+    "       object main_namespace = main_module.attr(\"__dict__\");\n"
+    "       handle<> ignored(PyRun_String(\"import testmodule; t = testmodule.TestStruct()\", Py_file_input, main_namespace.ptr(), main_namespace.ptr()));\n"
+    "   } catch (...) {\n"
+    "       PyErr_Print();\n"
+    "       return 1;\n"
+    "   }\n"
+    "   return 0;\n"
+    "}\n")
+endif(NOT GPLATES_PYTHON_3)
+
 SET(python_embedding_LIBS
 	${Boost_LIBRARIES}
 	${PYTHON_LIBRARIES})

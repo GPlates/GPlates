@@ -776,10 +776,19 @@ internal_main(int argc, char* argv[])
 {
 	// Initialize Qt resources that exist in the static 'qt-resources' library.
 	// NOTE: This is done here so that both the GUI and command-line-only paths have initialized resources.
-	Q_INIT_RESOURCE(gpgim);
-	Q_INIT_RESOURCE(qt_widgets);
+	//
+	// NOTE: According to the QtResources documentation calls to Q_INIT_RESOURCE are not needed if
+	// the resources are compiled into a shared library (further, if resources only accessed from
+	// within shared library then there's also no issue with the shared library not being loaded yet).
+	// So Q_INIT_RESOURCE is not called for the python (API) shared library (since this source
+	// file is not included in it) but that's no problem since the python shared library is used
+	// externally (ie, used by an external python interpreter not the GPlates embedded interpreter)
+	// and so the resources are only accessed internally by the shared library.
+	//
 	Q_INIT_RESOURCE(opengl);
 	Q_INIT_RESOURCE(python);
+	Q_INIT_RESOURCE(gpgim);
+	Q_INIT_RESOURCE(qt_widgets);
 
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)

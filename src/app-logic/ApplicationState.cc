@@ -193,7 +193,7 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 	// if the property is not actually modified). This model event in turn can cause the
 	// reconstruction tree layer to invalidate its reconstruction tree cache while its still being
 	// used thus resulting in a crash. This will no longer be a problem once the new model
-	// (for pygplates) is complete. In the meantime model notification guards and using the hacked
+	// (for 'pygplates') is complete. In the meantime model notification guards and using the hacked
 	// feature visitor FeatureVisitorThatGuaranteesNotToModify (eg, on ReconstructionTreePopulator)
 	// are the best alternatives.
 	//

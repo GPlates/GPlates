@@ -244,6 +244,13 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Returns true if the float and double built-in types have infinity and NaN.
+	 */
+	bool
+	has_infinity_and_nan();
+
+
+	/**
 	 * Terminates the application with an error message if the float and double
 	 * built-in types do not have infinity and NaN.
 	 */

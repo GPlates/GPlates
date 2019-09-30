@@ -239,7 +239,7 @@ namespace GPlatesAppLogic
 		 * Return false if point is not inside the network.
 		 */
 		bool
-		solve_velocities_on_network(
+		solve_velocities_on_networks(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
@@ -389,7 +389,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			// First check whether domain point is inside any topological networks.
 			// This includes points inside interior rigid blocks on the networks.
 			//
-			if (solve_velocities_on_network(
+			if (solve_velocities_on_networks(
 					domain_point,
 					range_element,
 					resolved_networks_query,

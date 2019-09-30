@@ -31,6 +31,7 @@
 #include <QProcess>
 #include <QMap>
 #include <iostream>
+#include <string>
 
 #include "PythonManager.h"
 
@@ -53,8 +54,12 @@
 #include "utils/StringUtils.h"
 
 #if !defined(GPLATES_NO_PYTHON)
-extern "C" void initpygplates();
 
+#if PY_MAJOR_VERSION >= 3
+extern "C" PyMODINIT_FUNC PyInit_pygplates(void);
+#else
+extern "C" void initpygplates();
+#endif 
 
 GPlatesGui::PythonManager::PythonManager() : 
 	d_python_main_thread_runner(NULL),
@@ -219,7 +224,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#if PY_MAJOR_VERSION >= 3
+	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
+#else
+    if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#endif
 	{
 		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
@@ -236,7 +245,17 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	string in static storage whose contents will not change for the duration of the program’s 
 	execution. No code in the Python interpreter will change the contents of this storage.
 	*/
+#if PY_MAJOR_VERSION >= 3
+	// Convert char* to wchar_t*
+	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
+	// Seems Py_SetProgramName accepts a wchar_t* pointer to 'non-const', so make a copy.
+	std::vector<wchar_t> program_name_non_const(program_name.begin(), program_name.end());
+	program_name_non_const.push_back('\0'); // Null terminate the string.
+
+	Py_SetProgramName(&program_name_non_const[0]);
+#else
 	Py_SetProgramName(argv[0]);
+#endif
 	/*
 	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
 	which is the version that boost python uses. So, the python version has been determined when compiling 
@@ -278,7 +297,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 
 	PythonInterpreterLocker interpreter_locker;
 
-	// Load the pygplates module.
+	// Load the 'pygplates' module.
 	try
 	{
 		d_python_main_module = import("__main__");

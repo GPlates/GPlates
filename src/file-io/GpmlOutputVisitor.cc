@@ -1375,7 +1375,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_piecewise_aggregation(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network)
+		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
 	d_output.writeStartGpmlElement("TopologicalNetwork");
 
@@ -1384,9 +1384,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 			d_output.writeStartGpmlElement("TopologicalSections");
 				// Write the boundary topological sections.
 				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator
-						boundary_sections_iter = gpml_toplogical_network.boundary_sections_begin();
+						boundary_sections_iter = gpml_topological_network.boundary_sections_begin();
 				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator
-						boundary_sections_end = gpml_toplogical_network.boundary_sections_end();
+						boundary_sections_end = gpml_topological_network.boundary_sections_end();
 				for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter) 
 				{
 					d_output.writeStartGpmlElement("section");
@@ -1398,9 +1398,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 
 		// Write the network interior geometries.
 		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator
-				interior_geometries_iter = gpml_toplogical_network.interior_geometries_begin();
+				interior_geometries_iter = gpml_topological_network.interior_geometries_begin();
 		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator
-				interior_geometries_end = gpml_toplogical_network.interior_geometries_end();
+				interior_geometries_end = gpml_topological_network.interior_geometries_end();
 		for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 		{
 			d_output.writeStartGpmlElement("interior");
@@ -1413,7 +1413,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
-	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 {
 	d_output.writeStartGpmlElement("TopologicalPolygon");
 
@@ -1421,9 +1421,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
 		d_output.writeStartGpmlElement("exterior");
 			d_output.writeStartGpmlElement("TopologicalSections");
 				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
-						gpml_toplogical_polygon.exterior_sections_begin();
+						gpml_topological_polygon.exterior_sections_begin();
 				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
-						gpml_toplogical_polygon.exterior_sections_end();
+						gpml_topological_polygon.exterior_sections_end();
 				for ( ; iter != end; ++iter) 
 				{
 					d_output.writeStartGpmlElement("section");
@@ -1441,14 +1441,14 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
-	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line)
+	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
 {
 	d_output.writeStartGpmlElement("TopologicalLine");
 
 	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
-			gpml_toplogical_line.sections_begin();
+			gpml_topological_line.sections_begin();
 	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
-			gpml_toplogical_line.sections_end();
+			gpml_topological_line.sections_end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_output.writeStartGpmlElement("section");
@@ -1462,17 +1462,17 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line_section(
-	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	d_output.writeStartGpmlElement("TopologicalLineSection");
 
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delgate 
-			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+			( gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this);
 		d_output.writeEndElement();
 		
 		d_output.writeStartGpmlElement("reverseOrder");
-			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
+			d_output.writeBoolean( gpml_topological_line_section.get_reverse_order() );
 		d_output.writeEndElement();
 
 	d_output.writeEndElement();
@@ -1481,12 +1481,12 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line_section(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_point(
-	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	d_output.writeStartGpmlElement("TopologicalPoint");
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delegate
-			( gpml_toplogical_point.get_source_geometry() )->accept_visitor(*this); 
+			( gpml_topological_point.get_source_geometry() )->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement();  
 }
@@ -1832,12 +1832,12 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_key_value_dictionary_element(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::write_gpml_topological_network_interior(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior)
+		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_network_interior)
 {
 	d_output.writeStartGpmlElement("TopologicalNetworkInterior");
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delegate 
-			gpml_toplogical_network_interior.get_source_geometry()->accept_visitor(*this); 
+			gpml_topological_network_interior.get_source_geometry()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement();  // </gpml:TopologicalNetworkInterior>
 }

@@ -150,7 +150,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 {
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows = gpml_piecewise_aggregation.time_windows();
 
-	// NOTE: If there's only one tine window then we do not check its time period against the
+	// NOTE: If there's only one time window then we do not check its time period against the
 	// current reconstruction time.
 	// This is because GPML files created with old versions of GPlates set the time period,
 	// of the sole time window, to match that of the 'feature's time period (in the topology
@@ -328,15 +328,15 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line_section(
 
 void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
-		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_toplogical_point.get_source_geometry()->feature_id();
+			gpml_topological_point.get_source_geometry()->feature_id();
 
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_toplogical_point.get_source_geometry(),
+					*gpml_topological_point.get_source_geometry(),
 					// This topological section is a point, so cannot be intersected with its neighbours,
 					// and so has no reversal information...
 					false/*reverse_hint*/);

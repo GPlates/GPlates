@@ -51,9 +51,8 @@ GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	bool multiple_geometry_types,
 	bool wrap_to_dateline):
 	d_filename(filename),
-	d_ogr_writer(0)
+	d_ogr_writer(new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline))
 {
-	d_ogr_writer = new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline);
 }
 
 GPlatesFileIO::OgrGeometryExporter::~OgrGeometryExporter()

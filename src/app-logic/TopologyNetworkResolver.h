@@ -134,17 +134,17 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit_gpml_topological_network(
-			 	GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network);
+			 	GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network);
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
 		void
 		visit_gpml_plate_id(

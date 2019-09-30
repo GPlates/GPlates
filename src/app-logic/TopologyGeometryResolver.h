@@ -148,7 +148,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit_gpml_topological_polygon(
-			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon);
 
 		void
 		visit_gpml_topological_line(
@@ -157,12 +157,12 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
 	private:
 		/**

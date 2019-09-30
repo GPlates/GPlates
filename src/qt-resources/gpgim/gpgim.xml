@@ -2823,7 +2823,7 @@
 			<Comment>This feature is an example of one which would use gridded data almost exclusively, with little need for Contours and outlines. However, in any case of gridded data, there is the possibility that such contours may be desirable, and should be available as an option.</Comment>
 		</FeatureClass>
 		
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:domainSet">
 			<Name>gpml:ScalarCoverage</Name>
 			<Description>Arbitrary surface scalar data represented by a scalar value at each point in a geometry.</Description>
 			<ClassType>concrete</ClassType>
