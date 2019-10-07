@@ -27,6 +27,7 @@
 #include <algorithm>
 #include "app-logic/PropertyExtractors.h"
 #include "global/CompilerWarnings.h"
+#include "presentation/Application.h"	
 #include "AgeColourPalettes.h"
 #include "DrawStyleManager.h"
 #include "DrawStyleAdapters.h"

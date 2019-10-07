@@ -38,7 +38,6 @@
 #include "global/python.h"
 #include "api/PythonUtils.h"
 #include "api/PythonInterpreterLocker.h"
-#include "model/FeatureHandle.h"
 #include "AgeColourPalettes.h"
 #include "ColourPalette.h"
 #include "ColourScheme.h"
@@ -46,6 +45,11 @@
 #include "Palette.h"
 #include "PlateIdColourPalettes.h"
 #include "PythonConfiguration.h"
+
+namespace GPlatesAppLogic
+{
+	class ReconstructionGeometry;
+}
 
 namespace GPlatesGui
 {
@@ -73,7 +77,7 @@ namespace GPlatesGui
 		virtual
 		const DrawStyle
 		get_style(
-				GPlatesModel::FeatureHandle::weak_ref f) const = 0;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const = 0;
 	
 		
 		const Configuration&
@@ -162,7 +166,7 @@ namespace GPlatesGui
 				
 		const DrawStyle
 		get_style(
-				GPlatesModel::FeatureHandle::weak_ref f) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 		
 		StyleAdapter*
@@ -237,7 +241,7 @@ namespace GPlatesGui
 		
 		const DrawStyle
 		get_style(
-				GPlatesModel::FeatureHandle::weak_ref f) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 		
 		StyleAdapter*

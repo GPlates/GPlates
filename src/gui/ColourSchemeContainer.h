@@ -58,9 +58,6 @@ namespace GPlatesGui
 			NUM_CATEGORIES // Must be the last one.
 		};
 
-		/*
-		* Are you joking me?
-		*/
 		class Iterator :
 				public std::iterator<std::input_iterator_tag, Type>
 		{

@@ -29,32 +29,41 @@
 #include "DrawStyleManager.h"
 #include "api/PyFeature.h"
 #include "api/PythonUtils.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "utils/Profile.h"
 
 #ifndef GPLATES_NO_PYTHON
 
 const GPlatesGui::DrawStyle
 GPlatesGui::PythonStyleAdapter::get_style(
-		GPlatesModel::FeatureHandle::weak_ref f) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	PROFILE_FUNC();
-	if(d_cfg_dirty)
+	if (d_cfg_dirty)
 	{
 		update_cfg();
 		d_cfg_dirty = false;
 	}
 
-	GPlatesApi::Feature py_feature(f);
-	DrawStyle ds; 
-	try
+	DrawStyle ds;
+
+	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(&reconstruction_geometry);
+	if (feature_ref)
 	{
-		GPlatesApi::PythonInterpreterLocker lock;
-		d_py_obj.attr("get_style")(py_feature, boost::ref(ds));
+		GPlatesApi::Feature py_feature(feature_ref.get());
+
+		try
+		{
+			GPlatesApi::PythonInterpreterLocker lock;
+			d_py_obj.attr("get_style")(py_feature, boost::ref(ds));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			qWarning() << GPlatesApi::PythonUtils::get_error_message();
+		}
 	}
-	catch (const boost::python::error_already_set &)
-	{
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
-	}
+
 	return ds;
 }
 
@@ -288,11 +297,11 @@ GPlatesGui::PythonStyleAdapter::create_cfg_item(const std::map<QString, QString>
 
 const GPlatesGui::DrawStyle
 GPlatesGui::ColourStyleAdapter::get_style(
-		GPlatesModel::FeatureHandle::weak_ref f) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	PROFILE_FUNC();
 	DrawStyle ds;
-	boost::optional<Colour> c = d_scheme->get_colour(*f);
+	boost::optional<Colour> c = d_scheme->get_colour(reconstruction_geometry);
 	if(c)
 	{
 		ds.colour = *c;

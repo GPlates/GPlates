@@ -31,106 +31,11 @@
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "ColourPalette.h"
-#include "Palette.h"
-#include "PlateIdColourPalettes.h"
 
 #include <boost/optional.hpp>
-#include "app-logic/ReconstructionGeometryUtils.h"
-#include "presentation/Application.h"
-#include "utils/FeatureUtils.h"
 
 namespace GPlatesGui
 {
-	class PlateIdScheme : public ColourScheme
-	{
-	public:
-		PlateIdScheme(const Palette* p) : d_palette(p)
-		{ }
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
-		{
-			return get_colour(GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(&reconstruction_geometry));
-		}
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesModel::FeatureHandle& feature) const
-		{
-			return get_colour(GPlatesUtils::get_recon_plate_id_as_int(&feature));
-		}
-	protected:
-		boost::optional<Colour>
-		get_colour(boost::optional<GPlatesModel::integer_plate_id_type> id) const
-		{
-			if(id)
-			{
-				return d_palette->get_colour(Palette::Key(static_cast<long>(*id)));
-			}
-			return boost::none;
-		}
-		
-		const Palette*  d_palette;
-	};
-
-
-	class FeatureAgeScheme : public ColourScheme
-	{
-		double d_upper,d_lower;
-	public:
-		FeatureAgeScheme(
-				const Palette* (*fun) (const double, const double),
-				const double upper = 450.0,
-				const double lower = 0.0) : 
-			d_upper(upper),
-			d_lower(lower),
-			d_palette(fun(upper,lower))
-		{ }
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesAppLogic::ReconstructionGeometry &r) const
-		{
-			boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature = 
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(&r);
-			if(feature)
-			{
-				return get_colour(GPlatesUtils::get_age(
-						(*feature).handle_ptr(), 
-						GPlatesPresentation::current_time()));
-			}
-			return boost::none;
-		}
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesModel::FeatureHandle& feature) const
-		{
-			return get_colour(GPlatesUtils::get_age(&feature, GPlatesPresentation::current_time()));
-		}
-	protected:
-		boost::optional<Colour>
-		get_colour(boost::optional<GPlatesMaths::Real> age) const
-		{
-			if(age)
-			{
-				Colour c;
-				if((*age).dval() > d_upper)
-				{
-					c =  boost::get<0>(d_palette->get_BFN_colour());
-					return c;
-				}
-				if((*age).dval() < d_lower)
-					return boost::get<1>(d_palette->get_BFN_colour());
-				return d_palette->get_colour(Palette::Key((*age).dval()));
-			}
-			return boost::none;
-		}
-		
-		const Palette*  d_palette;
-	};
-
 	/**
 	 * GenericColourScheme takes a reconstruction geometry, extracts a property
 	 * and maps that property to a colour using a colour palette.
@@ -177,12 +82,12 @@ namespace GPlatesGui
 		 * reconstruction geometry should not be drawn for some other reason
 		 */
 
-		template<typename ArguType>
 		boost::optional<Colour>
-		get_colour_t(const ArguType& argu) const
+		get_colour(
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 		{
 			boost::optional<typename PropertyExtractorType::return_type> value =
-				d_property_extractor(argu);
+				d_property_extractor(reconstruction_geometry);
 			if (value)
 			{
 				return d_colour_palette_ptr->get_colour(*value);
@@ -191,20 +96,6 @@ namespace GPlatesGui
 			{
 				return PROPERTY_NOT_FOUND_COLOUR;
 			}
-		}
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
-		{
-			return get_colour_t(reconstruction_geometry);
-		}
-
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesModel::FeatureHandle& feature) const
-		{
-			return get_colour_t(feature);
 		}
 	
 	private:

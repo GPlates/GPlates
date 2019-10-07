@@ -157,13 +157,7 @@ namespace
 
 			if (style_adapter)
 			{
-				boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
-						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-								reconstruction_geometry);
-				if (feature_ref)
-				{
-					style = style_adapter->get_style(feature_ref.get());
-				}
+				style = style_adapter->get_style(*reconstruction_geometry);
 			}
 
 			return GPlatesGui::ColourProxy(style.colour);
