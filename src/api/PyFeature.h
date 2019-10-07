@@ -27,7 +27,6 @@
 
 #include "global/python.h"
 #include "model/FeatureHandle.h"
-#include "utils/FeatureUtils.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToDouble.h"
 #include "data-mining/OpaqueDataToQString.h"

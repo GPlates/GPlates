@@ -34,11 +34,14 @@
 
 #include "data-mining/DataMiningUtils.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "global/LogException.h"
 
 #include "gui/AnimationController.h"
 
 #include "model/ModelUtils.h"
+#include "model/PropertyName.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLRenderer.h"
@@ -47,10 +50,11 @@
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
 
+#include "property-values/GmlTimePeriod.h"
+
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
 
-#include "utils/FeatureUtils.h"
 
 namespace
 {
@@ -322,22 +326,30 @@ GPlatesGui::GetBeginTimeCommand::execute(
 	try{
 		GPlatesModel::FeatureHandle::weak_ref feature = 
 			GPlatesModel::ModelUtils::find_feature(d_feature_id);
-		boost::optional<GPlatesMaths::Real> begin_time = 
-			GPlatesUtils::get_begin_time(feature.handle_ptr());
+
 		QString bt_str;
-		if(begin_time)
+
+		static const GPlatesModel::PropertyName GML_VALID_TIME = GPlatesModel::PropertyName::create_gml("validTime");
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				feature,
+				GML_VALID_TIME);
+		if (gml_valid_time)
 		{
-			if(begin_time->is_negative_infinity())
+			// Note that begin time can be finite, or positive/negative infinity.
+			const GPlatesPropertyValues::GeoTimeInstant begin_time = gml_valid_time.get()->begin()->time_position();
+
+			if(begin_time.is_distant_future())
 			{
 				bt_str = "-inf";
 			}
-			if(begin_time->is_positive_infinity())
+			if(begin_time.is_distant_past())
 			{
 				bt_str = "inf";
 			}
 			else
 			{
-				bt_str = QString().setNum(begin_time->dval());
+				bt_str = QString().setNum(begin_time.value());
 			}
 		}
 		else

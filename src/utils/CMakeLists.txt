@@ -35,8 +35,6 @@ set(srcs
     Endian.h
     Environment.cc
     Environment.h
-    FeatureUtils.cc
-    FeatureUtils.h
     FunctionTypes.h
     GeometryCreationUtils.h
     HasFunction.h

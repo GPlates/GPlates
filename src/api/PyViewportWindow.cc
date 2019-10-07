@@ -42,8 +42,6 @@
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 
-#include "utils/FeatureUtils.h"
-
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;

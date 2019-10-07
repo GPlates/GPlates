@@ -24,15 +24,23 @@
  */
 
 #include <iostream>
+#include <sstream>
+#include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <QRegExp>
+#include <QString>
 
 #include "PyFeature.h"
 
 #include "PythonUtils.h"
 
-#include "feature-visitors/ShapefileAttributeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
+#include "feature-visitors/ShapefileAttributeFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValue.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"
@@ -106,9 +114,7 @@ namespace GPlatesApi
 					gml_data_block_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -117,9 +123,7 @@ namespace GPlatesApi
 					gpml_plate_id_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -127,9 +131,7 @@ namespace GPlatesApi
 					gml_time_period_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -137,9 +139,7 @@ namespace GPlatesApi
 					enumeration_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -147,9 +147,7 @@ namespace GPlatesApi
 					gml_line_string_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -157,9 +155,7 @@ namespace GPlatesApi
 					gml_multi_point_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -167,9 +163,7 @@ namespace GPlatesApi
 						gml_orientable_curve_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void
@@ -177,9 +171,7 @@ namespace GPlatesApi
 						gml_point_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -187,9 +179,7 @@ namespace GPlatesApi
 						gml_polygon_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 			void 
@@ -197,9 +187,7 @@ namespace GPlatesApi
 					gml_time_instant_type &v)
 			{
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -208,9 +196,7 @@ namespace GPlatesApi
 					gpml_feature_reference_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -219,9 +205,7 @@ namespace GPlatesApi
 					gpml_feature_snapshot_reference_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -230,9 +214,7 @@ namespace GPlatesApi
 					gpml_finite_rotation_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -241,9 +223,7 @@ namespace GPlatesApi
 					gpml_finite_rotation_slerp_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -252,9 +232,7 @@ namespace GPlatesApi
 					gpml_hot_spot_trail_mark_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -263,9 +241,7 @@ namespace GPlatesApi
 					gpml_irregular_sampling_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -274,9 +250,7 @@ namespace GPlatesApi
 					gpml_key_value_dictionary_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -285,9 +259,7 @@ namespace GPlatesApi
 					gpml_measure_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -296,9 +268,7 @@ namespace GPlatesApi
 					gpml_old_plates_header_type &v) 
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -307,9 +277,7 @@ namespace GPlatesApi
 					gpml_piecewise_aggregation_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -318,9 +286,7 @@ namespace GPlatesApi
 					gpml_polarity_chron_id_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -329,9 +295,7 @@ namespace GPlatesApi
 					gpml_property_delegate_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -340,9 +304,7 @@ namespace GPlatesApi
 					gpml_revision_id_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -351,9 +313,7 @@ namespace GPlatesApi
 					gpml_topological_polygon_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 		
 
@@ -362,9 +322,7 @@ namespace GPlatesApi
 					gpml_topological_line_section_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -373,9 +331,7 @@ namespace GPlatesApi
 					gpml_topological_point_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -384,9 +340,7 @@ namespace GPlatesApi
 					uninterpreted_property_value_type &v)
 			{ 
 				//TODO:
-				d_val =	
-					PythonUtils::qstring_to_python_string(
-							property_value_to_qstring(v));
+				d_val =	PythonUtils::qstring_to_python_string(to_qstring(v));
 			}
 
 
@@ -450,6 +404,77 @@ namespace GPlatesApi
 		private:
 			bp::object d_val;
 		};
+
+
+		boost::optional<GPlatesModel::PropertyName>
+		convert_property_name(
+				const QString& name)
+		{
+			QRegExp rx("^\\s*(gpml|gml)\\s*:\\s*(\\w+)\\s*"); // (gpml|gml):(name)
+			rx.indexIn(name);
+			QString prefix = rx.cap(1);
+			QString short_name = rx.cap(2);
+	
+			boost::optional<GPlatesModel::PropertyName> ret = boost::none;
+			if(prefix.length() == 0 || short_name.length() == 0)
+			{
+				//qWarning() << "The prefix or name is empty.";
+				//qWarning() << prefix << " : " << short_name;
+			}
+
+			if(prefix == "gpml")
+			{
+				ret = GPlatesModel::PropertyName::create_gpml(short_name);
+			}
+
+			if(prefix == "gml")
+			{
+				ret = GPlatesModel::PropertyName::create_gml(short_name);
+			}
+
+			return ret; 
+		}
+
+
+		boost::optional<QString>
+		get_shapefile_attribute(
+				const QString& name)
+		{
+			boost::optional<QString> shape_name = boost::none;
+			QRegExp rx("^\\s*(gpml:shapefileAttributes)\\s*:\\s*\\b(\\w+)\\b\\s*"); // gpml:shapefileAttributes
+			if(rx.indexIn(name) != -1)
+			{
+				shape_name = rx.cap(2);
+			//	qDebug() << "Shapefile attribute name: " << *shape_name;
+			}
+			return shape_name;
+		}
+
+
+		boost::tuple<
+				GPlatesMaths::Real, 
+				GPlatesMaths::Real>
+		get_start_end_time(
+				const GPlatesModel::FeatureHandle* feature_ptr)
+		{
+			GPlatesMaths::Real begin_time(0);
+			GPlatesMaths::Real end_time(0);
+
+			static const GPlatesModel::PropertyName GML_VALID_TIME = GPlatesModel::PropertyName::create_gml("validTime");
+
+			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+							feature_ptr->reference(),
+							GML_VALID_TIME);
+			if (gml_valid_time)
+			{
+				// Note that begin/end times can be finite, or positive/negative infinity.
+				begin_time = gml_valid_time.get()->begin()->time_position().value();
+				end_time = gml_valid_time.get()->end()->time_position().value();
+			}
+
+			return boost::make_tuple(begin_time, end_time);
+		}
 	}
 }
 
@@ -507,7 +532,7 @@ GPlatesApi::Feature::get_properties_by_name(
 	const char* property_name = bp::extract<const char*>(prop_name);
 	QString q_property_name = QString(property_name);
 
-	boost::optional<QString> shapefile_attr = GPlatesUtils::get_shapefile_attribute(q_property_name);
+	boost::optional<QString> shapefile_attr = get_shapefile_attribute(q_property_name);
 	if(shapefile_attr)
 	{
 		is_shapefile_attr = true;
@@ -515,7 +540,7 @@ GPlatesApi::Feature::get_properties_by_name(
 
 	boost::optional<PropertyName> p_name = is_shapefile_attr ? 
 		PropertyName::create_gpml("shapefileAttributes") :
-		GPlatesUtils::convert_property_name(q_property_name);
+		convert_property_name(q_property_name);
 	
 	if(!p_name)
 	{
@@ -651,7 +676,7 @@ GPlatesApi::Feature::valid_time()
 		return bp::tuple();
 
 	GPlatesMaths::Real start, end;
-	boost::tie(start, end) = GPlatesUtils::get_start_end_time(d_handle.handle_ptr());
+	boost::tie(start, end) = get_start_end_time(d_handle.handle_ptr());
 	return bp::make_tuple(start.dval(),end.dval());
 }
 
@@ -694,9 +719,19 @@ GPlatesApi::Feature::plate_id()
 	if(!d_handle.is_valid())
 		return 0;
 
-	boost::optional<unsigned long> pid =
-		GPlatesUtils::get_recon_plate_id_as_int(d_handle.handle_ptr());
-	return pid ? *pid : 0;
+	static const GPlatesModel::PropertyName GPML_RECONSTRUCTION_PLATE_ID =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					d_handle,
+					GPML_RECONSTRUCTION_PLATE_ID);
+	if (!gpml_plate_id)
+	{
+		return 0;
+	}
+
+	return gpml_plate_id.get()->value();
 }
 
 
