@@ -39,8 +39,6 @@ set(srcs
     FeatureUtils.h
     FunctionTypes.h
     GeometryCreationUtils.h
-    GetPropertyAsPythonObjVisitor.cc
-    GetPropertyAsPythonObjVisitor.h
     HasFunction.h
     IdStringSet.cc
     IdStringSet.h
