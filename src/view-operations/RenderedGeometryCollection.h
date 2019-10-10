@@ -751,12 +751,7 @@ namespace GPlatesViewOperations
 			RenderedGeometryCollectionVisitorType &visitor,
 			RenderedGeometryLayerType &rendered_geom_layer)
 	{
-		// Ask the visitor if it wants to visit this RenderedGeometryLayer.
-		// It can query the active status of this RenderedGeometryLayer to decide.
-		if (visitor.visit_rendered_geometry_layer(rendered_geom_layer))
-		{
-			rendered_geom_layer.accept_visitor(visitor);
-		}
+		rendered_geom_layer.accept_visitor(visitor);
 	}
 
 

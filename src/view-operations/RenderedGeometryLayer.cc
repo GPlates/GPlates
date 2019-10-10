@@ -847,11 +847,16 @@ void
 GPlatesViewOperations::RenderedGeometryLayer::accept_visitor(
 		ConstRenderedGeometryLayerVisitor &visitor) const
 {
-	// Visit each RenderedGeometry.
-	std::for_each(
-		rendered_geometry_begin(),
-		rendered_geometry_end(),
-		boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+	// Ask the visitor if it wants to visit us.
+	// It can query our active status to decide.
+	if (visitor.visit_rendered_geometry_layer(*this))
+	{
+		// Visit each RenderedGeometry.
+		std::for_each(
+			rendered_geometry_begin(),
+			rendered_geometry_end(),
+			boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+	}
 }
 
 
@@ -859,11 +864,16 @@ void
 GPlatesViewOperations::RenderedGeometryLayer::accept_visitor(
 		RenderedGeometryLayerVisitor &visitor)
 {
-	// Visit each RenderedGeometry.
-	std::for_each(
-		rendered_geometry_begin(),
-		rendered_geometry_end(),
-		boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+	// Ask the visitor if it wants to visit us.
+	// It can query our active status to decide.
+	if (visitor.visit_rendered_geometry_layer(*this))
+	{
+		// Visit each RenderedGeometry.
+		std::for_each(
+			rendered_geometry_begin(),
+			rendered_geometry_end(),
+			boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+	}
 }
 
 
