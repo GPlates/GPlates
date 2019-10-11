@@ -136,6 +136,9 @@ namespace GPlatesGui
 		//! Used to get current topological sections.
 		GPlatesAppLogic::ApplicationState &d_application_state;
 
+		//! General view state usage.
+		GPlatesPresentation::ViewState &d_view_state;
+
 		//! For clicking geometries in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
 		//! For clicking geometries in the 2D map view.

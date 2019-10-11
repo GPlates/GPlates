@@ -151,6 +151,9 @@ namespace GPlatesGui
 		//! Used to get current topological sections.
 		GPlatesAppLogic::ApplicationState &d_application_state;
 
+		//! General view state usage.
+		GPlatesPresentation::ViewState &d_view_state;
+
 		//! Used when restoring the clicked geometries on workflow activation.
 		GPlatesQtWidgets::ViewportWindow &d_viewport_window;
 

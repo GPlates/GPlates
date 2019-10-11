@@ -51,6 +51,7 @@
 #include "gui/GeometryFocusHighlight.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayers.h"
 
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
@@ -98,6 +99,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 	d_render_settings(view_state.get_render_settings()),
 	d_symbol_map(view_state.get_feature_type_symbol_map()),
 	d_application_state(view_state.get_application_state()),
+	d_view_state(view_state),
 	d_viewport_window(viewport_window)
 {
 	create_canvas_tools(
@@ -356,6 +358,14 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::activate_workflow()
 			this,
 			SLOT(draw_feature_focus()));
 
+	// Re-draw the focused feature when a visual layer is modified since the focused feature styling
+	// depends on the visual layer it belongs to.
+	QObject::connect(
+			&d_view_state.get_visual_layers(),
+			SIGNAL(layer_modified(size_t)),
+			this,
+			SLOT(draw_feature_focus()));
+
 	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
 	draw_feature_focus();
 }
@@ -384,6 +394,11 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::deactivate_workflow()
 	QObject::disconnect(
 			&d_rendered_geometry_parameters,
 			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
+	QObject::disconnect(
+			&d_view_state.get_visual_layers(),
+			SIGNAL(layer_modified(size_t)),
 			this,
 			SLOT(draw_feature_focus()));
 }
@@ -430,6 +445,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::draw_feature_focus()
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
 			d_render_settings,
+			d_view_state.get_visual_layers(),
 			d_application_state.get_current_topological_sections(),
 			d_symbol_map);
 }
