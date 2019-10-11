@@ -92,7 +92,6 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 
-#include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -1889,29 +1888,16 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 		return;
 	}
 
-	// FIXME: Probably should use the same styling params used to draw
-	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
-			d_rendered_geometry_parameters);
-	render_style_params.reconstruction_line_width_hint =
-			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_line_width_hint();
-	render_style_params.reconstruction_point_size_hint =
-			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_point_size_hint();
-
-	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
-	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
-			render_style_params,
-			d_viewport_window_ptr->get_view_state().get_render_settings(),
-			d_application_state_ptr->get_current_topological_sections(),
+	// Create rendered geometry.
+	const GPlatesViewOperations::RenderedGeometry rendered_focused_geometry =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+			focused_geometry.get(),
 			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_colour(),
-			boost::none,
-			boost::none);
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_point_size_hint(),
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_line_width_hint());
 
-	reconstruction_geometry_renderer.begin_render(*d_focused_feature_layer_ptr);
-
-	focused_recon_geom->accept_visitor(reconstruction_geometry_renderer);
-
-	reconstruction_geometry_renderer.end_render();
+	// Add to layer.
+	d_focused_feature_layer_ptr->add_rendered_geometry(rendered_focused_geometry);
 
 	// Get the start and end points of the focused feature's geometry.
 	// Since the geometry is in focus but has not been added to the topology
