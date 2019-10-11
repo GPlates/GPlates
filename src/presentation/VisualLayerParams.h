@@ -31,6 +31,8 @@
 
 #include "VisualLayerParamsVisitor.h"
 
+#include "ReconstructionGeometrySymboliser.h"
+
 #include "app-logic/LayerParams.h"
 
 #include "utils/ReferenceCount.h"
@@ -110,6 +112,25 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::Layer &layer)
 		{  }
 
+
+		/**
+		 * The reconstruction geometry symboliser for this layer.
+		 *
+		 * Note: When the symboliser is modified then our 'modified' signal is emitted.
+		 */
+		ReconstructionGeometrySymboliser &
+		get_reconstruction_geometry_symboliser()
+		{
+			return *d_reconstruction_geometry_symboliser;
+		}
+
+		const ReconstructionGeometrySymboliser &
+		get_reconstruction_geometry_symboliser() const
+		{
+			return *d_reconstruction_geometry_symboliser;
+		}
+
+
 		void
 		set_style_adapter(
 				const GPlatesGui::StyleAdapter* adapter)
@@ -126,7 +147,7 @@ namespace GPlatesPresentation
 	Q_SIGNALS:
 
 		/**
-		 * Emitted when any aspect of the parameters has been modified.
+		 * Emitted when any aspect of the parameters has been modified (including the symboliser).
 		 */
 		void
 		modified();
@@ -136,10 +157,17 @@ namespace GPlatesPresentation
 		explicit
 		VisualLayerParams(
 				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
-				const GPlatesGui::StyleAdapter* style = NULL) :
+				const GPlatesGui::StyleAdapter* style = NULL,
+				ReconstructionGeometrySymboliser::non_null_ptr_type reconstruction_geometry_symboliser = ReconstructionGeometrySymboliser::create()) :
 			d_layer_params(layer_params),
-			d_style(style)
-		{  }
+			d_style(style),
+			d_reconstruction_geometry_symboliser(reconstruction_geometry_symboliser)
+		{
+			// When the symboliser is modified then we are modified.
+			QObject::connect(
+					d_reconstruction_geometry_symboliser.get(), SIGNAL(modified()),
+					this, SIGNAL(modified()));
+		}
 
 		GPlatesAppLogic::LayerParams::non_null_ptr_type
 		get_layer_params() const
@@ -161,6 +189,7 @@ namespace GPlatesPresentation
 
 		GPlatesAppLogic::LayerParams::non_null_ptr_type d_layer_params;
 		const GPlatesGui::StyleAdapter* d_style;
+		ReconstructionGeometrySymboliser::non_null_ptr_type d_reconstruction_geometry_symboliser;
 	};
 }
 

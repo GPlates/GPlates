@@ -339,6 +339,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRenderer(
 		const RenderParams &render_params,
 		const GPlatesGui::RenderSettings &render_settings,
+		const ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser,
 		const std::set<GPlatesModel::FeatureId> &topological_sections,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
@@ -346,6 +347,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
 	d_render_settings(render_settings),
+	d_reconstruction_geometry_symboliser(reconstruction_geometry_symboliser),
 	d_topological_sections(topological_sections),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),

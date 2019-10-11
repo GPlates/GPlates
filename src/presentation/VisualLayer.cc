@@ -150,6 +150,7 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),
 			d_render_settings,
+			d_visual_layer_params->get_reconstruction_geometry_symboliser(),
 			d_application_state.get_current_topological_sections(),
 			boost::none, // colour 
             boost::none, // rotation adjustment

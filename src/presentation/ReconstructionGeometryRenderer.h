@@ -81,6 +81,9 @@ namespace GPlatesViewOperations
 
 namespace GPlatesPresentation
 {
+	class ReconstructionGeometrySymboliser;
+
+
 	/**
 	 * Visits classes derived from @a ReconstructionGeometry and
 	 * renders them by creating @a RenderedGeometry objects.
@@ -263,6 +266,7 @@ namespace GPlatesPresentation
 		ReconstructionGeometryRenderer(
 				const RenderParams &render_params,
 				const GPlatesGui::RenderSettings &render_settings,
+				const ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser,
 				const std::set<GPlatesModel::FeatureId> &topological_sections,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
@@ -410,6 +414,7 @@ namespace GPlatesPresentation
 
 		RenderParams d_render_params;
 		const GPlatesGui::RenderSettings &d_render_settings;
+		const ReconstructionGeometrySymboliser &d_reconstruction_geometry_symboliser;
 		const std::set<GPlatesModel::FeatureId> &d_topological_sections;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
@@ -454,7 +459,26 @@ namespace GPlatesPresentation
 		 * to the root of the spatial partition.
 		 *
 		 * NOTE: Only call this for rendered geometries that represent the @a GeometryOnSphere
-		 * inside a *reconstruction* geometry, otherwise use @a render.
+		 * inside a *reconstruction* geometry, otherwise use @a render. This is because
+		 * view frustum culling in GlobeRenderedGeometryLayerPainter expects the rendered geometry
+		 * to be inside the bounds of its spatial partition location which in turn was determined
+		 * by the  @a GeometryOnSphere inside the *reconstruction* geometry. So for example, rendering
+		 * a polyline as a lines is fine but rendering it with marker symbols (along the line) should
+		 * be done using @a render.
+		 *
+		 * TODO: However rendering a polyline with a fat line width could be problematic since the
+		 * large line width could cause the *rendered* polyline to be extended outside the bounds
+		 * of the polyline's spatial partition location. This could result in the line disappearing
+		 * before it is completely outside the view frustum (by half the line width).
+		 * Might need to convert the line width to world units (difficult since a constant width in
+		 * screen space means a varying width in world space due to projection) and extend the
+		 * polyline's bounding circle radius (used when inserting into spatial partition).
+		 * Alternatively, just render without a spatial partition (ie, use @a render) if the line
+		 * width exceeds a threshold (although less efficient rendering). Or just simply live with
+		 * the popping - it won't be that bad - and will only occur for those parts of polyline that
+		 * touch the loose bounds of the spatial partition location (which would be relatively rare).
+		 * This is what we'll do for now (just live with any slight popping), users are unlikely to
+		 * have excessive line widths anyway.
 		 */
 		void
 		render_reconstruction_geometry_on_sphere(
