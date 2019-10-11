@@ -43,6 +43,11 @@ namespace GPlatesGui
 	class RenderSettings;
 }
 
+namespace GPlatesPresentation
+{
+	class VisualLayers;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
@@ -69,7 +74,8 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
-				const GPlatesGui::RenderSettings &render_settings,
+				const RenderSettings &render_settings,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				const std::set<GPlatesModel::FeatureId> &topological_sections,
 				const symbol_map_type &symbol_map);
 	}
