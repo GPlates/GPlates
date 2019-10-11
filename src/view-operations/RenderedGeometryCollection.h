@@ -208,6 +208,16 @@ namespace GPlatesViewOperations
 				MainLayerType);
 
 		/**
+		 * Get the @a RenderedGeometryLayer corresponding to specified main layer.
+		 *
+		 * This is a convenient place to add @a RenderedGeometry objects when you don't
+		 * need to use child layers.
+		 */
+		const RenderedGeometryLayer *
+		get_main_rendered_layer(
+				MainLayerType) const;
+
+		/**
 		 * Create a rendered layer that is a child of the specified main rendered layer.
 		 *
 		 * Child layers are used when you need to order groups of @a RenderedGeometry
@@ -300,6 +310,13 @@ namespace GPlatesViewOperations
 		RenderedGeometryLayer *
 		get_child_rendered_layer(
 				child_layer_index_type);
+
+		/**
+		 * Get the @a RenderedGeometryLayer corresponding to specified child layer.
+		 */
+		const RenderedGeometryLayer *
+		get_child_rendered_layer(
+				child_layer_index_type) const;
 
 		/**
 		 * Get the sequence of child layer indices for the given parent layer.

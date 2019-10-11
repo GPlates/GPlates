@@ -176,6 +176,14 @@ GPlatesViewOperations::RenderedGeometryCollection::get_main_rendered_layer(
 }
 
 
+const GPlatesViewOperations::RenderedGeometryLayer *
+GPlatesViewOperations::RenderedGeometryCollection::get_main_rendered_layer(
+		MainLayerType main_rendered_layer_type) const
+{
+	return d_main_layer_seq[main_rendered_layer_type].d_rendered_geom_layer.get();
+}
+
+
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
 GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
 		MainLayerType parent_layer)
@@ -304,6 +312,14 @@ GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer_a
 GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::get_child_rendered_layer(
 		child_layer_index_type child_layer_index)
+{
+	return d_rendered_geometry_layer_manager.get_rendered_geometry_layer(child_layer_index);
+}
+
+
+const GPlatesViewOperations::RenderedGeometryLayer *
+GPlatesViewOperations::RenderedGeometryCollection::get_child_rendered_layer(
+		child_layer_index_type child_layer_index) const
 {
 	return d_rendered_geometry_layer_manager.get_rendered_geometry_layer(child_layer_index);
 }
