@@ -30,13 +30,16 @@
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/optional.hpp>
 
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "RenderedGeometryUtils.h"
 
+#include "RenderedGeometryCollectionVisitor.h"
+#include "RenderedGeometryLayerVisitor.h"
 #include "RenderedReconstructionGeometry.h"
-#include "RenderedGeometryVisitor.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -44,82 +47,6 @@ namespace GPlatesViewOperations
 	{
 		namespace
 		{
-			/**
-			 * Increments count for every non-empty @a RenderedGeometryLayer.
-			 */
-			class CountNonEmptyRenderedGeometries
-			{
-			public:
-				CountNonEmptyRenderedGeometries() :
-				d_count(0)
-				{  }
-
-				void
-				operator()(
-						const RenderedGeometryLayer &rendered_geom_layer)
-				{
-					if (rendered_geom_layer.is_active() && !rendered_geom_layer.is_empty())
-					{
-						++d_count;
-					}
-				}
-
-				unsigned int
-				get_count() const
-				{
-					return d_count;
-				}
-
-			private:
-				unsigned int d_count;
-			};
-
-
-			/**
-			 * Retrieves any @a ReconstructionGeometry objects from @a RenderedGeometryLayer.
-			 */
-			class CollectReconstructionGeometries :
-				public ConstRenderedGeometryVisitor
-			{
-			public:
-				CollectReconstructionGeometries(
-						reconstruction_geom_seq_type &reconstruction_geom_seq) :
-					d_reconstruction_geom_seq(reconstruction_geom_seq)
-				{  }
-
-				void
-				operator()(
-						const RenderedGeometryLayer &rendered_geom_layer)
-				{
-					if (!rendered_geom_layer.is_active())
-					{
-						return;
-					}
-
-					// Visit each RenderedGeometry in the layer to collect its
-					// ReconstructionGeometry if it has one.
-					std::for_each(
-							rendered_geom_layer.rendered_geometry_begin(),
-							rendered_geom_layer.rendered_geometry_end(),
-							boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
-				}
-
-
-				virtual
-				void
-				visit_rendered_reconstruction_geometry(
-						const RenderedReconstructionGeometry &rendered_recon_geom)
-				{
-					d_reconstruction_geom_seq.push_back(
-							rendered_recon_geom.get_reconstruction_geometry());
-				}
-
-
-			private:
-				reconstruction_geom_seq_type &d_reconstruction_geom_seq;
-			};
-
-
 			/**
 			 * Removes duplicate @a ReconstructionGeometry objects from an unsorted sequence.
 			 *
@@ -158,6 +85,183 @@ namespace GPlatesViewOperations
 				// Replace the caller's sequence with the unique sequence.
 				reconstruction_geom_seq.swap(unique_reconstruction_geom_seq);
 			}
+
+
+			/**
+			 * Increments count for every non-empty @a RenderedGeometryLayer.
+			 */
+			class CountNonEmptyRenderedGeometries
+			{
+			public:
+				CountNonEmptyRenderedGeometries() :
+				d_count(0)
+				{  }
+
+				void
+				operator()(
+						const RenderedGeometryLayer &rendered_geom_layer)
+				{
+					if (rendered_geom_layer.is_active() && !rendered_geom_layer.is_empty())
+					{
+						++d_count;
+					}
+				}
+
+				unsigned int
+				get_count() const
+				{
+					return d_count;
+				}
+
+			private:
+				unsigned int d_count;
+			};
+
+
+			/**
+			 * Retrieves any @a ReconstructionGeometry objects from @a RenderedGeometryLayer.
+			 */
+			class CollectReconstructionGeometries :
+				public ConstRenderedGeometryLayerVisitor
+			{
+			public:
+				CollectReconstructionGeometries(
+						reconstruction_geom_seq_type &reconstruction_geom_seq) :
+					d_reconstruction_geom_seq(reconstruction_geom_seq)
+				{  }
+
+				void
+				operator()(
+						const RenderedGeometryLayer &rendered_geom_layer)
+				{
+					// Visit the rendered geometries in the layer if the layer is active.
+					rendered_geom_layer.accept_visitor(*this);
+				}
+
+
+				virtual
+				void
+				visit_rendered_reconstruction_geometry(
+						const RenderedReconstructionGeometry &rendered_recon_geom)
+				{
+					d_reconstruction_geom_seq.push_back(
+							rendered_recon_geom.get_reconstruction_geometry());
+				}
+
+
+			private:
+				reconstruction_geom_seq_type &d_reconstruction_geom_seq;
+			};
+
+
+			/**
+			 * Retrieves any @a ReconstructionGeometry objects in child layers of the main RECONSTRUCTION_LAYER
+			 * and associates them with their @a RenderedGeometryLayer objects.
+			 */
+			class CollectReconstructionGeometriesInReconstructionChildLayers :
+				public ConstRenderedGeometryCollectionVisitor<>
+			{
+			public:
+				explicit
+				CollectReconstructionGeometriesInReconstructionChildLayers(
+						child_rendered_geometry_layer_reconstruction_geom_map_type &child_rendered_geometry_layer_reconstruction_geom_map,
+						bool &collected_reconstruction_geometries,
+						bool only_if_reconstruction_layer_active = true) :
+					d_child_rendered_geometry_layer_reconstruction_geom_map(child_rendered_geometry_layer_reconstruction_geom_map),
+					d_collected_reconstruction_geometries(collected_reconstruction_geometries),
+					d_only_if_reconstruction_layer_active(only_if_reconstruction_layer_active)
+				{  }
+
+				virtual
+				bool
+				visit_main_rendered_layer(
+						const RenderedGeometryCollection &rendered_geometry_collection,
+						RenderedGeometryCollection::MainLayerType main_layer_type)
+				{
+					// Only interested in RECONSTRUCTION_LAYER.
+					if (main_layer_type != RenderedGeometryCollection::RECONSTRUCTION_LAYER)
+					{
+						return false;
+					}
+					
+					if (d_only_if_reconstruction_layer_active &&
+						!rendered_geometry_collection.is_main_layer_active(main_layer_type))
+					{
+						return false;
+					}
+
+					// NOTE: We don't visit the main rendered layer because we're only interested
+					// in the child layers (for RECONSTRUCTION_LAYER the main layer isn't used) and
+					// the main layer does not have a child layer index (which is what we're grouping into).
+
+					// We need to know the rendered geometry layer *indices*.
+					const RenderedGeometryCollection::child_layer_index_seq_type &child_rendered_layer_indices =
+							rendered_geometry_collection.get_child_rendered_layer_indices(main_layer_type);
+
+					// Iterate over the child rendered geometry layers.
+					RenderedGeometryCollection::child_layer_index_seq_type::const_iterator
+							child_rendered_layer_indices_iter = child_rendered_layer_indices.begin();
+					RenderedGeometryCollection::child_layer_index_seq_type::const_iterator
+							child_rendered_layer_indices_end = child_rendered_layer_indices.end();
+					for (;
+						child_rendered_layer_indices_iter != child_rendered_layer_indices_end;
+						++child_rendered_layer_indices_iter)
+					{
+						const RenderedGeometryCollection::child_layer_index_type
+								child_rendered_geometry_layer_index = *child_rendered_layer_indices_iter;
+
+						visit_child_rendered_geometry_layer(
+								child_rendered_geometry_layer_index,
+								rendered_geometry_collection.get_child_rendered_layer(child_rendered_geometry_layer_index));
+					}
+
+					// We've already visited our child layers.
+					return false;
+				}
+
+				virtual
+				void
+				visit_rendered_reconstruction_geometry(
+						const RenderedReconstructionGeometry &rendered_recon_geom)
+				{
+					d_child_layer_reconstruction_geometries.push_back(
+							rendered_recon_geom.get_reconstruction_geometry());
+				}
+
+			private:
+
+				void
+				visit_child_rendered_geometry_layer(
+						RenderedGeometryCollection::child_layer_index_type child_rendered_geometry_layer_index,
+						const RenderedGeometryLayer *rendered_geometry_layer)
+				{
+					// Visit the rendered geometries in the current child layer.
+					rendered_geometry_layer->accept_visitor(*this);
+
+					// If any reconstruction geometries were collected in the current child layer.
+					if (!d_child_layer_reconstruction_geometries.empty())
+					{
+						// Remove any duplicate reconstruction geometries.
+						remove_duplicates(d_child_layer_reconstruction_geometries);
+
+						// Only add a map layer entry if we collected some reconstruction geometries.
+						// Swapping the std::vector's transfers them into the new map entry and also
+						// clears 'd_child_layer_reconstruction_geometries' because the new map entry
+						// starts out empty (but we'll clear it anyway in case the caller had a non-empty
+						// map to start with for some reason).
+						d_child_rendered_geometry_layer_reconstruction_geom_map[child_rendered_geometry_layer_index]
+								.swap(d_child_layer_reconstruction_geometries);
+						d_child_layer_reconstruction_geometries.clear();
+
+						d_collected_reconstruction_geometries = true;
+					}
+				}
+
+				child_rendered_geometry_layer_reconstruction_geom_map_type &d_child_rendered_geometry_layer_reconstruction_geom_map;
+				bool &d_collected_reconstruction_geometries;
+				bool d_only_if_reconstruction_layer_active;
+				reconstruction_geom_seq_type d_child_layer_reconstruction_geometries;
+			};
 		}
 	}
 }
@@ -271,6 +375,8 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
 {
+	const unsigned int initial_reconstruction_geom_seq_size = reconstruction_geom_seq.size();
+
 	CollectReconstructionGeometries collect_recon_geoms(reconstruction_geom_seq);
 
 	ConstVisitFunctionOnRenderedGeometryLayers collect_recon_geoms_visitor(
@@ -283,24 +389,43 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 	// Remove any duplicate reconstruction geometries.
 	remove_duplicates(reconstruction_geom_seq);
 
-	return !reconstruction_geom_seq.empty();
+	return reconstruction_geom_seq.size() != initial_reconstruction_geom_seq_size;
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+		child_rendered_geometry_layer_reconstruction_geom_map_type &child_rendered_geometry_layer_reconstruction_geom_map,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		bool only_if_reconstruction_layer_active)
+{
+	bool collected_reconstruction_geometries = false;
+	CollectReconstructionGeometriesInReconstructionChildLayers collect_recon_geoms_in_reconstruction_child_layers(
+			child_rendered_geometry_layer_reconstruction_geom_map,
+			collected_reconstruction_geometries,
+			only_if_reconstruction_layer_active);
+
+	rendered_geom_collection.accept_visitor(collect_recon_geoms_in_reconstruction_child_layers);
+
+	return collected_reconstruction_geometries;
 }
 
 
 bool
 GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq_type &reconstruction_geom_seq,
-		const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &
-				sorted_rendered_geometry_hits)
+		const sorted_rendered_geometry_proximity_hits_type &sorted_rendered_geometry_hits)
 {
+	const unsigned int initial_reconstruction_geom_seq_size = reconstruction_geom_seq.size();
+
 	CollectReconstructionGeometries collect_recon_geoms(reconstruction_geom_seq);
 
-	GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
+	sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
 	for (sorted_iter = sorted_rendered_geometry_hits.begin();
 		sorted_iter != sorted_rendered_geometry_hits.end();
 		++sorted_iter)
 	{
-		GPlatesViewOperations::RenderedGeometry rendered_geom =
+		RenderedGeometry rendered_geom =
 			sorted_iter->d_rendered_geom_layer->get_rendered_geometry(
 			sorted_iter->d_rendered_geom_index);
 
@@ -312,7 +437,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 	// Remove any duplicate reconstruction geometries.
 	remove_duplicates(reconstruction_geom_seq);
 
-	return !reconstruction_geom_seq.empty();
+	return reconstruction_geom_seq.size() != initial_reconstruction_geom_seq_size;
 }
 
 
@@ -396,6 +521,176 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			feature_ref,
 			geometry_property_iterator,
 			reconstruct_handles);
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+		child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
+		bool only_if_reconstruction_layer_active)
+{
+	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type all_reconstruction_geoms_in_reconstruction_layer;
+	if (!get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+			all_reconstruction_geoms_in_reconstruction_layer,
+			rendered_geom_collection,
+			only_if_reconstruction_layer_active))
+	{
+		return false;
+	}
+
+	bool collected_reconstruction_geometries = false;
+
+	// Iterate over the child rendered geometry layers in the main rendered RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_iter = all_reconstruction_geoms_in_reconstruction_layer.begin();
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_end = all_reconstruction_geoms_in_reconstruction_layer.end();
+	for ( ;
+		child_rendered_geometry_layer_iter != child_rendered_geometry_layer_end;
+		++child_rendered_geometry_layer_iter)
+	{
+		const GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+			child_rendered_geometry_layer_index = child_rendered_geometry_layer_iter->first;
+
+		// The visible ReconstructionGeometry objects in the current reconstruction child layer.
+		const reconstruction_geom_seq_type &all_reconstruction_geoms_in_reconstruction_child_layer =
+				child_rendered_geometry_layer_iter->second;
+
+		// Find any reconstruction geometries in the current child layer that observe the feature.
+		reconstruction_geom_seq_type reconstruction_geoms_observing_feature_in_reconstruction_child_layer;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+				reconstruction_geoms_observing_feature_in_reconstruction_child_layer,
+				all_reconstruction_geoms_in_reconstruction_child_layer,
+				reconstruction_geometry,
+				reconstruct_handles))
+		{
+			// NOTE: We only insert an entry into the map for layers that actually contain observing recon geoms.
+			reconstruction_geometries_observing_feature[child_rendered_geometry_layer_index].swap(
+					reconstruction_geoms_observing_feature_in_reconstruction_child_layer);
+
+			collected_reconstruction_geometries = true;
+		}
+	}
+
+	return collected_reconstruction_geometries;
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+		child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
+		bool only_if_reconstruction_layer_active)
+{
+	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type all_reconstruction_geoms_in_reconstruction_layer;
+	if (!get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+			all_reconstruction_geoms_in_reconstruction_layer,
+			rendered_geom_collection,
+			only_if_reconstruction_layer_active))
+	{
+		return false;
+	}
+
+	bool collected_reconstruction_geometries = false;
+
+	// Iterate over the child rendered geometry layers in the main rendered RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_iter = all_reconstruction_geoms_in_reconstruction_layer.begin();
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_end = all_reconstruction_geoms_in_reconstruction_layer.end();
+	for ( ;
+		child_rendered_geometry_layer_iter != child_rendered_geometry_layer_end;
+		++child_rendered_geometry_layer_iter)
+	{
+		const GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+			child_rendered_geometry_layer_index = child_rendered_geometry_layer_iter->first;
+
+		// The visible ReconstructionGeometry objects in the current reconstruction child layer.
+		const reconstruction_geom_seq_type &all_reconstruction_geoms_in_reconstruction_child_layer =
+				child_rendered_geometry_layer_iter->second;
+
+		// Find any reconstruction geometries in the current child layer that observe the feature.
+		reconstruction_geom_seq_type reconstruction_geoms_observing_feature_in_reconstruction_child_layer;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+				reconstruction_geoms_observing_feature_in_reconstruction_child_layer,
+				all_reconstruction_geoms_in_reconstruction_child_layer,
+				feature_ref,
+				reconstruct_handles))
+		{
+			// NOTE: We only insert an entry into the map for layers that actually contain observing recon geoms.
+			reconstruction_geometries_observing_feature[child_rendered_geometry_layer_index] =
+					reconstruction_geoms_observing_feature_in_reconstruction_child_layer;
+
+			collected_reconstruction_geometries = true;
+		}
+	}
+
+	return collected_reconstruction_geometries;
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+		child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
+		bool only_if_reconstruction_layer_active)
+{
+	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type all_reconstruction_geoms_in_reconstruction_layer;
+	if (!get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+			all_reconstruction_geoms_in_reconstruction_layer,
+			rendered_geom_collection,
+			only_if_reconstruction_layer_active))
+	{
+		return false;
+	}
+
+	bool collected_reconstruction_geometries = false;
+
+	// Iterate over the child rendered geometry layers in the main rendered RECONSTRUCTION layer.
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_iter = all_reconstruction_geoms_in_reconstruction_layer.begin();
+	child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+			child_rendered_geometry_layer_end = all_reconstruction_geoms_in_reconstruction_layer.end();
+	for ( ;
+		child_rendered_geometry_layer_iter != child_rendered_geometry_layer_end;
+		++child_rendered_geometry_layer_iter)
+	{
+		const GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+			child_rendered_geometry_layer_index = child_rendered_geometry_layer_iter->first;
+
+		// The visible ReconstructionGeometry objects in the current reconstruction child layer.
+		const reconstruction_geom_seq_type &all_reconstruction_geoms_in_reconstruction_child_layer =
+				child_rendered_geometry_layer_iter->second;
+
+		// Find any reconstruction geometries in the current child layer that observe the feature.
+		reconstruction_geom_seq_type reconstruction_geoms_observing_feature_in_reconstruction_child_layer;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+				reconstruction_geoms_observing_feature_in_reconstruction_child_layer,
+				all_reconstruction_geoms_in_reconstruction_child_layer,
+				feature_ref,
+				geometry_property_iterator,
+				reconstruct_handles))
+		{
+			// NOTE: We only insert an entry into the map for layers that actually contain observing recon geoms.
+			reconstruction_geometries_observing_feature[child_rendered_geometry_layer_index] =
+					reconstruction_geoms_observing_feature_in_reconstruction_child_layer;
+
+			collected_reconstruction_geometries = true;
+		}
+	}
+
+	return collected_reconstruction_geometries;
 }
 
 

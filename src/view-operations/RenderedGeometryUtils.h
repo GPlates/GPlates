@@ -27,6 +27,8 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYCOLLECTIONUTILS_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYCOLLECTIONUTILS_H
 
+#include <map>
+#include <vector>
 #include <boost/function.hpp>
 
 #include "RenderedGeometryCollection.h"
@@ -113,6 +115,12 @@ namespace GPlatesViewOperations
 		typedef std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
 				reconstruction_geom_seq_type;
 
+		//! Typedef for a mapping of child rendered geometry layers to their @a ReconstructionGeometry objects.
+		typedef std::map<
+				RenderedGeometryCollection::child_layer_index_type,
+				reconstruction_geom_seq_type>
+						child_rendered_geometry_layer_reconstruction_geom_map_type;
+
 		/**
 		 * Collects any @a ReconstructionGeometry objects contained in
 		 * @a RenderedReconstructionGeometry objects in the specified main layer.
@@ -155,6 +163,25 @@ namespace GPlatesViewOperations
 
 
 		/**
+		 * Collects any @a ReconstructionGeometry objects contained in @a RenderedReconstructionGeometry
+		 * objects in the child layers of the main RECONSTRUCTION_LAYER layer.
+		 *
+		 * Returns true if any found.
+		 *
+		 * The @a ReconstructionGeometry objects are grouped into their child layers.
+		 * And only those child layers containing visible reconstruction geometries are returned.
+		 *
+		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects in each child layer
+		 * are removed in @a rendered_geometry_layer_reconstruction_geom_map.
+		 */
+		bool
+		get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+				child_rendered_geometry_layer_reconstruction_geom_map_type &child_rendered_geometry_layer_reconstruction_geom_map,
+				const RenderedGeometryCollection &rendered_geom_collection,
+				bool only_if_reconstruction_layer_active = true);
+
+
+		/**
 		 * Collects any @a ReconstructionGeometry objects contained in
 		 * the results of a proximity test.
 		 * Returns true if any found.
@@ -165,14 +192,13 @@ namespace GPlatesViewOperations
 		bool
 		get_unique_reconstruction_geometries(
 				reconstruction_geom_seq_type &reconstruction_geom_seq,
-				const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &
-						sorted_rendered_geometry_hits);
+				const sorted_rendered_geometry_proximity_hits_type &sorted_rendered_geometry_hits);
 
 
 		/**
 		 * Finds the @a ReconstructionGeometry objects that were generated from the same geometry property
 		 * as @a reconstruction_geometry and that were optionally reconstructed using @a reconstruct_handles
-		 * and that are from the reconstruction layer in @a rendered_geom_collection.
+		 * and that are from the RECONSTRUCTION_LAYER in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
 		 */
@@ -184,10 +210,9 @@ namespace GPlatesViewOperations
 				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
 				bool only_if_reconstruction_layer_active = true);
 
-
 		/**
 		 * Finds the @a ReconstructionGeometry objects from feature @a feature_ref and that were optionally
-		 * reconstructed using @a reconstruct_handles and that are from the reconstruction layer
+		 * reconstructed using @a reconstruct_handles and that are from the RECONSTRUCTION_LAYER
 		 * in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
@@ -200,11 +225,10 @@ namespace GPlatesViewOperations
 				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
 				bool only_if_reconstruction_layer_active = true);
 
-
 		/**
 		 * Finds the @a ReconstructionGeometry objects that were generated from the geometry property
 		 * @a geometry_property_iterator in feature @a feature_ref and that were optionally
-		 * reconstructed using @a reconstruct_handles and that are from the reconstruction layer
+		 * reconstructed using @a reconstruct_handles and that are from the RECONSTRUCTION_LAYER
 		 * in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
@@ -212,6 +236,63 @@ namespace GPlatesViewOperations
 		bool
 		get_unique_reconstruction_geometries_observing_feature(
 				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+				const RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
+				bool only_if_reconstruction_layer_active = true);
+
+
+		/**
+		 * Finds the @a ReconstructionGeometry objects that were generated from the same geometry property
+		 * as @a reconstruction_geometry and that were optionally reconstructed using @a reconstruct_handles
+		 * and that are from the RECONSTRUCTION_LAYER in @a rendered_geom_collection.
+		 *
+		 * Returns true if any found.
+		 *
+		 * The @a ReconstructionGeometry objects are grouped into their child layers.
+		 * And only those child layers containing observing reconstruction geometries are returned.
+		 */
+		bool
+		get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+				child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
+				const RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
+				bool only_if_reconstruction_layer_active = true);
+
+		/**
+		 * Finds the @a ReconstructionGeometry objects from feature @a feature_ref and that were optionally
+		 * reconstructed using @a reconstruct_handles and that are from the RECONSTRUCTION_LAYER
+		 * in @a rendered_geom_collection.
+		 *
+		 * Returns true if any found.
+		 *
+		 * The @a ReconstructionGeometry objects are grouped into their child layers.
+		 * And only those child layers containing observing reconstruction geometries are returned.
+		 */
+		bool
+		get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+				child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
+				const RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
+				bool only_if_reconstruction_layer_active = true);
+
+		/**
+		 * Finds the @a ReconstructionGeometry objects that were generated from the geometry property
+		 * @a geometry_property_iterator in feature @a feature_ref and that were optionally
+		 * reconstructed using @a reconstruct_handles and that are from the RECONSTRUCTION_LAYER
+		 * in @a rendered_geom_collection.
+		 *
+		 * Returns true if any found.
+		 *
+		 * The @a ReconstructionGeometry objects are grouped into their child layers.
+		 * And only those child layers containing observing reconstruction geometries are returned.
+		 */
+		bool
+		get_unique_reconstruction_geometries_observing_feature_in_reconstruction_child_layers(
+				child_rendered_geometry_layer_reconstruction_geom_map_type &reconstruction_geometries_observing_feature,
 				const RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
