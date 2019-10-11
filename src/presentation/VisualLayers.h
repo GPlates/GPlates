@@ -121,6 +121,24 @@ namespace GPlatesPresentation
 				size_t index);
 
 		/**
+		 * Returns the visual layer that owns the rendered geometry layer with the given index.
+		 *
+		 * Returns an invalid weak pointer if the index does not have a corresponding visual layer.
+		 */
+		boost::weak_ptr<const VisualLayer>
+		get_visual_layer_at_child_layer_index(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type child_layer_index) const;
+
+		/**
+		 * Returns the visual layer that owns the rendered geometry layer with the given index.
+		 *
+		 * Returns an invalid weak pointer if the index does not have a corresponding visual layer.
+		 */
+		boost::weak_ptr<VisualLayer>
+		get_visual_layer_at_child_layer_index(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type child_layer_index);
+
+		/**
 		 * Returns the corresponding visual layer for the given @a layer.
 		 *
 		 * Returns an invalid weak pointer if @a layer has no corresponding visual layer.
@@ -434,28 +452,6 @@ namespace GPlatesPresentation
 
 		void
 		refresh_all_layers();
-
-		/**
-		 * Returns the visual layer that owns the rendered geometry layer with the
-		 * given index.
-		 *
-		 * Returns an invalid weak pointer if the index does not have a corresponding
-		 * visual layer.
-		 */
-		boost::weak_ptr<const VisualLayer>
-		get_visual_layer(
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index) const;
-
-		/**
-		 * Returns the visual layer that owns the rendered geometry layer with the
-		 * given index.
-		 *
-		 * Returns an invalid weak pointer if the index does not have a corresponding
-		 * visual layer.
-		 */
-		boost::weak_ptr<VisualLayer>
-		get_visual_layer(
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
 
 		/**
 		 * Calculates where a new layer of the given type should go in the ordering.

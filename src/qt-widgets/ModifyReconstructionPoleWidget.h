@@ -26,21 +26,27 @@
 #ifndef GPLATES_QTWIDGETS_MODIFYRECONSTRUCTIONPOLEWIDGET_H
 #define GPLATES_QTWIDGETS_MODIFYRECONSTRUCTIONPOLEWIDGET_H
 
+#include <map>
 #include <vector>
 #include <QWidget>
-#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 #include "ModifyReconstructionPoleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
+#include "gui/Colour.h"
 #include "gui/SimpleGlobeOrientation.h"
 
 #include "maths/PointOnSphere.h"
+#include "maths/Rotation.h"
 
 #include "model/FeatureHandle.h"
+
+#include "presentation/VisualLayer.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -60,6 +66,11 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryLayer;
+}
+
 namespace GPlatesQtWidgets
 {
 	class AdjustmentApplicator;
@@ -75,12 +86,6 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-
-		/**
-		 * Typedef for a sequence of @a ReconstructedFeatureGeometry objects.
-		 */
-		typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
-				reconstructed_feature_geometry_collection_type;
 
 		ModifyReconstructionPoleWidget(
 				MovePoleWidget &move_pole_widget,
@@ -188,6 +193,15 @@ namespace GPlatesQtWidgets
 		draw_dragged_geometries();
 
 		/**
+		 * Main drawing code to render the the initial or final geometries.
+		 */
+		void
+		draw_geometries(
+				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
+				const GPlatesGui::Colour &colour,
+				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none);
+
+		/**
 		 * Draw the adjustment pole location (from Move Pole canvas tool) if enabled.
 		 */
 		void
@@ -235,6 +249,17 @@ namespace GPlatesQtWidgets
 		handle_layer_modified();
 
 	private:
+
+		//! Typedef for a sequence of @a ReconstructedFeatureGeometry objects.
+		typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+				reconstructed_feature_geometry_collection_type;
+
+		//! Typedef for a mapping of visual layers to their associated @a ReconstructedFeatureGeometry objects.
+		typedef std::map<
+				boost::weak_ptr<const GPlatesPresentation::VisualLayer>,
+				reconstructed_feature_geometry_collection_type>
+						visual_layer_reconstructed_feature_geometry_collection_map_type;
+
 
 		//! Manages reconstructions.
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
@@ -332,6 +357,10 @@ namespace GPlatesQtWidgets
 		/**
 		 * The RFGs whose plate IDs equal the plate ID of the currently-focused RFG (if there is one).
 		 *
+		 * This is also keeps track of the visual layers associated with the RFGs since each visual layer
+		 * has its own symbology, and we want to render the RFGs using the same symbols as before
+		 * (but with a different colour) so that they overlap nicely (and are recognisable by their expected symbology).
+		 *
 		 * As the user drags the geometries around to modify the total reconstruction pole,
 		 * the geometries from these RFGs will be rotated to new positions on the globe by the
 		 * accumulated rotation.
@@ -340,7 +369,7 @@ namespace GPlatesQtWidgets
 		 * slot is triggered, since if there were no geometry, what would the user be
 		 * dragging?
 		 */
-		reconstructed_feature_geometry_collection_type d_reconstructed_feature_geometries;
+		visual_layer_reconstructed_feature_geometry_collection_map_type d_visual_layer_reconstructed_feature_geometries;
 		
 		/**
 		 * View state for extracting VGP visibility settings.                                                                      

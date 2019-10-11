@@ -52,8 +52,11 @@
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayer.h"
+#include "presentation/VisualLayerParams.h"
 #include "presentation/VisualLayers.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/RenderedGeometryUtils.h"
@@ -763,7 +766,7 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 {
 	// First clear the RFGs before we do anything else (even before we return early).
-	d_reconstructed_feature_geometries.clear();
+	d_visual_layer_reconstructed_feature_geometries.clear();
 
 	// If there's no plate ID of the currently-focused RFG, then there can be no other RFGs
 	// with the same plate ID.
@@ -787,48 +790,89 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 	//
 	// Iterate over all the *visible* reconstruction geometries that were reconstructed using the
-	// same reconstruction tree as the focused feature geometry.
+	// same reconstruction tree as the focused feature geometry (and has a plate ID in plate collection).
 	//
 
-	// Get any ReconstructionGeometry objects that are visible in the main reconstruction rendered layer.
-	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type visible_reconstruction_geometries;
-	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
-			visible_reconstruction_geometries,
-			*d_rendered_geom_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-	// Narrow the visible ReconstructionGeometry objects down to visible ReconstructFeatureGeometry objects.
-	std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> visible_reconstructed_feature_geometries;
-	if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			visible_reconstruction_geometries.begin(),
-			visible_reconstruction_geometries.end(),
-			visible_reconstructed_feature_geometries))
+	GPlatesViewOperations::RenderedGeometryUtils::child_rendered_geometry_layer_reconstruction_geom_map_type
+			child_rendered_geometry_layer_reconstruction_geom_map;
+	if (GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_in_reconstruction_child_layers(
+			child_rendered_geometry_layer_reconstruction_geom_map,
+			*d_rendered_geom_collection))
 	{
-		// Iterate over the RFGs.
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_iter =
-				visible_reconstructed_feature_geometries.begin();
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_end =
-				visible_reconstructed_feature_geometries.end();
-		for ( ; rfg_iter != rfg_end; ++rfg_iter)
+		// Iterate over the child rendered geometry layers in the main rendered RECONSTRUCTION layer.
+		GPlatesViewOperations::RenderedGeometryUtils::child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+				child_rendered_geometry_layer_iter = child_rendered_geometry_layer_reconstruction_geom_map.begin();
+		GPlatesViewOperations::RenderedGeometryUtils::child_rendered_geometry_layer_reconstruction_geom_map_type::const_iterator
+				child_rendered_geometry_layer_end = child_rendered_geometry_layer_reconstruction_geom_map.end();
+		for ( ;
+			child_rendered_geometry_layer_iter != child_rendered_geometry_layer_end;
+			++child_rendered_geometry_layer_iter)
 		{
-			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+			const GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+					child_rendered_geometry_layer_index = child_rendered_geometry_layer_iter->first;
 
-			// Make sure the current RFG was created from the same reconstruction tree as the focused geometry.
-			if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
+			// Find the visual layer associated with the current child layer index.
+			const GPlatesPresentation::VisualLayers &visual_layers = d_view_state_ptr->get_visual_layers();
+			boost::weak_ptr<const GPlatesPresentation::VisualLayer> visual_layer =
+					visual_layers.get_visual_layer_at_child_layer_index(child_rendered_geometry_layer_index);
+			if (visual_layer.expired())
 			{
+				// Did not find the associated visual layer, so ignore.
+				// This shouldn't happen though.
+				// FIXME: Probably should assert.
 				continue;
 			}
 
-			// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
-			if (rfg->reconstruction_plate_id())
+			// The visible ReconstructionGeometry objects in the current rendered geometry layer.
+			const GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type &
+					visible_reconstruction_geometries = child_rendered_geometry_layer_iter->second;
+
+			// Matching RFGs in the current layer will go here.
+			reconstructed_feature_geometry_collection_type matching_reconstructed_feature_geometries;
+
+			// Narrow the visible ReconstructionGeometry objects down to visible ReconstructFeatureGeometry objects.
+			std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> visible_reconstructed_feature_geometries;
+			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				visible_reconstruction_geometries.begin(),
+				visible_reconstruction_geometries.end(),
+				visible_reconstructed_feature_geometries))
 			{
-				// OK, so the RFG *does* have a reconstruction plate ID.
-				GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
-				if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
-					plate_id_collection.end())
+				// Iterate over the RFGs.
+				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_iter =
+					visible_reconstructed_feature_geometries.begin();
+				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_end =
+					visible_reconstructed_feature_geometries.end();
+				for (; rfg_iter != rfg_end; ++rfg_iter)
 				{
-					d_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+
+					// Make sure the current RFG was created from the same reconstruction tree as the focused geometry.
+					if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
+					{
+						continue;
+					}
+
+					// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
+					if (rfg->reconstruction_plate_id())
+					{
+						// OK, so the RFG *does* have a reconstruction plate ID.
+						GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
+						if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
+							plate_id_collection.end())
+						{
+							matching_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
+						}
+					}
 				}
+			}
+
+			// NOTE: We only insert an entry into the map for layers that actually contain matching recon geoms.
+			// This is important otherwise the drawing code will have to iterate over all available layers
+			// and set up layer rendering even if there is nothing in those layers.
+			if (!matching_reconstructed_feature_geometries.empty())
+			{
+				// Record the visual layer and its matching RFGs.
+				d_visual_layer_reconstructed_feature_geometries[visual_layer].swap(matching_reconstructed_feature_geometries);
 			}
 		}
 	}
@@ -863,44 +907,10 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 	d_initial_geom_layer_ptr->clear_rendered_geometries();
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::get_white();
-
-	// FIXME: Probably should use the same styling params used to draw
-	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
-			d_view_state_ptr->get_rendered_geometry_parameters());
-	render_style_params.reconstruction_line_width_hint =
-			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
-	render_style_params.reconstruction_point_size_hint =
-			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT;
-
-	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
-	// using the colour 'white_colour'.
-	//
-	// Note that we don't have the feature_type_to_symbol_map available in this class
-	// at the moment, so we can't pass it to the Renderer, so any symbols will just
-	// get rendered as regular point-on-spheres.
-	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
-			render_style_params,
-			d_view_state_ptr->get_render_settings(),
-			d_application_state_ptr->get_current_topological_sections(),
-			white_colour,
-			boost::none,
-			boost::none);
-
-	initial_geometry_renderer.begin_render(*d_initial_geom_layer_ptr);
-
-	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
-			d_reconstructed_feature_geometries.begin();
-	reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
-			d_reconstructed_feature_geometries.end();
-	for ( ; rfg_iter != rfg_end; ++rfg_iter)
-	{
-		// Visit the RFG with the renderer.
-		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
-	}
-
-	initial_geometry_renderer.end_render();
+	// Use a white colour.
+	draw_geometries(
+			*d_initial_geom_layer_ptr,
+			GPlatesGui::Colour::get_white());
 }
 
 
@@ -926,38 +936,79 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 
 	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
 
-	// FIXME: Probably should use the same styling params used to draw
-	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
-			d_view_state_ptr->get_rendered_geometry_parameters());
-	render_style_params.reconstruction_line_width_hint =
-			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
-	render_style_params.reconstruction_point_size_hint =
-			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT;
+	// Use a silver colour and rotate geometries in the RFGs.
+	draw_geometries(
+			*d_dragged_geom_layer_ptr,
+			GPlatesGui::Colour::get_silver(),
+			d_accum_orientation->rotation());
+}
 
-	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
-	// using the colour 'silver_colour' and rotates geometries in the RFGs.
-	GPlatesPresentation::ReconstructionGeometryRenderer dragged_geometry_renderer(
-			render_style_params,
-			d_view_state_ptr->get_render_settings(),
-			d_application_state_ptr->get_current_topological_sections(),
-			silver_colour,
-			d_accum_orientation->rotation(),
-			boost::none);
 
-	dragged_geometry_renderer.begin_render(*d_dragged_geom_layer_ptr);
-
-	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
-			d_reconstructed_feature_geometries.begin();
-	reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
-			d_reconstructed_feature_geometries.end();
-	for ( ; rfg_iter != rfg_end; ++rfg_iter)
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_geometries(
+		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
+		const GPlatesGui::Colour &colour,
+		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment)
+{
+	// Iterate over the visual layers.
+	// Each one is associated with a visual layer that has its own symboliser.
+	visual_layer_reconstructed_feature_geometry_collection_map_type::const_iterator visual_layer_iter =
+		d_visual_layer_reconstructed_feature_geometries.begin();
+	visual_layer_reconstructed_feature_geometry_collection_map_type::const_iterator visual_layer_end =
+		d_visual_layer_reconstructed_feature_geometries.end();
+	for (; visual_layer_iter != visual_layer_end; ++visual_layer_iter)
 	{
-		// Visit the RFG with the renderer.
-		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
-	}
+		boost::shared_ptr<const GPlatesPresentation::VisualLayer> visual_layer = visual_layer_iter->first.lock();
+		if (!visual_layer)
+		{
+			// Visual layer no longer exists for some reason, so ignore it.
+			continue;
+		}
 
-	dragged_geometry_renderer.end_render();
+		const GPlatesPresentation::VisualLayerParams::non_null_ptr_to_const_type visual_layer_params =
+				visual_layer->get_visual_layer_params();
+		const GPlatesPresentation::ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser =
+				visual_layer_params->get_reconstruction_geometry_symboliser();
+
+		GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator(
+				d_view_state_ptr->get_rendered_geometry_parameters());
+		visual_layer_params->accept_visitor(render_params_populator);
+
+		GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_params =
+				render_params_populator.get_render_params();
+		render_params.reconstruction_line_width_hint =
+				GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
+		render_params.reconstruction_point_size_hint =
+				GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT;
+		// Ensure filled polygons are fully opaque (it's possible the layer has set a translucent opacity).
+		render_params.fill_modulate_colour = GPlatesGui::Colour::get_white();
+
+		// This creates the RenderedGeometry's from the ReconstructedFeatureGeometry's.
+		GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
+				render_params,
+				d_view_state_ptr->get_render_settings(),
+				reconstruction_geometry_symboliser,
+				d_application_state_ptr->get_current_topological_sections(),
+				colour,
+				reconstruction_adjustment,
+				boost::none);
+
+		reconstruction_geometry_renderer.begin_render(rendered_geometry_layer);
+
+		const reconstructed_feature_geometry_collection_type &reconstructed_feature_geometries =
+				visual_layer_iter->second;
+		reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
+				reconstructed_feature_geometries.begin();
+		reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
+				reconstructed_feature_geometries.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
+		{
+			// Visit the RFG with the renderer.
+			(*rfg_iter)->accept_visitor(reconstruction_geometry_renderer);
+		}
+
+		reconstruction_geometry_renderer.end_render();
+	}
 }
 
 

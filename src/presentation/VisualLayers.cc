@@ -74,10 +74,10 @@ GPlatesPresentation::VisualLayers::size() const
 
 
 boost::weak_ptr<const GPlatesPresentation::VisualLayer>
-GPlatesPresentation::VisualLayers::get_visual_layer(
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index) const
+GPlatesPresentation::VisualLayers::get_visual_layer_at_child_layer_index(
+	GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type child_layer_index) const
 {
-	index_map_type::const_iterator iter = d_index_map.find(index);
+	index_map_type::const_iterator iter = d_index_map.find(child_layer_index);
 	if (iter == d_index_map.end())
 	{
 		return boost::weak_ptr<VisualLayer>();
@@ -90,10 +90,10 @@ GPlatesPresentation::VisualLayers::get_visual_layer(
 
 
 boost::weak_ptr<GPlatesPresentation::VisualLayer>
-GPlatesPresentation::VisualLayers::get_visual_layer(
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index)
+GPlatesPresentation::VisualLayers::get_visual_layer_at_child_layer_index(
+	GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type child_layer_index)
 {
-	index_map_type::iterator iter = d_index_map.find(index);
+	index_map_type::iterator iter = d_index_map.find(child_layer_index);
 	if (iter == d_index_map.end())
 	{
 		return boost::weak_ptr<VisualLayer>();
@@ -109,7 +109,7 @@ boost::weak_ptr<const GPlatesPresentation::VisualLayer>
 GPlatesPresentation::VisualLayers::visual_layer_at(
 		size_t index) const
 {
-	return get_visual_layer(d_layer_order[index]);
+	return get_visual_layer_at_child_layer_index(d_layer_order[index]);
 }
 
 
@@ -117,7 +117,7 @@ boost::weak_ptr<GPlatesPresentation::VisualLayer>
 GPlatesPresentation::VisualLayers::visual_layer_at(
 		size_t index)
 {
-	return get_visual_layer(d_layer_order[index]);
+	return get_visual_layer_at_child_layer_index(d_layer_order[index]);
 }
 
 
