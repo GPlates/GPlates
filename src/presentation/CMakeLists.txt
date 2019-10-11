@@ -19,12 +19,15 @@ set(srcs
     InternalSession.h
     LayerOutputRenderer.cc
     LayerOutputRenderer.h
+    LineSymbol.h
     ProjectSession.cc
     ProjectSession.h
     RasterVisualLayerParams.cc
     RasterVisualLayerParams.h
     ReconstructionGeometryRenderer.cc
     ReconstructionGeometryRenderer.h
+    ReconstructionGeometrySymboliser.cc
+    ReconstructionGeometrySymboliser.h
     ReconstructScalarCoverageVisualLayerParams.cc
     ReconstructScalarCoverageVisualLayerParams.h
     ReconstructVisualLayerParams.cc
