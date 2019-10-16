@@ -147,7 +147,7 @@ namespace
 
 
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::STRAIN_RATE_SCALE = 1e+17;
-const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MIN = 1e-6;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MIN = 0.0;
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MAX = 1e+6;
 const int GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_DECIMAL_PLACES = 6;
 const int GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::RIFT_EXPONENTIAL_STRETCHING_CONSTANT_DECIMAL_PLACES = 3;
