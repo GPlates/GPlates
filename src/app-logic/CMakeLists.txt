@@ -29,6 +29,7 @@ set(srcs
     CoRegistrationLayerTask.h
     DeformationStrain.cc
     DeformationStrain.h
+    DeformationStrainRate.cc
     DeformationStrainRate.h
     DependentTopologicalSectionLayers.cc
     DependentTopologicalSectionLayers.h
