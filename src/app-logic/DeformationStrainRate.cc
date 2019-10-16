@@ -81,5 +81,7 @@ GPlatesAppLogic::DeformationStrainRate::get_strain_rate_style() const
 			? abs_principal_D_11
 			: abs_principal_D_22;
 
+	// NOTE: If all principal components are zero (because the strain rate is zero) then
+	// we'll get NaN (zero divided by zero).
 	return (principal_D_11 + principal_D_22) / max_abs_principal_D;
 }

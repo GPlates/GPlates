@@ -219,6 +219,9 @@ namespace GPlatesAppLogic
 		 *   max(|D_principal_11|, |D_principal_22|)
 		 *
 		 * ...and the result is typically clamped to the range [-1, 1], although that's not done here.
+		 *
+		 * NOTE: If D_principal_11 and D_principal_22 are both zero (because the strain rate is zero)
+		 * then NaN (zero divided by zero) is returned.
 		 */
 		double
 		get_strain_rate_style() const;
