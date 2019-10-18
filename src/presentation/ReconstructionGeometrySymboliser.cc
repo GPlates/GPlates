@@ -126,3 +126,25 @@ GPlatesPresentation::ReconstructionGeometrySymboliser::symbolise(
 
 	return boost::none;
 }
+
+
+void
+GPlatesPresentation::ReconstructionGeometrySymboliser::set_line_width(
+		float line_width) const
+{
+	// HACK: Remove when symbolisers are properly created and modified via the GUI.
+	const_cast<ReconstructionGeometrySymboliser *>(this)
+			->d_polyline_symboliser->get_layers()[0].get_simple_line()->line_width = line_width;
+	const_cast<ReconstructionGeometrySymboliser *>(this)
+			->d_polygon_symboliser->get_layers()[0].get_simple_outline()->line_width = line_width;
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometrySymboliser::set_point_size(
+		float point_size) const
+{
+	// HACK: Remove when symbolisers are properly created and modified via the GUI.
+	const_cast<ReconstructionGeometrySymboliser *>(this)
+			->d_point_symboliser->get_layers()[0].get_simple_point()->point_size = point_size;
+}

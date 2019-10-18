@@ -554,6 +554,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 	// A value of zero will set no limits.
 	d_rendered_geometry_layer->set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 			d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius);
+
+	// TODO: Remove when symbolisers are properly created and modified via the GUI. 
+	d_reconstruction_geometry_symboliser.set_line_width(d_render_params.reconstruction_line_width_hint);
+	d_reconstruction_geometry_symboliser.set_point_size(d_render_params.reconstruction_point_size_hint);
 }
 
 

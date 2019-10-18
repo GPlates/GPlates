@@ -89,6 +89,21 @@ namespace GPlatesPresentation
 		PointSymboliser::non_null_ptr_type d_point_symboliser;
 		PolylineSymboliser::non_null_ptr_type d_polyline_symboliser;
 		PolygonSymboliser::non_null_ptr_type d_polygon_symboliser;
+
+	//
+	// TODO: Remove the following when symbolisers are properly created and modified via the GUI...
+	//
+	// Note that these do not trigger the 'modified' signal since these changes have already
+	// been signalled elsewhere.
+	//
+	public:
+		void
+		set_line_width(
+				float line_width) const;
+
+		void
+		set_point_size(
+				float point_size) const;
 	};
 }
 
