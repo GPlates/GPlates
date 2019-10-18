@@ -23,24 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PRESENTATION_LINESYMBOL_H
-#define GPLATES_PRESENTATION_LINESYMBOL_H
+#ifndef GPLATES_PRESENTATION_POLYLINESYMBOL_H
+#define GPLATES_PRESENTATION_POLYLINESYMBOL_H
+
+#include <vector>
 
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+
+#include "Symbol.h"
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesPresentation
 {
-	class LineSymbol :
-			public GPlatesUtils::ReferenceCount<LineSymbol>
+	class PolylineSymbol :
+			public Symbol
 	{
 	public:
-		// Convenience typedefs for a shared pointer to a @a LineSymbol.
-		typedef GPlatesUtils::non_null_intrusive_ptr<LineSymbol> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const LineSymbol> non_null_ptr_to_const_type;
+		// Convenience typedefs for a shared pointer to a @a PolylineSymbol.
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineSymbol> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineSymbol> non_null_ptr_to_const_type;
 
 
 		class SimpleLine
@@ -48,11 +52,11 @@ namespace GPlatesPresentation
 		public:
 			explicit
 			SimpleLine(
-					const double &line_width_ = 1.0) :
+					float line_width_ = 1.0f) :
 				line_width(line_width_)
 			{  }
 
-			double line_width;
+			float line_width;
 		};
 
 		class MarkerLine
@@ -75,6 +79,7 @@ namespace GPlatesPresentation
 					const MarkerLine &marker_line) :
 				d_layer(marker_line)
 			{  }
+
 
 			boost::optional<const SimpleLine &>
 			get_simple_line() const
@@ -110,7 +115,7 @@ namespace GPlatesPresentation
 		non_null_ptr_type
 		create()
 		{
-			return non_null_ptr_type(new LineSymbol());
+			return non_null_ptr_type(new PolylineSymbol());
 		}
 
 		void
@@ -126,13 +131,37 @@ namespace GPlatesPresentation
 			return d_layers;
 		}
 
-	private:
-		LineSymbol()
+
+		/**
+		 * Accept a ConstSymbolVisitor instance.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstSymbolVisitor &visitor) const
+		{
+			visitor.visit(GPlatesUtils::get_non_null_pointer(this));
+		}
+
+		/**
+		 * Accept a SymbolVisitor instance.
+		 */
+		virtual
+		void
+		accept_visitor(
+				SymbolVisitor &visitor)
+		{
+			visitor.visit(GPlatesUtils::get_non_null_pointer(this));
+		}
+
+	protected:
+		PolylineSymbol()
 		{  }
 
+	private:
 		layer_seq_type d_layers;
 	};
 }
 
-#endif // GPLATES_PRESENTATION_LINESYMBOL_H
+#endif // GPLATES_PRESENTATION_POLYLINESYMBOL_H
 
