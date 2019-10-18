@@ -34,6 +34,7 @@
 #include <boost/bind.hpp>
 #include <boost/optional.hpp>
 
+#include "SymbolVisitor.h"
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VisualLayer.h"
 #include "VisualLayerParamsVisitor.h"
@@ -433,6 +434,44 @@ namespace GPlatesPresentation
 		 */
 		boost::optional<const rendered_geometries_spatial_partition_type::location_type &>
 				d_rendered_geometries_spatial_partition_location;
+
+
+		/**
+		 * Renders symbols generated from a ReconstructedFeatureGeometry.
+		 */
+		class ReconstructedFeatureGeometrySymbolRenderer :
+				public ConstSymbolVisitor
+		{
+		public:
+			ReconstructedFeatureGeometrySymbolRenderer(
+					ReconstructionGeometryRenderer &reconstruction_geometry_renderer,
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &reconstructed_feature_geometry) :
+				d_reconstruction_geometry_renderer(reconstruction_geometry_renderer),
+				d_reconstructed_feature_geometry(reconstructed_feature_geometry)
+			{  }
+
+			// Bring base class visit methods into scope of current class.
+			using ConstSymbolVisitor::visit;
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<point_symbol_type> &point_symbol);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<polygon_symbol_type> &polygon_symbol);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<polyline_symbol_type> &polyline_symbol);
+
+		private:
+			ReconstructionGeometryRenderer &d_reconstruction_geometry_renderer;
+			const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &d_reconstructed_feature_geometry;
+		};
 
 
 		/**

@@ -31,7 +31,11 @@
 
 #include "ReconstructionGeometryRenderer.h"
 
+#include "PointSymbol.h"
+#include "PolygonSymbol.h"
+#include "PolylineSymbol.h"
 #include "RasterVisualLayerParams.h"
+#include "ReconstructionGeometrySymboliser.h"
 #include "ReconstructScalarCoverageVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
@@ -111,11 +115,11 @@ namespace
 	 */
 	boost::optional<GPlatesGui::Symbol>
 	get_symbol(
-	    boost::optional<const GPlatesGui::symbol_map_type &> symbol_map,
-	    const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
+		boost::optional<const GPlatesGui::symbol_map_type &> symbol_map,
+		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
 	{
-	    if (symbol_map)
-	    {
+		if (symbol_map)
+		{
 			GPlatesAppLogic::FeatureTypePropertyExtractor extractor;
 			const boost::optional<GPlatesAppLogic::FeatureTypePropertyExtractor::return_type> feature_type =
 					extractor(*reconstruction_geometry);
@@ -129,9 +133,9 @@ namespace
 					return iter->second;
 				}
 			}
-	    }
+		}
 
-	    return boost::none;
+		return boost::none;
 	}
 
 
@@ -333,6 +337,184 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 	d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius = params.get_arrow_spacing();
 	d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius = params.get_arrow_body_scale();
 	d_render_params.ratio_arrowhead_size_to_globe_radius = params.get_arrowhead_scale();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometrySymbolRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<point_symbol_type> &point_symbol)
+{
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_geometry =
+			d_reconstructed_feature_geometry->reconstructed_geometry();
+
+	if (boost::optional<const GPlatesMaths::PointOnSphere &> point =
+		GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*reconstructed_geometry))
+	{
+		const PointSymbol::layer_seq_type &layers = point_symbol->get_layers();
+
+		for (unsigned int layer_index = 0; layer_index < layers.size(); ++layer_index)
+		{
+			const PointSymbol::Layer &layer = layers[layer_index];
+			if (boost::optional<const PointSymbol::SimplePoint &> simple_point = layer.get_simple_point())
+			{
+				boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
+						d_reconstruction_geometry_renderer.d_feature_type_symbol_map,
+						d_reconstructed_feature_geometry);
+
+				GPlatesViewOperations::RenderedGeometry rendered_geometry;
+				if (symbol)
+				{
+					rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_symbol(
+							d_reconstruction_geometry_renderer.d_reconstruction_adjustment
+									? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * point.get()
+									: point.get(),
+							symbol.get(),
+							get_colour(
+									d_reconstructed_feature_geometry,
+									d_reconstruction_geometry_renderer.d_colour,
+									d_reconstruction_geometry_renderer.d_style_adapter),
+							simple_point->point_size);
+				}
+				else
+				{
+					rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+							d_reconstruction_geometry_renderer.d_reconstruction_adjustment
+									? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * point.get()
+									: point.get(),
+							get_colour(
+									d_reconstructed_feature_geometry,
+									d_reconstruction_geometry_renderer.d_colour,
+									d_reconstruction_geometry_renderer.d_style_adapter),
+							simple_point->point_size);
+				}
+
+				// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+				rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+						d_reconstructed_feature_geometry,
+						rendered_geometry);
+
+				// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+				d_reconstruction_geometry_renderer.render_reconstruction_geometry_on_sphere(rendered_geometry);
+			}
+		}
+	}
+	else if (boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> multi_point =
+			GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(*reconstructed_geometry))
+	{
+		const PointSymbol::layer_seq_type &layers = point_symbol->get_layers();
+
+		for (unsigned int layer_index = 0; layer_index < layers.size(); ++layer_index)
+		{
+			const PointSymbol::Layer &layer = layers[layer_index];
+			if (boost::optional<const PointSymbol::SimplePoint &> simple_point = layer.get_simple_point())
+			{
+				GPlatesViewOperations::RenderedGeometry rendered_geometry =
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
+						d_reconstruction_geometry_renderer.d_reconstruction_adjustment
+								? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * multi_point.get()
+								: multi_point.get(),
+						get_colour(
+							d_reconstructed_feature_geometry,
+							d_reconstruction_geometry_renderer.d_colour,
+							d_reconstruction_geometry_renderer.d_style_adapter),
+						simple_point->point_size);
+
+				// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+				rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+					d_reconstructed_feature_geometry,
+					rendered_geometry);
+
+				// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+				d_reconstruction_geometry_renderer.render_reconstruction_geometry_on_sphere(rendered_geometry);
+			}
+		}
+	}
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometrySymbolRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<polygon_symbol_type> &polygon_symbol)
+{
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_geometry =
+			d_reconstructed_feature_geometry->reconstructed_geometry();
+
+	if (boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+		GPlatesAppLogic::GeometryUtils::get_polygon_on_sphere(*reconstructed_geometry))
+	{
+		const PolygonSymbol::layer_seq_type &layers = polygon_symbol->get_layers();
+
+		for (unsigned int layer_index = 0; layer_index < layers.size(); ++layer_index)
+		{
+			const PolygonSymbol::Layer &layer = layers[layer_index];
+			if (boost::optional<const PolygonSymbol::SimpleOutline &> simple_outline = layer.get_simple_outline())
+			{
+				GPlatesViewOperations::RenderedGeometry rendered_geometry =
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
+								d_reconstruction_geometry_renderer.d_reconstruction_adjustment
+										? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * polygon.get()
+										: polygon.get(),
+								get_colour(
+										d_reconstructed_feature_geometry,
+										d_reconstruction_geometry_renderer.d_colour,
+										d_reconstruction_geometry_renderer.d_style_adapter),
+								simple_outline->line_width,
+								d_reconstruction_geometry_renderer.d_render_params.fill_polygons,
+								d_reconstruction_geometry_renderer.d_render_params.fill_modulate_colour);
+
+				// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+				rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+						d_reconstructed_feature_geometry,
+						rendered_geometry);
+
+				// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+				d_reconstruction_geometry_renderer.render_reconstruction_geometry_on_sphere(rendered_geometry);
+			}
+		}
+	}
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometrySymbolRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<polyline_symbol_type> &polyline_symbol)
+{
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_geometry =
+			d_reconstructed_feature_geometry->reconstructed_geometry();
+
+	if (boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
+		GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*reconstructed_geometry))
+	{
+		const PolylineSymbol::layer_seq_type &layers = polyline_symbol->get_layers();
+
+		for (unsigned int layer_index = 0; layer_index < layers.size(); ++layer_index)
+		{
+			const PolylineSymbol::Layer &layer = layers[layer_index];
+			if (boost::optional<const PolylineSymbol::SimpleLine &> simple_line = layer.get_simple_line())
+			{
+				GPlatesViewOperations::RenderedGeometry rendered_geometry =
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+								d_reconstruction_geometry_renderer.d_reconstruction_adjustment
+										? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * polyline.get()
+										: polyline.get(),
+								get_colour(
+										d_reconstructed_feature_geometry,
+										d_reconstruction_geometry_renderer.d_colour,
+										d_reconstruction_geometry_renderer.d_style_adapter),
+								simple_line->line_width,
+								d_reconstruction_geometry_renderer.d_render_params.fill_polylines,
+								d_reconstruction_geometry_renderer.d_render_params.fill_modulate_colour);
+
+				// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+				rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+						d_reconstructed_feature_geometry,
+						rendered_geometry);
+
+				// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+				d_reconstruction_geometry_renderer.render_reconstruction_geometry_on_sphere(rendered_geometry);
+			}
+		}
+	}
 }
 
 
@@ -599,15 +781,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rfg_geometry = rfg->reconstructed_geometry();
-
 	// Return early if hiding the geometry type of the reconstructed feature geometry.
 	if (!d_render_settings.show_static_points() ||
 		!d_render_settings.show_static_multipoints() ||
 		!d_render_settings.show_static_lines() ||
 		!d_render_settings.show_static_polygons())
 	{
-		const GPlatesMaths::GeometryType::Value rfg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*rfg_geometry);
+		const GPlatesMaths::GeometryType::Value rfg_geometry_type =
+				GPlatesAppLogic::GeometryUtils::get_geometry_type(*rfg->reconstructed_geometry());
 		if ((!d_render_settings.show_static_points() && (rfg_geometry_type == GPlatesMaths::GeometryType::POINT)) ||
 			(!d_render_settings.show_static_multipoints() && (rfg_geometry_type == GPlatesMaths::GeometryType::MULTIPOINT)) ||
 			(!d_render_settings.show_static_lines() && (rfg_geometry_type == GPlatesMaths::GeometryType::POLYLINE)) ||
@@ -617,17 +798,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
-		create_rendered_reconstruction_geometry(
-				rfg_geometry,
-				rfg,
-				d_render_params,
-				get_colour(rfg, d_colour, d_style_adapter),
-				d_reconstruction_adjustment,
-				d_feature_type_symbol_map);
-
-	// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
-	render_reconstruction_geometry_on_sphere(rendered_geometry);
+	// Generate a symbol for the reconstructed feature geometry.
+	boost::optional<Symbol::non_null_ptr_type> symbol = d_reconstruction_geometry_symboliser.symbolise(*rfg);
+	if (symbol)
+	{
+		// Generate rendered geometries from the reconstructed feature geometry and its symbol.
+		ReconstructedFeatureGeometrySymbolRenderer symbol_renderer(*this, rfg);
+		symbol.get()->accept_visitor(symbol_renderer);
+	}
 }
 
 
