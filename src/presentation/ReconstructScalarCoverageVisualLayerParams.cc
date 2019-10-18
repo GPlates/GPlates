@@ -37,8 +37,9 @@
 
 
 GPlatesPresentation::ReconstructScalarCoverageVisualLayerParams::ReconstructScalarCoverageVisualLayerParams(
-		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
-	VisualLayerParams(layer_params)
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+		ViewState &view_state) :
+	VisualLayerParams(layer_params, view_state)
 {
 }
 

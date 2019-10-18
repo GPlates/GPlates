@@ -50,8 +50,6 @@
 
 #include "presentation/VisualLayers.h"
 
-#include "utils/VirtualProxy.h"
-
 
 namespace GPlatesOpenGL
 {

@@ -130,9 +130,10 @@ namespace
 	// create_visual_layer_params_function.
 	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 	default_visual_layer_params(
-			GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
+			GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+			GPlatesPresentation::ViewState &view_state)
 	{
-		return GPlatesPresentation::VisualLayerParams::create(layer_params);
+		return GPlatesPresentation::VisualLayerParams::create(layer_params, view_state);
 	}
 }
 
@@ -350,14 +351,15 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
 		VisualLayerType::Type visual_layer_type,
-		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) const
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+		GPlatesPresentation::ViewState &view_state) const
 {
 	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
 	if (iter != d_visual_layer_info_map.end())
 	{
-		return iter->second.create_visual_layer_params_function(layer_params);
+		return iter->second.create_visual_layer_params_function(layer_params, view_state);
 	}
-	return VisualLayerParams::create(layer_params);
+	return VisualLayerParams::create(layer_params, view_state);
 }
 
 
@@ -446,9 +448,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RECONSTRUCT_SCALAR_COVERAGE),
 			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
-			boost::bind(
-					&ReconstructScalarCoverageVisualLayerParams::create,
-					_1),
+			&ReconstructScalarCoverageVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(
@@ -493,12 +493,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				SCALAR_FIELD_3D),
 			&GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::create,
-			boost::bind(
-					&ScalarField3DVisualLayerParams::create,
-					// NOTE: We pass in ViewState and not the GlobeAndMapWidget, obtained from
-					// ViewportWindow, because ViewportWindow is not yet available (a reference to
-					// it not yet been initialised inside ViewState) so accessing it would crash...
-					_1, boost::ref(view_state)),
+			&ScalarField3DVisualLayerParams::create,
 			true);
 
 	// DERIVED_DATA group.
@@ -547,9 +542,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
 			&GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create,
-			boost::bind(
-					&VelocityFieldCalculatorVisualLayerParams::create,
-					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
+			&VelocityFieldCalculatorVisualLayerParams::create,
 			true);
 
 	using namespace  GPlatesUtils;

@@ -39,8 +39,9 @@
 
 
 GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
-		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
-	VisualLayerParams(layer_params),
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+		ViewState &view_state) :
+	VisualLayerParams(layer_params, view_state),
 	d_colour_palette_parameters_initialised_from_raster(false),
 	d_colour_palette_parameters(create_default_colour_palette_parameters()),
 	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN),

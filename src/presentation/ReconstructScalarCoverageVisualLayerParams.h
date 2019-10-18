@@ -36,6 +36,8 @@
 
 namespace GPlatesPresentation
 {
+	class ViewState;
+
 	class ReconstructScalarCoverageVisualLayerParams :
 			public VisualLayerParams
 	{
@@ -47,9 +49,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state)
 		{
-			return new ReconstructScalarCoverageVisualLayerParams(layer_params);
+			return new ReconstructScalarCoverageVisualLayerParams(layer_params, view_state);
 		}
 
 
@@ -131,9 +134,9 @@ namespace GPlatesPresentation
 
 	protected:
 
-		explicit 
 		ReconstructScalarCoverageVisualLayerParams( 
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state);
 
 	private:
 

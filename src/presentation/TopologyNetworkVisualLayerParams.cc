@@ -39,9 +39,11 @@
 
 
 GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLayerParams(
-		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
+		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+		ViewState &view_state) :
 	VisualLayerParams(
 			layer_params,
+			view_state,
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
 	d_triangulation_colour_mode(TRIANGULATION_COLOUR_DRAW_STYLE),
 	// Display as mesh by default (instead of just a boundary) since it's a good visual indicator

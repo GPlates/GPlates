@@ -34,6 +34,8 @@
 
 namespace GPlatesPresentation
 {
+	class ViewState;
+
 	class TopologyGeometryVisualLayerParams :
 			public VisualLayerParams
 	{
@@ -44,9 +46,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state)
 		{
-			return new TopologyGeometryVisualLayerParams( layer_params );
+			return new TopologyGeometryVisualLayerParams(layer_params, view_state);
 		}
 
 		void
@@ -132,11 +135,13 @@ namespace GPlatesPresentation
 		}
 
 	protected:
-		explicit
+
 		TopologyGeometryVisualLayerParams( 
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) :
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state) :
 			VisualLayerParams(
 					layer_params,
+					view_state,
 					GPlatesGui::DrawStyleManager::instance()->default_style()),
 			d_fill_polygons(false),
 			d_fill_opacity(1.0),

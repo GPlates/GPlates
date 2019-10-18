@@ -68,7 +68,8 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_visual_layer_params(
 			d_visual_layer_registry.create_visual_layer_params(
 					get_layer_type(),
-					layer.get_layer_params()))
+					layer.get_layer_params(),
+					view_state))
 {
 	d_widget_sections_expanded[ALL] = false;
 	d_widget_sections_expanded[INPUT_CHANNELS] = true;

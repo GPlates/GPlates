@@ -28,6 +28,8 @@
 
 #include "VisualLayerParams.h"
 
+#include "ViewState.h"
+
 #include "view-operations/RenderedGeometryParameters.h"
 
 
@@ -45,9 +47,9 @@ namespace GPlatesPresentation
 		non_null_ptr_type
 		create(
 				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
-				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters)
+				ViewState &view_state)
 		{
-			return new VelocityFieldCalculatorVisualLayerParams(layer_params, rendered_geometry_parameters);
+			return new VelocityFieldCalculatorVisualLayerParams(layer_params, view_state);
 		}
 
 
@@ -122,16 +124,15 @@ namespace GPlatesPresentation
 
 	protected:
 
-		explicit 
 		VelocityFieldCalculatorVisualLayerParams( 
 				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
-				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
-			VisualLayerParams(layer_params),
-			d_arrow_spacing(rendered_geometry_parameters
+				ViewState &view_state) :
+			VisualLayerParams(layer_params, view_state),
+			d_arrow_spacing(view_state.get_rendered_geometry_parameters()
 					.get_reconstruction_layer_arrow_spacing()),
-			d_arrow_body_scale(rendered_geometry_parameters
+			d_arrow_body_scale(view_state.get_rendered_geometry_parameters()
 					.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
-			d_arrowhead_scale(rendered_geometry_parameters
+			d_arrowhead_scale(view_state.get_rendered_geometry_parameters()
 					.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius())
 		{  }
 

@@ -76,7 +76,7 @@ namespace GPlatesPresentation
 GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerParams(
 		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 		GPlatesPresentation::ViewState &view_state) :
-	VisualLayerParams(layer_params),
+	VisualLayerParams(layer_params, view_state),
 	d_is_surface_polygons_mask_supported(determine_if_surface_polygons_mask_supported(view_state)),
 	d_scalar_colour_palette_parameters_initialised_from_scalar_field(false),
 	d_gradient_colour_palette_parameters_initialised_from_scalar_field(false),

@@ -99,12 +99,15 @@ namespace GPlatesPresentation
 		> create_options_widget_function_type;
 
 		/**
-		 * Convenience typedef for a function that takes a layer params argument and
+		 * Convenience typedef for a function that takes a layer params argument (and ViewState) and
 		 * creates a non-null intrusive pointer to an instance of VisualLayerParams
 		 * (or one of its derived classes).
 		 */
-		typedef boost::function< VisualLayerParams::non_null_ptr_type (GPlatesAppLogic::LayerParams::non_null_ptr_type) >
-			create_visual_layer_params_function_type;
+		typedef boost::function<
+			VisualLayerParams::non_null_ptr_type (
+				GPlatesAppLogic::LayerParams::non_null_ptr_type,
+				GPlatesPresentation::ViewState &)
+		> create_visual_layer_params_function_type;
 
 		/**
 		 * Stores information about the given @a visual_layer_type_.
@@ -224,7 +227,8 @@ namespace GPlatesPresentation
 		VisualLayerParams::non_null_ptr_type
 		create_visual_layer_params(
 				VisualLayerType::Type visual_layer_type,
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params) const;
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				GPlatesPresentation::ViewState &view_state) const;
 
 		/**
 		 * Returns whether the given @a visual_layer_type ever produces rendered

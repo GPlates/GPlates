@@ -35,6 +35,8 @@
 
 namespace GPlatesPresentation
 {
+	class ViewState;
+
 	class ReconstructVisualLayerParams :
 			public VisualLayerParams
 	{
@@ -46,9 +48,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state)
 		{
-			return new ReconstructVisualLayerParams(layer_params);
+			return new ReconstructVisualLayerParams(layer_params, view_state);
 		}
 
 
@@ -170,9 +173,9 @@ namespace GPlatesPresentation
 
 	protected:
 
-		explicit
 		ReconstructVisualLayerParams(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state);
 
 	private:
 

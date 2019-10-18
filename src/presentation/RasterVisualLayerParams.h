@@ -40,6 +40,8 @@
 
 namespace GPlatesPresentation
 {
+	class ViewState;
+
 	class RasterVisualLayerParams :
 			public VisualLayerParams
 	{
@@ -51,9 +53,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state)
 		{
-			return new RasterVisualLayerParams(layer_params);
+			return new RasterVisualLayerParams(layer_params, view_state);
 		}
 
 		/**
@@ -176,9 +179,9 @@ namespace GPlatesPresentation
 
 	protected:
 
-		explicit
 		RasterVisualLayerParams(
-				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				ViewState &view_state);
 
 	private:
 
