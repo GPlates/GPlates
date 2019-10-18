@@ -25,15 +25,104 @@
 
 #include "ReconstructionGeometrySymboliser.h"
 
+#include "PointSymbol.h"
+#include "PolygonSymbol.h"
+#include "PolylineSymbol.h"
+
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructionGeometryVisitor.h"
 
 
-GPlatesPresentation::LineSymbol::non_null_ptr_to_const_type
-GPlatesPresentation::ReconstructionGeometrySymboliser::symbolise(
-	const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry) const
+namespace GPlatesPresentation
 {
-	LineSymbol::non_null_ptr_type line_symbol = LineSymbol::create();
-	line_symbol->add_layer(LineSymbol::Layer(LineSymbol::SimpleLine()));
+	namespace
+	{
+		/**
+		 * Visitor to symbolise derived @a ReconstructionGeometry type.
+		 */
+		class VisitReconstructionGeometryDerivedType :
+				public GPlatesAppLogic::ConstReconstructionGeometryVisitor
+		{
+		public:
 
-	return line_symbol;
+			explicit
+			VisitReconstructionGeometryDerivedType(
+					const ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser) :
+				d_reconstruction_geometry_symboliser(reconstruction_geometry_symboliser)
+			{  }
+
+
+			//! Return the symbol
+			boost::optional<Symbol::non_null_ptr_type>
+			get_symbol() const
+			{
+				return d_symbol;
+			}
+
+
+			// Bring base class visit methods into scope of current class.
+			using GPlatesAppLogic::ConstReconstructionGeometryVisitor::visit;
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+			{
+				d_symbol = d_reconstruction_geometry_symboliser.symbolise(*rfg);
+			}
+
+		private:
+			const ReconstructionGeometrySymboliser &d_reconstruction_geometry_symboliser;
+			boost::optional<Symbol::non_null_ptr_type> d_symbol;
+		};
+	}
+}
+
+
+GPlatesPresentation::ReconstructionGeometrySymboliser::ReconstructionGeometrySymboliser() :
+	d_point_symboliser(PointSymboliser::create()),
+	d_polyline_symboliser(PolylineSymboliser::create()),
+	d_polygon_symboliser(PolygonSymboliser::create())
+{
+	// Start with just a simple points, lines and polygons for now.
+	d_point_symboliser->add_layer(PointSymboliser::Layer(PointSymboliser::SimplePoint(4.0f)));
+	d_polyline_symboliser->add_layer(PolylineSymboliser::Layer(PolylineSymboliser::SimpleLine(1.5f)));
+	d_polygon_symboliser->add_layer(PolygonSymboliser::Layer(PolygonSymboliser::SimpleOutline(1.5f)));
+}
+
+
+boost::optional<GPlatesPresentation::Symbol::non_null_ptr_type>
+GPlatesPresentation::ReconstructionGeometrySymboliser::symbolise(
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
+{
+	// Call symbolise() for derived reconstruction geometry type.
+	VisitReconstructionGeometryDerivedType visitor(*this);
+	reconstruction_geometry.accept_visitor(visitor);
+	return visitor.get_symbol();
+}
+
+
+boost::optional<GPlatesPresentation::Symbol::non_null_ptr_type>
+GPlatesPresentation::ReconstructionGeometrySymboliser::symbolise(
+		const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstruct_feature_geometry) const
+{
+	switch (GPlatesAppLogic::GeometryUtils::get_geometry_type(*reconstruct_feature_geometry.reconstructed_geometry()))
+	{
+	case GPlatesMaths::GeometryType::POINT:
+	case GPlatesMaths::GeometryType::MULTIPOINT:
+		return d_point_symboliser->symbolise(reconstruct_feature_geometry);
+
+	case GPlatesMaths::GeometryType::POLYLINE:
+		return d_polyline_symboliser->symbolise(reconstruct_feature_geometry);
+
+	case GPlatesMaths::GeometryType::POLYGON:
+		return d_polygon_symboliser->symbolise(reconstruct_feature_geometry);
+
+	case GPlatesMaths::GeometryType::NONE:
+	default:
+		break;
+	}
+
+	return boost::none;
 }

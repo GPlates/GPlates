@@ -27,18 +27,22 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTIONGEOMETRYSYMBOLISER_H
 #define GPLATES_PRESENTATION_RECONSTRUCTIONGEOMETRYSYMBOLISER_H
 
+#include <boost/optional.hpp>
 #include <QObject>
 
-#include "utils/ReferenceCount.h"
+#include "PointSymboliser.h"
+#include "PolygonSymboliser.h"
+#include "PolylineSymboliser.h"
+#include "Symbol.h"
 
-#include "LineSymbol.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
+	class ReconstructionGeometry;
 }
-
 
 namespace GPlatesPresentation
 {
@@ -62,21 +66,29 @@ namespace GPlatesPresentation
 		}
 
 
-		LineSymbol::non_null_ptr_to_const_type
+		boost::optional<Symbol::non_null_ptr_type>
 		symbolise(
-				const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+
+		boost::optional<Symbol::non_null_ptr_type>
+		symbolise(
+				const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstruct_feature_geometry) const;
 
 	Q_SIGNALS:
 
 		/**
-		 * Emitted when any aspect of the symboliser has been modified.
+		 * Emitted when any aspect of any rule/symboliser has been modified.
 		 */
 		void
 		modified();
 
 	private:
-		ReconstructionGeometrySymboliser()
-		{  }
+
+		ReconstructionGeometrySymboliser();
+
+		PointSymboliser::non_null_ptr_type d_point_symboliser;
+		PolylineSymboliser::non_null_ptr_type d_polyline_symboliser;
+		PolygonSymboliser::non_null_ptr_type d_polygon_symboliser;
 	};
 }
 
