@@ -19,7 +19,15 @@ set(srcs
     InternalSession.h
     LayerOutputRenderer.cc
     LayerOutputRenderer.h
-    LineSymbol.h
+    PointSymbol.h
+    PointSymboliser.cc
+    PointSymboliser.h
+    PolygonSymbol.h
+    PolygonSymboliser.cc
+    PolygonSymboliser.h
+    PolylineSymbol.h
+    PolylineSymboliser.cc
+    PolylineSymboliser.h
     ProjectSession.cc
     ProjectSession.h
     RasterVisualLayerParams.cc
@@ -40,6 +48,9 @@ set(srcs
     Session.h
     SessionManagement.cc
     SessionManagement.h
+    Symbol.h
+    Symboliser.h
+    SymbolVisitor.h
     TopologyGeometryVisualLayerParams.h
     TopologyNetworkVisualLayerParams.cc
     TopologyNetworkVisualLayerParams.h
