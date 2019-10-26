@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <vector>
+#include <boost/optional.hpp>
 #include <QDebug>
 
 #include "ActionButtonBox.h"
@@ -38,8 +39,9 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerProxyUtils.h"
-#include "app-logic/ReconstructLayerProxy.h"
+#include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
 
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
@@ -307,19 +309,45 @@ namespace
 	 */
 	void
 	find_trses(
-			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
-					sequence_choices,
+			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &sequence_choices,
 			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
-			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
+			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+			const GPlatesAppLogic::Reconstruction &reconstruction)
 	{
 		using namespace GPlatesModel;
 
+		// Find the reconstruction feature collections used to create the reconstruction tree.
+		// They could come from any of the reconstruction layer outputs (likely only one layer but could be more).
+		boost::optional<const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &> reconstruction_feature_collections;
+		std::vector<GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type> reconstruction_layer_outputs;
+		if (reconstruction.get_active_layer_outputs<GPlatesAppLogic::ReconstructionLayerProxy>(reconstruction_layer_outputs))
+		{
+			// Iterate over the reconstruction layers.
+			for (unsigned int reconstruction_layer_index = 0;
+				reconstruction_layer_index < reconstruction_layer_outputs.size();
+				++reconstruction_layer_index)
+			{
+				const GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type &
+						reconstruction_layer_output = reconstruction_layer_outputs[reconstruction_layer_index];
+
+				if (reconstruction_layer_output->get_reconstruction_tree() == reconstruction_tree)
+				{
+					reconstruction_feature_collections = reconstruction_layer_output->get_current_reconstruction_feature_collections();
+					break;
+				}
+			}
+		}
+		if (!reconstruction_feature_collections)
+		{
+			return;
+		}
+
 		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_iter =
-				reconstruction_tree.get_reconstruction_features().begin();
+				reconstruction_feature_collections->begin();
 		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
-				reconstruction_tree.get_reconstruction_features().end();
+				reconstruction_feature_collections->end();
 		for ( ; collections_iter != collections_end; ++collections_iter)
 		{
 			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
@@ -336,9 +364,13 @@ namespace
 			FeatureCollectionHandle::iterator features_end = current_collection->end();
 			for ( ; features_iter != features_end; ++features_iter)
 			{
-				examine_trs(sequence_choices, trs_plate_id_finder,
-						trs_time_period_finder, plate_id_of_interest,
-						reconstruction_tree.get_reconstruction_time(), features_iter);
+				examine_trs(
+						sequence_choices,
+						trs_plate_id_finder,
+						trs_time_period_finder,
+						plate_id_of_interest,
+						reconstruction.get_reconstruction_time(),
+						features_iter);
 			}
 		}
 	}
@@ -606,8 +638,13 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
-	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, *d_plate_id,
-			 **d_reconstruction_tree);
+	find_trses(
+			sequence_choices,
+			trs_plate_id_finder,
+			trs_time_period_finder,
+			*d_plate_id,
+			*d_reconstruction_tree,
+			d_application_state_ptr->get_current_reconstruction());
 
 	// The Applicator should be set before the dialog is set up.
 	// Why, you ask?  Because when the dialog is set up, the first row in the sequence choices

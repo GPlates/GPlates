@@ -2,9 +2,6 @@
 #include <boost/test/unit_test.hpp>
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
-#include <boost/test/detail/unit_test_parameters.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
 #include <boost/version.hpp>
 #endif // __WINDOWS__
 #include <QDebug>

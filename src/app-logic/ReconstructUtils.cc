@@ -392,22 +392,3 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruct_params,
 			reverse_reconstruct);
 }
-
-
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-		const ReconstructionTree &reconstruction_tree,
-		const ReconstructParams &reconstruct_params,
-		bool reverse_reconstruct)
-{
-	return reconstruct_geometry(
-			geometry,
-			reconstruction_properties,
-			reconstruction_tree.get_reconstruction_time(),
-			reconstruction_tree.get_anchor_plate_id(),
-			reconstruction_tree.get_reconstruction_features(),
-			reconstruct_params,
-			reverse_reconstruct);
-}

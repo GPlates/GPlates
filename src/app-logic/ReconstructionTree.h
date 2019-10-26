@@ -29,11 +29,8 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONTREE_H
 
 #include <map>  // std::multimap
-#include <vector>
 
 #include "ReconstructionGraph.h"
-
-#include "model/FeatureCollectionHandle.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
@@ -127,12 +124,6 @@ namespace GPlatesAppLogic
 		 * Create a new ReconstructionTree instance from the ReconstructionGraph instance
 		 * @a graph, building a tree-structure which has @a anchor_plate_id_ as the anchor plate.
 		 *
-		 * @a reconstruction_features are the features that were used to fill this graph.
-		 * This can be used to find which ReconstructionTrees were generated using the same
-		 * set of reconstruction features and can also be used to find the set of reconstruction
-		 * features used to reconstruct specific geometries so that those reconstruction features
-		 * can be modified (such as inserting new rotation poles).
-		 *
 		 * Note that invoking this function will cause all total reconstruction poles in
 		 * the ReconstructionGraph instance to be transferred to this instance, leaving the
 		 * ReconstructionGraph instance empty (as if it had just been created).
@@ -142,8 +133,7 @@ namespace GPlatesAppLogic
 		create(
 				ReconstructionGraph &graph,
 				GPlatesModel::integer_plate_id_type anchor_plate_id_,
-				const double &reconstruction_time_,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_);
+				const double &reconstruction_time_);
 
 		/**
 		 * Create a duplicate of this ReconstructionTree instance.
@@ -235,16 +225,6 @@ namespace GPlatesAppLogic
 			return d_reconstruction_time;
 		}
 
-		/**
-		 * Access the features containing the reconstruction features used to
-		 * create this reconstruction tree.
-		 */
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-		get_reconstruction_features() const
-		{
-			return d_reconstruction_features;
-		}
-
 	private:
 
 		ReconstructionGraph d_graph;
@@ -267,11 +247,6 @@ namespace GPlatesAppLogic
 		 */
 		double d_reconstruction_time;
 
-		/**
-		 * The features used to generate the total reconstruction poles inserted into this tree.
-		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_reconstruction_features;
-
 
 
 		/**
@@ -281,11 +256,9 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructionTree(
 				GPlatesModel::integer_plate_id_type anchor_plate_id_,
-				const double &reconstruction_time_,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_) :
+				const double &reconstruction_time_) :
 			d_anchor_plate_id(anchor_plate_id_),
-			d_reconstruction_time(reconstruction_time_),
-			d_reconstruction_features(reconstruction_features_)
+			d_reconstruction_time(reconstruction_time_)
 		{  }
 
 		/**

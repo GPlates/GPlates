@@ -163,12 +163,30 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		double
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time.dval();
+		}
+
+		/**
 		 * Gets the current anchor plate id.
 		 */
 		GPlatesModel::integer_plate_id_type
 		get_current_anchor_plate_id() const
 		{
 			return d_current_anchor_plate_id;
+		}
+
+		/**
+		 * Get the reconstruction feature collections set by @a add_reconstruction_feature_collection, etc.
+		 */
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+		get_current_reconstruction_feature_collections() const
+		{
+			return d_current_reconstruction_feature_collections;
 		}
 
 

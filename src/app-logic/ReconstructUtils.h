@@ -215,8 +215,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -230,8 +229,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -245,8 +243,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -271,8 +268,9 @@ namespace GPlatesAppLogic
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
 		 *
-		 * Note that @a reconstruct_method_context can also contain deformation information used
-		 * to deform the specified geometry.
+		 * Note that if deformation (topological reconstruction) is present in @a reconstruct_method_context
+		 * then it is ignored because we only want to reconstruct based on the feature's properties
+		 * in @a reconstruction_properties (eg, plate ID).
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
@@ -314,19 +312,6 @@ namespace GPlatesAppLogic
 				const ReconstructParams &reconstruct_params,
 				bool reverse_reconstruct = false,
 				unsigned int reconstruction_tree_cache_size = 1);
-
-
-		/**
-		 * Same as other overload of @a reconstruct_geometry but generates a @a ReconstructionTreeCreator
-		 * from @a reconstruction_tree (using its reconstruction time, anchor plate ID and reconstruction features).
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_geometry(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-				const ReconstructionTree &reconstruction_tree,
-				const ReconstructParams &reconstruct_params,
-				bool reverse_reconstruct = false);
 
 
 		/**

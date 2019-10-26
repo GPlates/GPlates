@@ -170,6 +170,8 @@ GPlatesAppLogic::create_reconstruction_tree(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstruction_features_collection)
 {
+	PROFILE_FUNC();
+
 	ReconstructionGraph graph;
 	ReconstructionTreePopulator rtp(time, graph);
 
@@ -178,11 +180,8 @@ GPlatesAppLogic::create_reconstruction_tree(
 			reconstruction_features_collection.end(),
 			rtp);
 
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	ReconstructionTree::non_null_ptr_type tree =
-			graph.build_tree(anchor_plate_id, time, reconstruction_features_collection);
-
-	return tree;
+	// Build the reconstruction tree, using the anchor plate as the root of the tree.
+	return graph.build_tree(anchor_plate_id, time);
 }
 
 

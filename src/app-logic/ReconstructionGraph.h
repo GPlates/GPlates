@@ -35,8 +35,6 @@
 
 #include "ReconstructionTreeEdge.h"
 
-#include "model/FeatureCollectionHandle.h"
-
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 
@@ -139,14 +137,7 @@ namespace GPlatesAppLogic
 				bool finite_rotation_was_interpolated);
 
 		/**
-		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of
-		 * the tree.
-		 *
-		 * @a reconstruction_features are the features that were used to fill this graph.
-		 * This can be used to find which ReconstructionTrees were generated using the same
-		 * set of reconstruction features and can also be used to find the set of reconstruction
-		 * features used to reconstruct specific geometries so that those reconstruction features
-		 * can be modified (such as inserting new rotation poles).
+		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of the tree.
 		 *
 		 * Note that invoking this function will cause all total reconstruction poles in
 		 * this graph to be transferred to the new ReconstructionTree instance, leaving
@@ -157,8 +148,7 @@ namespace GPlatesAppLogic
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>
 		build_tree(
 				GPlatesModel::integer_plate_id_type root_plate_id,
-				const double &reconstruction_time,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features);
+				const double &reconstruction_time);
 
 		/**
 		 * Find all edges in this graph whose fixed plate ID matches @a plate_id.

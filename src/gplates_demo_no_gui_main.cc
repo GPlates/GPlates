@@ -454,8 +454,7 @@ output_reconstructions(
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree =
 				graph.build_tree(
 						anchor_plate_id,
-						recon_time,
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, total_recon_seqs));
+						recon_time);
 
 		traverse_recon_tree(*tree);
 

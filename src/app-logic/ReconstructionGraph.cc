@@ -185,14 +185,12 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 GPlatesUtils::non_null_intrusive_ptr<GPlatesAppLogic::ReconstructionTree>
 GPlatesAppLogic::ReconstructionGraph::build_tree(
 		GPlatesModel::integer_plate_id_type root_plate_id,
-		const double &reconstruction_time,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features)
+		const double &reconstruction_time)
 {
 	return ReconstructionTree::create(
 			*this,
 			root_plate_id,
-			reconstruction_time,
-			reconstruction_features);
+			reconstruction_time);
 }
 
 

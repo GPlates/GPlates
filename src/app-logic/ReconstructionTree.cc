@@ -36,6 +36,8 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
+#include "utils/Profile.h"
+
 
 namespace
 {
@@ -57,9 +59,9 @@ const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
 GPlatesAppLogic::ReconstructionTree::create(
 		ReconstructionGraph &graph,
 		GPlatesModel::integer_plate_id_type anchor_plate_id_,
-		const double &reconstruction_time_,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_)
+		const double &reconstruction_time_)
 {
+	PROFILE_FUNC();
 
 	//std::cerr << std::endl << "Starting new tree... " << std::endl;
 	// FIXME:  This function is very, very exception-unsafe.
@@ -67,8 +69,7 @@ GPlatesAppLogic::ReconstructionTree::create(
 	ReconstructionTree::non_null_ptr_type tree(
 			new ReconstructionTree(
 					anchor_plate_id_,
-					reconstruction_time_,
-					reconstruction_features_));
+					reconstruction_time_));
 
 	// We *could* do this recursively, but to minimise the chance that pathological input data
 	// (eg, trees which are actually linear, like lists) could kill the program, let's use a
