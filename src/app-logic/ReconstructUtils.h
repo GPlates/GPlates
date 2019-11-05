@@ -206,6 +206,11 @@ namespace GPlatesAppLogic
 		 * reconstruction trees to cache if the reconstructable features use reconstruction
 		 * trees for reconstruction times other than @a reconstruction_time.
 		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See GPlatesAppLogic::create_reconstruction_graph for more details.
+		 *
 		 * This function will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
@@ -216,6 +221,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+				bool extend_total_reconstruction_poles_to_distant_past = false,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -230,6 +236,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+				bool extend_total_reconstruction_poles_to_distant_past = false,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -244,6 +251,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+				bool extend_total_reconstruction_poles_to_distant_past = false,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -294,13 +302,18 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 				const double &reconstruction_time,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const ReconstructParams &reconstruct_params,
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				bool reverse_reconstruct = false);
 
 
 		/**
 		 * Same as other overload of @a reconstruct_geometry but creates temporary
 		 * @a ReconstructMethodRegistry and cached reconstruction tree creator objects internally.
+		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See GPlatesAppLogic::create_reconstruction_graph for more details.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
@@ -309,7 +322,8 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-				const ReconstructParams &reconstruct_params,
+				bool extend_total_reconstruction_poles_to_distant_past = false,
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				bool reverse_reconstruct = false,
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -339,7 +353,7 @@ namespace GPlatesAppLogic
 			// in the present day to this time.
 			GPlatesMaths::FiniteRotation rotation =
 					reconstruction_tree.get_composed_absolute_rotation(
-							reconstruction_plate_id).first;
+							reconstruction_plate_id);
 
 			// Are we reversing reconstruction back to present day ?
 			if (reverse_reconstruct)

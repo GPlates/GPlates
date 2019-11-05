@@ -38,7 +38,8 @@
 bool
 GPlatesMaths::Vector3D::is_zero_magnitude() const
 {
-	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+	// Using double (dval()) instead of real_t generates more efficient assembly code.
+	const real_t mag_sqrd = d_x.dval() * d_x.dval() + d_y.dval() * d_y.dval() + d_z.dval() * d_z.dval();
 
 	// Mirror the code in 'get_normalisation()'.
 	return (mag_sqrd > 0.0) ? false : true;
@@ -48,14 +49,16 @@ GPlatesMaths::Vector3D::is_zero_magnitude() const
 GPlatesMaths::UnitVector3D
 GPlatesMaths::Vector3D::get_normalisation() const
 {
-	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+	// Using double (dval()) instead of real_t generates more efficient assembly code.
+	const real_t mag_sqrd = d_x.dval() * d_x.dval() + d_y.dval() * d_y.dval() + d_z.dval() * d_z.dval();
 
 	GPlatesGlobal::Assert<UnableToNormaliseZeroVectorException>(
 			mag_sqrd > 0.0,
 			GPLATES_EXCEPTION_SOURCE);
 
-	real_t scale = 1 / sqrt(mag_sqrd);
-	return UnitVector3D(d_x * scale, d_y * scale, d_z * scale);
+	// Using double (dval()) instead of real_t generates more efficient assembly code.
+	const double scale = 1.0 / sqrt(mag_sqrd).dval();
+	return UnitVector3D(d_x.dval() * scale, d_y.dval() * scale, d_z.dval() * scale);
 }
 
 

@@ -51,6 +51,12 @@ namespace GPlatesUtils
 	 * an "append" function.  The sentinel is contained within the list (which thus controls
 	 * the lifetime of the sentinel), which means that there's no additional heap allocation
 	 * for an empty list.
+	 *
+	 * NOTE: Now that the minimum version requirement of the boost library has been raised to 1.35 we
+	 * should instead use the boost version of an intrusive doubly linked list 'boost::intrusive::list'
+	 * along with its 'auto_unlink' hooks (which is the equivalent of 'splice_self_out()' in the
+	 * Node destructor below, which means when a list element is destroyed it is automatically
+	 * removed from the list).
 	 */
 	template <typename T>
 	class SmartNodeLinkedList :

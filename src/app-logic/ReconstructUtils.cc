@@ -34,7 +34,7 @@
 
 #include "AppLogicUtils.h"
 #include "ReconstructContext.h"
-#include "ReconstructionTreePopulator.h"
+#include "ReconstructionGraphPopulator.h"
 #include "SmallCircleGeometryPopulator.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -46,7 +46,7 @@ bool
 GPlatesAppLogic::ReconstructUtils::is_reconstruction_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	return ReconstructionTreePopulator::can_process(feature_ref);
+	return ReconstructionGraphPopulator::can_process(feature_ref);
 }
 
 
@@ -210,6 +210,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		const ReconstructParams &reconstruct_params,
 		unsigned int reconstruction_tree_cache_size)
 {
@@ -220,6 +221,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			anchor_plate_id,
 			reconstructable_features_collection,
 			reconstruction_features_collection,
+			extend_total_reconstruction_poles_to_distant_past,
 			reconstruct_params,
 			reconstruction_tree_cache_size);
 
@@ -248,6 +250,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		const ReconstructParams &reconstruct_params,
 		unsigned int reconstruction_tree_cache_size)
 {
@@ -258,6 +261,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			anchor_plate_id,
 			reconstructable_features_collection,
 			reconstruction_features_collection,
+			extend_total_reconstruction_poles_to_distant_past,
 			reconstruct_params,
 			reconstruction_tree_cache_size);
 
@@ -283,6 +287,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		const ReconstructParams &reconstruct_params,
 		unsigned int reconstruction_tree_cache_size)
 {
@@ -291,10 +296,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
+					extend_total_reconstruction_poles_to_distant_past,
 					anchor_plate_id,
-					reconstruction_tree_cache_size,
-					// We're not going to modify the reconstruction features so no need to clone...
-					false/*clone_reconstruction_features*/);
+					reconstruction_tree_cache_size);
 
 	return reconstruct(
 			reconstructed_features,
@@ -369,6 +373,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		const ReconstructParams &reconstruct_params,
 		bool reverse_reconstruct,
 		unsigned int reconstruction_tree_cache_size)
@@ -376,10 +381,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
+					extend_total_reconstruction_poles_to_distant_past,
 					anchor_plate_id,
-					reconstruction_tree_cache_size,
-					// We're not going to modify the reconstruction features so no need to clone...
-					false/*clone_reconstruction_features*/);
+					reconstruction_tree_cache_size);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
 

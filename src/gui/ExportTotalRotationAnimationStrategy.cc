@@ -28,7 +28,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/ReconstructionTreeEdge.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -72,14 +71,11 @@ GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 			application_state.get_current_reconstruction()
 				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-					reconstruction_tree->edge_map_begin();
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-					reconstruction_tree->edge_map_end();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it;
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it_begin =
+			reconstruction_tree->get_all_edges().begin();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it_end =
+			reconstruction_tree->get_all_edges().end();
 
 	GPlatesGui::CsvExport::LineDataType data_line;
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
@@ -93,8 +89,8 @@ GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 
 		GPlatesMaths::FiniteRotation fr =
 				is_relative_rotation
-				? it->second->relative_rotation()
-				: it->second->composed_absolute_rotation();
+				? it->second->get_relative_rotation()
+				: it->second->get_composed_absolute_rotation();
 
 		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
 
@@ -177,7 +173,7 @@ GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 		
 		if (is_relative_rotation)
 		{
-			GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
+			GPlatesModel::integer_plate_id_type fixed_id = it->second->get_fixed_plate();
 			QString fixed_plate_id_string;
 			fixed_plate_id_string.setNum(fixed_id);
 

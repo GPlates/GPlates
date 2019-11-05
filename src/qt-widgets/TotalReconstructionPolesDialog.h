@@ -193,6 +193,12 @@ namespace GPlatesQtWidgets
 
 		VisualLayersComboBox *d_visual_layers_combobox;
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_curr_visual_layer;
+
+		/**
+		 * When we ignore an update because we are not visible, then we need to do the update
+		 * the next time we become visible.
+		 */
+		bool d_need_to_update_when_visible;
 	};
 }
 

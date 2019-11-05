@@ -488,8 +488,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 		}
 
@@ -502,8 +501,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
 		}
@@ -549,8 +547,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
 		}
 
@@ -563,8 +560,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT);
 		}

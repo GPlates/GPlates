@@ -45,7 +45,7 @@ namespace GPlatesFeatureVisitors
 	 * Interpolate a finite rotation from a total reconstruction sequence for a particular
 	 * reconstruction time.
 	 *
-	 * This class is based very strongly on 'GPlatesAppLogic::ReconstructionTreePopulator'.
+	 * This class is based very strongly on the  old 'GPlatesAppLogic::ReconstructionTreePopulator'.
 	 */
 	class TotalReconstructionSequenceRotationInterpolater:
 			public GPlatesModel::ConstFeatureVisitor

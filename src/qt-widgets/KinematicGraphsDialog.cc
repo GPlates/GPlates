@@ -677,7 +677,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree =
 				tree_creator.get_reconstruction_tree(time, d_anchor_id);
-		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id).first;
+		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p = rot*pos_;
 
@@ -690,8 +690,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 				tree_creator.get_reconstruction_tree(time_older, d_anchor_id);
 
 
-		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id).first;
-		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id).first;
+		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id);
+		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p_1 = rot_1*pos_;
 		PointOnSphere p_2 = rot_2*pos_;

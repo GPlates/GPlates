@@ -209,6 +209,7 @@ namespace
 		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 						reconstruction_feature_collections,
+						false/*extend_total_reconstruction_poles_to_distant_past*/,
 						anchor_plate_id/*default_anchor_plate_id*/);
 
 		// Create the context in which to reconstruct.

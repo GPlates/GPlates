@@ -96,6 +96,17 @@ namespace GPlatesAppLogic
 }
 
 
+GPlatesAppLogic::ReconstructionLayerProxy::ReconstructionLayerProxy(
+		unsigned int default_max_num_reconstruction_trees_in_cache,
+		GPlatesModel::integer_plate_id_type initial_anchored_plate_id) :
+	d_current_reconstruction_time(0),
+	d_current_anchor_plate_id(initial_anchored_plate_id),
+	d_default_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache),
+	d_current_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache)
+{
+}
+
+
 GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree(
 		const double &reconstruction_time,
@@ -105,10 +116,9 @@ GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree(
 	{
 		d_cached_reconstruction_trees = create_cached_reconstruction_tree_creator_impl(
 				d_current_reconstruction_feature_collections,
+				d_current_reconstruction_params.get_extend_total_reconstruction_poles_to_distant_past(),
 				d_current_anchor_plate_id/*default_anchor_plate_id*/,
-				d_current_max_num_reconstruction_trees_in_cache,
-				// We'll invalidate cache when any reconstruction feature is modified, so no need to clone...
-				false/*clone_reconstruction_features*/);
+				d_current_max_num_reconstruction_trees_in_cache);
 	}
 
 	// See if there's a reconstruction tree cached for the specified reconstruction time.
@@ -197,6 +207,22 @@ GPlatesAppLogic::ReconstructionLayerProxy::set_current_anchor_plate_id(
 
 	// The default anchor plate id (stored in the cached reconstruction tree creator) has changed
 	// so we need to invalidate the reconstruction tree cache.
+	invalidate();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionLayerProxy::set_current_reconstruction_params(
+		const ReconstructionParams &reconstruction_params)
+{
+	if (d_current_reconstruction_params == reconstruction_params)
+	{
+		// The current reconstruction params haven't changed so avoid updating any observers unnecessarily.
+		return;
+	}
+	d_current_reconstruction_params = reconstruction_params;
+
+	// The reconstruction trees are now invalid.
 	invalidate();
 }
 

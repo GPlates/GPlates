@@ -86,6 +86,13 @@ namespace GPlatesCli
 				loaded_feature_collection_file_seq_type;
 
 		GPlatesModel::ModelInterface d_model;
+
+		/**
+		 * Whether each moving plate rotation sequence is extended back to the distant past such that
+		 * reconstructed geometries are not snapped back to their present day positions.
+		 */
+		bool d_extend_total_reconstruction_poles_to_distant_past;
+
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 		GPlatesModel::integer_plate_id_type d_plate_id;

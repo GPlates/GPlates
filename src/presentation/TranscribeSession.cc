@@ -52,6 +52,7 @@
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/RasterLayerParams.h"
+#include "app-logic/ReconstructionLayerParams.h"
 #include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructScalarCoverageLayerParams.h"
 #include "app-logic/ScalarField3DLayerParams.h"
@@ -656,6 +657,15 @@ namespace GPlatesPresentation
 
 			virtual
 			void
+			visit_reconstruction_layer_params(
+					reconstruction_layer_params_type &params)
+			{
+				// Save the reconstruction params.
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_reconstruction_params(), d_layer_params_tag("reconstruction_params"));
+			}
+
+			virtual
+			void
 			visit_reconstruct_layer_params(
 					reconstruct_layer_params_type &params)
 			{
@@ -762,6 +772,19 @@ namespace GPlatesPresentation
 				if (band_name.is_valid())
 				{
 					params.set_band_name(band_name);
+				}
+			}
+
+			virtual
+			void
+			visit_reconstruction_layer_params(
+					reconstruction_layer_params_type &params)
+			{
+				// Load the reconstruction params.
+				GPlatesAppLogic::ReconstructionParams reconstruction_params;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, reconstruction_params, d_layer_params_tag("reconstruction_params")))
+				{
+					params.set_reconstruction_params(reconstruction_params);
 				}
 			}
 

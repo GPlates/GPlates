@@ -133,20 +133,22 @@ set(srcs
     ReconstructionGeometryUtils.h
     ReconstructionGeometryVisitor.cc
     ReconstructionGeometryVisitor.h
-    ReconstructionGraph.cc
     ReconstructionGraph.h
+    ReconstructionGraphBuilder.cc
+    ReconstructionGraphBuilder.h
+    ReconstructionGraphPopulator.cc
+    ReconstructionGraphPopulator.h
+    ReconstructionLayerParams.h
     ReconstructionLayerProxy.cc
     ReconstructionLayerProxy.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
+    ReconstructionParams.cc
+    ReconstructionParams.h
     ReconstructionTree.cc
     ReconstructionTree.h
     ReconstructionTreeCreator.cc
     ReconstructionTreeCreator.h
-    ReconstructionTreeEdge.cc
-    ReconstructionTreeEdge.h
-    ReconstructionTreePopulator.cc
-    ReconstructionTreePopulator.h
     ReconstructLayerParams.cc
     ReconstructLayerParams.h
     ReconstructLayerProxy.cc

@@ -137,18 +137,18 @@ namespace
 
 	void
 	add_child_edges_to_collection(
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
+		const GPlatesAppLogic::ReconstructionTree::Edge &edge,
 		std::vector<GPlatesModel::integer_plate_id_type> &child_plate_id_collection)
 	{	
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-			it_begin = edge->children_in_built_tree().begin();
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-			it_end = edge->children_in_built_tree().end();
+		GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator it;
+		GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator
+			it_begin = edge.get_child_edges().begin();
+		GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator
+			it_end = edge.get_child_edges().end();
 
 		for(it = it_begin; it != it_end ; it++)
 		{
-			child_plate_id_collection.push_back((*it)->moving_plate());
+			child_plate_id_collection.push_back(it->get_moving_plate());
 			add_child_edges_to_collection(*it,child_plate_id_collection);
 		}		
 	}
@@ -159,33 +159,15 @@ namespace
 		const GPlatesModel::integer_plate_id_type plate_id,
 		const GPlatesAppLogic::ReconstructionTree &tree)
 	{
-		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type 
-			edges = tree.find_edges_whose_moving_plate_id_match(plate_id);
-
-		if (edges.first == edges.second)
+		boost::optional<const GPlatesAppLogic::ReconstructionTree::Edge &> edge = tree.get_edge(plate_id);
+		if (!edge)
 		{
-			// We haven't found any edges. That'ok, we might just not have a
-			// rotation file loaded. 
+			// We didn't find the edge. That'ok, we might just not have a rotation file loaded. 
 			//qDebug() << "Empty edge container for plate id " << plate_id;
 			return;
 		}
 
-		// We shouldn't have more than one edge - even in a cross-over situation, one
-		// of the edges will already have been selected for use in the tree	
- 		if (std::distance(edges.first,edges.second) > 1)
-		{
-			qDebug() << "More than one edge found for plate id " << plate_id;
-			return;			
-		}
-
-		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator
-			it = edges.first;
-
-		for (; it != edges.second ; ++it)
-		{
-			add_child_edges_to_collection(it->second,child_plate_id_collection);
-		}
-
+		add_child_edges_to_collection(edge.get(), child_plate_id_collection);
 	}
 
 	void

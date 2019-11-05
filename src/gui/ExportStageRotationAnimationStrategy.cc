@@ -31,8 +31,8 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
-#include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/RotationUtils.h"
 
 #include "global/GPlatesAssert.h"
@@ -80,14 +80,10 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree1 =
 			tree_creator.get_reconstruction_tree(reconstruction.get_reconstruction_time());
 	
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator tree1_edges_iter;
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator tree1_edges_begin = 
-			tree1->edge_map_begin();
-	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator tree1_edges_end = 
-			tree1->edge_map_end();
+	const GPlatesAppLogic::ReconstructionTree::edge_map_type &tree1_edges = tree1->get_all_edges();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator tree1_edges_iter;
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator tree1_edges_begin = tree1_edges.begin();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator tree1_edges_end = tree1_edges.end();
 
 	GPlatesGui::CsvExport::LineDataType data_line;
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
@@ -106,10 +102,10 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 				(d_configuration->rotation_type == Configuration::RELATIVE_SEMICOLON) ||
 				(d_configuration->rotation_type == Configuration::RELATIVE_TAB) );
 
-		const GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type &tree1_edge = tree1_edges_iter->second;
+		const GPlatesAppLogic::ReconstructionTree::Edge *tree1_edge = tree1_edges_iter->second;
 
-		const GPlatesModel::integer_plate_id_type fixed_plate_id = tree1_edge->fixed_plate();
-		const GPlatesModel::integer_plate_id_type moving_plate_id = tree1_edge->moving_plate();
+		const GPlatesModel::integer_plate_id_type fixed_plate_id = tree1_edge->get_fixed_plate();
+		const GPlatesModel::integer_plate_id_type moving_plate_id = tree1_edge->get_moving_plate();
 
 		const GPlatesMaths::UnitQuaternion3D q = is_relative_rotation
 				? get_relative_stage_rotation(*tree1, *tree2, moving_plate_id, fixed_plate_id)
@@ -267,8 +263,8 @@ GPlatesGui::ExportStageRotationAnimationStrategy::get_equivalent_stage_rotation(
 		const GPlatesAppLogic::ReconstructionTree &tree2,
 		GPlatesModel::integer_plate_id_type moving_plate_id) const
 {
-	GPlatesMaths::FiniteRotation fr_t1 = tree1.get_composed_absolute_rotation(moving_plate_id).first;
-	GPlatesMaths::FiniteRotation fr_t2 = tree2.get_composed_absolute_rotation(moving_plate_id).first;
+	GPlatesMaths::FiniteRotation fr_t1 = tree1.get_composed_absolute_rotation(moving_plate_id);
+	GPlatesMaths::FiniteRotation fr_t2 = tree2.get_composed_absolute_rotation(moving_plate_id);
 
 	// This quaternion represents a rotation from t2 (the older time) to t1 (closer to present day).
 	// The rotation is from the anchor plate to the moving plate.
