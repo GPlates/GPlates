@@ -78,41 +78,51 @@ namespace GPlatesApi
 		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
 		 * on any python object satisfying FeatureCollectionSequenceFunctionArgument::is_convertible().
 		 *
-		 * If @a clone_rotation_features is true then the rotation features are first cloned
-		 * internally. This ensures any subsequent modifications to the original features will not affect
-		 * any subsequently generated reconstruction trees. This is not necessary if you know the original
-		 * feature collections will not be modified during the scope of the returned RotationModel.
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false);
 
 
 		/**
 		 * Create a rotation model (from a sequence of rotation feature collection files) that will cache
 		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false);
 
 
 		/**
 		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
 		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false);
 	
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type

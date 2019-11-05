@@ -41,6 +41,7 @@
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonVariableFunctionArguments.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -129,16 +130,140 @@ namespace GPlatesApi
 		/**
 		 * This is called directly from Python via 'RotationModel.__init__()'.
 		 */
-		RotationModel::non_null_ptr_type
+		bp::object
 		rotation_model_create_from_features(
-				const FeatureCollectionSequenceFunctionArgument &rotation_features,
-				unsigned int reconstruction_tree_cache_size,
-				bool clone_rotation_features)
+				bp::tuple positional_args,
+				bp::dict keyword_args)
 		{
-			return RotationModel::create(
-					rotation_features,
-					reconstruction_tree_cache_size,
-					clone_rotation_features);
+			// The non-explicit function arguments.
+			// These are our variable number of export parameters.
+			VariableArguments::keyword_arguments_type unused_keyword_args;
+
+			// Define the explicit function argument types...
+			typedef boost::tuple<
+					FeatureCollectionSequenceFunctionArgument,
+					unsigned int,
+					bool>
+							reconstruct_args_type;
+
+			// Define the explicit function argument names...
+			const boost::tuple<const char *, const char *, const char *>
+					explicit_arg_names(
+							"rotation_features",
+							"reconstruction_tree_cache_size",
+							"extend_total_reconstruction_poles_to_distant_past");
+
+			// Define the default function arguments...
+			typedef boost::tuple<unsigned int, bool> default_args_type;
+			default_args_type defaults_args(
+					RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE/*reconstruction_tree_cache_size*/,
+					false/*extend_total_reconstruction_poles_to_distant_past*/);
+
+			// If this version of 'RotationModel.__init__()' does not match then return Py_None.
+			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
+				positional_args,
+				keyword_args,
+				explicit_arg_names,
+				defaults_args,
+				boost::none/*unused_positional_args*/,
+				boost::none/*unused_keyword_args*/))
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			const reconstruct_args_type reconstruct_args =
+					VariableArguments::get_explicit_args<reconstruct_args_type>(
+							positional_args,
+							keyword_args,
+							explicit_arg_names,
+							defaults_args,
+							boost::none/*unused_positional_args*/,
+							boost::none/*unused_keyword_args*/);
+
+			RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+					boost::get<0>(reconstruct_args)/*rotation_features*/,
+					boost::get<1>(reconstruct_args)/*reconstruction_tree_cache_size*/,
+					boost::get<2>(reconstruct_args)/*extend_total_reconstruction_poles_to_distant_past*/);
+
+			return bp::object(rotation_model);
+		}
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()'.
+		 *
+		 * This is a deprecated overload of 'RotationModel.__init__()' that accepts the
+		 * deprecated argument 'clone_rotation_features' (which is no longer needed, but we
+		 * still accept for any clients still using it, and then just ignore it).
+		 *
+		 * Note that this overload has the same type and order of function arguments as
+		 * @a rotation_model_create_from_features, and so it is only distinguishable if the
+		 * caller explicitly specified the 'clone_rotation_features' argument name, as in:
+		 *
+		 *   rotation_model = RotationModel(rotation_features, clone_rotation_features=False)
+		 *
+		 * ...however, if they specified:
+		 *
+		 *   rotation_model = RotationModel(rotation_features, False)
+		 *
+		 * ...then we incorrectly accept the @a rotation_model_create_from_features overload, and
+		 * the 'clone_rotation_features' argument will be interpreted as a
+		 * 'extend_total_reconstruction_poles_to_distant_past' argument.
+		 */
+		bp::object
+		rotation_model_create_from_features_deprecated(
+				bp::tuple positional_args,
+				bp::dict keyword_args)
+		{
+			// The non-explicit function arguments.
+			// These are our variable number of export parameters.
+			VariableArguments::keyword_arguments_type unused_keyword_args;
+
+			// Define the explicit function argument types...
+			typedef boost::tuple<
+					FeatureCollectionSequenceFunctionArgument,
+					unsigned int,
+					bool>
+							reconstruct_args_type;
+
+			// Define the explicit function argument names...
+			const boost::tuple<const char *, const char *, const char *>
+					explicit_arg_names(
+							"rotation_features",
+							"reconstruction_tree_cache_size",
+							"clone_rotation_features");
+
+			// Define the default function arguments...
+			typedef boost::tuple<unsigned int, bool> default_args_type;
+			default_args_type defaults_args(
+					RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE/*reconstruction_tree_cache_size*/,
+					true/*clone_rotation_features*/);
+
+			// If this version of 'RotationModel.__init__()' does not match then return Py_None.
+			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
+				positional_args,
+				keyword_args,
+				explicit_arg_names,
+				defaults_args,
+				boost::none/*unused_positional_args*/,
+				boost::none/*unused_keyword_args*/))
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			const reconstruct_args_type reconstruct_args =
+					VariableArguments::get_explicit_args<reconstruct_args_type>(
+							positional_args,
+							keyword_args,
+							explicit_arg_names,
+							defaults_args,
+							boost::none/*unused_positional_args*/,
+							boost::none/*unused_keyword_args*/);
+
+			RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+					boost::get<0>(reconstruct_args)/*rotation_features*/,
+					boost::get<1>(reconstruct_args)/*reconstruction_tree_cache_size*/);
+
+			return bp::object(rotation_model);
 		}
 
 		/**
@@ -151,11 +276,95 @@ namespace GPlatesApi
 		 *
 		 * ...which will work if 'rotation_features_or_model' is already a 'RotationModel'.
 		 */
-		RotationModel::non_null_ptr_type
+		bp::object
 		rotation_model_create_from_rotation_model(
-				RotationModel::non_null_ptr_type rotation_model)
+				bp::tuple positional_args,
+				bp::dict keyword_args)
 		{
-			return rotation_model;
+			// Define the explicit function argument types...
+			typedef boost::tuple<RotationModel::non_null_ptr_type> reconstruct_args_type;
+
+			// Define the explicit function argument names...
+			const boost::tuple<const char *> explicit_arg_names("rotation_model");
+
+			// Define the default function arguments...
+			typedef boost::tuple<> default_args_type;
+			default_args_type defaults_args;
+
+			// If this version of 'RotationModel.__init__()' does not match then return Py_None.
+			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
+				positional_args,
+				keyword_args,
+				explicit_arg_names,
+				defaults_args,
+				boost::none/*unused_positional_args*/,
+				boost::none/*unused_keyword_args*/))
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			const reconstruct_args_type reconstruct_args =
+					VariableArguments::get_explicit_args<reconstruct_args_type>(
+							positional_args,
+							keyword_args,
+							explicit_arg_names,
+							defaults_args,
+							boost::none/*unused_positional_args*/,
+							boost::none/*unused_keyword_args*/);
+
+			RotationModel::non_null_ptr_type rotation_model = boost::get<0>(reconstruct_args);
+
+			return bp::object(rotation_model);
+		}
+
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()' as a bp::raw_function.
+		 *
+		 * We use a raw function since we need the flexibility to accept some deprecated arguments
+		 * (specifically 'clone_rotation_features' which is no longer needed, but we still accept for
+		 * any clients still using it).
+		 *
+		 * The function signature enables us to use bp::raw_function to get variable keyword arguments and
+		 * also more flexibility in function overloading.
+		 */
+		bp::object
+		rotation_model_create(
+				bp::tuple positional_args,
+				bp::dict keyword_args)
+		{
+			//
+			// Try each overload of this function in turn until we find a match, otherwise raise an error.
+			//
+
+			bp::object rotation_model;
+
+			rotation_model = rotation_model_create_from_features(positional_args, keyword_args);
+			if (rotation_model != bp::object()/*Py_None*/)
+			{
+				return rotation_model;
+			}
+
+			rotation_model = rotation_model_create_from_rotation_model(positional_args, keyword_args);
+			if (rotation_model != bp::object()/*Py_None*/)
+			{
+				return rotation_model;
+			}
+
+			// Finally try a deprecated function overload that uses the deprecated argument 'clone_rotation_features'.
+			rotation_model = rotation_model_create_from_features_deprecated(positional_args, keyword_args);
+			if (rotation_model != bp::object()/*Py_None*/)
+			{
+				return rotation_model;
+			}
+
+			// If we get there then we were unable to find a matching function overload.
+			// So raise an error.
+			PyErr_SetString(PyExc_TypeError, "Unable to match function arguments");
+			boost::python::throw_error_already_set();
+
+			// To keep compiler happy (cannot actually get here due to thrown exception).
+			return bp::object()/*Py_None*/;
 		}
 	}
 }
@@ -175,47 +384,23 @@ namespace GPlatesApi
 // So version 2 is less restrictive in its ability to share cache entries.
 //
 // Each cache entry (reconstruction tree) consumes ~0.5Mb.
-const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 100;
+const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 150;
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const FeatureCollectionSequenceFunctionArgument &rotation_features,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past)
 {
 	// Copy feature collection files into a vector.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	// If the caller requested to clone reconstruction features then we don't actually need
-	// to do this if all feature collections were loaded from files. This is because feature
-	// collections loaded from files are not exposed to the Python user and therefore cannot be
-	// modified and so we don't need to clone them to ensure this.
-	if (clone_rotation_features)
-	{
-		// See if all feature collections were loaded from files.
-		bool all_loaded_from_files = true;
-
-		BOOST_FOREACH(
-				GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
-				feature_collection_files)
-		{
-			// If filename is empty then feature collection was *not* loaded from a file.
-			if (feature_collection_file->get_reference().get_file_info().get_qfileinfo().fileName().isEmpty())
-			{
-				all_loaded_from_files = false;
-				break;
-			}
-		}
-
-		if (all_loaded_from_files)
-		{
-			clone_rotation_features = false;
-		}
-	}
-
-	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
+	return create(
+			feature_collection_files,
+			reconstruction_tree_cache_size,
+			extend_total_reconstruction_poles_to_distant_past);
 }
 
 
@@ -223,7 +408,7 @@ GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past)
 {
 	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
@@ -242,9 +427,9 @@ GPlatesApi::RotationModel::create(
 	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 					feature_collection_refs,
+					extend_total_reconstruction_poles_to_distant_past,
 					0/*default_anchor_plate_id*/,
-					reconstruction_tree_cache_size,
-					clone_rotation_features);
+					reconstruction_tree_cache_size);
 
 	return non_null_ptr_type(new RotationModel(feature_collection_files, reconstruction_tree_creator));
 }
@@ -254,7 +439,7 @@ GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past)
 {
 	// Create feature collection files with empty filenames.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
@@ -270,7 +455,7 @@ GPlatesApi::RotationModel::create(
 		feature_collection_files.push_back(feature_collection_file);
 	}
 
-	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
+	return create(feature_collection_files, reconstruction_tree_cache_size, extend_total_reconstruction_poles_to_distant_past);
 }
 
 
@@ -439,7 +624,7 @@ export_rotation_model()
 			// Specific overload signature...
 			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
-			<< "], [clone_rotation_features=True])\n"
+			<< "], [extend_total_reconstruction_poles_to_distant_past=False])\n"
 			"  Create from rotation feature collection(s) and/or rotation filename(s), and "
 			"an optional reconstruction tree cache size.\n"
 			"\n"
@@ -450,10 +635,11 @@ export_rotation_model()
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
 			"  :type reconstruction_tree_cache_size: int\n"
-			"  :param clone_rotation_features: cloning rotation features prevents subsequent rotation feature "
-			"modifications adversely affecting cached rotations (defaults to ``True``) - "
-			"see *ADVANCED* note below for more details, otherwise just use default\n"
-			"  :type clone_rotation_features: bool\n"
+			"  :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate "
+			"sequence back infinitely far into the distant past such that reconstructed geometries will "
+			"not snap back to their present day positions when the reconstruction time is older than "
+			"the oldest times specified in the rotation features (defaults to ``False``)\n"
+			"  :type extend_total_reconstruction_poles_to_distant_past: bool\n"
 			"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
 			"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
 			"extensions) does not support reading (when filenames specified)\n"
@@ -473,40 +659,24 @@ export_rotation_model()
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
 			"\n"
-			"  .. note:: *ADVANCED*\n"
+			"__init__(rotation_model)\n"
+			"  Create from an existing rotation model as a convenience.\n"
 			"\n"
-			"     | *clone_rotation_features* should be left to its default of ``True`` unless "
-			"you know the rotation features will never be modified while the ``RotationModel`` is being used.\n"
-			"     | This is purely an **optimisation** opportunity since cloning feature collections in "
-			"high repetition inner loops can potentially slow things down noticeably.\n"
-			"     | For example if you create a ``RotationModel`` inside a loop:\n"
+			"  :param rotation_model: an existing rotation model\n"
+			"  :type rotation_model: :class:`RotationModel`\n"
 			"\n"
-			"     ::\n"
+			"  This is useful when defining your own function that accepts rotation features or a rotation model. "
+			"It avoids the hassle of having to explicitly test for each source type:\n"
+			"  ::\n"
 			"\n"
-			"       rotation_features = pygplates.FeatureCollection('rotations.rot')\n"
+			"    def my_function(rotation_features_or_model):\n"
+			"        # The appropriate constructor (__init__) overload is chosen depending on argument type.\n"
+			"        rotation_model = pygplates.RotationModel(rotation_features_or_model)\n"
+			"        ...\n"
 			"\n"
-			"       while iteration < MAX_ITERATIONS:\n"
-			"           # We won't be modifying 'rotation_features' until finished using 'rotation_model'.\n"
-			"           # So we can turn off 'clone_rotation_features'.\n"
-			"           rotation_model = RotationModel(rotation_features, clone_rotation_features=False)\n"
-			"\n"
-			"           # The last time we use 'rotation_model' in this loop.\n"
-			"           rotation = rotation_model.get_rotation(...)\n"
-			"\n"
-			"           # Modify 'rotation_features' (eg, adjust rotations stored in features)\n"
-			"           # in preparation for the next iteration.\n"
-			"           # But we're not going to use 'rotation_model' again until the next iteration where\n"
-			"           # we'll create a new RotationModel instance with the updated rotation features.\n"
-			"           ...\n"
-			"\n"
-			"     Using this approach (avoiding cloning rotation features) in the implementation of "
-			":func:`synchronise_crossovers` *dramatically* improves its performance.\n"
-			"\n"
-			"  .. note:: *clone_rotation_features* is ignored if all rotation features specified in the "
-			"*rotation_features* argument are loaded from files (ie, if only filenames are specified).\n"
-			"\n"
-			"  .. note:: *clone_rotation_features* will be deprecated in future when this optimisation  is "
-			"taken care of internally (by cloning only if a modification to its features is detected internally).\n"
+			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to *rotation_model* because a "
+			"*RotationModel* object is immutable (contains no operations or methods that modify its state) and "
+			"hence a deep copy of *rotation_model* is not needed.\n"
 			;
 
 	//
@@ -539,38 +709,8 @@ export_rotation_model()
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
 		.def("__init__",
-				bp::make_constructor(
-						&GPlatesApi::rotation_model_create_from_features,
-						bp::default_call_policies(),
-						(bp::arg("rotation_features"),
-							bp::arg("reconstruction_tree_cache_size") =
-								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-							bp::arg("clone_rotation_features") = true)),
+				bp::raw_function(&GPlatesApi::rotation_model_create),
 				rotation_model_from_features_constructor_docstring_stream.str().c_str())
-		.def("__init__",
-				bp::make_constructor(
-						&GPlatesApi::rotation_model_create_from_rotation_model,
-						bp::default_call_policies(),
-						(bp::arg("rotation_model"))),
-			// Specific overload signature...
-			"__init__(rotation_model)\n"
-			"  Create from an existing rotation model as a convenience.\n"
-			"\n"
-			"  :param rotation_model: an existing rotation model\n"
-			"  :type rotation_model: :class:`RotationModel`\n"
-			"\n"
-			"  This is useful when defining your own function that accepts rotation features or a rotation model. "
-			"It avoids the hassle of having to explicitly test for each source type:\n"
-			"  ::\n"
-			"\n"
-			"    def my_function(rotation_features_or_model):\n"
-			"        # The appropriate constructor (__init__) overload is chosen depending on argument type.\n"
-			"        rotation_model = pygplates.RotationModel(rotation_features_or_model)\n"
-			"        ...\n"
-			"\n"
-			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to *rotation_model* because a "
-			"*RotationModel* object is immutable (contains no operations or methods that modify its state) and "
-			"hence a deep copy of *rotation_model* is not needed.\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
