@@ -28,15 +28,19 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONTREE_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONTREE_H
 
-#include <map>  // std::multimap
-#include <vector>
+#include <map>
+#include <boost/intrusive/slist.hpp>
+#include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 
 #include "ReconstructionGraph.h"
 
-#include "model/FeatureCollectionHandle.h"
+#include "maths/FiniteRotation.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "model/types.h"
+
+#include "property-values/GeoTimeInstant.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -52,173 +56,199 @@ namespace GPlatesAppLogic
 			public GPlatesUtils::ReferenceCount<ReconstructionTree>
 	{
 	public:
-		/**
-		 * A convenience typedef for a shared pointer to non-const @a ReconstructionTree.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a shared pointer to const @a ReconstructionTree.
-		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructionTree> non_null_ptr_to_const_type;
 
-		/**
-		 * This type is used to reference an edge in this graph.
-		 */
-		typedef ReconstructionGraph::edge_ref_type edge_ref_type;
+
+		// Some setup needed for an intrusive list of edges.
+		typedef boost::intrusive::slist_base_hook<
+				// Turn off safe linking (the default link mode) because it asserts if we destroy
+				// an edge before removing it from a list (eg, a child list of a parent edge).
+				// Since we're destroying the entire tree in one go, we don't want to go to the
+				// extra (unnecessary) effort of removing edges from lists before destroying them...
+				//
+				// NOTE: This should be changed back to 'safe_link' if debugging a problem though...
+				boost::intrusive::link_mode<boost::intrusive::normal_link> >
+						edge_list_base_hook_type;
+		class Edge;
+		//! Typedef for a list of edges.
+		typedef boost::intrusive::slist<Edge, boost::intrusive::base_hook<edge_list_base_hook_type> >
+						edge_list_type;
+
 
 		/**
-		 * This type is used to map plate IDs to edge-refs.
+		 * Represents the relative rotation from a fixed plate to a moving plate.
 		 */
-		typedef ReconstructionGraph::edge_refs_by_plate_id_map_type
-				edge_refs_by_plate_id_map_type;
-
-		/**
-		 * This type is used to describe the number of edges in the graph.
-		 */
-		typedef ReconstructionGraph::size_type size_type;
-
-		/**
-		 * This type is the iterator for a map of plate IDs to edge-refs.
-		 */
-		typedef ReconstructionGraph::edge_refs_by_plate_id_map_iterator
-				edge_refs_by_plate_id_map_iterator;
-
-		/**
-		 * This type is the const-iterator for a map of plate IDs to edge-refs.
-		 */
-		typedef ReconstructionGraph::edge_refs_by_plate_id_map_const_iterator
-				edge_refs_by_plate_id_map_const_iterator;
-
-		/**
-		 * The purpose of this type is the same as the purpose of the return-type of the
-		 * function 'multimap::equal_range' -- it contains the "begin" and "end" iterators
-		 * of an STL container range.
-		 */
-		typedef ReconstructionGraph::edge_refs_by_plate_id_map_range_type
-				edge_refs_by_plate_id_map_range_type;
-
-		/**
-		 * The purpose of this type is the same as the purpose of the return-type of the
-		 * function 'multimap::equal_range' -- it contains the "begin" and "end" iterators
-		 * of an STL container range.
-		 *
-		 * This contains const-iterators.
-		 */
-		typedef ReconstructionGraph::edge_refs_by_plate_id_map_const_range_type
-				edge_refs_by_plate_id_map_const_range_type;
-
-		/**
-		 * The type used for collections of edges.
-		 */
-		typedef ReconstructionTreeEdge::edge_collection_type edge_collection_type;
-
-		/**
-		 * This is the enumeration of the circumstances which surround a reconstruction.
-		 */
-		enum ReconstructionCircumstance
+		class Edge :
+				// Using an intrusive list avoids extra memory allocations and is generally faster...
+				public edge_list_base_hook_type
 		{
-			ExactlyOnePlateIdMatchFound,
-			NoPlateIdMatchesFound,
-			MultiplePlateIdMatchesFound
+		public:
+
+			GPlatesModel::integer_plate_id_type
+			get_fixed_plate() const
+			{
+				return d_fixed_plate;
+			}
+
+			GPlatesModel::integer_plate_id_type
+			get_moving_plate() const
+			{
+				return d_moving_plate;
+			}
+
+			/**
+			 * Returns true if the direction of this tree edge (from @a get_fixed_plate to @a get_moving_plate)
+			 * is the opposite of the associated @a ReconstructionGraph edge.
+			 *
+			 * In other words, if this tree edge is reversed compared to the total reconstruction pole
+			 * in the rotation features or files (used to build the reconstruction graph).
+			 */
+			bool
+			is_reversed() const
+			{
+				// We're reversed if the fixed/moving plate IDs are swapped.
+				return d_moving_plate == d_graph_edge.get_fixed_plate().get_plate_id();
+			}
+
+			/**
+			 * Return the parent edge, or NULL if there is no parent edge (if this is a root edge).
+			 */
+			const Edge *
+			get_parent_edge() const
+			{
+				return d_parent_edge;
+			}
+
+			/**
+			 * Return the "children" of this edge instance in the tree.
+			 *
+			 * That is, these edges will be one step further away from the root (anchor) of the
+			 * tree than 'this' edge; and the moving plate of this edge instance will be the
+			 * fixed plate of each child edge (every child edge will "hang off" this edge).
+			 */
+			const edge_list_type &
+			get_child_edges() const
+			{
+				return d_child_edges;
+			}
+
+			/**
+			 * Return the relative rotation describing the motion of our moving plate
+			 * relative to our fixed plate.
+			 */
+			const GPlatesMaths::FiniteRotation &
+			get_relative_rotation() const
+			{
+				if (!d_relative_rotation)
+				{
+					cache_relative_rotation();
+				}
+
+				return d_relative_rotation.get();
+			}
+
+			/**
+			 * Get the composed absolute rotation describing the motion of our moving plate
+			 * relative to the anchor plate.
+			 */
+			const GPlatesMaths::FiniteRotation &
+			get_composed_absolute_rotation() const
+			{
+				if (!d_composed_absolute_rotation)
+				{
+					cache_composed_absolute_rotation();
+				}
+
+				return d_composed_absolute_rotation.get();
+			}
+
+		private:
+
+			friend class ReconstructionTree;
+			friend class boost::object_pool<Edge>;  // Access to Edge constructor.
+
+			Edge(
+					GPlatesModel::integer_plate_id_type fixed_plate,
+					GPlatesModel::integer_plate_id_type moving_plate,
+					const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time_instant,
+					const ReconstructionGraph::Edge &graph_edge) :
+				d_fixed_plate(fixed_plate),
+				d_moving_plate(moving_plate),
+				d_reconstruction_time_instant(reconstruction_time_instant),
+				d_graph_edge(graph_edge),
+				d_parent_edge(NULL)
+			{  }
+
+			void
+			cache_relative_rotation() const;
+
+			void
+			cache_composed_absolute_rotation() const;
+
+
+			GPlatesModel::integer_plate_id_type d_fixed_plate;
+			GPlatesModel::integer_plate_id_type d_moving_plate;
+
+			/**
+			 * The reconstruction time of the tree.
+			 *
+			 * This is needed when calculating the relative rotation.
+			 */
+			GPlatesPropertyValues::GeoTimeInstant d_reconstruction_time_instant;
+
+			/**
+			 * Reference to associated edge in ReconstructionGraph.
+			 *
+			 * The reconstruction graph edge contains the time sequence of finite rotations
+			 * whereas we only contain the finite rotation at the reconstruction time of our tree.
+			 *
+			 * Note: The graph edge should remain alive as long as we're alive because we're owned
+			 * by ReconstructionTree which has a shared reference to ReconstructionGraph which owns
+			 * the graph edges. So we don't need to worry about a dangling reference here.
+			 */
+			const ReconstructionGraph::Edge &d_graph_edge;
+
+			//! Reference to sole parent edge (is NULL for anchor plate edges).
+			Edge *d_parent_edge;
+			//! List of child edges.
+			edge_list_type d_child_edges;
+
+			// We only calculate these when needed...
+			mutable boost::optional<GPlatesMaths::FiniteRotation> d_relative_rotation;
+			mutable boost::optional<GPlatesMaths::FiniteRotation> d_composed_absolute_rotation;
 		};
+
+
+		//! Typedef for mapping moving plate IDs to @a Edge objects.
+		typedef std::map<GPlatesModel::integer_plate_id_type, const Edge *> edge_map_type;
+
 
 		/**
 		 * Create a new ReconstructionTree instance from the ReconstructionGraph instance
-		 * @a graph, building a tree-structure which has @a anchor_plate_id_ as the anchor plate.
-		 *
-		 * @a reconstruction_features are the features that were used to fill this graph.
-		 * This can be used to find which ReconstructionTrees were generated using the same
-		 * set of reconstruction features and can also be used to find the set of reconstruction
-		 * features used to reconstruct specific geometries so that those reconstruction features
-		 * can be modified (such as inserting new rotation poles).
-		 *
-		 * Note that invoking this function will cause all total reconstruction poles in
-		 * the ReconstructionGraph instance to be transferred to this instance, leaving the
-		 * ReconstructionGraph instance empty (as if it had just been created).
+		 * @a graph, building a tree-structure which has @a anchor_plate_id as the anchor plate.
 		 */
 		static
 		const non_null_ptr_type
 		create(
-				ReconstructionGraph &graph,
-				GPlatesModel::integer_plate_id_type anchor_plate_id_,
-				const double &reconstruction_time_,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_);
+				ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 		/**
-		 * Create a duplicate of this ReconstructionTree instance.
+		 * Return the @a ReconstructionGraph that this reconstruction tree was created from.
 		 *
-		 * Note that this will perform a "shallow copy".
+		 * This enables other reconstruction trees to be created at different reconstruction times.
 		 */
-		const non_null_ptr_type
-		clone() const
+		ReconstructionGraph::non_null_ptr_to_const_type
+		get_reconstruction_graph() const
 		{
-			non_null_ptr_type dup(new ReconstructionTree(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
-		}
-	
-		edge_refs_by_plate_id_map_const_iterator
-		edge_map_begin() const
-		{
-			return d_edges_by_moving_plate_id.begin();
-		}
-
-		edge_refs_by_plate_id_map_const_iterator
-		edge_map_end() const
-		{
-			return d_edges_by_moving_plate_id.end();
+			return d_reconstruction_graph;
 		}
 
 		/**
-		 * Access the begin iterator of the collection of rootmost edges.
-		 *
-		 * Since the tree is built out of the edges (total reconstruction poles),
-		 * tree-traversal begins by iterating through a collection of edges, each of which
-		 * has a fixed plate ID which is equal to the "anchor" plate ID of the tree.
-		 */
-		edge_collection_type::const_iterator
-		rootmost_edges_begin() const
-		{
-			return d_rootmost_edges.begin();
-		}
-
-		/**
-		 * Access the end iterator of the collection of rootmost edges.
-		 *
-		 * Since the tree is built out of the edges (total reconstruction poles),
-		 * tree-traversal begins by iterating through a collection of edges, each of which
-		 * has a fixed plate ID which is equal to the "anchor" plate ID of the tree.
-		 */
-		edge_collection_type::const_iterator
-		rootmost_edges_end() const
-		{
-			return d_rootmost_edges.end();
-		}
-
-		edge_refs_by_plate_id_map_const_range_type
-		find_edges_whose_moving_plate_id_match(
-				GPlatesModel::integer_plate_id_type plate_id) const;
-
-		edge_refs_by_plate_id_map_range_type
-		find_edges_whose_moving_plate_id_match(
-				GPlatesModel::integer_plate_id_type plate_id);
-
-		/**
-		 * Get the composed absolute rotation which describes the motion of @a
-		 * moving_plate_id relative to the anchor plate ID
-		 *
-		 * If the motion of @a moving_plate_id is not described by this tree, the identity
-		 * rotation will be returned.
-		 */
-		const std::pair<GPlatesMaths::FiniteRotation,
-				ReconstructionCircumstance>
-		get_composed_absolute_rotation(
-				GPlatesModel::integer_plate_id_type moving_plate_id) const;
-
-		/**
-		 * Returns the plate id of the anchor plate that all rotations are calculated
-		 * relative to.
+		 * Returns the plate id of the anchor plate that all rotations are calculated relative to.
 		 */
 		GPlatesModel::integer_plate_id_type
 		get_anchor_plate_id() const
@@ -229,92 +259,164 @@ namespace GPlatesAppLogic
 		/**
 		 * Return the reconstruction time of this tree.
 		 */
-		const double &
+		double
 		get_reconstruction_time() const
 		{
-			return d_reconstruction_time;
+			return d_reconstruction_time_instant.value();
+		}
+	
+		/**
+		 * Return all edges.
+		 *
+		 * Maps moving plate IDs to pointers to const @a Edge objects.
+		 */
+		const edge_map_type &
+		get_all_edges() const
+		{
+			return d_all_edges;
 		}
 
 		/**
-		 * Access the features containing the reconstruction features used to
-		 * create this reconstruction tree.
+		 * Return edges of anchor plate (edges whose fixed plate ID equals the anchor plate ID).
+		 *
+		 * Since the tree is built out of the edges (total reconstruction poles),
+		 * tree-traversal begins by iterating through a collection of edges, each of which
+		 * has a fixed plate ID which is equal to the "anchor" plate ID of the tree.
 		 */
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-		get_reconstruction_features() const
+		const edge_list_type &
+		get_anchor_plate_edges() const
 		{
-			return d_reconstruction_features;
+			return d_anchor_plate_edges;
+		}
+
+
+		/**
+		 * Return the @a Edge associated with the specified moving plate ID
+		 * (or none if this tree does not contain the moving plate ID).
+		 */
+		boost::optional<const Edge &>
+		get_edge(
+				GPlatesModel::integer_plate_id_type moving_plate_id) const
+		{
+			edge_map_type::const_iterator edge_iter = d_all_edges.find(moving_plate_id);
+			if (edge_iter == d_all_edges.end())
+			{
+				return boost::none;
+			}
+
+			return *edge_iter->second;
+		}
+
+		/**
+		 * Get the composed absolute rotation which describes the motion of @a
+		 * moving_plate_id relative to the anchor plate ID.
+		 *
+		 * If the motion of @a moving_plate_id is not described by this tree, the identity
+		 * rotation will be returned.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_composed_absolute_rotation(
+				GPlatesModel::integer_plate_id_type moving_plate_id) const
+		{
+			boost::optional<const Edge &> edge = get_edge(moving_plate_id);
+			if (!edge)
+			{
+				return GPlatesMaths::FiniteRotation::create_identity_rotation();
+			}
+
+			return edge->get_composed_absolute_rotation();
+		}
+
+		/**
+		 * Same as @a get_composed_absolute_rotation except returns boost::none if
+		 * the motion of @a moving_plate_id is not described by this tree.
+		 */
+		boost::optional<GPlatesMaths::FiniteRotation>
+		get_composed_absolute_rotation_or_none(
+				GPlatesModel::integer_plate_id_type moving_plate_id) const
+		{
+			boost::optional<const Edge &> edge = get_edge(moving_plate_id);
+			if (!edge)
+			{
+				return boost::none;
+			}
+
+			return edge->get_composed_absolute_rotation();
 		}
 
 	private:
 
-		ReconstructionGraph d_graph;
-
 		/**
-		 * This is a mapping of moving plate IDs to edge-refs.
-		 *
-		 * It is populated when the tree is created.
-		 *
-		 * It is used to reconstruct geometries and query the composed absolute rotations.
+		 * We maintain a shared reference to the graph since we reference its graph nodes and edges
+		 * (because we build the absolute rotations at each plate ID as needed, as an optimisation).
 		 */
-		edge_refs_by_plate_id_map_type d_edges_by_moving_plate_id;
-
-		edge_collection_type d_rootmost_edges;
-
-		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+		ReconstructionGraph::non_null_ptr_to_const_type d_reconstruction_graph;
 
 		/**
 		 * This is the reconstruction time of the total reconstruction poles in this tree.
 		 */
-		double d_reconstruction_time;
+		GPlatesPropertyValues::GeoTimeInstant d_reconstruction_time_instant;
 
 		/**
-		 * The features used to generate the total reconstruction poles inserted into this tree.
+		 * The anchor (root-most) plate of this reconstruction tree.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_reconstruction_features;
+		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 
+		/**
+		 * Storage for the edges.
+		 */
+		boost::object_pool<Edge> d_edge_pool;
+
+		/**
+		* Edges whose fixed plate ID equals the anchor plate ID.
+		*/
+		edge_list_type d_anchor_plate_edges;
+
+		/**
+		 * This is a mapping of moving plate IDs to edges.
+		 */
+		edge_map_type d_all_edges;
 
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		explicit
 		ReconstructionTree(
-				GPlatesModel::integer_plate_id_type anchor_plate_id_,
-				const double &reconstruction_time_,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_) :
-			d_anchor_plate_id(anchor_plate_id_),
-			d_reconstruction_time(reconstruction_time_),
-			d_reconstruction_features(reconstruction_features_)
+				ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph,
+				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time_instant,
+				GPlatesModel::integer_plate_id_type anchor_plate_id) :
+			d_reconstruction_graph(reconstruction_graph),
+			d_reconstruction_time_instant(reconstruction_time_instant),
+			d_anchor_plate_id(anchor_plate_id)
 		{  }
 
 		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
+		 * Create zero, one or more sub-trees emanating from a plate.
 		 *
-		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
-		 * the new duplicate.  Since initially the only reference to the new duplicate will
-		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
-		 * is created, the ref-count of the new ReconstructionTree instance should be zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
+		 * Each outgoing edge (and at most one incoming edge) can generate its own sub-tree.
 		 */
-		ReconstructionTree(
-				const ReconstructionTree &other):
-			GPlatesUtils::ReferenceCount<ReconstructionTree>(),
-			d_graph(other.d_graph),
-			d_edges_by_moving_plate_id(other.d_edges_by_moving_plate_id),
-			d_rootmost_edges(other.d_rootmost_edges),
-			d_anchor_plate_id(other.d_anchor_plate_id)
-		{  }
+		void
+		create_sub_trees_from_graph_plate(
+				const ReconstructionGraph::Plate &graph_plate,
+				Edge *parent_tree_edge,
+				edge_list_type &tree_edges);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		ReconstructionTree &
-		operator=(
-				const ReconstructionTree &);
+		/**
+		 * Create a sub-tree by following the specified graph edge in the forward direction
+		 * (or reverse direction if @a reverse_tree_edge is true).
+		 *
+		 * But only create a tree edge if the graph edge contains the reconstruction time and
+		 * if a new tree edge does not create a cycle in the reconstruction tree.
+		 *
+		 * Returns true if an edge was created.
+		 */
+		bool
+		create_sub_tree_from_graph_edge(
+				const ReconstructionGraph::Edge &graph_edge,
+				Edge *parent_tree_edge,
+				edge_list_type &tree_edges,
+				bool reverse_tree_edge);
 	};
 }
 

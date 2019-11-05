@@ -1766,7 +1766,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::rigid_reconstruct(
 	GPlatesMaths::FiniteRotation rotation =
 			d_topology_reconstruct->get_reconstruction_tree_creator()
 					.get_reconstruction_tree(reconstruction_time)
-							->get_composed_absolute_rotation(d_reconstruction_plate_id).first;
+							->get_composed_absolute_rotation(d_reconstruction_plate_id);
 
 	if (reverse_reconstruct)
 	{

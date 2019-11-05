@@ -117,7 +117,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::initialise_pre_feature_properties(
 						*d_motion_track_property_finder->get_relative_plate_id());
 
 			GPlatesMaths::FiniteRotation rot = tree_at_time_t_ptr->get_composed_absolute_rotation(
-				*d_motion_track_property_finder->get_reconstruction_plate_id()).first;
+				*d_motion_track_property_finder->get_reconstruction_plate_id());
 
 			d_rotations.push_back(rot);
 		}
@@ -150,7 +150,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_seed_multipoint_geometry =
 				reconstruction_tree->get_composed_absolute_rotation(
-					d_motion_track_property_finder->get_reconstruction_plate_id().get()).first *
+					d_motion_track_property_finder->get_reconstruction_plate_id().get()) *
 					gml_multi_point.get_multipoint();
 
 	try{
@@ -230,7 +230,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_seed_point_geometry =
 		reconstruction_tree->get_composed_absolute_rotation(
-			d_motion_track_property_finder->get_reconstruction_plate_id().get()).first *
+			d_motion_track_property_finder->get_reconstruction_plate_id().get()) *
 			gml_point.get_point();
 
 
@@ -310,7 +310,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 
 	GPlatesMaths::FiniteRotation relative_plate_correction =
 		reconstruction_tree->get_composed_absolute_rotation(
-		d_motion_track_property_finder->get_relative_plate_id().get()).first;
+		d_motion_track_property_finder->get_relative_plate_id().get());
 
 	try
 	{

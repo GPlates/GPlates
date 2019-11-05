@@ -30,6 +30,8 @@
 
 #include "ReconstructContext.h"
 
+#include "ReconstructionGraph.h"
+#include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodRegistry.h"
 
 #include "global/AssertionFailureException.h"
@@ -50,6 +52,13 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			IdentityReconstructionTreeCreatorImpl() :
+				d_empty_reconstruction_graph(
+						GPlatesAppLogic::create_reconstruction_graph(
+								// An empty sequence of reconstruction feature collections...
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()))
+			{  }
+
 			virtual
 			ReconstructionTree::non_null_ptr_to_const_type
 			get_reconstruction_tree(
@@ -57,7 +66,7 @@ namespace GPlatesAppLogic
 					GPlatesModel::integer_plate_id_type anchor_plate_id)
 			{
 				// Create a reconstruction tree that returns identity rotations.
-				return create_reconstruction_tree(0, 0);
+				return ReconstructionTree::create(d_empty_reconstruction_graph, 0, 0);
 			}
 
 			virtual
@@ -66,8 +75,15 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time)
 			{
 				// Create a reconstruction tree that returns identity rotations.
-				return create_reconstruction_tree(0, 0);
+				return ReconstructionTree::create(d_empty_reconstruction_graph, 0, 0);
 			}
+
+		private:
+			/**
+			 * An empty ReconstructionGraph will create empty ReconstructionTree objects which
+			 * will always return identity finite rotations.
+			 */
+			ReconstructionGraph::non_null_ptr_to_const_type d_empty_reconstruction_graph;
 		};
 	}
 }

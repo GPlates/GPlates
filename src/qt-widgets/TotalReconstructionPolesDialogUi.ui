@@ -160,11 +160,6 @@
            <string>Fixed Plate ID</string>
           </property>
          </column>
-         <column>
-          <property name="text">
-           <string>Interpolated?</string>
-          </property>
-         </column>
         </widget>
        </item>
        <item row="0" column="0">

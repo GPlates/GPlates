@@ -25,315 +25,409 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <iterator>  /* std::distance */
 #include <deque>
-#include <boost/none.hpp>
+#include <new>
 
 #include "ReconstructionTree.h"
-#include "ReconstructionTreeEdge.h"
 
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
+#include "utils/Profile.h"
 
 
-namespace
+void
+GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 {
-	template<typename I>
-	void
-	output_edges(
-			std::ostream &os,
-			I begin,
-			I end)
+	// Get the pole samples from the graph edge.
+	const ReconstructionGraph::pole_sample_list_type &pole = d_graph_edge.get_pole();
+	ReconstructionGraph::pole_sample_list_type::const_iterator pole_iter = pole.begin();
+	ReconstructionGraph::pole_sample_list_type::const_iterator pole_end = pole.end();
+
+	// Iterate over the pole samples to determine where our reconstruction time lies.
+	// Note that we have been guaranteed to have at least two time samples.
+	ReconstructionGraph::pole_sample_list_type::const_iterator prev_pole_iter = pole_iter;
+	for (++pole_iter; pole_iter != pole_end; ++pole_iter, ++prev_pole_iter)
 	{
-		for ( ; begin != end; ++begin) {
-			GPlatesAppLogic::output_for_debugging(os, *(begin->second));
+		const ReconstructionGraph::PoleSample &pole_sample = *pole_iter;
+
+		// See if the reconstruction time is later than (ie, less far in the past than)
+		// the time of the current time sample, which must mean that it lies between the previous
+		// and current time samples (or is coincident with previous time sample).
+		if (d_reconstruction_time_instant.is_strictly_later_than(pole_sample.get_time_instant()))
+		{
+			const ReconstructionGraph::PoleSample &prev_pole_sample = *prev_pole_iter;
+			if (d_reconstruction_time_instant.is_coincident_with(prev_pole_sample.get_time_instant()))
+			{
+				// An exact match!  Hence, we can use the FiniteRotation of the previous time
+				// sample directly, without need for interpolation.
+				d_relative_rotation = prev_pole_sample.get_finite_rotation();
+
+				return;
+			}
+			else if (pole_sample.get_time_instant().is_distant_past())
+			{
+				// We now allow the oldest time sample to be distant-past (+Infinity).
+				//
+				// Since the pole is infinitely far in the past it essentially would get ignored if we
+				// interpolated between it and the previous pole (for the current reconstruction time).
+				// In other words the interpolation ratio would be '(t - t_prev) / (Inf - t_prev)'
+				// which is zero, and so the distant-past pole would get zero weighting.
+				//
+				// So we just use the previous pole.
+				//
+				// This path should only happen when ReconstructionGraph creates extra graph edges
+				// that extend to the distant past, and it keeps the pole constant during this
+				// extended time range, so both previous and current poles should be the same anyway.
+				d_relative_rotation = prev_pole_sample.get_finite_rotation();
+
+				return;
+			}
+
+			const GPlatesMaths::FiniteRotation &prev_finite_rotation = prev_pole_sample.get_finite_rotation();
+			const GPlatesMaths::FiniteRotation &finite_rotation = pole_sample.get_finite_rotation();
+
+			// If either of the finite rotations has an axis hint, use it.
+			boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
+			if (prev_finite_rotation.axis_hint())
+			{
+				axis_hint = prev_finite_rotation.axis_hint();
+			}
+			else if (finite_rotation.axis_hint())
+			{
+				axis_hint = finite_rotation.axis_hint();
+			}
+
+			// Interpolate between the previous and current finite rotations.
+			d_relative_rotation = GPlatesMaths::interpolate(
+					prev_finite_rotation,
+					finite_rotation,
+					prev_pole_sample.get_time_instant().value(),
+					pole_sample.get_time_instant().value(),
+					d_reconstruction_time_instant.value(),
+					axis_hint);
+
+			return;
 		}
+	}
+
+	// The reconstruction time must coincide with the time of the last pole sample because
+	// we know that the reconstruction time is contained in the inclusive time bounds of the pole.
+	d_relative_rotation = pole.back().get_finite_rotation();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionTree::Edge::cache_composed_absolute_rotation() const
+{
+	// Compose our relative rotation with the absolute rotation of the parent edge (if there is one).
+	if (d_parent_edge)
+	{
+		d_composed_absolute_rotation = compose(
+				d_parent_edge->get_composed_absolute_rotation(),
+				get_relative_rotation());
+	}
+	else
+	{
+		d_composed_absolute_rotation = get_relative_rotation();
 	}
 }
 
 
 const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
 GPlatesAppLogic::ReconstructionTree::create(
-		ReconstructionGraph &graph,
-		GPlatesModel::integer_plate_id_type anchor_plate_id_,
-		const double &reconstruction_time_,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_)
+		ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id)
 {
+	PROFILE_FUNC();
 
-	//std::cerr << std::endl << "Starting new tree... " << std::endl;
-	// FIXME:  This function is very, very exception-unsafe.
-
-	ReconstructionTree::non_null_ptr_type tree(
+	ReconstructionTree::non_null_ptr_type reconstruction_tree(
 			new ReconstructionTree(
-					anchor_plate_id_,
-					reconstruction_time_,
-					reconstruction_features_));
+					reconstruction_graph,
+					GPlatesPropertyValues::GeoTimeInstant(reconstruction_time),
+					anchor_plate_id));
 
-	// We *could* do this recursively, but to minimise the chance that pathological input data
-	// (eg, trees which are actually linear, like lists) could kill the program, let's use a
-	// FIFO instead.
-	std::deque<edge_ref_type> edges_to_be_processed;
-
-	edge_refs_by_plate_id_map_range_type root_edge_range =
-			graph.find_edges_whose_fixed_plate_id_match(anchor_plate_id_);
-
-	// Note that this if-statement is not strictly necessary (ie, the code would still function
-	// correctly without it, iterating over empty ranges), but we might want to notify the user
-	// that there were no matches, since that is presumably *not* what the user was intending.
-	if (root_edge_range.first == root_edge_range.second) {
-		// No edges found whose fixed plate ID matches the root plate ID.  Nothing to do.
-		// FIXME:  Should we invoke an alert box to the user or something?
-		return tree;
-	}
-	
-	bool  reversed_edge_in_rootmost_collection = false;
-
-	//std::cerr << "Looping over potential rootmost edges" << std::endl;
-	for (edge_refs_by_plate_id_map_iterator root_iter = root_edge_range.first;
-			root_iter != root_edge_range.second;
-			++root_iter) {
-		edge_ref_type curr_edge = root_iter->second;
-		
-		//output_for_debugging(std::cerr, *curr_edge);
-		if (curr_edge->pole_type() == ReconstructionTreeEdge::PoleTypes::ORIGINAL)
-		{
-			// If the edge is original, we add it to the collection, regardless of 
-			// whether or not there are reversed edges in the collection. 
-			edges_to_be_processed.push_back(curr_edge);
-			tree->d_rootmost_edges.push_back(curr_edge);
-			curr_edge->set_parent_edge(NULL);
-		} 
-		else
-		if (!reversed_edge_in_rootmost_collection) 
-		{
-			// The current edge is reversed, and we don't yet have any reversed edges,
-			// so we can add the current edge. 
-			edges_to_be_processed.push_back(curr_edge);
-			tree->d_rootmost_edges.push_back(curr_edge);
-			curr_edge->set_parent_edge(NULL);
-			reversed_edge_in_rootmost_collection = true;
-		}
-		// Otherwise the current edge is reversed, but we already have a reversed edge,
-		// so we do nothing. 
+	// Start building the tree at the anchor plate.
+	//
+	// If the anchor plate does not exist then we'll get an empty tree
+	// (that will always return identity rotations).
+	boost::optional<const ReconstructionGraph::Plate &> anchor_plate =
+			reconstruction_graph->get_plate(anchor_plate_id);
+	if (anchor_plate)
+	{
+		reconstruction_tree->create_sub_trees_from_graph_plate(
+				anchor_plate.get(),  // graph_plate
+				NULL,  // parent_tree_edge
+				reconstruction_tree->d_anchor_plate_edges);  // tree_edges
 	}
 
-	while ( ! edges_to_be_processed.empty()) {
-		edge_ref_type edge_being_processed = edges_to_be_processed.front();
-		edges_to_be_processed.pop_front();
+	return reconstruction_tree;
+}
 
-#if 0
-		std::cerr << std::endl;
-		std::cerr << "Processing edge: ";
-		output_for_debugging(std::cerr, *edge_being_processed);
-#endif
 
-		// We want to find all the edges which hang relative to this edge (ie, all the
-		// edges whose fixed plate ID is equal to the moving plate ID of this edge).
-		GPlatesModel::integer_plate_id_type moving_plate_id_of_edge_being_processed =
-				edge_being_processed->moving_plate();
+void
+GPlatesAppLogic::ReconstructionTree::create_sub_trees_from_graph_plate(
+		const ReconstructionGraph::Plate &graph_plate,
+		Edge *parent_tree_edge,
+		edge_list_type &tree_edges)
+{
+	/*
+	 * The reconstruction *graph* can contain cycles due to crossovers (when a moving plate switches
+	 * fixed plates at a particular time) because, in a reconstruction graph, each edge represents
+	 * a total reconstruction *sequence* (which contains a pole over a range of times).
+	 *
+	 * An example reconstruction graph is:
+	 *
+	 *                            ------0------
+	 *                           /     / \     \
+	 *                          1     2   3     4
+	 *                         / \    |   |
+	 *                        5   6   7   8
+	 *                                 \ /
+	 *                                  9
+	 *                                /   \
+	 *                              10     11
+	 *                             /  \   /  \
+	 *                            12  13 14  15
+	 *
+	 * Conversely a reconstruction *tree* represents an *acyclic* graph rooted at a chosen anchor plate.
+	 *
+	 * Using the above reconstruction graph, and choosing 0 for the anchor plate, and choosing the
+	 * time to match the crossover time for plate 9, might result in the following reconstruction tree:
+	 *
+	 *                            ------0------
+	 *                           /     / \     \
+	 *                          1     2   3     4
+	 *                         / \    |   |
+	 *                        5   6   7   8
+	 *                                 \
+	 *                                  9
+	 *                                /   \
+	 *                              10     11
+	 *                             /  \   /  \
+	 *                            12  13 14  15
+	 *
+	 * ...where we've only followed one path down through to the crossover to moving plate 9
+	 * (note there is no link between 8 and 9). If the crossover has been synchronised then taking
+	 * either path should give the same result (ie, instead we might have had a link from 8 to 9, it just
+	 * depends on which graph edge happens to come first, which depends on the order in the rotation file).
+	 * Also note that in this case all tree edges are not reversed (compared to the reconstruction graph edges),
+	 * in other words we've always traversed downwards from 0 in the reconstruction *graph* diagram.
+	 *
+	 * If we choose a *non-zero* anchor plate then we'll need to traverse upwards for some tree branches
+	 * and hence will get reversed tree edges. The rule for reversed tree edges (traversing upwards)
+	 * is, for each plate, we can only traverse upwards through *one* reconstruction graph edge.
+	 * This avoids taking a longer path than expected to reach any plate from plate 0 (see reasons below).
+	 *
+	 * For example, choosing anchor plate 10 results in the following reconstruction tree:
+	 *
+	 *                                  --10
+	 *                                 /  / \
+	 *                              --9  12 13
+	 *                             /   \
+	 *                            7     11
+	 *                            |    /  \
+	 *                            2   14  15
+	 *                            |
+	 *                         ---0---
+	 *                        /   |   \
+	 *                       1    3    4
+	 *                      / \   |
+	 *                     5   6  8
+	 *
+	 * ...where edges 10->9, 9->7, 7->2 and 2->0 are reversed edges (traversed upwards in the reconstruction graph).
+	 * Note that we could have traversed either edge 9->7 or edge 9->8 (if the reconstruction time is
+	 * at the crossover time for plate 9) - this just depends on which graph edge happens to come first
+	 * (which depends on the order in the rotation file). Note that at other reconstruction times there will only
+	 * be one path (9->7 or 9->8) since only one path will have a time range (associated with total reconstruction
+	 * sequence 7->9 or 8->9) that contains the reconstruction time. But at the crossover time there are two options.
+	 *
+	 * As for why we can only traverse one graph edge upwards per plate, note that, in the above tree,
+	 * the paths from plate 0 to plates 7 and 8 are 0->2->7 and 0->3->8. If we had taken both paths upward
+	 * from plate 9 (9->7 and 9->8) then it's possible (depending on how the tree is traversed, eg,
+	 * depth-first versus breadth-first) that the paths from plate 0 to plates 7 and 8 could be
+	 * 0->2->7 and 0->2->7->9->8. Note that the second path (from 0 to 8) is much longer than before,
+	 * and this is probably not what the user (who created the rotation file) expected - they're expecting
+	 * everything to take the shortest path relative to plate 0, even when the anchor plate is non-zero.
+	 * Here is the relevant part of that *incorrect* tree (compared to the relevant part of a correct version):
+	 *
+	 *   INCORRECT        CORRECT
+	 *
+	 *       9               9
+	 *      / \              |
+	 *     7   8             7
+	 *     |   |             |
+	 *     2   3             2
+	 *      \                |
+	 *       0               0
+	 *                       |
+	 *                       3
+	 *                       |
+	 *                       8
+	 * 
+	 * Now if all the crossovers are synchronised, then relative rotations (relative to plate 0 or
+	 * relative to the anchor plate) should not change. However some rather long paths can be
+	 * taken is real scenarios and this just amplifies the possibility of an un-synchronised
+	 * crossover causing problems (not to mention the long paths are unexpected when looking at
+	 * the reconstruction tree plate circuit paths in the GUI dialog).
+	 *
+	 * One final thing, it is possible to have more than one *graph* edge between the same fixed and moving plates.
+	 * This happens when a fixed/moving rotation sequence is split into two (or more) sequences
+	 * (such as splitting across two rotation files, one for 0-250Ma and the other for 250-410Ma).
+	 * In the following, the graph has two edges 1->5 (0-250Ma and 250-410Ma) and two edges 1->6
+	 * (0-250Ma and 250-410Ma). The tree at 200Ma uses the first edge in each plate pair, whereas the
+	 * tree at 400Ma uses the second edge in each plate pair:
+	 *
+	 *       GRAPH                      TREE (200Ma)     TREE (400Ma)
+	 *                                                              
+	 *        ---1---                 ---1                 1--- 
+	 *       /  / \  \               /    \               /    \
+	 *        5     6                 5     6           5     6 
+	 *                               (0-250Ma)        (250-410Ma)
+	 *
+	 * ...and at the common time 250Ma, either edge in each plate pair could be used - this just depends
+	 * on which graph edge happens to come first (which depends on the order in the rotation file).
+	 * But only one edge per plate pair will get traversed to create a tree edge because once a tree
+	 * edge has been created (to the moving plate) another tree edge cannot be created to that same
+	 * (tree edge) moving plate. In other words only one *tree* edge is created for 1->5 and likewise
+	 * only one for 1->6.
+	 */
 
-		// Find any and all other edges with the same moving plate ID.
-		edge_refs_by_plate_id_map_const_range_type moving_plate_id_edge_range =
-				tree->find_edges_whose_moving_plate_id_match(moving_plate_id_of_edge_being_processed);
+	//
+	// For the reasons above...
+	//
+	// We can only traverse an incoming graph edge (upwards, in the reverse direction) if:
+	//   (1) We're at the anchor plate ('parent_tree_edge == NULL'), or
+	//   (2) the parent edge is in the reverse direction (ie, we're moving up the reconstruction *graph*).
+	//
+	// And we can only traverse up *one* incoming edge (we can't take both branches up through a crossover).
+	//
+	if (parent_tree_edge == NULL ||
+		parent_tree_edge->is_reversed())
+	{
+		// Iterate over the edges going *into* the plate.
+		const ReconstructionGraph::plate_incoming_edge_list_type &incoming_graph_edges = graph_plate.get_incoming_edges();
+		ReconstructionGraph::plate_incoming_edge_list_type::const_iterator incoming_graph_edges_iter = incoming_graph_edges.begin();
+		ReconstructionGraph::plate_incoming_edge_list_type::const_iterator incoming_graph_edges_end = incoming_graph_edges.end();
+		for ( ; incoming_graph_edges_iter != incoming_graph_edges_end; ++incoming_graph_edges_iter)
+		{
+			const ReconstructionGraph::Edge &incoming_graph_edge = *incoming_graph_edges_iter;
 
-		// Have we already processed edges whose moving plate ID is the same as the moving
-		// plate ID of the edge being processed?
-		if ((moving_plate_id_edge_range.first != moving_plate_id_edge_range.second) ||
-			(moving_plate_id_of_edge_being_processed == anchor_plate_id_)){
-			// There is already an edge leading to the moving plate ID.  (Actually, at
-			// least one, but we'll assume that it's only one, since this block of code
-			// should ensure that it's never more than one.)  We don't need another
-			// edge which leads to the moving plate ID, and we don't *want* another. 
-			// (It could result in an infinite loop.)
+			// Create a sub-tree by following the current incoming graph edge
+			// in the reverse direction from its moving plate (which is 'graph_plate') to its fixed plate.
 			//
-			// FIXME:  Should we check that the composed absolute rots are the same?
-// Silence these warnings for the release.
-#if 0
-			std::cerr << "Warning: Potential cycle detected (may be a cross-over point):\n";
-			output_for_debugging(std::cerr, *edge_being_processed);
-			std::cerr << "forms a cycle with the existing edge(s):\n";
-			output_edges(std::cerr, moving_plate_id_edge_range.first, moving_plate_id_edge_range.second);
-			std::cerr << "Won't process the new edge!\n" << std::endl;
-#endif
-
-
-// Remove the edge_being_processed from its parent's children, using the parent member
-// of the ReconstructionTreeEdge.
-		
-			if (edge_being_processed->parent_edge())
+			// But only if it contains the reconstruction time.
+			if (create_sub_tree_from_graph_edge(
+					incoming_graph_edge,
+					parent_tree_edge,
+					tree_edges,
+					true/*reverse_tree_edge*/))
 			{
-				
-				edge_ref_type parent_edge = 
-						GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
-								GPlatesUtils::NullIntrusivePointerHandler>(
-								edge_being_processed->parent_edge(),
-								GPlatesUtils::NullIntrusivePointerHandler());
-				
-				edge_collection_type::iterator kids;
-				edge_collection_type::iterator kids_begin =
-						parent_edge->children_in_built_tree().begin();
-				edge_collection_type::iterator kids_end = 
-						parent_edge->children_in_built_tree().end();
-
-				kids = std::find(kids_begin,kids_end,edge_being_processed);
-
-				if (kids == kids_end){
-					// We shouldn't be here, because any edges added to the queue
-					// should also have been allocated a parent, and added to the parent's
-					// children-collection. 
-					std::cerr << "Couldn't find edge_being_processed in the parent's children" << std::endl;
-				}
-				else
-				{
-					parent_edge->children_in_built_tree().erase(kids);
-				}
+				// We only create one reversed tree edge (and associated sub-tree).
+				break;
 			}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-				
-			continue;
 		}
-		// Otherwise, let's insert this edge into the edge-by-moving-plate-ID map.
-		tree->d_edges_by_moving_plate_id.insert(
-				std::make_pair(moving_plate_id_of_edge_being_processed, edge_being_processed));
+	}
 
-		edge_refs_by_plate_id_map_const_range_type potential_children_range =
-				graph.find_edges_whose_fixed_plate_id_match(moving_plate_id_of_edge_being_processed);
+	// Iterate over the edges going *out* the plate.
+	//
+	// Note that we can traverse all outgoing edges.
+	const ReconstructionGraph::plate_outgoing_edge_list_type &outgoing_graph_edges = graph_plate.get_outgoing_edges();
+	ReconstructionGraph::plate_outgoing_edge_list_type::const_iterator outgoing_graph_edges_iter = outgoing_graph_edges.begin();
+	ReconstructionGraph::plate_outgoing_edge_list_type::const_iterator outgoing_graph_edges_end = outgoing_graph_edges.end();
+	for ( ; outgoing_graph_edges_iter != outgoing_graph_edges_end; ++outgoing_graph_edges_iter)
+	{
+		const ReconstructionGraph::Edge &outgoing_graph_edge = *outgoing_graph_edges_iter;
 
-		GPlatesModel::integer_plate_id_type fixed_plate_id_of_edge_being_processed =
-				edge_being_processed->fixed_plate();
-		// Each of the targets of iter is an edge which has a fixed plate ID which is equal
-		// to the moving plate ID of the edge being processed.
+		// Create a sub-tree by following the current outgoing graph edge
+		// in the forward direction from its fixed plate (which is 'graph_plate') to its moving plate.
 		//
-		// Before we do anything with each of the targets of iter, however, we will ensure
-		// that it is not the reverse of the edge being processed.
-
-		bool reversed_edge_in_children = false;
-
-		for (edge_refs_by_plate_id_map_const_iterator iter = potential_children_range.first;
-				iter != potential_children_range.second;
-				++iter) {
-
-			//std::cerr << "Potential child: " << std::endl;
-	
-			edge_ref_type potential_child = iter->second;
-
-			//output_for_debugging(std::cerr, *potential_child);
-
-			// First, check whether the potential child is the reverse of the edge
-			// being processed.
-			if (potential_child->moving_plate() == fixed_plate_id_of_edge_being_processed) {
-				// The potential child is the reverse of the edge being processed. 
-				// Do nothing with it.
-				continue;
-			}
-
-			// If the current edge is original, then we should only have original children. 
-			if ((edge_being_processed->pole_type() == ReconstructionTreeEdge::PoleTypes::ORIGINAL)
-				&& (potential_child->pole_type() == ReconstructionTreeEdge::PoleTypes::REVERSED)){
-				continue;
-			}
-
-			// If the current edge is reversed, then we should have at most one reversed edge in the
-			// children. So if the potential_child is reversed, make sure we don't already have a 
-			// reversed edge in the children-collection. 
-			if ((edge_being_processed->pole_type() == ReconstructionTreeEdge::PoleTypes::REVERSED)
-				&& (potential_child->pole_type() == ReconstructionTreeEdge::PoleTypes::REVERSED))
-			{
-				if (reversed_edge_in_children){
-					// We already have a reversed edge in the children collection, 
-					// so do nothing with the current potential_child.
-					continue;
-				}
-				else
-				{
-					reversed_edge_in_children = true;
-				}
-			}
-
-
-			edges_to_be_processed.push_back(potential_child);
-			edge_being_processed->children_in_built_tree().push_back(potential_child);
-			potential_child->set_parent_edge(edge_being_processed.get());
-		
-			
-	//		std::cerr << "Added child: ";
-	//		output_for_debugging(std::cerr,*potential_child);
-
-			// Finally, set the "composed absolute rotation" of the child edge.
-			const GPlatesMaths::FiniteRotation &absolute_rot_of_parent =
-					edge_being_processed->composed_absolute_rotation();
-			const GPlatesMaths::FiniteRotation &relative_rot_of_child =
-					potential_child->relative_rotation();
-
-			potential_child->set_composed_absolute_rotation(
-					::GPlatesMaths::compose(absolute_rot_of_parent, relative_rot_of_child));
-		}
-	}
-
-	tree->d_graph.swap(graph);
-
-	return tree;
-}
-
-
-const std::pair<
-		GPlatesMaths::FiniteRotation,
-		GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance>
-GPlatesAppLogic::ReconstructionTree::get_composed_absolute_rotation(
-		GPlatesModel::integer_plate_id_type moving_plate_id) const
-{
-	using namespace GPlatesMaths;
-
-	// If the moving plate ID is the root of the reconstruction tree, return the identity
-	// rotation.
-	if (moving_plate_id == d_anchor_plate_id) {
-		return std::make_pair(
-				FiniteRotation::create_identity_rotation(),
-				ExactlyOnePlateIdMatchFound);
-	}
-
-	edge_refs_by_plate_id_map_const_range_type range =
-			find_edges_whose_moving_plate_id_match(moving_plate_id);
-
-	if (range.first == range.second) {
-		// No matches.  Let's return the identity rotation and inform the client code.
-		return std::make_pair(
-				FiniteRotation::create_identity_rotation(),
-				NoPlateIdMatchesFound);
-	}
-	if (std::distance(range.first, range.second) > 1) {
-		// More than one match.  Ambiguity!
-		// For now, let's just use the first match anyway.
-		// FIXME:  Should we verify that all alternatives are equivalent?
-		// FIXME:  Should we complain to the user about this?
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation, MultiplePlateIdMatchesFound);
-	} else {
-		// Exactly one match.  Ideal!
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation, ExactlyOnePlateIdMatchFound);
+		// But only if it contains the reconstruction time and doesn't create a cycle in the tree.
+		create_sub_tree_from_graph_edge(
+				outgoing_graph_edge,
+				parent_tree_edge,
+				tree_edges,
+				false/*reverse_tree_edge*/);
 	}
 }
 
 
-GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type
-GPlatesAppLogic::ReconstructionTree::find_edges_whose_moving_plate_id_match(
-		GPlatesModel::integer_plate_id_type plate_id) const
+bool
+GPlatesAppLogic::ReconstructionTree::create_sub_tree_from_graph_edge(
+		const ReconstructionGraph::Edge &graph_edge,
+		Edge *parent_tree_edge,
+		edge_list_type &tree_edges,
+		bool reverse_tree_edge)
 {
-	return d_edges_by_moving_plate_id.equal_range(plate_id);
-}
+	// If the reconstruction time is outside the graph edge [begin,end] time range then
+	// discontinue the current tree edge branch.
+	if (d_reconstruction_time_instant.is_strictly_earlier_than(graph_edge.get_begin_time()) ||
+		d_reconstruction_time_instant.is_strictly_later_than(graph_edge.get_end_time()))
+	{
+		return false;
+	}
 
+	// If the tree edge is the reverse of the graph edge (ie, if we're following the graph edge backwards)
+	// then swap the fixed and moving plate associated with the tree edge.
+	const ReconstructionGraph::Plate &graph_plate_of_tree_edge_fixed_plate =
+			reverse_tree_edge ? graph_edge.get_moving_plate() : graph_edge.get_fixed_plate();
+	const ReconstructionGraph::Plate &graph_plate_of_tree_edge_moving_plate =
+			reverse_tree_edge ? graph_edge.get_fixed_plate() : graph_edge.get_moving_plate();
 
-GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_range_type
-GPlatesAppLogic::ReconstructionTree::find_edges_whose_moving_plate_id_match(
-		GPlatesModel::integer_plate_id_type plate_id)
-{
-	return d_edges_by_moving_plate_id.equal_range(plate_id);
+	const GPlatesModel::integer_plate_id_type tree_edge_fixed_plate_id =
+			graph_plate_of_tree_edge_fixed_plate.get_plate_id();
+	const GPlatesModel::integer_plate_id_type tree_edge_moving_plate_id =
+			graph_plate_of_tree_edge_moving_plate.get_plate_id();
+
+	// If we've looped back to the anchor (via a crossover cycle) then discontinue the current tree edge branch.
+	// We avoid cycles in the tree (it's a directed *acyclic* graph).
+	//
+	// This also prevents reversing back along the tree edge branch (from tree edge child back to parent).
+	if (tree_edge_moving_plate_id == d_anchor_plate_id)
+	{
+		return false;
+	}
+
+	// If there's already a tree edge with the same (moving) plate ID then we've looped back to the
+	// same (moving) plate (via a crossover cycle), so discontinue the current tree edge branch.
+	// We avoid cycles in the tree (it's a directed *acyclic* graph).
+	//
+	// This also prevents reversing back along the tree edge branch (from tree edge child back to parent).
+	//
+	// Attempt to insert 'tree_edge_moving_plate_id' into our map of tree edges.
+	// It will only succeed if we don't already have 'tree_edge_moving_plate_id' in our map.
+	std::pair<edge_map_type::iterator, bool> tree_edge_insert_result = d_all_edges.insert(
+			edge_map_type::value_type(tree_edge_moving_plate_id, NULL));
+	if (!tree_edge_insert_result.second)
+	{
+		return false;
+	}
+
+	// Successfully inserted 'tree_edge_moving_plate_id', which means it did not already exist.
+	// So create a tree edge to moving plate from fixed plate.
+	//
+	// Note: Seems boost::object_pool<>::construct() is limited to 3 constructor arguments in its default compiled mode.
+	// So, since we have more arguments, we'll allocate and then construct using placement new.
+	Edge *tree_edge = d_edge_pool.malloc();
+	if (tree_edge == NULL)
+	{
+		throw std::bad_alloc();
+	}
+	new (tree_edge) Edge(tree_edge_fixed_plate_id, tree_edge_moving_plate_id, d_reconstruction_time_instant, graph_edge);
+
+	// Initialise the map item to point to the new tree edge.
+	tree_edge_insert_result.first->second = tree_edge;
+
+	// Add to the sub-tree edges.
+	tree_edges.push_front(*tree_edge);
+
+	// The parent of the current tree edge.
+	tree_edge->d_parent_edge = parent_tree_edge;
+
+	// Create a sub-tree rooted at the graph plate associated with the current tree edge's moving plate
+	// since the tree is branching from its fixed plate to moving plates.
+	create_sub_trees_from_graph_plate(
+			graph_plate_of_tree_edge_moving_plate,  // graph_plate
+			tree_edge,  // parent_tree_edge
+			tree_edge->d_child_edges);  // tree_edges
+
+	return true;
 }

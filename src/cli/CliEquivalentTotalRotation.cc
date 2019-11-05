@@ -54,6 +54,9 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
+	//! Option name for extending total reconstruction poles back to distant past.
+	const char *EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME = "extend-total-reconstruction-poles";
+
 	//! Option name for reconstruction time with short version.
 	const char *RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION = "recon-time,t";
 
@@ -73,6 +76,7 @@ namespace
 
 
 GPlatesCli::EquivalentTotalRotationCommand::EquivalentTotalRotationCommand() :
+	d_extend_total_reconstruction_poles_to_distant_past(false),
 	d_recon_time(0),
 	d_anchor_plate_id(0),
 	d_plate_id(0)
@@ -94,6 +98,12 @@ GPlatesCli::EquivalentTotalRotationCommand::add_options(
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
 			"load reconstruction feature collection (rotation) file (multiple options allowed)"
+		)
+		(
+			EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME,
+			boost::program_options::value<bool>(&d_extend_total_reconstruction_poles_to_distant_past)->default_value(false),
+			"extend moving plate rotation sequences back to the distant past such that reconstructed geometries "
+			"are not snapped back to their present day positions (defaults to 'false')."
 		)
 		(
 			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
@@ -149,17 +159,20 @@ GPlatesCli::EquivalentTotalRotationCommand::run(
 			reconstruction_feature_collections, reconstruction_files);
 
 	// Create a reconstruction tree from the rotation features.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree =
-			GPlatesAppLogic::create_reconstruction_tree(
+	const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
+			GPlatesAppLogic::create_reconstruction_graph(
+					reconstruction_feature_collections,
+					d_extend_total_reconstruction_poles_to_distant_past);
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			GPlatesAppLogic::ReconstructionTree::create(
+					reconstruction_graph,
 					d_recon_time,
-					d_anchor_plate_id,
-					reconstruction_feature_collections);
+					d_anchor_plate_id);
 
-	const std::pair<GPlatesMaths::FiniteRotation, GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance>
-			equivalent_rotation_result =
-					reconstruction_tree->get_composed_absolute_rotation(d_plate_id);
+	boost::optional<GPlatesMaths::FiniteRotation> equivalent_rotation_result =
+			reconstruction_tree->get_composed_absolute_rotation_or_none(d_plate_id);
 
-	if (equivalent_rotation_result.second == GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+	if (!equivalent_rotation_result)
 	{
 		// Return failure if plate is was not found in the reconstruction tree.
 		throw GPlatesGlobal::LogException(
@@ -168,7 +181,7 @@ GPlatesCli::EquivalentTotalRotationCommand::run(
 	}
 
 	// Get the equivalent rotation.
-	const GPlatesMaths::FiniteRotation &equivalent_rotation = equivalent_rotation_result.first;
+	const GPlatesMaths::FiniteRotation &equivalent_rotation = equivalent_rotation_result.get();
 	const GPlatesMaths::UnitQuaternion3D &unit_quaternion = equivalent_rotation.unit_quat();
 	
 	if (GPlatesMaths::represents_identity_rotation(unit_quaternion)) 

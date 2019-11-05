@@ -388,27 +388,15 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_plate_pair(
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			rfg.get_reconstruction_tree();
 
-	GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type edges =
-			reconstruction_tree->find_edges_whose_moving_plate_id_match(
-					reconstruction_plate_id.get());
-
-	if (edges.first == edges.second)
+	boost::optional<const GPlatesAppLogic::ReconstructionTree::Edge &> edge =
+			reconstruction_tree->get_edge(reconstruction_plate_id.get());
+	if (!edge)
 	{
-		// We haven't found any edges - might not have a rotation file loaded.
+		// We didn't find the edge - might not have a rotation file loaded.
 		return boost::none;
 	}
 
-	// We shouldn't have more than one edge - even in a cross-over situation, one
-	// of the edges will already have been selected for use in the tree.
-	if (std::distance(edges.first, edges.second) > 1)
-	{
-		//qDebug() << "More than one edge found for reconstruction plate id " << reconstruction_plate_id.get();
-		return boost::none;
-	}
-
-	GPlatesAppLogic::ReconstructionTree::edge_ref_type edge = edges.first->second;
-
-	return std::make_pair(edge->moving_plate(), edge->fixed_plate());
+	return std::make_pair(edge->get_moving_plate(), edge->get_fixed_plate());
 }
 
 
@@ -485,7 +473,7 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 	//
 
 	const GPlatesMaths::FiniteRotation fixed_plate_rotation =
-		reconstruction_tree->get_composed_absolute_rotation(fixed_plate_id).first;
+		reconstruction_tree->get_composed_absolute_rotation(fixed_plate_id);
 
 	// Return the stage pole axis rotated into the moving plate frame.
 	return GPlatesMaths::PointOnSphere(fixed_plate_rotation * stage_pole_axis);

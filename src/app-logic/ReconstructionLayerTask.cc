@@ -28,6 +28,18 @@
 #include "ReconstructUtils.h"
 
 
+
+GPlatesAppLogic::ReconstructionLayerTask::ReconstructionLayerTask() :
+	d_layer_params(ReconstructionLayerParams::create()),
+	d_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
+{
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_reconstruction_params(GPlatesAppLogic::ReconstructionLayerParams &)),
+			this, SLOT(handle_reconstruction_params_modified(GPlatesAppLogic::ReconstructionLayerParams &)));
+}
+
+
 bool
 GPlatesAppLogic::ReconstructionLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -102,4 +114,13 @@ GPlatesAppLogic::ReconstructionLayerTask::update(
 {
 	d_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 	d_reconstruction_layer_proxy->set_current_anchor_plate_id(reconstruction->get_anchor_plate_id());
+}
+
+
+void
+GPlatesAppLogic::ReconstructionLayerTask::handle_reconstruction_params_modified(
+		ReconstructionLayerParams &layer_params)
+{
+	// Update our reconstruction layer proxy.
+	d_reconstruction_layer_proxy->set_current_reconstruction_params(layer_params.get_reconstruction_params());
 }

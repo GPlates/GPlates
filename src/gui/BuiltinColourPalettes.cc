@@ -1278,6 +1278,9 @@ GPlatesGui::BuiltinColourPalettes::create_strain_rate_strain_rate_style_colour_p
 		colour_palette->add_entry(colour_slice);
 	}
 
+	// Set NaN colour.
+	colour_palette->set_nan_colour(Colour(0.5, 0.5, 0.5));
+
 	// Convert/adapt Real to double.
 	return convert_colour_palette<
 			RegularCptColourPalette::key_type,

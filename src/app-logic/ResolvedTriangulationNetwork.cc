@@ -1170,7 +1170,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_2(
 	// Only then can be compare the stage pole axis with the reconstructed rift geometries in the network.
 	//
 	const GPlatesMaths::FiniteRotation left_plate_rotation =
-			reconstruction_tree_1->get_composed_absolute_rotation(rift_params.left_plate_id).first;
+			reconstruction_tree_1->get_composed_absolute_rotation(rift_params.left_plate_id);
 	const GPlatesMaths::UnitVector3D twist_axis = left_plate_rotation * stage_pole_axis;
 
 

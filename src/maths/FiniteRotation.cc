@@ -52,34 +52,8 @@
 #include "global/PreconditionViolationError.h"
 
 
-namespace {
-
-	// This value is calculated to optimise rotation operations.
-	inline
-	const GPlatesMaths::real_t
-	calculate_d_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((s * s) - dot(v, v));
-	}
-
-
-	// This value is calculated to optimise rotation operations.
-	inline
-	const GPlatesMaths::Vector3D
-	calculate_e_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((2.0 * s) * v);
-	}
-
-
+namespace
+{
 	/**
 	 * Visits a @a GeometryOnSphere, rotates it and returns as a @a GeometryOnSphere.
 	 */
@@ -187,32 +161,6 @@ GPlatesMaths::FiniteRotation::create(
 }
 
 
-const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create(
-		const UnitQuaternion3D &uq,
-		const boost::optional<UnitVector3D> &axis_hint_)
-{
-	return FiniteRotation(uq, axis_hint_);
-}
-
-
-const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create_identity_rotation()
-{
-	return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
-}
-
-
-GPlatesMaths::FiniteRotation::FiniteRotation(
-		const UnitQuaternion3D &unit_quat_,
-		const boost::optional<UnitVector3D> &axis_hint_):
-	d_unit_quat(unit_quat_),
-	d_axis_hint(axis_hint_),
-	d_d(::calculate_d_value(unit_quat_)),
-	d_e(::calculate_e_value(unit_quat_))
-{  }
-
-
 const GPlatesMaths::UnitVector3D
 GPlatesMaths::FiniteRotation::operator*(
 		const UnitVector3D &unit_vect) const
@@ -253,9 +201,38 @@ const GPlatesMaths::Vector3D
 GPlatesMaths::FiniteRotation::operator*(
 		const Vector3D &vect) const
 {
+	const GPlatesMaths::real_t &uq_s = d_unit_quat.scalar_part();
 	const Vector3D &uq_v = d_unit_quat.vector_part();
 
-	return d_d * vect + (2.0 * dot(uq_v, vect)) * uq_v + cross(d_e, vect);
+	//
+	// Quaternion (uq_s, uq_v) rotates vector v to v' as:
+	//
+	//   v' = v + 2 * uq_v x (uq_s * v + uq_v x v)
+	//
+	// ...and using the vector triple product rule:
+	//
+	//   a x (b x c) = (a.c)b - (a.b)c
+	//
+	// ...we get:
+	//
+	//   v' = v + 2 * uq_s * uq_v x v + 2 * uq_v x (uq_v x v)
+	//      = v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v - 2 * (uq_v . uq_v) * v
+	//      = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//
+	// ...and using the norm of a unit quaternion:
+	//
+	//   uq_s * uq_s + uq_v . uq_v = 1
+	//                 uq_v . uq_v = 1 - uq_s * uq_s
+	//       1 - 2 * (uq_v . uq_v) = 1 - 2 * (1 - uq_s * uq_s)
+	//                             = 2 * uq_s * uq_s - 1
+	//
+	// ...we get:
+	//
+	//   v' = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * [uq_s * uq_v x v + (uq_v . v) * uq_v]
+	//
+	return (2.0 * uq_s * uq_s - 1.0) * vect + 2.0 * (cross(uq_s * uq_v, vect) + dot(uq_v, vect) * uq_v);
 }
 
 
@@ -422,30 +399,15 @@ GPlatesMaths::compose(
 }
 
 
-const GPlatesMaths::PointOnSphere
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const PointOnSphere &p)
-{
-
-	return PointOnSphere(r * p.position_vector());
-}
-
-
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
-{
-	return PointOnSphere::create_on_heap(r * p->position_vector());
-}
-
-
 const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(mp->number_of_points());
 
@@ -465,6 +427,10 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
 
@@ -483,6 +449,10 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_exterior_ring;
 	rotated_exterior_ring.reserve(p->number_of_vertices_in_exterior_ring());
 

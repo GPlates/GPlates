@@ -54,6 +54,9 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
+	//! Option name for extending total reconstruction poles back to distant past.
+	const char *EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME = "extend-total-reconstruction-poles";
+
 	//! Option name for reconstruction time with short version.
 	const char *RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION = "recon-time,t";
 
@@ -73,6 +76,7 @@ namespace
 
 
 GPlatesCli::RelativeTotalRotationCommand::RelativeTotalRotationCommand() :
+	d_extend_total_reconstruction_poles_to_distant_past(false),
 	d_recon_time(0),
 	d_fixed_plate_id(0),
 	d_moving_plate_id(0)
@@ -94,6 +98,12 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
 			"load reconstruction feature collection (rotation) file (multiple options allowed)"
+		)
+		(
+			EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME,
+			boost::program_options::value<bool>(&d_extend_total_reconstruction_poles_to_distant_past)->default_value(false),
+			"extend moving plate rotation sequences back to the distant past such that reconstructed geometries "
+			"are not snapped back to their present day positions (defaults to 'false')."
 		)
 		(
 			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
@@ -151,37 +161,21 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	// Create a reconstruction tree from the rotation features.
 	// Note that we set the anchor plate id to zero - it doesn't matter what the value is
 	// because we're only returning a *relative* rotation between a moving/fixed plate pair.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree =
-			GPlatesAppLogic::create_reconstruction_tree(
+	const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
+			GPlatesAppLogic::create_reconstruction_graph(
+					reconstruction_feature_collections,
+					d_extend_total_reconstruction_poles_to_distant_past);
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			GPlatesAppLogic::ReconstructionTree::create(
+					reconstruction_graph,
 					d_recon_time,
-					0/*anchor_plate_id*/,
-					reconstruction_feature_collections);
+					0/*anchor_plate_id*/);
 
-	// Find those edges matching the user-specified moving plate id.
-	GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type moving_plate_id_edges =
-			reconstruction_tree->find_edges_whose_moving_plate_id_match(d_moving_plate_id);
-
-	boost::optional<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type> reconstruction_tree_edge;
-
-	GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator moving_plate_id_edge_iter =
-			moving_plate_id_edges.first;
-	GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator moving_plate_id_edge_end =
-			moving_plate_id_edges.second;
-	for ( ; moving_plate_id_edge_iter != moving_plate_id_edge_end; ++moving_plate_id_edge_iter)
-	{
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type current_edge =
-				moving_plate_id_edge_iter->second;
-
-		// If we've found the reconstruction tree edge matching our fixed/moving plate pair then
-		// save it and break out of the 'for' loop.
-		if (current_edge->fixed_plate() == d_fixed_plate_id)
-		{
-			reconstruction_tree_edge = current_edge;
-			break;
-		}
-	}
-
-	if (!reconstruction_tree_edge)
+	// See if we have an edge matching the user-specified moving and fixed plate ids.
+	boost::optional<const GPlatesAppLogic::ReconstructionTree::Edge &> reconstruction_tree_edge =
+			reconstruction_tree->get_edge(d_moving_plate_id);
+	if (!reconstruction_tree_edge ||
+		reconstruction_tree_edge->get_fixed_plate() != d_fixed_plate_id)
 	{
 		// Return failure if fixed/moving plate pair was not found in the reconstruction tree.
 		throw GPlatesGlobal::LogException(
@@ -190,7 +184,7 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	}
 
 	// Get the relative rotation.
-	const GPlatesMaths::FiniteRotation finite_rotation = reconstruction_tree_edge.get()->relative_rotation();
+	const GPlatesMaths::FiniteRotation finite_rotation = reconstruction_tree_edge->get_relative_rotation();
 	const GPlatesMaths::UnitQuaternion3D &unit_quaternion = finite_rotation.unit_quat();
 	
 	if (GPlatesMaths::represents_identity_rotation(unit_quaternion)) 

@@ -65,6 +65,9 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *RECONSTRUCTION_FILES_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
+	//! Option name for extending total reconstruction poles back to distant past.
+	const char *EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME = "extend-total-reconstruction-poles";
+
 	//! Option name for assign plate ids method.
 	const char *ASSIGN_METHOD_OPTION_NAME = "assign-method";
 	//! Option name for assign plate ids method with short version.
@@ -156,6 +159,7 @@ namespace
 
 
 GPlatesCli::AssignPlateIdsCommand::AssignPlateIdsCommand() :
+	d_extend_total_reconstruction_poles_to_distant_past(false),
 	d_recon_time(0),
 	d_assign_plate_id(true),
 	d_assign_time_period(false),
@@ -195,6 +199,12 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 			(std::string("load reconstruction feature collection (rotation) file (multiple options allowed) - "
 					"this is optional if '") + RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION +
 					"' is zero.").c_str()
+		)
+		(
+			EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME,
+			boost::program_options::value<bool>(&d_extend_total_reconstruction_poles_to_distant_past)->default_value(false),
+			"extend moving plate rotation sequences back to the distant past such that reconstructed geometries "
+			"are not snapped back to their present day positions (defaults to 'false')."
 		)
 		(
 			ASSIGN_METHOD_OPTION_NAME_WITH_SHORT_OPTION,
@@ -351,10 +361,9 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	const GPlatesAppLogic::ReconstructionTreeCreator default_reconstruction_tree_creator =
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 					reconstruction_feature_collections,
+					d_extend_total_reconstruction_poles_to_distant_past,
 					d_anchor_plate_id,
-					10/*max_num_reconstruction_trees_in_cache*/,
-					// We're not going to modify the reconstruction features so no need to clone...
-					false/*clone_reconstruction_features*/);
+					10/*max_num_reconstruction_trees_in_cache*/);
 
 	// Create the object used to assign plate ids.
 	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =

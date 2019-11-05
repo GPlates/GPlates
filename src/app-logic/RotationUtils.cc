@@ -163,7 +163,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 	while (!last_iteration);
 
 	const FiniteRotation left_rotation = reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
-			->get_composed_absolute_rotation(left_plate_id).first;
+			->get_composed_absolute_rotation(left_plate_id);
 
 	return compose(left_rotation, spreading_rotation);
 }
@@ -227,9 +227,9 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 				reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
 		const GPlatesMaths::FiniteRotation left_rotation =
-				reconstruction_tree->get_composed_absolute_rotation(left_plate_id).first;
+				reconstruction_tree->get_composed_absolute_rotation(left_plate_id);
 		const GPlatesMaths::FiniteRotation right_rotation =
-				reconstruction_tree->get_composed_absolute_rotation(right_plate_id).first;
+				reconstruction_tree->get_composed_absolute_rotation(right_plate_id);
 
 		const GPlatesMaths::FiniteRotation left_to_right = compose(get_reverse(left_rotation), right_rotation);
 
@@ -461,20 +461,20 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 #else
 	// For t1, get the rotation for plate M w.r.t. anchor	
 	GPlatesMaths::FiniteRotation finite_rot_0_to_t1_M = 
-		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
+		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id);
 
 	// For t1, get the rotation for plate F w.r.t. anchor	
 	GPlatesMaths::FiniteRotation finite_rot_0_to_t1_F = 
-		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;
+		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id);
 
 
 	// For t2, get the rotation for plate M w.r.t. anchor	
 	GPlatesMaths::FiniteRotation finite_rot_0_to_t2_M = 
-		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first;
+		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id);
 
 	// For t2, get the rotation for plate F w.r.t. anchor	
 	GPlatesMaths::FiniteRotation finite_rot_0_to_t2_F = 
-		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;
+		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id);
 
 	// Compose these rotations so that we get
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.

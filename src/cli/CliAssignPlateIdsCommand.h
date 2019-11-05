@@ -85,6 +85,12 @@ namespace GPlatesCli
 		GPlatesModel::ModelInterface d_model;
 
 		/**
+		 * Whether each moving plate rotation sequence is extended back to the distant past such that
+		 * reconstructed geometries are not snapped back to their present day positions.
+		 */
+		bool d_extend_total_reconstruction_poles_to_distant_past;
+
+		/**
 		 * The reconstruction time at which to do the cookie-cutting or plate id (re)assigning.
 		 * For most cases this will be present day (0Ma).
 		 */

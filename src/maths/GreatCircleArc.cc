@@ -398,9 +398,7 @@ GPlatesMaths::GreatCircleArc::create_rotated_arc(
 	{
 		// The arc is pointlike, so there is no determinate rotation axis.
 
-		// NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so we
-		// use copy-assignment instead.
-		gca.d_rotation_info = RotationInfo();
+		gca.d_rotation_info = boost::in_place();
 	}
 	else
 	{
@@ -584,9 +582,7 @@ GPlatesMaths::GreatCircleArc::calculate_rotation_info() const
 	if (v.magSqrd() <= 0.0)
 	{
 		// The points are coincident, which means there is no determinate rotation axis.
-		// NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so we
-		// use copy-assignment instead.
-		d_rotation_info = RotationInfo();
+		d_rotation_info = boost::in_place();
 	}
 	else
 	{
