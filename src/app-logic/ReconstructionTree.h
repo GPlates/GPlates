@@ -181,8 +181,25 @@ namespace GPlatesAppLogic
 				d_parent_edge(NULL)
 			{  }
 
+			/**
+			 * Calculates the relative rotation of the associated *graph* edge.
+			 *
+			 * Note that the *tree* edge may reverse this (if @a is_reversed returns true).
+			 */
+			GPlatesMaths::FiniteRotation
+			calculate_graph_edge_relative_rotation() const;
+
 			void
-			cache_relative_rotation() const;
+			cache_relative_rotation() const
+			{
+				d_relative_rotation = calculate_graph_edge_relative_rotation();
+
+				// Reverse the relative rotation if we are reversed wrt the *graph* edge.
+				if (is_reversed())
+				{
+					d_relative_rotation = GPlatesMaths::get_reverse(d_relative_rotation.get());
+				}
+			}
 
 			void
 			cache_composed_absolute_rotation() const;

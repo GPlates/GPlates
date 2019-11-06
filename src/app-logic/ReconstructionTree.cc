@@ -33,8 +33,8 @@
 #include "utils/Profile.h"
 
 
-void
-GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::ReconstructionTree::Edge::calculate_graph_edge_relative_rotation() const
 {
 	// Get the pole samples from the graph edge.
 	const ReconstructionGraph::pole_sample_list_type &pole = d_graph_edge.get_pole();
@@ -58,9 +58,7 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 			{
 				// An exact match!  Hence, we can use the FiniteRotation of the previous time
 				// sample directly, without need for interpolation.
-				d_relative_rotation = prev_pole_sample.get_finite_rotation();
-
-				return;
+				return prev_pole_sample.get_finite_rotation();
 			}
 			else if (pole_sample.get_time_instant().is_distant_past())
 			{
@@ -76,9 +74,7 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 				// This path should only happen when ReconstructionGraph creates extra graph edges
 				// that extend to the distant past, and it keeps the pole constant during this
 				// extended time range, so both previous and current poles should be the same anyway.
-				d_relative_rotation = prev_pole_sample.get_finite_rotation();
-
-				return;
+				return prev_pole_sample.get_finite_rotation();
 			}
 			else if (prev_pole_sample.get_time_instant().is_distant_future())
 			{
@@ -96,9 +92,7 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 				// In other words, the total rotation is constant from present day to the distant future.
 				// If this is not the case then essentially the present-day pole sample will be extended
 				// as if it was constant in the distant future.
-				d_relative_rotation = pole_sample.get_finite_rotation();
-
-				return;
+				return pole_sample.get_finite_rotation();
 			}
 
 			const GPlatesMaths::FiniteRotation &prev_finite_rotation = prev_pole_sample.get_finite_rotation();
@@ -116,21 +110,19 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 			}
 
 			// Interpolate between the previous and current finite rotations.
-			d_relative_rotation = GPlatesMaths::interpolate(
+			return GPlatesMaths::interpolate(
 					prev_finite_rotation,
 					finite_rotation,
 					prev_pole_sample.get_time_instant().value(),
 					pole_sample.get_time_instant().value(),
 					d_reconstruction_time_instant.value(),
 					axis_hint);
-
-			return;
 		}
 	}
 
 	// The reconstruction time must coincide with the time of the last pole sample because
 	// we know that the reconstruction time is contained in the inclusive time bounds of the pole.
-	d_relative_rotation = pole.back().get_finite_rotation();
+	return pole.back().get_finite_rotation();
 }
 
 
