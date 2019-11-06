@@ -1345,6 +1345,8 @@ class RotationModelCase(unittest.TestCase):
                     [rotation for rotation in self.rotations],
                     next(iter(self.rotations))],
                 clone_rotation_features=False)
+        # Create a reference to the same (C++) rotation model.
+        rotation_model_reference = pygplates.RotationModel(rotation_model)
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)
