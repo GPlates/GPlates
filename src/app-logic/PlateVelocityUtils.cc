@@ -1065,10 +1065,10 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 	// Get the finite rotation results for the plate id.
 	boost::optional<GPlatesMaths::FiniteRotation> fr_young =
 			reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/)
-					->get_composed_absolute_rotation(reconstruction_plate_id);
+					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 	boost::optional<GPlatesMaths::FiniteRotation> fr_old =
 			reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/)
-					->get_composed_absolute_rotation(reconstruction_plate_id);
+					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 	// If both times found then calculate velocity as normal.
 	if (fr_young && fr_old)
@@ -1093,10 +1093,10 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 		// Shift velocity calculation such that the time interval [velocity_delta_time, 0] is non-negative.
 		boost::optional<GPlatesMaths::FiniteRotation> fr_zero =
 				reconstruction_tree_creator.get_reconstruction_tree(0)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 		boost::optional<GPlatesMaths::FiniteRotation> fr_delta =
 				reconstruction_tree_creator.get_reconstruction_tree(velocity_delta_time)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 		// If both times found then calculate velocity.
 		if (fr_zero && fr_delta)
@@ -1122,10 +1122,10 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 
 		boost::optional<GPlatesMaths::FiniteRotation> fr_new_young =
 				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.second/*young*/)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 		boost::optional<GPlatesMaths::FiniteRotation> fr_new_old =
 				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.first/*old*/)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 		// If both times found then calculate velocity.
 		if (fr_new_young && fr_new_old)
