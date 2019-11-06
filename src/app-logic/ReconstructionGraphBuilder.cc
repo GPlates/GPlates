@@ -203,6 +203,13 @@ GPlatesAppLogic::ReconstructionGraphBuilder::extend_total_reconstruction_poles_t
 			}
 		}
 
+		// If the oldest incoming edge already goes back to the distant past then
+		// we don't need to create a new edge that extends to the distant past.
+		if (oldest_incoming_edge->get_begin_time().is_distant_past())
+		{
+			continue;
+		}
+
 		// Fixed plate of the oldest incoming edge.
 		ReconstructionGraph::Plate &fixed_plate = *oldest_incoming_edge->d_fixed_plate;
 
