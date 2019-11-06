@@ -45,7 +45,6 @@
 #include "app-logic/ReconstructionGraph.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
-#include "app-logic/ReconstructionTreeEdge.h"
 
 #include "maths/MathsUtils.h"
 
@@ -75,7 +74,7 @@ namespace GPlatesApi
 
 		ReconstructionTreeEdge(
 				GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree,
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge) :
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge) :
 			d_reconstruction_tree(reconstruction_tree),
 			d_edge(edge)
 		{  }
@@ -83,25 +82,25 @@ namespace GPlatesApi
 		GPlatesModel::integer_plate_id_type
 		get_fixed_plate_id() const
 		{
-			return d_edge->fixed_plate();
+			return d_edge.get_fixed_plate();
 		}
 
 		GPlatesModel::integer_plate_id_type
 		get_moving_plate_id() const
 		{
-			return d_edge->moving_plate();
+			return d_edge.get_moving_plate();
 		}
 
 		const GPlatesMaths::FiniteRotation &
 		get_relative_total_rotation() const
 		{
-			return d_edge->relative_rotation();
+			return d_edge.get_relative_rotation();
 		}
 
 		const GPlatesMaths::FiniteRotation &
 		get_equivalent_total_rotation() const
 		{
-			return d_edge->composed_absolute_rotation();
+			return d_edge.get_composed_absolute_rotation();
 		}
 
 		// Helper methods...
@@ -112,7 +111,7 @@ namespace GPlatesApi
 			return d_reconstruction_tree;
 		}
 
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+		const GPlatesAppLogic::ReconstructionTree::Edge &
 		get_edge() const
 		{
 			return d_edge;
@@ -122,8 +121,8 @@ namespace GPlatesApi
 		// Keep the reconstruction tree alive while we're referencing it so not left with dangling pointer.
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type d_reconstruction_tree;
 
-		// The edge (also owned by the reconstruction tree).
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type d_edge;
+		// The edge (owned by the reconstruction tree).
+		const GPlatesAppLogic::ReconstructionTree::Edge &d_edge;
 	};
 
 
@@ -139,7 +138,7 @@ namespace GPlatesApi
 	template <
 			class EdgeIteratorType,
 			// Nontype template parameter is a function pointer that takes an iterator and returns an edge...
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+			const GPlatesAppLogic::ReconstructionTree::Edge &
 					(*edge_from_iterator_unary_func)(EdgeIteratorType)>
 	class ReconstructionTreeEdgeSequenceView
 	{
@@ -158,7 +157,7 @@ namespace GPlatesApi
 
 		/**
 		 * We don't use bp::iterator because we need to convert
-		 * 'GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type' to its equivalent wrapper
+		 * 'const GPlatesAppLogic::ReconstructionTree::Edge &' to its equivalent wrapper
 		 * 'GPlatesApi::ReconstructionTreeEdge'.
 		 */
 		class Iterator
@@ -189,7 +188,7 @@ namespace GPlatesApi
 					boost::python::throw_error_already_set();
 				}
 
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge =
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge =
 						edge_from_iterator_unary_func(d_edges_iter);
 				++d_edges_iter;
 				return ReconstructionTreeEdge(d_reconstruction_tree, edge);
@@ -245,7 +244,7 @@ namespace GPlatesApi
 
 				EdgeIteratorType iter = d_edges_begin;
 				std::advance(iter, index);
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge =
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge =
 						edge_from_iterator_unary_func(iter);
 
 				return bp::object(ReconstructionTreeEdge(d_reconstruction_tree, edge));
@@ -270,7 +269,7 @@ namespace GPlatesApi
 
 
 	template <typename IteratorType>
-	GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_vector_iterator(
 			IteratorType iter)
 	{
@@ -279,13 +278,13 @@ namespace GPlatesApi
 
 	//! Typedef for reconstruction tree edge *vector* sequence view.
 	typedef ReconstructionTreeEdgeSequenceView<
-			GPlatesAppLogic::ReconstructionTreeEdge::edge_collection_type::const_iterator,
-			&edge_from_vector_iterator<GPlatesAppLogic::ReconstructionTreeEdge::edge_collection_type::const_iterator> >
+			GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator,
+			&edge_from_vector_iterator<GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator> >
 					reconstruction_tree_edge_vector_view_type;
 
 
 	template <typename IteratorType>
-	GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_map_iterator(
 			IteratorType iter)
 	{
@@ -294,8 +293,8 @@ namespace GPlatesApi
 
 	//! Typedef for reconstruction tree edge *map* sequence view.
 	typedef ReconstructionTreeEdgeSequenceView<
-			GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator,
-			&edge_from_map_iterator<GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator> >
+			GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator,
+			&edge_from_map_iterator<GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator> >
 					reconstruction_tree_edge_map_view_type;
 
 
@@ -304,14 +303,14 @@ namespace GPlatesApi
 	reconstruction_tree_edge_get_parent_edge(
 			const ReconstructionTreeEdge &reconstruction_tree_edge)
 	{
-		GPlatesAppLogic::ReconstructionTreeEdge *parent_edge =
-				reconstruction_tree_edge.get_edge()->parent_edge();
+		const GPlatesAppLogic::ReconstructionTree::Edge *parent_edge =
+				reconstruction_tree_edge.get_edge().get_parent_edge();
 		if (parent_edge == NULL)
 		{
 			return boost::none;
 		}
 
-		return ReconstructionTreeEdge(reconstruction_tree_edge.get_reconstruction_tree(), parent_edge);
+		return ReconstructionTreeEdge(reconstruction_tree_edge.get_reconstruction_tree(), *parent_edge);
 	}
 
 	// This function moved out of class ReconstructionTreeEdge due to cyclic dependency.
@@ -321,8 +320,8 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_vector_view_type(
 				reconstruction_tree_edge.get_reconstruction_tree(),
-				reconstruction_tree_edge.get_edge()->children_in_built_tree().begin(),
-				reconstruction_tree_edge.get_edge()->children_in_built_tree().end());
+				reconstruction_tree_edge.get_edge().get_child_edges().begin(),
+				reconstruction_tree_edge.get_edge().get_child_edges().end());
 	}
 
 
@@ -370,16 +369,15 @@ namespace GPlatesApi
 			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree,
 			GPlatesModel::integer_plate_id_type moving_plate_id)
 	{
-		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_range_type range =
-				reconstruction_tree->find_edges_whose_moving_plate_id_match(moving_plate_id);
-		if (range.first == range.second)
+		const GPlatesAppLogic::ReconstructionTree::edge_map_type &all_edges = reconstruction_tree->get_all_edges();
+		GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator edge_iter = all_edges.find(moving_plate_id);
+		if (edge_iter == all_edges.end())
 		{
-			// No matches.
+			// No match.
 			return boost::none;
 		}
 
-		// Return first match if more than one match.
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge = range.first->second;
+		const GPlatesAppLogic::ReconstructionTree::Edge &edge = *edge_iter->second;
 		return ReconstructionTreeEdge(reconstruction_tree, edge);
 	}
 
@@ -389,8 +387,8 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_map_view_type(
 				reconstruction_tree,
-				reconstruction_tree->edge_map_begin(),
-				reconstruction_tree->edge_map_end());
+				reconstruction_tree->get_all_edges().begin(),
+				reconstruction_tree->get_all_edges().end());
 	}
 
 	reconstruction_tree_edge_vector_view_type
@@ -399,8 +397,8 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_vector_view_type(
 				reconstruction_tree,
-				reconstruction_tree->rootmost_edges_begin(),
-				reconstruction_tree->rootmost_edges_end());
+				reconstruction_tree->get_anchor_plate_edges().begin(),
+				reconstruction_tree->get_anchor_plate_edges().end());
 	}
 
 	boost::optional<GPlatesMaths::FiniteRotation>
@@ -409,23 +407,19 @@ namespace GPlatesApi
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			bool use_identity_for_missing_plate_ids)
 	{
-		const std::pair<
-				GPlatesMaths::FiniteRotation,
-				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance> result =
-						reconstruction_tree.get_composed_absolute_rotation(moving_plate_id);
-		if (result.second == GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+		const boost::optional<GPlatesMaths::FiniteRotation> finite_rotation =
+				reconstruction_tree.get_composed_absolute_rotation_or_none(moving_plate_id);
+		if (!finite_rotation)
 		{
 			if (use_identity_for_missing_plate_ids)
 			{
-				// It's already an identity rotation.
-				return result.first;
+				return GPlatesMaths::FiniteRotation::create_identity_rotation();
 			}
 
 			return boost::none;
 		}
 
-		// Currently ignoring difference between 'one' and 'one or more' moving plate id matches.
-		return result.first;
+		return finite_rotation.get();
 	}
 
 	boost::optional<GPlatesMaths::FiniteRotation>
@@ -979,8 +973,7 @@ export_reconstruction_tree()
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned "
 				"if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
 				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
-				"go missing and how to work around it. If *plate_id* matches more than one plate id in this "
-				"*ReconstructionTree* then the first match is returned.\n"
+				"go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
@@ -1029,8 +1022,7 @@ export_reconstruction_tree()
 				"\n"
 				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
 				"\n"
-				"  This method is useful if *fixed_plate_id* and *moving_plate_id* have more than one "
-				"edge between them. If *fixed_plate_id* is the *anchored* plate then this method gives the same "
+				"  If *fixed_plate_id* is the *anchored* plate then this method gives the same "
 				"result as :meth:`get_equivalent_total_rotation`. Another way to calculate this result "
 				"is to create a new *ReconstructionTree* using *fixed_plate_id* as the *anchored* plate. "
 				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for a description of some "
@@ -1063,10 +1055,8 @@ export_reconstruction_tree()
 				"  :type moving_plate_id: int\n"
 				"  :rtype: :class:`ReconstructionTreeEdge` or None\n"
 				"\n"
-				"  Returns ``None`` if *moving_plate_id* is the *anchored* plate, or is not found (because a "
-				"total reconstruction pole with that moving plate id was not inserted into the "
-				":class:`ReconstructionTreeBuilder` used to build this reconstruction tree). "
-				"If *moving_plate_id* matches more than one edge then the first match is returned.\n")
+				"  Returns ``None`` if *moving_plate_id* is the *anchored* plate, or is not found "
+				"(not in this reconstruction tree).\n")
 		.def("get_edges",
 				&GPlatesApi::reconstruction_tree_get_edges,
 				"get_edges()\n"
