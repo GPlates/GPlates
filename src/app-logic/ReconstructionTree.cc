@@ -33,8 +33,8 @@
 #include "utils/Profile.h"
 
 
-void
-GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::ReconstructionTree::Edge::calculate_graph_edge_relative_rotation() const
 {
 	// Get the pole samples from the graph edge.
 	const ReconstructionGraph::pole_sample_list_type &pole = d_graph_edge.get_pole();
@@ -58,27 +58,41 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 			{
 				// An exact match!  Hence, we can use the FiniteRotation of the previous time
 				// sample directly, without need for interpolation.
-				d_relative_rotation = prev_pole_sample.get_finite_rotation();
-
-				return;
+				return prev_pole_sample.get_finite_rotation();
 			}
 			else if (pole_sample.get_time_instant().is_distant_past())
 			{
 				// We now allow the oldest time sample to be distant-past (+Infinity).
 				//
 				// Since the pole is infinitely far in the past it essentially would get ignored if we
-				// interpolated between it and the previous pole (for the current reconstruction time).
+				// interpolated between it and the previous pole (at the reconstruction time).
 				// In other words the interpolation ratio would be '(t - t_prev) / (Inf - t_prev)'
-				// which is zero, and so the distant-past pole would get zero weighting.
+				// which is zero, and so the distant-past (current) pole would get zero weighting.
 				//
 				// So we just use the previous pole.
 				//
 				// This path should only happen when ReconstructionGraph creates extra graph edges
 				// that extend to the distant past, and it keeps the pole constant during this
 				// extended time range, so both previous and current poles should be the same anyway.
-				d_relative_rotation = prev_pole_sample.get_finite_rotation();
-
-				return;
+				return prev_pole_sample.get_finite_rotation();
+			}
+			else if (prev_pole_sample.get_time_instant().is_distant_future())
+			{
+				// We now allow the youngest time sample to be distant-future (-Infinity).
+				//
+				// Since the previous pole is infinitely far in the future it essentially would get ignored
+				// if we interpolated between it and the current pole (at the reconstruction time).
+				// In other words the interpolation ratio would be '(t - -Inf) / (t_curr - -Inf)'
+				// which is one, and so the distant-future (prev) pole would get zero (1.0 - 1.0 = 0.0) weighting.
+				//
+				// So we just use the current pole.
+				//
+				// It is assumed that the user is only creating a pole sample at the distant-future
+				// to extend, for example, a present-day pole sample into the future.
+				// In other words, the total rotation is constant from present day to the distant future.
+				// If this is not the case then essentially the present-day pole sample will be extended
+				// as if it was constant in the distant future.
+				return pole_sample.get_finite_rotation();
 			}
 
 			const GPlatesMaths::FiniteRotation &prev_finite_rotation = prev_pole_sample.get_finite_rotation();
@@ -96,21 +110,19 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 			}
 
 			// Interpolate between the previous and current finite rotations.
-			d_relative_rotation = GPlatesMaths::interpolate(
+			return GPlatesMaths::interpolate(
 					prev_finite_rotation,
 					finite_rotation,
 					prev_pole_sample.get_time_instant().value(),
 					pole_sample.get_time_instant().value(),
 					d_reconstruction_time_instant.value(),
 					axis_hint);
-
-			return;
 		}
 	}
 
 	// The reconstruction time must coincide with the time of the last pole sample because
 	// we know that the reconstruction time is contained in the inclusive time bounds of the pole.
-	d_relative_rotation = pole.back().get_finite_rotation();
+	return pole.back().get_finite_rotation();
 }
 
 

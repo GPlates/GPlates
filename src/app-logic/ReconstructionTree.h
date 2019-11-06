@@ -181,8 +181,25 @@ namespace GPlatesAppLogic
 				d_parent_edge(NULL)
 			{  }
 
+			/**
+			 * Calculates the relative rotation of the associated *graph* edge.
+			 *
+			 * Note that the *tree* edge may reverse this (if @a is_reversed returns true).
+			 */
+			GPlatesMaths::FiniteRotation
+			calculate_graph_edge_relative_rotation() const;
+
 			void
-			cache_relative_rotation() const;
+			cache_relative_rotation() const
+			{
+				d_relative_rotation = calculate_graph_edge_relative_rotation();
+
+				// Reverse the relative rotation if we are reversed wrt the *graph* edge.
+				if (is_reversed())
+				{
+					d_relative_rotation = GPlatesMaths::get_reverse(d_relative_rotation.get());
+				}
+			}
 
 			void
 			cache_composed_absolute_rotation() const;
@@ -311,22 +328,8 @@ namespace GPlatesAppLogic
 		 * Get the composed absolute rotation which describes the motion of @a
 		 * moving_plate_id relative to the anchor plate ID.
 		 *
-		 * If the motion of @a moving_plate_id is not described by this tree, the identity
-		 * rotation will be returned.
+		 * If the motion of @a moving_plate_id is not described by this tree, then none is returned.
 		 */
-		GPlatesMaths::FiniteRotation
-		get_composed_absolute_rotation(
-				GPlatesModel::integer_plate_id_type moving_plate_id) const
-		{
-			boost::optional<const Edge &> edge = get_edge(moving_plate_id);
-			if (!edge)
-			{
-				return GPlatesMaths::FiniteRotation::create_identity_rotation();
-			}
-
-			return edge->get_composed_absolute_rotation();
-		}
-
 		/**
 		 * Same as @a get_composed_absolute_rotation except returns boost::none if
 		 * the motion of @a moving_plate_id is not described by this tree.
@@ -335,6 +338,14 @@ namespace GPlatesAppLogic
 		get_composed_absolute_rotation_or_none(
 				GPlatesModel::integer_plate_id_type moving_plate_id) const
 		{
+			// There's no edge with a *moving* plate equal to the anchor plate (since the anchor
+			// plate can only be the *fixed* plate of edges emanating from the root of the tree).
+			// However a rotation of the anchor plate relative to itself is the identity rotation.
+			if (moving_plate_id == d_anchor_plate_id)
+			{
+				return GPlatesMaths::FiniteRotation::create_identity_rotation();
+			}
+
 			boost::optional<const Edge &> edge = get_edge(moving_plate_id);
 			if (!edge)
 			{
@@ -342,6 +353,27 @@ namespace GPlatesAppLogic
 			}
 
 			return edge->get_composed_absolute_rotation();
+		}
+
+		/**
+		 * Get the composed absolute rotation which describes the motion of @a
+		 * moving_plate_id relative to the anchor plate ID.
+		 *
+		 * If the motion of @a moving_plate_id is not described by this tree, then
+		 * the identity rotation will be returned.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_composed_absolute_rotation(
+				GPlatesModel::integer_plate_id_type moving_plate_id) const
+		{
+			boost::optional<GPlatesMaths::FiniteRotation> composed_absolute_rotation =
+					get_composed_absolute_rotation_or_none(moving_plate_id);
+			if (!composed_absolute_rotation)
+			{
+				return GPlatesMaths::FiniteRotation::create_identity_rotation();
+			}
+
+			return composed_absolute_rotation.get();
 		}
 
 	private:
