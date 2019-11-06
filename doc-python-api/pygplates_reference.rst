@@ -113,15 +113,13 @@ Rotation
    pygplates.RotationModel
    pygplates.FiniteRotation
 
-.. note:: ``ReconstructionTreeBuilder`` and ``ReconstructionTreeEdge``
-   are only needed for very advanced scenarios.
+.. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
    pygplates.ReconstructionTree
-   pygplates.ReconstructionTreeBuilder
    pygplates.ReconstructionTreeEdge
 
 Functions to find and fix finite rotation crossovers (transitions of fixed plate):
