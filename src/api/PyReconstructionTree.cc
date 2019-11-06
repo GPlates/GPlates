@@ -326,8 +326,13 @@ namespace GPlatesApi
 	}
 
 
+	/**
+	 * DEPRECATED - Creating a ReconstructionTree directly from rotation features is now deprecated.
+	 *              We'll still allow it but it is no longer documented.
+	 *              It is recommended users create ReconstructionTree's using a RotationModel.
+	 */
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-	reconstruction_tree_create(
+	deprecated_reconstruction_tree_create(
 			const FeatureCollectionSequenceFunctionArgument &rotation_features,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id = 0)
@@ -351,7 +356,10 @@ namespace GPlatesApi
 			feature_collection_refs.push_back(feature_collection->reference());
 		}
 
-		// TODO: Don't create a ReconstructionGraph each time a ReconstructionTree is created.
+		// Normally we wouldn't create a ReconstructionGraph each time a ReconstructionTree is created
+		// (because a single ReconstructionGraph can create many ReconstructionTree's at different times).
+		// However this is a deprecated function, so users should plan to stop using it
+		// (in favour of RotationModel.get_reconstruction_tree()).
 		const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
 				GPlatesAppLogic::create_reconstruction_graph(
 						feature_collection_refs,
@@ -747,40 +755,19 @@ export_reconstruction_tree()
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
+		// DEPRECATED - Creating a ReconstructionTree directly from rotation features is now deprecated.
+		//              We'll still allow it but it is no longer documented.
+		//              It is recommended users create ReconstructionTree's using a RotationModel...
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::reconstruction_tree_create,
+						&GPlatesApi::deprecated_reconstruction_tree_create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_time"),
 							bp::arg("anchor_plate_id") = 0)),
-				"__init__(rotation_features, reconstruction_time, [anchor_plate_id=0])\n"
-				"  Create a plate-reconstruction hierarchy at the specified reconstruction time "
-				"with *equivalent* rotations relative to the specified anchored plate.\n"
-				"\n"
-				"  :param rotation_features: A rotation feature collection, or rotation filename, or "
-				"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
-				"of any combination of those four types\n"
-				"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
-				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-				"  :param reconstruction_time: the time at which to generate the reconstruction tree\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
-				"are calculated with respect to\n"
-				"  :type anchor_plate_id: int\n"
-				"  :raises: InterpolationError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
-				"\n"
-				"  Note that *rotation_features* can be a rotation :class:`FeatureCollection` or a "
-				"rotation filename or a rotation :class:`Feature` or a sequence of rotation :class:`features<Feature>`, "
-				"or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.\n"
-				"\n"
-				"  If any rotation filenames are specified then this method uses "
-				":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
-				"\n"
-				"  .. note:: The anchored plate id can be any plate id (does not have to be zero). "
-				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n")
+				"__init__()\n"
+				"  This class cannot be instantiated from Python. "
+				"Instead, use :meth:`RotationModel.get_reconstruction_tree` to create an instance of this class.\n")
 		.def("get_equivalent_stage_rotation",
 				&GPlatesApi::get_equivalent_stage_rotation,
 				(bp::arg("from_reconstruction_tree"),
@@ -1268,7 +1255,7 @@ export_reconstruction_tree()
 			GPlatesAppLogic::ReconstructionGraphBuilder,
 			boost::noncopyable>(
 					"ReconstructionTreeBuilder",
-					bp::init<>("__init__()\n")) // Sphinx autosummary complains if signature not present in docstring.
+					bp::init<>())
 		.def("insert_total_reconstruction_pole",
 				&GPlatesApi::deprecated_reconstruction_tree_builder_insert_total_reconstruction_pole,
 				(bp::arg("fixed_plate_id"), bp::arg("moving_plate_id"), bp::arg("total_reconstruction_pole")))
