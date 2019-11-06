@@ -67,9 +67,9 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 				// We now allow the oldest time sample to be distant-past (+Infinity).
 				//
 				// Since the pole is infinitely far in the past it essentially would get ignored if we
-				// interpolated between it and the previous pole (for the current reconstruction time).
+				// interpolated between it and the previous pole (at the reconstruction time).
 				// In other words the interpolation ratio would be '(t - t_prev) / (Inf - t_prev)'
-				// which is zero, and so the distant-past pole would get zero weighting.
+				// which is zero, and so the distant-past (current) pole would get zero weighting.
 				//
 				// So we just use the previous pole.
 				//
@@ -77,6 +77,26 @@ GPlatesAppLogic::ReconstructionTree::Edge::cache_relative_rotation() const
 				// that extend to the distant past, and it keeps the pole constant during this
 				// extended time range, so both previous and current poles should be the same anyway.
 				d_relative_rotation = prev_pole_sample.get_finite_rotation();
+
+				return;
+			}
+			else if (prev_pole_sample.get_time_instant().is_distant_future())
+			{
+				// We now allow the youngest time sample to be distant-future (-Infinity).
+				//
+				// Since the previous pole is infinitely far in the future it essentially would get ignored
+				// if we interpolated between it and the current pole (at the reconstruction time).
+				// In other words the interpolation ratio would be '(t - -Inf) / (t_curr - -Inf)'
+				// which is one, and so the distant-future (prev) pole would get zero (1.0 - 1.0 = 0.0) weighting.
+				//
+				// So we just use the current pole.
+				//
+				// It is assumed that the user is only creating a pole sample at the distant-future
+				// to extend, for example, a present-day pole sample into the future.
+				// In other words, the total rotation is constant from present day to the distant future.
+				// If this is not the case then essentially the present-day pole sample will be extended
+				// as if it was constant in the distant future.
+				d_relative_rotation = pole_sample.get_finite_rotation();
 
 				return;
 			}
