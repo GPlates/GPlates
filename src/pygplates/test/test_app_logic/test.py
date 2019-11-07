@@ -1330,6 +1330,10 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.OpenFileForReadingError,
                 pygplates.RotationModel,
                 [ 'non_existent_file.rot' ])
+        #
+        # UPDATE: Argument 'clone_rotation_features' is deprecated in revision 25.
+        #         And argument 'extend_total_reconstruction_poles_to_distant_past' was added in revision 25.
+        #
         # Create using feature collections instead of filenames.
         rotation_model = pygplates.RotationModel([self.rotations], clone_rotation_features=False)
         # Create using a single feature collection.
@@ -1347,6 +1351,33 @@ class RotationModelCase(unittest.TestCase):
                 clone_rotation_features=False)
         # Create a reference to the same (C++) rotation model.
         rotation_model_reference = pygplates.RotationModel(rotation_model)
+        
+        # Test extending total reconstruction poles to distant past.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # Deprecated version (triggered by explicitly specifying 'clone_rotation_features' argument) is also an un-extended model.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, clone_rotation_features=False)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, clone_rotation_features=True)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, extend_total_reconstruction_poles_to_distant_past=False)
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # This should choose the 'extend_total_reconstruction_poles_to_distant_past' __init__ overload instead of the
+        # deprecated (not documented) overload accepting 'clone_rotation_features'.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, 100, False)
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        
+        rotation_model_extended = pygplates.RotationModel(self.rotations, extend_total_reconstruction_poles_to_distant_past=True)
+        # But at 1000Ma there are rotations (for extended model).
+        self.assertTrue(rotation_model_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # This should still choose the 'extend_total_reconstruction_poles_to_distant_past' __init__ overload instead of the
+        # deprecated (not documented) overload accepting 'clone_rotation_features'.
+        rotation_model_extended = pygplates.RotationModel(self.rotations, 100, True)
+        self.assertTrue(rotation_model_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)

@@ -482,6 +482,10 @@ export_rotation_model()
 			"    rotation_adjustments = pygplates.FeatureCollection()\n"
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
+			"\n"
+			"  .. versionchanged:: 25\n"
+			"     Added *extend_total_reconstruction_poles_to_distant_past* argument and "
+			"removed *clone_rotation_features* argument.\n"
 			;
 
 	//
@@ -513,7 +517,10 @@ export_rotation_model()
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		// Define deprecated '__init__' first since later definitions get higher priority.
+		// Define deprecated '__init__' first since we want it to have lowest priority
+		// (later definitions get higher priority). This is important because the overload accepting
+		// 'extend_total_reconstruction_poles_to_distant_past' argument has the exact same argument types
+		// (only the argument names differ).
 		// Also exclude a docstring for it, since we don't want it documented anymore...
 		.def("__init__",
 				bp::make_constructor(
