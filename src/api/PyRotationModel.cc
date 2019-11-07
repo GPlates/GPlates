@@ -168,10 +168,10 @@ namespace GPlatesApi
 				unsigned int reconstruction_tree_cache_size,
 				bool clone_rotation_features)
 		{
+			// Ignore deprecated 'clone_rotation_features' argument.
 			return RotationModel::create(
 					rotation_features,
-					reconstruction_tree_cache_size,
-					clone_rotation_features);
+					reconstruction_tree_cache_size);
 		}
 
 		/**
