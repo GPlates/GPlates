@@ -766,8 +766,9 @@ export_reconstruction_tree()
 							bp::arg("reconstruction_time"),
 							bp::arg("anchor_plate_id") = 0)),
 				"__init__()\n"
-				"  This class cannot be instantiated from Python. "
-				"Instead, use :meth:`RotationModel.get_reconstruction_tree` to create an instance of this class.\n")
+				"\n"
+				"  .. deprecated:: 25\n"
+				"     Use :meth:`RotationModel.get_reconstruction_tree` instead.\n")
 		.def("get_equivalent_stage_rotation",
 				&GPlatesApi::get_equivalent_stage_rotation,
 				(bp::arg("from_reconstruction_tree"),
