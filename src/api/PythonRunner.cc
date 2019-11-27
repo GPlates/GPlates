@@ -57,7 +57,12 @@ GPlatesApi::PythonRunner::PythonRunner(
 		d_console = eval("code.InteractiveConsole(locals())", d_namespace, d_namespace);
 		PyRun_SimpleString("del code");
 
-		object builtin_module = import("__builtin__");
+		object builtin_module =
+#if PY_MAJOR_VERSION >= 3
+			import("builtins");
+#else
+			import("__builtin__");
+#endif
 		d_compile = builtin_module.attr("compile");
 		d_eval = builtin_module.attr("eval");
 	}

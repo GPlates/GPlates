@@ -281,7 +281,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
 	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
 	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
-	modules __builtin__, __main__ and sys. It also initializes the module search path (sys.path). 
+	modules __builtin__ ('builtins' for Python 3), __main__ and sys. It also initializes the module search path (sys.path). 
 	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
 	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
 	if the initialization fails.
@@ -315,6 +315,9 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	//The objective of the following code is mysterious to me. 
 	//Comment out them until I figure out the purpose of these code.
 	//At least one crash is caused by deleting python built-in functions.
+	//
+	// NOTE: Python 3 names the "__builtin__" module "builtins"
+	// (in case this code is later uncommented).
 #if 0
 	// Importing "sys" enables the printing of the value of expressions in
 	// the interactive Python console window, and importing "builtin" enables
