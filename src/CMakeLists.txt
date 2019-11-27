@@ -28,7 +28,6 @@ if(NOT GPLATES_NO_PYTHON)
 		else(NOT GPLATES_PYTHON_3)
 			set(boost_components ${boost_components} python3)
 		endif(NOT GPLATES_PYTHON_3)
-		set(boost_components ${boost_components} python)
 	endif()
 endif(NOT GPLATES_NO_PYTHON)
 
