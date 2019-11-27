@@ -132,15 +132,14 @@ GLEW
 
 Python
   1. Download, and install, the latest 2.7 Windows MSI installer (eg, 'http://www.python.org/downloads/').
-     * Download the 32-bit installer for a 32-bit build (eg, 'python-2.7.16.msi'), or
-       download the 64-bit installer for a 64-bit build (eg, 'python-2.7.16.amd64.msi).
+     * Download the 32-bit installer for a 32-bit build (eg, 'python-2.7.17.msi'), or
+       download the 64-bit installer for a 64-bit build (eg, 'python-2.7.17.amd64.msi).
      * Note that GPlates (and pygplates) currently only support the Python 2 series (not Python 3).
      * Ideally you should install 2.7.15 (or later in the Python 2 series) since it includes 'pip' by default
        which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
-  2. Add the base Python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
-  3. Add the base Python directory to the PYTHONHOME environment variable.
-  4. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
-  5. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
+  2. Add the base Python directory and 'libs/' and 'Scripts/' and 'DLLs/' sub-directories to the PATH environment variable.
+  3. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
+  4. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.
 
 Boost
@@ -169,8 +168,12 @@ Boost
   and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
   then, at runtime, the python DLL (version 2.7) should exist in the PATH.
   To get boost to find python at compile time you might also need to add something like...
-     using python : 2.7 : C:\\SDK\\python\\Python-2.7.16 : C:\\SDK\\python\\Python-2.7.16\\Include : C:\\SDK\\python\\Python-2.7.16\\libs ;
-  ...for example to "user-config.jam" in your home directory(see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html )
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.17 : C:\\SDK\\python\\Python-2.7.17\\Include : C:\\SDK\\python\\Python-2.7.17\\libs ;
+  ...for example to "user-config.jam" (in your home directory)- see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html
+  If you have multiple versions of python installed then specify multiple lines, for example:
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.17 ;
+     using python : 3.7 : C:\\SDK\\python\\Python-3.7.5 ;
+  ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
   Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
   exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
   - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
