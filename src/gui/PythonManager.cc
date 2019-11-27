@@ -123,6 +123,15 @@ GPlatesGui::PythonManager::initialize(
 void
 GPlatesGui::PythonManager::check_python_capability()
 {
+	// FIXME: For some reason importing 'sys' is required for Python 3.
+	//
+	// This was discovered because 'register_utils_scripts()' seemed to work,
+	// but the code below did not. And the only difference is 'set_python_prefix()'
+	// is called between them and that calls 'bp::import("sys")'.
+#if PY_MAJOR_VERSION >= 3
+	bp::import("sys");
+#endif
+
 	QString test_code = QString() +
 			"from __future__ import print_function;" +
 			"print(\'******Start testing python capability******\');" +
