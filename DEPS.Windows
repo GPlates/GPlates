@@ -138,6 +138,8 @@ Python
      * Ideally you should install 2.7.15 (or later in the Python 2 series) since it includes 'pip' by default
        which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
   2. Add the base Python directory and 'libs/' and 'Scripts/' and 'DLLs/' sub-directories to the PATH environment variable.
+     * Note: Make sure you add these higher in the PATH than "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps" because
+             Windows 10 May 2019 update now places a redirect python.exe in there that takes you straight to the Microsoft Store.
   3. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
   4. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.

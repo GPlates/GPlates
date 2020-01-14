@@ -1352,6 +1352,17 @@ class RotationModelCase(unittest.TestCase):
         # Create a reference to the same (C++) rotation model.
         rotation_model_reference = pygplates.RotationModel(rotation_model)
         
+        # Test using a non-zero default anchor plate ID.
+        rotation_model_non_zero_default_anchor = pygplates.RotationModel(self.rotations, default_anchor_plate_id=802)
+        self.assertTrue(rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802).represents_identity_rotation())
+        self.assertFalse(rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802, anchor_plate_id=0).represents_identity_rotation())
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802),
+                self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=802)))
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802, anchor_plate_id=0),
+                self.rotation_model.get_rotation(self.to_time, 802)))
+        
         # Test extending total reconstruction poles to distant past.
         rotation_model_not_extended = pygplates.RotationModel(self.rotations)
         # At 1000Ma there are no rotations (for un-extended model).
