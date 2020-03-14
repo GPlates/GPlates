@@ -161,7 +161,7 @@ namespace GPlatesApi
 		get_rotation(
 				const GPlatesPropertyValues::GeoTimeInstant &to_time,
 				GPlatesModel::integer_plate_id_type moving_plate_id,
-				const GPlatesPropertyValues::GeoTimeInstant &from_time,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> from_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
 				bool use_identity_for_missing_plate_ids);

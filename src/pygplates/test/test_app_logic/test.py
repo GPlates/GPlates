@@ -1448,6 +1448,32 @@ class RotationModelCase(unittest.TestCase):
                         self.to_reconstruction_tree,
                         802,
                         291)))
+        
+        # Ensure that specifying 'from_time' at present day (ie, 0Ma) does not assume zero finite rotation (at present day).
+        non_zero_present_day_rotation_model = pygplates.RotationModel(
+            pygplates.Feature.create_total_reconstruction_sequence(
+                0,
+                801,
+                pygplates.GpmlIrregularSampling([
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                            pygplates.FiniteRotation((0, 0), 1.57)),
+                        0.0), # non-zero finite rotation at present day
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                            pygplates.FiniteRotation.create_identity_rotation()),
+                        10.0)
+                    ])))
+        # Non-zero finite rotation.
+        self.assertFalse(non_zero_present_day_rotation_model.get_rotation(0.0, 801).represents_identity_rotation())
+        # Just looks at 10Ma.
+        self.assertTrue(non_zero_present_day_rotation_model.get_rotation(10.0, 801).represents_identity_rotation())
+        # 10Ma relative to non-zero finite rotation at present day.
+        #
+        #   R(0->time, A->Plate) = R(time, A->Plate) * inverse[R(0, A->Plate)]
+        self.assertTrue(
+            non_zero_present_day_rotation_model.get_rotation(10.0, 801, 0.0) ==
+            non_zero_present_day_rotation_model.get_rotation(10.0, 801) * non_zero_present_day_rotation_model.get_rotation(0.0, 801).get_inverse())
 
 
 def suite():

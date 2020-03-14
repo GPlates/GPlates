@@ -315,21 +315,21 @@ boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesApi::RotationModel::get_rotation(
 		const GPlatesPropertyValues::GeoTimeInstant &to_time,
 		GPlatesModel::integer_plate_id_type moving_plate_id,
-		const GPlatesPropertyValues::GeoTimeInstant &from_time,
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> from_time,
 		boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
 		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
 		bool use_identity_for_missing_plate_ids)
 {
 	// Times must not be distant past/future.
 	GPlatesGlobal::Assert<InterpolationException>(
-			to_time.is_real() && from_time.is_real(),
+			to_time.is_real() && (!from_time || from_time->is_real()),
 			GPLATES_ASSERTION_SOURCE,
 			"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
 			get_reconstruction_tree(to_time, anchor_plate_id);
 
-	if (from_time == GPlatesPropertyValues::GeoTimeInstant(0))
+	if (!from_time)
 	{
 		if (!fixed_plate_id)
 		{
@@ -349,7 +349,7 @@ GPlatesApi::RotationModel::get_rotation(
 	}
 
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type from_reconstruction_tree =
-			get_reconstruction_tree(from_time, anchor_plate_id);
+			get_reconstruction_tree(from_time.get(), anchor_plate_id);
 
 	if (!fixed_plate_id)
 	{
@@ -587,11 +587,11 @@ export_rotation_model()
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
 					bp::arg("moving_plate_id"),
-					bp::arg("from_time") = 0,
+					bp::arg("from_time") = boost::optional<GPlatesPropertyValues::GeoTimeInstant>(),
 					bp::arg("fixed_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("use_identity_for_missing_plate_ids") = true),
-				"get_rotation(to_time, moving_plate_id, [from_time=0], [fixed_plate_id], [anchor_plate_id]"
+				"get_rotation(to_time, moving_plate_id, [from_time], [fixed_plate_id], [anchor_plate_id]"
 				", [use_identity_for_missing_plate_ids=True])\n"
 				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time *from_time* to the time *to_time*.\n"
@@ -648,10 +648,10 @@ export_rotation_model()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_rotation(rotation_model, to_time, moving_plate_id, from_time=0, "
+				"    def get_rotation(rotation_model, to_time, moving_plate_id, from_time=None, "
 				"fixed_plate_id=None, anchor_plate_id=None):\n"
 				"        \n"
-				"        if from_time == 0:\n"
+				"        if from_time is None:\n"
 				"            if fixed_plate_id is None:\n"
 				"                return rotation_model.get_reconstruction_tree(to_time, anchor_plate_id)"
 				".get_equivalent_total_rotation(moving_plate_id)\n"
@@ -671,9 +671,17 @@ export_rotation_model()
 				"            moving_plate_id,\n"
 				"            fixed_plate_id)\n"
 				"\n"
+				"  .. note:: Explicitly setting *from_time* to zero can give a different result than not "
+				"specifying *from_time* at all if the moving plate (or fixed plate) has a non-zero finite rotation "
+				"at present day (relative to the anchor plate). However all present-day finite rotations should "
+				"ideally be zero (identity), so typically there should not be a difference.\n"
+				"\n"
 				"  .. versionchanged:: 26\n"
 				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
-				"in :meth:`constructor<__init__>`).\n")
+				"\n"
+				"  .. versionchanged:: 27\n"
+				"     *from_time* no longer defaults to zero, and no longer assumes present day "
+				"rotations are identity (zero) rotations\n")
 		.def("get_reconstruction_tree",
 				&GPlatesApi::RotationModel::get_reconstruction_tree,
 				(bp::arg("reconstruction_time"),
