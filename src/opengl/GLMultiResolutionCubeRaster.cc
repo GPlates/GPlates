@@ -359,6 +359,12 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	const GLTransform::non_null_ptr_to_const_type view_transform =
 			cube_subdivision_cache.get_view_transform(cube_subdivision_cache_node);
 
+	// Multiply the current world transform into the model-view matrix.
+	GLMatrix world_model_view_transform_matrix(view_transform->get_matrix());
+	world_model_view_transform_matrix.gl_mult_matrix(d_world_transform);
+	const GLTransform::non_null_ptr_to_const_type world_model_view_transform =
+			GLTransform::create(world_model_view_transform_matrix);
+
 	// Set the projection transform.
 	// Get the expanded tile frustum (by half a texel around the border of the frustum).
 	// This causes the texel centres of the border tile texels to fall right on the edge
@@ -375,7 +381,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	unsigned int tile_level_of_detail = boost::numeric_cast<unsigned int>(
 			d_multi_resolution_raster->clamp_level_of_detail(
 					d_multi_resolution_raster->get_level_of_detail(
-							view_transform->get_matrix(),
+							world_model_view_transform_matrix,
 							half_texel_expanded_projection_transform->get_matrix(),
 							viewport)));
 	// If we can use a lower-resolution level-of-detail just for this tile then might as well
@@ -398,15 +404,11 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 				d_multi_resolution_raster->clamp_level_of_detail(source_level_of_detail));
 	}
 
-	// Multiply the current world transform into the model-view matrix.
-	GLMatrix world_model_view_transform(view_transform->get_matrix());
-	world_model_view_transform.gl_mult_matrix(d_world_transform);
-
 	// Get the source tiles that are visible in the current view frustum.
 	std::vector<GLMultiResolutionRaster::tile_handle_type> source_raster_tile_handles;
 	d_multi_resolution_raster->get_visible_tiles(
 			source_raster_tile_handles,
-			world_model_view_transform,
+			world_model_view_transform_matrix,
 			half_texel_expanded_projection_transform->get_matrix(),
 			tile_level_of_detail);
 
@@ -422,7 +424,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 			d_cube_quad_tree->create_node(
 					CubeQuadTreeNode(
 							tile_level_of_detail,
-							view_transform,
+							world_model_view_transform,
 							half_texel_expanded_projection_transform,
 							d_texture_cache->allocate_volatile_object()));
 
@@ -601,10 +603,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		// Multiply in the projection matrix.
 		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
-		// The model-view matrix.
-		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-		// Multiply in the requested world transform.
-		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
+		// The world model-view matrix (with world transform multiplied in).
+		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_world_model_view_transform->get_matrix());
 
 		// Clear the frame buffer as appropriate for the source raster type.
 		//

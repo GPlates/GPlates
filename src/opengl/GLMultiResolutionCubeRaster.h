@@ -430,13 +430,13 @@ namespace GPlatesOpenGL
 		{
 			CubeQuadTreeNode(
 					unsigned int tile_level_of_detail_,
-					const GLTransform::non_null_ptr_to_const_type &view_transform_,
+					const GLTransform::non_null_ptr_to_const_type &world_model_view_transform_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				// Starts off as true (and later gets set to false if this is an internal node)...
 				d_is_leaf_node(true),
 				d_tile_level_of_detail(tile_level_of_detail_),
-				d_view_transform(view_transform_),
+				d_world_model_view_transform(world_model_view_transform_),
 				d_projection_transform(projection_transform_),
 				d_tile_texture(tile_texture_)
 			{  }
@@ -453,8 +453,8 @@ namespace GPlatesOpenGL
 			 */
 			unsigned int d_tile_level_of_detail;
 
-			//! View transform used to render source raster into current tile.
-			GLTransform::non_null_ptr_to_const_type d_view_transform;
+			//! World model view transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_world_model_view_transform;
 
 			//! Projection transform used to render source raster into current tile.
 			GLTransform::non_null_ptr_to_const_type d_projection_transform;
