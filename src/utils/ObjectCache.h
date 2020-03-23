@@ -548,7 +548,7 @@ namespace GPlatesUtils
 			 * happen until the object cache gets destroyed but it can't get destroyed
 			 * if we're keeping it alive with a shared_ptr.
 			 *
-			 * The sublety is that 'this' volatile can get returned to the pool but
+			 * The subtlety is that 'this' volatile can get returned to the pool but
 			 * not necessarily destroyed.
 			 */
 			object_cache_type *d_object_cache;
