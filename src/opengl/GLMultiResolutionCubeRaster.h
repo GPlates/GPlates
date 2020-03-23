@@ -463,13 +463,6 @@ namespace GPlatesOpenGL
 			mutable std::vector<GLMultiResolutionRaster::tile_handle_type> d_src_raster_tiles;
 
 			/**
-			 * Keeps track of the visible source tiles contributing to this tile.
-			 *
-			 * The set of source tiles changes when the world transform is modified.
-			 */
-			mutable GPlatesUtils::ObserverToken d_visible_source_tiles_observer_token;
-
-			/**
 			 * The texture representation of the raster data for this tile.
 			 */
 			tile_texture_cache_type::volatile_object_ptr_type d_tile_texture;
@@ -594,9 +587,6 @@ namespace GPlatesOpenGL
 		 * The transform to use when rendering into the cube quad tree tiles.
 		 */
 		GLMatrix d_world_transform;
-
-		//! Keep track of changes to @a d_world_transform.
-		GPlatesUtils::SubjectToken d_world_transform_subject;
 
 
 		//! Constructor.

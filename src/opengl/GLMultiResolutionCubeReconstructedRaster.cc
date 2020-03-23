@@ -120,15 +120,19 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::set_world_transform(
 		const GLMatrix &world_transform)
 {
-	d_world_transform = world_transform;
-
-	// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
-	// This will force an update when the textures are subsequently requested.
-	cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
-	for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+	// If the world transform has changed then set it, and mark all our texture tiles dirty.
+	if (d_world_transform != world_transform)
 	{
-		CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
-		cube_quad_tree_node.d_source_texture_observer_token.reset();
+		d_world_transform = world_transform;
+
+		// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
+		// This will force an update when the textures are subsequently requested.
+		cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
+		for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+		{
+			CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
+			cube_quad_tree_node.d_source_texture_observer_token.reset();
+		}
 	}
 }
 
