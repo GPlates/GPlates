@@ -505,7 +505,32 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_world_transform(
 		// Note that the tile 'textures' are not re-generated here (only regenerated in 'get_tile_texture()').
 		d_cube_quad_tree->clear();
 		initialise_cube_quad_trees();
+
+		// Let any clients know that they're now out-of-date (since our cube map texture has a new orientation).
+		d_subject_token.invalidate();
 	}
+}
+
+
+const GPlatesUtils::SubjectToken &
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_subject_token() const
+{
+	//
+	// This covers changes to the inputs that don't require completely re-creating the inputs.
+	// That is beyond our scope and is detected and managed by our owners (and owners of our inputs).
+	//
+
+	// If the source raster has changed.
+	if (!d_multi_resolution_raster->get_subject_token().is_observer_up_to_date(
+				d_multi_resolution_raster_observer_token))
+	{
+		d_subject_token.invalidate();
+
+		d_multi_resolution_raster->get_subject_token().update_observer(
+				d_multi_resolution_raster_observer_token);
+	}
+
+	return d_subject_token;
 }
 
 

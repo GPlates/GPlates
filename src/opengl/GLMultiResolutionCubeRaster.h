@@ -274,12 +274,7 @@ namespace GPlatesOpenGL
 		 */
 		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const
-		{
-			// We'll just use the subject token of the raster source - if they don't change then neither do we.
-			// If we had two input sources then we'd have to have our own subject token.
-			return d_multi_resolution_raster->get_subject_token();
-		}
+		get_subject_token() const;
 
 
 		/**
@@ -547,6 +542,11 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionRaster::non_null_ptr_type d_multi_resolution_raster;
 
+		/**
+		 * Keep track of changes to @a d_multi_resolution_raster.
+		 */
+		mutable GPlatesUtils::ObserverToken d_multi_resolution_raster_observer_token;
+
 
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
@@ -587,6 +587,11 @@ namespace GPlatesOpenGL
 		 * The transform to use when rendering into the cube quad tree tiles.
 		 */
 		GLMatrix d_world_transform;
+
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		mutable GPlatesUtils::SubjectToken d_subject_token;
 
 
 		//! Constructor.
