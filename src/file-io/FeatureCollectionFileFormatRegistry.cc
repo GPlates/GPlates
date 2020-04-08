@@ -217,6 +217,7 @@ namespace GPlatesFileIO
 			ogr_read_feature_collection(
 					File::Reference &file_ref,
 					const Registry &file_format_registry,
+					Format file_format,
 					ReadErrorAccumulation &read_errors,
 					bool &contains_unsaved_changes)
 			{
@@ -225,7 +226,7 @@ namespace GPlatesFileIO
 						ogr_file_configuration =
 								FeatureCollectionFileFormat::dynamic_cast_configuration<
 										const FeatureCollectionFileFormat::OGRConfiguration>(
-												file_format_registry.get_default_configuration(SHAPEFILE));
+												file_format_registry.get_default_configuration(file_format));
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
@@ -860,7 +861,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-							_1, boost::cref(*this), _2, _3)),
+							_1, boost::cref(*this), SHAPEFILE, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), SHAPEFILE)),
@@ -880,7 +881,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-							_1, boost::cref(*this), _2, _3)),
+							_1, boost::cref(*this), OGRGMT, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), OGRGMT)),
@@ -903,7 +904,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 				&file_name_ends_with,
 				Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-								_1, boost::cref(*this), _2, _3)),
+								_1, boost::cref(*this), GEOJSON, _2, _3)),
 				Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 								_1, boost::cref(*this), GEOJSON)),
@@ -925,7 +926,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 				&file_name_ends_with,
 				Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-								_1, boost::cref(*this), _2, _3)),
+								_1, boost::cref(*this), GEOPACKAGE, _2, _3)),
 				Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 								_1, boost::cref(*this), GEOPACKAGE)),
