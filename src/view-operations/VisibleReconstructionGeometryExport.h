@@ -84,7 +84,7 @@ namespace GPlatesViewOperations
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -116,7 +116,7 @@ namespace GPlatesViewOperations
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -148,7 +148,7 @@ namespace GPlatesViewOperations
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -197,9 +197,8 @@ namespace GPlatesViewOperations
 				bool export_topological_polygons,
 				bool export_topological_networks,
 				bool export_topological_sections,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
-						force_polygon_orientation = boost::none,
-				bool wrap_to_dateline = true);
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
+				bool wrap_to_dateline);
 	}
 }
 

@@ -69,7 +69,7 @@ namespace GPlatesFileIO
 		OgrWriter(
 			QString filename,
 			bool multiple_layers,
-			bool wrap_to_dateline = true,
+			bool wrap_to_dateline,
 			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs = boost::none,
 			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour &behaviour =
 				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR);
