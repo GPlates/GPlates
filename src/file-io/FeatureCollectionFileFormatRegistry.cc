@@ -850,7 +850,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type shapefile_default_configuration(new OGRConfiguration(SHAPEFILE));
+	Configuration::shared_ptr_to_const_type shapefile_default_configuration(
+			new OGRConfiguration(SHAPEFILE, true/*wrap_to_dateline*/));
 	register_file_format(
 			SHAPEFILE,
 			"ESRI Shapefile",
@@ -869,7 +870,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type ogr_gmt_default_configuration(new OGRConfiguration(OGRGMT));
+	Configuration::shared_ptr_to_const_type ogr_gmt_default_configuration(
+			new OGRConfiguration(OGRGMT, false/*wrap_to_dateline*/));
 	register_file_format(
 			OGRGMT,
 			"OGR GMT",
@@ -891,7 +893,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON);
 	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON_ALTERNATIVE);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type geojson_default_configuration(new OGRConfiguration(GEOJSON));
+	Configuration::shared_ptr_to_const_type geojson_default_configuration(
+			new OGRConfiguration(GEOJSON, false/*wrap_to_dateline*/));
 	register_file_format(
 				GEOJSON,
 				"GeoJSON",
@@ -912,7 +915,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	std::vector<QString> geopackage_filename_extensions;
 	geopackage_filename_extensions.push_back(FILE_FORMAT_EXT_GEOPACKAGE);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type geopackage_default_configuration(new OGRConfiguration(GEOPACKAGE));
+	Configuration::shared_ptr_to_const_type geopackage_default_configuration(
+			new OGRConfiguration(GEOPACKAGE, false/*wrap_to_dateline*/));
 	register_file_format(
 				GEOPACKAGE,
 				"GeoPackage",

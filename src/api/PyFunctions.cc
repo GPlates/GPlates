@@ -157,7 +157,8 @@ namespace
 					recon_time,
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/,
-					false/*export_separate_output_directory_per_input_file*/);
+					false/*export_separate_output_directory_per_input_file*/,
+					format == ReconstructedFeatureGeometryExport::SHAPEFILE/*wrap_to_dateline*/);
 	}
 
 
