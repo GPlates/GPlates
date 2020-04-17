@@ -201,7 +201,7 @@ namespace
 			return result.d_velocity_lon;
 			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::ANGULAR_VELOCITY_GRAPH_TYPE:
-			return std::abs(result.d_angular_velocity);
+			return result.d_angular_velocity;
 			break;
 #if 0
 		case GPlatesQtWidgets::KinematicGraphsDialog::ROTATION_RATE_GRAPH_TYPE:
@@ -699,11 +699,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		// The velocity calculation assumes a time step of 1Ma. As we have used dtime here to generate the finite rotations, we need to correct for this.
 		// The position here should represent the position of the point *at the desired time instant*, not the present day point.
 
-		// I've added an axis hint to the velocity routine in order to get the sign of the rotation angle, but in order to get the axis hint
-		// I have to generate the stage pole, so I'm probably duplicating work here. There may be a neater way of getting this.
-		FiniteRotation stage_pole_rotation = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree_t1,*tree_t2,d_moving_id,d_anchor_id);
-		boost::optional<UnitVector3D> stage_pole_axis = stage_pole_rotation.axis_hint();
-		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime,stage_pole_axis);
+		// Calculate velocity 'vector' and positive angular velocity (rads/Myr).
+		// Note that 'omega' is always positive since the stage rotation 'pole' is arbitrary (can negate pole/angle pair and get same rotation).
+		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime);
 		Vector3D v = velocity_and_omega_pair.first;
 
 		VectorColatitudeLongitude vcl = convert_vector_from_xyz_to_colat_lon(p,v);
