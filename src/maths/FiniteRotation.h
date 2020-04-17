@@ -31,8 +31,9 @@
 #include <iosfwd>
 #include <boost/optional.hpp>
 
-#include "UnitQuaternion3D.h"
+#include "PointOnSphere.h"
 #include "Rotation.h"
+#include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -48,7 +49,6 @@ namespace GPlatesMaths
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
-	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
 	class GeometryOnSphere;
@@ -111,14 +111,20 @@ namespace GPlatesMaths
 		const FiniteRotation
 		create(
 				const UnitQuaternion3D &uq,
-				const boost::optional<UnitVector3D> &axis_hint_);
+				const boost::optional<UnitVector3D> &axis_hint_)
+		{
+			return FiniteRotation(uq, axis_hint_);
+		}
 
 		/**
 		 * Create an identity rotation.
 		 */
 		static
 		const FiniteRotation
-		create_identity_rotation();
+		create_identity_rotation()
+		{
+			return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
+		}
 
 		/**
 		 * Return a unit quaternion which would effect the rotation of this finite
@@ -173,7 +179,10 @@ namespace GPlatesMaths
 		explicit
 		FiniteRotation(
 				const UnitQuaternion3D &unit_quat_,
-				const boost::optional<UnitVector3D> &axis_hint_);
+				const boost::optional<UnitVector3D> &axis_hint_) :
+			d_unit_quat(unit_quat_),
+			d_axis_hint(axis_hint_)
+		{  }
 
 	private:
 
@@ -182,11 +191,6 @@ namespace GPlatesMaths
 
 		// This provides a hint as to what the rotation axis might approx be.
 		boost::optional<UnitVector3D> d_axis_hint;
-
-		// These values are used to optimise rotation operations.
-		real_t   d_d;
-		Vector3D d_e;
-
 	};
 
 
@@ -327,10 +331,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
+	inline
 	const PointOnSphere
 	operator*(
 			const FiniteRotation &r,
-			const PointOnSphere &p);
+			const PointOnSphere &p)
+	{
+		return PointOnSphere(r * p.position_vector());
+	}
 
 
 	/**
@@ -338,10 +346,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
+	inline
 	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
+	{
+		return PointOnSphere::create_on_heap(r * p->position_vector());
+	}
 
 
 	/**

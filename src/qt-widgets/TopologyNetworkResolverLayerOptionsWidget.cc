@@ -147,7 +147,7 @@ namespace
 
 
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::STRAIN_RATE_SCALE = 1e+17;
-const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MIN = 1e-6;
+const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MIN = 0.0;
 const double GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_MAX = 1e+6;
 const int GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::SCALED_STRAIN_RATE_DECIMAL_PLACES = 6;
 const int GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::RIFT_EXPONENTIAL_STRETCHING_CONSTANT_DECIMAL_PLACES = 3;
@@ -265,7 +265,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			this, SLOT(handle_strain_rate_clamping_clicked()));
 	clamp_strain_rate_line_edit->setCursor(QCursor(Qt::ArrowCursor));
 	d_clamp_strain_rate_line_edit_double_validator = 
-			new QDoubleValidator(
+			new DoubleValidator(
 					// Text must be numeric 'double' within a reasonable range of total strain rates.
 					// And these values are subsequently multiplied by 'STRAIN_RATE_SCALE'.
 					SCALED_STRAIN_RATE_MIN,
@@ -284,7 +284,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	// Rift parameters.
 	rift_exponential_stretching_constant_line_edit->setCursor(QCursor(Qt::ArrowCursor));
 	d_rift_exponential_stretching_constant_line_edit_double_validator =
-			new QDoubleValidator(
+			new DoubleValidator(
 					1e-3, // min
 					100, // max
 					RIFT_EXPONENTIAL_STRETCHING_CONSTANT_DECIMAL_PLACES/*decimal places*/,
@@ -299,7 +299,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			d_help_rift_exponential_stretching_constant_dialog, SLOT(show()));
 	rift_strain_rate_resolution_line_edit->setCursor(QCursor(Qt::ArrowCursor));
 	d_rift_strain_rate_resolution_line_edit_double_validator =
-		new QDoubleValidator(
+		new DoubleValidator(
 			// Text must be numeric 'double' within a reasonable range of total strain rates.
 			// And these values are subsequently multiplied by 'STRAIN_RATE_SCALE'.
 			SCALED_STRAIN_RATE_MIN,
@@ -316,7 +316,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			d_help_rift_strain_rate_resolution_dialog, SLOT(show()));
 	rift_edge_length_threshold_line_edit->setCursor(QCursor(Qt::ArrowCursor));
 	d_rift_edge_length_threshold_line_edit_double_validator =
-			new QDoubleValidator(
+			new DoubleValidator(
 					1e-3, // min
 					100, // max
 					RIFT_EDGE_LENGTH_THRESHOLD_DECIMAL_PLACES/*decimal places*/,

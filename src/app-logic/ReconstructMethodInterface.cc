@@ -67,8 +67,8 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-	const GPlatesMaths::FiniteRotation &finite_rotation =
-			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
+	const GPlatesMaths::FiniteRotation finite_rotation =
+			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id);
 
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;

@@ -662,17 +662,10 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		return;
 	}
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state.get_current_reconstruction()
-			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-
+	// The default reconstruction tree creator.
 	GPlatesAppLogic::ReconstructionTreeCreator tree_creator =
-			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-				default_reconstruction_tree->get_reconstruction_features(),
-				d_anchor_id,
-				100, /* try this cache size for starters */
-				// We're not going to modify the reconstruction features so no need to clone...
-				false/*clone_reconstruction_features*/);
+			d_application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 
 	LatLonPoint llp(d_lat,d_lon);
 	PointOnSphere pos_ = make_point_on_sphere(llp);
@@ -688,8 +681,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		get_older_and_younger_times(d_configuration,time,time_older,time_younger);
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree =
-				tree_creator.get_reconstruction_tree(time);
-		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id).first;
+				tree_creator.get_reconstruction_tree(time, d_anchor_id);
+		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p = rot*pos_;
 
@@ -697,13 +690,13 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 
 		// t1 is younger than t2, as required by the calculate_velocity_vector_and_omaga function used below.
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t1 =
-				tree_creator.get_reconstruction_tree(time_younger);
+				tree_creator.get_reconstruction_tree(time_younger, d_anchor_id);
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t2 =
-				tree_creator.get_reconstruction_tree(time_older);
+				tree_creator.get_reconstruction_tree(time_older, d_anchor_id);
 
 
-		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id).first;
-		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id).first;
+		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id);
+		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p_1 = rot_1*pos_;
 		PointOnSphere p_2 = rot_2*pos_;

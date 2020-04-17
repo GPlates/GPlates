@@ -37,8 +37,9 @@
 #include "app-logic/ReconstructParams.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGraph.h"
+#include "app-logic/ReconstructionGraphBuilder.h"
+#include "app-logic/ReconstructionGraphPopulator.h"
 #include "app-logic/ReconstructionTree.h"
-#include "app-logic/ReconstructionTreePopulator.h"
 #include "app-logic/ReconstructUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -142,33 +143,29 @@ create_isochron(
 
 void
 traverse_recon_tree_recursive(
-		GPlatesAppLogic::ReconstructionTreeEdge &edge)
+		const GPlatesAppLogic::ReconstructionTree::Edge &edge)
 {
 	std::cout << " * Children of pole (fixed plate: "
-			<< edge.fixed_plate()
+			<< edge.get_fixed_plate()
 			<< ", moving plate: "
-			<< edge.moving_plate()
+			<< edge.get_moving_plate()
 			<< ")\n";
 
-	GPlatesAppLogic::ReconstructionTree::edge_collection_type::iterator iter =
-			edge.children_in_built_tree().begin();
-	GPlatesAppLogic::ReconstructionTree::edge_collection_type::iterator end =
-			edge.children_in_built_tree().end();
-	for ( ; iter != end; ++iter) {
-		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
-		std::cout << "    with absolute rotation: " << (*iter)->composed_absolute_rotation() << "\n";
-		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
-		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
-		if ((*iter)->pole_type() ==
-				GPlatesAppLogic::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
-			std::cout << "    which is original.\n";
-		} else {
-			std::cout << "    which is reversed.\n";
-		}
+	const GPlatesAppLogic::ReconstructionTree::edge_list_type &child_edges = edge.get_child_edges();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator iter = child_edges.begin();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator end = child_edges.end();
+	for ( ; iter != end; ++iter)
+	{
+		std::cout << " - FiniteRotation: " << iter->get_relative_rotation() << "\n";
+		std::cout << "    with absolute rotation: " << iter->get_composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << iter->get_fixed_plate() << std::endl;
+		std::cout << "    and moving plate: " << iter->get_moving_plate() << std::endl;
 	}
-	iter = edge.children_in_built_tree().begin();
-	for ( ; iter != end; ++iter) {
-		::traverse_recon_tree_recursive(**iter);
+
+	iter = child_edges.begin();
+	for ( ; iter != end; ++iter)
+	{
+		::traverse_recon_tree_recursive(*iter);
 	}
 }
 
@@ -179,25 +176,21 @@ traverse_recon_tree(
 {
 	std::cout << " * Root-most poles:\n";
 
-	GPlatesAppLogic::ReconstructionTree::edge_collection_type::const_iterator iter =
-			recon_tree.rootmost_edges_begin();
-	GPlatesAppLogic::ReconstructionTree::edge_collection_type::const_iterator end =
-			recon_tree.rootmost_edges_end();
-	for ( ; iter != end; ++iter) {
-		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
-		std::cout << "    with absolute rotation: " << (*iter)->composed_absolute_rotation() << "\n";
-		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
-		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
-		if ((*iter)->pole_type() ==
-				GPlatesAppLogic::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
-			std::cout << "    which is original.\n";
-		} else {
-			std::cout << "    which is reversed.\n";
-		}
+	const GPlatesAppLogic::ReconstructionTree::edge_list_type &anchor_plate_edges =
+			recon_tree.get_anchor_plate_edges();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator iter = anchor_plate_edges.begin();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator end = anchor_plate_edges.end();
+	for ( ; iter != end; ++iter)
+	{
+		std::cout << " - FiniteRotation: " << iter->get_relative_rotation() << "\n";
+		std::cout << "    with absolute rotation: " << iter->get_composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << iter->get_fixed_plate() << std::endl;
+		std::cout << "    and moving plate: " << iter->get_moving_plate() << std::endl;
 	}
-	iter = recon_tree.rootmost_edges_begin();
-	for ( ; iter != end; ++iter) {
-		::traverse_recon_tree_recursive(**iter);
+	iter = anchor_plate_edges.begin();
+	for ( ; iter != end; ++iter)
+	{
+		::traverse_recon_tree_recursive(*iter);
 	}
 }
 
@@ -434,28 +427,31 @@ output_reconstructions(
 	static const unsigned num_recon_times_to_test =
 			sizeof(recon_times_to_test) / sizeof(recon_times_to_test[0]);
 
+	GPlatesAppLogic::ReconstructionGraphBuilder graph_builder;
+	GPlatesAppLogic::ReconstructionGraphPopulator rgp(graph_builder);
+
+	GPlatesModel::FeatureCollectionHandle::iterator iter1 = total_recon_seqs->begin();
+	for ( ; iter1 != total_recon_seqs->end(); ++iter1)
+	{
+		rgp.visit_feature(iter1);
+	}
+
+	std::cout << "\n--> Building graph\n";
+	GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type graph = graph_builder.build_graph();
+
 	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
 		double recon_time = recon_times_to_test[i];
 
 		const GPlatesModel::integer_plate_id_type anchor_plate_id = 501;
 
-		GPlatesAppLogic::ReconstructionGraph graph;
-		GPlatesAppLogic::ReconstructionTreePopulator rtp(recon_time, graph);
-
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
-
-		GPlatesModel::FeatureCollectionHandle::iterator iter1 =
-				total_recon_seqs->begin();
-		for ( ; iter1 != total_recon_seqs->end(); ++iter1) {
-			rtp.visit_feature(iter1);
-		}
 
 		std::cout << "\n--> Building tree, root node: " << anchor_plate_id << " \n";
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree =
-				graph.build_tree(
-						anchor_plate_id,
+				GPlatesAppLogic::ReconstructionTree::create(
+						graph,
 						recon_time,
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, total_recon_seqs));
+						anchor_plate_id);
 
 		traverse_recon_tree(*tree);
 

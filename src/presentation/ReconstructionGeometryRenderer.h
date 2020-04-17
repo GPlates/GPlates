@@ -502,7 +502,7 @@ namespace GPlatesPresentation
 		 * view frustum culling in GlobeRenderedGeometryLayerPainter expects the rendered geometry
 		 * to be inside the bounds of its spatial partition location which in turn was determined
 		 * by the  @a GeometryOnSphere inside the *reconstruction* geometry. So for example, rendering
-		 * a polyline as a lines is fine but rendering it with marker symbols (along the line) should
+		 * a polyline as a line is fine but rendering it with marker symbols (along the line) should
 		 * be done using @a render.
 		 *
 		 * TODO: However rendering a polyline with a fat line width could be problematic since the

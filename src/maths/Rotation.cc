@@ -42,30 +42,6 @@
 
 namespace
 {
-	inline
-	const GPlatesMaths::real_t
-	calculate_d_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((s * s) - dot(v, v));
-	}
-
-
-	inline
-	const GPlatesMaths::Vector3D
-	calculate_e_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((2.0 * s) * v);
-	}
-
-
 	/**
 	 * Visits a @a GeometryOnSphere, rotates it and returns as a @a GeometryOnSphere.
 	 */
@@ -150,11 +126,7 @@ GPlatesMaths::Rotation::create(
 {
 	UnitQuaternion3D uq = UnitQuaternion3D::create_rotation(rotation_axis, rotation_angle);
 
-	// These values are used to optimise rotation of points on the sphere.
-	real_t d = calculate_d_value(uq);
-	Vector3D e = calculate_e_value(uq);
-
-	return Rotation(rotation_axis, rotation_angle, uq, d, e);
+	return Rotation(rotation_axis, rotation_angle, uq);
 }
 
 
@@ -224,12 +196,8 @@ GPlatesMaths::Rotation::create_identity_rotation()
 {
 	UnitQuaternion3D uq = UnitQuaternion3D::create_identity_rotation();
 
-	// These values are used to optimise rotation of points on the sphere.
-	real_t d = calculate_d_value(uq);
-	Vector3D e = calculate_e_value(uq);
-
 	// Since it's an identity rotation we can use any axis we like (because rotation angle is zero).
-	return Rotation(UnitVector3D::zBasis(), 0, uq, d, e);
+	return Rotation(UnitVector3D::zBasis(), 0, uq);
 }
 
 
@@ -237,36 +205,48 @@ const GPlatesMaths::UnitVector3D
 GPlatesMaths::Rotation::operator*(
 		const UnitVector3D &uv) const
 {
-	Vector3D v(uv);
+	// Re-use the operator associated with 'Vector3D'.
+	const Vector3D v = operator*(Vector3D(uv));
 
-	Vector3D v_rot = d_d * v +
-			(2.0 * dot(d_quat.vector_part(), v)) * d_quat.vector_part() +
-			cross(d_e, v);
-
-	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
+	return UnitVector3D(v.x(), v.y(), v.z());
 }
 
 const GPlatesMaths::Vector3D
 GPlatesMaths::Rotation::operator*(
 		const Vector3D &v) const
 {
-	return d_d * v +
-			(2.0 * dot(d_quat.vector_part(), v)) * d_quat.vector_part() +
-			cross(d_e, v);
+	const GPlatesMaths::real_t &uq_s = d_quat.scalar_part();
+	const Vector3D &uq_v = d_quat.vector_part();
 
-}
-
-const GPlatesMaths::Rotation
-GPlatesMaths::Rotation::create(
-		const UnitQuaternion3D &uq,
-		const UnitVector3D &rotation_axis,
-		const real_t &rotation_angle)
-{
-	// These values are used to optimise rotation of points on the sphere.
-	real_t d = calculate_d_value(uq);
-	Vector3D e = calculate_e_value(uq);
-
-	return Rotation(rotation_axis, rotation_angle, uq, d, e);
+	//
+	// Quaternion (uq_s, uq_v) rotates vector v to v' as:
+	//
+	//   v' = v + 2 * uq_v x (uq_s * v + uq_v x v)
+	//
+	// ...and using the vector triple product rule:
+	//
+	//   a x (b x c) = (a.c)b - (a.b)c
+	//
+	// ...we get:
+	//
+	//   v' = v + 2 * uq_s * uq_v x v + 2 * uq_v x (uq_v x v)
+	//      = v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v - 2 * (uq_v . uq_v) * v
+	//      = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//
+	// ...and using the norm of a unit quaternion:
+	//
+	//   uq_s * uq_s + uq_v . uq_v = 1
+	//                 uq_v . uq_v = 1 - uq_s * uq_s
+	//       1 - 2 * (uq_v . uq_v) = 1 - 2 * (1 - uq_s * uq_s)
+	//                             = 2 * uq_s * uq_s - 1
+	//
+	// ...we get:
+	//
+	//   v' = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * [uq_s * uq_v x v + (uq_v . v) * uq_v]
+	//
+	return (2.0 * uq_s * uq_s - 1.0) * v + 2.0 * (cross(uq_s * uq_v, v) + dot(uq_v, v) * uq_v);
 }
 
 

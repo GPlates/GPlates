@@ -359,6 +359,12 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	const GLTransform::non_null_ptr_to_const_type view_transform =
 			cube_subdivision_cache.get_view_transform(cube_subdivision_cache_node);
 
+	// Multiply the current world transform into the model-view matrix.
+	GLMatrix world_model_view_transform_matrix(view_transform->get_matrix());
+	world_model_view_transform_matrix.gl_mult_matrix(d_world_transform);
+	const GLTransform::non_null_ptr_to_const_type world_model_view_transform =
+			GLTransform::create(world_model_view_transform_matrix);
+
 	// Set the projection transform.
 	// Get the expanded tile frustum (by half a texel around the border of the frustum).
 	// This causes the texel centres of the border tile texels to fall right on the edge
@@ -375,7 +381,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	unsigned int tile_level_of_detail = boost::numeric_cast<unsigned int>(
 			d_multi_resolution_raster->clamp_level_of_detail(
 					d_multi_resolution_raster->get_level_of_detail(
-							view_transform->get_matrix(),
+							world_model_view_transform_matrix,
 							half_texel_expanded_projection_transform->get_matrix(),
 							viewport)));
 	// If we can use a lower-resolution level-of-detail just for this tile then might as well
@@ -402,7 +408,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	std::vector<GLMultiResolutionRaster::tile_handle_type> source_raster_tile_handles;
 	d_multi_resolution_raster->get_visible_tiles(
 			source_raster_tile_handles,
-			view_transform->get_matrix(),
+			world_model_view_transform_matrix,
 			half_texel_expanded_projection_transform->get_matrix(),
 			tile_level_of_detail);
 
@@ -418,13 +424,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 			d_cube_quad_tree->create_node(
 					CubeQuadTreeNode(
 							tile_level_of_detail,
-							view_transform,
+							world_model_view_transform,
 							half_texel_expanded_projection_transform,
 							d_texture_cache->allocate_volatile_object()));
-
-	// Mark the tile as up-to-date with respect to the world transform.
-	d_world_transform_subject.update_observer(
-			quad_tree_node->get_element().d_visible_source_tiles_observer_token);
 
 	// Initialise the quad tree node's source tiles.
 	quad_tree_node->get_element().d_src_raster_tiles.swap(source_raster_tile_handles);
@@ -483,22 +485,52 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::set_world_transform(
 		const GLMatrix &world_transform)
 {
-	d_world_transform = world_transform;
-
-	// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
-	// This will force an update when the textures are subsequently requested.
-	cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
-	for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+	// If the world transform has changed then set it, and re-create our quad tree of tiles
+	// (just the tiles, their textures will be re-generated as needed).
+	if (d_world_transform != world_transform)
 	{
-		CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
+		d_world_transform = world_transform;
 
-		// Force the texture to be regenerated.
-		cube_quad_tree_node.d_source_texture_observer_token.reset();
+		// For example, the cube map is rotated to align with the central meridian of the map projection.
+		//
+		// This can have two effects:
+		//   1) The tile textures are no longer valid, and
+		//   2) For regional rasters (that don't cover the entire globe) some quad-tree nodes will be NULL
+		//      where the tile does not cover raster data. As the cube map rotates, each cube face quad tree
+		//      also rotates and different regions of the raster are covered resulting in the branching
+		//      pattern in each quad tree changing.
+		//
+		// As a result of (2) it's best to clear the cube map quad trees and re-generate them in the new
+		// rotated cube map position. This also has the by-product of invalidating all the tile textures.
+		// Note that the tile 'textures' are not re-generated here (only regenerated in 'get_tile_texture()').
+		d_cube_quad_tree->clear();
+		initialise_cube_quad_trees();
+
+		// Let any clients know that they're now out-of-date (since our cube map texture has a new orientation).
+		d_subject_token.invalidate();
+	}
+}
+
+
+const GPlatesUtils::SubjectToken &
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_subject_token() const
+{
+	//
+	// This covers changes to the inputs that don't require completely re-creating the inputs.
+	// That is beyond our scope and is detected and managed by our owners (and owners of our inputs).
+	//
+
+	// If the source raster has changed.
+	if (!d_multi_resolution_raster->get_subject_token().is_observer_up_to_date(
+				d_multi_resolution_raster_observer_token))
+	{
+		d_subject_token.invalidate();
+
+		d_multi_resolution_raster->get_subject_token().update_observer(
+				d_multi_resolution_raster_observer_token);
 	}
 
-	// Force the visible source tiles to be recalculated for each cube quad tree tile.
-	// This is necessary because the source tiles that contribute to each destination tile are now different.
-	d_world_transform_subject.invalidate();
+	return d_subject_token;
 }
 
 
@@ -508,30 +540,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		const CubeQuadTreeNode &tile,
 		cache_handle_type &cache_handle)
 {
-	//
-	// See if a new set of visible source tiles, contributing to this tile, needs to be calculated.
-	//
-
-	if (!d_world_transform_subject.is_observer_up_to_date(tile.d_visible_source_tiles_observer_token))
-	{
-		// Clear the old set of source tiles.
-		tile.d_src_raster_tiles.clear();
-
-		// Multiply the current world transform into the model-view matrix.
-		GLMatrix world_model_view_transform(tile.d_view_transform->get_matrix());
-		world_model_view_transform.gl_mult_matrix(d_world_transform);
-
-		// Get the new set of source tiles that are visible in the current tile's frustum.
-		d_multi_resolution_raster->get_visible_tiles(
-				tile.d_src_raster_tiles,
-				world_model_view_transform,
-				tile.d_projection_transform->get_matrix(),
-				tile.d_tile_level_of_detail);
-
-		// The tile is now up-to-date with respect to the world transform.
-		d_world_transform_subject.update_observer(tile.d_visible_source_tiles_observer_token);
-	}
-
 	//
 	// Get the texture for the tile.
 	//
@@ -620,10 +628,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		// Multiply in the projection matrix.
 		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
-		// The model-view matrix.
-		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-		// Multiply in the requested world transform.
-		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
+		// The world model-view matrix (with world transform multiplied in).
+		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_world_model_view_transform->get_matrix());
 
 		// Clear the frame buffer as appropriate for the source raster type.
 		//

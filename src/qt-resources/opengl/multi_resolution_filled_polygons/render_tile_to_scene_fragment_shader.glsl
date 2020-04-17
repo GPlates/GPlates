@@ -58,6 +58,13 @@ void main (void)
 #endif // ENABLE_CLIPPING
 
 	// As a small optimisation discard the pixel if the alpha is zero.
+	//
+	// Note: This would not work on our 'data' floating-point textures because
+	//       it stores data in red channel and coverage in green channel.
+	//       Also, due to no alpha blending/testing for floating-point textures,
+	//       this discard would have been necessary rather than just an optimisation.
+	//       However we're not using floating-point textures, only regular colour fixed-point,
+	//       so it's not an issue. Just noting this in case this changes later for some reason.
 	if (gl_FragColor.a == 0)
 		discard;
 

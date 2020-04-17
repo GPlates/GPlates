@@ -356,14 +356,18 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 			file.remove();
 			geometry_exporter.reset(
 				new GPlatesFileIO::OgrGeometryExporter(
-						filename, false /* multiple_geometries = false */));
+						filename,
+						false /* multiple_geometries = false */,
+						true /*wrap_to_dateline*/));
 			break;
 
 		case OGRGMT:
 			file.remove();
 			geometry_exporter.reset(
 				new GPlatesFileIO::OgrGeometryExporter(
-						filename, false /* multiple_geometries = false */));
+						filename,
+						false /* multiple_geometries = false */,
+						false /*wrap_to_dateline*/));
 			break;
 
 		default:

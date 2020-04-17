@@ -313,9 +313,6 @@ namespace GPlatesUtils
 		 *
 		 * The returned object will remain valid as long as this pool is alive, or until @a clear
 		 * is called, at which point the object will be destroyed and the pointer will be left dangling.
-		 *
-		 * NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so you'll
-		 * need to use the other @a add overload (ie, the one that copies the object).
 		 */
 		template <class InPlaceFactoryType>
 		object_ptr_type
@@ -397,9 +394,6 @@ namespace GPlatesUtils
 		 *
 		 * NOTE: You must ensure that this object pool lives longer than any returned shared_ptr's
 		 * otherwise a crash is likely to occur.
-		 *
-		 * NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so you'll
-		 * need to use the other @a add_with_auto_release overload (ie, the one that copies the object).
 		 */
 		template <class InPlaceFactoryType>
 		shared_object_ptr_type

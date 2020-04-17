@@ -505,7 +505,7 @@ GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 			reconstruction_tree_creator.get_reconstruction_tree(current_time);
 
     GPlatesMaths::FiniteRotation plate_correction =
-			reconstruction_tree->get_composed_absolute_rotation(finder.get_left_plate().get()).first;
+			reconstruction_tree->get_composed_absolute_rotation(finder.get_left_plate().get());
 
     if (reverse)
     {
@@ -581,7 +581,7 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
     GPlatesMaths::FiniteRotation correction =
-	    reconstruction_tree->get_composed_absolute_rotation(plate_1).first;
+	    reconstruction_tree->get_composed_absolute_rotation(plate_1);
 
 
     geometry_ = get_reverse(correction) * geometry_;

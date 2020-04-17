@@ -34,6 +34,7 @@ namespace GPlatesAppLogic
 	// Forward declarations of supported LayerParams derivations.
 	class CoRegistrationLayerParams;
 	class RasterLayerParams;
+	class ReconstructionLayerParams;
 	class ReconstructLayerParams;
 	class ReconstructScalarCoverageLayerParams;
 	class ScalarField3DLayerParams;
@@ -52,6 +53,7 @@ namespace GPlatesAppLogic
 		// Typedefs to give the supported derivations the appropriate const-ness.
 		typedef typename GPlatesUtils::SetConst<CoRegistrationLayerParams, Const>::type co_registration_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<RasterLayerParams, Const>::type raster_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<ReconstructionLayerParams, Const>::type reconstruction_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructLayerParams, Const>::type reconstruct_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructScalarCoverageLayerParams, Const>::type reconstruct_scalar_coverage_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ScalarField3DLayerParams, Const>::type scalar_field_3d_layer_params_type;
@@ -72,6 +74,12 @@ namespace GPlatesAppLogic
 		void
 		visit_raster_layer_params(
 				raster_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_reconstruction_layer_params(
+				reconstruction_layer_params_type &params)
 		{  }
 
 		virtual
