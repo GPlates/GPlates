@@ -149,7 +149,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 
 	// The maximum texel size of any texel projected onto the unit sphere occurs at the centre
 	// of the cube faces. Not all cube subdivisions occur at the face centres but the projected
-	// texel size will always be less that at the face centre so at least it's bounded and the
+	// texel size will always be less than at the face centre so at least it's bounded and the
 	// variation across the cube face is not that large so we shouldn't be using a level-of-detail
 	// that is much higher than what we need.
 	const float max_lowest_resolution_texel_size_on_unit_sphere = 2.0 / tile_texel_dimension;

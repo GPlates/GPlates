@@ -128,7 +128,7 @@ namespace GPlatesGui
 		/**
 		 * This is the intuitive "zoom percent".
 		 *
-		 * GPlates allows zoom percents in the range [100.0, 10000.0].
+		 * GPlates allows zoom percents in the range [100.0, 100000.0].
 		 */
 		double d_zoom_percent;
 	};

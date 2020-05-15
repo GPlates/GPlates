@@ -549,8 +549,7 @@ namespace GPlatesGui
 
 
 		PointLinePolygonDrawables drawables_off_the_sphere;
-		PointLinePolygonDrawables opaque_drawables_on_the_sphere;
-		PointLinePolygonDrawables translucent_drawables_on_the_sphere;
+		PointLinePolygonDrawables drawables_on_the_sphere;
 
 		std::vector<RasterDrawable> rasters;
 		std::vector<ScalarField3DDrawable> scalar_fields;

@@ -341,7 +341,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_multi_point_on_spher
 
 	// Get the stream for points of the current point size.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+			d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
 
 	// Used to add points to the stream.
 	stream_primitives_type::Points stream_points(stream);
@@ -405,7 +405,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point
 
 	// Get the stream for points of the current point size.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+			d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
 
 	// Used to add points to the stream.
 	stream_primitives_type::Points stream_points(stream);
@@ -473,7 +473,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Get the stream for points of the current point size.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+			d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
 
 	// Get the projected point position.
 	const QPointF proj_pos = get_projected_unwrapped_position(rendered_point_on_sphere.get_point_on_sphere());
@@ -507,7 +507,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	if (rendered_polygon_on_sphere.get_is_filled())
 	{
 		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+				d_layer_painter->drawables_on_the_sphere.get_filled_polygons_map_view();
 
 		// Modulate with the fill modulate colour.
 		const Colour fill_colour = Colour::modulate(
@@ -531,7 +531,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
@@ -579,7 +579,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Paint the polygon's exterior ring.
 	paint_vertex_coloured_polygon(polygon_on_sphere, vertex_colours, stream);
@@ -602,7 +602,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 	if (rendered_polyline_on_sphere.get_is_filled())
 	{
 		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+				d_layer_painter->drawables_on_the_sphere.get_filled_polygons_map_view();
 
 		// Modulate with the fill modulate colour.
 		const Colour fill_colour = Colour::modulate(
@@ -626,7 +626,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
@@ -671,7 +671,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	paint_vertex_coloured_polyline(polyline_on_sphere, vertex_colours, stream);
 }
@@ -686,7 +686,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	typedef GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh mesh_type;
 
@@ -887,7 +887,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh)
 {
 	GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+			d_layer_painter->drawables_on_the_sphere.get_filled_polygons_map_view();
 
 	filled_polygons.begin_filled_triangle_mesh();
 
@@ -1435,7 +1435,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle(
 	const float line_width = rendered_small_circle.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	stream_primitives_type &lines_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the small circle tessellated as a closed polyline.
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, rgba8_color, lines_stream);
@@ -1465,7 +1465,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 	const float line_width = rendered_small_circle_arc.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	stream_primitives_type &lines_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the small circle arc tessellated as a polyline.
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(small_circle_arc_polyline, rgba8_color, lines_stream);
@@ -1519,7 +1519,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 	const float line_width = rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	stream_primitives_type &lines_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Render the ellipse tessellated as a closed polyline.
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(ellipse_polyline, rgba8_color, lines_stream);
@@ -1565,7 +1565,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 
 	// Get the stream for the small circle lines.
 	stream_primitives_type &small_circle_line_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
 
 	// Used to add a line loop to the stream.
 	stream_primitives_type::LineLoops stream_small_circle_line_loops(small_circle_line_stream);
@@ -1580,7 +1580,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE)
 	{
 		stream_primitives_type &triangle_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+			d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
 
 		stream_primitives_type::TriangleFans stream_triangle_fans(triangle_stream);
 
@@ -1605,7 +1605,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 		// The factor of 2 gives a nice look.
 		const float point_size = 2.0f * POINT_SIZE_ADJUSTMENT * d_scale;
 		stream_primitives_type &point_stream =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+				d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
 
 		stream_primitives_type::Points stream_points(point_stream);
 		stream_points.begin_points();
@@ -1622,7 +1622,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 
 		// Get the stream for the cross lines.
 		stream_primitives_type &cross_line_stream =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(cross_line_width);
+				d_layer_painter->drawables_on_the_sphere.get_lines_stream(cross_line_width);
 
 		stream_primitives_type::LineStrips stream_cross_line_strips(cross_line_stream);
 
@@ -1739,7 +1739,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	const float line_width = rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	stream_primitives_type &lines_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline, rgba8_color, lines_stream, arrowhead_size);
 }
@@ -1786,7 +1786,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	if (filled)
 	{
 		stream_primitives_type &stream =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+				d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
 
 		stream_primitives_type::Triangles stream_triangles(stream);
 
@@ -1804,7 +1804,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 		const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 		stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 		stream_primitives_type::LineStrips stream_line_strips(stream);
 
@@ -1861,7 +1861,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	if (filled)
 	{
 		stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+			d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
 
 		stream_primitives_type::TriangleFans stream_triangle_fans(stream);
 
@@ -1882,7 +1882,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 		const float line_width = rendered_square_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 		stream_primitives_type &stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 		stream_primitives_type::LineStrips stream_line_strips(stream);
 
@@ -1920,7 +1920,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		// Get the stream for points of the current point size.
 		stream_primitives_type &stream =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+				d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
 
 		// Vertex representing the point's position and colour.
 		// Convert colour from floats to bytes to use less vertex memory.
@@ -1951,7 +1951,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 		vertices.push_back(vertices.front());
 
 		stream_primitives_type &stream =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+				d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 		stream_primitives_type::LineStrips stream_line_strips(stream);
 
@@ -2008,7 +2008,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	QPointF pd = centre + horizontal_shift;
 
 	stream_primitives_type &stream =
-		d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+		d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	const coloured_vertex_type va(pa.x(),pa.y(),0,rgba8_colour);
 	const coloured_vertex_type vb(pb.x(),pb.y(),0,rgba8_colour);

@@ -400,8 +400,7 @@ GPlatesGui::LayerPainter::begin_painting(
 	d_renderer = renderer;
 
 	drawables_off_the_sphere.begin_painting();
-	opaque_drawables_on_the_sphere.begin_painting();
-	translucent_drawables_on_the_sphere.begin_painting();
+	drawables_on_the_sphere.begin_painting();
 }
 
 
@@ -462,16 +461,6 @@ GPlatesGui::LayerPainter::end_painting(
 	// are *off* the sphere we can limit them to being opaque.
 	//
 
-	//
-	// To further complicate matters we also separate the non-raster primitives *on* the sphere into
-	// two groups, opaque and translucent. This is because they have different alpha-blending and
-	// point/line anti-aliasing states. By sorting primitives to each group we minimise changing
-	// OpenGL state back and forth (which can be costly).
-	//
-	// We don't need two groups for the primitives *off* the sphere because they should
-	// consist only of opaque primitives (see comments above).
-	//
-
 
 	// Enable depth testing but disable depth writes by default.
 	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
@@ -501,7 +490,7 @@ GPlatesGui::LayerPainter::end_painting(
 	//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
 	//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
 	//
-	// ...this then enables use to later use (1, 1 - src_alpha) for all RGBA channels when blending
+	// ...this then enables us to later use (1, 1 - src_alpha) for all RGBA channels when blending
 	// the render texture into the main framebuffer (if that's how we get rendered by clients).
 	if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
 	{
@@ -532,24 +521,7 @@ GPlatesGui::LayerPainter::end_painting(
 	// Turn on depth testing if not using a 2D map view.
 	renderer.gl_enable(GL_DEPTH_TEST, !d_map_projection);
 
-	// Even though these primitives are opaque they are still rendered with polygon anti-aliasing
-	// which relies on alpha-blending (so we don't disable it here).
-	// UPDATE: We no longer enable polygon anti-aliasing because it generates transparent edges
-	// between adjacent triangles in a mesh.
-	opaque_drawables_on_the_sphere.end_painting(
-			renderer,
-			*d_vertex_element_buffer->get_buffer(),
-			*d_vertex_buffer->get_buffer(),
-			*d_vertex_array,
-			*d_unlit_axially_symmetric_mesh_vertex_array,
-			*d_lit_axially_symmetric_mesh_vertex_array,
-			*d_gl_visual_layers,
-			d_map_projection,
-			d_render_point_line_polygon_lighting_in_globe_view_program_object,
-			d_render_point_line_polygon_lighting_in_map_view_program_object,
-			d_render_axially_symmetric_mesh_lighting_program_object);
-
-	translucent_drawables_on_the_sphere.end_painting(
+	drawables_on_the_sphere.end_painting(
 			renderer,
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
