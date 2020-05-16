@@ -60,6 +60,32 @@ GPlatesGui::ViewportZoom::s_min_zoom_percent = 100.0;
 //
 // ...and so a zoom level of 40 corresponds to a zoom percent of 10,000 which were the old maximums.
 //
+// Note that if we later change the minimum zoom percent from 100 to 10, for example to view
+// vertical rasters sticking out of the globe, then the minimum zoom level should be changed to -20...
+//
+//    zoom_percent(level=60)  = pow(10, (60 - -20) / (60 - -20) * (log10(100,000) - log10(10)) + log10(10))
+//                            = pow(10, 1/1 * (5 - 1) + 1)
+//                            = pow(10, 5)
+//                            = 100000
+//
+//    zoom_percent(level=40)  = pow(10, (40 - -20) / (60 - -20) * (log10(100,000) - log10(10)) + log10(10))
+//                            = pow(10, 3/4 * (5 - 1) + 1)
+//                            = pow(10, 4)
+//                            = 10000
+//
+//    zoom_percent(level=0)   = pow(10, (0 - -20) / (60 - -20) * (log10(100,000) - log10(10)) + log10(10))
+//                            = pow(10, 1/4 * (5 - 1) + 1)
+//                            = pow(10, 2)
+//                            = 100
+//
+//    zoom_percent(level=-20) = pow(10, (-20 - -20) / (60 - -20) * (log10(100,000) - log10(10)) + log10(10))
+//                            = pow(10, 0/4 * (5 - 1) + 1)
+//                            = pow(10, 1)
+//                            = 10
+//
+// ...so that zoom levels of 0, 40 and 60 still correspond to zoom percents of 100, 10,000 and 100,000.
+// And the new zoom level of -20 corresponds to zoom percent 10.
+//
 const double
 GPlatesGui::ViewportZoom::s_max_zoom_percent = 100000.0;
 

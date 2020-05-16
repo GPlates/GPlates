@@ -564,8 +564,8 @@ namespace GPlatesQtWidgets
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialisedGL;
 
-		//! The current model-view transform for regular OpenGL rendering.
-		GPlatesOpenGL::GLMatrix d_gl_model_view_transform;
+		//! The current view transform for regular OpenGL rendering.
+		GPlatesOpenGL::GLMatrix d_gl_view_transform;
 
 		/**
 		 * The current projection transform for OpenGL rendering of the *front* visible half of the globe.
@@ -677,6 +677,7 @@ namespace GPlatesQtWidgets
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLMatrix &view_transform,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,

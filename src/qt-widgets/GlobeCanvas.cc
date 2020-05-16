@@ -78,8 +78,8 @@
 
 /**
  * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
- * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
- * accordingly.
+ * diameter of the Globe. This creates a little space between the globe circumference and the viewport.
+ * When the GlobeCanvas is resized, the Globe will be scaled accordingly.
  *
  * The value of this constant is purely cosmetic.
  */
@@ -87,14 +87,6 @@ const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat
 
 namespace 
 {
-	/**
-	 * The view is initially oriented such that the global x-axis points out of the screen.
-	 * So set our viewpoint to be along the positive x-axis (looking at the origin).
-	 *
-	 * This should be outside the globe (centred at origin) - should have magnitude greater than 1.0.
-	 */
-	static const GPlatesMaths::Vector3D EYE_POSITION(5.0, 0, 0);
-
 	/**
 	 * Calculate the globe-position discriminant for the universe coordinates @a y and @a z.
 	 */
@@ -205,6 +197,7 @@ namespace
 			unsigned int scene_view_width,
 			unsigned int scene_view_height,
 			const double &zoom_factor,
+			GPlatesOpenGL::GLMatrix &view_transform,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
@@ -221,19 +214,55 @@ namespace
 		// This is effectively does the equivalent culling of the opaque disc but in the
 		// transformation pipeline instead of the rasterisation pipeline.
 		//
-		static const GLdouble eye_to_globe_centre_distance = EYE_POSITION.magnitude().dval();
+
+		//
+		// View transform.
+		//
+
+		// Set up our universe coordinate system (the standard geometric one):
+		//   Z points up
+		//   Y points right
+		//   X points out of the screen
+		//
+		// Note that, for 'orthographic' viewing (as opposed to 'perspective'), the 'eye' can be anywhere
+		// along the x-axis (and looking at the centre of the globe). This is because the view rays are
+		// parallel and hence only the direction matters (not the position). Well, the position does affect
+		// the near/far clip plane distances, but they're all adjusted based on the eye position, so the
+		// near/far clip planes always end up in the correct position regardless of the eye position.
+		// The end result is moving the eye position along the x-axis does not affect the rendered scene
+		// for 'orthographic' viewing (whereas it does affect the scene for 'perspective' viewing).
+		// Also note that, counter-intuitively, zooming into the view is not accomplished by moving
+		// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
+		// the orthographic viewing frustum (rectangular prism).
+		//
+		// In contrast, for 'perspective' viewing, zooming is accomplished by moving the eye position.
+		// Alternatively zooming could also be accomplished by narrowing the field-of-view, but it's better
+		// to keep the field-of-view constant since that is how we view the real world with the naked eye
+		// (as opposed to a telephoto lens where the viewing rays become more parallel with greater zoom).
+
+		// The view is oriented such that the global x-axis points out of the screen.
+		// So set our viewpoint to be along the positive x-axis (looking at the origin).
+		//
+		// Note: This distance should be non-zero (otherwise an eye-to-centre direction cannot be obtained).
+		//       Any positive value will do.
+		const GLdouble eye_to_globe_centre_distance = 1.0;
+		view_transform.glu_look_at(
+			eye_to_globe_centre_distance, 0, 0, // eye
+			0, 0, 0,  // centre
+			0, 0, 1); // up
+
 		// The 1.0 is the globe radius.
 		// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
 		// to the globe because some objects are outside the globe such as rendered arrows.
-		static const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
-		static const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
+		const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
+		const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
 		// The stars need a far clip plane further away.
-		static const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-		static const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
+		const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
+		const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
 		// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
 		// Also the opaque sphere is now rendered as a flat disk facing the camera and
 		// positioned through the globe centre - so we don't want that to get clipped away either.
-		static const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
+		const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
 		// The smaller/larger of the dimensions (width/height) of the screen.
 		double smaller_dim;
@@ -273,6 +302,10 @@ namespace
 			ortho_bottom = -smaller_dim_clipping;
 			ortho_top = smaller_dim_clipping;
 		}
+
+		//
+		// Projection transforms.
+		//
 
 		projection_transform_include_front_half_globe.gl_ortho(
 				ortho_left, ortho_right,
@@ -630,7 +663,7 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary()
 {
 	// Return early if we've already initialised OpenGL.
 	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
-	// that call our 'initializeGL()' method - we also now it when a client wants to render the
+	// that call our 'initializeGL()' method - it's now also when a client wants to render the
 	// scene to an image (instead of render/update the QGLWidget itself).
 	if (d_initialisedGL)
 	{
@@ -655,20 +688,6 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	d_gl_off_screen_context =
 			GPlatesOpenGL::GLOffScreenContext::create(
 					GPlatesOpenGL::GLOffScreenContext::QGLWidgetContext(this, d_gl_context));
-
-	//
-	// Set up the initial model-view transform.
-	//
-
-	// Set up our universe coordinate system (the standard geometric one):
-	//   Z points up
-	//   Y points right
-	//   X points out of the screen
-	d_gl_model_view_transform.gl_load_identity();
-	d_gl_model_view_transform.glu_look_at(
-			EYE_POSITION.x().dval(), EYE_POSITION.y().dval(), EYE_POSITION.z().dval(), // eye
-			0, 0, 0,  // centre
-			0, 0, 1); // up
 
 	// Get a renderer - it'll be used to initialise some OpenGL objects.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -726,6 +745,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
+			d_gl_view_transform,
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,
 			d_gl_projection_transform_include_full_globe,
@@ -876,6 +896,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	const GPlatesOpenGL::GLMatrix &projection_matrix_tile = projection_transform_tile->get_matrix();
 
 	// Calculate the projection matrices associated with the current image dimensions.
+	GPlatesOpenGL::GLMatrix tile_view_transform;
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_front_half_globe(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_rear_half_globe(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_full_globe(projection_matrix_tile);
@@ -885,6 +906,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			image.width(),
 			image.height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			tile_view_transform,
 			tile_projection_transform_include_front_half_globe,
 			tile_projection_transform_include_rear_half_globe,
 			tile_projection_transform_include_full_globe,
@@ -896,6 +918,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
 			renderer,
+			tile_view_transform,
 			tile_projection_transform_include_front_half_globe,
 			tile_projection_transform_include_rear_half_globe,
 			tile_projection_transform_include_full_globe,
@@ -971,6 +994,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	renderer->gl_scissor(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
 
 	// Calculate the projection matrices associated with the feedback paint device dimensions.
+	GPlatesOpenGL::GLMatrix view_transform;
 	GPlatesOpenGL::GLMatrix projection_transform_include_front_half_globe;
 	GPlatesOpenGL::GLMatrix projection_transform_include_rear_half_globe;
 	GPlatesOpenGL::GLMatrix projection_transform_include_full_globe;
@@ -980,6 +1004,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			view_transform,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
 			projection_transform_include_full_globe,
@@ -991,6 +1016,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
+			view_transform,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
 			projection_transform_include_full_globe,
@@ -1004,6 +1030,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 GPlatesQtWidgets::GlobeCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeCanvas::render_scene(
 		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &view_transform,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
@@ -1024,7 +1051,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	// The projection transform is set inside the globe renderer.
 	// This is because there are two projection transforms (with differing far clip planes)
 	// and the choice is determined by the globe renderer.
-	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
+	renderer.gl_load_matrix(GL_MODELVIEW, view_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 	const float scale = calculate_scale(paint_device_width, paint_device_height);
@@ -1289,6 +1316,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	update_dimensions();
 
 	// Update the projection matrices.
+	d_gl_view_transform.gl_load_identity();
 	d_gl_projection_transform_include_front_half_globe.gl_load_identity();
 	d_gl_projection_transform_include_rear_half_globe.gl_load_identity();
 	d_gl_projection_transform_include_full_globe.gl_load_identity();
@@ -1298,6 +1326,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 			width(),
 			height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			d_gl_view_transform,
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,
 			d_gl_projection_transform_include_full_globe,
