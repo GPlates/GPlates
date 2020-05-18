@@ -150,6 +150,8 @@ set(srcs
     GlobeCanvasToolAdapter.cc
     GlobeCanvasToolAdapter.h
     GlobeOrientation.h
+    GlobeProjectionType.cc
+    GlobeProjectionType.h
     GlobeRenderedGeometryCollectionPainter.cc
     GlobeRenderedGeometryCollectionPainter.h
     GlobeRenderedGeometryLayerPainter.cc

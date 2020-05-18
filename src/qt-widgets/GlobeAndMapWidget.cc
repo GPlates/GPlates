@@ -283,14 +283,13 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		const GPlatesGui::ViewportProjection &view_projection)
 {
-	// Update the map canvas's projection.
-	d_map_view_ptr->map_canvas().map().set_projection_type(
-		view_projection.get_projection_type());
-	d_map_view_ptr->map_canvas().map().set_central_meridian(
-		view_projection.get_central_meridian());
-
-	if (view_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
+	// If a globe projection.
+	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
+		view_projection.get_globe_projection_type())
 	{
+		// Update the globe canvas's projection.
+		d_globe_canvas_ptr->globe().set_projection_type(globe_projection_type.get());
+
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();
 		d_globe_canvas_ptr->update_canvas();
@@ -300,8 +299,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		}
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 	}
-	else
+	else // map projection...
 	{
+		// Update the map canvas's projection.
+		d_map_view_ptr->map_canvas().map().set_projection_type(
+			view_projection.get_map_projection_type().get());
+		d_map_view_ptr->map_canvas().map().set_central_meridian(
+			view_projection.get_map_central_meridian());
+
 		// Switch to map.
 		d_active_view_ptr = d_map_view_ptr.get();
 		// d_map_view_ptr->set_view();

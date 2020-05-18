@@ -31,9 +31,9 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-#include "file-io/Proj.h"
+#include "ProjectionException.h"
 
-#include "gui/ProjectionException.h"
+#include "file-io/Proj.h"
 
 #include "maths/GreatCircle.h"
 #include "maths/LatLonPoint.h"
@@ -58,21 +58,23 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<const MapProjection> non_null_ptr_to_const_type;
 
 
-		// Make the first enum Orthographic (even though we don't implement that
-		// as a map projection), so that we'll match up better with the combo-box indices, which will
-		// use the zeroth entry for the 3D Orthographic (Globe) view. 
 		enum Type
 		{
-			ORTHOGRAPHIC = 0,
 			RECTANGULAR,
 			MERCATOR,
 			MOLLWEIDE,
 			ROBINSON,
-			LAMBERT_CONIC,
 
 			NUM_PROJECTIONS
 		};
 
+		/**
+		 * Return a suitable label naming the specified projection type.
+		 */
+		static
+		const char *
+		get_display_name(
+				Type projection_type);
 
 		/**
 		 * Creates a @a MapProjection object with no map projection setting.
@@ -192,8 +194,6 @@ namespace GPlatesGui
 
 			
 	private:
-
-		static const int MIN_PROJECTION_INDEX = RECTANGULAR;
 
 #if defined(GPLATES_USING_PROJ4)
 

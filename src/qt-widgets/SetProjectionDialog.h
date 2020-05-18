@@ -32,14 +32,11 @@
 
 #include "GPlatesDialog.h"
 
-#include "gui/MapProjection.h"
+#include "gui/ViewportProjection.h"
 
 
 namespace GPlatesQtWidgets
 {
-
-	class ViewportWindow;
-
 	class SetProjectionDialog: 
 			public GPlatesDialog,
 			protected Ui_SetProjectionDialog
@@ -49,7 +46,6 @@ namespace GPlatesQtWidgets
 	public:
 		
 		SetProjectionDialog(
-				ViewportWindow &viewport_window,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -61,21 +57,26 @@ namespace GPlatesQtWidgets
 		 * appropriate states.
 		 */
 		void
-		setup();
+		setup(
+				const GPlatesGui::ViewportProjection &viewport_projection)
+		{
+			set_projection(viewport_projection);
+		}
 
 		void
 		set_projection(
-			GPlatesGui::MapProjection::Type projection_type);
+				const GPlatesGui::ViewportProjection &viewport_projection);
 
 		void
-		set_central_meridian(
-			double central_meridian);
+		set_map_central_meridian(
+				double map_central_meridian);
 
-		GPlatesGui::MapProjection::Type
+
+		GPlatesGui::ViewportProjection::projection_type
 		get_projection_type() const;
 
 		double
-		central_meridian();
+		get_map_central_meridian();
 
 	private Q_SLOTS:
 
@@ -84,14 +85,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		update_central_meridian_status();
-
-	private:
-
-		/**
-		 * View state
-		 */
-		ViewportWindow *d_viewport_window_ptr;
-
 	};
 
 }

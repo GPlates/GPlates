@@ -50,6 +50,7 @@
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/FileIODirectoryConfigurations.h"
+#include "gui/GlobeProjectionType.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/PythonManager.h"
@@ -107,7 +108,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
-			new GPlatesGui::ViewportProjection(GPlatesGui::MapProjection::ORTHOGRAPHIC)),
+			new GPlatesGui::ViewportProjection(GPlatesGui::GlobeProjection::ORTHOGRAPHIC)),
 	d_digitise_geometry_builder(
 			new GPlatesViewOperations::GeometryBuilder()),
 	d_focused_feature_geometry_builder(

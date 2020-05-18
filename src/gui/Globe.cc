@@ -67,6 +67,7 @@ GPlatesGui::Globe::Globe(
 	d_visual_layers(visual_layers),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_globe_orientation_changing_during_mouse_drag(false),
+	d_globe_projection_type(GlobeProjection::ORTHOGRAPHIC),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
 			gl_visual_layers,
@@ -87,6 +88,7 @@ GPlatesGui::Globe::Globe(
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_globe_orientation_changing_during_mouse_drag(false),
+	d_globe_projection_type(existing_globe.d_globe_projection_type),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
 			gl_visual_layers,

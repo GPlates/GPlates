@@ -30,29 +30,48 @@
 #include "MapView.h"
 #include "ReconstructionViewWidget.h"
 #include "QtWidgetUtils.h"
-#include "ViewportWindow.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
 
 GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
-		ViewportWindow &viewport_window,
 		QWidget *parent_) :
-	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_viewport_window_ptr(&viewport_window)
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint)
 {
 	setupUi(this);
 
-	// FIXME: Synchronise these with the definitions in the the MapProjection class. 
-	combo_projection->addItem(tr("3D Orthographic"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
-	combo_projection->addItem(tr("Rectangular"),GPlatesGui::MapProjection::RECTANGULAR);
-	combo_projection->addItem(tr("Mercator"),GPlatesGui::MapProjection::MERCATOR);
-	combo_projection->addItem(tr("Mollweide"),GPlatesGui::MapProjection::MOLLWEIDE);
-	combo_projection->addItem(tr("Robinson"),GPlatesGui::MapProjection::ROBINSON);
+	// First add the globe projections.
+	for (unsigned int globe_projection_index = 0;
+		globe_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS;
+		++globe_projection_index)
+	{
+		const GPlatesGui::GlobeProjection::Type globe_projection_type =
+				static_cast<GPlatesGui::GlobeProjection::Type>(globe_projection_index);
 
-	// The central_meridian spinbox should be disabled if we're in Orthographic mode. 
+		combo_projection->addItem(
+				tr(GPlatesGui::GlobeProjection::get_display_name(globe_projection_type)),
+				globe_projection_index);
+	}
+
+	// Then add the map projections.
+	// NOTE: The map projections will have combo box indices after the globe projections.
+	for (unsigned int map_projection_index = 0;
+		map_projection_index < GPlatesGui::MapProjection::NUM_PROJECTIONS;
+		++map_projection_index)
+	{
+		const GPlatesGui::MapProjection::Type map_projection_type =
+			static_cast<GPlatesGui::MapProjection::Type>(map_projection_index);
+
+		combo_projection->addItem(
+				tr(GPlatesGui::MapProjection::get_display_name(map_projection_type)),
+				// Add map projection indices *after* the globe projection indices...
+				GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_index);
+	}
+
+	// The central_meridian spinbox should be disabled if we're in a globe projection. 
 	update_central_meridian_status();
+
 	QObject::connect(
 			combo_projection,
 			SIGNAL(currentIndexChanged(int)),
@@ -75,12 +94,31 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 
 void
 GPlatesQtWidgets::SetProjectionDialog::set_projection(
-		GPlatesGui::MapProjection::Type projection_type)
+		const GPlatesGui::ViewportProjection &viewport_projection)
 {
+	// Get the projection index of the viewport projection (it's either a globe or map projection).
+	unsigned int projection_index;
+	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
+		viewport_projection.get_globe_projection_type())
+	{
+		projection_index = globe_projection_type.get();
+	}
+	else // map projection...
+	{
+		boost::optional<GPlatesGui::MapProjection::Type> map_projection_type =
+				viewport_projection.get_map_projection_type();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				map_projection_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Map projection indices come *after* the globe projection indices.
+		projection_index = GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_type.get();
+	}
+
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
 	// label)
-	const int idx = combo_projection->findData(projection_type);
+	const int idx = combo_projection->findData(projection_index);
 	if (idx != -1)
 	{
 		combo_projection->setCurrentIndex(idx);
@@ -88,49 +126,46 @@ GPlatesQtWidgets::SetProjectionDialog::set_projection(
 }
 
 void
-GPlatesQtWidgets::SetProjectionDialog::set_central_meridian(
+GPlatesQtWidgets::SetProjectionDialog::set_map_central_meridian(
 		double central_meridian_)
 {
 	spin_central_meridian->setValue(central_meridian_);
 }
 
 void
-GPlatesQtWidgets::SetProjectionDialog::setup()
-{
-	// Get the current projection. 
-	const GPlatesGui::MapProjection::Type projection_type =
-		d_viewport_window_ptr->reconstruction_view_widget().map_view().map_canvas().map().projection_type();
-
-	set_projection(projection_type);
-}
-
-void
 GPlatesQtWidgets::SetProjectionDialog::update_central_meridian_status()
 {
+	// Disable for the globe projections (map projections added to combo box after globe projections).
 	spin_central_meridian->setDisabled(
-			combo_projection->currentIndex() == GPlatesGui::MapProjection::ORTHOGRAPHIC);
+			combo_projection->currentIndex() < GPlatesGui::GlobeProjection::NUM_PROJECTIONS);
 }
 
-GPlatesGui::MapProjection::Type
+GPlatesGui::ViewportProjection::projection_type
 GPlatesQtWidgets::SetProjectionDialog::get_projection_type() const
 {
 	// Retrieve the embedded QVariant for the selected combobox choice.
 	QVariant projection_qv = combo_projection->itemData(combo_projection->currentIndex());
 
-	// Extract projection type from QVariant.
-	const GPlatesGui::MapProjection::Type projection_type =
-		static_cast<GPlatesGui::MapProjection::Type>(projection_qv.toInt());
-	
+	// Extract projection index from QVariant.
+	const unsigned int projection_index = projection_qv.toUInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			projection_type >= 0 && projection_type < GPlatesGui::MapProjection::NUM_PROJECTIONS,
+			projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
 			GPLATES_ASSERTION_SOURCE);
 
-	return projection_type;
+	// If it's a globe projection.
+	if (projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
+	{
+		return GPlatesGui::ViewportProjection::projection_type(
+				static_cast<GPlatesGui::GlobeProjection::Type>(projection_index));
+	}
+
+	// Map projection (projection index is after all globe projections).
+	return GPlatesGui::ViewportProjection::projection_type(
+			static_cast<GPlatesGui::MapProjection::Type>(projection_index - GPlatesGui::GlobeProjection::NUM_PROJECTIONS));
 }
 
 double
-GPlatesQtWidgets::SetProjectionDialog::central_meridian()
+GPlatesQtWidgets::SetProjectionDialog::get_map_central_meridian()
 {
 	return spin_central_meridian->value();
 }
-

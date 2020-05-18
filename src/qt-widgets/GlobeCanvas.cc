@@ -197,6 +197,7 @@ namespace
 			unsigned int scene_view_width,
 			unsigned int scene_view_height,
 			const double &zoom_factor,
+			const GPlatesGui::GlobeProjection::Type globe_projection_type,
 			GPlatesOpenGL::GLMatrix &view_transform,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -215,9 +216,6 @@ namespace
 		// transformation pipeline instead of the rasterisation pipeline.
 		//
 
-		// TODO: Add ability to select perspective viewing.
-		bool using_orthographic_view = true;
-
 		//
 		// Set up our universe coordinate system (the standard geometric one):
 		//   Z points up
@@ -225,7 +223,7 @@ namespace
 		//   X points out of the screen
 		//
 
-		if (using_orthographic_view)
+		if (globe_projection_type == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 		{
 			//
 			// View transform.
@@ -334,7 +332,7 @@ namespace
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
 		}
-		else // perspective view...
+		else if (globe_projection_type == GPlatesGui::GlobeProjection::PERSPECTIVE)
 		{
 			//
 			// View transform.
@@ -493,6 +491,10 @@ namespace
 					aspect_ratio,
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
+		}
+		else // an unhandled globe projection type...
+		{
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		}
 
 		// The text overlay coordinates are specified in window coordinates.
@@ -1070,6 +1072,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			image.width(),
 			image.height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			d_globe.get_projection_type(),
 			tile_view_transform,
 			tile_projection_transform_include_front_half_globe,
 			tile_projection_transform_include_rear_half_globe,
@@ -1168,6 +1171,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			d_globe.get_projection_type(),
 			view_transform,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
@@ -1490,6 +1494,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 			width(),
 			height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
+			d_globe.get_projection_type(),
 			d_gl_view_transform,
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,

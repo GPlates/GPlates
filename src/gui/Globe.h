@@ -33,6 +33,7 @@
 
 #include "Colour.h"
 #include "ColourScheme.h"
+#include "GlobeProjectionType.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
@@ -136,6 +137,20 @@ namespace GPlatesGui
 			return *d_globe_orientation_ptr;
 		}
 
+
+		void
+		set_projection_type(
+				GlobeProjection::Type globe_projection_type)
+		{
+			d_globe_projection_type = globe_projection_type;
+		}
+
+		GlobeProjection::Type
+		get_projection_type() const
+		{
+			return d_globe_projection_type;
+		}
+
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *
@@ -203,6 +218,11 @@ namespace GPlatesGui
 		 * This is currently used to temporarily reduce the sampling rate for 3D scalar field iso-surfaces.
 		 */
 		bool d_globe_orientation_changing_during_mouse_drag;
+
+		/**
+		 * Globe view projection (3D orthographic or 3D perspective).
+		 */
+		GlobeProjection::Type d_globe_projection_type;
 
 		/**
 		 * Painter used to draw @a RenderedGeometry objects on the globe.

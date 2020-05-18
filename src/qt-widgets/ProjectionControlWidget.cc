@@ -42,12 +42,34 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 {
 	setupUi(this);
 	show_label(false);
-	
-	add_projection(tr("3D Orthographic"), GPlatesGui::MapProjection::ORTHOGRAPHIC, tr("Ctrl+1"));
-	add_projection(tr("Rectangular"), GPlatesGui::MapProjection::RECTANGULAR, tr("Ctrl+2"));
-	add_projection(tr("Mercator"), GPlatesGui::MapProjection::MERCATOR, tr("Ctrl+3"));
-	add_projection(tr("Mollweide"), GPlatesGui::MapProjection::MOLLWEIDE, tr("Ctrl+4"));
-	add_projection(tr("Robinson"), GPlatesGui::MapProjection::ROBINSON, tr("Ctrl+5"));
+
+	// First add the globe projections.
+	for (unsigned int globe_projection_index = 0;
+		globe_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS;
+		++globe_projection_index)
+	{
+		const GPlatesGui::GlobeProjection::Type globe_projection_type =
+				static_cast<GPlatesGui::GlobeProjection::Type>(globe_projection_index);
+
+		add_projection(
+				tr(GPlatesGui::GlobeProjection::get_display_name(globe_projection_type)),
+				globe_projection_index);
+	}
+
+	// Then add the map projections.
+	// NOTE: The map projections will have combo box indices after the globe projections.
+	for (unsigned int map_projection_index = 0;
+		map_projection_index < GPlatesGui::MapProjection::NUM_PROJECTIONS;
+		++map_projection_index)
+	{
+		const GPlatesGui::MapProjection::Type map_projection_type =
+				static_cast<GPlatesGui::MapProjection::Type>(map_projection_index);
+
+		add_projection(
+				tr(GPlatesGui::MapProjection::get_display_name(map_projection_type)),
+				// Add map projection indices *after* the globe projection indices...
+				GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_index);
+	}
 	
 	// Handle events from the user changing the combobox.
 	QObject::connect(combo_projections, SIGNAL(activated(int)),
@@ -64,11 +86,13 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 void
 GPlatesQtWidgets::ProjectionControlWidget::add_projection(
 		const QString &projection_text,
-		GPlatesGui::MapProjection::Type projection_type,
-		const QString &shortcut_key_sequence)
+		unsigned int projection_index)
 {
 	// Add to the combo box.
-	combo_projections->addItem(projection_text, projection_type);
+	combo_projections->addItem(projection_text, projection_index);
+
+	// Shortcut "Ctrl+1" for first projection, "Ctrl+2" for second, etc.
+	const QString shortcut_key_sequence = QString("Ctrl+%1").arg(projection_index + 1);
 
 	// Set the tooltip text for the current item.
 	const QString combobox_item_tooltip_text = projection_text + " (" + shortcut_key_sequence + ")";
@@ -90,7 +114,7 @@ GPlatesQtWidgets::ProjectionControlWidget::add_projection(
 	addAction(shortcut_action);
 
 	// Set some data on the QAction so we know which projection it corresponds to when triggered.
-	shortcut_action->setData(static_cast<uint>(projection_type));
+	shortcut_action->setData(projection_index);
 
 	// Call handler when action is triggered.
 	QObject::connect(
@@ -106,16 +130,25 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_combobox_changed(
 	// Retrieve the embedded QVariant for the selected combobox choice.
 	QVariant selected_projection_qv = combo_projections->itemData(idx);
 
-	// Extract projection type from QVariant.
-	const GPlatesGui::MapProjection::Type projection_type =
-			static_cast<GPlatesGui::MapProjection::Type>(selected_projection_qv.toInt());
-	
+	// Extract projection index from QVariant.
+	const unsigned int selected_projection_index = selected_projection_qv.toUInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			projection_type >= 0 && projection_type < GPlatesGui::MapProjection::NUM_PROJECTIONS,
+			selected_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the projection type - it will also notify us of the change with its signal.
-	d_viewport_projection.set_projection_type(projection_type);
+	if (selected_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
+	{
+		// It's a globe projection.
+		d_viewport_projection.set_globe_projection_type(
+				static_cast<GPlatesGui::GlobeProjection::Type>(selected_projection_index));
+	}
+	else // map projection...
+	{
+		d_viewport_projection.set_map_projection_type(
+			// Map projection indices come *after* the globe projection indices...
+			static_cast<GPlatesGui::MapProjection::Type>(selected_projection_index - GPlatesGui::GlobeProjection::NUM_PROJECTIONS));
+	}
 }
 
 
@@ -137,11 +170,24 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_shortcut_triggered()
 			GPLATES_ASSERTION_SOURCE);
 
 	// Determine the projection to activate.
-	const GPlatesGui::MapProjection::Type projection_type =
-			static_cast<GPlatesGui::MapProjection::Type>(shortcut_action->data().toUInt());
+	const unsigned int projection_index = shortcut_action->data().toInt();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
+			GPLATES_ASSERTION_SOURCE);
 
 	// Set the projection type - it will also notify us of the change with its signal.
-	d_viewport_projection.set_projection_type(projection_type);
+	if (projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
+	{
+		// It's a globe projection.
+		d_viewport_projection.set_globe_projection_type(
+				static_cast<GPlatesGui::GlobeProjection::Type>(projection_index));
+	}
+	else // map projection...
+	{
+		d_viewport_projection.set_map_projection_type(
+				// Map projection indices come *after* the globe projection indices...
+				static_cast<GPlatesGui::MapProjection::Type>(projection_index - GPlatesGui::GlobeProjection::NUM_PROJECTIONS));
+	}
 }
 
 
@@ -149,12 +195,29 @@ void
 GPlatesQtWidgets::ProjectionControlWidget::handle_projection_type_changed(
 		const GPlatesGui::ViewportProjection &viewport_projection)
 {
-	QVariant selected_projection_qv(viewport_projection.get_projection_type());
-	
+	// Get the projection index of the viewport projection (it's either a globe or map projection).
+	unsigned int projection_index;
+	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
+		viewport_projection.get_globe_projection_type())
+	{
+		projection_index = globe_projection_type.get();
+	}
+	else // map projection...
+	{
+		boost::optional<GPlatesGui::MapProjection::Type> map_projection_type =
+				viewport_projection.get_map_projection_type();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				map_projection_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Map projection indices come *after* the globe projection indices.
+		projection_index = GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_type.get();
+	}
+
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
 	// label)
-	const int idx = combo_projections->findData(selected_projection_qv);
+	const int idx = combo_projections->findData(projection_index);
 	if (idx != -1) {
 		// This will not trigger activate() causing a infinite cycle
 		// because we're setting this programmatically.

@@ -52,21 +52,31 @@ namespace
 	struct ProjectionParameters 
 	{
 		GPlatesGui::MapProjection::Type projection_name;
+		const char *label_name;
 		const char* proj4_name;
 		const char* proj4_ellipse;
 		double scaling_factor;
 		bool inverse_defined;
 	};
 
-	static ProjectionParameters projection_table[] = {
-		{GPlatesGui::MapProjection::ORTHOGRAPHIC,"","",0.,false},
-		{GPlatesGui::MapProjection::RECTANGULAR,"proj=latlong","ellps=WGS84",(180.0 / GPlatesMaths::PI)/*RAD_TO_DEG*/,true},
-		{GPlatesGui::MapProjection::MERCATOR,"proj=merc","ellps=WGS84",0.0000070,true},
-		{GPlatesGui::MapProjection::MOLLWEIDE,"proj=moll","ellps=WGS84",0.0000095,true},
-		{GPlatesGui::MapProjection::ROBINSON,"proj=robin","ellps=WGS84",0.0000095,true},
-		{GPlatesGui::MapProjection::LAMBERT_CONIC,"proj=lcc","ellps=WGS84",0.000003,true}
+	static ProjectionParameters projection_table[] =
+	{
+		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", (180.0 / GPlatesMaths::PI)/*RAD_TO_DEG*/, true},
+		{GPlatesGui::MapProjection::MERCATOR, "Mercator", "proj=merc", "ellps=WGS84", 0.0000070, true},
+		{GPlatesGui::MapProjection::MOLLWEIDE, "Mollweide", "proj=moll", "ellps=WGS84", 0.0000095, true},
+		{GPlatesGui::MapProjection::ROBINSON, "Robinson", "proj=robin", "ellps=WGS84", 0.0000095, true}
+		// This was never used as a map projection, probably because it's not a standard projection, so we'll remove it as a choice...
+		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003, true}
 	};
 
+}
+
+
+const char *
+GPlatesGui::MapProjection::get_display_name(
+		Type projection_type)
+{
+	return projection_table[projection_type].label_name;
 }
 
 
@@ -79,7 +89,7 @@ GPlatesGui::MapProjection::MapProjection():
 	d_proj_info(proj_info()),
 #endif
 	d_scale(1.),
-	d_projection_type(ORTHOGRAPHIC),
+	d_projection_type(RECTANGULAR),
 	d_central_llp(0,0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
@@ -96,7 +106,7 @@ GPlatesGui::MapProjection::MapProjection(
 	d_proj_info(proj_info()),
 #endif
 	d_scale(1.),
-	d_projection_type(ORTHOGRAPHIC),
+	d_projection_type(RECTANGULAR),
 	d_central_llp(0,0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
@@ -113,7 +123,7 @@ GPlatesGui::MapProjection::MapProjection(
 	d_proj_info(proj_info()),
 #endif
 	d_scale(1.),
-	d_projection_type(ORTHOGRAPHIC),
+	d_projection_type(RECTANGULAR),
 	d_central_llp(projection_settings.get_central_llp()),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
@@ -153,14 +163,6 @@ void
 GPlatesGui::MapProjection::set_projection_type(
 		MapProjection::Type projection_type_)
 {
-
-	if ((projection_type_ < MIN_PROJECTION_INDEX) || (projection_type_ > NUM_PROJECTIONS-1))
-	{
-		// An invalid projection type was set. 	
-		d_projection_type = ORTHOGRAPHIC;
-		return;
-	}
-
 	// Set up the central longitude string.
 	QString lon_string("lon_0=");
 	double lon = d_central_llp.longitude();

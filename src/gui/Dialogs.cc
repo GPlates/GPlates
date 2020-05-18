@@ -777,7 +777,7 @@ GPlatesGui::Dialogs::set_projection_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(&viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -788,7 +788,8 @@ GPlatesGui::Dialogs::pop_up_set_projection_dialog()
 {
 	GPlatesQtWidgets::SetProjectionDialog &dialog = set_projection_dialog();
 
-	dialog.setup();
+	GPlatesGui::ViewportProjection &viewport_projection = view_state().get_viewport_projection();
+	dialog.setup(viewport_projection);
 
 	if (dialog.exec())
 	{
@@ -796,9 +797,8 @@ GPlatesGui::Dialogs::pop_up_set_projection_dialog()
 		{
 			// Notify the view state of the projection change.
 			// It will handle the rest.
-			GPlatesGui::ViewportProjection &viewport_projection = view_state().get_viewport_projection();
 			viewport_projection.set_projection_type(dialog.get_projection_type());
-			viewport_projection.set_central_meridian(dialog.central_meridian());
+			viewport_projection.set_map_central_meridian(dialog.get_map_central_meridian());
 		}
 		catch(GPlatesGui::ProjectionException &e)
 		{

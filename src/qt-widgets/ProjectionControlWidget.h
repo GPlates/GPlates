@@ -32,8 +32,6 @@
 
 #include "ProjectionControlWidgetUi.h"
 
-#include "gui/MapProjection.h"
-
 
 namespace GPlatesGui
 {
@@ -83,8 +81,7 @@ namespace GPlatesQtWidgets
 		void
 		add_projection(
 				const QString &projection_text,
-				GPlatesGui::MapProjection::Type projection_type,
-				const QString &shortcut_key_sequence);
+				unsigned int projection_index);
 
 	};
 }
