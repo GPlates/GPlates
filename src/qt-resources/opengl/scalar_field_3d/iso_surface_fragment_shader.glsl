@@ -100,17 +100,6 @@ uniform float light_ambient_contribution;
 // For testing purposes
 // float light_ambient_contribution = test_variable_0;
 
-//
-// View options.
-//
-
-// If using an orthographic, instead of perspective, projection.
-uniform bool using_ortho_projection;
-// Eye position (only applies to perspective projection).
-// There's not really any eye position with an orthographic projection.
-// Instead it gets emulated in the shader.
-uniform vec3 perspective_projection_eye_position;
-
 
 //
 // Depth occlusion options.
@@ -855,7 +844,6 @@ bool
 render_volume_fill_walls(
 		Ray ray,
 		float lambda_outer_sphere_entry_point,
-		vec3 eye_position,
 		inout vec4 colour_background,
 		inout vec3 iso_surface_position,
 		inout vec2 lambda_min_max)
@@ -897,7 +885,7 @@ render_volume_fill_walls(
 	vec4 colour_wall = vec4(1,1,1,1);
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
+			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
 	vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
 	int cube_face_index_wall;
@@ -1033,7 +1021,6 @@ reduce_depth_range_to_volume_fill_walls(
 		Ray ray,
 		float lambda_outer_sphere_entry_point,
 		float lambda_outer_sphere_exit_point,
-		vec3 eye_position,
 		inout vec2 lambda_min_max)
 {
 	// The position along the ray where it enters/exits the outer sphere.
@@ -1088,7 +1075,7 @@ reduce_depth_range_to_volume_fill_walls(
 		{
 			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_min_depth = convert_screen_space_depth_to_ray_lambda(
-					min_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
+					min_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
 			lambda_min_max.x = max(lambda_min_max.x, lambda_min_depth);
 		}
 		
@@ -1097,7 +1084,7 @@ reduce_depth_range_to_volume_fill_walls(
 		{
 			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_max_depth = convert_screen_space_depth_to_ray_lambda(
-					max_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
+					max_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
 			lambda_min_max.y = min(lambda_min_max.y, lambda_max_depth);
 		}
 	}
@@ -1355,8 +1342,6 @@ raycasting(
 {
 	// background colour
 	vec4 background_colour = vec4(0,0,0,0);
-	// position, where our ray starts
-	vec3 eye_position = vec3(0,0,0);
 	// lambda min max limits
 	vec2 lambda_min_max = vec2(0,0);
 
@@ -1462,26 +1447,23 @@ raycasting(
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Initialize ray
 
-	if (using_ortho_projection)
-	{
-		// Calculate a pseudo eye position when using an orthographic view projection.
-		// The real eye position is at infinity and generates parallel rays for all pixels.
-		// This is such that the ray will always be parallel to the view direction.
-		// Use an arbitrary post-projection screen-space depth of -2.
-		// Any value will do as long as it's outside the view frustum [-1,1] and not *on* the near plane (z = -1).
-		//
-		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
-	}
-	else
-	{
-		eye_position = perspective_projection_eye_position;
-	}
-
-	// Create the ray starting at eye position and moving into direction through near plane
+	// Create the ray starting at the ray origin and moving into direction through near plane.
+	//
+	// Normally the ray origin would be the eye/camera position, but for orthographic viewing the real eye position is at
+	// infinity and generates parallel rays for all pixels. Note that we also support perspective viewing, so it would be
+	// nice to calculate a ray origin that works for both orthographic and perspective viewing. Turns out it doesn't really
+	// matter where, along the ray, the ray origin is. As long as the ray line is correct. So the ray origin doesn't need to
+	// be the eye/camera position. The viewing transform is encoded in the model-view-projection transform so using that
+	// provides a way to support both orthographic and perspective viewing with the same code.
+	//
+	// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
+	// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
+	// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
+	// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
+	// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
 	//
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
+	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1569,7 +1551,7 @@ raycasting(
 		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
 		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
+				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
 		lambda_min_max.y = min(lambda_min_max.y, depth_texture_lambda);
 	}
 
@@ -1582,8 +1564,7 @@ raycasting(
 	if (using_surface_fill_mask && using_volume_fill_wall_depth_range)
 	{
 		if (reduce_depth_range_to_volume_fill_walls(
-				ray, outer_sphere_interval.from, outer_sphere_interval.to,
-				eye_position, lambda_min_max))
+				ray, outer_sphere_interval.from, outer_sphere_interval.to, lambda_min_max))
 		{
 			// Force separate else clause to avoid Nvidia GLSL compiler bug (tested driver version 320.18)
 			// where 'lambda_min_max' is not copied back from function call.
@@ -1608,8 +1589,7 @@ raycasting(
 	if (using_surface_fill_mask && show_volume_fill_walls)
 	{
 		if (!render_volume_fill_walls(
-				ray, outer_sphere_interval.from, eye_position,
-				background_colour, iso_surface_position, lambda_min_max))
+				ray, outer_sphere_interval.from, background_colour, iso_surface_position, lambda_min_max))
 		{
 			// There is no need to ray-trace, so set the colour and return.
 			colour = background_colour;

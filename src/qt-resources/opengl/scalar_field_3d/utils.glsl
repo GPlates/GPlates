@@ -132,15 +132,22 @@ screen_to_world(
 }
 
 // Ray initialization from screen-space coordinate.
+//
+// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
+// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
+// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
+// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
+// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
 Ray
 get_ray(
 		const vec2 screen_coord,
-		const mat4 model_view_proj_inverse,
-		const vec3 eye_position)
+		const mat4 model_view_proj_inverse)
 {
+	 vec3 ray_origin = screen_to_world(vec3(screen_coord, -2.0), model_view_proj_inverse);
+
 	 return Ray(
-		eye_position, // eye_position is the camera position in world coordinates
-		normalize(screen_to_world(vec3(screen_coord, 0.0), model_view_proj_inverse) - eye_position));
+		ray_origin,
+		normalize(screen_to_world(vec3(screen_coord, 0.0), model_view_proj_inverse) - ray_origin));
 }
 
 // Convert screen-space depth (in range [-1,1]) to ray distance/lambda.
@@ -149,10 +156,10 @@ convert_screen_space_depth_to_ray_lambda(
 		const float screen_space_depth,
 		const vec2 screen_coord,
 		const mat4 model_view_proj_inverse,
-		const vec3 eye_position)
+		const vec3 ray_origin)
 {
 	vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_proj_inverse);
-	return length(world_position - eye_position);
+	return length(world_position - ray_origin);
 }
 
 // Look up a 1D texture using 'input_value'.

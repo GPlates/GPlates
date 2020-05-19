@@ -788,13 +788,6 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			test_variables,
 			surface_occlusion_texture);
 
-	// Currently always using orthographic projection.
-	// TODO: Add support for perspective projection.
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
-			renderer,
-			"using_ortho_projection",
-			true);
-
 	// Specify the colour mode.
 	d_render_iso_surface_program_object.get()->gl_uniform1i(
 			renderer,
