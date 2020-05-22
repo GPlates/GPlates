@@ -232,6 +232,14 @@ namespace GPlatesOpenGL
 				double zNear,
 				double zFar);
 
+		/**
+		 * Replaces internal matrix with its inverse.
+		 *
+		 * Returns false if unable to invert (in which case internal matrix is not modified).
+		 */
+		bool
+		glu_invert_matrix();
+
 
 		////////////////////////////
 		// Used by implementation //
