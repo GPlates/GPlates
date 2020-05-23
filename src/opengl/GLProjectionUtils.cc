@@ -34,6 +34,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Vector3D.h"
 #include "maths/types.h"
 
@@ -115,6 +116,7 @@ namespace GPlatesOpenGL
 	}
 }
 
+
 int
 GPlatesOpenGL::GLProjectionUtils::glu_project(
 		const GLViewport &viewport,
@@ -127,12 +129,40 @@ GPlatesOpenGL::GLProjectionUtils::glu_project(
 		GLdouble *winy,
 		GLdouble *winz)
 {
-	return gluProject(
-			objx, objy, objz,
-			model_view_transform.get_matrix(),
-			projection_transform.get_matrix(),
-			viewport.get_viewport(),
-			winx, winy, winz);
+	double in_vec[4] = { objx, objy, objz, 1.0 };
+	double tmp_vec[4];
+
+	// Transform object-space vector first using model-view matrix then projection matrix.
+	model_view_transform.glu_mult_vec(in_vec, tmp_vec);
+	projection_transform.glu_mult_vec(tmp_vec, in_vec);
+
+	if (GPlatesMaths::are_almost_exactly_equal(in_vec[3], 0.0))
+	{
+		return GL_FALSE;
+	}
+
+	// Divide xyz by w.
+	const double inv_w = 1.0 / in_vec[3];
+	in_vec[0] *= inv_w;
+	in_vec[1] *= inv_w;
+	in_vec[2] *= inv_w;
+
+	// Convert range xyz range [-1, 1] to [0, 1].
+	in_vec[0] = 0.5 + 0.5 * in_vec[0];
+	in_vec[1] = 0.5 + 0.5 * in_vec[1];
+	in_vec[2] = 0.5 + 0.5 * in_vec[2];
+
+	// Convert x range [0, 1] to [viewport_x, viewport_x + viewport_width].
+	// Convert y range [0, 1] to [viewport_y, viewport_y + viewport_height].
+	in_vec[0] = viewport.x() + in_vec[0] * viewport.width();
+	in_vec[1] = viewport.y() + in_vec[1] * viewport.height();
+
+	// Return window coordinates.
+	*winx = in_vec[0];
+	*winy = in_vec[1];
+	*winz = in_vec[2];
+
+	return GL_TRUE;
 }
 
 
@@ -148,12 +178,47 @@ GPlatesOpenGL::GLProjectionUtils::glu_un_project(
 		GLdouble *objy,
 		GLdouble *objz)
 {
-	return gluUnProject(
-			winx, winy, winz,
-			model_view_transform.get_matrix(),
-			projection_transform.get_matrix(),
-			viewport.get_viewport(),
-			objx, objy, objz);
+	// Calculate inverse(projection * model_view).
+	GLMatrix inverse_model_view_projection(projection_transform);
+	inverse_model_view_projection.gl_mult_matrix(model_view_transform);
+	if (!inverse_model_view_projection.glu_inverse())
+	{
+		return GL_FALSE;
+	}
+
+	double in_vec[4] = { winx, winy, winz, 1.0 };
+
+	// Convert x range [viewport_x, viewport_x + viewport_width] to [0, 1].
+	// Convert y range [viewport_y, viewport_y + viewport_height] to [0, 1].
+	in_vec[0] = (in_vec[0] - viewport.x()) / viewport.width();
+	in_vec[1] = (in_vec[1] - viewport.y()) / viewport.height();
+
+	// Convert range xyz range [0, 1] to [-1, 1].
+	in_vec[0] = 2 * in_vec[0] - 1;
+	in_vec[1] = 2 * in_vec[1] - 1;
+	in_vec[2] = 2 * in_vec[2] - 1;
+
+	// Transform window-space vector using inverse model-view-projection matrix.
+	double out_vec[4];
+	inverse_model_view_projection.glu_mult_vec(in_vec, out_vec);
+
+	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
+	{
+		return GL_FALSE;
+	}
+
+	// Divide xyz by w.
+	const double inv_w = 1.0 / out_vec[3];
+	out_vec[0] *= inv_w;
+	out_vec[1] *= inv_w;
+	out_vec[2] *= inv_w;
+
+	// Return object-space coordinates.
+	*objx = out_vec[0];
+	*objy = out_vec[1];
+	*objz = out_vec[2];
+
+	return GL_TRUE;
 }
 
 
