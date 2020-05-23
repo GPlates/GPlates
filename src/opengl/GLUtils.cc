@@ -75,9 +75,40 @@ GPlatesOpenGL::GLUtils::check_gl_errors(
 	GLenum error;
 	while ((error = glGetError()) != GL_NO_ERROR)
 	{
-		const char *gl_error_string = reinterpret_cast<const char *>(gluErrorString(error));
+		const char *error_message = NULL;
 
-		qWarning() << "OpenGL error: " << gl_error_string;
+		// These are the error codes returned for all OpenGL versions up to, and including, 4.5.
+		switch (error)
+		{
+		case GL_INVALID_ENUM:
+			error_message = "Enumerated argument not legal - offending command ignored.";
+			break;
+		case GL_INVALID_VALUE:
+			error_message = "Numeric argument out of range - offending command ignored.";
+			break;
+		case GL_INVALID_OPERATION:
+			error_message = "Operation not allowed in the current state - offending command ignored.";
+			break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION:
+			error_message = "Framebuffer object not complete - offending command ignored.";
+			break;
+		case GL_OUT_OF_MEMORY:
+			error_message = "Not enough memory to execute command - state of GL is undefined.";
+			break;
+		case GL_STACK_UNDERFLOW:
+			error_message = "Internal stack underflow.";
+			break;
+		case GL_STACK_OVERFLOW:
+			error_message = "Internal stack overflow.";
+			break;
+
+		default:
+			// Unexpected error code - we'll just ignore and continue to next error code (if any).
+			error_message = "Unknown.";
+			break;
+		}
+
+		qWarning() << "OpenGL error: " << error_message;
 
 #ifdef GPLATES_DEBUG
 		GPlatesGlobal::Abort(assert_location);
