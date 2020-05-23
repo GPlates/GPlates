@@ -238,7 +238,15 @@ namespace GPlatesOpenGL
 		 * Returns false if unable to invert (in which case internal matrix is not modified).
 		 */
 		bool
-		glu_invert_matrix();
+		glu_inverse();
+
+		/**
+		 * Post-multiplies internal matrix with @a in_vec and stores result in @a out_vec.
+		 */
+		void
+		glu_mult_vec(
+				const double (&in_vec)[4],
+				double(&out_vec)[4]) const;
 
 
 		////////////////////////////

@@ -478,7 +478,7 @@ GPlatesOpenGL::GLMatrix::glu_perspective(
 
 
 bool
-GPlatesOpenGL::GLMatrix::glu_invert_matrix()
+GPlatesOpenGL::GLMatrix::glu_inverse()
 {
 	// Read from our internal matrix when inverting.
 	const GLdouble *const m = reinterpret_cast<const GLdouble *>(d_matrix);
@@ -539,4 +539,22 @@ GPlatesOpenGL::GLMatrix::glu_invert_matrix()
 	}
 
 	return true;
+}
+
+
+void
+GPlatesOpenGL::GLMatrix::glu_mult_vec(
+		const double (&in_vec)[4],
+		double(&out_vec)[4]) const
+{
+	const matrix_type &matrix = d_matrix;
+
+	for (unsigned int i = 0; i < 4; ++i)
+	{
+		out_vec[i] =
+				matrix[0][i] * in_vec[0] +
+				matrix[1][i] * in_vec[1] +
+				matrix[2][i] * in_vec[2] +
+				matrix[3][i] * in_vec[3];
+	}
 }
