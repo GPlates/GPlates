@@ -66,6 +66,7 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
+#include "opengl/GLProjectionUtils.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLTileRender.h"
 
@@ -789,8 +790,10 @@ GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change()
 void
 GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 {
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
+	double y_pos;
+	double z_pos;
+	get_universe_coord_y_z_of_mouse(y_pos, z_pos);
+
 	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
 	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
@@ -810,8 +813,10 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 void
 GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 {
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
+	double y_pos;
+	double z_pos;
+	get_universe_coord_y_z_of_mouse(y_pos, z_pos);
+
 	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
 	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
@@ -1531,25 +1536,34 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 }
 
 
-double
-GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
-		int screen_x) const
+void
+GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y_z(
+		int screen_x,
+		int screen_y,
+		double &universe_coord_y,
+		double &universe_coord_z) const
 {
-	// Scale the screen to a "unit square".
-	double y_pos = (2.0 * screen_x - width()) / d_smaller_dim;
+	// Note that OpenGL and Qt y-axes are the reverse of each other.
+	screen_y = height() - screen_y;
 
-	return (y_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
-}
+	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
+			GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
+					GPlatesOpenGL::GLViewport(0, 0, width(), height()),
+					d_gl_view_transform,
+					d_gl_projection_transform_include_full_globe,
+					screen_x,
+					screen_y);
+	if (!projected_point_on_sphere)
+	{
+		// Screen pixel does not intersect unit sphere.
+		//
+		// FIXME: For now, incorrectly returning centre of viewport.
+		//        But should find position, along ray of projected screen pixel, closest to unit sphere.
+		projected_point_on_sphere = centre_of_viewport().position_vector();
+	}
 
-
-double
-GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
-		int screen_y) const
-{
-	// Scale the screen to a "unit square".
-	double z_pos = (height() - 2.0 * screen_y) / d_smaller_dim;
-	
-	return (z_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
+	universe_coord_y = projected_point_on_sphere->y().dval();
+	universe_coord_z = projected_point_on_sphere->z().dval();
 }
 
 

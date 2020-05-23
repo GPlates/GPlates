@@ -694,52 +694,36 @@ namespace GPlatesQtWidgets
 		update_dimensions();
 
 		/**
-		 * Get the "universe" y-coordinate of the current mouse pointer position.
+		 * Get the "universe" y and z coordinates of the current mouse pointer position.
 		 *
 		 * Note that this function makes no statement about whether the current mouse
 		 * pointer position is on the globe or not.
 		 */
 		inline
-		double
-		get_universe_coord_y_of_mouse() const
+		void
+		get_universe_coord_y_z_of_mouse(
+				double &universe_coord_y,
+				double &universe_coord_z) const
 		{
-			return get_universe_coord_y(d_mouse_pointer_screen_pos_x);
+			return get_universe_coord_y_z(
+					d_mouse_pointer_screen_pos_x,
+					d_mouse_pointer_screen_pos_y,
+					universe_coord_y,
+					universe_coord_z);
 		}
 
 		/**
-		 * Get the "universe" z-coordinate of the current mouse pointer position.
-		 *
-		 * Note that this function makes no statement about whether the current mouse
-		 * pointer position is on the globe or not.
-		 */
-		inline
-		double
-		get_universe_coord_z_of_mouse() const
-		{
-			return get_universe_coord_z(d_mouse_pointer_screen_pos_y);
-		}
-
-		/**
-		 * Translate the screen x-coordinate @a screen_x to the corresponding "universe"
-		 * y-coordinate.
+		 * Translate the screen xy coordinates to the corresponding "universe" yz coordinates.
 		 *
 		 * Note that this function makes no statement about whether the screen position is
 		 * on the globe or not.
 		 */
-		double
-		get_universe_coord_y(
-				int screen_x) const;
-
-		/**
-		 * Translate the screen y-coordinate @a screen_y to the corresponding "universe"
-		 * z-coordinate.
-		 *
-		 * Note that this function makes no statement about whether the screen position is
-		 * on the globe or not.
-		 */
-		double
-		get_universe_coord_z(
-				int screen_y) const;
+		void
+		get_universe_coord_y_z(
+				int screen_x,
+				int screen_y,
+				double &universe_coord_y,
+				double &universe_coord_z) const;
 
 		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
