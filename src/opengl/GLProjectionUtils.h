@@ -30,6 +30,8 @@
 #include <utility>
 #include <opengl/OpenGL.h>
 
+#include "maths/Vector3D.h"
+
 #include "GLMatrix.h"
 #include "GLViewport.h"
 
@@ -73,6 +75,27 @@ namespace GPlatesOpenGL
 				GLdouble *objx,
 				GLdouble *objy,
 				GLdouble *objz);
+
+
+		/**
+		 * Projects a window coordinate onto the unit sphere in model space using the specified
+		 * model-view and projection transforms and the specified viewport.
+		 *
+		 * The returned vector is the intersection of the window coordinate (screen pixel)
+		 * projected onto the unit sphere, or returns false if misses the globe.
+		 *
+		 * The screen pixel is converted to a ray where the ray origin is screen pixel projected onto
+		 * the near plane (of the projection transform) and the ray direction is towards the screen
+		 * pixel projected onto the far plane. This ray is then intersected with the unit sphere
+		 * (centered on global origin). The first intersection with sphere is the returned position on sphere.
+		 */
+		boost::optional<GPlatesMaths::UnitVector3D>
+		project_window_coords_onto_unit_sphere(
+				const GLViewport &viewport,
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform,
+				const double &window_x,
+				const double &window_y);
 
 
 		/**

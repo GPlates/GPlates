@@ -39,84 +39,6 @@
 #include "maths/types.h"
 
 
-namespace GPlatesOpenGL
-{
-	namespace GLProjectionUtils
-	{
-		namespace
-		{
-			/**
-			 * Projects a windows coordinate onto the unit sphere in model space
-			 * using the specified model-view and projection transforms and the specified viewport.
-			 *
-			 * The returned vector is the intersection of the window coordinate (screen pixel)
-			 * projected onto the unit sphere, or returns false if misses the globe.
-			 */
-			boost::optional<GPlatesMaths::UnitVector3D>
-			project_window_coords_onto_unit_sphere(
-					const GLViewport &viewport,
-					const GLMatrix &model_view_transform,
-					const GLMatrix &projection_transform,
-					const double &window_x,
-					const double &window_y)
-			{
-				// Get point on near clipping plane.
-				double near_objx, near_objy, near_objz;
-				if (glu_un_project(
-					viewport,
-					model_view_transform,
-					projection_transform,
-					window_x, window_y, 0,
-					&near_objx, &near_objy, &near_objz) == GL_FALSE)
-				{
-					return boost::none;
-				}
-
-				// Get point on far clipping plane.
-				double far_objx, far_objy, far_objz;
-				if (glu_un_project(
-					viewport,
-					model_view_transform,
-					projection_transform,
-					window_x, window_y, 1,
-					&far_objx, &far_objy, &far_objz) == GL_FALSE)
-				{
-					return boost::none;
-				}
-
-				// Near and far point in 3D model space.
-				const GPlatesMaths::Vector3D near_point(near_objx, near_objy, near_objz);
-				const GPlatesMaths::Vector3D far_point(far_objx, far_objy, far_objz);
-
-				// Use the near and far 3D model-space points to form a ray with a ray origin
-				// at the near point and ray direction pointing to the far point.
-				const GLIntersect::Ray ray(
-						near_point,
-						(far_point - near_point).get_normalisation());
-
-				// Create a unit sphere in model space representing the globe.
-				const GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
-
-				// Intersect the ray with the globe.
-				const boost::optional<GPlatesMaths::real_t> ray_distance =
-						intersect_ray_sphere(ray, sphere);
-
-				// Did the ray intersect the globe ?
-				if (!ray_distance)
-				{
-					return boost::none;
-				}
-
-				// Return the point on the sphere where the ray first intersects.
-				// Due to numerical precision the ray may be slightly off the sphere so we'll
-				// normalise it (otherwise can provide out-of-range for 'acos' later on).
-				return ray.get_point_on_ray(ray_distance.get()).get_normalisation();
-			}
-		}
-	}
-}
-
-
 int
 GPlatesOpenGL::GLProjectionUtils::glu_project(
 		const GLViewport &viewport,
@@ -222,6 +144,68 @@ GPlatesOpenGL::GLProjectionUtils::glu_un_project(
 }
 
 
+boost::optional<GPlatesMaths::UnitVector3D>
+GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
+		const GLViewport &viewport,
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		const double &window_x,
+		const double &window_y)
+{
+	// Get point on near clipping plane.
+	double near_objx, near_objy, near_objz;
+	if (glu_un_project(
+		viewport,
+		model_view_transform,
+		projection_transform,
+		window_x, window_y, 0,
+		&near_objx, &near_objy, &near_objz) == GL_FALSE)
+	{
+		return boost::none;
+	}
+
+	// Get point on far clipping plane.
+	double far_objx, far_objy, far_objz;
+	if (glu_un_project(
+		viewport,
+		model_view_transform,
+		projection_transform,
+		window_x, window_y, 1,
+		&far_objx, &far_objy, &far_objz) == GL_FALSE)
+	{
+		return boost::none;
+	}
+
+	// Near and far point in 3D model space.
+	const GPlatesMaths::Vector3D near_point(near_objx, near_objy, near_objz);
+	const GPlatesMaths::Vector3D far_point(far_objx, far_objy, far_objz);
+
+	// Use the near and far 3D model-space points to form a ray with a ray origin
+	// at the near point and ray direction pointing to the far point.
+	const GLIntersect::Ray ray(
+			near_point,
+			(far_point - near_point).get_normalisation());
+
+	// Create a unit sphere in model space representing the globe.
+	const GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
+
+	// Intersect the ray with the globe.
+	const boost::optional<GPlatesMaths::real_t> ray_distance =
+			intersect_ray_sphere(ray, sphere);
+
+	// Did the ray intersect the globe ?
+	if (!ray_distance)
+	{
+		return boost::none;
+	}
+
+	// Return the point on the sphere where the ray first intersects.
+	// Due to numerical precision the ray may be slightly off the sphere so we'll
+	// normalise it (otherwise can provide out-of-range for 'acos' later on).
+	return ray.get_point_on_ray(ray_distance.get()).get_normalisation();
+}
+
+
 std::pair<double/*min*/, double/*max*/>
 GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 		const GLViewport &viewport,
@@ -246,14 +230,14 @@ GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 	const double window_xy_coords[9][2] =
 	{
 		{double(viewport.x()),                          double(viewport.y())                           },
-                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y())                           },
-                {double(viewport.x() + viewport.width()),       double(viewport.y())                           },
-                {double(viewport.x()),                          double(viewport.y() + 0.5 * viewport.height()) },
-                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + 0.5 * viewport.height()) },
-                {double(viewport.x() + viewport.width()),       double(viewport.y() + 0.5 * viewport.height()) },
-                {double(viewport.x()),                          double(viewport.y() + viewport.height())       },
-                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + viewport.height())       },
-                {double(viewport.x() + viewport.width()),       double(viewport.y() + viewport.height())       }
+		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y())                           },
+		{double(viewport.x() + viewport.width()),       double(viewport.y())                           },
+		{double(viewport.x()),                          double(viewport.y() + 0.5 * viewport.height()) },
+		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + 0.5 * viewport.height()) },
+		{double(viewport.x() + viewport.width()),       double(viewport.y() + 0.5 * viewport.height()) },
+		{double(viewport.x()),                          double(viewport.y() + viewport.height())       },
+		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + viewport.height())       },
+		{double(viewport.x() + viewport.width()),       double(viewport.y() + viewport.height())       }
 	};
 
 	// Iterate over all sample points and project onto the unit sphere in model space.
