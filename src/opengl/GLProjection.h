@@ -33,6 +33,7 @@
 
 #include "maths/Vector3D.h"
 
+#include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLViewport.h"
 
@@ -81,16 +82,29 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * The screen pixel is converted to a ray where the ray origin is screen pixel projected onto
+		 * the near plane (of the projection transform) and the ray direction is towards the screen
+		 * pixel projected onto the far plane.
+		 *
+		 * Returns none is unable to invert model-view-projection transform.
+		 */
+		boost::optional<GLIntersect::Ray>
+		project_window_coords_into_ray(
+				const double &window_x,
+				const double &window_y) const;
+
+
+		/**
 		 * Projects a window coordinate onto the unit sphere in model space using the specified
 		 * model-view and projection transforms and the specified viewport.
 		 *
 		 * The returned vector is the intersection of the window coordinate (screen pixel)
-		 * projected onto the unit sphere, or returns false if misses the globe.
+		 * projected onto the unit sphere.
 		 *
-		 * The screen pixel is converted to a ray where the ray origin is screen pixel projected onto
-		 * the near plane (of the projection transform) and the ray direction is towards the screen
-		 * pixel projected onto the far plane. This ray is then intersected with the unit sphere
-		 * (centered on global origin). The first intersection with sphere is the returned position on sphere.
+		 * Returns false if misses the globe (or if unable to invert model-view-projection transform).
+		 *
+		 * The screen pixel ray is intersected with the unit sphere (centered on global origin).
+		 * The first intersection with sphere is the returned position on sphere.
 		 */
 		boost::optional<GPlatesMaths::UnitVector3D>
 		project_window_coords_onto_unit_sphere(

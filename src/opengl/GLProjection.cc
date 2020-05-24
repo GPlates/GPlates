@@ -29,7 +29,6 @@
 #include "GLProjection.h"
 
 #include "GLIntersect.h"
-#include "GLIntersectPrimitives.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -110,6 +109,9 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 	// Note: We only need to calculate it once for this class instance (and only when it's first needed).
 	if (!d_inverse_model_view_projection)
 	{
+		// Combined model-view-projection is P*V*M since transforming a vector is:
+		//   v' = P*V*M*v = P*(V*(M*v))
+		// ...where vector is transformed by M first, then V and finally P.
 		GLMatrix inverse_model_view_projection(d_projection_transform);
 		inverse_model_view_projection.gl_mult_matrix(d_model_view_transform);
 		if (!inverse_model_view_projection.glu_inverse())
@@ -156,8 +158,8 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 }
 
 
-boost::optional<GPlatesMaths::UnitVector3D>
-GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
+boost::optional<GPlatesOpenGL::GLIntersect::Ray>
+GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
 		const double &window_x,
 		const double &window_y) const
 {
@@ -185,16 +187,29 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 
 	// Use the near and far 3D model-space points to form a ray with a ray origin
 	// at the near point and ray direction pointing to the far point.
-	const GLIntersect::Ray ray(
+	return GLIntersect::Ray(
 			near_point,
 			(far_point - near_point).get_normalisation());
+}
+
+
+boost::optional<GPlatesMaths::UnitVector3D>
+GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
+		const double &window_x,
+		const double &window_y) const
+{
+	boost::optional<GLIntersect::Ray> ray = project_window_coords_into_ray(window_x, window_y);
+	if (!ray)
+	{
+		return boost::none;
+	}
 
 	// Create a unit sphere in model space representing the globe.
 	const GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
 
 	// Intersect the ray with the globe.
 	const boost::optional<GPlatesMaths::real_t> ray_distance =
-			intersect_ray_sphere(ray, sphere);
+			intersect_ray_sphere(ray.get(), sphere);
 
 	// Did the ray intersect the globe ?
 	if (!ray_distance)
@@ -205,7 +220,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 	// Return the point on the sphere where the ray first intersects.
 	// Due to numerical precision the ray may be slightly off the sphere so we'll
 	// normalise it (otherwise can provide out-of-range for 'acos' later on).
-	return ray.get_point_on_ray(ray_distance.get()).get_normalisation();
+	return ray->get_point_on_ray(ray_distance.get()).get_normalisation();
 }
 
 
