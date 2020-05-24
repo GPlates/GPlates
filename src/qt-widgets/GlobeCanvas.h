@@ -32,6 +32,7 @@
 #ifndef GPLATES_QTWIDGETS_GLOBECANVAS_H
 #define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
+#include <utility>  // std::pair
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -45,6 +46,7 @@
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
+#include "maths/PointOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -694,42 +696,22 @@ namespace GPlatesQtWidgets
 		update_dimensions();
 
 		/**
-		 * Get the "universe" y and z coordinates of the current mouse pointer position.
+		 * Given the screen coordinates, calculate and return a position which is on
+		 * the globe (a unit sphere).
 		 *
-		 * Note that this function makes no statement about whether the current mouse
-		 * pointer position is on the globe or not.
+		 * This position might be the position determined by @a y and @a z, or the closest position
+		 * on the globe to the position determined by @a y and @a z.
 		 */
-		inline
-		void
-		get_universe_coord_y_z_of_mouse(
-				double &universe_coord_y,
-				double &universe_coord_z) const
-		{
-			return get_universe_coord_y_z(
-					d_mouse_pointer_screen_pos_x,
-					d_mouse_pointer_screen_pos_y,
-					universe_coord_y,
-					universe_coord_z);
-		}
-
-		/**
-		 * Translate the screen xy coordinates to the corresponding "universe" yz coordinates.
-		 *
-		 * Note that this function makes no statement about whether the screen position is
-		 * on the globe or not.
-		 */
-		void
-		get_universe_coord_y_z(
+		std::pair<bool, GPlatesMaths::PointOnSphere>
+		calc_virtual_globe_position(
 				int screen_x,
-				int screen_y,
-				double &universe_coord_y,
-				double &universe_coord_z) const;
+				int screen_y) const;
 
 		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
 		calculate_scale(
 				int paint_device_width,
-				int paint_device_height);
+				int paint_device_height) const;
 
 	};
 

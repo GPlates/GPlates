@@ -89,104 +89,6 @@ const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat
 namespace 
 {
 	/**
-	 * Calculate the globe-position discriminant for the universe coordinates @a y and @a z.
-	 */
-	inline
-	double
-	calc_globe_pos_discrim(
-			double y,
-			double z) 
-	{
-		return (y * y + z * z);
-	}
-	
-
-	/**
-	 * Return whether the globe-position discriminant indicates that a position is on the
-	 * globe.
-	 */
-	inline
-	bool
-	discrim_signifies_on_globe(
-			double discrim) 
-	{
-		return (discrim < 1.0);
-	}
-
-
-	/**
-	 * Given universe coordinates @a y and @a z and discriminant @a discrim, calculate the
-	 * corresponding position on the globe (@a x, @a y, @a z).
-	 *
-	 * This assumes that (@a discrim >= 0 && @a discrim <= 1) and (@a y * @a y + @a z * @a z +
-	 * @a discrim == 1).
-	 */
-	const GPlatesMaths::PointOnSphere
-	calc_pos_on_globe(
-			double y,
-			double z,
-			double discrim) 
-	{
-		// Be wary of floating-point error, which could result in calculating the sqrt of a
-		// (very slightly) negative value.  (Yes, this is something I actually observed in
-		// this code.)
-		double one_minus_discrim = 1.0 - discrim;
-		if (one_minus_discrim < 0.0) {
-			one_minus_discrim = 0.0;
-		}
-		double x = sqrt(one_minus_discrim);
-
-		return GPlatesMaths::PointOnSphere(
-				GPlatesMaths::UnitVector3D(x, y, z));
-	}
-
-
-	/**
-	 * Given universe coordinates @a y and @a z and a discriminant @a discrim which together
-	 * indicate that a position is @em not on the globe, calculate the closest position which
-	 * @em is on the globe.
-	 *
-	 * This assumes that (@a discrim >= 1).
-	 */
-	const GPlatesMaths::PointOnSphere
-	calc_pos_at_intersection_with_globe(
-			double y,
-			double z,
-			double discrim) 
-	{
-		double norm_reciprocal = 1.0 / sqrt(discrim);
-		return GPlatesMaths::PointOnSphere(
-				GPlatesMaths::UnitVector3D(
-					0.0, y * norm_reciprocal, z * norm_reciprocal));
-	}
-
-
-	/**
-	 * Given universe coordinates @a y and @a z, calculate and return a position which is on
-	 * the globe (a unit sphere).
-	 *
-	 * This position might be the position determined by @a y and @a z, or the closest position
-	 * on the globe to the position determined by @a y and @a z.
-	 */
-	const GPlatesMaths::PointOnSphere
-	calc_virtual_globe_position(
-			double y,
-			double z) 
-	{
-		double discrim = calc_globe_pos_discrim(y, z);
-		
-		if (discrim_signifies_on_globe(discrim)) {
-			// Universe coords y and z do in fact determine a position on the globe.
-			return calc_pos_on_globe(y, z, discrim);
-		}
-
-		// Universe coords y and z do not determine a position on the globe.  Find the
-		// closest point which *is* on the globe.
-		return calc_pos_at_intersection_with_globe(y, z, discrim);
-	}
-
-
-	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate projection transforms
 	 * needed to display the scene, and generate the orthographic/perspective view transform.
 	 *
@@ -790,13 +692,13 @@ GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change()
 void
 GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 {
-	double y_pos;
-	double z_pos;
-	get_universe_coord_y_z_of_mouse(y_pos, z_pos);
+	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
+			calc_virtual_globe_position(
+					d_mouse_pointer_screen_pos_x,
+					d_mouse_pointer_screen_pos_y);
 
-	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
-
-	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
+	bool is_now_on_globe = new_pos_result.first;
+	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
 
 	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
 			is_now_on_globe != d_mouse_pointer_is_on_globe) {
@@ -813,13 +715,13 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 void
 GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 {
-	double y_pos;
-	double z_pos;
-	get_universe_coord_y_z_of_mouse(y_pos, z_pos);
+	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
+			calc_virtual_globe_position(
+					d_mouse_pointer_screen_pos_x,
+					d_mouse_pointer_screen_pos_y);
 
-	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
-
-	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
+	bool is_now_on_globe = new_pos_result.first;
+	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
 
 	d_virtual_mouse_pointer_pos_on_globe = new_pos;
 	d_mouse_pointer_is_on_globe = is_now_on_globe;
@@ -1536,37 +1438,6 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y_z(
-		int screen_x,
-		int screen_y,
-		double &universe_coord_y,
-		double &universe_coord_z) const
-{
-	// Note that OpenGL and Qt y-axes are the reverse of each other.
-	screen_y = height() - screen_y;
-
-	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
-			GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
-					GPlatesOpenGL::GLViewport(0, 0, width(), height()),
-					d_gl_view_transform,
-					d_gl_projection_transform_include_full_globe,
-					screen_x,
-					screen_y);
-	if (!projected_point_on_sphere)
-	{
-		// Screen pixel does not intersect unit sphere.
-		//
-		// FIXME: For now, incorrectly returning centre of viewport.
-		//        But should find position, along ray of projected screen pixel, closest to unit sphere.
-		projected_point_on_sphere = centre_of_viewport().position_vector();
-	}
-
-	universe_coord_y = projected_point_on_sphere->y().dval();
-	universe_coord_z = projected_point_on_sphere->z().dval();
-}
-
-
 #if 0
 void
 GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
@@ -1713,10 +1584,37 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 	globe().orientation().orient_poles_vertically();
 }
 
+std::pair<bool, GPlatesMaths::PointOnSphere>
+GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
+		int screen_x,
+		int screen_y) const
+{
+	// Note that OpenGL and Qt y-axes are the reverse of each other.
+	screen_y = height() - screen_y;
+
+	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
+		GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
+			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
+			d_gl_view_transform,
+			d_gl_projection_transform_include_full_globe,
+			screen_x,
+			screen_y);
+	if (projected_point_on_sphere)
+	{
+		return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere.get()));
+	}
+
+	// Screen pixel does not intersect unit sphere.
+	//
+	// FIXME: For now, incorrectly returning centre of viewport.
+	//        But should find position, along ray of projected screen pixel, closest to unit sphere.
+	return std::make_pair(false, centre_of_viewport());
+}
+
 float
 GPlatesQtWidgets::GlobeCanvas::calculate_scale(
 		int paint_device_width,
-		int paint_device_height)
+		int paint_device_height) const
 {
 	const int paint_device_dimension = (std::min)(paint_device_width, paint_device_height);
 	const int min_viewport_dimension = d_view_state.get_main_viewport_min_dimension();
