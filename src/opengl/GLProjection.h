@@ -24,10 +24,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_OPENGL_GLPROJECTIONUTILS_H
-#define GPLATES_OPENGL_GLPROJECTIONUTILS_H
+#ifndef GPLATES_OPENGL_GLPROJECTION_H
+#define GPLATES_OPENGL_GLPROJECTION_H
 
 #include <utility>
+#include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
 #include "maths/Vector3D.h"
@@ -43,22 +44,27 @@ namespace GPlatesOpenGL
 	 *
 	 * This typically involves the OpenGL model-view and projection transforms and the viewport.
 	 */
-	namespace GLProjectionUtils
+	class GLProjection
 	{
+	public:
+
+		GLProjection(
+				const GLViewport &viewport,
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform);
+
+
 		/**
 		 * Convenience function performs same as similarly named OpenGL function.
 		 */
 		int
 		glu_project(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
 				double objx,
 				double objy,
 				double objz,
 				GLdouble *winx,
 				GLdouble *winy,
-				GLdouble *winz);
+				GLdouble *winz) const;
 
 
 		/**
@@ -66,15 +72,12 @@ namespace GPlatesOpenGL
 		 */
 		int
 		glu_un_project(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
 				double winx,
 				double winy,
 				double winz,
 				GLdouble *objx,
 				GLdouble *objy,
-				GLdouble *objz);
+				GLdouble *objz) const;
 
 
 		/**
@@ -91,11 +94,8 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<GPlatesMaths::UnitVector3D>
 		project_window_coords_onto_unit_sphere(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
 				const double &window_x,
-				const double &window_y);
+				const double &window_y) const;
 
 
 		/**
@@ -114,10 +114,7 @@ namespace GPlatesOpenGL
 		 * south poles on the unit sphere.
 		 */
 		std::pair<double/*min*/, double/*max*/>
-		get_min_max_pixel_size_on_unit_sphere(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform);
+		get_min_max_pixel_size_on_unit_sphere() const;
 
 
 		/**
@@ -127,15 +124,9 @@ namespace GPlatesOpenGL
 		 */
 		inline
 		double
-		get_min_pixel_size_on_unit_sphere(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform)
+		get_min_pixel_size_on_unit_sphere() const
 		{
-			return get_min_max_pixel_size_on_unit_sphere(
-					viewport,
-					model_view_transform,
-					projection_transform).first/*min*/;
+			return get_min_max_pixel_size_on_unit_sphere().first/*min*/;
 		}
 
 
@@ -146,17 +137,18 @@ namespace GPlatesOpenGL
 		 */
 		inline
 		double
-		get_max_pixel_size_on_unit_sphere(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform)
+		get_max_pixel_size_on_unit_sphere() const
 		{
-			return get_min_max_pixel_size_on_unit_sphere(
-					viewport,
-					model_view_transform,
-					projection_transform).second/*max*/;
+			return get_min_max_pixel_size_on_unit_sphere().second/*max*/;
 		}
+
+	private:
+		GLViewport d_viewport;
+		GLMatrix d_model_view_transform;
+		GLMatrix d_projection_transform;
+
+		mutable boost::optional<GLMatrix> d_inverse_model_view_projection;
 	};
 }
 
-#endif // GPLATES_OPENGL_GLPROJECTIONUTILS_H
+#endif // GPLATES_OPENGL_GLPROJECTION_H

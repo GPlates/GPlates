@@ -37,7 +37,6 @@
 #include "GLMultiResolutionCubeRaster.h"
 
 #include "GLContext.h"
-#include "GLProjectionUtils.h"
 #include "GLRenderer.h"
 #include "GLTexture.h"
 #include "GLUtils.h"

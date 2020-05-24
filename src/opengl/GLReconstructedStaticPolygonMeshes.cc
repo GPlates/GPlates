@@ -32,7 +32,6 @@
 
 #include "GLIntersect.h"
 #include "GLRenderer.h"
-#include "GLProjectionUtils.h"
 #include "GLVertex.h"
 
 #include "app-logic/GeometryUtils.h"

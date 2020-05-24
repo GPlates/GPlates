@@ -26,7 +26,7 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
-#include "GLProjectionUtils.h"
+#include "GLProjection.h"
 
 #include "GLIntersect.h"
 #include "GLIntersectPrimitives.h"
@@ -39,24 +39,32 @@
 #include "maths/types.h"
 
 
-int
-GPlatesOpenGL::GLProjectionUtils::glu_project(
+GPlatesOpenGL::GLProjection::GLProjection(
 		const GLViewport &viewport,
 		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
+		const GLMatrix &projection_transform) :
+	d_viewport(viewport),
+	d_model_view_transform(model_view_transform),
+	d_projection_transform(projection_transform)
+{
+}
+
+
+int
+GPlatesOpenGL::GLProjection::glu_project(
 		double objx,
 		double objy,
 		double objz,
 		GLdouble *winx,
 		GLdouble *winy,
-		GLdouble *winz)
+		GLdouble *winz) const
 {
 	double in_vec[4] = { objx, objy, objz, 1.0 };
 	double tmp_vec[4];
 
 	// Transform object-space vector first using model-view matrix then projection matrix.
-	model_view_transform.glu_mult_vec(in_vec, tmp_vec);
-	projection_transform.glu_mult_vec(tmp_vec, in_vec);
+	d_model_view_transform.glu_mult_vec(in_vec, tmp_vec);
+	d_projection_transform.glu_mult_vec(tmp_vec, in_vec);
 
 	if (GPlatesMaths::are_almost_exactly_equal(in_vec[3], 0.0))
 	{
@@ -76,8 +84,8 @@ GPlatesOpenGL::GLProjectionUtils::glu_project(
 
 	// Convert x range [0, 1] to [viewport_x, viewport_x + viewport_width].
 	// Convert y range [0, 1] to [viewport_y, viewport_y + viewport_height].
-	in_vec[0] = viewport.x() + in_vec[0] * viewport.width();
-	in_vec[1] = viewport.y() + in_vec[1] * viewport.height();
+	in_vec[0] = d_viewport.x() + in_vec[0] * d_viewport.width();
+	in_vec[1] = d_viewport.y() + in_vec[1] * d_viewport.height();
 
 	// Return window coordinates.
 	*winx = in_vec[0];
@@ -89,31 +97,35 @@ GPlatesOpenGL::GLProjectionUtils::glu_project(
 
 
 int
-GPlatesOpenGL::GLProjectionUtils::glu_un_project(
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
+GPlatesOpenGL::GLProjection::glu_un_project(
 		double winx,
 		double winy,
 		double winz,
 		GLdouble *objx,
 		GLdouble *objy,
-		GLdouble *objz)
+		GLdouble *objz) const
 {
-	// Calculate inverse(projection * model_view).
-	GLMatrix inverse_model_view_projection(projection_transform);
-	inverse_model_view_projection.gl_mult_matrix(model_view_transform);
-	if (!inverse_model_view_projection.glu_inverse())
+	// Calculate inverse(projection * model_view) if it hasn't been calculated yet.
+	//
+	// Note: We only need to calculate it once for this class instance (and only when it's first needed).
+	if (!d_inverse_model_view_projection)
 	{
-		return GL_FALSE;
+		GLMatrix inverse_model_view_projection(d_projection_transform);
+		inverse_model_view_projection.gl_mult_matrix(d_model_view_transform);
+		if (!inverse_model_view_projection.glu_inverse())
+		{
+			return GL_FALSE;
+		}
+
+		d_inverse_model_view_projection = inverse_model_view_projection;
 	}
 
 	double in_vec[4] = { winx, winy, winz, 1.0 };
 
 	// Convert x range [viewport_x, viewport_x + viewport_width] to [0, 1].
 	// Convert y range [viewport_y, viewport_y + viewport_height] to [0, 1].
-	in_vec[0] = (in_vec[0] - viewport.x()) / viewport.width();
-	in_vec[1] = (in_vec[1] - viewport.y()) / viewport.height();
+	in_vec[0] = (in_vec[0] - d_viewport.x()) / d_viewport.width();
+	in_vec[1] = (in_vec[1] - d_viewport.y()) / d_viewport.height();
 
 	// Convert range xyz range [0, 1] to [-1, 1].
 	in_vec[0] = 2 * in_vec[0] - 1;
@@ -122,7 +134,7 @@ GPlatesOpenGL::GLProjectionUtils::glu_un_project(
 
 	// Transform window-space vector using inverse model-view-projection matrix.
 	double out_vec[4];
-	inverse_model_view_projection.glu_mult_vec(in_vec, out_vec);
+	d_inverse_model_view_projection->glu_mult_vec(in_vec, out_vec);
 
 	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
 	{
@@ -145,19 +157,13 @@ GPlatesOpenGL::GLProjectionUtils::glu_un_project(
 
 
 boost::optional<GPlatesMaths::UnitVector3D>
-GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
+GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 		const double &window_x,
-		const double &window_y)
+		const double &window_y) const
 {
 	// Get point on near clipping plane.
 	double near_objx, near_objy, near_objz;
 	if (glu_un_project(
-		viewport,
-		model_view_transform,
-		projection_transform,
 		window_x, window_y, 0,
 		&near_objx, &near_objy, &near_objz) == GL_FALSE)
 	{
@@ -167,9 +173,6 @@ GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
 	// Get point on far clipping plane.
 	double far_objx, far_objy, far_objz;
 	if (glu_un_project(
-		viewport,
-		model_view_transform,
-		projection_transform,
 		window_x, window_y, 1,
 		&far_objx, &far_objy, &far_objz) == GL_FALSE)
 	{
@@ -207,10 +210,7 @@ GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
 
 
 std::pair<double/*min*/, double/*max*/>
-GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform)
+GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere() const
 {
 	//
 	// Divide the near face of the normalised device coordinates (NDC) box into 9 points and
@@ -229,15 +229,15 @@ GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 
 	const double window_xy_coords[9][2] =
 	{
-		{double(viewport.x()),                          double(viewport.y())                           },
-		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y())                           },
-		{double(viewport.x() + viewport.width()),       double(viewport.y())                           },
-		{double(viewport.x()),                          double(viewport.y() + 0.5 * viewport.height()) },
-		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + 0.5 * viewport.height()) },
-		{double(viewport.x() + viewport.width()),       double(viewport.y() + 0.5 * viewport.height()) },
-		{double(viewport.x()),                          double(viewport.y() + viewport.height())       },
-		{double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + viewport.height())       },
-		{double(viewport.x() + viewport.width()),       double(viewport.y() + viewport.height())       }
+		{double(d_viewport.x()),                            double(d_viewport.y())                             },
+		{double(d_viewport.x() + 0.5 * d_viewport.width()), double(d_viewport.y())                             },
+		{double(d_viewport.x() + d_viewport.width()),       double(d_viewport.y())                             },
+		{double(d_viewport.x()),                            double(d_viewport.y() + 0.5 * d_viewport.height()) },
+		{double(d_viewport.x() + 0.5 * d_viewport.width()), double(d_viewport.y() + 0.5 * d_viewport.height()) },
+		{double(d_viewport.x() + d_viewport.width()),       double(d_viewport.y() + 0.5 * d_viewport.height()) },
+		{double(d_viewport.x()),                            double(d_viewport.y() + d_viewport.height())       },
+		{double(d_viewport.x() + 0.5 * d_viewport.width()), double(d_viewport.y() + d_viewport.height())       },
+		{double(d_viewport.x() + d_viewport.width()),       double(d_viewport.y() + d_viewport.height())       }
 	};
 
 	// Iterate over all sample points and project onto the unit sphere in model space.
@@ -254,9 +254,6 @@ GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 		// Project the same point on the unit sphere.
 		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel =
 				project_window_coords_onto_unit_sphere(
-						viewport,
-						model_view_transform,
-						projection_transform,
 						window_xy_coords[n][0],
 						window_xy_coords[n][1]);
 		if (!projected_pixel)
@@ -269,9 +266,6 @@ GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 		// because there's no clipping happening here.
 		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_x =
 				project_window_coords_onto_unit_sphere(
-						viewport,
-						model_view_transform,
-						projection_transform,
 						window_xy_coords[n][0] + 1,
 						window_xy_coords[n][1]);
 		if (!projected_pixel_plus_one_x)
@@ -299,9 +293,6 @@ GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 		// because there's no clipping happening here.
 		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_y =
 				project_window_coords_onto_unit_sphere(
-						viewport,
-						model_view_transform,
-						projection_transform,
 						window_xy_coords[n][0],
 						window_xy_coords[n][1] + 1);
 		if (!projected_pixel_plus_one_y)

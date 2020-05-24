@@ -48,7 +48,7 @@
 #include "GLFrustum.h"
 #include "GLIntersect.h"
 #include "GLNormalMapSource.h"
-#include "GLProjectionUtils.h"
+#include "GLProjection.h"
 #include "GLRenderer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLShaderProgramUtils.h"
@@ -295,9 +295,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
-	const double min_pixel_size_on_unit_sphere =
-			GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
-					viewport, model_view_transform, projection_transform);
+	GLProjection projection(viewport, model_view_transform, projection_transform);
+	const double min_pixel_size_on_unit_sphere = projection.get_min_pixel_size_on_unit_sphere();
 
 	// Calculate the level-of-detail.
 	// This is the equivalent of:

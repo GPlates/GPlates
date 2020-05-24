@@ -66,7 +66,7 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
-#include "opengl/GLProjectionUtils.h"
+#include "opengl/GLProjection.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLTileRender.h"
 
@@ -1592,13 +1592,12 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
 	screen_y = height() - screen_y;
 
-	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
-		GPlatesOpenGL::GLProjectionUtils::project_window_coords_onto_unit_sphere(
+	GPlatesOpenGL::GLProjection gl_projection(
 			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
 			d_gl_view_transform,
-			d_gl_projection_transform_include_full_globe,
-			screen_x,
-			screen_y);
+			d_gl_projection_transform_include_full_globe);
+	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
+			gl_projection.project_window_coords_onto_unit_sphere(screen_x, screen_y);
 	if (projected_point_on_sphere)
 	{
 		return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere.get()));

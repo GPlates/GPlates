@@ -35,7 +35,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GLMatrix.h"
-#include "opengl/GLProjectionUtils.h"
+#include "opengl/GLProjection.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLText.h"
@@ -79,7 +79,7 @@ namespace
 		return ret;
 	}
 
-	void
+	bool
 	set_glu_projection(
 			GPlatesOpenGL::GLRenderer &renderer,
 			const int &world_x,
@@ -94,11 +94,10 @@ namespace
 		const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
 		const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
 
-		GLProjectionUtils::glu_project(
-					viewport, model_view_transform, projection_transform,
+		GLProjection projection(viewport, model_view_transform, projection_transform);
+		return projection.glu_project(
 					world_x, world_y, world_z,
 					&win_x, &win_y, &win_z);
-
 	}
 
 	/**
@@ -332,7 +331,10 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	float y_offset = settings.get_y_offset() * scale;
 
 	GLdouble win_x, win_y, win_z;
-	set_glu_projection(renderer,x_offset,y_offset,0,win_x,win_y,win_z);
+	if (!set_glu_projection(renderer, x_offset, y_offset, 0, win_x, win_y, win_z))
+	{
+		return;
+	}
 
 	if (win_z < 0 || win_z > 1)
 	{

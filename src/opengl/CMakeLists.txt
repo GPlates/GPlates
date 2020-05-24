@@ -87,8 +87,8 @@ set(srcs
     GLPixelBufferObject.h
     GLProgramObject.cc
     GLProgramObject.h
-    GLProjectionUtils.cc
-    GLProjectionUtils.h
+    GLProjection.cc
+    GLProjection.h
     GLRasterCoRegistration.cc
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc

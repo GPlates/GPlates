@@ -45,7 +45,7 @@
 #include "GLImageUtils.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLProjectionUtils.h"
+#include "GLProjection.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
@@ -665,10 +665,8 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	// Get map-projection coordinates of bottom-left viewport pixel.
 	// The depth doesn't actually matter since it's a 2D orthographic projection
 	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
-	if (GLProjectionUtils::glu_un_project(
-		viewport,
-		model_view_transform,
-		projection_transform,
+	GLProjection projection(viewport, model_view_transform, projection_transform);
+	if (projection.glu_un_project(
 		// Bottom-left viewport pixel...
 		// The 'z' value does matter in 2D orthographic projection
 		// (for 'projection_transform' as opposed to the map projection).
@@ -684,10 +682,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	// Get map-projection coordinates of bottom-left viewport pixel.
 	// The depth doesn't actually matter since it's a 2D orthographic projection
 	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
-	if (GLProjectionUtils::glu_un_project(
-		viewport,
-		model_view_transform,
-		projection_transform,
+	if (projection.glu_un_project(
 		// Bottom-left viewport pixel plus one in x-direction...
 		// The 'z' value does matter in 2D orthographic projection
 		// (for 'projection_transform' as opposed to the map projection).

@@ -49,7 +49,7 @@
 #include "GLMatrix.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLRenderer.h"
-#include "GLProjectionUtils.h"
+#include "GLProjection.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
@@ -472,8 +472,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_d
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
-	const double min_pixel_size_on_unit_sphere = GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
-				viewport, model_view_transform, projection_transform);
+	GLProjection projection(viewport, model_view_transform, projection_transform);
+	const double min_pixel_size_on_unit_sphere = projection.get_min_pixel_size_on_unit_sphere();
 
 	//
 	// Calculate the cube quad tree depth we need to traverse to satisfy the resolution of the view frustum.
