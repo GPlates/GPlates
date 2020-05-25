@@ -66,6 +66,8 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
+#include "opengl/GLIntersect.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLProjection.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLTileRender.h"
@@ -1592,22 +1594,62 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
 	screen_y = height() - screen_y;
 
+	// Project screen coordinates into a ray into 3D scene.
 	GPlatesOpenGL::GLProjection gl_projection(
 			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
 			d_gl_view_transform,
 			d_gl_projection_transform_include_full_globe);
-	boost::optional<GPlatesMaths::UnitVector3D> projected_point_on_sphere =
-			gl_projection.project_window_coords_onto_unit_sphere(screen_x, screen_y);
-	if (projected_point_on_sphere)
+	boost::optional<GPlatesOpenGL::GLIntersect::Ray> ray =
+			gl_projection.project_window_coords_into_ray(screen_x, screen_y);
+	if (!ray)
 	{
-		return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere.get()));
+		// Shouldn't really get here. Only happens when unable to invert model-view-projection transform.
+		// Just return arbitrary point on sphere (centre of viewport) and log a warning message.
+		qWarning() << "Unable to project screen pixel onto scene ray:" << __FILE__ << ":" << __LINE__;
+		return std::make_pair(false, centre_of_viewport());
 	}
 
-	// Screen pixel does not intersect unit sphere.
-	//
-	// FIXME: For now, incorrectly returning centre of viewport.
-	//        But should find position, along ray of projected screen pixel, closest to unit sphere.
-	return std::make_pair(false, centre_of_viewport());
+	// Create a unit sphere in model space representing the globe.
+	const GPlatesOpenGL::GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
+
+	// Intersect the ray with the globe.
+	const boost::optional<GPlatesMaths::real_t> ray_distance_to_sphere = intersect_ray_sphere(ray.get(), sphere);
+
+	// Did the ray intersect the globe ?
+	if (!ray_distance_to_sphere)
+	{
+		// Screen pixel does not intersect unit sphere.
+		// Find the position, along ray of projected screen pixel, closest to the globe (unit sphere).
+		// We'll project this towards the origin onto the globe, and consider that the horizon of the globe.
+		// Note that this works well for orthographic viewing since all screen pixel rays are parallel and
+		// hence all perpendicular to the horizon (circumference around globe).
+		// For perspective viewing the further the screen pixel is away from the horizon circumference
+		// the closer the projected point on the globe is to the viewer (ie, it drifts away from the
+		// horizon circumference). It mainly has an effect when dragging the globe (not using SHIFT)
+		// while the mouse is *off* the globe. For orthographic viewing it behaves exactly like
+		// SHIFT-dragging (when mouse is *off* the globe). For perspective viewing, SHIFT-dragging
+		// behaves the same as SHIFT-dragging in orthographic viewing mode, but in normal dragging (no SHIFT)
+		// it behaves as the mouse cursor position is projected onto the globe as described above.
+
+		// Project line segment from globe origin to ray origin onto the ray direction.
+		// This gives us the distance along ray to that point on the ray that is closest to the globe.
+		const GPlatesMaths::real_t ray_distance_to_closest_point =
+				dot(GPlatesMaths::Vector3D(0,0,0) - ray->get_origin(), ray->get_direction());
+		const GPlatesMaths::Vector3D closest_point = ray->get_point_on_ray(ray_distance_to_closest_point);
+
+		// Normalise the closest point to project it towards the origin onto the unit-sphere globe.
+		// Return false to indicate ray did not intersect the globe.
+		return std::make_pair(false, GPlatesMaths::PointOnSphere(closest_point.get_normalisation()));
+	}
+
+	// Return the point on the sphere where the ray first intersects.
+	// Due to numerical precision the ray may be slightly off the sphere so we'll
+	// normalise it (otherwise can provide out-of-range for 'acos' later on).
+	const GPlatesMaths::UnitVector3D projected_point_on_sphere =
+			ray->get_point_on_ray(ray_distance_to_sphere.get()).get_normalisation();
+
+	// Return true to indicate ray intersected the globe.
+	return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere));
 }
 
 float
