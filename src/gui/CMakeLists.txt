@@ -145,6 +145,8 @@ set(srcs
     GeometryFocusHighlight.h
     Globe.cc
     Globe.h
+    GlobeCamera.cc
+    GlobeCamera.h
     GlobeCanvasTool.cc
     GlobeCanvasTool.h
     GlobeCanvasToolAdapter.cc
