@@ -30,6 +30,7 @@
 
 #include "VelocityLegendOverlay.h"
 
+#include "GlobeCamera.h"
 #include "VelocityLegendOverlaySettings.h"
 
 #include "global/GPlatesAssert.h"
@@ -44,8 +45,6 @@
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
-
-#include "qt-widgets/GlobeCanvas.h"
 
 namespace
 {
@@ -397,8 +396,10 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	const double angle_rad = GPlatesMaths::convert_deg_to_rad(angle);
 
 
-	// The length of an arrow representing 2 cm per year. See comments in the GlobeCanvas class for information about the FRAMING_RATIO
-	double two_cm_per_year = *layer_scale * (std::min)(paint_device_width, paint_device_height)/ GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO;
+	// The length of an arrow representing 2 cm per year. See comments in the GlobeCamera class for
+	// information about the FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT.
+	double two_cm_per_year = *layer_scale * (std::min)(paint_device_width, paint_device_height) /
+			GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT;
 
 	double arrow_length, velocity_scale;
 

@@ -37,6 +37,7 @@
 #include "MapView.h"
 
 #include "gui/ColourScheme.h"
+#include "gui/GlobeCamera.h"
 #include "gui/MapTransform.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/ViewportProjection.h"
@@ -221,14 +222,6 @@ GPlatesQtWidgets::GlobeAndMapWidget::sizeHint() const
 void
 GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 {
-	// Handle signals for change in zoom.
-	GPlatesGui::ViewportZoom &vzoom = d_view_state.get_viewport_zoom();
-	QObject::connect(
-			&vzoom,
-			SIGNAL(zoom_changed()),
-			this,
-			SLOT(handle_zoom_change()));
-
 	// Handle changes in the projection.
 	GPlatesGui::ViewportProjection &vprojection = d_view_state.get_viewport_projection();
 	QObject::connect(
@@ -288,7 +281,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		view_projection.get_globe_projection_type())
 	{
 		// Update the globe canvas's projection.
-		d_globe_canvas_ptr->globe().set_projection_type(globe_projection_type.get());
+		d_view_state.get_globe_camera().set_projection_type(globe_projection_type.get());
 
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();
@@ -317,19 +310,8 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		}
 		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
-	
-	// There might have been a zoom change while the previous view was active and the current
-	// view would not have known about it.
-	d_active_view_ptr->handle_zoom_change();
 
 	Q_EMIT update_tools_and_status_message();
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapWidget::handle_zoom_change()
-{
-	d_active_view_ptr->handle_zoom_change();
 }
 
 

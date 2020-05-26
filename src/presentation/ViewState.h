@@ -65,6 +65,7 @@ namespace GPlatesGui
 	class FeatureTableModel;
 	class FeatureFocus;
 	class FileIODirectoryConfigurations;
+	class GlobeCamera;
 	class GraticuleSettings;
 	class MapTransform;
 	class PythonManager;
@@ -284,6 +285,13 @@ namespace GPlatesPresentation
 		get_map_transform() const;
 
 
+		GPlatesGui::GlobeCamera &
+		get_globe_camera();
+
+		const GPlatesGui::GlobeCamera &
+		get_globe_camera() const;
+
+
 		const std::pair<int, int> &
 		get_main_viewport_dimensions() const;
 
@@ -494,6 +502,9 @@ namespace GPlatesPresentation
 
 		//! Sends signals to transform maps
 		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
+
+		//! Camera controls for the 3D globe view (3D orthographic and 3D perspective settings).
+		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;
 
 		/**
 		 * The dimensions (in pixels) of the main globe or map attached.

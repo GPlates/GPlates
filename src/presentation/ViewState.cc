@@ -50,6 +50,7 @@
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/FileIODirectoryConfigurations.h"
+#include "gui/GlobeCamera.h"
 #include "gui/GlobeProjectionType.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
@@ -129,6 +130,9 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayerRegistry()),
 	d_map_transform(
 			new GPlatesGui::MapTransform(
+				*d_viewport_zoom)),
+	d_globe_camera(
+			new GPlatesGui::GlobeCamera(
 				*d_viewport_zoom)),
 	d_main_viewport_dimensions(0, 0),
 	d_file_io_directory_configurations(
@@ -445,6 +449,19 @@ const GPlatesGui::MapTransform &
 GPlatesPresentation::ViewState::get_map_transform() const
 {
 	return *d_map_transform;
+}
+
+
+GPlatesGui::GlobeCamera &
+GPlatesPresentation::ViewState::get_globe_camera()
+{
+	return *d_globe_camera;
+}
+
+const GPlatesGui::GlobeCamera &
+GPlatesPresentation::ViewState::get_globe_camera() const
+{
+	return *d_globe_camera;
 }
 
 

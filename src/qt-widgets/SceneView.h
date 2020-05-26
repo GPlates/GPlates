@@ -89,11 +89,6 @@ namespace GPlatesQtWidgets
 		{ };
 
 		virtual
-		void
-		handle_zoom_change()
-		{ };
-
-		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp() const = 0;
 

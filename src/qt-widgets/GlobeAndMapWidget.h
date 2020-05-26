@@ -217,9 +217,6 @@ namespace GPlatesQtWidgets
 		init();
 
 		void
-		handle_zoom_change();
-
-		void
 		about_to_change_projection(
 				const GPlatesGui::ViewportProjection &view_projection);
 

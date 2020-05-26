@@ -52,6 +52,7 @@
 
 #include "gui/Colour.h"
 #include "gui/ColourScheme.h"
+#include "gui/GlobeCamera.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
@@ -79,14 +80,6 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
-/**
- * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
- * diameter of the Globe. This creates a little space between the globe circumference and the viewport.
- * When the GlobeCanvas is resized, the Globe will be scaled accordingly.
- *
- * The value of this constant is purely cosmetic.
- */
-const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
 namespace 
 {
@@ -99,10 +92,9 @@ namespace
 	 */
 	void
 	calc_scene_view_projection_transforms(
-			unsigned int scene_view_width,
-			unsigned int scene_view_height,
-			const double &zoom_factor,
-			const GPlatesGui::GlobeProjection::Type globe_projection_type,
+			unsigned int viewport_width,
+			unsigned int viewport_height,
+			const GPlatesGui::GlobeCamera &camera,
 			GPlatesOpenGL::GLMatrix &view_transform,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -121,97 +113,63 @@ namespace
 		// transformation pipeline instead of the rasterisation pipeline.
 		//
 
-		//
-		// Set up our universe coordinate system (the standard geometric one):
-		//   Z points up
-		//   Y points right
-		//   X points out of the screen
-		//
+		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
+		const GPlatesMaths::UnitVector3D &camera_look_at = camera.get_look_at_position();
+		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
 
-		if (globe_projection_type == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+		if (camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 		{
 			//
 			// View transform.
 			//
-
 			// Note that, for 'orthographic' viewing (as opposed to 'perspective'), the 'eye' can be anywhere
-			// along the x-axis (and looking at the centre of the globe). This is because the view rays are
-			// parallel and hence only the direction matters (not the position). Well, the position does affect
-			// the near/far clip plane distances, but they're all adjusted based on the eye position, so the
-			// near/far clip planes always end up in the correct position regardless of the eye position.
-			// The end result is moving the eye position along the x-axis does not affect the rendered scene
+			// along the view direction. This is because the view rays are parallel and hence only the direction
+			// matters (not the position). The position does affect the near/far clip plane distances, but
+			// they're all adjusted based on the eye position anyway, so the near/far clip planes always end up
+			// in the correct position regardless of the eye position.
+			// The end result is moving the eye position along the view direction does not affect the rendered scene
 			// for 'orthographic' viewing (whereas it does affect the scene for 'perspective' viewing).
-			// Also note that, counter-intuitively, zooming into the view is not accomplished by moving
-			// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
-			// the orthographic viewing frustum (rectangular prism).
-
-			// Distance from eye to globe centre.
-			// Note: This distance should be non-zero (otherwise an eye-to-centre direction cannot be obtained).
-			//       Any positive value will do.
-			const GLdouble eye_to_globe_centre_distance = 1.0;
+			//
+			// We'll just (arbitrarily) choose the eye position to be the look-at position moved back one unit along the view direction.
+			const GPlatesMaths::Vector3D camera_eye = GPlatesMaths::Vector3D(camera_look_at) - GPlatesMaths::Vector3D(camera_view_direction);
 			view_transform.glu_look_at(
-				// The view is oriented such that the global x-axis points out of the screen.
-				// So set our viewpoint to be along the positive x-axis (looking at the origin)...
-				eye_to_globe_centre_distance, 0, 0, // eye
-				0, 0, 0,  // centre
-				0, 0, 1); // up
+					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
+					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
+					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
+
+			// Distance from eye to globe centre projected along the view direction.
+			const GPlatesMaths::Vector3D globe_centre(0, 0, 0);
+			const GLdouble eye_to_globe_centre_distance_along_view_direction = dot(globe_centre - camera_eye, camera_view_direction).dval();
 
 			// The 1.0 is the globe radius.
 			// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
 			// Same applies to the far clipping plane.
-			const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
-			const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
+			const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance_along_view_direction - 1.0 - 0.5;
+			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + 0.5;
 			// The stars need a far clip plane further away.
 			const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-			const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
+			const GLdouble depth_globe_centre = eye_to_globe_centre_distance_along_view_direction;
 			// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
 			// Also the opaque sphere is now rendered as a flat disk facing the camera and
 			// positioned through the globe centre - so we don't want that to get clipped away either.
 			const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
-			// The smaller/larger of the dimensions (width/height) of the screen.
-			GLdouble smaller_dim;
-			GLdouble larger_dim;
-			if (scene_view_width <= scene_view_height)
-			{
-				smaller_dim = static_cast<GLdouble>(scene_view_width);
-				larger_dim = static_cast<GLdouble>(scene_view_height);
-			}
-			else
-			{
-				smaller_dim = static_cast<GLdouble>(scene_view_height);
-				larger_dim = static_cast<GLdouble>(scene_view_width);
-			}
-		
-			// This is used for the coordinates of the symmetrical clipping planes which bound the
-			// smaller dimension.
-			GLdouble smaller_dim_clipping = GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO / zoom_factor;
-
-			// This is used for the coordinates of the symmetrical clipping planes which bound the
-			// larger dimension.
-			GLdouble dim_ratio = larger_dim / smaller_dim;
-			GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
-
-			GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
-			if (scene_view_width <= scene_view_height)
-			{
-				ortho_left = -smaller_dim_clipping;
-				ortho_right = smaller_dim_clipping;
-				ortho_bottom = -larger_dim_clipping;
-				ortho_top = larger_dim_clipping;
-			}
-			else
-			{
-				ortho_left = -larger_dim_clipping;
-				ortho_right = larger_dim_clipping;
-				ortho_bottom = -smaller_dim_clipping;
-				ortho_top = smaller_dim_clipping;
-			}
-
 			//
-			// Projection transforms.
+			// Projection transform.
 			//
+			// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
+			// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
+			// the orthographic viewing frustum (rectangular prism).
+			//
+
+			double ortho_left;
+			double ortho_right;
+			double ortho_bottom;
+			double ortho_top;
+			camera.get_orthographic_left_right_bottom_top(
+					viewport_width, viewport_height,
+					ortho_left, ortho_right, ortho_bottom, ortho_top);
 
 			projection_transform_include_front_half_globe.gl_ortho(
 					ortho_left, ortho_right,
@@ -237,70 +195,26 @@ namespace
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
 		}
-		else if (globe_projection_type == GPlatesGui::GlobeProjection::PERSPECTIVE)
+		else if (camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE)
 		{
 			//
 			// View transform.
 			//
-
 			// In contrast to orthographic viewing, zooming in 'perspective' viewing is accomplished by moving the eye position.
 			// Alternatively zooming could also be accomplished by narrowing the field-of-view, but it's better
 			// to keep the field-of-view constant since that is how we view the real world with the naked eye
 			// (as opposed to a telephoto lens where the viewing rays become more parallel with greater zoom).
-
-			// Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
-			const GLdouble perspective_field_of_view_smaller_dim_degrees = 90.0;
-			const GLdouble perspective_field_of_view_smaller_dim_radians =
-					GPlatesMaths::convert_deg_to_rad(perspective_field_of_view_smaller_dim_degrees);
-
 			//
-			// Adjust the eye distance such that the globe is just encompassed by the view
-			// (and a little extra due to the framing ratio).
-			//
-			// First a ray from the eye position touches the globe surface tangentially.
-			// That intersection point has a positive x value (since closer to eye than the global
-			// y-z plane at x=0), and a radial value that is distance from x-axis (less than 1.0).
-			// This is what we'd get if the field-of-view exactly encompassed the globe.
-			// Note that the angle between this tangential ray and the x-axis is half the field of view.
-			// That positive x value is 'sin(fov/2)' and the radial r value is 'cos(fov/2)'.
-			// Picture a y-z plane (at x='sin(fov/2)') parallel to the global y-z plane (at x=0) but moved closer.
-			//
-			// But now we want the field-of-view to encompass slightly more than the globe.
-			// The framing ratio (slightly larger than 1.0) lifts the tangential line slightly off the
-			// globe surface to create a little space around the globe in the viewport.
-			// So we extend that radial value by the framing ratio to get 'r = framing_ratio * cos(fov/2)'.
-			// The reason we extend along the radial direction (y-z plane) is the non-tilted
-			// (ie, eye direction along x-axis) perspective frustum projects 3D points that are in the
-			// same plane onto the viewport in a proportional manner, and so the framing ratio should
-			// provide the desired spacing around the globe (when the globe is projected into the viewport).
-			// The final eye position is such that the same field-of-view now applies to this extended 'r'
-			// (in other words that ray is no longer touching the globe surface, it misses it slightly by the framing ratio):
-			//
-			//   tan(fov/2) = r/(d-x)
-			// 
-			// ...where 'd' is the distance from eye to globe centre (global origin) and 'd-x' is distance
-			// from eye to that y-z plane (where x='sin(fov/2)'), and r='framing_ratio*cos(fov/2)'.
-			//
-			// Therefore:
-			//
-			//   d = x + r/tan(fov/2)
-			//     = sin(fov/2) + framing_ratio * cos(fov/2) / tan(fov/2)
-			//     = sin(fov/2) + framing_ratio * sin(fov/2)
-			//     = (1 + framing_ratio) * sin(fov/2)
-			//
-			GLdouble eye_to_globe_centre_distance = (1.0 + GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO) *
-					std::sin(perspective_field_of_view_smaller_dim_radians / 2.0);
-
-			// Zooming brings us closer to the globe surface but never quite reaches it.
-			// The distance from the eye to the surface is what gets reduced by zooming, hence the globe radius (1.0) subtraction.
-			eye_to_globe_centre_distance = 1.0 + (eye_to_globe_centre_distance - 1.0) / zoom_factor;
-
+			const GPlatesMaths::Vector3D camera_eye = camera.get_perspective_eye_position();
 			view_transform.glu_look_at(
-				// The view is oriented such that the global x-axis points out of the screen.
-				// So set our viewpoint to be along the positive x-axis (looking at the origin)...
-				eye_to_globe_centre_distance, 0, 0, // eye
-				0, 0, 0,  // centre
-				0, 0, 1); // up
+					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
+					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
+					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
+
+			// Distance from eye to globe centre projected along the view direction.
+			const GPlatesMaths::Vector3D globe_centre(0, 0, 0);
+			const GLdouble eye_to_globe_centre_distance_along_view_direction =
+					dot(globe_centre - camera_eye, camera_view_direction).dval();
 
 			//
 			// For perspective viewing it's generally advised to keep the near plane as far away as
@@ -338,61 +252,50 @@ namespace
 			// This also shows we get about 2e+8 times more z-buffer precision at the near plane compared to the far plane.
 			//
 
-			// The 1.0 is the globe radius.
-			const GLdouble depth_in_front_of_globe = 0.5 * (eye_to_globe_centre_distance - 1.0);
+			const GLdouble depth_in_front_of_globe = 0.001;
 			// The 1.0 is the globe radius.
 			// The 0.5 is arbitrary and because we don't want to put the far clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
 			// Note that this only really matters if you can see them (if the globe is translucent).
-			const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
+			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + 0.5;
 			// The stars need a far clip plane further away.
 			const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-			const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
+			const GLdouble depth_globe_centre = eye_to_globe_centre_distance_along_view_direction;
 			// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
 			// Also the opaque sphere is now rendered as a flat disk facing the camera and
 			// positioned through the globe centre - so we don't want that to get clipped away either.
 			const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
-			// The aspect ratio (width/height) of the screen.
-			const GLdouble aspect_ratio = GLdouble(scene_view_width) / scene_view_height;
-			// Since 'glu_perspective()' accepts a 'y' field-of-view (along height dimension),
-			// if the height is the smaller dimension we don't need to do anything.
-			GLdouble perspective_field_of_view_height_dim_degrees = perspective_field_of_view_smaller_dim_degrees;
-			// If the width is the smaller dimension then our field-of-view applies to the width,
-			// so we need to calculate the field-of-view that applies to the height.
-			if (aspect_ratio < 1.0)
-			{
-				// Convert fov along with to fov along height by adjusting for the aspect ratio.
-				const GLdouble perspective_field_of_view_height_dim_radians = 2.0 * std::atan(
-						std::tan(perspective_field_of_view_smaller_dim_radians / 2.0) / aspect_ratio);
-				perspective_field_of_view_height_dim_degrees = GPlatesMaths::convert_rad_to_deg(
-						perspective_field_of_view_height_dim_radians);
-			}
+			double aspect_ratio;
+			double fovy_degrees;
+			camera.get_perspective_aspect_ratio_and_fovy(
+					viewport_width, viewport_height,
+					aspect_ratio, fovy_degrees);
 
 			//
 			// Projection transforms.
 			//
 
 			projection_transform_include_front_half_globe.glu_perspective(
-					perspective_field_of_view_height_dim_degrees,
+					fovy_degrees,
 					aspect_ratio,
 					depth_in_front_of_globe,
 					depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
 
 			projection_transform_include_rear_half_globe.glu_perspective(
-					perspective_field_of_view_height_dim_degrees,
+					fovy_degrees,
 					aspect_ratio,
 					depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
 					depth_behind_globe);
 
 			projection_transform_include_full_globe.glu_perspective(
-					perspective_field_of_view_height_dim_degrees,
+					fovy_degrees,
 					aspect_ratio,
 					depth_in_front_of_globe,
 					depth_behind_globe);
 
 			projection_transform_include_stars.glu_perspective(
-					perspective_field_of_view_height_dim_degrees,
+					fovy_degrees,
 					aspect_ratio,
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
@@ -405,8 +308,8 @@ namespace
 		// The text overlay coordinates are specified in window coordinates.
 		// The near and far values only need to include z=0 so [-1,1] will do fine.
 		projection_transform_text_overlay.gl_ortho(
-				0, scene_view_width,
-				0, scene_view_height,
+				0, viewport_width,
+				0, viewport_height,
 				-1,
 				1);
 	}
@@ -574,7 +477,14 @@ GPlatesQtWidgets::GlobeCanvas::init()
 			this,
 			SLOT(update_canvas()));
 
-	handle_zoom_change();
+	// Update our view whenever the camera changes.
+	//
+	// Note that the camera is updated when the zoom changes.
+	QObject::connect(
+			&d_view_state.get_globe_camera(), SIGNAL(camera_changed()),
+			this, SLOT(handle_camera_change()));
+
+	handle_camera_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
 }
@@ -655,8 +565,9 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	// to the cos of 'lambda'.
 	double cos_lambda = click_point.position_vector().x().dval();
 	double lambda_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lambda);
+	const GLdouble smaller_dim = (width() <= height()) ? width() : height();
 	GLdouble diameter_ratio =
-			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_view_state.get_viewport_zoom().zoom_factor());
+			lambda_scaled_epsilon_diameter / (smaller_dim * d_view_state.get_viewport_zoom().zoom_factor());
 	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
 
 #if 0  // Change 0 to 1 if you want this informative output.
@@ -980,8 +891,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	calc_scene_view_projection_transforms(
 			image.width(),
 			image.height(),
-			d_view_state.get_viewport_zoom().zoom_factor(),
-			d_globe.get_projection_type(),
+			d_view_state.get_globe_camera(),
 			tile_view_transform,
 			tile_projection_transform_include_front_half_globe,
 			tile_projection_transform_include_rear_half_globe,
@@ -1079,8 +989,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	calc_scene_view_projection_transforms(
 			feedback_paint_device.width(),
 			feedback_paint_device.height(),
-			d_view_state.get_viewport_zoom().zoom_factor(),
-			d_globe.get_projection_type(),
+			d_view_state.get_globe_camera(),
 			view_transform,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
@@ -1363,7 +1272,7 @@ GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
+GPlatesQtWidgets::GlobeCanvas::handle_camera_change() 
 {
 	// switch context before we do any GL stuff
 	makeCurrent();
@@ -1389,9 +1298,6 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// Set up the projection transforms for the current canvas dimensions.
 	//
 
-	// Always fill up all of the available space.
-	update_dimensions();
-
 	// Update the projection matrices.
 	d_gl_view_transform.gl_load_identity();
 	d_gl_projection_transform_include_front_half_globe.gl_load_identity();
@@ -1402,30 +1308,13 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	calc_scene_view_projection_transforms(
 			width(),
 			height(),
-			d_view_state.get_viewport_zoom().zoom_factor(),
-			d_globe.get_projection_type(),
+			d_view_state.get_globe_camera(),
 			d_gl_view_transform,
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,
 			d_gl_projection_transform_include_full_globe,
 			d_gl_projection_transform_include_stars,
 			d_gl_projection_transform_text_overlay);
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::update_dimensions() 
-{
-	if (width() <= height())
-	{
-		d_smaller_dim = static_cast<GLdouble>(width());
-		d_larger_dim = static_cast<GLdouble>(height());
-	}
-	else
-	{
-		d_smaller_dim = static_cast<GLdouble>(height());
-		d_larger_dim = static_cast<GLdouble>(width());
-	}
 }
 
 
@@ -1619,6 +1508,7 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 	if (!ray_distance_to_sphere)
 	{
 		// Screen pixel does not intersect unit sphere.
+		//
 		// Find the position, along ray of projected screen pixel, closest to the globe (unit sphere).
 		// We'll project this towards the origin onto the globe, and consider that the horizon of the globe.
 		// Note that this works well for orthographic viewing since all screen pixel rays are parallel and

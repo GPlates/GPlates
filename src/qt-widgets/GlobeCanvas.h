@@ -94,8 +94,6 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		static const GLfloat FRAMING_RATIO;
-
 
 		struct MousePressInfo
 		{
@@ -524,7 +522,7 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void
-		handle_zoom_change();
+		handle_camera_change();
 
 	private:
 		/**
@@ -638,12 +636,6 @@ namespace GPlatesQtWidgets
 		//! The y-coord of the mouse pointer position on the screen.
 		int d_mouse_pointer_screen_pos_y;
 
-		//! The smaller of the dimensions (width/height) of the screen.
-		double d_smaller_dim;
-
-		//! The larger of the dimensions (width/height) of the screen.
-		double d_larger_dim;
-
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
 		GPlatesGui::Globe d_globe;
@@ -691,9 +683,6 @@ namespace GPlatesQtWidgets
 		void
 		update_mouse_pointer_pos(
 				QMouseEvent *mouse_event);
-
-		void
-		update_dimensions();
 
 		/**
 		 * Given the screen coordinates, calculate and return a position which is on
