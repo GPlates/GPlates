@@ -512,82 +512,52 @@ double
 GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 		const GPlatesMaths::PointOnSphere &click_point) const
 {
-	// Say we pick an epsilon radius of 3 pixels around the click position.  That's an epsilon
-	// diameter of 6 pixels.  (Obviously, the larger this diameter, the more relaxed the
-	// proximity inclusion threshold.)
+	// Say we pick an epsilon radius of 3 pixels around the click position.
+	// The larger this radius, the more relaxed the proximity inclusion threshold.
+	//
 	// FIXME:  Do we want this constant to instead be a variable set by a per-user preference,
 	// to enable users to specify their own epsilon radius?  (For example, users with shaky
 	// hands or very high-resolution displays might prefer a larger epsilon radius.)
-	static const GLdouble epsilon_diameter = 6.0;
+	const double pixel_inclusion_threshold = 3.0;
+	// Limit the maximum angular distance on unit sphere. When the click point is at the circumference
+	// of the visible globe, a one viewport pixel variation can result in a large traversal on the
+	// globe since the globe surface is tangential to the view there.
+	const double max_distance_inclusion_threshold = GPlatesMaths::convert_deg_to_rad(5.0);
 
-	// The value of 'd_smaller_dim' is the value of whichever of the width or height of the
-	// canvas is smaller; the smaller dimension of the canvas will play a role in determining
-	// the size of the globe.
+	// At the circumference of the visible globe we see the globe surface of the globe almost-tangentially.
+	// At these locations, a small mouse-pointer displacement on-screen will result in a significantly
+	// larger mouse-pointer displacement on the surface of the globe than would the equivalent
+	// mouse-pointer away from the visible circumference.
 	//
-	// The value of 'zoom_factor' starts at 1 for no zoom, then increases to 1.12202, 1.25893,
-	// etc.  The product (d_smaller_dim * zoom_factor) gives the current size of the globe in
-	// (floating-point) pixels, taking into account canvas size and zoom.
+	// To take this into account we use the current view and projection transforms (and viewport) to
+	// project one screen pixel area onto the globe and find the maximum deviation of this area
+	// projected onto the globe (in terms of angular distance on the globe).
 	//
-	// So, (epsilon_diameter / (d_smaller_dim * zoom_factor)) is the ratio of the diameter of
-	// the epsilon circle to the diameter of the globe.  We want to convert this to an angle,
-	// so we should pipe this value through an inverse-sine function, to convert from the
-	// on-screen projection size of the epsilon circle to the angle at the centre of the globe.
-	// (However, we won't bother with the inverse-sine:  For arguments of as small a magnitude
-	// as these (less than 0.05), the value of asin(x) is practically equal to the value of 'x'
-	// anyway.  No, really -- don't take my word for it -- try it yourself!)
-	//
-	// Then take the cosine, and we have the dot-product-related closeness inclusion threshold.
+	// Calculate the maximum distance on the unit-sphere subtended by one viewport pixel projected onto it.
+	GPlatesOpenGL::GLProjection gl_projection(
+			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
+			d_gl_view_transform,
+			d_gl_projection_transform_include_full_globe);
+	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
+			gl_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
+	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
+	if (!min_max_pixel_size)
+	{
+		return std::cos(max_distance_inclusion_threshold);  // Proximity threshold is expected to be a cosine.
+	}
 
-	// Algorithm modification, 2007-10-16:  If you look at a cross-section of the globe (sliced
-	// vertically) you'll notice that at high latitudes (whether positive or negative), we see
-	// the surface of the globe almost-tangentially.  At these high latitudes, a small
-	// mouse-pointer displacement on-screen will result in a significantly larger mouse-pointer
-	// displacement on the surface of the globe than would the equivalent mouse-pointer
-	// displacement at the Equator.
-	//
-	// Since the mouse-pointer position on-screen will vary by whole pixels, at the high
-	// latitudes of the cross-section it might not even be *possible* to reach a mouse-pointer
-	// position on the globe which is close enough to a geometry to click on it:  Moving by a
-	// single pixel on-screen might cause the mouse-pointer position on the globe to "skip
-	// over" the necessary location on the globe.
-	//
-	// If we generalise this reasoning to the 3-D sphere, we can state that the "problem areas"
-	// of the sphere are those which are "far" from the point which appears at the centre of
-	// the projection of the globe.  Mathematically, if we let 'lambda' be the angular distance
-	// of the current point from the point which appears at the centre of the projection of the
-	// globe, then it is the "high" values of lambda (those which are close to 90 degrees)
-	// which correspond to the high latitudes of the cross-section case.
-	// 
-	// So, let's increase the epsilon diameter proportional to (1 - cos(lambda)) so that it is
-	// still possible to click on geometries at the edge of the globe.
-	//
-	// The value of 3 below is pretty much arbitrary, however.  I just tried different values
-	// till things behaved as I wanted in the GUI.
+	// Multiply the inclusive distance on unit-sphere (associated with one viewport pixel) by the
+	// number of inclusive viewport pixels.
+	double distance_inclusion_threshold = pixel_inclusion_threshold * min_max_pixel_size->second/*max*/;
 
-	// Since our globe is a unit sphere, the x-coordinate of the virtual click point is equal
-	// to the cos of 'lambda'.
-	double cos_lambda = click_point.position_vector().x().dval();
-	double lambda_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lambda);
-	const GLdouble smaller_dim = (width() <= height()) ? width() : height();
-	GLdouble diameter_ratio =
-			lambda_scaled_epsilon_diameter / (smaller_dim * d_view_state.get_viewport_zoom().zoom_factor());
-	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
+	// Clamp to range to the maximum distance inclusion threshold (if necessary).
+	if (distance_inclusion_threshold > max_distance_inclusion_threshold)
+	{
+		distance_inclusion_threshold = max_distance_inclusion_threshold;
+	}
 
-#if 0  // Change 0 to 1 if you want this informative output.
-	std::cout << "\nEpsilon diameter: " << epsilon_diameter << std::endl;
-	std::cout << "cos(lambda): " << cos_lambda << std::endl;
-	std::cout << "Lambda-scaled epsilon diameter: " << lambda_scaled_epsilon_diameter << std::endl;
-	std::cout << "Smaller canvas dim: " << d_smaller_dim << std::endl;
-	std::cout << "Zoom factor: " << d_viewport_zoom.zoom_factor() << std::endl;
-	std::cout << "Globe size: " << (d_smaller_dim * d_viewport_zoom.zoom_factor()) << std::endl;
-	std::cout << "Diameter ratio: " << diameter_ratio << std::endl;
-	std::cout << "asin(diameter ratio): " << asin(diameter_ratio) << std::endl;
-	std::cout << "Proximity inclusion threshold: " << proximity_inclusion_threshold << std::endl;
-	std::cout << "Proximity inclusion threshold from asin(diameter ratio): "
-			<< cos(asin(diameter_ratio)) << std::endl;
-#endif
-
-	return proximity_inclusion_threshold;
+	// Proximity threshold is expected to be a cosine.
+	return std::cos(distance_inclusion_threshold);
 }
 
 
