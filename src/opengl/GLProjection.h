@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
 #include "GLIntersectPrimitives.h"
@@ -113,8 +114,27 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto
-		 * the unit sphere using the specified model-view and projection transforms.
+		 * Returns an estimate of the minimum and maximum sizes of one viewport pixel,
+		 * at the specified position on the unit sphere.
+		 *
+		 * Currently this is done by sampling 8 screen points in a circle (of radius one pixel) around the window
+		 * coordinate (that @a position_on_sphere projects onto) and projecting them onto the unit sphere.
+		 * Then minimum and maximum distances of these unit-sphere samples to @a position_on_sphere are returned.
+		 *
+		 * Since these sampled points are projected onto the visible front side of the unit sphere, it is
+		 * assumed that @a position_on_sphere is also on the visible front side of the unit sphere.
+		 *
+		 * Returned results are in the range (0, Pi] where Pi is the distance between North and South poles.
+		 *
+		 * Returns none if none of the offset pixels intersect the unit sphere.
+		 */
+		boost::optional< std::pair<double/*min*/, double/*max*/> >
+		get_min_max_pixel_size_on_unit_sphere(
+				const GPlatesMaths::UnitVector3D &position_on_sphere) const;
+
+
+		/**
+		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto the unit sphere.
 		 *
 		 * This assumes the globe is a sphere of radius one centred at the origin in model space.
 		 *

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
@@ -221,6 +222,90 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 	// Due to numerical precision the ray may be slightly off the sphere so we'll
 	// normalise it (otherwise can provide out-of-range for 'acos' later on).
 	return ray->get_point_on_ray(ray_distance.get()).get_normalisation();
+}
+
+
+boost::optional< std::pair<double/*min*/, double/*max*/> >
+GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere(
+		const GPlatesMaths::UnitVector3D &projected_pixel) const
+{
+	// Find the window coordinates of the position on the unit sphere.
+	GLdouble window_x, window_y, window_z;
+	if (glu_project(
+			projected_pixel.x().dval(),
+			projected_pixel.y().dval(),
+			projected_pixel.z().dval(),
+			&window_x,
+			&window_y,
+			&window_z) == GL_FALSE)
+	{
+		return boost::none;
+	}
+
+	// Calculate 8 sample points in a circle (of radius one pixel) around the window coordinate.
+	const double inv_sqrt_two = 1.0 / std::sqrt(2.0);
+	// The offset pixel coordinates.
+	// It doesn't matter if their window coordinates go outside the viewport
+	// because there's no clipping happening here.
+	const double window_xy_offset_coords[8][2] =
+	{
+		{ window_x + 1.0         , window_y },
+		{ window_x - 1.0         , window_y },
+		{ window_x               , window_y + 1.0 },
+		{ window_x               , window_y - 1.0 },
+		{ window_x + inv_sqrt_two, window_y + inv_sqrt_two },
+		{ window_x + inv_sqrt_two, window_y - inv_sqrt_two },
+		{ window_x - inv_sqrt_two, window_y + inv_sqrt_two },
+		{ window_x - inv_sqrt_two, window_y - inv_sqrt_two }
+	};
+
+	// Iterate over all sample points and project onto the unit sphere.
+	// Some might miss the unit sphere if the position on the unit sphere is tangential to the view.
+	// If all miss the unit sphere then we return no result.
+	bool projected_at_least_one_offset_pixel_onto_unit_sphere = false;
+	GPlatesMaths::real_t min_dot_product(1.0);
+	GPlatesMaths::real_t max_dot_product(-1.0);
+	for (int n = 0; n < 8; ++n)
+	{
+		// Project the offset pixel onto the unit sphere.
+		const boost::optional<GPlatesMaths::UnitVector3D> projected_offset_pixel =
+				project_window_coords_onto_unit_sphere(
+						window_xy_offset_coords[n][0],
+						window_xy_offset_coords[n][1]);
+		if (!projected_offset_pixel)
+		{
+			continue;
+		}
+
+		// The dot product can be converted to arc distance but we can delay that
+		// expensive operation until we've compared all samples.
+		const GPlatesMaths::real_t dot_product =
+				dot(projected_offset_pixel.get(), projected_pixel);
+		// Here we want the maximum projected pixel size which means minimum dot product.
+		if (dot_product < min_dot_product)
+		{
+			min_dot_product = dot_product;
+		}
+		// Here we want the minimum projected pixel size which means maximum dot product.
+		if (dot_product > max_dot_product)
+		{
+			max_dot_product = dot_product;
+		}
+
+		projected_at_least_one_offset_pixel_onto_unit_sphere = true;
+	}
+
+	// If none of our offset pixels intersected the unit sphere then return none.
+	if (!projected_at_least_one_offset_pixel_onto_unit_sphere)
+	{
+		return boost::none;
+	}
+
+	// Convert from dot product to arc distance on the unit sphere.
+	const double min_distance = acos(max_dot_product).dval();
+	const double max_distance = acos(min_dot_product).dval();
+
+	return std::make_pair(min_distance, max_distance);
 }
 
 
