@@ -38,6 +38,9 @@ namespace GPlatesGui
 {
 	class ViewportZoom;
 
+	/**
+	 * Handles viewing of the globe (eye location, view direction, projection).
+	 */
 	class GlobeCamera :
 			public QObject
 	{
@@ -99,6 +102,8 @@ namespace GPlatesGui
 
 		/**
 		 * The camera (eye) location for perspective viewing.
+		 *
+		 * The current viewport zoom affects this eye location.
 		 *
 		 * NOTE: For orthographic viewing there is no real eye location since the view rays
 		 *       are parallel and hence the eye location is at infinity.

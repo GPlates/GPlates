@@ -58,9 +58,10 @@
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 
+#include "maths/LatLonPoint.h"
+#include "maths/Rotation.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
-#include "maths/LatLonPoint.h"
 
 #include "model/FeatureHandle.h"
 
@@ -195,8 +196,12 @@ namespace
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
 		}
-		else if (camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE)
+		else // perspective...
 		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+					GPLATES_ASSERTION_SOURCE);
+
 			//
 			// View transform.
 			//
@@ -300,10 +305,6 @@ namespace
 					depth_in_front_of_globe,
 					depth_behind_globe_and_including_stars);
 		}
-		else // an unhandled globe projection type...
-		{
-			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		}
 
 		// The text overlay coordinates are specified in window coordinates.
 		// The near and far values only need to include z=0 so [-1,1] will do fine.
@@ -352,6 +353,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_visual_layers(),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
+	d_globe_camera(view_state.get_globe_camera()),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
 				view_state.get_application_state())),
@@ -401,6 +403,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
+	d_globe_camera(existing_globe_canvas->d_globe_camera),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
 				d_view_state.get_application_state())),
@@ -481,7 +484,7 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	//
 	// Note that the camera is updated when the zoom changes.
 	QObject::connect(
-			&d_view_state.get_globe_camera(), SIGNAL(camera_changed()),
+			&d_globe_camera, SIGNAL(camera_changed()),
 			this, SLOT(handle_camera_change()));
 
 	handle_camera_change();
@@ -891,7 +894,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	calc_scene_view_projection_transforms(
 			image.width(),
 			image.height(),
-			d_view_state.get_globe_camera(),
+			d_globe_camera,
 			tile_view_transform,
 			tile_projection_transform_include_front_half_globe,
 			tile_projection_transform_include_rear_half_globe,
@@ -989,7 +992,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	calc_scene_view_projection_transforms(
 			feedback_paint_device.width(),
 			feedback_paint_device.height(),
-			d_view_state.get_globe_camera(),
+			d_globe_camera,
 			view_transform,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
@@ -1308,7 +1311,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	calc_scene_view_projection_transforms(
 			width(),
 			height(),
-			d_view_state.get_globe_camera(),
+			d_globe_camera,
 			d_gl_view_transform,
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,
@@ -1505,21 +1508,30 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 	const boost::optional<GPlatesMaths::real_t> ray_distance_to_sphere = intersect_ray_sphere(ray.get(), sphere);
 
 	// Did the ray intersect the globe ?
-	if (!ray_distance_to_sphere)
+	if (ray_distance_to_sphere)
 	{
-		// Screen pixel does not intersect unit sphere.
-		//
+		// Return the point on the sphere where the ray first intersects.
+		// Due to numerical precision the ray may be slightly off the sphere so we'll
+		// normalise it (otherwise can provide out-of-range for 'acos' later on).
+		const GPlatesMaths::UnitVector3D projected_point_on_sphere =
+				ray->get_point_on_ray(ray_distance_to_sphere.get()).get_normalisation();
+
+		// Return true to indicate ray intersected the globe.
+		return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere));
+	}
+
+	//
+	// Screen pixel does not intersect unit sphere.
+	//
+	// We need to find the nearest point on the horizon (visible circumference) of the globe.
+	//
+
+	if (d_globe_camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+	{
 		// Find the position, along ray of projected screen pixel, closest to the globe (unit sphere).
 		// We'll project this towards the origin onto the globe, and consider that the horizon of the globe.
 		// Note that this works well for orthographic viewing since all screen pixel rays are parallel and
 		// hence all perpendicular to the horizon (circumference around globe).
-		// For perspective viewing the further the screen pixel is away from the horizon circumference
-		// the closer the projected point on the globe is to the viewer (ie, it drifts away from the
-		// horizon circumference). It mainly has an effect when dragging the globe (not using SHIFT)
-		// while the mouse is *off* the globe. For orthographic viewing it behaves exactly like
-		// SHIFT-dragging (when mouse is *off* the globe). For perspective viewing, SHIFT-dragging
-		// behaves the same as SHIFT-dragging in orthographic viewing mode, but in normal dragging (no SHIFT)
-		// it behaves as the mouse cursor position is projected onto the globe as described above.
 
 		// Project line segment from globe origin to ray origin onto the ray direction.
 		// This gives us the distance along ray to that point on the ray that is closest to the globe.
@@ -1527,19 +1539,44 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 				dot(GPlatesMaths::Vector3D(0,0,0) - ray->get_origin(), ray->get_direction());
 		const GPlatesMaths::Vector3D closest_point = ray->get_point_on_ray(ray_distance_to_closest_point);
 
-		// Normalise the closest point to project it towards the origin onto the unit-sphere globe.
+		// Normalise the closest point, to project it towards the origin onto the unit-sphere globe.
 		// Return false to indicate ray did not intersect the globe.
 		return std::make_pair(false, GPlatesMaths::PointOnSphere(closest_point.get_normalisation()));
 	}
+	else // perspective...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_globe_camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				GPLATES_ASSERTION_SOURCE);
 
-	// Return the point on the sphere where the ray first intersects.
-	// Due to numerical precision the ray may be slightly off the sphere so we'll
-	// normalise it (otherwise can provide out-of-range for 'acos' later on).
-	const GPlatesMaths::UnitVector3D projected_point_on_sphere =
-			ray->get_point_on_ray(ray_distance_to_sphere.get()).get_normalisation();
+		// For perspective viewing we want the equivalent of a ray, emanating from the eye location,
+		// that touches the globe surface tangentially - call this the horizon ray.
+		// Our current ray misses the surface, so we can't use that.
+		//
+		// First we find the normal to the plane that contains our current ray and the globe centre.
+		// The plane intersects the globe surface to form a circle. We find the point on this circle
+		// that is perpendicular to the eye location (both with respect to globe centre). We then find
+		// the angle between this point and the globe centre (at the eye location). We then rotate
+		// this point by the angle around the globe centre (along the plane). The rotated point is
+		// the horizon point where the horizon ray touches the globe surface tangentially.
+		
+		const GPlatesMaths::Vector3D ray_origin_to_globe_centre = GPlatesMaths::Vector3D(0, 0, 0) - ray->get_origin();
+		// Note that normalisation should never fail here since the current ray is not pointing
+		// at the globe centre because we already know it missed the entire globe.
+		const GPlatesMaths::UnitVector3D horizon_rotation_axis =
+				cross(ray_origin_to_globe_centre, ray->get_direction()).get_normalisation();
+		const GPlatesMaths::UnitVector3D ray_origin_to_globe_centre_perpendicular =
+				cross(horizon_rotation_axis, ray_origin_to_globe_centre).get_normalisation();
+		// The 1.0 is the radius of globe (unit sphere).
+		// And distance from globe centre to ray origin (eye) should be greater than 1.0 since eye is outside globe.
+		const GPlatesMaths::real_t horizon_rotation_angle = asin(1.0 / ray_origin_to_globe_centre.magnitude());
+		const GPlatesMaths::Rotation horizon_rotation =
+				GPlatesMaths::Rotation::create(horizon_rotation_axis, horizon_rotation_angle);
+		const GPlatesMaths::UnitVector3D horizon_point = horizon_rotation * ray_origin_to_globe_centre_perpendicular;
 
-	// Return true to indicate ray intersected the globe.
-	return std::make_pair(true, GPlatesMaths::PointOnSphere(projected_point_on_sphere));
+		// Return false to indicate ray did not intersect the globe.
+		return std::make_pair(false, GPlatesMaths::PointOnSphere(horizon_point));
+	}
 }
 
 float

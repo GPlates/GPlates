@@ -64,6 +64,7 @@
 
 namespace GPlatesGui
 {
+	class GlobeCamera;
 	class TextOverlay;
 	class VelocityLegendOverlay;
 }
@@ -639,6 +640,8 @@ namespace GPlatesQtWidgets
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
 		GPlatesGui::Globe d_globe;
+		
+		GPlatesGui::GlobeCamera &d_globe_camera;
 
 		//! Paints an optional text overlay onto the globe.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;

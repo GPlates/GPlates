@@ -143,6 +143,7 @@ GPlatesMaths::Vector3D
 GPlatesGui::GlobeCamera::get_perspective_eye_position() const
 {
 	// Zooming brings us closer to the globe surface but never quite reaches it.
+	// Move 1/zoom_factor times the default zoom distance between the look-at location and the eye location.
 	const double distance_eye_to_look_at =
 			d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom / d_viewport_zoom.zoom_factor();
 
