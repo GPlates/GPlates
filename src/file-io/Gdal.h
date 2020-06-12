@@ -38,10 +38,10 @@
 
 // On some systems, it's <gdal_priv.h>, on others, <gdal/gdal_priv.h>.
 // The "CMake" script should have determined which one to use.
-// We hijack the HAVE_GDAL_OGRSF_FRMTS_H variable because the ogrsf_frmts.h
+// We hijack the GPLATES_HAVE_GDAL_OGRSF_FRMTS_H variable because the ogrsf_frmts.h
 // file is in the same directory.
 #include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
+#ifdef GPLATES_HAVE_GDAL_OGRSF_FRMTS_H
 	#include <gdal/gdal_priv.h>
 #else
 	#include <gdal_priv.h>

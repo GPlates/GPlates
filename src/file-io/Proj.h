@@ -28,7 +28,7 @@
 
 #include "global/config.h"
 // Give preference to the Proj5+ header ("proj.h").
-#ifdef HAVE_PROJ_H
+#ifdef GPLATES_HAVE_PROJ_H
 	#include <proj.h>
 #else
 	// Fallback to using Proj4 header ("proj_api.h").

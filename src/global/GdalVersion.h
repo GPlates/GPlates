@@ -33,10 +33,10 @@
 // which contains the version of GDAL we're compiling against.
 #include "global/config.h"
 
-#ifdef HAVE_GDAL_VERSION_H
-	#if defined(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
+#ifdef GPLATES_HAVE_GDAL_VERSION_H
+	#if defined(GPLATES_HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
 		#include <GDAL/gdal_version.h>
-	#elif defined(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
+	#elif defined(GPLATES_HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
 		#include <gdal/gdal_version.h>
 	#else
 		#include <gdal_version.h>
