@@ -24,15 +24,10 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include "global/CompilerWarnings.h"
-
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/bind.hpp>
-POP_MSVC_WARNINGS
 
 #include <stack>
 #include <vector>
@@ -46,6 +41,12 @@ POP_MSVC_WARNINGS
 #include <iomanip>
 #include <numeric>
 #include <functional>
+
+#if defined(_WIN32)
+// Including up top (instead of just including below, when needed) somehow avoids compile error:
+//    qatomic_msvc.h(320): error C2668: '_InterlockedCompareExchange': ambiguous call to overloaded function
+#include <windows.h>
+#endif
 
 #include "Profile.h"
 
@@ -72,7 +73,7 @@ namespace
 	 * Returns current time in units of @a ticks_t.
 	 */
 	ticks_t
-			get_ticks();
+	get_ticks();
 
 	/**
 	 * Converts ticks to seconds.
@@ -1293,7 +1294,6 @@ namespace
 
 #if defined(_WIN32)
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 	inline

@@ -32,22 +32,23 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QDir>
 #include <QProcess>
-#include <QtXml/QXmlStreamReader>
+#include <QXmlStreamReader>
 
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningPipeFromGzipException.h"
-#include "ExternalProgram.h"
 #include "FileInfo.h"
 #include "GpmlFeatureReaderFactory.h"
+#include "GpmlPropertyStructuralTypeReader.h"
 #include "GpmlReaderUtils.h"
+#include "GzipFile.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
-#include "GpmlPropertyStructuralTypeReader.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -67,18 +68,6 @@
 #include "utils/Profile.h"
 #include "utils/StringUtils.h"
 #include "utils/UnicodeStringUtils.h"
-
-const GPlatesFileIO::ExternalProgram &
-GPlatesFileIO::GpmlReader::gunzip_program()
-{
-	if (s_gunzip_program == NULL) {
-		s_gunzip_program = new ExternalProgram("gzip -d", "gzip --version");
-	}
-	return *s_gunzip_program;
-}
-
-
-const GPlatesFileIO::ExternalProgram *GPlatesFileIO::GpmlReader::s_gunzip_program = NULL;
 
 
 namespace
@@ -233,10 +222,6 @@ namespace
 			const boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> &alias_map)
 	{
 		QXmlStreamReader &reader = params.reader;
-		// .atEnd() can not be relied upon when reading a QProcess,
-		// so we must make sure we block for a moment to make sure
-		// the process is ready to feed us data.
-		reader.device()->waitForReadyRead(1000);
 		while ( ! reader.atEnd())
 		{
 			reader.readNext();
@@ -250,7 +235,6 @@ namespace
 						Model::XmlElementNode::create(reader, alias_map);
 				read_feature(feature_xml_element, feature_reader_factory, feature_collection, params);
 			}
-			reader.device()->waitForReadyRead(1000);
 		}
 	}
 
@@ -262,10 +246,6 @@ namespace
 	{
 		QXmlStreamReader &reader = params.reader;
 
-		// .atEnd() can not be relied upon when reading a QProcess,
-		// so we must make sure we block for a moment to make sure
-		// the process is ready to feed us data.
-		reader.device()->waitForReadyRead(1000);
 		if (Utils::append_failure_to_begin_if(
 			reader.atEnd(), params, IO::ReadErrors::FileIsEmpty, IO::ReadErrors::FileNotLoaded))
 		{
@@ -273,10 +253,6 @@ namespace
 		}
 
 		// Skip over the <?xml ... ?> stuff.
-		// .atEnd() can not be relied upon when reading a QProcess,
-		// so we must make sure we block for a moment to make sure
-		// the process is ready to feed us data.
-		reader.device()->waitForReadyRead(1000);
 		while ( ! reader.atEnd())
 		{
 			reader.readNext();
@@ -284,7 +260,6 @@ namespace
 			{
 				break;
 			}
-			reader.device()->waitForReadyRead(1000);
 		}
 
 		if (Utils::append_failure_to_begin_if(
@@ -378,34 +353,27 @@ GPlatesFileIO::GpmlReader::read_file(
 	QString filename(fileinfo.get_qfileinfo().filePath());
 	QXmlStreamReader reader;
 
-	QProcess input_process;
 	QFile input_file(filename);
+	boost::optional<GzipFile> gzip_file;
 	if (use_gzip)
 	{
-		// gzipped, assuming gzipped GPML.
-		// Set up the gzip process.
-		input_process.setStandardInputFile(filename);
+		// The gzip file reads and decompresses the gpmlz input file.
+		gzip_file = boost::in_place(&input_file);
 
-		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
-		// In fact, it may need to be a user preference.
-		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
-
-		// Checking the error code is a workaround for a Qt bug that causes a crash on Mac/Unix
-		// when the input file does not exist - see https://bugreports.qt.io/browse/QTBUG-33021.
-		// Without the bug only QProcess::waitForStarted() needs to be called.
-		if (input_process.error() != QProcess::UnknownError ||
-			!input_process.waitForStarted())
+		// Open gzip file for reading.
+		// This automatically opens the compressed gzip input file 'input_file' for reading.
+		// The decompressed data is read in text mode.
+		// The compressed input file is read in binary mode.
+		if (!gzip_file->open(QIODevice::ReadOnly | QIODevice::Text))
 		{
-			throw ErrorOpeningPipeFromGzipException(GPLATES_EXCEPTION_SOURCE,
-					gunzip_program().command(), filename);
+			throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 		}
-		input_process.waitForReadyRead(20000);
-		reader.setDevice(&input_process);
 
+		reader.setDevice(&gzip_file.get());
 	}
 	else
 	{
-		if ( ! input_file.open(QIODevice::ReadOnly | QIODevice::Text))
+		if (!input_file.open(QIODevice::ReadOnly | QIODevice::Text))
 		{
 			throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 		}
@@ -440,10 +408,6 @@ GPlatesFileIO::GpmlReader::read_file(
 		const GpmlFeatureReaderFactory feature_reader_factory(
 				property_structural_type_reader, gpml_version.get());
 
-		// .atEnd() can not be relied upon when reading a QProcess,
-		// so we must make sure we block for a moment to make sure
-		// the process is ready to feed us data.
-		reader.device()->waitForReadyRead(1000);
 		while ( ! reader.atEnd())
 		{
 			reader.readNext();
@@ -463,7 +427,6 @@ GPlatesFileIO::GpmlReader::read_file(
 					ReadErrors::ElementNameChanged);
 				read_feature_member(params, feature_reader_factory, feature_collection, alias_map);
 			}
-			reader.device()->waitForReadyRead(1000);
 		}
 	}
 

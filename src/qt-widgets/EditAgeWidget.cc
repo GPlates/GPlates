@@ -54,7 +54,12 @@ namespace
 		bool conv_ok = false;
 		// Note that this converts from the QLineEdit to a double assuming the system locale, falling back to C locale.
 		// This is important if someone uses a locale where , is the decimal separator.
-		double dbl = lineedit.text().toDouble(&conv_ok);
+		double dbl = lineedit.locale().toDouble(lineedit.text(), &conv_ok);
+		if (!conv_ok)
+		{
+			// QString::toDouble() only uses C locale.
+			dbl = lineedit.text().toDouble(&conv_ok);
+		}
 		if (conv_ok) {
 			return dbl;
 		} else {

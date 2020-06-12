@@ -31,7 +31,7 @@
 
 #include <QGroupBox>
 
-#include "ChooseFeatureCollectionWidgetUi.h"
+#include "ui_ChooseFeatureCollectionWidgetUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "file-io/FeatureCollectionFileFormatClassify.h"

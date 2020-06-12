@@ -29,7 +29,7 @@
 #include <QDialog>
 #include <QPointer>
 
-#include "AboutDialogUi.h"
+#include "ui_AboutDialogUi.h"
 
 #include "GPlatesDialog.h"
 

@@ -35,7 +35,7 @@
 #include <QFileInfo>
 #include <QValidator>
 
-#include "ScalarField3DDepthLayersPageUi.h"
+#include "ui_ScalarField3DDepthLayersPageUi.h"
 
 #include "OpenDirectoryDialog.h"
 #include "OpenFileDialog.h"

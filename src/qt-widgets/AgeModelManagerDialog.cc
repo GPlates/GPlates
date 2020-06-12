@@ -163,7 +163,7 @@ namespace
 			int column,
 			QStandardItemModel *standard_model)
 	{
-			standard_model->setData(standard_model->index(row,column),Qt::yellow,Qt::BackgroundColorRole);
+			standard_model->setData(standard_model->index(row,column), QColor(Qt::yellow), Qt::BackgroundColorRole);
 	}
 
 	void

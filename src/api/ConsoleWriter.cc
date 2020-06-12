@@ -31,7 +31,6 @@
 #include "PythonInterpreterUnlocker.h"
 #include "PythonUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace
 {
 	const char *
@@ -126,5 +125,3 @@ export_console_writer()
 	class_<GPlatesApi::ConsoleWriter, boost::noncopyable>("GPlatesConsoleWriter")
 		.def("write", &GPlatesApi::ConsoleWriter::write);
 }
-#endif //GPLATES_NO_PYTHON
-

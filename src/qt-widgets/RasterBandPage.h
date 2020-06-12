@@ -31,7 +31,7 @@
 #include <QString>
 #include <QComboBox>
 
-#include "RasterBandPageUi.h"
+#include "ui_RasterBandPageUi.h"
 
 
 namespace GPlatesQtWidgets

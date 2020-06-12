@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "ExportFileOptionsWidgetUi.h"
+#include "ui_ExportFileOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

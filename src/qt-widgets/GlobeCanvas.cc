@@ -202,8 +202,8 @@ namespace
 	 */
 	void
 	calc_scene_projection_transforms(
-			unsigned int scene_view_width,
-			unsigned int scene_view_height,
+			int scene_view_width_in_device_pixels,
+			int scene_view_height_in_device_pixels,
 			const double &zoom_factor,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -238,15 +238,15 @@ namespace
 		// The smaller/larger of the dimensions (width/height) of the screen.
 		double smaller_dim;
 		double larger_dim;
-		if (scene_view_width <= scene_view_height)
+		if (scene_view_width_in_device_pixels <= scene_view_height_in_device_pixels)
 		{
-			smaller_dim = static_cast<GLdouble>(scene_view_width);
-			larger_dim = static_cast<GLdouble>(scene_view_height);
+			smaller_dim = static_cast<GLdouble>(scene_view_width_in_device_pixels);
+			larger_dim = static_cast<GLdouble>(scene_view_height_in_device_pixels);
 		}
 		else
 		{
-			smaller_dim = static_cast<GLdouble>(scene_view_height);
-			larger_dim = static_cast<GLdouble>(scene_view_width);
+			smaller_dim = static_cast<GLdouble>(scene_view_height_in_device_pixels);
+			larger_dim = static_cast<GLdouble>(scene_view_width_in_device_pixels);
 		}
 		
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
@@ -259,7 +259,7 @@ namespace
 		GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
 		GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
-		if (scene_view_width <= scene_view_height)
+		if (scene_view_width_in_device_pixels <= scene_view_height_in_device_pixels)
 		{
 			ortho_left = -smaller_dim_clipping;
 			ortho_right = smaller_dim_clipping;
@@ -301,8 +301,8 @@ namespace
 		// The text overlay coordinates are specified in window coordinates.
 		// The near and far values only need to include z=0 so [-1,1] will do fine.
 		projection_transform_text_overlay.gl_ortho(
-				0, scene_view_width,
-				0, scene_view_height,
+				0, scene_view_width_in_device_pixels,
+				0, scene_view_height_in_device_pixels,
 				-1,
 				1);
 	}
@@ -731,8 +731,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			d_gl_projection_transform_include_full_globe,
 			d_gl_projection_transform_include_stars,
 			d_gl_projection_transform_text_overlay,
-			width(),
-			height());
+			*this);
 }
 
 
@@ -743,9 +742,18 @@ GPlatesQtWidgets::GlobeCanvas::get_viewport_size() const
 }
 
 
+QSize
+GPlatesQtWidgets::GlobeCanvas::get_viewport_size_in_device_pixels() const
+{
+	// QWidget::width() and QWidget::height() are in device independent pixels.
+	// Convert from widget size to device pixels (OpenGL).
+	return devicePixelRatio() * get_viewport_size();
+}
+
+
 QImage
 GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
-		boost::optional<QSize> image_size)
+		const QSize &image_size)
 {
 	// Initialise OpenGL if we haven't already.
 	initializeGL_if_necessary();
@@ -770,19 +778,15 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
 	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
 			*d_gl_off_screen_context.get(),
-			width(),
-			height(),
+			// Convert from widget size to device pixels (used by OpenGL)...
+			width() * devicePixelRatio(),
+			height() * devicePixelRatio(),
 			painter);
 
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
 
-	if (!image_size)
-	{
-		image_size = get_viewport_size();
-	}
-
 	// The image to render the scene into.
-	QImage image(image_size.get(), QImage::Format_ARGB32);
+	QImage image(image_size, QImage::Format_ARGB32);
 	if (image.isNull())
 	{
 		// Most likely a memory allocation failure - return the null image.
@@ -793,7 +797,7 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(0,0,0,0).rgba());
 
-	// Get the frame buffer dimensions.
+	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
 			renderer->get_current_frame_buffer_dimensions();
 
@@ -808,8 +812,8 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
-					image_size->width(),
-					image_size->height())/*destination_viewport*/,
+					image_size.width(),
+					image_size.height())/*destination_viewport*/,
 			tile_border);
 
 	// Keep track of the cache handles of all rendered tiles.
@@ -901,8 +905,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			tile_projection_transform_include_full_globe,
 			tile_projection_transform_include_stars,
 			tile_projection_transform_text_overlay,
-			image.width(),
-			image.height());
+			image);
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -956,8 +959,9 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
 	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
 			*d_gl_off_screen_context.get(),
-			width(),
-			height(),
+			// Convert from widget size to device pixels (used by OpenGL)...
+			width() * devicePixelRatio(),
+			height() * devicePixelRatio(),
 			feedback_painter,
 			false/*paint_device_is_framebuffer*/);
 
@@ -967,8 +971,14 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	// of the globe canvas because OpenGL feedback uses the viewport to generate projected vertices.
 	// Also text rendering uses the viewport.
 	// And we want all this to be positioned correctly within the feedback paint device.
-	renderer->gl_viewport(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
-	renderer->gl_scissor(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
+	renderer->gl_viewport(0, 0,
+			// Convert from widget size to device pixels (used by OpenGL)...
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
+	renderer->gl_scissor(0, 0,
+			// Convert from widget size to device pixels (used by OpenGL)...
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
 
 	// Calculate the projection matrices associated with the feedback paint device dimensions.
 	GPlatesOpenGL::GLMatrix projection_transform_include_front_half_globe;
@@ -977,8 +987,9 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	GPlatesOpenGL::GLMatrix projection_transform_include_stars;
 	GPlatesOpenGL::GLMatrix projection_transform_text_overlay;
 	calc_scene_projection_transforms(
-			feedback_paint_device.width(),
-			feedback_paint_device.height(),
+			// Convert from widget size to device pixels (used by OpenGL)...
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
@@ -996,8 +1007,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_include_full_globe,
 			projection_transform_include_stars,
 			projection_transform_text_overlay,
-			feedback_paint_device.width(),
-			feedback_paint_device.height());
+			feedback_paint_device);
 }
 
 
@@ -1009,8 +1019,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
-		int paint_device_width,
-		int paint_device_height)
+		const QPaintDevice &paint_device)
 {
 	PROFILE_FUNC();
 
@@ -1027,7 +1036,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(paint_device_width, paint_device_height);
+	const float scale = calculate_scale(paint_device);
 	//
 	// Paint the globe and its contents.
 	//
@@ -1057,16 +1066,16 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	d_text_overlay->paint(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
-			paint_device_width,
-			paint_device_height,
+			paint_device,
 			scale);
 
 	// Paint the velocity legend overlay
 	d_velocity_legend_overlay->paint(
 			renderer,
 			d_view_state.get_velocity_legend_overlay_settings(),
-			paint_device_width,
-			paint_device_height,
+			// These are widget dimensions (not device pixels)...
+			paint_device.width(),
+			paint_device.height(),
 			scale);
 
 	return frame_cache_handle;
@@ -1295,8 +1304,9 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	d_gl_projection_transform_include_stars.gl_load_identity();
 	d_gl_projection_transform_text_overlay.gl_load_identity();
 	calc_scene_projection_transforms(
-			width(),
-			height(),
+			// Convert from widget size to device pixels (used by OpenGL)...
+			width() * devicePixelRatio(),
+			height() * devicePixelRatio(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,
@@ -1503,11 +1513,13 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 
 float
 GPlatesQtWidgets::GlobeCanvas::calculate_scale(
-		int paint_device_width,
-		int paint_device_height)
+		const QPaintDevice &paint_device)
 {
-	const int paint_device_dimension = (std::min)(paint_device_width, paint_device_height);
-	const int min_viewport_dimension = d_view_state.get_main_viewport_min_dimension();
+	// Note that we use regular device *independent* sizes not high-DPI device pixels
+	// (ie, not using device pixel ratio) to calculate scale because font sizes, etc, are
+	// based on these coordinates (it's only OpenGL, really, that deals with device pixels).
+	const int paint_device_dimension = (std::min)(paint_device.width(), paint_device.height());
+	const int min_viewport_dimension = (std::min)(width(), height());
 
 	// If paint device is larger than the viewport then don't scale - this avoids having
 	// too large point/line sizes when exporting large screenshots.

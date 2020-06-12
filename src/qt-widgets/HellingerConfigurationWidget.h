@@ -28,7 +28,7 @@
 #include <QWidget>
 
 #include "gui/Colour.h"
-#include "HellingerConfigurationWidgetUi.h"
+#include "ui_HellingerConfigurationWidgetUi.h"
 //#include "HellingerDialog.h"
 
 namespace GPlatesQtWidgets

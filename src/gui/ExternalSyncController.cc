@@ -756,7 +756,7 @@ GPlatesGui::ExternalSyncController::read_process_output()
 
 	for (; iter != end ; ++iter)
 	{
-		QString command = iter->toAscii();
+		QString command = iter->toLatin1();
 		process_external_command(command);
 	}
 }
@@ -778,7 +778,7 @@ GPlatesGui::ExternalSyncController::send_external_command(
 		if (d_process->state() & QProcess::Running)
 		{
 			command += QString("\n");
-			d_process->write(command.toAscii());
+			d_process->write(command.toLatin1());
 		}
 	}
 	else

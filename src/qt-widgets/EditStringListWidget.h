@@ -32,7 +32,7 @@
 
 #include "AbstractEditWidget.h"
 #include "EditTableWidget.h"
-#include "EditStringListWidgetUi.h"
+#include "ui_EditStringListWidgetUi.h"
 
 #include "property-values/GpmlStringList.h"
 

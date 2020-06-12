@@ -27,7 +27,7 @@
 #define GPLATES_QTWIDGETS_POLESEQUENCETABLEWIDGET_H
 
 #include <QWidget>
-#include "PoleSequenceTableWidgetUi.h"
+#include "ui_PoleSequenceTableWidgetUi.h"
 #include "model/FeatureHandle.h"
 
 namespace GPlatesQtWidgets

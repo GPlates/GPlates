@@ -35,7 +35,7 @@
 #include "model/types.h"
 #include "property-values/GpmlArray.h"
 
-#include "EditTimeSequenceWidgetUi.h"
+#include "ui_EditTimeSequenceWidgetUi.h"
 
 namespace GPlatesAppLogic
 {

@@ -190,11 +190,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Construct the Awesome Bar. This used to go on top, but we want to push this
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
 	// room.
-	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
+	std::unique_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
 			view_state.get_animation_controller(), viewport_window);
 
 	// Construct the "View Bar" for the bottom.
-	std::auto_ptr<QWidget> viewbar = 
+	std::unique_ptr<QWidget> viewbar =
 		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
 										   view_state.get_viewport_projection());
 
@@ -295,24 +295,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			&viewport_window,
 			SLOT(update_tools_and_status_message()));
 
-	// Our GlobeAndMapWidget is the main viewport for ViewportWindow
-	QObject::connect(
-			d_globe_and_map_widget_ptr,
-			SIGNAL(resized(int, int)),
-			this,
-			SLOT(handle_globe_and_map_widget_resized(int, int)));
-
 	recalc_camera_position();
 	// Focus anything, ANYTHING, other than the time spinbox as it eats hotkeys.
 	globe_canvas().setFocus(Qt::ActiveWindowFocusReason);
-}
-
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_and_map_widget_resized(
-		int new_width, int new_height)
-{
-	d_view_state.set_main_viewport_dimensions(std::make_pair(new_width, new_height));
 }
 
 
@@ -396,15 +381,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_update_tools_and_status_messa
 }
 
 
-std::auto_ptr<QWidget>
+std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 		GPlatesGui::AnimationController &animation_controller,
 		GPlatesQtWidgets::ViewportWindow &main_window)
 {
-	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
-	// auto_ptr will keep tabs on the memory for us until we can return it
+	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
+	// unique_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
-	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	std::unique_ptr<QWidget> awesomebar_widget(new QWidget);
 	awesomebar_widget->setObjectName("AwesomeBar_1");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
@@ -441,15 +426,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
  * NOTE! Awesomebar two is not currently used. We played with the idea of a double-bar
  * at the top for a while, but in the end found other ways to save space.
  */
-std::auto_ptr<QWidget>
+std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
 		GPlatesGui::ViewportProjection &vprojection)
 {
-	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
-	// auto_ptr will keep tabs on the memory for us until we can return it
+	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
+	// unique_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
-	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	std::unique_ptr<QWidget> awesomebar_widget(new QWidget);
 	awesomebar_widget->setObjectName("AwesomeBar_2");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
@@ -464,14 +449,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 }
 
 
-std::auto_ptr<QWidget>
+std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 		GPlatesGui::ViewportZoom &vzoom)
 {
-	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
-	// auto_ptr will keep tabs on the memory for us until we can return it
+	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
+	// unique_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
-	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	std::unique_ptr<QWidget> viewbar_widget(new QWidget);
 	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);
@@ -511,15 +496,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 	return viewbar_widget;
 }
 
-std::auto_ptr<QWidget>
+std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	GPlatesGui::ViewportZoom &vzoom,
 	GPlatesGui::ViewportProjection &vprojection)
 {
-	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
-	// auto_ptr will keep tabs on the memory for us until we can return it
+	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
+	// unique_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
-	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	std::unique_ptr<QWidget> viewbar_widget(new QWidget);
 	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);

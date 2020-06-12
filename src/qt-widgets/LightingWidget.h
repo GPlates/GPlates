@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "LightingWidgetUi.h"
+#include "ui_LightingWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 

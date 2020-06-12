@@ -2321,11 +2321,11 @@ GPlatesOpenGL::GLScalarField3D::set_shader_test_variables(
 		// a warning is emitted (but can be ignored).
 		//
 		// Not all test variables are necessarily used by the shader program.
-		if (program_object->is_active_uniform(variable_name.toAscii().constData()))
+		if (program_object->is_active_uniform(variable_name.toLatin1().constData()))
 		{
 			program_object->gl_uniform1f(
 					renderer,
-					variable_name.toAscii().constData(),
+					variable_name.toLatin1().constData(),
 					test_variables[variable_index]);
 		}
 	}
@@ -2816,11 +2816,11 @@ GPlatesOpenGL::GLScalarField3D::initialise_shader_utils(
 					.arg(axis == 0 ? 'x' : (axis == 1 ? 'y' : 'z'));
 
 			// Not all shader programs use the cube coordinate frames.
-			if (program_object->is_active_uniform(uniform_name.toAscii().constData()))
+			if (program_object->is_active_uniform(uniform_name.toLatin1().constData()))
 			{
 				program_object->gl_uniform3f(
 						renderer,
-						uniform_name.toAscii().constData(),
+						uniform_name.toLatin1().constData(),
 						cube_face_axis);
 			}
 		}

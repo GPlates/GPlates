@@ -51,7 +51,7 @@ GPlatesUnitTest::CptPaletteTest::test_case_1()
 	std::cout << "testing cpt palette" << std::endl;
 
 	Palette* cpt_palette = 
-		new CptPalette("C:/gplates_src/symbology-2011-Jun-03/sample-data/unit-test-data/cpt_unit_test.txt");
+		new CptPalette("unit-test-data/cpt_unit_test.txt");
 	
 	boost::optional<Colour> c = cpt_palette->get_colour(Palette::Key(125));
 	BOOST_CHECK(QColor(*c).name().toStdString()=="#ffa500");

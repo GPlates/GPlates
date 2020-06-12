@@ -28,7 +28,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include "EditTimePeriodWidgetUi.h"
+#include "ui_EditTimePeriodWidgetUi.h"
 
 #include "AbstractEditWidget.h"
 #include "InformationDialog.h"

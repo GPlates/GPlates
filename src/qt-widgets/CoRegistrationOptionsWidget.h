@@ -29,7 +29,7 @@
 #include <boost/bind.hpp>
 
 #include "CoRegistrationLayerConfigurationDialog.h"
-#include "CoRegistrationOptionsWidgetUi.h"
+#include "ui_CoRegistrationOptionsWidgetUi.h"
 #include "LayerOptionsWidget.h"
 #include "CoRegistrationResultTableDialog.h"
 

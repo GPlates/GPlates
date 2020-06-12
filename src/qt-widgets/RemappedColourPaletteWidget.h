@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "RemappedColourPaletteWidgetUi.h"
+#include "ui_RemappedColourPaletteWidgetUi.h"
 
 #include "gui/BuiltinColourPaletteType.h"
 

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <utility> // std::move
 #include <boost/numeric/conversion/cast.hpp>
 
 #include "TreeWidgetBuilder.h"
@@ -130,10 +131,10 @@ GPlatesGui::TreeWidgetBuilder::create_item(
 	// NOTE: We don't pass the parent into the constructor as this slows things down a lot -
 	// but we must then make sure we don't add to a parent that itself has no parent as this
 	// seems to cause Qt to crash.
-	std::auto_ptr<QTreeWidgetItem> new_tree_widget_item(new QTreeWidgetItem(fields));
+	std::unique_ptr<QTreeWidgetItem> new_tree_widget_item(new QTreeWidgetItem(fields));
 
 	// Create a new Item wrapper.
-	managed_item_ptr_type new_item(new Item(new_tree_widget_item));
+	managed_item_ptr_type new_item(new Item(std::move(new_tree_widget_item)));
 
 	// Allocate a handle for the new item and store the new item.
 	return allocate_item(new_item);
@@ -397,7 +398,7 @@ GPlatesGui::TreeWidgetBuilder::remove_child(
 	// Check the managed resource to see if our local tree owns the QTreeWidgetItem.
 	// This will happen if we're removing a child that we've already added and
 	// committed to the QTreeWidget.
-	if (child_item->d_managed_item.get() == NULL)
+	if (child_item->d_managed_item.get() == nullptr)
 	{
 		// The child item has already been transferred to the QTreeWidget so transfer it back.
 		// We don't need to delay this operation since the QTreeWidgetItem is already attached to
@@ -511,7 +512,7 @@ GPlatesGui::TreeWidgetBuilder::transfer_managed_tree_widget_items_to_qlist(
 		const item_handle_type item_handle = *item_iter;
 		Item* item = d_items[item_handle].get();
 
-		if (item->d_managed_item.get() == NULL)
+		if (item->d_managed_item.get() == nullptr)
 		{
 			// End of contiguous sequence of managed items.
 			break;

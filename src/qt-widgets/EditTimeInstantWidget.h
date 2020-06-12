@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/GmlTimeInstant.h"
 
-#include "EditTimeInstantWidgetUi.h"
+#include "ui_EditTimeInstantWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

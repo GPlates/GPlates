@@ -26,6 +26,7 @@
  */
 
 #include <memory>
+#include <utility> // std::move
 #include <QDebug>
 #include <QUndoCommand>
 
@@ -342,7 +343,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 		bool is_intermediate_move)
 {
 	// The command that does the actual moving of vertex.
-	std::auto_ptr<QUndoCommand> move_vertex_command(
+	std::unique_ptr<QUndoCommand> move_vertex_command(
 			new GeometryBuilderMovePointUndoCommand(
 					d_geometry_builder,
 					d_selected_vertex_index,
@@ -351,10 +352,10 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 					
 	// Command wraps move vertex command with handing canvas tool choice and
 	// move vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("move vertex"),
-					move_vertex_command,
+					std::move(move_vertex_command),
 					this,
 					d_canvas_tool_workflows,
 					d_move_vertex_command_id));

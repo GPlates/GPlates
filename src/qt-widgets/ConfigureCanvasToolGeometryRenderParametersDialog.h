@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ConfigureCanvasToolGeometryRenderParametersDialogUi.h"
+#include "ui_ConfigureCanvasToolGeometryRenderParametersDialogUi.h"
 
 #include "GPlatesDialog.h"
 

@@ -76,13 +76,13 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::ApplyReconstructionPo
 	QObject::connect(spinbox_pole_time, SIGNAL(valueChanged(double)),
 			this, SLOT(handle_pole_time_changed(double)));
 
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::FIXED_PLATE,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::FIXED_PLATE,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::MOVING_PLATE,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::MOVING_PLATE,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::BEGIN_TIME,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::BEGIN_TIME,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::END_TIME,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::END_TIME,
 			QHeaderView::Stretch);
 }
 

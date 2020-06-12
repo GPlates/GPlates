@@ -18,74 +18,61 @@ Build process
 
 Development environment
 
-The first step is to ensure that g++ is installed.
-Although it appears to be installed by default we recommend installing the XCode development
-tools if you haven't already done so. This is because in our experience the linker error message
-"load command <x> unknown cmd field" has always been fixed by installing the XCode developement tools.
-Although this linker error does not occur on all systems it occurs often enough to note.
-To install the XCode development tools you'll need to obtain a copy of the install disc used to
-install MacOS X on your computer. If you don't have this then you can download the
-XCode development tools free of charge from http://developer.apple.com/technology/tools.html
-(a login is required). Once you have the XCode disc image locate the XcodeTools.pkg and install it.
-Note that a MacOS X 10.5 install disc will not work on a computer with a 10.4 version of MacOS X.
-You can test the version of g++ by typing "g++ --version" at the terminal (you can open the terminal
-by running Applications->Utilities->Terminal in Finder).
-
-NOTE: Previously GPlates only required the default compiler g++ 4.0.1 on both MacOS X 10.4 and 10.5.
-Now it requires g++ 4.2 or above (apparently there is a bug in g++ 4.0 that causes a new
-GPlates dependency library called CGAL to fail - http://www.cgal.org/FAQ.html#mac_optimization_bug).
-On MacOS X 10.4 (Tiger) there is only one compiler (g++ 4.0) so g++ 4.2 needs to be downloaded
-and installed - it can be obtained from http://r.research.att.com/tools/ (see gcc 4.2 under
-the section "Alternative and experimental tools") - this installs it as "/usr/bin/g++-4.2".
-On MacOS X 10.5 (Leopard) there are two compilers (g++ 4.0 and 4.2) and the default is g++ 4.0 -
-however you do not need to download and install g++ 4.2.
+Although it appears to be installed by default we recommend installing the XCode development tools
+if you haven't already done so. You can download them free of charge from http://developer.apple.com
+(a login is required). Also install the XCode command-line tools if they don't get installed.
 
 Package dependencies
 
-Firstly, you should ensure that you have installed all the packages which are
-dependencies for compilation.
+Firstly, you should ensure that you have installed all the packages which are dependencies for compilation.
 
 See "DEPS.OSX" for more information on installing dependencies.
-NOTE: All dependencies (except CGAL) can be built with either g++/gcc 4.0 or 4.2
 
 Commands to build GPlates
 
  1. Open a terminal window by running Applications->Utilities->Terminal in Finder.
- 2. Change your working directory (if not already) into the base directory of
-    the GPlates source code.
- 3. Use g++/gcc 4.2 to build GPlates by typing (see above for installing g++ 4.2 on MacOS X 10.4):
+ 2. Change your working directory (if not already) into the base directory of the GPlates source code.
+ 3. Build GPlates by typing:
 
-	cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.2 .
+    cmake .
     make
 
     * If you wish to install GPlates to a location other than the default
       ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
       For more information, see the Installing GPlates step below.
 
-The GPlates executable
+The GPlates application
 
-The GPlates executable will be called "gplates", located in the "bin"
-directory. If you want to do more than test GPlates from this local directory,
+The GPlates application bundle will be called "gplates.app", located in the "bin" directory.
+However this will appear simply as 'gplates' in the file explorer (Finder),
+and you can run GPlates by double-clicking on it.
+
+Alternatively, to run gplates from the command-line (Terminal window) you can type:
+
+    bin/gplates.app/Contents/MacOS/gplates
+
+...this is because the actual gplates executable is installed inside the GPlates application bundle,
+along with other files (such as libraries that GPlates depends on).
+
+If you want to do more than test GPlates from this local build directory,
 you will need to install it on your system.
 
 Installing GPlates
 
 The command
 
-	make install
+    sudo make install
 
-Will copy the "gplates" executable to the default location, "/usr/local".
-The GPlates executable will be installed as "/usr/local/bin/gplates".
-Note that you will need to be root to install software to "/usr/local".
-On Ubuntu systems, this is accomplished by prefixing the command with
-"sudo", i.e. "sudo make install".
+Will copy the "gplates" application bundle to the default location, "/usr/local".
+The GPlates application bundle will be installed as "/usr/local/bin/gplates.app".
+Note that 'sudo' is needed since root permissions are required to install software to "/usr/local".
 
 If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
 "cmake". For example:
 
-	cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
     make
-	make install
+    make install
 
-This will install GPlates in your home directory as "~/usr/bin/gplates".
+This will install GPlates in your home directory as "~/usr/bin/gplates.app".
 

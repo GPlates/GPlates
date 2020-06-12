@@ -29,7 +29,7 @@
 #include <QRadioButton>
 
 #include "HellingerNewSegmentWarning.h"
-#include "HellingerNewSegmentWarningUi.h"
+#include "ui_HellingerNewSegmentWarningUi.h"
 #include "QtWidgetUtils.h"
 
 GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(QWidget *parent_):

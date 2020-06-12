@@ -28,7 +28,7 @@
 
 #include <QWizardPage>
 
-#include "RasterFeatureCollectionPageUi.h"
+#include "ui_RasterFeatureCollectionPageUi.h"
 
 
 namespace GPlatesQtWidgets

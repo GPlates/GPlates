@@ -32,7 +32,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "ColouringDialogUi.h"
+#include "ui_ColouringDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "OpenFileDialog.h"

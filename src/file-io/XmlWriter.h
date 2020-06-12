@@ -31,7 +31,7 @@
 
 #include <vector>
 #include <utility>
-#include <QtXml/QXmlStreamWriter>
+#include <QXmlStreamWriter>
 #include <QTextStream>
 #include "model/StringContentTypeGenerator.h"
 #include "model/QualifiedXmlName.h"

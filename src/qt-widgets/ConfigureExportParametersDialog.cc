@@ -26,13 +26,12 @@
 #include <algorithm>
 #include <map>
 #include <QCheckBox>
-#include <QLabel>
-#include <QFileDialog>
 #include <QDir>
 #include <QFileInfo>
-#include <QColorGroup>
-#include <QMessageBox>
+#include <QFileDialog>
 #include <QHeaderView>
+#include <QLabel>
+#include <QMessageBox>
 #include <QScrollArea>
 
 #include "ConfigureExportParametersDialog.h"

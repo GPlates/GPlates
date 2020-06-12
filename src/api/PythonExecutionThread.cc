@@ -25,9 +25,10 @@
 
 #include <iostream>
 #include <boost/bind.hpp>
-#include <QMutexLocker>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QMetaType>
+#include <QMutexLocker>
 
 #include "PythonExecutionThread.h"
 
@@ -36,12 +37,16 @@
 
 #include "api/PythonUtils.h"
 #include "api/Sleeper.h"
+
 #include "app-logic/ApplicationState.h"
 
-#include "utils/DeferredCallEvent.h"
+#include "global/python.h"  // PY_MAJOR_VERSION
+
 #include "gui/PythonManager.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+#include "utils/DeferredCallEvent.h"
+
+
 GPlatesApi::PythonExecutionThread::PythonExecutionThread(
 		const  boost::python::object &main_namespace,
 		QObject *parent_) :
@@ -234,4 +239,35 @@ GPlatesApi::PythonExecutionThread::run()
 	d_event_loop = NULL;
 }
 
-#endif // GPLATES_NO_PYTHON
+
+//
+// We're compiling qRegisterMetaType<type>() (ie, without a string argument) below in CC file.
+// And qRegisterMetaType<type>() expects Q_DECLARE_METATYPE(typename), so we declare that here.
+//
+// We avoid compiling qRegisterMetaType<type>(typename) (ie, *with* a string argument) in the header file
+// since qRegisterMetaType<type>(typename) declares QMetaTypeId<type> (in Qt5). And there might be a
+// CC file that includes the header but also declares Q_DECLARE_METATYPE(typename)
+// (presumably because it uses  'type' in a QVariant) which in turn declares QMetaTypeId<type>.
+// This duplicate declaration of QMetaTypeId<type> would result in a compile error.
+//
+// We could compile qRegisterMetaType(typename) below in CC file and not declare Q_DECLARE_METATYPE(typename).
+// That should achieve the same result.
+//
+Q_DECLARE_METATYPE(boost::function< void() >)
+
+void
+GPlatesApi::PythonExecutionThread::run_in_python_thread(
+		boost::function< void () > &f)
+{
+	if(PythonUtils::is_main_thread())
+	{
+		PythonUtils::ThreadSwitchGuard g;
+		qRegisterMetaType<boost::function< void () > >();
+		QMetaObject::invokeMethod(
+				d_python_runner, 
+				"exec_function_slot", 
+				Qt::AutoConnection,
+				Q_ARG(boost::function< void () > , f));
+		wait_done();
+	}
+}

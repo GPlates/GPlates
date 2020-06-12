@@ -178,7 +178,6 @@ namespace GPlatesGui
 		CfgItemMap d_items;
 	};
 
-#if !defined(GPLATES_NO_PYTHON)
 
 	namespace bp = boost::python ;
 	
@@ -302,7 +301,6 @@ namespace GPlatesGui
 
 	private:
 	};
-#endif //GPLATES_NO_PYTHON
 }
 #endif    //GPLATES_GUI_PYTHON_CONFIGURATION_H
 

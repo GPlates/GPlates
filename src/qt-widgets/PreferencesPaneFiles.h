@@ -31,7 +31,7 @@
 
 #include "gui/ConfigGuiUtils.h"
 
-#include "PreferencesPaneFilesUi.h"
+#include "ui_PreferencesPaneFilesUi.h"
 
 
 namespace GPlatesAppLogic

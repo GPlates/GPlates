@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_TOPOLOGYGEOMETRYRESOLVERLAYEROPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_TOPOLOGYGEOMETRYRESOLVERLAYEROPTIONSWIDGET_H
 
-#include "TopologyGeometryResolverLayerOptionsWidgetUi.h"
+#include "ui_TopologyGeometryResolverLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 

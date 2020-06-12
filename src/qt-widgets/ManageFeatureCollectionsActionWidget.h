@@ -30,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QWidget>
 
-#include "ManageFeatureCollectionsActionWidgetUi.h"
+#include "ui_ManageFeatureCollectionsActionWidgetUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 

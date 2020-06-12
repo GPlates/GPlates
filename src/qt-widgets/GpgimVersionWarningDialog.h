@@ -30,7 +30,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 
-#include "GpgimVersionWarningDialogUi.h"
+#include "ui_GpgimVersionWarningDialogUi.h"
 
 
 namespace GPlatesQtWidgets

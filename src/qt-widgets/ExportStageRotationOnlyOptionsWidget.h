@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "ExportStageRotationOnlyOptionsWidgetUi.h"
+#include "ui_ExportStageRotationOnlyOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

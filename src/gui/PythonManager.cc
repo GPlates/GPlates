@@ -46,6 +46,9 @@
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
 
+#include "global/config.h"  // GPLATES_IGNORE_PYTHON_ENVIRONMENT
+#include "global/python.h"  // PY_MAJOR_VERSION
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/QtWidgetUtils.h"
@@ -53,10 +56,9 @@
 
 #include "utils/StringUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 #if PY_MAJOR_VERSION >= 3
-extern "C" PyMODINIT_FUNC PyInit_pygplates(void);
+PyMODINIT_FUNC PyInit_pygplates(void);
 #else
 extern "C" void initpygplates();
 #endif 
@@ -655,18 +657,3 @@ GPlatesGui::PythonManager::print_py_msg(const QString& msg)
 {
 	d_python_console_dialog_ptr->append_text(msg);
 }
-
-#endif //GPLATES_NO_PYTHON
-
-
-
-
-
-
-
-
-
-
-
-
-

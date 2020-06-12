@@ -44,7 +44,7 @@ GPlatesQtWidgets::MissingSessionFilesDialog::MissingSessionFilesDialog(
 
 	// Try to adjust column widths.
 	QHeaderView *header = missing_files_table_widget->horizontalHeader();
-	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
+	header->setSectionResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::UPDATE, 30);
 
 	QObject::connect(

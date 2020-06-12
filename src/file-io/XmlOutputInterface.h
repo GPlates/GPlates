@@ -55,8 +55,8 @@ namespace GPlatesFileIO
 		 * Elements of this enumeration represent the possible status of the interface.
 		 */
 		enum Status {
-			NO_ERROR,
-			WRITE_ERROR
+			XML_NO_ERROR,
+			XML_WRITE_ERROR
 		};
 
 		/**

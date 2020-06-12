@@ -27,7 +27,7 @@
 #define GPLATES_OPENGL_GLVERTEXARRAYOBJECT_H
 
 #include <bitset>
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -118,14 +118,14 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLVertexArrayObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLVertexArrayObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLVertexArrayObject>(new GLVertexArrayObject(renderer));
+			return std::unique_ptr<GLVertexArrayObject>(new GLVertexArrayObject(renderer));
 		}
 
 

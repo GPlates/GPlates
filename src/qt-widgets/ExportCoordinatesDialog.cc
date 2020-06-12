@@ -322,7 +322,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 		return;
 	}
 
-	std::auto_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
+	std::unique_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
 
 	// FIXME: It would be awesome if we could arrange this switch -before- we
 	// open the file, to avoid clobbering the user's file needlessly.
@@ -396,7 +396,7 @@ void
 GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_text_stream(
 	OutputFormat format, QTextStream &text_stream)
 {
-	std::auto_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
+	std::unique_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
 
 
 	// Create the geometry exporter based on 'format'.

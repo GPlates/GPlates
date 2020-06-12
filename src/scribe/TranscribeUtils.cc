@@ -360,7 +360,7 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 		return file_path;
 	}
 
-#if defined(Q_WS_WIN)
+#if defined(Q_OS_WIN)
 
 	// Add a Windows drive letter to absolute paths if necessary.
 	if (file_path.startsWith('/') &&

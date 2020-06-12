@@ -28,7 +28,7 @@
 
 #include <QWidget>
 #include <QDockWidget>
-#include "TimeControlWidgetUi.h"
+#include "ui_TimeControlWidgetUi.h"
 
 
 namespace GPlatesGui

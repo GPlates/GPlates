@@ -29,7 +29,7 @@
 #include <QWidget>
 #include <QAction>
 
-#include "InsertionPointWidgetUi.h"
+#include "ui_InsertionPointWidgetUi.h"
 
 
 namespace GPlatesQtWidgets

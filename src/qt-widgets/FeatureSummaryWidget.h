@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "FeatureSummaryWidgetUi.h"
+#include "ui_FeatureSummaryWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "app-logic/FeatureCollectionFileState.h"

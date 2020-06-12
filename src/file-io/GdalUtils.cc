@@ -135,9 +135,9 @@
 		}
 	}
 
-	#ifndef Q_WS_X11
+	#ifndef Q_OS_LINUX
 
-		// For everyone but Q_WS_X11, let's just call GDALOpen directly.
+		// For everyone but Q_OS_LINUX, let's just call GDALOpen directly.
 
 		namespace GPlatesFileIO
 		{
@@ -255,7 +255,7 @@
 			}
 		}
 
-	#endif  // Q_WS_X11
+	#endif  // Q_OS_LINUX
 
 #endif // defined(GDAL_VERSION_MAJOR) && GDAL_VERSION_MAJOR >= 2
 

@@ -28,7 +28,7 @@
 
 #include <QDoubleValidator>
 
-#include "TopologyNetworkResolverLayerOptionsWidgetUi.h"
+#include "ui_TopologyNetworkResolverLayerOptionsWidgetUi.h"
 
 #include "DrawStyleDialog.h"
 #include "InformationDialog.h"
@@ -200,7 +200,7 @@ namespace GPlatesQtWidgets
 				double value = locale().toDouble(input, &ok);
 				if (!ok)
 				{
-					// It appears QString::toDouble() only uses C locale despite its documentation.
+					// QString::toDouble() only uses C locale.
 					value = input.toDouble(&ok);
 				}
 

@@ -30,7 +30,7 @@
 #include <boost/weak_ptr.hpp>
 #include <QWidget>
 
-#include "SetTopologyReconstructionParametersDialogUi.h"
+#include "ui_SetTopologyReconstructionParametersDialogUi.h"
 
 #include "InformationDialog.h"
 

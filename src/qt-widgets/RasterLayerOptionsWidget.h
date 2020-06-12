@@ -31,7 +31,7 @@
 #include <QString>
 #include <QToolButton>
 
-#include "RasterLayerOptionsWidgetUi.h"
+#include "ui_RasterLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"

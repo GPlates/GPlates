@@ -35,7 +35,6 @@
 #include "ArbitraryXmlReader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningPipeFromGzipException.h"
-#include "ExternalProgram.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileFormatNotSupportedException.h"
 #include "FileInfo.h"
@@ -195,18 +194,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				// NOTE: This includes the case where boost::none was returned meaning
-				// that the file could not be read in which case we're fine with just the
-				// filename extension matching.
-
-				// Test if we can offer on-the-fly gzip decompression/compression.
-				// FIXME: Ideally we should let the user know WHY we're concealing this option.
-				// The user will still be able to type in a .gpml.gz file name and activate the
-				// gzipped saving code, however this will produce an exception which pops up
-				// a suitable message box (See ViewportWindow.cc).
-				//
-				// There's also 'gunzip_program' but testing either determines if both are available.
-				return GpmlOutputVisitor::gzip_program().test();
+				return true;
 			}
 
 

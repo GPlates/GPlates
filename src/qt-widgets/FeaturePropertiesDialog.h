@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "FeaturePropertiesDialogUi.h"
+#include "ui_FeaturePropertiesDialogUi.h"
 
 #include "EditFeaturePropertiesWidget.h"
 #include "GPlatesDialog.h"

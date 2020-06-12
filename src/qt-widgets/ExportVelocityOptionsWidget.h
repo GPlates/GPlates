@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTVELOCITYOPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTVELOCITYOPTIONSWIDGET_H
 
-#include "ExportVelocityOptionsWidgetUi.h"
+#include "ui_ExportVelocityOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

@@ -42,7 +42,7 @@
 
 #include "app-logic/UserPreferences.h"
 
-#include "global/python.h" // GPLATES_NO_PYTHON
+#include "global/python.h"
 
 #include "model/FeatureHandle.h"
 
@@ -209,10 +209,9 @@ namespace GPlatesGui
 
 		~DrawStyleManager()
 		{
-#if !defined(GPLATES_NO_PYTHON)
 			// Deleting the styles also destroys Python objects.
 			GPlatesApi::PythonInterpreterLocker interpreter_locker;
-#endif
+			
 			save_user_defined_styles();
 			clear_container(d_styles);
 			clear_container(d_catagories);

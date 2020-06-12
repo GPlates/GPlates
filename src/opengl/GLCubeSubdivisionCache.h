@@ -640,7 +640,7 @@ namespace GPlatesOpenGL
 				{
 					// Create a new element and set it in the cache.
 					element = volatile_element.set_cached_object(
-							std::auto_ptr<element_type>(new element_type()));
+							std::unique_ptr<element_type>(new element_type()));
 				}
 			}
 

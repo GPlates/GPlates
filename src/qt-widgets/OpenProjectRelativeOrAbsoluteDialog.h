@@ -31,7 +31,7 @@
 #include <QPushButton>
 #include <QStringList>
 
-#include "OpenProjectRelativeOrAbsoluteDialogUi.h"
+#include "ui_OpenProjectRelativeOrAbsoluteDialogUi.h"
 
 
 namespace GPlatesQtWidgets

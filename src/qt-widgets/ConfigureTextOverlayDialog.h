@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ConfigureTextOverlayDialogUi.h"
+#include "ui_ConfigureTextOverlayDialogUi.h"
 
 #include "GPlatesDialog.h"
 
@@ -68,6 +68,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::TextOverlaySettings &settings);
 
 	private:
+		using GPlatesDialog::exec;  // We're hiding QDialog::exec()
 
 		void
 		populate(

@@ -29,22 +29,18 @@
 //
 // Include the GDAL version header so we can access its macros such as GDAL_VERSION_MAJOR and GDAL_RELEASE_DATE.
 //
-#ifdef HAVE_CONFIG_H
-	// Include config header so we know whether (and how) to include "gdal_version.h"
-	// which contains the version of GDAL we're compiling against.
-	#include "global/config.h"
+// Include config header so we know whether (and how) to include "gdal_version.h"
+// which contains the version of GDAL we're compiling against.
+#include "global/config.h"
 
-	#ifdef HAVE_GDAL_VERSION_H
-		#if defined(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
-			#include <GDAL/gdal_version.h>
-		#elif defined(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
-			#include <gdal/gdal_version.h>
-		#else
-			#include <gdal_version.h>
-		#endif
+#ifdef HAVE_GDAL_VERSION_H
+	#if defined(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
+		#include <GDAL/gdal_version.h>
+	#elif defined(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
+		#include <gdal/gdal_version.h>
+	#else
+		#include <gdal_version.h>
 	#endif
-#else  // We'll have to assume it's <gdal_version.h>.
-	#include <gdal_version.h>
 #endif
 
 

@@ -255,11 +255,11 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_fo
 		// Note that reconstruction_time is always positive (need to know this since
 		// static_cast truncates towards zero).
 		const int reconstruction_time_int = static_cast<int>(reconstruction_time + 0.5);
-		return QString().sprintf(d_format_string.c_str(), reconstruction_time_int);
+		return QString::asprintf(d_format_string.c_str(), reconstruction_time_int);
 	}
 	else
 	{
-		return QString().sprintf(d_format_string.c_str(), reconstruction_time);
+		return QString::asprintf(d_format_string.c_str(), reconstruction_time);
 	}
 }
 

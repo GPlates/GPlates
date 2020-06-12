@@ -32,7 +32,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "ChooseFeatureCollectionWidget.h"
 
-#include "CreateTotalReconstructionSequenceDialogUi.h"
+#include "ui_CreateTotalReconstructionSequenceDialogUi.h"
 
 namespace GPlatesAppLogic
 {

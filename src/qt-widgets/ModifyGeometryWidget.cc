@@ -41,7 +41,7 @@ GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
 	setupUi(this);
 	
 	// Set up the header of the coordinates widget.
-	coordinates_table()->header()->setResizeMode(QHeaderView::Stretch);
+	coordinates_table()->header()->setSectionResizeMode(QHeaderView::Stretch);
 
 	// Get a wrapper around coordinates table that listens to a GeometryBuilder
 	// and fills in the table accordingly.

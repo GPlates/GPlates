@@ -24,18 +24,19 @@
  */
 
 #include <boost/foreach.hpp>
-#include <QPalette>
 #include <QApplication>
 #include <QColorDialog>
 #include <QDesktopWidget>
-#include <QFileInfo>
-#include <QHeaderView>
-#include <QMessageBox>
-#include <QMetaType>
-#include <QPixmap>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QFileInfo>
+#include <QHeaderView>
 #include <QList>
+#include <QMessageBox>
+#include <QMetaType>
+#include <QMimeData>
+#include <QPalette>
+#include <QPixmap>
 #include <QUrl>
 #include <QDir>
 
@@ -254,10 +255,9 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
 
 #if defined(Q_OS_MAC)
-	if(QT_VERSION >= 0x040600)
-		d_globe_and_map_widget_ptr->move(
-				colour_schemes_list->spacing()+4, 
-				colour_schemes_list->spacing()+3); 
+	d_globe_and_map_widget_ptr->move(
+			colour_schemes_list->spacing()+4, 
+			colour_schemes_list->spacing()+3); 
 #else
 	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
 #endif
@@ -267,7 +267,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Set up the table of colour scheme categories.
 	populate_colour_scheme_categories();
-	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
+	categories_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
 
@@ -733,10 +733,15 @@ void
 GPlatesQtWidgets::ColouringDialog::handle_repaint(
 		bool mouse_down)
 {
+	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+	// The image will still be the size of the globe/map widget in device-independent pixels.
+	const int device_pixel_ratio = devicePixelRatio();
+	QImage icon_image = d_globe_and_map_widget_ptr->render_to_qimage(
+			device_pixel_ratio * d_globe_and_map_widget_ptr->get_viewport_size());
+	icon_image.setDevicePixelRatio(device_pixel_ratio);
+
 	colour_schemes_list->item(d_next_icon_to_render)->setIcon(
-			QIcon(
-				QPixmap::fromImage(
-					d_globe_and_map_widget_ptr->render_to_qimage())));
+			QIcon(QPixmap::fromImage(icon_image)));
 	++d_next_icon_to_render;
 
 	if (d_next_icon_to_render < colour_schemes_list->count())

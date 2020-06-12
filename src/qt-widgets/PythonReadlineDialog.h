@@ -30,7 +30,7 @@
 #include <QString>
 #include <QPoint>
 
-#include "PythonReadlineDialogUi.h"
+#include "ui_PythonReadlineDialogUi.h"
 
 
 namespace GPlatesQtWidgets

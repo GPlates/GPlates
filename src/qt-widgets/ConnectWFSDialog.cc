@@ -236,8 +236,7 @@ GPlatesQtWidgets::ConnectWFSDialog::downloadFile()
 				QApplication::translate(
 						"QMessageBox", 
 						"Invalid request url.", 
-						0, 
-						QApplication::UnicodeUTF8));
+						0));
 		msgBox.exec();
 		return;
 	}
@@ -284,8 +283,7 @@ GPlatesQtWidgets::ConnectWFSDialog::downloadFile()
 			QApplication::translate(
 				"QProgressDialog", 
 				"Connecting to WFS server ...    ", 
-				0, 
-				QApplication::UnicodeUTF8),
+				0),
 		d_progress_dlg);
 
 	d_progress_dlg->setLabel(progress_label);

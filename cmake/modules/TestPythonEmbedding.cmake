@@ -22,7 +22,6 @@
 # system version of Python and the version of Python installed by Macports, if
 # Boost is installed via Macports.
 
-if(NOT GPLATES_PYTHON_3)
 FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
 	"#include <boost/python.hpp>\n"
 	"using namespace boost::python;\n"
@@ -33,7 +32,11 @@ FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embe
 	"int main() {\n"
 	"	try {\n"
 	"		char MODULE_NAME[] = \"testmodule\";\n"
-	"		PyImport_AppendInittab(MODULE_NAME, &inittestmodule);\n"
+	"		#if PY_MAJOR_VERSION >= 3\n"
+	"			PyImport_AppendInittab(MODULE_NAME, &PyInit_testmodule);\n"
+	"		#else\n"
+	"			PyImport_AppendInittab(MODULE_NAME, &inittestmodule);\n"
+	"		#endif\n"
 	"		Py_Initialize();\n"
 	"		object main_module(handle<>(borrowed(PyImport_AddModule(\"__main__\"))));\n"
 	"		object main_namespace = main_module.attr(\"__dict__\");\n"
@@ -44,40 +47,35 @@ FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embe
 	"	}\n"
 	"	return 0;\n"
 	"}\n")
-else(NOT GPLATES_PYTHON_3)
-FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
-    "#include <boost/python.hpp>\n"
-    "using namespace boost::python;\n"
-    "struct TestStruct {  };\n"
-    "BOOST_PYTHON_MODULE(testmodule) {\n"
-    "   class_<TestStruct>(\"TestStruct\");\n"
-    "}\n"
-    "int main() {\n"
-    "   try {\n"
-    "       char MODULE_NAME[] = \"testmodule\";\n"
-    "       PyImport_AppendInittab(MODULE_NAME, &PyInit_testmodule);\n"
-    "       Py_Initialize();\n"
-    "       object main_module(handle<>(borrowed(PyImport_AddModule(\"__main__\"))));\n"
-    "       object main_namespace = main_module.attr(\"__dict__\");\n"
-    "       handle<> ignored(PyRun_String(\"import testmodule; t = testmodule.TestStruct()\", Py_file_input, main_namespace.ptr(), main_namespace.ptr()));\n"
-    "   } catch (...) {\n"
-    "       PyErr_Print();\n"
-    "       return 1;\n"
-    "   }\n"
-    "   return 0;\n"
-    "}\n")
-endif(NOT GPLATES_PYTHON_3)
 
-SET(python_embedding_LIBS
-	${Boost_LIBRARIES}
-	${PYTHON_LIBRARIES})
-SET(python_embedding_INCLUDE_DIRS
-	${Boost_INCLUDE_DIR}
-	${PYTHON_INCLUDE_PATH})
+SET(python_embedding_LIBS ${Boost_LIBRARIES})
+SET(python_embedding_LIB_DIRS ${Boost_LIBRARY_DIRS})
+SET(python_embedding_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+if (TARGET Python3::Python)
+	# We used the Python3 find module.
+	list(APPEND python_embedding_LIBS ${Python3_LIBRARIES})
+	list(APPEND python_embedding_LIB_DIRS ${Python3_LIBRARY_DIRS})
+	list(APPEND python_embedding_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
+elseif (TARGET Python2::Python)
+	# We used the Python2 find module.
+	list(APPEND python_embedding_LIBS ${Python2_LIBRARIES})
+	list(APPEND python_embedding_LIB_DIRS ${Python2_LIBRARY_DIRS})
+	list(APPEND python_embedding_INCLUDE_DIRS ${Python2_INCLUDE_DIRS})
+else()
+	# We used the PythonLibs find module (which does not have imported targets).
+	list(APPEND python_embedding_LIBS ${PYTHON_LIBRARIES})
+	list(APPEND python_embedding_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+endif()
+
+# According to the docs...
+# Projects built by try_compile() and try_run() are built synchronously during the CMake configuration step.
+# Therefore a specific build configuration must be chosen even if the generated build system supports multiple configurations.
+SET(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
 	${CMAKE_BINARY_DIR}
 	${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
-	CMAKE_FLAGS "-DLINK_LIBRARIES:STRING=${python_embedding_LIBS}" "-DINCLUDE_DIRECTORIES=${python_embedding_INCLUDE_DIRS}"
+	CMAKE_FLAGS "-DLINK_DIRECTORIES:STRING=${python_embedding_LIB_DIRS}" "-DINCLUDE_DIRECTORIES=${python_embedding_INCLUDE_DIRS}"
+	LINK_LIBRARIES ${python_embedding_LIBS}
 	COMPILE_OUTPUT_VARIABLE PYTHON_EMBEDDING_COMPILE_OUTPUT
 	RUN_OUTPUT_VARIABLE PYTHON_EMBEDDING_RUN_OUTPUT)
 

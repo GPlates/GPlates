@@ -2311,7 +2311,7 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::initialise(
 	d_shared_ptr2 = d_shared_ptr;
 	d_intrusive_ptr.reset(new Derived(value));
 	d_intrusive_ptr2 = d_intrusive_ptr;
-	d_auto_ptr.reset(new Derived(value));
+	d_unique_ptr.reset(new Derived(value));
 	d_non_null_intrusive_ptr = GPlatesUtils::non_null_intrusive_ptr<Base>(new Derived(value));
 
 	d_pre_derived_object1 = Derived(value);
@@ -2357,11 +2357,11 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::check_equality(
 		dynamic_cast<Derived *>(d_intrusive_ptr2.get())->check_equality(dynamic_cast<Derived &>(*other.d_intrusive_ptr2));
 	}
 
-	BOOST_CHECK(d_auto_ptr.get() && other.d_auto_ptr.get());
-	if (d_auto_ptr.get() && other.d_auto_ptr.get())
+	BOOST_CHECK(d_unique_ptr.get() && other.d_unique_ptr.get());
+	if (d_unique_ptr.get() && other.d_unique_ptr.get())
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_auto_ptr.get()) && dynamic_cast<Derived *>(other.d_auto_ptr.get()));
-		dynamic_cast<Derived *>(d_auto_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_auto_ptr));
+		BOOST_CHECK(dynamic_cast<Derived *>(d_unique_ptr.get()) && dynamic_cast<Derived *>(other.d_unique_ptr.get()));
+		dynamic_cast<Derived *>(d_unique_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_unique_ptr));
 	}
 
 	BOOST_CHECK(dynamic_cast<Derived *>(d_non_null_intrusive_ptr.get()) && dynamic_cast<Derived *>(other.d_non_null_intrusive_ptr.get()));
@@ -2387,7 +2387,7 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::transcribe(
 		scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr2, "d_shared_ptr2", GPlatesScribe::TRACK);
 		scribe.transcribe(TRANSCRIBE_SOURCE, d_intrusive_ptr, "d_intrusive_ptr", GPlatesScribe::TRACK);
 		scribe.transcribe(TRANSCRIBE_SOURCE, d_intrusive_ptr2, "d_intrusive_ptr2", GPlatesScribe::TRACK);
-		scribe.transcribe(TRANSCRIBE_SOURCE, d_auto_ptr, "d_auto_ptr", GPlatesScribe::TRACK);
+		scribe.transcribe(TRANSCRIBE_SOURCE, d_unique_ptr, "d_unique_ptr", GPlatesScribe::TRACK);
 		scribe.transcribe(TRANSCRIBE_SOURCE, d_non_null_intrusive_ptr, "d_non_null_intrusive_ptr", GPlatesScribe::TRACK);
 
 		scribe.transcribe(TRANSCRIBE_SOURCE, d_pre_derived_object_ptr1, "d_derived_object_ptr1", GPlatesScribe::TRACK);
@@ -2403,11 +2403,11 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::transcribe(
 		//
 
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_scoped_ptr, "d_non_null_intrusive_ptr") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr, "d_auto_ptr") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr2, "d_auto_ptr") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr, "d_unique_ptr") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr2, "d_unique_ptr") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_intrusive_ptr, "d_shared_ptr") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_intrusive_ptr2, "d_shared_ptr") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_auto_ptr, "d_intrusive_ptr") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_unique_ptr, "d_intrusive_ptr") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_non_null_intrusive_ptr, "d_scoped_ptr"))
 		{
 			return scribe.get_transcribe_result();

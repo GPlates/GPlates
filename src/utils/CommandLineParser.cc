@@ -28,6 +28,7 @@
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
+#include <QtGlobal>
 
 #include "CommandLineParser.h"
 
@@ -35,9 +36,9 @@
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
 
-#include "global/Constants.h"
 #include "global/GPlatesException.h"
 #include "global/NotYetImplementedException.h"
+#include "global/Version.h"
 
 namespace
 {
@@ -124,7 +125,7 @@ namespace
 		//
 		// Note that we end up ignoring the '-psn...' option.
 		// Also note that it doesn't actually appear in 'argv[]' for some reason.
-#if defined(__APPLE__)
+#if defined(Q_OS_MAC)
 		command_line_parser.allow_unregistered();
 
 		// Parse options.

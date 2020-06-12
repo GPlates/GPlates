@@ -31,7 +31,7 @@
 #include <boost/weak_ptr.hpp>
 #include <QWidget>
 
-#include "MergeReconstructionLayersDialogUi.h"
+#include "ui_MergeReconstructionLayersDialogUi.h"
 
 #include "app-logic/Layer.h"
 

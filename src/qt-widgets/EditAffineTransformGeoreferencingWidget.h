@@ -30,7 +30,7 @@
 #include <QWidget>
 #include <QDoubleSpinBox>
 
-#include "EditAffineTransformGeoreferencingWidgetUi.h"
+#include "ui_EditAffineTransformGeoreferencingWidgetUi.h"
 
 #include "InformationDialog.h"
 

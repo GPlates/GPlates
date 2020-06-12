@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ConfigureGraticulesDialogUi.h"
+#include "ui_ConfigureGraticulesDialogUi.h"
 
 #include "GPlatesDialog.h"
 
@@ -67,6 +67,8 @@ namespace GPlatesQtWidgets
 				GPlatesGui::GraticuleSettings &settings);
 
 	private:
+		using GPlatesDialog::exec;  // We're hiding QDialog::exec()
+
 
 		void
 		populate(

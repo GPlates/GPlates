@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "AbstractEditWidget.h"
-#include "EditGeometryWidgetUi.h"
+#include "ui_EditGeometryWidgetUi.h"
 #include "EditTableWidget.h"
 
 #include "maths/GeometryType.h"

@@ -35,7 +35,7 @@
 #include <QPointer>
 #include <QString>
 
-#include "ManageFeatureCollectionsDialogUi.h"
+#include "ui_ManageFeatureCollectionsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "SaveFileDialog.h"

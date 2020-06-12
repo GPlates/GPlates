@@ -147,11 +147,6 @@ GPlatesFileIO::XmlWriter::getAliasForNamespace(
 	NamespaceStack::const_reverse_iterator iter = std::find_if(
 			d_ns_stack.rbegin(), d_ns_stack.rend(), 
 			boost::bind(compare_ns_and_decl, namespace_uri, _1));
-	// N.B.  We can't use bind1st in the find_if call above since it takes
-	// a reference to it's argument which, in this case, is already a (const)
-	// reference (and one can't take the reference of a reference).  The same
-	// reasoning lies behind the subsequent uses of boost::bind(...) in this file.
-
 	if (iter != d_ns_stack.rend()) 
 	{
 		return *(iter->second);

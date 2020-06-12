@@ -414,7 +414,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_info_item(
 	QTreeWidgetItem *file_item = new QTreeWidgetItem();
 	std::ostringstream file_str;
 	error.write_short_name(file_str);
-	file_item->setText(0, QString::fromAscii(file_str.str().c_str()));
+	file_item->setText(0, QString::fromLatin1(file_str.str().c_str()));
  	file_item->setIcon(0, file_icon);
 	
 	return file_item;
@@ -430,7 +430,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_path_item(
 	QTreeWidgetItem *path_item = new QTreeWidgetItem();
 	std::ostringstream path_str;
 	error.d_data_source->write_full_name(path_str);
-	path_item->setText(0, QDir::toNativeSeparators(QString::fromAscii(path_str.str().c_str())));
+	path_item->setText(0, QDir::toNativeSeparators(QString::fromLatin1(path_str.str().c_str())));
  	path_item->setIcon(0, path_icon);
  	
  	return path_item;
@@ -448,13 +448,13 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_line_item(
 	error.d_location->write(location_str);
 	if (show_short_description) {
 		location_item->setText(0, QString("Line %1 [%2; %3] %4")
-				.arg(QString::fromAscii(location_str.str().c_str()))
+				.arg(QString::fromLatin1(location_str.str().c_str()))
 				.arg(error.d_description)
 				.arg(error.d_result)
 				.arg(GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(error.d_description)) );
 	} else {
 		location_item->setText(0, QString("Line %1 [%2; %3]")
-				.arg(QString::fromAscii(location_str.str().c_str()))
+				.arg(QString::fromLatin1(location_str.str().c_str()))
 				.arg(error.d_description)
 				.arg(error.d_result) );
 	}

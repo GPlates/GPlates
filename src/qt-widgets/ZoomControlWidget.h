@@ -27,7 +27,7 @@
 #define GPLATES_QTWIDGETS_ZOOMCONTROLWIDGET_H
 
 #include <QWidget>
-#include "ZoomControlWidgetUi.h"
+#include "ui_ZoomControlWidgetUi.h"
 
 
 namespace GPlatesGui

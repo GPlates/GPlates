@@ -23,9 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtGlobal>
 #include <QDebug>
 #include <QHeaderView>
+#include <QtGlobal>
 #include <QTreeWidget>
 #include <QUndoStack>
 #include <QToolButton>
@@ -93,7 +93,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 	ActionButtonBox *action_button_box = new ActionButtonBox(2, 16, this);
 	action_button_box->add_action(clear_action);
 	action_button_box->add_action(undo_action);
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
 	int desired_height = button_create_feature->sizeHint().height();
 	action_button_box->setFixedHeight(desired_height);
 	button_export_coordinates->setFixedHeight(desired_height);
@@ -104,7 +104,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 			action_button_box_placeholder_widget);
 	
 	// Set up the header of the coordinates widget.
-	coordinates_table()->header()->setResizeMode(QHeaderView::Stretch);
+	coordinates_table()->header()->setSectionResizeMode(QHeaderView::Stretch);
 
 	// Get a wrapper around coordinates table that listens to a GeometryBuilder
 	// and fills in the table accordingly.
@@ -263,7 +263,7 @@ void
 GPlatesQtWidgets::DigitisationWidget::handle_clear_action_triggered()
 {
 	// Group two undo commands into one.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 		new GPlatesViewOperations::UndoRedo::GroupUndoCommand(QObject::tr("clear geometry")));
 
 	// Add child undo command for clearing all geometries.

@@ -226,10 +226,10 @@ GPlatesQtWidgets::EditStringListWidget::EditStringListWidget(
 
 	// Set column widths and resizabilty.
 	EditTableActionWidget dummy(this, NULL);
-	table_elements->horizontalHeader()->setResizeMode(COLUMN_ELEMENT, QHeaderView::Stretch);
-	table_elements->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
+	table_elements->horizontalHeader()->setSectionResizeMode(COLUMN_ELEMENT, QHeaderView::Stretch);
+	table_elements->horizontalHeader()->setSectionResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
 	table_elements->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
-	table_elements->horizontalHeader()->setMovable(true);
+	table_elements->horizontalHeader()->setSectionsMovable(true);
 	// Set up a minimum row height as well, for the action widgets' sake.
 	table_elements->verticalHeader()->setDefaultSectionSize(dummy.height());
 

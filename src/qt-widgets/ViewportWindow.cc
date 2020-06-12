@@ -49,12 +49,14 @@
 #include <QInputDialog>
 #include <QLocale>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QProcess>
 #include <QProgressBar>
 #include <QString>
 #include <QStringList>
 #include <QtGlobal>
 #include <QToolBar>
+#include <QWidget>
 
 #include "ViewportWindow.h"
 
@@ -97,10 +99,9 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/SymbolFileReader.h"
 
-#include "global/Constants.h"
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
-#include "global/SubversionInfo.h"
+#include "global/Version.h"
 #include "global/config.h"
 #include "global/python.h"
 
@@ -851,13 +852,12 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
-#if !defined(GPLATES_NO_PYTHON)
 		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
 				menu_Utilities,
 				action_Open_Python_Console,
 				get_view_state().get_python_manager(),
 				this);
-#endif
+		
 		// ----
 		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
 				this, SLOT(pop_up_python_console()));
@@ -1678,14 +1678,14 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 {
 	QString window_title("GPlates");
 
-	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 
 	// If the subversion branch name is the empty string, that should mean that
 	// GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING is set in ConfigDefault.cmake,
 	// which should mean that this is a public release.
 	if (!subversion_branch_name.isEmpty())
 	{
-		QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+		QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
 
 		if (subversion_version_number.isEmpty())
 		{
@@ -1752,7 +1752,7 @@ GPlatesQtWidgets::ViewportWindow::status_message(
 		const QString &message,
 		int timeout)
 {
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 	static const QString CLOVERLEAF(QChar(0x2318));
 	QString fixed_message = message;
 	fixed_message.replace(QString("ctrl"), CLOVERLEAF, Qt::CaseInsensitive);

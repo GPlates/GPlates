@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/XsDouble.h"
 
-#include "EditDoubleWidgetUi.h"
+#include "ui_EditDoubleWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

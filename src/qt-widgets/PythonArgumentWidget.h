@@ -34,24 +34,23 @@
 // to ensure <Python.h> is included before <ctype.h>.
 #include "global/python.h"
 
-#include <QtCore/QVariant>
-#include <QtGui/QAction>
-#include <QtGui/QApplication>
-#include <QtGui/QButtonGroup>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QHeaderView>
-#include <QtGui/QLabel>
-#include <QtGui/QPushButton>
-#include <QtGui/QSpacerItem>
-#include <QtGui/QWidget>
-#include <QtGui/QColorDialog>
-#include <QtGui/QFileDialog>
-#include <QtGui/QLineEdit>
 #include <QPalette>
+#include <QtCore/QVariant>
+#include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QHeaderView>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QColorDialog>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QLineEdit>
 
 #include "gui/PythonConfiguration.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesQtWidgets
 {
@@ -282,8 +281,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif
-
 #endif  // GPLATES_QTWIDGETS_PYTHONARGUMENTWIDGET_H
-
-

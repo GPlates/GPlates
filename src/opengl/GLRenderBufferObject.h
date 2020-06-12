@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLRENDERBUFFEROBJECT_H
 #define GPLATES_OPENGL_GLRENDERBUFFEROBJECT_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <utility>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
@@ -109,16 +109,16 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 *
 		 * Note that the GL_EXT_framebuffer_object extension must be supported.
 		 */
 		static
-		std::auto_ptr<GLRenderBufferObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLRenderBufferObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLRenderBufferObject>(new GLRenderBufferObject(renderer));
+			return std::unique_ptr<GLRenderBufferObject>(new GLRenderBufferObject(renderer));
 		}
 
 

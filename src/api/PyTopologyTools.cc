@@ -28,7 +28,6 @@
 #include "feature-visitors/TopologySectionsFinder.h"
 #include "model/FeatureHandle.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp=boost::python;
 
@@ -77,5 +76,3 @@ export_topology_tools()
 	class_<TopologyTools>("TopologyTools")
 		.def("sections_info", &TopologyTools::sections_info).staticmethod("sections_info");
 }
-#endif   //GPLATES_NO_PYTHON
-

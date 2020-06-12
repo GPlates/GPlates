@@ -31,7 +31,6 @@
 
 #include <QApplication>
 #include <QDebug>
-#include <QMetaType>
 #include <QString>
 #include <QThread>
 
@@ -42,7 +41,6 @@
 
 #include "gui/PythonManager.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 #define DISPATCH_GUI_FUN \
 	if(!GPlatesApi::PythonUtils::is_main_thread())  \
@@ -145,32 +143,17 @@ namespace GPlatesApi
 						&helper_fun<ReturnType>,
 						f,
 						&retVal);
-			qRegisterMetaType< boost::function< void () > >("boost::function< void () >");
-			ThreadSwitchGuard g;
-			QMetaObject::invokeMethod(
-				&python_manager(), 
-				"exec_function_slot", 
-				Qt::BlockingQueuedConnection,
-				Q_ARG(boost::function<void () > , fun)
-				);
-			return  boost::any_cast<ReturnType>(retVal);
+
+			// Call specialised method ('void' return type).
+			run_in_main_thread(fun);
+
+			return boost::any_cast<ReturnType>(retVal);
 		}
 		
 		template<>
-		inline
 		void
 		run_in_main_thread(
-				const boost::function< void () > &f)
-		{
-			qRegisterMetaType< boost::function< void () > >("boost::function< void () >");
-			ThreadSwitchGuard g;
-			QMetaObject::invokeMethod(
-					&python_manager(), 
-					"exec_function_slot", 
-					Qt::BlockingQueuedConnection,
-					Q_ARG(boost::function< void () > , f));
-			return ;
-		}
+				const boost::function< void () > &f);
 
 
 		inline
@@ -200,5 +183,5 @@ namespace GPlatesApi
 		}
 	}
 }
-#endif   //GPLATES_NO_PYTHON)
+
 #endif  // GPLATES_API_PYTHONUTILS_H

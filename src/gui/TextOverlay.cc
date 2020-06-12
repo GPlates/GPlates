@@ -46,8 +46,7 @@ void
 GPlatesGui::TextOverlay::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const TextOverlaySettings &settings,
-		int paint_device_width,
-		int paint_device_height,
+		const QPaintDevice &paint_device,
 		float scale)
 {
 	if (!settings.is_enabled())
@@ -76,7 +75,7 @@ GPlatesGui::TextOverlay::paint(
 	else // TOP_RIGHT, BOTTOM_RIGHT
 	{
 		float text_width = fm.width(substituted) * scale;
-		x = paint_device_width - x_offset - text_width;
+		x = paint_device.width() - x_offset - text_width;
 	}
 
 	float y;
@@ -84,12 +83,14 @@ GPlatesGui::TextOverlay::paint(
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_RIGHT)
 	{
 		float text_height = fm.height() * scale;
-		y = paint_device_height - y_offset - text_height;
+		y = paint_device.height() - y_offset - text_height;
 	}
 	else // BOTTOM_LEFT, BOTTOM_RIGHT
 	{
 		y = y_offset;
 	}
+
+	const int paint_device_pixel_ratio = paint_device.devicePixelRatio();
 
 	if (settings.has_shadow())
 	{
@@ -99,25 +100,27 @@ GPlatesGui::TextOverlay::paint(
 
 		GPlatesOpenGL::GLText::render_text_2D(
 				renderer,
-				x,
-				y,
+				// Convert from device size to device pixels (used by OpenGL)...
+				x * paint_device_pixel_ratio,
+				y * paint_device_pixel_ratio,
 				substituted,
 				shadow_colour,
-				1,
+				1 * paint_device_pixel_ratio,
 				// OpenGL viewport 'y' coord goes from bottom to top...
-				-1, // down 1px
+				-1 * paint_device_pixel_ratio, // down 1px
 				settings.get_font(),
 				scale);
 	}
 
 	GPlatesOpenGL::GLText::render_text_2D(
 			renderer,
-			x,
-			y,
+			// Convert from device size to device pixels (used by OpenGL)...
+			x * paint_device_pixel_ratio,
+			y * paint_device_pixel_ratio,
 			substituted,
 			settings.get_colour(),
-			0,
-			0,
+			0 * paint_device_pixel_ratio,
+			0 * paint_device_pixel_ratio,
 			settings.get_font(),
 			scale);
 }
