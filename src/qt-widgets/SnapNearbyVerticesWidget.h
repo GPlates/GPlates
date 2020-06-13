@@ -28,7 +28,7 @@
 #include <QWidget>
 #include "boost/optional.hpp"
 
-#include "SnapNearbyVerticesWidgetUi.h"
+#include "ui_SnapNearbyVerticesWidgetUi.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"

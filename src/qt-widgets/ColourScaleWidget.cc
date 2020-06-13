@@ -179,7 +179,7 @@ GPlatesQtWidgets::ColourScaleWidget::contextMenuEvent(
 		if (file_name)
 		{
 			// Grab an image of this widget and save it to disk.
-			QPixmap widget_pixmap = QPixmap::grabWidget(this, geometry());
+			QPixmap widget_pixmap = grab(geometry());
 			bool success = widget_pixmap.save(*file_name);
 			if (!success)
 			{

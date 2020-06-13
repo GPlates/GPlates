@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "AnimateDialogUi.h"
+#include "ui_AnimateDialogUi.h"
 
 #include "GPlatesDialog.h"
 

@@ -31,11 +31,10 @@
 // Workaround mentioned at https://bugreports.qt.io/browse/QTBUG-22829
 #ifndef Q_MOC_RUN
 
-#include "global/config.h" // GPLATES_NO_PYTHON
+#	include "global/config.h"
 
 // The undef's are compile fixes for Windows.
 
-#if !defined(GPLATES_NO_PYTHON)
 #	if defined(HAVE_DIRECT_H)
 #		undef HAVE_DIRECT_H
 #	endif
@@ -102,7 +101,6 @@
 #	endif
 
 #	include <boost/python.hpp>
-#endif //GPLATES_NO_PYTHON
 
 #endif //Q_MOC_RUN
 

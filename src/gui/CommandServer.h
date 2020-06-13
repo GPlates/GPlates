@@ -36,7 +36,7 @@
 #include <QTimer>
 #include <QStringList>
 #include <QRegExp>
-#include <QtXml/QXmlStreamReader>
+#include <QXmlStreamReader>
 
 #include "app-logic/ApplicationState.h"
 
@@ -257,7 +257,7 @@ namespace GPlatesGui
 
 		void 
 		incomingConnection(
-				int socket)
+				qintptr socket)
 		{
 			 if (d_disabled)
 			 {

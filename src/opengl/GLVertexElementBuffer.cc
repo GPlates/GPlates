@@ -37,16 +37,16 @@ const GLenum GPlatesOpenGL::GLVertexElementTraits<GLushort>::type = GL_UNSIGNED_
 const GLenum GPlatesOpenGL::GLVertexElementTraits<GLuint>::type = GL_UNSIGNED_INT;
 
 
-std::auto_ptr<GPlatesOpenGL::GLVertexElementBuffer>
-GPlatesOpenGL::GLVertexElementBuffer::create_as_auto_ptr(
+std::unique_ptr<GPlatesOpenGL::GLVertexElementBuffer>
+GPlatesOpenGL::GLVertexElementBuffer::create_as_unique_ptr(
 		GLRenderer &renderer,
 		const GLBuffer::shared_ptr_type &buffer)
 {
 	const GLBufferObject::shared_ptr_type buffer_object = boost::dynamic_pointer_cast<GLBufferObject>(buffer);
 	if (buffer_object)
 	{
-		return std::auto_ptr<GPlatesOpenGL::GLVertexElementBuffer>(
-				GLVertexElementBufferObject::create_as_auto_ptr(renderer, buffer_object));
+		return std::unique_ptr<GPlatesOpenGL::GLVertexElementBuffer>(
+				GLVertexElementBufferObject::create_as_unique_ptr(renderer, buffer_object));
 	}
 
 	// If it's not a buffer object then it can only be a buffer impl (only two types are possible).
@@ -55,6 +55,6 @@ GPlatesOpenGL::GLVertexElementBuffer::create_as_auto_ptr(
 			buffer_impl,
 			GPLATES_ASSERTION_SOURCE);
 
-	return std::auto_ptr<GPlatesOpenGL::GLVertexElementBuffer>(
-			GLVertexElementBufferImpl::create_as_auto_ptr(renderer, buffer_impl));
+	return std::unique_ptr<GPlatesOpenGL::GLVertexElementBuffer>(
+			GLVertexElementBufferImpl::create_as_unique_ptr(renderer, buffer_impl));
 }

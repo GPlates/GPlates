@@ -29,7 +29,7 @@
 #include <QWidget>
 #include <boost/optional.hpp>
 
-#include "EditFeaturePropertiesWidgetUi.h"
+#include "ui_EditFeaturePropertiesWidgetUi.h"
 #include "AddPropertyDialog.h"
 #include "EditWidgetGroupBox.h"
 

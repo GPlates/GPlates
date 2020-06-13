@@ -29,7 +29,8 @@
 
 #include <cstddef> // For std::size_t
 #include <exception>
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
+#include <utility> // For std::move
 #include <boost/checked_delete.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
@@ -84,7 +85,7 @@ namespace GPlatesUtils
 	 *  if (!object)
 	 *  {
 	 *  	// No unused object so create a new one...
-	 *      std::auto_ptr new_object = ...; // Create a new object.
+	 *      std::unique_ptr new_object = ...; // Create a new object.
 	 *  	object = my_object_cache->allocate_object(new_object);
 	 *  }
 	 *
@@ -143,7 +144,7 @@ namespace GPlatesUtils
 	 *      object = volatile_object->recycle_an_unused_object();
 	 *      if (!object)
 	 *      {
-	 *          std::auto_ptr new_object = ...; // Create a new object.
+	 *          std::unique_ptr new_object = ...; // Create a new object.
 	 *          object = volatile_object->set_cached_object(new_object);
 	 *      }
 	 *      // else might also want to initialise recycled object to a specific state.
@@ -287,7 +288,7 @@ namespace GPlatesUtils
 					// The object cache won't delete a cached object if it knows there are clients
 					// out there referencing the cached object.
 
-					// Since it was originally passed into the object cache as a 'std::auto_ptr'
+					// Since it was originally passed into the object cache as a 'std::unique_ptr'
 					// we know it was allocated with global 'new' so we can 'delete' it.
 					boost::checked_delete(cached_object);
 
@@ -325,7 +326,7 @@ namespace GPlatesUtils
 					}
 
 					// Since 'cached_object' was originally passed into the object cache as a
-					// 'std::auto_ptr' we know it was allocated with global 'new' but we
+					// 'std::unique_ptr' we know it was allocated with global 'new' but we
 					// don't want to 'delete' it yet - instead we return it to the
 					// object cache wrapped in a brand new shared_ptr - with its own
 					// reference count - because it's a cached object and clients may later
@@ -349,7 +350,7 @@ namespace GPlatesUtils
 					// The object cache has the only reference to it and now the object cache
 					// is presumably being destroyed in turn destroying its cached objects.
 					// So delete the cached object.
-					// Since it was originally passed into the object cache as a 'std::auto_ptr'
+					// Since it was originally passed into the object cache as a 'std::unique_ptr'
 					// we know it was allocated with global 'new' so we can 'delete' it.
 					boost::checked_delete(cached_object);
 				}
@@ -505,7 +506,7 @@ namespace GPlatesUtils
 			 */
 			object_shared_ptr_type
 			set_cached_object(
-					std::auto_ptr<object_type> created_object,
+					std::unique_ptr<object_type> created_object,
 					const return_object_to_cache_function_type &return_object_to_cache_function =
 							return_object_to_cache_function_type())
 			{
@@ -515,7 +516,7 @@ namespace GPlatesUtils
 
 				// Store the newly created object in the object cache.
 				d_object_info_iter =
-						&d_object_cache->add_cached_object(created_object, return_object_to_cache_function);
+						&d_object_cache->add_cached_object(std::move(created_object), return_object_to_cache_function);
 
 				connect_to_cached_object();
 
@@ -548,7 +549,7 @@ namespace GPlatesUtils
 			 * happen until the object cache gets destroyed but it can't get destroyed
 			 * if we're keeping it alive with a shared_ptr.
 			 *
-			 * The sublety is that 'this' volatile can get returned to the pool but
+			 * The subtlety is that 'this' volatile can get returned to the pool but
 			 * not necessarily destroyed.
 			 */
 			object_cache_type *d_object_cache;
@@ -665,13 +666,13 @@ namespace GPlatesUtils
 		 */
 		object_shared_ptr_type
 		allocate_object(
-				std::auto_ptr<object_type> new_object,
+				std::unique_ptr<object_type> new_object,
 				const return_object_to_cache_function_type &return_object_to_cache_function =
 						return_object_to_cache_function_type())
 		{
 			// Store the newly created object in the object cache.
 			typename object_seq_type::Node &object_info_iter =
-					add_cached_object(new_object, return_object_to_cache_function);
+					add_cached_object(std::move(new_object), return_object_to_cache_function);
 
 			return return_cached_object_to_client(object_info_iter);
 		}
@@ -823,7 +824,7 @@ namespace GPlatesUtils
 		 */
 		typename object_seq_type::Node &
 		add_cached_object(
-				std::auto_ptr<object_type> new_object,
+				std::unique_ptr<object_type> new_object,
 				const return_object_to_cache_function_type &return_object_to_cache_function)
 		{
 			// Allocate a list node from our pool.

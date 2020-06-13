@@ -10,7 +10,6 @@ Table of Contents
          3. How to install via a GUI (recommended)
          4. How to install using the command-line (advanced)
          5. A note about the packages for GL and GLU
-         6. A note about Qt
      2. For other Linux variants
 
 Introduction
@@ -28,18 +27,19 @@ Program and library dependencies
 To compile GPlates, you will need the following programs and libraries
 installed:
 
-  • cmake (2.8.8 or newer)
-  • g++ 4.x 
+  • cmake (3.5 or newer)
+  • g++ (4.8.1 or newer, required to support C++11) 
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  • Python library (version 2.x but not version 3.x)
+  • Python library (version 2 or 3, preferably 3)
   • Boost library headers (version 1.35 or newer; the highest version number which has been tested so far is 1.65.)
-  • Qt library (version 4.4 or newer; 4.8 is recommended; does not compile with Qt 5 yet.)
+  • Qt library (version 5.0 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer; GDAL 2 is highly recommended.)
-  • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
+  • Computational Geometry Algorithms Library (CGAL) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
   • PROJ.4 (4.6.0 or newer)
   • Qwt 6.0.1 (6.1.x is recommended)
+  • zlib
 
 Corresponding package dependencies
 
@@ -66,21 +66,22 @@ g++             g++
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
-Python          python-dev
+Python          python3-dev
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
-                libboost-test-dev libboost-system-dev (See note below)
-Qt              libqt4-opengl-dev libqt4-dev (See note below.)
+                libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04)
+Qt              qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
-CGAL            libcgal-dev
+CGAL            libcgal-dev (may also need libcgal-qt5-dev on Xenial 16.04 due to bug in CGAL cmake)
 PROJ.4          libproj-dev
-Qwt             libqwt-dev
+Qwt             libqwt-qt5-dev
+zlib            zlib1g-dev
 
 Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
 
 
 The command to install the dependencies on Ubuntu is:
 
-sudo apt-get update; sudo apt-get install libglew-dev python-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt4-opengl-dev libqt4-dev libgdal-dev libcgal-dev libproj-dev libqwt-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 (For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
 
 How to install via a GUI (recommended)
@@ -101,15 +102,7 @@ you would run the command:
 
 You would then look for a line which looks like:
 
-ii  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
-
-or:
-
-un  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
-
-or:
-
-pn  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
+ii  libboost-dev:amd64 1.71.0.0ubuntu2 amd64        Boost C++ Libraries development files (default version)
 
 Look at the first two letters in the line: "ii" tells you that libboost-dev is
 currently installed on your system, while "un" or "pn" tell you that
@@ -158,20 +151,18 @@ complains about a missing GL dependency and you are certain you are using the
 nvidia binary driver.  (If you don't know what this means, don't install
 nvidia-glx-dev!)
 
-A note about Qt
 
-To obtain Qt 4.4 on Ubuntu 8.04, you will need to enable the 'backports'
-repository. (By default, Ubuntu 8.04 is shipped with Qt 4.3.) To enable the
-'backports' repository, edit /etc/apt/sources.list and uncomment the two lines
-in that file that refer to that repository. If you have already installed Qt,
-you will then need to go to the Synaptic Package Manager and upgrade Qt. Note,
-however, that the 'backports' repository only provides Qt 4.4.0, which is not
-the latest bugfix release of Qt 4.4.
+A note about Boost
 
-Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
-not necessary to enable the 'backports' repository on those systems.
+When running cmake (see BUILD.Linux) on Xenial 16.04, if you get the error...
 
-GPlates cannot compile with Qt 5.x yet.
+  Could not find the following Boost libraries:
+          boost_python3
+
+...then you may need to create the following symbolic link...
+
+  sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
+
 
 A note about GDAL
 
@@ -189,23 +180,7 @@ have been installed in /opt/local/):
 ...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5'
 according to https://trac.osgeo.org/gdal/wiki/NetCDF
 
-A note about Boost
-
-The highest version number which has been tested so far is 1.65.
-Starting with 1.67, Boost's Python library name has been changed and now includes the version suffix of the Python version used to compile it. 
-GPlates cannot find the new name and ,therefore, cannot compile with Boost 1.67 for now.
-There are several reports about compiling failure with Boost 1.61, it would be better avoiding that version of Boost. 
-
 For other Linux variants
 
 There are some sucessful stories about compiling GPlates on other Linux variants, including Fedora, Debian, Redhat
 and CentOS.
-
-Known issues
-
-Sometimes, the parallel compiling fails and complains about the missing file ViewportWindowUi.h. Usually the problem
-goes away after executing the parallel compiling command again.
-
-Sometimes, the compiling on Ubuntu Trusty 32-bit exhausts the virtual memory. It is recommended to use the newer Ubuntu
-or use the 64-bit Ubuntu.
- 

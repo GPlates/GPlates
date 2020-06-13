@@ -191,7 +191,21 @@ GPlatesQtWidgets::MapView::handle_transform_changed(
 {
 	setTransformationAnchor(QGraphicsView::NoAnchor);
 
-	setMatrix(calc_world_transform(map_transform, width(), height()));
+	// Calculate world transforms.
+	//
+	// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
+	// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
+	const QMatrix qpainter_world_transform = calc_world_transform(
+			map_transform,
+			width(),
+			height());
+	const QMatrix opengl_world_transform = calc_world_transform(
+			map_transform,
+			devicePixelRatio() * width(),
+			devicePixelRatio() * height());
+
+	setMatrix(qpainter_world_transform);
+	map_canvas().set_viewport_transform_for_device_pixels(QTransform(opengl_world_transform));
 
 	// Even though the scroll bars are hidden, the QGraphicsView is still
 	// scrollable, and it has a habit of scrolling around if you have panned to the
@@ -478,17 +492,23 @@ GPlatesQtWidgets::MapView::get_viewport_size() const
 }
 
 
+QSize
+GPlatesQtWidgets::MapView::get_viewport_size_in_device_pixels() const
+{
+	// QWidget::width() and QWidget::height() are in device independent pixels.
+	// Convert from widget size to device pixels (OpenGL).
+	return devicePixelRatio() * get_viewport_size();
+}
+
+
 QImage
 GPlatesQtWidgets::MapView::render_to_qimage(
-		boost::optional<QSize> image_size_opt)
+		const QSize &image_size)
 {
-	// Determine the image size if one was not specified...
-	const QSize image_size = image_size_opt ? image_size_opt.get() : get_viewport_size();
-
 	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
 	const QMatrix world_matrix = calc_world_transform(d_map_transform, image_size.width(), image_size.height());
 
-	return map_canvas().render_to_qimage(d_gl_widget_ptr, QTransform(world_matrix), image_size);
+	return map_canvas().render_to_qimage(*d_gl_widget_ptr, QTransform(world_matrix), image_size);
 }
 
 
@@ -500,11 +520,15 @@ GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
 	// of the feedback paint device.
 	const QMatrix world_matrix = calc_world_transform(
 			d_map_transform,
-			feedback_paint_device.width(),
-			feedback_paint_device.height());
+			// Use device pixels (instead of device *independent* pixels) since this transform is used for OpenGL rendering.
+			//
+			// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
+			// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
 
 	map_canvas().render_opengl_feedback_to_paint_device(
-			d_gl_widget_ptr,
+			*d_gl_widget_ptr,
 			QTransform(world_matrix),
 			feedback_paint_device);
 }
@@ -600,20 +624,6 @@ GPlatesQtWidgets::MapView::wheelEvent(
 	// will cause the view to scroll up and down.
 	// Zooming is handled by our parent widget, GlobeAndMapWidget.
 	wheel_event->ignore();
-}
-
-
-void
-GPlatesQtWidgets::MapView::enable_raster_display()
-{
-	// Do nothing because we can't draw rasters in map view yet.
-}
-
-
-void
-GPlatesQtWidgets::MapView::disable_raster_display()
-{
-	// Do nothing because we can't draw rasters in map view yet.
 }
 
 

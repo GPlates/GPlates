@@ -58,7 +58,7 @@ GPlatesOpenGL::GLStateStore::allocate_state()
 	{
 		// No unused 'GLstate' object so create a new one...
 		state = d_state_cache->allocate_object(
-				GLState::create_as_auto_ptr(
+				GLState::create_as_unique_ptr(
 						d_state_set_store,
 						d_state_set_keys,
 						d_state_shared_data,

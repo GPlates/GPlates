@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <utility> // std::move
 #include <boost/scoped_array.hpp>
 
 #include "CoordinateTransformation.h"
@@ -45,7 +46,7 @@ GPlatesPropertyValues::CoordinateTransformation::create(
 	SpatialReferenceSystem::non_null_ptr_type target_srs_copy =
 			SpatialReferenceSystem::create(target_srs->get_ogr_srs());
 
-	std::auto_ptr<OGRCoordinateTransformation> coordinate_transformation(
+	std::unique_ptr<OGRCoordinateTransformation> coordinate_transformation(
 			OGRCreateCoordinateTransformation(
 					&source_srs_copy->get_ogr_srs(),
 					&target_srs_copy->get_ogr_srs()));
@@ -57,7 +58,7 @@ GPlatesPropertyValues::CoordinateTransformation::create(
 	}
 
 	return non_null_ptr_type(
-			new CoordinateTransformation(source_srs_copy, target_srs_copy, coordinate_transformation));
+			new CoordinateTransformation(source_srs_copy, target_srs_copy, std::move(coordinate_transformation)));
 }
 
 
@@ -74,7 +75,7 @@ GPlatesPropertyValues::CoordinateTransformation::CoordinateTransformation() :
 GPlatesPropertyValues::CoordinateTransformation::CoordinateTransformation(
 		const SpatialReferenceSystem::non_null_ptr_to_const_type &source_srs,
 		const SpatialReferenceSystem::non_null_ptr_to_const_type &target_srs,
-		std::auto_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation) :
+		std::unique_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation) :
 	d_source_srs(source_srs),
 	d_target_srs(target_srs),
 	d_ogr_coordinate_transformation(ogr_coordinate_transformation.release())

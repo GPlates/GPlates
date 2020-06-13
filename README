@@ -16,10 +16,10 @@ documented in the "Program and library dependencies" section in the "DEPS.Linux"
 file in this directory.
 
 After installing those dependencies, to compile on Linux, execute:
-	cmake .
-	make
+    cmake .
+    make
 and then optionally:
-	make install
+    sudo make install
 
 More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
 this directory.
@@ -33,10 +33,10 @@ documented in the "Program and library dependencies" section in the "DEPS.OSX"
 file in this directory.
 
 After installing those dependencies, to compile on Mac OS X, execute:
-	cmake .
-	make
+    cmake .
+    make
 and then optionally:
-	make install
+    sudo make install
 
 More information can be found in the files "DEPS.OSX" and "BUILD.OSX" in
 this directory.
@@ -54,12 +54,13 @@ To compile on Windows:
  * Set both the 'source' and 'build' directories to the root GPlates source directory
    (the one that has 'src' as a sub-directory).
  * Click 'configure'.
- * Specify 'Visual Studio 2005'.
+ * Specify 'Visual Studio 14 2015', or above.
+   * And specify 'x64' as the optional platform (to compile GPlates as 64-bit).
  * Click 'configure' once more.
- * Click 'OK'.
+ * Click 'generate'.
  * Open newly created 'GPlates.sln' with the Visual Studio IDE.
  * Select 'Release' build from the "Build->Configuration Manager..." menu.
- * Rebuild All from the Build menu.
+ * Right-click the 'gplates' project and select 'build'.
 
 More information can be found in the files "DEPS.Windows" and "BUILD.Windows" in this directory.
 

@@ -897,7 +897,7 @@ GPlatesGui::FeatureTableModel::set_default_resize_modes(
 		QHeaderView &header)
 {
 	for (int column = 0; column < static_cast<int>(NUM_ELEMS(column_heading_info_table)); ++column) {
-		header.setResizeMode(column, column_heading_info_table[column].resize_mode);
+		header.setSectionResizeMode(column, column_heading_info_table[column].resize_mode);
 	}
 }
 

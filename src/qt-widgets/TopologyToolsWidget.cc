@@ -29,6 +29,7 @@
 #include <QKeySequence>
 #include <QLocale>
 #include <QMessageBox>
+#include <QtGlobal>
 #include <QVBoxLayout>
 
 #include "TopologyToolsWidget.h"
@@ -172,7 +173,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	// Set up the action button box to hold the "Clear" button.
 	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
 	action_button_box->add_action(clear_action);
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
 	action_button_box->setFixedHeight(button_create->sizeHint().height());
 	action_button_box->setFixedHeight(button_apply->sizeHint().height());
 #endif

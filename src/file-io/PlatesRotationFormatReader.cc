@@ -428,48 +428,61 @@ namespace
 		//
 		if (!time_sample->is_disabled())
 		{
-			// Search backwards for most recently added time sample (that's enabled).
-			for (unsigned int n = 0; n < time_samples.size(); ++n)
+			GpmlFiniteRotation *curr_gpml_finite_rotation =
+					dynamic_cast<GpmlFiniteRotation *>(
+							time_sample.value().get());
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					curr_gpml_finite_rotation,
+					GPLATES_ASSERTION_SOURCE);
+
+			// If the current total pole is the identity rotation then adjusting it won't have any effect
+			// because negating its quaternion (as done in RotationUtils::calculate_short_path_final_rotation())
+			// will still result in an identity rotation which will still look the same in the rotation file
+			// (ie, "90.0  0.0  0.0").
+			//
+			// This avoids modifying the rotation file every time its loaded to no effect, and then
+			// asking the user to save the rotation file every time (because it's marked as modified).
+			if (!GPlatesMaths::represents_identity_rotation(curr_gpml_finite_rotation->finite_rotation().unit_quat()))
 			{
-				const GpmlTimeSample::non_null_ptr_type prev_enabled_time_sample =
-						time_samples[time_samples.size() - n - 1];
-				if (prev_enabled_time_sample->is_disabled())
+				// Search backwards for most recently added time sample (that's enabled).
+				for (unsigned int n = 0; n < time_samples.size(); ++n)
 				{
-					continue;
+					const GpmlTimeSample::non_null_ptr_type prev_enabled_time_sample = time_samples[time_samples.size() - n - 1];
+					if (prev_enabled_time_sample.is_disabled())
+					{
+						continue;
+					}
+
+					const GpmlFiniteRotation *prev_gpml_finite_rotation =
+							dynamic_cast<const GpmlFiniteRotation *>(
+									prev_enabled_time_sample->value().get());
+					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+							prev_gpml_finite_rotation,
+							GPLATES_ASSERTION_SOURCE);
+
+					// Make sure the stage rotation (relative to previous total pole) takes the short path.
+					boost::optional<GPlatesMaths::FiniteRotation> adjusted_curr_finite_rotation =
+							GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
+									curr_gpml_finite_rotation->get_finite_rotation(),
+									prev_gpml_finite_rotation->get_finite_rotation());
+					if (adjusted_curr_finite_rotation)
+					{
+						// Change the current finite rotation for short path.
+						curr_gpml_finite_rotation->set_finite_rotation(adjusted_curr_finite_rotation.get());
+
+						// The loaded finite rotation differs from what was read from the file.
+						contains_unsaved_changes = true;
+
+						// Warn the user that the change was made.
+						boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
+						ReadErrors::Description descr = ReadErrors::PoleTakesLongRotationPathRelativeToPrevPole;
+						ReadErrors::Result res = ReadErrors::PoleAdjustedToShortRotationPathRelativeToPrevPole;
+						ReadErrorOccurrence read_error(data_source, location, descr, res);
+						read_errors.d_warnings.push_back(read_error);
+					}
+
+					break;
 				}
-
-				const GpmlFiniteRotation *prev_gpml_finite_rotation =
-						dynamic_cast<const GpmlFiniteRotation *>(
-								prev_enabled_time_sample->value().get());
-				GpmlFiniteRotation *curr_gpml_finite_rotation =
-						dynamic_cast<GpmlFiniteRotation *>(
-								time_sample->value().get());
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						prev_gpml_finite_rotation && curr_gpml_finite_rotation,
-						GPLATES_ASSERTION_SOURCE);
-
-				// Make sure the stage rotation (relative to previous total pole) takes the short path.
-				boost::optional<GPlatesMaths::FiniteRotation> adjusted_curr_finite_rotation =
-						GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
-								curr_gpml_finite_rotation->get_finite_rotation(),
-								prev_gpml_finite_rotation->get_finite_rotation());
-				if (adjusted_curr_finite_rotation)
-				{
-					// Change the current finite rotation for short path.
-					curr_gpml_finite_rotation->set_finite_rotation(adjusted_curr_finite_rotation.get());
-
-					// The loaded finite rotation differs from what was read from the file.
-					contains_unsaved_changes = true;
-
-					// Warn the user that the change was made.
-					boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
-					ReadErrors::Description descr = ReadErrors::PoleTakesLongRotationPathRelativeToPrevPole;
-					ReadErrors::Result res = ReadErrors::PoleAdjustedToShortRotationPathRelativeToPrevPole;
-					ReadErrorOccurrence read_error(data_source, location, descr, res);
-					read_errors.d_warnings.push_back(read_error);
-				}
-
-				break;
 			}
 		}
 

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <utility> // std::move
 #include <vector>
 #include <boost/cast.hpp>
 #include <boost/shared_ptr.hpp>
@@ -163,7 +164,7 @@ namespace GPlatesViewOperations
 		{
 		public:
 			MergeUndoCommand(
-					std::auto_ptr<QUndoCommand> command,
+					std::unique_ptr<QUndoCommand> command,
 					UndoRedo::CommandId command_id,
 					QUndoCommand *parent = 0) :
 			QUndoCommand(parent),
@@ -376,24 +377,24 @@ GPlatesViewOperations::UndoRedo::get_unique_command_id_scope() const
 	return d_unique_command_id_scope_stack.top();
 }
 
-std::auto_ptr<QUndoCommand>
+std::unique_ptr<QUndoCommand>
 GPlatesViewOperations::UndoRedo::make_mergable_undo_command(
-		std::auto_ptr<QUndoCommand> undo_command,
+		std::unique_ptr<QUndoCommand> undo_command,
 		CommandId merge_id)
 {
-	return std::auto_ptr<QUndoCommand>(
+	return std::unique_ptr<QUndoCommand>(
 			new UndoRedoInternal::MergeUndoCommand(
-					undo_command,
+					std::move(undo_command),
 					merge_id));
 }
 
-std::auto_ptr<QUndoCommand>
+std::unique_ptr<QUndoCommand>
 GPlatesViewOperations::UndoRedo::make_mergable_undo_command_in_current_unique_command_id_scope(
-		std::auto_ptr<QUndoCommand> undo_command)
+		std::unique_ptr<QUndoCommand> undo_command)
 {
 	const CommandId merge_id = get_unique_command_id_scope();
 
-	return make_mergable_undo_command(undo_command, merge_id);
+	return make_mergable_undo_command(std::move(undo_command), merge_id);
 }
 
 GPlatesViewOperations::UndoRedo::CommandId

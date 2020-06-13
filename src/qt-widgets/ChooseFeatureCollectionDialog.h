@@ -29,7 +29,7 @@
 #include <boost/optional.hpp>
 #include <QDialog>
 
-#include "ChooseFeatureCollectionDialogUi.h"
+#include "ui_ChooseFeatureCollectionDialogUi.h"
 
 #include "GPlatesDialog.h"
 

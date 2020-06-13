@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_RASTERGEOREFERENCINGPAGE_H
 #define GPLATES_QTWIDGETS_RASTERGEOREFERENCINGPAGE_H
 
-#include "RasterGeoreferencingPageUi.h"
+#include "ui_RasterGeoreferencingPageUi.h"
 
 #include "property-values/Georeferencing.h"
 

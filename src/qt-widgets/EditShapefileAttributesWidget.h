@@ -29,7 +29,7 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 
 #include "AbstractEditWidget.h"
-#include "EditShapefileAttributesWidgetUi.h"
+#include "ui_EditShapefileAttributesWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

@@ -31,9 +31,9 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QFile>
-#include <QProcess>
 
 #include "FileInfo.h"
+#include "GzipFile.h"
 #include "XmlWriter.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -52,18 +52,10 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesFileIO
 {
-	class ExternalProgram;
-
-
 	class GpmlOutputVisitor:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		static
-		const ExternalProgram &
-		gzip_program();
-
-
 		/**
 		 * Creates a GPML writer for the given file.
 		 *
@@ -392,35 +384,14 @@ namespace GPlatesFileIO
 		boost::shared_ptr<QFile> d_qfile_ptr;
 		
 		/**
-		 * Keeps track of the process currently being written to.
-		 *
-		 * This shared_ptr will only have been initialised with a QProcess *
-		 * if the GpmlOutputVisitor(const FileInfo &) constructor
-		 * was used. In this case, this class is responsible for starting
-		 * the process and closing it afterwards, just like the QFile
-		 * shared_ptr above.
-		 *
-		 * boost::shared_ptr takes care of cleaning up the QProcess * when
-		 * this parser is destroyed, and QProcess' destructor handles closing
-		 * input/output streams and stopping processes.
-		 *
-		 * If the alternative GpmlOutputVisitor(QIODevice *)
-		 * constructor has been used, this is safe as the QFile shared ptr
-		 * will be empty.
+		 * Optional Gzip QIODevice to use when saving ".gpmlz" (or ".gpml.gz").
 		 */
-		boost::shared_ptr<QProcess> d_qprocess_ptr;
-		
+		boost::optional<GzipFile> d_gzip_file;
 
 		/**
 		 * The destination of the the XML data.
 		 */
 		XmlWriter d_output;
-		
-		/**
-		 * Whether or not we need to perform a gzip after producing uncompressed gpml output.
-		 * This should be true when compressed output is requested on a Windows system. 
-		 */
-		bool d_gzip_afterwards;
 
 		/**
 		 * The requested output filename. 

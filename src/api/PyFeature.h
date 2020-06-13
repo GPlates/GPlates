@@ -36,8 +36,6 @@
 #include "model/PropertyName.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -111,7 +109,5 @@ namespace GPlatesApi
 	get_default_geometry_property_name(
 			const GPlatesModel::FeatureType &feature_type);
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYFEATURE_H

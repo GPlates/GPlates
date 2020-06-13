@@ -26,7 +26,7 @@
 #ifndef GPLATES_VIEWOPERATIONS_GEOMETRYOPERATIONUNDO_H
 #define GPLATES_VIEWOPERATIONS_GEOMETRYOPERATIONUNDO_H
 
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
 #include <boost/scoped_ptr.hpp>
 #include <QUndoCommand>
 #include <QString>
@@ -57,7 +57,7 @@ namespace GPlatesViewOperations
 	public:
 		GeometryOperationUndoCommand(
 				const QString &text_,
-				std::auto_ptr<QUndoCommand> geometry_operation_command,
+				std::unique_ptr<QUndoCommand> geometry_operation_command,
 				GeometryOperation *geometry_operation,
 				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				UndoRedo::CommandId command_id = UndoRedo::CommandId(),

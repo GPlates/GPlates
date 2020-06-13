@@ -34,7 +34,7 @@
 #include "property-values/Enumeration.h"
 #include "property-values/StructuralType.h"
 
-#include "EditEnumerationWidgetUi.h"
+#include "ui_EditEnumerationWidgetUi.h"
 
 
 namespace GPlatesQtWidgets

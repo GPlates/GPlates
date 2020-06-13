@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "CreateSmallCircleFeatureDialogUi.h"
+#include "ui_CreateSmallCircleFeatureDialogUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "maths/SmallCircle.h"

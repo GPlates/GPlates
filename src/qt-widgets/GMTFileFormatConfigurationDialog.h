@@ -27,7 +27,7 @@
 #ifndef GPLATES_QTWIDGETS_GMTFILEFORMATCONFIGURATIONDIALOG_H
 #define GPLATES_QTWIDGETS_GMTFILEFORMATCONFIGURATIONDIALOG_H
 
-#include "GMTFileFormatConfigurationDialogUi.h"
+#include "ui_GMTFileFormatConfigurationDialogUi.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfigurations.h"

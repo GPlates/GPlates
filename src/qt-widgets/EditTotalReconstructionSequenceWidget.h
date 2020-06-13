@@ -34,7 +34,7 @@
 
 #include "EditTableActionWidget.h"
 #include "EditTableWidget.h"
-#include "EditTotalReconstructionSequenceWidgetUi.h"
+#include "ui_EditTotalReconstructionSequenceWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

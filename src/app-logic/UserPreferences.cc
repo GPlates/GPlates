@@ -23,31 +23,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+
 #include <QDebug>
-#include <QtAlgorithms>
 #include <QCoreApplication>
 #include <QSet>
 #include <QList>
 #include <QSettings>
+#include <QtGlobal>
 
 // For magic defaults:-
 #include <QDir>
-#include <QDesktopServices>
+#include <QNetworkProxyQuery>
+#include <QNetworkProxyFactory>
+#include <QNetworkProxy>
+#include <QStandardPaths>
+#include <QtNetwork>
 #include <QUrl>
-// Automatic proxy detection needs Qt 4.5, so using a conditional compile (see set_magic_defaults for more info)
-#if QT_VERSION >= 0x040500
-	#include <QNetworkProxyQuery>
-	#include <QNetworkProxyFactory>
-	#include <QNetworkProxy>
-	#include <QtNetwork>
-#endif
 
 
 #include "UserPreferences.h"
 
-#include "global/Constants.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/Version.h"
 
 #include "utils/ConfigBundle.h"
 #include "utils/ConfigBundleUtils.h"
@@ -76,9 +75,12 @@ namespace
 		// paths/python_user_script_dir :-
 		//
 		// Get the platform-specific "application user data" dir. Add "scripts/" to that.
-		//   Linux: ~/.local/share/data/GPlates/GPlates/
+		//   Linux: ~/.local/share/GPlates/GPlates/
 		//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
-		QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
+		//
+		// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4)
+		// no longer has 'data/' in the path, so this may prevent user scripts from being found.
+		QDir local_scripts_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/scripts/");
 		defaults.setValue("paths/python_user_script_dir", QVariant(local_scripts_dir.absolutePath()));
 
 		// paths/python_system_script_dir :-
@@ -94,7 +96,7 @@ namespace
 		QDir app_scripts_dir(QCoreApplication::applicationDirPath() + "/../Resources/scripts/");
 		defaults.setValue("paths/python_system_script_dir", QVariant(app_scripts_dir.absolutePath()));
 
-#elif defined(Q_OS_WIN32)
+#elif defined(Q_OS_WIN)
 		// The Windows Installer should drop a scripts/ directory in whatever Program Files area the gplates.exe
 		// file lands in.
 		QDir progfile_scripts_dir(QCoreApplication::applicationDirPath() + "/scripts/");
@@ -110,13 +112,13 @@ namespace
 		//   Linux and OSX: ~/Documents/
 		defaults.setValue(
 				"paths/default_export_dir", 
-				QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
+				QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).absolutePath());
 		defaults.setValue(
-					"paths/default_feature_collection_dir",
-					QDir::currentPath());
+				"paths/default_feature_collection_dir",
+				QDir::currentPath());
 		defaults.setValue(
-					"paths/default_project_dir",
-					QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
+				"paths/default_project_dir",
+				QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).absolutePath());
 
 
 		////////////////////////////////
@@ -140,11 +142,9 @@ namespace
 		defaults.setValue("net/proxy/url", "");
 		
 		// GPlates will use information from Qt where it can (OSX Frameworks and Win32 DLLs)
-#if QT_VERSION >= 0x040500
-
 		QUrl gplates_url("http://www.gplates.org");
 
-		// The following code enclosed in the "#if defined(Q_WS_MAC)" preprocessor directive provides 
+		// The following code enclosed in the "#if defined(Q_OS_MAC)" preprocessor directive provides 
 		// a workaround for a bug on MacOS. The bug causes GPlates fails to launch under certain circumstance. 
 		// On MacOS, when the network interface appears active but in fact
 		// the computer does not have a valid network connection, the QNetworkProxyFactory::systemProxyForQuery() 
@@ -165,7 +165,7 @@ namespace
 		// Although the startup will be slower than normal, GPlates will launch successfully eventually.
 		// Note: The finished() signal will be emitted immediately if the network interface is not active.
 		// GPlates will wait the "network timeout" only when the network seems active but in fact not really working.  
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
 		QNetworkAccessManager nam;
 		QNetworkRequest req(gplates_url);
 		QNetworkReply* reply = nam.get(req);
@@ -183,7 +183,7 @@ namespace
 					defaults.setValue("net/proxy/url", system_proxy_url);
 				}
 			}
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
 		}else{//network no good, skip network proxy query and print a warning message.
 			qWarning() << "No available network has been detected! Will not query network proxy.";
 		}
@@ -193,7 +193,6 @@ namespace
 		// You can use the deleteLater() function.
 		// https://doc.qt.io/archives/qt-4.8/qnetworkaccessmanager.html#get
 		reply->deleteLater();
-#endif
 #endif
 		
 		// GPlates will override that default with the "http_proxy" environment variable if it is set.
@@ -220,7 +219,7 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 {
 	// Initialise names used to identify our settings and paths in the OS.
 	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
-	// QDesktopServices paths and preference settings.
+	// QStandardPaths paths and preference settings.
 	QCoreApplication::setOrganizationName("GPlates");
 	QCoreApplication::setOrganizationDomain("gplates.org");
 	QCoreApplication::setApplicationName("GPlates");
@@ -414,7 +413,7 @@ GPlatesAppLogic::UserPreferences::subkeys(
 
 	// And for presentation purposes it would be nice to get that sorted.
 	QStringList list = keys.toList();
-	qSort(list);
+	std::sort(list.begin(), list.end());
 	return list;
 }
 
@@ -543,7 +542,7 @@ GPlatesAppLogic::UserPreferences::initialise_versioning()
 	// FIXME: Ideally this should not overwrite if existing version >= current version,
 	// and also trigger version upgrade or version sandbox as appropriate...
 	// ... which we may not get around to implementing.
-	raw_settings.setValue("version/current", GPlatesGlobal::VersionString);
+	raw_settings.setValue("version/current", GPlatesGlobal::Version::get_GPlates_version());
 }
 
 void

@@ -25,6 +25,7 @@
  */
 
 #include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "DeleteVertexGeometryOperation.h"
@@ -309,17 +310,17 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::delete_vertex(
 	emit_unhighlight_signal(&d_geometry_builder);
 
 	// The command that does the actual deleting of vertex.
-	std::auto_ptr<QUndoCommand> delete_vertex_command(
+	std::unique_ptr<QUndoCommand> delete_vertex_command(
 			new GeometryBuilderRemovePointUndoCommand(
 					d_geometry_builder,
 					delete_vertex_index));
 
 	// Command wraps delete vertex command with handing canvas tool choice and
 	// delete vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("delete vertex"),
-					delete_vertex_command,
+					std::move(delete_vertex_command),
 					this,
 					d_canvas_tool_workflows));
 

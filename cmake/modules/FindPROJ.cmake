@@ -174,11 +174,14 @@ FIND_LIBRARY(PROJ_LIBRARY
   DOC "PROJ library"
 )
 
-# Found PROJ only if both include directory and library found.
-SET(PROJ_FOUND "NO")
-IF(PROJ_LIBRARY AND PROJ_INCLUDE_DIR)
-  SET(PROJ_FOUND "YES")
-ENDIF(PROJ_LIBRARY AND PROJ_INCLUDE_DIR)
 
+include (FindPackageHandleStandardArgs)
+find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
 
+if (PROJ_FOUND AND NOT TARGET PROJ4::proj)
+	add_library(PROJ4::proj IMPORTED INTERFACE)
+	set_target_properties(PROJ4::proj PROPERTIES INTERFACE_LINK_LIBRARIES "${PROJ_LIBRARY}")
+	set_target_properties(PROJ4::proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ_INCLUDE_DIR}")
+endif ()
 
+mark_as_advanced(PROJ_LIBRARY PROJ_INCLUDE_DIR)

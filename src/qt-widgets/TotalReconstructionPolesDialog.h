@@ -32,7 +32,7 @@
 #include <boost/weak_ptr.hpp>
 #include <QDialog>
 
-#include "TotalReconstructionPolesDialogUi.h"
+#include "ui_TotalReconstructionPolesDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "SaveFileDialog.h"

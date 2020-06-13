@@ -200,11 +200,12 @@ GPlatesFileIO::OgrFormatFlowlineExport::export_flowlines(
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
-		bool should_export_referenced_files)
+		bool should_export_referenced_files,
+		bool wrap_to_dateline)
 {
 
 	QString file_path = file_info.filePath();
-	OgrGeometryExporter exporter(file_path,false /* single geometry types */);
+	OgrGeometryExporter exporter(file_path,false /* single geometry types */, wrap_to_dateline);
 
 	std::list<feature_geometry_group_type>::const_iterator 
 		iter = feature_geometry_group_seq.begin(),

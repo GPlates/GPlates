@@ -29,7 +29,7 @@
 #include <QWidget>
 
 #include "model/types.h"
-#include "ReconstructionPoleWidgetUi.h"
+#include "ui_ReconstructionPoleWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

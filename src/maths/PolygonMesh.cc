@@ -32,26 +32,11 @@
 #include <boost/cast.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/optional.hpp>
-
-#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
-#	ifdef NDEBUG
-#		define HAVE_NDEBUG
-#		undef NDEBUG
-#	endif
-#endif
-
 #include <CGAL/Cartesian.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Constrained_triangulation_face_base_2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Triangulation_vertex_base_2.h>
-
-#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
-#	ifdef HAVE_NDEBUG
-#		define NDEBUG
-#	endif
-#endif
-
 #include <QDebug>
 
 #include "PolygonMesh.h"

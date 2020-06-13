@@ -35,7 +35,6 @@
 #include "utils/DeferredCallEvent.h"
 #include "api/PythonUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonExecutionMonitor::PythonExecutionMonitor() :
 	d_continue_interactive_input(false),
 	d_finish_reason(SUCCESS),
@@ -194,4 +193,3 @@ GPlatesApi::PythonExecutionMonitor::stop_monitor()
 	}
 	d_event_loop.quit();
 }
-#endif //GPLATES_NO_PYTHON

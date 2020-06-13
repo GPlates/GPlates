@@ -45,7 +45,6 @@
 #include "utils/FeatureUtils.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;
 
 namespace GPlatesApi
@@ -249,11 +248,3 @@ export_main_window()
 		.def("set_focus", &ViewportWindow::set_focus)
 		;
 }
-#endif
-
-
-
-
-
-
-

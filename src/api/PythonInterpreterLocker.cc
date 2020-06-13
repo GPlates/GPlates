@@ -27,7 +27,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 GPlatesApi::PythonInterpreterLocker::PythonInterpreterLocker(
 		bool ensure_) :
 	d_has_gil(false)
@@ -72,6 +72,3 @@ GPlatesApi::PythonInterpreterLocker::release()
 	d_has_gil = false;
 	PyGILState_Release(d_gil_state);
 }
-
-#endif //GPLATES_NO_PYTHON
-

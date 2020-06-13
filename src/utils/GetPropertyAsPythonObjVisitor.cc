@@ -77,8 +77,6 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-
 
 void 
 GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_data_block(
@@ -376,9 +374,3 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_uninterpreted_property_value(
 		GPlatesApi::PythonUtils::qstring_to_python_string(
 				property_value_to_qstring(v));
 }
-
-#endif //GPLATES_NO_PYTHON
-
-
-
-

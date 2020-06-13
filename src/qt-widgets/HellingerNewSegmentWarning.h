@@ -28,7 +28,7 @@
 
 //#include <QWidget>
 
-#include "HellingerNewSegmentWarningUi.h"
+#include "ui_HellingerNewSegmentWarningUi.h"
 
 
 namespace GPlatesQtWidgets

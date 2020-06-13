@@ -616,7 +616,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 			&GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget()
 					.globe_and_map_widget();
 
-	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
+	categories_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
 	categories_table->resizeColumnsToContents();
@@ -796,7 +796,13 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icons()
 			set_style(sa);
 
 			// Render the preview icon image.
-			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
+			//
+			// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+			// The image will still be ICON_SIZE in device-independent pixels.
+			const int device_pixel_ratio = devicePixelRatio();
+			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
+					QSize(device_pixel_ratio * ICON_SIZE, device_pixel_ratio * ICON_SIZE));
+			image.setDevicePixelRatio(device_pixel_ratio);
 
 			current_item->setIcon(QIcon(to_QPixmap(image)));
 		}
@@ -819,7 +825,13 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 		set_style(sa);
 
 		// Render the preview icon image.
-		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
+		//
+		// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+		// The image will still be ICON_SIZE in device-independent pixels.
+		const int device_pixel_ratio = devicePixelRatio();
+		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
+				QSize(device_pixel_ratio * ICON_SIZE, device_pixel_ratio * ICON_SIZE));
+		image.setDevicePixelRatio(device_pixel_ratio);
 
 		current_item->setIcon(QIcon(to_QPixmap(image)));
 	}
@@ -863,7 +875,6 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 void
 GPlatesQtWidgets::DrawStyleDialog::build_config_panel(const GPlatesGui::Configuration& cfg)
 {
-#if !defined(GPLATES_NO_PYTHON)
 	//clear old gui widget in the panel
 	BOOST_FOREACH(QWidget* old_widget, d_cfg_widgets)
 	{
@@ -897,7 +908,6 @@ GPlatesQtWidgets::DrawStyleDialog::build_config_panel(const GPlatesGui::Configur
 			d_cfg_widgets.push_back(cfg_widget);//save the pointer so that we can disconnect them later.
 		}
 	}
-#endif
 }
 
 

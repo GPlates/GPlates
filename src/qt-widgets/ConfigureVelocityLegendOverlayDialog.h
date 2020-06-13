@@ -31,7 +31,7 @@
 
 #include "gui/Colour.h"
 
-#include "ConfigureVelocityLegendOverlayDialogUi.h"
+#include "ui_ConfigureVelocityLegendOverlayDialogUi.h"
 
 #include "GPlatesDialog.h"
 
@@ -138,6 +138,8 @@ namespace GPlatesQtWidgets
 
 
 	private:
+		using GPlatesDialog::exec;  // We're hiding QDialog::exec()
+
 
 		/**
 		 * @brief populate -  fill the dialog's widgets from the values in @param settings.

@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 
-#include "EditOldPlatesHeaderWidgetUi.h"
+#include "ui_EditOldPlatesHeaderWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

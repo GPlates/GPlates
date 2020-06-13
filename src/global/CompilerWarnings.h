@@ -26,7 +26,6 @@
 #ifndef GPLATES_GLOBAL_COMPILERWARNINGS_H
 #define GPLATES_GLOBAL_COMPILERWARNINGS_H
 
-
 //
 // NOTE: In the macros below we cannot use "#pragma" because the compiler
 // interprets the '#' to be the stringizing operator.
@@ -139,17 +138,5 @@
 
 // Used to support gcc's _Pragma() preprocessor operator which expects a string literal.
 #define STRINGIFY_WARNING(warning) #warning
-
-
-// Some Mac OSX compilers generate warnings in system include headers even when we've specified '-isystem'.
-// This caused me to eventually disable all warnings just for Mac.
-// Which has worked fairly well until now :(
-// However it seems, on some OSX compilers, that warnings are generated even though we've turned them all off !
-// Florian discovered the issue was with CGAL in release builds and to do with the CGAL assertions.
-// Oddly enough the lack of assertions (release build) was causing a problem and not the presence of assertions.
-// His solution involves temporarily undefining NDEBUG while including CGAL headers.
-#if defined(__APPLE__)
-#	define CGAL_MACOS_COMPILER_WORKAROUND
-#endif
 
 #endif // GPLATES_GLOBAL_COMPILERWARNINGS_H

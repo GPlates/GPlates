@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_VelocityFieldCalculatorLayerOptionsWidget_H
 #define GPLATES_QTWIDGETS_VelocityFieldCalculatorLayerOptionsWidget_H
 
-#include "VelocityFieldCalculatorLayerOptionsWidgetUi.h"
+#include "ui_VelocityFieldCalculatorLayerOptionsWidgetUi.h"
 
 #include "InformationDialog.h"
 #include "LayerOptionsWidget.h"

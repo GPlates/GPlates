@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
 #include "PythonInitFailedDialog.h"
 
 #include "gui/PythonManager.h"
@@ -44,7 +46,7 @@ namespace
 		$INSTALL_INSTRUCTION \
 		</body> </html>"
 		;
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 	const char* python26_install_instructions_win =
 		"<p><a href=\"http://www.python.org/download/releases/2.6.6/\">Click here to download Python installer for Windows</a></p>" \
 		;
@@ -53,7 +55,7 @@ namespace
 		"<p><a href=\"http://www.python.org/download/releases/2.7.2/\">Click here to download Python installer for Windows</a></p>" \
 		;
 #endif
-#ifdef Q_WS_MACX
+#ifdef Q_OS_MAC
 	const char* python26_install_instructions_mac =
 		"<h4>Type in \"sudo port install python26\" in terminal to install python.</h4>" \
 		;
@@ -62,7 +64,7 @@ namespace
 		"<h4>Type in \"sudo port install python27\" in terminal to install python.</h4>" \
 		;
 #endif
-#ifdef Q_WS_X11
+#ifdef Q_OS_LINUX
 	const char* python26_install_instructions_linux =
 		"<h4>Type in \"sudo apt-get install python2.6\" in terminal to install python.</h4>" \
 		;
@@ -92,17 +94,17 @@ GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 	d_html_page = QString(python_failed_msg);
 	QString python_version = GPlatesGui::PythonManager::instance()->python_version();
 	d_html_page.replace("$PYTHON_NAME", QString("Python") + python_version);
-#ifdef Q_WS_MACX   
+#ifdef Q_OS_MAC   
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_mac);
 	else if("2.6" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_mac);
-#elif defined Q_WS_X11 
+#elif defined Q_OS_LINUX 
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_linux);
 	else if("2.6" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_linux);
-#elif defined Q_WS_WIN 
+#elif defined Q_OS_WIN
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_win);
 	else if("2.6" == python_version)

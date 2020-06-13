@@ -28,7 +28,7 @@
 
 #include <QWidget>
 #include <QMenu>
-#include "GMenuButtonUi.h"
+#include "ui_GMenuButtonUi.h"
 
 
 namespace GPlatesQtWidgets

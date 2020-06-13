@@ -26,7 +26,7 @@
 #include "boost/scoped_ptr.hpp"
 
 #include "GPlatesDialog.h"
-#include "AgeModelManagerDialogUi.h"
+#include "ui_AgeModelManagerDialogUi.h"
 
 class QStandardItemModel;
 

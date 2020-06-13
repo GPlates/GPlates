@@ -26,7 +26,7 @@
 
 #include <QWidget>
 
-#include "VelocityMethodWidgetUi.h"
+#include "ui_VelocityMethodWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

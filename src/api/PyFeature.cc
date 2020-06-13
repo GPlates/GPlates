@@ -87,8 +87,6 @@
 #include "utils/UnicodeString.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -5447,9 +5445,3 @@ export_feature()
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesModel::FeatureHandle>();
 }
-
-// This is here at the end of the layer because the problem appears to reside
-// in a template being instantiated at the end of the compilation unit.
-DISABLE_GCC_WARNING("-Wshadow")
-
-#endif // GPLATES_NO_PYTHON

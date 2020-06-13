@@ -17,13 +17,13 @@ SET(CMAKE_MODULE_PATH "@CMAKE_MODULE_PATH@")
 # CPACK_PACKAGE_FILE_NAME is set to the default for public releases in Package.cmake.
 # Here we change it to add the SVN revision number for non-public releases - see Package.cmake for
 # why this has to be done here.
-SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPLATES_PACKAGE_VERSION@")
+SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPlates_VERSION@")
 # Add the Subversion version number to the package filename if this is a non-public release.
 # A non-public release has an empty 'GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING' variable in 'ConfigDefault.cmake'.
 IF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 	# Get the location, inside the staging area location, to copy the application bundle to.
 	EXECUTE_PROCESS(
-			COMMAND svnversion @CMAKE_SOURCE_DIR@
+			COMMAND svnversion @GPlates_SOURCE_DIR@
 			RESULT_VARIABLE SVN_VERSION_RESULT
 			OUTPUT_VARIABLE SVN_VERSION_OUTPUT
 			OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -36,7 +36,7 @@ IF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 		# with filenames so we'll remove the start revision and the colon after it (leaving the end revision).
 		STRING(REGEX REPLACE "^.*:" "" SVN_VERSION ${SVN_VERSION_OUTPUT})
 		# Set the updated package version.
-		SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPLATES_PACKAGE_VERSION@_r${SVN_VERSION}")
+		SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPlates_VERSION@_r${SVN_VERSION}")
 	ENDIF (SVN_VERSION_RESULT)
 ENDIF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 
@@ -229,7 +229,7 @@ ELSE (MAKE_SCRIPTS_DIR_RESULT)
 	# Next copy the scripts directory into the bundle.
 	EXECUTE_PROCESS(
 			COMMAND "@CMAKE_COMMAND@" -E copy_directory
-				"@CMAKE_SOURCE_DIR@/scripts" 
+				"@GPlates_SOURCE_DIR@/scripts" 
 				"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
 			RESULT_VARIABLE COPY_SCRIPTS_DIR_RESULT
 			)

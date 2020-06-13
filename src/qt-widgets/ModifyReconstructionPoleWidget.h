@@ -31,7 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 
-#include "ModifyReconstructionPoleWidgetUi.h"
+#include "ui_ModifyReconstructionPoleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"

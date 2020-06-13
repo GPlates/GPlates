@@ -27,7 +27,7 @@
 #define GPLATES_QTWIDGETS_LEAVEFULLSCREENBUTTON_H
 
 #include <QWidget>
-#include "LeaveFullScreenButtonUi.h"
+#include "ui_LeaveFullScreenButtonUi.h"
 
 
 namespace GPlatesQtWidgets

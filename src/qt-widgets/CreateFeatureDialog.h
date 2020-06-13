@@ -33,7 +33,7 @@
 
 #include <QCheckBox>
 
-#include "CreateFeatureDialogUi.h"
+#include "ui_CreateFeatureDialogUi.h"
 
 #include "CreateFeaturePropertiesPage.h"
 

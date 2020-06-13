@@ -34,7 +34,7 @@
 #include <QUrl>
 #include <QProgressDialog>
 
-#include "ConnectWFSDialogUi.h"
+#include "ui_ConnectWFSDialogUi.h"
 
 #include "EditTimePeriodWidget.h"
 #include "GPlatesDialog.h"

@@ -27,7 +27,7 @@
 #include <QDialog>
 
 #include "KinematicGraphsDialog.h"
-#include "KinematicGraphsConfigurationDialogUi.h"
+#include "ui_KinematicGraphsConfigurationDialogUi.h"
 
 //TODO: Add some text here (i.e. to the UI) explaining something about saving to preferences through Edit->Preferences
 //TODO: Possibly add direct "Save to preferences" option.

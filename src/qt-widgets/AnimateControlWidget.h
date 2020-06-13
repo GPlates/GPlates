@@ -28,7 +28,7 @@
 
 #include <QWidget>
 #include <QDockWidget>
-#include "AnimateControlWidgetUi.h"
+#include "ui_AnimateControlWidgetUi.h"
 
 
 namespace GPlatesGui

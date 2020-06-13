@@ -29,8 +29,6 @@
 
 #include "PyGPlatesModule.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-
 // Exceptions
 void export_exceptions();
 
@@ -308,11 +306,3 @@ BOOST_PYTHON_MODULE(pygplates)
 	// code injects methods into the python classes already defined by the C++ python bindings.
     export_pure_python_api();
 }
-
-#else
-
-// Dummy variable so that this compilation unit isn't empty.
-void *dummy_gplates_can_haz_python = 0;
-
-#endif
-

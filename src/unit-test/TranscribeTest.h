@@ -762,7 +762,7 @@ namespace GPlatesUnitTest
 			boost::scoped_ptr<Base> d_scoped_ptr;
 			boost::shared_ptr<Base> d_shared_ptr, d_shared_ptr2;
 			boost::intrusive_ptr<Base> d_intrusive_ptr, d_intrusive_ptr2;
-			std::auto_ptr<Base> d_auto_ptr;
+			std::unique_ptr<Base> d_unique_ptr;
 			GPlatesUtils::non_null_intrusive_ptr<Base> d_non_null_intrusive_ptr;
 
 			Derived d_pre_derived_object1;

@@ -56,7 +56,7 @@ GPlatesQtWidgets::ExportImageResolutionOptionsWidget::ExportImageResolutionOptio
 	{
 		d_export_image_resolution_options.image_size =
 				export_animation_context.viewport_window().reconstruction_view_widget()
-						.globe_and_map_widget().get_active_view().get_viewport_size();
+						.globe_and_map_widget().get_active_view().get_viewport_size_in_device_pixels();
 	}
 
 	constrain_aspect_ratio_check_box->setChecked(d_export_image_resolution_options.constrain_aspect_ratio);
@@ -153,7 +153,7 @@ GPlatesQtWidgets::ExportImageResolutionOptionsWidget::handle_use_main_window_dim
 {
 	QSize main_window_size =
 			d_export_animation_context.viewport_window().reconstruction_view_widget()
-					.globe_and_map_widget().get_active_view().get_viewport_size();
+					.globe_and_map_widget().get_active_view().get_viewport_size_in_device_pixels();
 
 	// Constrain the aspect ratio if necessary.
 	if (d_constrained_aspect_ratio)

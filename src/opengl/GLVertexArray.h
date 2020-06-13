@@ -27,7 +27,7 @@
 #ifndef GPLATES_OPENGL_GLVERTEXARRAY_H
 #define GPLATES_OPENGL_GLVERTEXARRAY_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
@@ -75,15 +75,15 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer).release());
+			return shared_ptr_type(create_as_unique_ptr(renderer).release());
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLVertexArray>
-		create_as_auto_ptr(
+		std::unique_ptr<GLVertexArray>
+		create_as_unique_ptr(
 				GLRenderer &renderer);
 
 

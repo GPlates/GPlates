@@ -30,7 +30,7 @@
 #include <boost/weak_ptr.hpp>
 #include <QWidget>
 
-#include "SetVGPVisibilityDialogUi.h"
+#include "ui_SetVGPVisibilityDialogUi.h"
 
 
 namespace GPlatesAppLogic

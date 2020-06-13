@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
 #include "presentation/ViewState.h"
 #include "SaveFileDialog.h"
 
@@ -32,7 +34,7 @@
 
 
 // We use the native dialog, instead of the Qt dialog, on Windows and Mac OS X.
-#if defined(Q_WS_WIN) || defined(Q_WS_MAC)
+#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
 #	define GPLATES_USE_NATIVE_FILE_DIALOG
 #endif
 

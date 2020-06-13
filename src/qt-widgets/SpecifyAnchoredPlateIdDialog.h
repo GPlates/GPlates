@@ -29,7 +29,7 @@
 #include <QDialog>
 #include <QMenu>
 
-#include "SpecifyAnchoredPlateIdDialogUi.h"
+#include "ui_SpecifyAnchoredPlateIdDialogUi.h"
 
 #include "GPlatesDialog.h"
 

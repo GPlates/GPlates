@@ -35,7 +35,6 @@
 #include "ArbitraryXmlReader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningPipeFromGzipException.h"
-#include "ExternalProgram.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileFormatNotSupportedException.h"
 #include "FileInfo.h"
@@ -195,18 +194,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				// NOTE: This includes the case where boost::none was returned meaning
-				// that the file could not be read in which case we're fine with just the
-				// filename extension matching.
-
-				// Test if we can offer on-the-fly gzip decompression/compression.
-				// FIXME: Ideally we should let the user know WHY we're concealing this option.
-				// The user will still be able to type in a .gpml.gz file name and activate the
-				// gzipped saving code, however this will produce an exception which pops up
-				// a suitable message box (See ViewportWindow.cc).
-				//
-				// There's also 'gunzip_program' but testing either determines if both are available.
-				return GpmlOutputVisitor::gzip_program().test();
+				return true;
 			}
 
 
@@ -217,6 +205,7 @@ namespace GPlatesFileIO
 			ogr_read_feature_collection(
 					File::Reference &file_ref,
 					const Registry &file_format_registry,
+					Format file_format,
 					ReadErrorAccumulation &read_errors,
 					bool &contains_unsaved_changes)
 			{
@@ -225,7 +214,7 @@ namespace GPlatesFileIO
 						ogr_file_configuration =
 								FeatureCollectionFileFormat::dynamic_cast_configuration<
 										const FeatureCollectionFileFormat::OGRConfiguration>(
-												file_format_registry.get_default_configuration(SHAPEFILE));
+												file_format_registry.get_default_configuration(file_format));
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
@@ -850,7 +839,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type shapefile_default_configuration(new OGRConfiguration(SHAPEFILE));
+	Configuration::shared_ptr_to_const_type shapefile_default_configuration(
+			new OGRConfiguration(SHAPEFILE, true/*wrap_to_dateline*/));
 	register_file_format(
 			SHAPEFILE,
 			"ESRI Shapefile",
@@ -859,7 +849,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-							_1, boost::cref(*this), _2, _3)),
+							_1, boost::cref(*this), SHAPEFILE, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), SHAPEFILE)),
@@ -869,7 +859,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type ogr_gmt_default_configuration(new OGRConfiguration(OGRGMT));
+	Configuration::shared_ptr_to_const_type ogr_gmt_default_configuration(
+			new OGRConfiguration(OGRGMT, false/*wrap_to_dateline*/));
 	register_file_format(
 			OGRGMT,
 			"OGR GMT",
@@ -878,7 +869,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-							_1, boost::cref(*this), _2, _3)),
+							_1, boost::cref(*this), OGRGMT, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), OGRGMT)),
@@ -891,7 +882,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON);
 	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON_ALTERNATIVE);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type geojson_default_configuration(new OGRConfiguration(GEOJSON));
+	Configuration::shared_ptr_to_const_type geojson_default_configuration(
+			new OGRConfiguration(GEOJSON, false/*wrap_to_dateline*/));
 	register_file_format(
 				GEOJSON,
 				"GeoJSON",
@@ -900,7 +892,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 				&file_name_ends_with,
 				Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-								_1, boost::cref(*this), _2, _3)),
+								_1, boost::cref(*this), GEOJSON, _2, _3)),
 				Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 								_1, boost::cref(*this), GEOJSON)),
@@ -912,7 +904,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	std::vector<QString> geopackage_filename_extensions;
 	geopackage_filename_extensions.push_back(FILE_FORMAT_EXT_GEOPACKAGE);
 	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
-	Configuration::shared_ptr_to_const_type geopackage_default_configuration(new OGRConfiguration(GEOPACKAGE));
+	Configuration::shared_ptr_to_const_type geopackage_default_configuration(
+			new OGRConfiguration(GEOPACKAGE, false/*wrap_to_dateline*/));
 	register_file_format(
 				GEOPACKAGE,
 				"GeoPackage",
@@ -921,7 +914,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 				&file_name_ends_with,
 				Registry::read_feature_collection_function_type(
 					boost::bind(&ogr_read_feature_collection,
-								_1, boost::cref(*this), _2, _3)),
+								_1, boost::cref(*this), GEOPACKAGE, _2, _3)),
 				Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 								_1, boost::cref(*this), GEOPACKAGE)),

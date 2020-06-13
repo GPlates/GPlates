@@ -33,9 +33,8 @@
 
 #include "GPlatesQApplication.h"
 
-#include "global/Constants.h"
 #include "global/GPlatesException.h"
-#include "global/SubversionInfo.h"
+#include "global/Version.h"
 
 #include "gui/FileIOFeedback.h"
 
@@ -153,7 +152,7 @@ namespace
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
 					<< endl
-					<< GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+					<< GPlatesGlobal::Version::get_working_copy_version_number();
 		}
 
 		// If we have an installed message handler then this will output to a log file.

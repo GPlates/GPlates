@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <QTextStream>
 
-#include "ExportCoordinatesDialogUi.h"
+#include "ui_ExportCoordinatesDialogUi.h"
 
 #include "SaveFileDialog.h"
 

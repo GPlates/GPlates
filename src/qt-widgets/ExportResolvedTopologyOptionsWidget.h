@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTRESOLVEDTOPOLOGYOPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTRESOLVEDTOPOLOGYOPTIONSWIDGET_H
 
-#include "ExportResolvedTopologyOptionsWidgetUi.h"
+#include "ui_ExportResolvedTopologyOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

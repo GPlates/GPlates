@@ -32,7 +32,7 @@
 #include <QTreeWidget>
 #include <boost/scoped_ptr.hpp>
 
-#include "ModifyGeometryWidgetUi.h"
+#include "ui_ModifyGeometryWidgetUi.h"
 #include "LatLonCoordinatesTable.h"
 #include "TaskPanelWidget.h"
 

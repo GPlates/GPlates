@@ -23,16 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtGlobal>
+#include <QAction>
 #include <QApplication>
+#include <QDebug>
 #include <QFontMetrics>
 #include <QLocale>
-#include <QDebug>
-#include <QMenuBar>
 #include <QMenu>
-#include <QAction>
+#include <QMenuBar>
 #include <QMetaMethod>
-#include <QDesktopServices>
+#include <QStandardPaths>
+#include <QStyle>
+#include <QtGlobal>
 #include <boost/foreach.hpp>
 
 #include "GuiDebug.h"
@@ -71,14 +72,14 @@ namespace
 			QMetaMethod method = introspect->method(i);
 			// Aha! A method of ours. Is it a slot which takes no arguments?
 			if (method.methodType() == QMetaMethod::Slot && method.parameterTypes().isEmpty()) {
-				QString label(method.signature());
+				QString label(method.methodSignature().constData());
 				// does it match the given prefix?
 				if (prefix.isNull() || prefix.isEmpty() || label.startsWith(prefix)) {
 					// Below I use a little hack to emulate the SLOT() macro on a dynamic char*:
 					QString slot("1");
-					slot.append(method.signature());
+					slot.append(method.methodSignature().constData());
 					// Add to menu.
-					menu->addAction(label, object, slot.toAscii().constData());
+					menu->addAction(label, object, slot.toLatin1().constData());
 				}
 			}
 		}
@@ -300,18 +301,16 @@ void
 GPlatesGui::GuiDebug::debug_system_paths()
 {
 	qDebug() << "\nSYSTEM PATHS:";
-	qDebug() << "QDesktopServices::DesktopLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
-	qDebug() << "QDesktopServices::DocumentsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
-	qDebug() << "QDesktopServices::FontsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::FontsLocation);
-	qDebug() << "QDesktopServices::ApplicationsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::ApplicationsLocation);
-	qDebug() << "QDesktopServices::MusicLocation ==" << QDesktopServices::storageLocation(QDesktopServices::MusicLocation);
-	qDebug() << "QDesktopServices::MoviesLocation ==" << QDesktopServices::storageLocation(QDesktopServices::MoviesLocation);
-	qDebug() << "QDesktopServices::PicturesLocation ==" << QDesktopServices::storageLocation(QDesktopServices::PicturesLocation);
-	qDebug() << "QDesktopServices::TempLocation ==" << QDesktopServices::storageLocation(QDesktopServices::TempLocation);
-	qDebug() << "QDesktopServices::HomeLocation ==" << QDesktopServices::storageLocation(QDesktopServices::HomeLocation);
-	qDebug() << "QDesktopServices::DataLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-#if QT_VERSION >= 0x040500
-	qDebug() << "QDesktopServices::CacheLocation (4.5) ==" << QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-#endif
+	qDebug() << "QStandardPaths::DesktopLocation ==" << QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+	qDebug() << "QStandardPaths::DocumentsLocation ==" << QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+	qDebug() << "QStandardPaths::FontsLocation ==" << QStandardPaths::writableLocation(QStandardPaths::FontsLocation);
+	qDebug() << "QStandardPaths::ApplicationsLocation ==" << QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
+	qDebug() << "QStandardPaths::MusicLocation ==" << QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+	qDebug() << "QStandardPaths::MoviesLocation ==" << QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+	qDebug() << "QStandardPaths::PicturesLocation ==" << QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+	qDebug() << "QStandardPaths::TempLocation ==" << QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+	qDebug() << "QStandardPaths::HomeLocation ==" << QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+	qDebug() << "QStandardPaths::DataLocation ==" << QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+	qDebug() << "QStandardPaths::CacheLocation ==" << QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 }
 

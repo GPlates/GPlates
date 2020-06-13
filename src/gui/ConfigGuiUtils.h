@@ -26,15 +26,16 @@
 #ifndef GPLATES_GUI_CONFIGGUIUTILS_H
 #define GPLATES_GUI_CONFIGGUIUTILS_H
 
-#include <QWidget>
+#include <QAbstractButton>
+#include <QButtonGroup>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QLineEdit>
 #include <QPointer>
+#include <QSpinBox>
 #include <QTableView>
 #include <QVariant>
-#include <QAbstractButton>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
+#include <QWidget>
 
 //class QMultiMap;
 

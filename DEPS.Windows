@@ -85,22 +85,23 @@ Microsoft Visual Studio
 
 CMake
 
-  1. Get and install cmake 2.8.8 (or above) from: http://www.cmake.org/
+  1. Get and install the latest CMake (at least 3.5) from: http://www.cmake.org/
 
 Qt
 
-  1. Download qt-everywhere-opensource-src-4.8.7.zip from: https://download.qt.io/archive/qt/
-  2. Extract it to a path containing no spaces.
-  3. Start a Visual Studio command prompt (see above for 32-bit versus 64-bit).
-  4. Run: configure
-  5. Run: nmake (or 'jom' for faster parallel builds).
-     NOTE: If you get errors using Visual Studio 2015 (compiling Qt4) such as...
-               error C2039: 'int_least8_t': is not a member of '`global namespace''
-           ...then you may need to apply the patch noted at
-           https://forum.qt.io/topic/56453/compiling-qt4-head-with-msvc-2015-cstdint-errors/7
-           (and the patch can be applied using "python -m patch 02-fix_build_with_msvc2015-45e8f4ee.diff"
-           once 'patch' has been installed in Python using 'pip install patch') and run nmake (or jom) again.
-  6. Add the Qt \bin directory to the PATH environment variable.
+  1. Download the latest Qt5 opensource installer exe from: https://download.qt.io/archive/qt/
+     For example, for Qt 5.14.2 this is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
+     Note that you now need a Qt account to use the binary installer (it will ask you to sign in or create a new account).
+     And after Qt 5.14 you will need to use the online installer (offline for commercial license only).
+     Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
+  2. Select the pre-built components appropriate for you compiler.
+     For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
+  3. Select the GPL license.
+  4. Add the base of your selected pre-built components directory to the CMAKE_PREFIX_PATH environment variable.
+     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64".
+  5. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
+     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64\bin".
+     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs.
 
 Qwt
 
@@ -112,44 +113,36 @@ Qwt
        qmake qwt.pro
        nmake
      You should now have a "lib" folder containing .dll and .lib files.
-  5. (If you have a preferred installation location which is different from your build location,
-      you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
-  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the
-     qwt header files and the qwt library respectively.
-     For example:
-       QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.1.4\src" 
-     and 
-       QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.1.4\lib\qwt.lib"
-  7. Add the QWT_LIBRARY location to your PATH environment variable.
+  5. Edit the QWT_INSTALL_PREFIX variable in "qwtconfig.pri" to refer to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.4 )
+     You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
+  6. Then at the command prompt, run:
+       nmake install
+  7. Add the Qwt root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4 ).
+  8. Add the Qwt library location to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4\lib ).
 
 GLEW
   1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/
-  2. Add the GLEW \include directory to the CMAKE_INCLUDE_PATH environment variable.
-  3. Add the GLEW \lib\Release\Win32 directory to the CMAKE_LIBRARY_PATH environment variable for a 32-bit build, or
-     add the GLEW \lib\Release\x64 directory to the CMAKE_LIBRARY_PATH environment variable for a 64-bit build.
-  4. Add the GLEW \Bin\Release\Win3 directory to the PATH environment variable for a 32-bit build, or
+  2. Add the GLEW root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\glew\glew-2.1.0 )
+  3. Add the GLEW \Bin\Release\Win32 directory to the PATH environment variable for a 32-bit build, or
      add the GLEW \Bin\Release\x64 directory to the PATH environment variable for a 64-bit build.
 
 Python
-  1. Download, and install, the latest 2.7 Windows MSI installer (eg, 'http://www.python.org/downloads/').
-     * Download the 32-bit installer for a 32-bit build (eg, 'python-2.7.17.msi'), or
-       download the 64-bit installer for a 64-bit build (eg, 'python-2.7.17.amd64.msi).
-     * Note that GPlates (and pygplates) currently only support the Python 2 series (not Python 3).
-     * Ideally you should install 2.7.15 (or later in the Python 2 series) since it includes 'pip' by default
-       which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
-  2. Add the base Python directory and 'libs/' and 'Scripts/' and 'DLLs/' sub-directories to the PATH environment variable.
+  1. Download, and install, the latest Python 3 Windows MSI installer (eg, 'http://www.python.org/downloads/').
+     * Download the 32-bit installer for a 32-bit build (eg, 'python-3.7.7.exe'), or
+       download the 64-bit installer for a 64-bit build (eg, 'python-3.7.7.amd64.exe).
+     * Note that GPlates (and pygplates) also support Python 2 (but it has reached end of life, so Python 3 is recommended).
+  2. Add the root Python directory, and 'DLLs/' and 'Scripts/' sub-directories, to the PATH environment variable.
      * Note: Make sure you add these higher in the PATH than "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps" because
              Windows 10 May 2019 update now places a redirect python.exe in there that takes you straight to the Microsoft Store.
-  3. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
-  4. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
-     * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.
+  3. Add the root Python directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\python\Python-3.7.7 )
+     * CMAKE_PREFIX_PATH prevents GPlates finding a different Python installation (such as inside ArcGIS).
 
 Boost
 
   1. Download and extract the source code for boost from http://www.boost.org/users/download/
      NOTE: You can no longer get pre-compiled binaries from http://www.boostpro.com/download
            However there are now binaries available at https://sourceforge.net/projects/boost/files/boost-binaries/
-  2. Follow the instructions in the Getting Started guide at http://www.boost.org/doc/libs/1_69_0/more/getting_started/windows.html
+  2. Follow the instructions in the Getting Started guide (eg, at http://www.boost.org/doc/libs/1_69_0/more/getting_started/windows.html )
      Essentially (for Visual Studio 2015) this involves:
      * Starting a Visual Studio command prompt (see above for 32-bit versus 64-bit).
      * Changing to the boost source code directory (eg, "cd C:\SDK\boost\boost_1_69_0").
@@ -162,39 +155,39 @@ Boost
        where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
        This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
-  2. Add the boost root directory to the CMAKE_INCLUDE_PATH environment variable (eg, C:\SDK\boost\boost_1_69).
-  3. Add the boost 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, C:\SDK\boost\boost_1_69\lib).
-  4. Add the boost 'lib' directory to the PATH environment variable (eg, C:\SDK\boost\boost_1_69\lib).
-  Note that if you upgrade your boost version you'll need to re-compile the CGAL library (since it uses boost thread).
-  Note that the boost-python (sub)library will link against your python installation
-  and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
-  then, at runtime, the python DLL (version 2.7) should exist in the PATH.
-  To get boost to find python at compile time you might also need to add something like...
-     using python : 2.7 : C:\\SDK\\python\\Python-2.7.17 : C:\\SDK\\python\\Python-2.7.17\\Include : C:\\SDK\\python\\Python-2.7.17\\libs ;
-  ...for example to "user-config.jam" (in your home directory)- see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html
-  If you have multiple versions of python installed then specify multiple lines, for example:
-     using python : 2.7 : C:\\SDK\\python\\Python-2.7.17 ;
-     using python : 3.7 : C:\\SDK\\python\\Python-3.7.5 ;
-  ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
-  Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
-  exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
-  - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
-  You may get compile errors about '_snprintf' not being a member of 'std' when (later) compiling GPlates. This is typically due to some source code somewhere defining:
-    #if defined(_MSC_VER)
-        #define snprintf _snprintf
-    #endif
-  ...when it should be using "#if defined(_MSC_VER) && _MSC_VER < 1900" since Visual Studio 2015 now defines 'std::snprintf'.
-  It's hard to find where this is happening (among the dependency library headers) so one (hacky) option is to edit "boost/system/detail/system_category_win32.hpp" as
-    inline char const * unknown_message_win32( int ev, char * buffer, std::size_t len )
-    {
-        // Microsoft Visual Studio has std::snprint(), but some other code might have "#define snprintf _snprintf" for all _MSC_VER versions.
-    #if defined(_MSC_VER) && !defined(snprintf)
-        std::
-    #endif
-            snprintf( buffer, len, "Unknown error (%d)", ev );
-        return buffer;
-    }
-  ...since this is the only location it seems to be happening currently.
+  2. Add the boost root directory to the BOOST_ROOT environment variable (eg, C:\SDK\boost\boost_1_69).
+  3. Add the boost 'lib' directory to the PATH environment variable (eg, C:\SDK\boost\boost_1_69\lib).
+     
+     Note that if you upgrade your boost version you'll need to re-compile the CGAL library (since it uses boost thread).
+     
+     Note that the boost-python (sub)library will link against your python installation
+     and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 3.7
+     then, at runtime, the python DLL (version 3.7) should exist in the PATH.
+     
+     To get boost to find python at compile time you might also need to add something like...
+        using python : 3.7 : C:\\SDK\\python\\Python-3.7.7 ;
+     ...for example to "user-config.jam" in your home directory(see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html )
+     And if you're using both Python 2 and 3 (ie, compiling one GPlates/pyGPlates for Python 2 and one for Python 3) then you might have something like...
+        using python : 2.7 : C:\\SDK\\python\\Python-2.7.18 ;
+        using python : 3.7 : C:\\SDK\\python\\Python-3.7.7 ;
+     ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
+     
+     You may get compile errors about '_snprintf' not being a member of 'std' when (later) compiling GPlates. This is typically due to some source code somewhere defining:
+       #if defined(_MSC_VER)
+           #define snprintf _snprintf
+       #endif
+     ...when it should be using "#if defined(_MSC_VER) && _MSC_VER < 1900" since Visual Studio 2015 now defines 'std::snprintf'.
+     It's hard to find where this is happening (among the dependency library headers) so one (hacky) option is to edit "boost/system/detail/system_category_win32.hpp" as
+       inline char const * unknown_message_win32( int ev, char * buffer, std::size_t len )
+       {
+           // Microsoft Visual Studio has std::snprint(), but some other code might have "#define snprintf _snprintf" for all _MSC_VER versions.
+       #if defined(_MSC_VER) && !defined(snprintf)
+           std::
+       #endif
+               snprintf( buffer, len, "Unknown error (%d)", ev );
+           return buffer;
+       }
+     ...since this is the only location it seems to be happening currently.
 
 SQLite3
 
@@ -223,9 +216,9 @@ Proj6
      o If cmake cannot find the location of sqlite3 then you'll need to either set it manually in the CMake GUI (after the first 'Configure' stage), or
        specify it on the cmake command-line as covered in the Proj6 README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
      o Open the "PROJ4" Visual Studio solution , select "Release" build and then build the "INSTALL" project.
-  3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\include").
-  4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-6.1.1\lib").
-  5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\bin").
+  3. Add the Proj6 root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\proj\proj-6.1.1 ).
+  4. Add the 'bin' directory to the PATH environment variable so the PROJ DLL, if there is one,
+     can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\bin").
 
 NetCDF
 
@@ -239,7 +232,7 @@ NetCDF
 GDAL
 
     1. Get GDAL 3.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
-    2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.0.1").
+    2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.1.0").
     3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
        o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
        o For example, after editing, you might have something like:
@@ -276,13 +269,14 @@ GDAL
        o If you want a debug build then add 'DEBUG=1'.
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
-    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-3.0.1").
+    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-3.1.0").
     11. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+    
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
   
 CGAL
 
-  1. Get and install the CGAL 4.13.1 source code from http://www.cgal.org/
+  1. Get and install the latest CGAL (eg, 4.13.1) source code from http://www.cgal.org/
      * Download and run 'CGAL-4.13.1-Setup.exe'.
      * Under 'Choose Components' untick everything except:
          * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
@@ -298,8 +292,8 @@ CGAL
      * Click 'Configure' once and select a Visual Studio generator
        (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
         * If an error dialog pops up and there's red text that complains it cannot find the boost library
-          boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
-          versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
+          boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library versions
+          of the boost libraries (the ones with the 'lib' prefix in the library filenames - see Boost above).
      * Untick all 'WITH_*' options except:
          * WITH_CGAL_Core,
          * WITH_GMP and
@@ -323,16 +317,27 @@ CGAL
   ...with...
     const int UNKNOWN_DIMENSION=(std::numeric_limits<int>::max)();
   ...in 'include/CGAL/Dimension.h'
- 
+    
+    NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
 
-gzip
+zlib
 
-  1. Get and install gzip from http://gnuwin32.sourceforge.net/packages/gzip.htm 
-     . Select the 'complete package, except sources' link.
-       * Alternatively, Cygwin (http://www.cygwin.com/), a complete POSIX
-         environment for Windows, contains gzip.
-  2. Add the location of the gzip executable to the PATH environment variable
-     (see above).
+  1. Download the source code for version 1.2.11 http://zlib.net/
+  2. Extract to a location on your hard drive (eg, "C:\SDK\zlib\zlib-1.2.11").
+  2. Open the appropriate Visual Studio solution in the 'contrib/vstudio/' directory.
+     For example, for Visual Studio 2015 open 'contrib/vstudio/vc14/zlibvc.sln'.
+  3. Build zlib:
+     * Select the 'Release' build type. (GPlates developers may also want to build 'Debug').
+     * Select configuration type 'x64' for a 64-bit build or 'Win32' for a 32-bit build.
+     * Build the 'zlibvc' project.
+  4. Copy the following built files to the root zlib directory (eg, "C:\SDK\zlib\zlib-1.2.11").
+     For a 64-bit build these files are copied from the 'contrib\vstudio\vc14\x64\ZlibDllRelease\' directory.
+     * zlibwapi.dll
+     * zlibwapi.lib
+     * zlibwapi.exp
+     * zlibwapi.pdb
+  5. Add the zlib root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\zlib\zlib-1.2.11 ).
+  6. Add the zlib root directory to the PATH environment variable (eg, "C:\SDK\zlib\zlib-1.2.11") so the DLL can be found.
 
 Subversion (optional, but recommended for developers)
 

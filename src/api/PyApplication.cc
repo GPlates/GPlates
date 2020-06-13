@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include "global/python.h"
-#if !defined(GPLATES_NO_PYTHON)
 
 #include <boost/foreach.hpp>
 
@@ -285,13 +284,3 @@ export_instance()
 		.def("current_time", &Application::current_time)
 		;
 }
-
-#endif
-
-
-
-
-
-
-
-

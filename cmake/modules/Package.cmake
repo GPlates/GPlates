@@ -1,6 +1,6 @@
 # Where all the distribution files are located.
-SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${CMAKE_SOURCE_DIR}/cmake/distribution")
-SET(GPLATES_BINARY_DISTRIBUTION_DIR "${CMAKE_BINARY_DIR}/cmake/distribution")
+SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
+SET(GPLATES_BINARY_DISTRIBUTION_DIR "${GPlates_BINARY_DIR}/cmake/distribution")
 
 # NOTE: Since the Mac OSX platform does *not* "include(CPack)"
 # we define a lot of the CPack variables. Normally the CPack
@@ -22,15 +22,15 @@ SET(CPACK_PACKAGE_VENDOR "${GPLATES_PACKAGE_VENDOR}")
 
 #   CPACK_PACKAGE_VERSION_MAJOR - Package major Version
 #
-SET(CPACK_PACKAGE_VERSION_MAJOR "${GPLATES_PACKAGE_VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${GPlates_VERSION_MAJOR}")
 
 #   CPACK_PACKAGE_VERSION_MINOR - Package minor Version
 #
-SET(CPACK_PACKAGE_VERSION_MINOR "${GPLATES_PACKAGE_VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${GPlates_VERSION_MINOR}")
 
 #   CPACK_PACKAGE_VERSION_PATCH - Package patch Version
 #
-SET(CPACK_PACKAGE_VERSION_PATCH "${GPLATES_PACKAGE_VERSION_PATCH}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${GPlates_VERSION_PATCH}")
 
 #   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the
 #   project. Used, for example, the introduction screen of a
@@ -46,7 +46,7 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
 #   not including the extension. For example, cmake-2.6.1-Linux-i686.
 #
-SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}")
+SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPlates_VERSION}-${CMAKE_SYSTEM_NAME}")
 
 #   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which
 #   will typically be displayed to the user (often with an explicit
@@ -178,7 +178,7 @@ IF (WIN32 AND NOT UNIX)
     #   target system, e.g., "CMake 2.5".
     #
     # NOTE: this variable doesn't appear to be used by CMake 2.6.2.
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
 
     # The following variables are specific to the graphical installers built
     # on Windows using the Nullsoft Installation System.
@@ -221,12 +221,12 @@ IF (WIN32 AND NOT UNIX)
     #   CPACK_NSIS_DISPLAY_NAME - The title displayed at the top of the
     #   installer.
     #
-    SET(CPACK_NSIS_DISPLAY_NAME "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
+    SET(CPACK_NSIS_DISPLAY_NAME "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
     
     #   CPACK_NSIS_INSTALLED_ICON_NAME - A path to the executable that
     #   contains the installer icon.
     #
-    SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}.exe")
+    SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}.exe")
     
     #   CPACK_NSIS_HELP_LINK - URL to a web site providing assistance in
     #   installing your application.
@@ -265,7 +265,7 @@ IF (APPLE)
 
 	# The area we copy the application bundle to.
 	# It is here that it is made standalone in preparation for packaging.
-	SET(STAGING_AREA_FOR_CPACK "${CMAKE_BINARY_DIR}/CPackStagingAreaMacOSX")
+	SET(STAGING_AREA_FOR_CPACK "${GPlates_BINARY_DIR}/CPackStagingAreaMacOSX")
 
 	#####################################################
 	# CPack configuration variables specific to Mac OSX #
@@ -279,7 +279,7 @@ IF (APPLE)
 	# that cmake file gets executed when we type 'make package' whereas here we might pick up an old
 	# SVN version number if the source code changed but none of the cmake scripts have changed (and hence
 	# cmake didn't run this script again).
-	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPlates_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 	#   CPACK_GENERATOR - List of CPack generators to use. If not
 	#   specified, CPack will create a set of options (e.g.,
@@ -365,8 +365,17 @@ IF (APPLE)
 			"${GPLATES_CPACK_STAGING_AREA_EXTRAS} ${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
 	endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
 
+	# Add the sample data directory to the list of binary install extras if requested.
+	set(GPLATES_BINARY_INSTALL_EXTRAS "")
+	if (GPLATES_INCLUDE_SAMPLE_DATA)
+		# Should already be full paths (eg, this can convert
+		# "~/sample-data" to "/Users/gplates/sample-data").
+		get_filename_component(extra "${GPLATES_INCLUDE_SAMPLE_DATA}" ABSOLUTE)
+		set(GPLATES_BINARY_INSTALL_EXTRAS "${GPLATES_BINARY_INSTALL_EXTRAS} ${extra}")
+	endif()
+
 	# Set some configure variables that will be used by the following "CONFIGURE_FILE()" commands.
-	SET(BUILT_BUNDLE "${EXECUTABLE_OUTPUT_PATH}/${GPLATES_MAIN_TARGET}.app")
+	SET(BUILT_BUNDLE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GPLATES_MAIN_TARGET}.app")
 	SET(PACKAGE_CPACK_CONFIG "${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack")
 	SET(OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh")

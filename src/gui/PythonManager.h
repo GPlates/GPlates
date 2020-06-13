@@ -34,6 +34,7 @@
 #include <boost/foreach.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QtGlobal>
 
 #include "global/GPlatesException.h"
 #include "global/python.h"
@@ -61,7 +62,6 @@ namespace GPlatesQtWidgets
 	class PythonConsoleDialog;
 }
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp = boost::python ;
 
@@ -278,7 +278,7 @@ namespace GPlatesGui
 		validate_python_home(
 				const QString& new_home)
 		{
-#ifndef __WINDOWS__ 
+#ifndef Q_OS_WIN
 			QString path_of_code_py = 
 				new_home + "/lib/python" +
 				d_python_version + "/os.py"; //use this file as hint to find python home.
@@ -409,26 +409,6 @@ namespace GPlatesGui
 		GPlatesPresentation::Application *d_application;
 	};
 }
-#else
-#include "presentation/Application.h"
-namespace GPlatesGui
-{
-	class PythonManager : public QObject
-	{
-	public:
-		static
-		PythonManager*
-		instance()
-		{
-			//static variable will be initialized only once.
-			static PythonManager* inst = new PythonManager();
-			return inst;
-		}
-		void initialize(GPlatesPresentation::Application& app){app.get_main_window().hide_python_menu();}
-		void pop_up_python_console(){}
-	};
-}
-#endif    //GPLATES_NO_PYTHON
 #endif    //GPLATES_UTILS_PYTHON_MANAGER_H
 
 

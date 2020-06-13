@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "SetCameraViewpointDialogUi.h"
+#include "ui_SetCameraViewpointDialogUi.h"
 
 #include "GPlatesDialog.h"
 

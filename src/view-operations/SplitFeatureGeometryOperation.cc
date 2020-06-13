@@ -23,8 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <memory>
 #include <iterator>
+#include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "SplitFeatureGeometryOperation.h"
@@ -467,7 +468,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		boost::optional<const GPlatesMaths::PointOnSphere> insert_pos_on_sphere)
 {
 	// The command that does the actual splitting feature.
-	std::auto_ptr<QUndoCommand> split_feature_command(
+	std::unique_ptr<QUndoCommand> split_feature_command(
 			new SplitFeatureUndoCommand(
 					d_feature_focus,
 					d_model_interface,
@@ -475,10 +476,10 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 					insert_pos_on_sphere));
 
 	// Command wraps insert vertex command with handing canvas tool choice and
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("split feature"),
-					split_feature_command,
+					std::move(split_feature_command),
 					this,
 					d_canvas_tool_workflows));
 

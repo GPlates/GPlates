@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLSHADEROBJECT_H
 #define GPLATES_OPENGL_GLSHADEROBJECT_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
@@ -178,17 +178,17 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 *
 		 * See comment in @a create for details on @a shader_type.
 		 */
 		static
-		std::auto_ptr<GLShaderObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLShaderObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer,
 				GLenum shader_type)
 		{
-			return std::auto_ptr<GLShaderObject>(new GLShaderObject(renderer, shader_type));
+			return std::unique_ptr<GLShaderObject>(new GLShaderObject(renderer, shader_type));
 		}
 
 

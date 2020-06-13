@@ -28,7 +28,7 @@
 
 #include "property-values/SpatialReferenceSystem.h"
 
-#include "OgrSrsWriteOptionDialogUi.h"
+#include "ui_OgrSrsWriteOptionDialogUi.h"
 
 
 namespace GPlatesQtWidgets

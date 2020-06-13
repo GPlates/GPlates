@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLBUFFEROBJECT_H
 #define GPLATES_OPENGL_GLBUFFEROBJECT_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -107,19 +107,19 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const buffers_type &buffer_types)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer, buffer_types).release());
+			return shared_ptr_type(create_as_unique_ptr(renderer, buffer_types).release());
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLBufferObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLBufferObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer,
 				const buffers_type &buffer_types)
 		{
-			return std::auto_ptr<GLBufferObject>(new GLBufferObject(renderer, buffer_types));
+			return std::unique_ptr<GLBufferObject>(new GLBufferObject(renderer, buffer_types));
 		}
 
 

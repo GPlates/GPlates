@@ -24,23 +24,24 @@
  */
 
 #include <algorithm>
-#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
-#include <QPalette>
-#include <QResizeEvent>
-#include <QFont>
-#include <QString>
-#include <QMetaType>
-#include <QIcon>
-#include <QMessageBox>
-#include <QMimeData>
+#include <boost/shared_ptr.hpp>
 #include <QByteArray>
 #include <QDataStream>
-#include <QDrag>
-#include <QInputDialog>
 #include <QDebug>
+#include <QDrag>
+#include <QFont>
+#include <QIcon>
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QMetaType>
+#include <QMimeData>
+#include <QPalette>
+#include <QResizeEvent>
+#include <QString>
+#include <QWidget>
 
 #include "VisualLayerWidget.h"
 

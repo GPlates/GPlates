@@ -30,7 +30,7 @@
 
 #include <iostream>
 
-#include "ProgressDialogUi.h"
+#include "ui_ProgressDialogUi.h"
 
 namespace GPlatesQtWidgets
 {

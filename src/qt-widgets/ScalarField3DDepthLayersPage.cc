@@ -30,18 +30,19 @@
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/weak_ptr.hpp>
-#include <QTableWidgetItem>
-#include <QItemDelegate>
 #include <QDir>
-#include <QString>
-#include <QStringList>
-#include <QHeaderView>
-#include <QLineEdit>
 #include <QDoubleValidator>
-#include <QKeyEvent>
-#include <QSizePolicy>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QHeaderView>
+#include <QItemDelegate>
+#include <QKeyEvent>
+#include <QLineEdit>
+#include <QMimeData>
+#include <QSizePolicy>
+#include <QString>
+#include <QStringList>
+#include <QTableWidgetItem>
 #include <QUrl>
 
 #include "ScalarField3DDepthLayersPage.h"
@@ -361,7 +362,7 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::ScalarField3DDepthLayersPage(
 	setAcceptDrops(true);
 
 	files_table->verticalHeader()->hide();
-	files_table->horizontalHeader()->setResizeMode(1, QHeaderView::Stretch);
+	files_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 	files_table->horizontalHeader()->setHighlightSections(false);
 
 	files_table->setTextElideMode(Qt::ElideLeft);

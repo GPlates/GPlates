@@ -25,14 +25,15 @@
 
 #include <cmath>
 #include <QApplication>
+#include <QBrush>
+#include <QColorDialog>
 #include <QDesktopWidget>
 #include <QHBoxLayout>
-#include <QRect>
-#include <QSize>
-#include <QColorDialog>
 #include <QPainter>
 #include <QPen>
-#include <QBrush>
+#include <QRect>
+#include <QSize>
+#include <QtGlobal>
 
 #include "QtWidgetUtils.h"
 
@@ -111,7 +112,6 @@ GPlatesQtWidgets::QtWidgetUtils::get_colour_with_alpha(
 	// is to be invoked if you are interested in getting an alpha value.
 	// QColorDialog::getRgba() is deprecated; note also that the dialog when
 	// invoked using this function resets the alpha value to 255.
-#if QT_VERSION >= 0x040500
 	QColor new_colour = QColorDialog::getColor(
 			initial,
 			parent,
@@ -122,16 +122,6 @@ GPlatesQtWidgets::QtWidgetUtils::get_colour_with_alpha(
 		return GPlatesGui::Colour(new_colour);
 	}
 	return boost::none;
-#else
-	QRgb curr_colour = GPlatesGui::Colour::to_qrgb(initial);
-	bool ok;
-	QRgb result = QColorDialog::getRgba(curr_colour, &ok, parent);
-	if (ok)
-	{
-		return GPlatesGui::Colour::from_qrgb(result);
-	}
-	return boost::none;
-#endif
 }
 
 
@@ -140,7 +130,7 @@ GPlatesQtWidgets::QtWidgetUtils::is_control_c(
 		QKeyEvent *key_event)
 {
 	return key_event->key() == Qt::Key_C &&
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
 		key_event->modifiers() == Qt::MetaModifier;
 #else
 		key_event->modifiers() == Qt::ControlModifier;

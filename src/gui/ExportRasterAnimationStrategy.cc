@@ -387,40 +387,44 @@ namespace
 		if (lon_extent > 360)
 		{
 			lon_extent = 360;
+			lat_lon_extents.right = lat_lon_extents.left + lon_extent;
 		}
 		else if (lon_extent < -360)
 		{
 			lon_extent = -360;
+			lat_lon_extents.right = lat_lon_extents.left + lon_extent;
 		}
 
-		// Ensure longitude is within range [-360, 360] so we can use GPlatesMaths::LatLonPoint.
-		if (lat_lon_extents.left < lat_lon_extents.right)
+		//
+		// Ensure 'left' and 'right' longitudes are within range [-360, 360] so we can use GPlatesMaths::LatLonPoint.
+		//
+		// First bring 'left' into the range [-360, 360].
+		while (lat_lon_extents.left < -360)
 		{
-			// Make sure 'left' is in range [-360,0] so that 'right' will be in range [-360,360].
-			while (lat_lon_extents.left < -360)
-			{
-				lat_lon_extents.left += 360;
-			}
-			while (lat_lon_extents.left > 0)
-			{
-				lat_lon_extents.left -= 360;
-			}
+			lat_lon_extents.left += 360;
+			lat_lon_extents.right += 360;
 		}
-		else
+		while (lat_lon_extents.left > 360)
 		{
-			// Make sure 'left' is in range [0,360] so that 'right' will be in range [-360,360].
-			while (lat_lon_extents.left < 0)
-			{
-				lat_lon_extents.left += 360;
-			}
-			while (lat_lon_extents.left > 360)
-			{
-				lat_lon_extents.left -= 360;
-			}
+			lat_lon_extents.left -= 360;
+			lat_lon_extents.right -= 360;
 		}
-
-		// Fixup 'right' in case 'left' or 'lon_extent' were modified.
-		lat_lon_extents.right = lat_lon_extents.left + lon_extent;
+		// Then since 'right' is no further than -/+ 360 from 'left' it'll be in range [-720, 720].
+		// If 'right' is in [-360, 360] then both 'left' and 'right' are fine (both in [-360, 360]),
+		// else if 'right' is in [-720, -360] then 'left' must be in [-360, 0] so add 360 to 'left' and 'right'
+		// to bring both in [-360, 360],
+		// else if 'right' is in [360, 720] then 'left' must be in [0, 360] so subtract 360 from 'left' and 'right'
+		// to bring both in [-360, 360].
+		if (lat_lon_extents.right < -360)
+		{
+			lat_lon_extents.left += 360;
+			lat_lon_extents.right += 360;
+		}
+		if (lat_lon_extents.right > 360)
+		{
+			lat_lon_extents.left -= 360;
+			lat_lon_extents.right -= 360;
+		}
 
 		// Avoid zero width or height exported raster.
 		// Thrown exception will get caught and report error (and update status message).

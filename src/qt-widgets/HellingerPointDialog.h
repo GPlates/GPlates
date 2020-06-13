@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGERPOINTDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGERPOINTDIALOG_H
 
-#include "HellingerPointDialogUi.h"
+#include "ui_HellingerPointDialogUi.h"
 #include "HellingerDialog.h"
 
 namespace GPlatesQtWidgets
