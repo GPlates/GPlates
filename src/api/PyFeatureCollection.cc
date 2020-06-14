@@ -49,8 +49,6 @@
 #include "utils/ReferenceCount.h"
 
 
-GPlatesApi::FeatureCollection::FeatureCollection(
-
 namespace bp = boost::python;
 
 

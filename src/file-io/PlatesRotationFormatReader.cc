@@ -430,7 +430,7 @@ namespace
 		{
 			GpmlFiniteRotation *curr_gpml_finite_rotation =
 					dynamic_cast<GpmlFiniteRotation *>(
-							time_sample.value().get());
+							time_sample->value().get());
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					curr_gpml_finite_rotation,
 					GPLATES_ASSERTION_SOURCE);
@@ -442,13 +442,13 @@ namespace
 			//
 			// This avoids modifying the rotation file every time its loaded to no effect, and then
 			// asking the user to save the rotation file every time (because it's marked as modified).
-			if (!GPlatesMaths::represents_identity_rotation(curr_gpml_finite_rotation->finite_rotation().unit_quat()))
+			if (!GPlatesMaths::represents_identity_rotation(curr_gpml_finite_rotation->get_finite_rotation().unit_quat()))
 			{
 				// Search backwards for most recently added time sample (that's enabled).
 				for (unsigned int n = 0; n < time_samples.size(); ++n)
 				{
 					const GpmlTimeSample::non_null_ptr_type prev_enabled_time_sample = time_samples[time_samples.size() - n - 1];
-					if (prev_enabled_time_sample.is_disabled())
+					if (prev_enabled_time_sample->is_disabled())
 					{
 						continue;
 					}
