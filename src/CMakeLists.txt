@@ -419,6 +419,10 @@ endif()
 # A lot of "#include" statements are relative to the 'src' directory.
 target_include_directories(gplates-lib PUBLIC ${GPlates_SOURCE_DIR}/src)
 target_include_directories(pygplates PUBLIC ${GPlates_SOURCE_DIR}/src)
+# The 'src' directory exists in both the CMake source and binary trees (which, while same for in-place builds,
+# are different for out-of-place builds). This is so generated source files (like 'global/config.h') can be found.
+target_include_directories(gplates-lib PUBLIC ${GPlates_BINARY_DIR}/src)
+target_include_directories(pygplates PUBLIC ${GPlates_BINARY_DIR}/src)
 
 # External library include directories are treated as system include directories.
 # 'src/system-fixes' contains files copied from external libraries.
