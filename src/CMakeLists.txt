@@ -699,6 +699,10 @@ target_include_directories(gplates-lib PUBLIC
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include
 	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include_$<CONFIG>)
+target_include_directories(pygplates PUBLIC
+	${CMAKE_CURRENT_BINARY_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include
+	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include_$<CONFIG>)
 # Define QT_NO_KEYWORDS so that Qt will not pollute namespaces.
 # Must use "Q_SLOTS Q_EMIT Q_SIGNALS" instead of "slots emit signals".
 #
