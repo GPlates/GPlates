@@ -69,7 +69,7 @@ namespace GPlatesGlobal
 		 * The revision number of pyGPlates.
 		 */
 		unsigned int
-		GPlatesGlobal::Version::get_pyGPlates_revision()
+		get_pyGPlates_revision();
 
 
 		/**

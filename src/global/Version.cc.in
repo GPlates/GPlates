@@ -59,13 +59,15 @@ GPlatesGlobal::Version::get_GPlates_version_patch()
 unsigned int
 GPlatesGlobal::Version::get_GPlates_version_tweak()
 {
-	return @PYGPLATES_REVISION@;
+	return @GPlates_VERSION_TWEAK@
+			+0; // In case tweak component not specified in CMake project() command.
 }
 
 unsigned int
 GPlatesGlobal::Version::get_pyGPlates_revision()
 {
-	"@PYGPLATES_REVISION@";
+	return @PYGPLATES_REVISION@;
+}
 
 QString
 GPlatesGlobal::Version::get_working_copy_version_number()
