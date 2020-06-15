@@ -2391,13 +2391,13 @@ namespace GPlatesApi
 		// Extract the topological geometries.
 		for (unsigned int n = 0; n < sequence_of_objects.size(); ++n)
 		{
-			bp::extract<topological_geometry_property_value_type> extract_topological_geometry(sequence_of_objects[n]);
-			if (!extract_topological_geometry.check())
+			bp::extract<topological_geometry_property_value_type> extract_topological_geometry_n(sequence_of_objects[n]);
+			if (!extract_topological_geometry_n.check())
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
-			topological_geometry_property_value_type topological_geometry = extract_topological_geometry();
+			topological_geometry_property_value_type topological_geometry = extract_topological_geometry_n();
 
 			topological_geometries.push_back(topological_geometry);
 		}
