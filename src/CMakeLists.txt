@@ -353,6 +353,10 @@ endforeach()
 # This also enables the default placement of some targets created by CMake under a folder called "CMakePredefinedTargets".
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Traverse pygplates sub-directory.
+# Currently contains tests for pygplates. 
+add_subdirectory(pygplates)
+
 
 #############################
 # General target properties #
