@@ -30,7 +30,7 @@
 #include <QWidget>
 
 #include "AbstractCustomPropertiesWidget.h"
-#include "FlowlinePropertiesWidgetUi.h"
+#include "ui_FlowlinePropertiesWidgetUi.h"
 
 namespace GPlatesAppLogic
 {

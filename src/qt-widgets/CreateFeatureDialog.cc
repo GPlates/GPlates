@@ -252,7 +252,7 @@ namespace
 	/**
 	 * Returns whether or not we should offer a reconstruction plate ID property.
 	 *
-	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 * Note: Returns false if geometry is a topological line or network (regardless of feature type).
 	 */
 	bool
 	should_offer_reconstruction_plate_id_prop(
@@ -293,7 +293,7 @@ namespace
 	/**
 	 * Returns whether or not we should offer a conjugate plate ID property.
 	 *
-	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 * Note: Returns false if geometry is a topological line or network (regardless of feature type).
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(

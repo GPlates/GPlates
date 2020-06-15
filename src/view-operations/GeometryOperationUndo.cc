@@ -32,7 +32,7 @@
 
 GPlatesViewOperations::GeometryOperationUndoCommand::GeometryOperationUndoCommand(
 		const QString &text_,
-		std::auto_ptr<QUndoCommand> geometry_operation_command,
+		std::unique_ptr<QUndoCommand> geometry_operation_command,
 		GeometryOperation *geometry_operation,
 		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		UndoRedo::CommandId command_id,

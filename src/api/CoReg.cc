@@ -47,7 +47,6 @@ using namespace GPlatesFileIO;
 using namespace GPlatesDataMining;
 using namespace GPlatesModel;
 
-#if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
 
 // TODO: Re-implement this when the lower-level python API is implemented.
@@ -577,11 +576,3 @@ export_co_registration()
 		;
 #endif
 }
-#endif
-
-
-
-
-
-
-

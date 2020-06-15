@@ -57,31 +57,24 @@ Firstly, you should ensure that you have installed the dependencies as described
 Creating Visual Studio solution and project files with CMake
 
   1.  Install the library dependencies by following the instructions in "DEPS.Windows".
-      Note that the 'CMAKE_INCLUDE_PATH' and 'CMAKE_LIBRARY_PATH' environment variables are used
+      Note that the 'CMAKE_PREFIX_PATH' environment variable is used
       to help find some of these libraries (see "DEPS.Windows").
-  2.  The Gzip package should be found automatically if it's installed in
-      'C:/Program Files/GnuWin32/' otherwise you'll need to tell CMake where it is by editing
-      either the 'CMAKE_PROGRAM_PATH' variable or 'PATH' environment variable.
-  3.  Run the CMake GUI program ('cmake-gui.exe').
-          Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
-          right-click->properties->compatibility(tab)->check "run this program as an administrator".
-  4.  Set the 'source' directory to the root GPlates source directory
+  2.  Run the CMake GUI program ('cmake-gui.exe').
+  3.  Set the 'source' directory to the root GPlates source directory
       (the one that has 'src' as a sub-directory).
-  5.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
+  4.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
       to a different directory for out-of-place builds (recommended for developers).
-  6.  Click 'configure'.
+  5.  Click 'Configure'.
   6.  Specify 'Visual Studio 14 2015' for 32-bit or 'Visual Studio 14 2015 Win64' for 64-bit.
       Note that the library dependencies should be compiled as 32-bit or 64-bit respectively.
-  7.  Once configuration finished you should get no popup messages.
-      If you do then most likely the 'CMAKE_INCLUDE_PATH' environment variable is not referring
-      to the correct locations.
-  8.  Even if no popup messages occurred the 'OK' will still be greyed out so you'll need
-      to click 'configure' once more.
-  9.  Click 'OK' or 'Generate' - NOTE: you might get multiple warning messages that look like..
-      "WARNING: Target "gplates" requests linking to directory..." referring to the CGAL library location.
-      This is OK and can be ignored.
-  10. The CMake GUI closes or stays open and says 'Generating done'.
-  11. You should now have a 'gplates.sln' file in your root GPlates directory.
+  7.  Once configuration finished you should get no popup messages saying a dependency could not be found.
+      If you do then you might need to edit 'CMAKE_PREFIX_PATH' environment variable if it is not referring
+      to the correct dependency locations.
+  8.  Even if no popup messages occurred, the 'Generate' will still be greyed out so you'll need
+      to click 'Configure' once more.
+  9.  Click 'Generate'.
+  10. The CMake GUI should then say 'Generating done' (or it might just close when finished).
+  11. You should now have a 'GPlates.sln' file in your root GPlates directory.
 
 Building GPlates via the IDE
 

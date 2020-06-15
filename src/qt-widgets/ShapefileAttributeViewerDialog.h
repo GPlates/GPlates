@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ShapefileAttributeViewerDialogUi.h"
+#include "ui_ShapefileAttributeViewerDialogUi.h"
 
 #include "GPlatesDialog.h"
 

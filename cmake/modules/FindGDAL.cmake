@@ -230,10 +230,16 @@ FIND_LIBRARY(GDAL_LIBRARY
   DOC "GDAL library"
 )
 
-# Found GDAL only if both include directory and library found.
-SET(GDAL_FOUND "NO")
-IF(GDAL_LIBRARY AND GDAL_INCLUDE_DIR)
-  SET(GDAL_FOUND "YES")
-ENDIF(GDAL_LIBRARY AND GDAL_INCLUDE_DIR)
 
+include (FindPackageHandleStandardArgs)
+find_package_handle_standard_args(GDAL REQUIRED_VARS GDAL_LIBRARY GDAL_INCLUDE_DIR)
 
+if (GDAL_FOUND AND NOT TARGET GDAL::GDAL)
+	add_library(GDAL::GDAL IMPORTED INTERFACE)
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_LINK_LIBRARIES "${GDAL_LIBRARY}")
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+		# Include directories (must be specified as a list "a;b;c" to 'set_target_properties')...
+		"${GDAL_INCLUDE_DIR};${GDAL_OGR_INCLUDE_DIR};${GDAL_PORT_INCLUDE_DIR};${GDAL_FRMTS_INCLUDE_DIR}")
+endif ()
+
+mark_as_advanced(GDAL_LIBRARY GDAL_INCLUDE_DIR)

@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "ShapefileAttributeWidgetUi.h"
+#include "ui_ShapefileAttributeWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

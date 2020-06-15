@@ -261,7 +261,7 @@ namespace
 		{
 			for (int i = 0; i < table->horizontalHeader()->count()-1; i++)
 			{
-				table->item(row_count, i)->setData(Qt::BackgroundRole, Qt::gray);
+				table->item(row_count, i)->setData(Qt::BackgroundRole, QColor(Qt::gray));
 			}
 		}
 		QVariant qv;
@@ -490,14 +490,12 @@ GPlatesQtWidgets::EditPoleActionWidget::EditPoleActionWidget(
 			QApplication::translate(
 					"EditPoleActionWidget", 
 					"Disable this pole", 
-					0, 
-					QApplication::UnicodeUTF8));
+					0));
 	enable_button->setToolTip(
 			QApplication::translate(
 					"EditPoleActionWidget", 
 					"Enable this pole", 
-					0, 
-					QApplication::UnicodeUTF8));
+					0));
 #endif // QT_NO_TOOLTIP
 	refresh_buttons();
 	QObject::connect(enable_button, SIGNAL(clicked()), this, SLOT(enable_pole()));
@@ -548,8 +546,8 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstruction
 
 	// For setting minimum sizes.
 	EditPoleActionWidget dummy(this);
-	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::COMMENT,QHeaderView::Stretch);
-	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::ACTIONS,QHeaderView::Fixed);
+	table_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::COMMENT,QHeaderView::Stretch);
+	table_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::ACTIONS,QHeaderView::Fixed);
 	table_sequences->horizontalHeader()->resizeSection(ColumnNames::ACTIONS,dummy.width());
 	table_sequences->verticalHeader()->setDefaultSectionSize(dummy.height());
 
@@ -983,7 +981,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_disable_pole(
 		set_action_widget_in_row(row);
 		for (int i = 0; i < table_sequences->horizontalHeader()->count()-1; i++)
 		{
-			table_sequences->item(row, i)->setData(Qt::BackgroundRole, bg_color);
+			table_sequences->item(row, i)->setData(Qt::BackgroundRole, QColor(bg_color));
 		}
 	}
 }

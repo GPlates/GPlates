@@ -67,9 +67,9 @@ GPlatesGui::CustomCompleter::set_custom_popup()
 	// We need to keep the zeroeth column 'visible', but all our actual data for presentation
 	// is in the next column. Making it zero-width allows us to display things the way we want,
 	// but also (importantly!) keep keyboard focus behaviour working sanely.
-	treeview->header()->setResizeMode(MODEL_COLUMN_COMPLETION, QHeaderView::Fixed);
+	treeview->header()->setSectionResizeMode(MODEL_COLUMN_COMPLETION, QHeaderView::Fixed);
 	treeview->header()->resizeSection(MODEL_COLUMN_COMPLETION, 0);
-	treeview->header()->setResizeMode(MODEL_COLUMN_POPUP, QHeaderView::Stretch);
+	treeview->header()->setSectionResizeMode(MODEL_COLUMN_POPUP, QHeaderView::Stretch);
 }
 
 

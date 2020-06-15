@@ -306,9 +306,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 			new VisualLayersComboBox(
 				view_state.get_visual_layers(),
 				view_state.get_visual_layer_registry(),
-				std::bind1st(std::equal_to<GPlatesPresentation::VisualLayerType::Type>(),
-					static_cast<GPlatesPresentation::VisualLayerType::Type>(
-						GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)),
+				[] (GPlatesPresentation::VisualLayerType::Type layer_type)
+				{ return layer_type == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION; },
 				this)),
 	d_need_to_update_when_visible(false)
 {
@@ -320,31 +319,31 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 
 	QHeaderView *equivalent_header = table_equivalent->horizontalHeader();
 
-	equivalent_header->setResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
 
 	QHeaderView *equivalent_vertical = table_equivalent->verticalHeader();
 	equivalent_vertical->hide();
 
 	QHeaderView *relative_header = table_relative->horizontalHeader();
 
-	relative_header->setResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::FIXED, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::FIXED, QHeaderView::Fixed);
 
 	QHeaderView *relative_vertical = table_relative->verticalHeader();
 	relative_vertical->hide();
 
 	QHeaderView *tree_reconstruction_header = tree_reconstruction->header();
-	tree_reconstruction_header->setResizeMode(0,QHeaderView::ResizeToContents);
-	tree_reconstruction_header->setResizeMode(1,QHeaderView::Fixed);
-	tree_reconstruction_header->setResizeMode(2,QHeaderView::Fixed);
-	tree_reconstruction_header->setResizeMode(3,QHeaderView::Fixed);
-	tree_reconstruction_header->setMovable(false);
+	tree_reconstruction_header->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+	tree_reconstruction_header->setSectionResizeMode(1,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionResizeMode(2,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionResizeMode(3,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionsMovable(false);
 
 	tree_reconstruction_header->resizeSection(1,100);
 	tree_reconstruction_header->resizeSection(2,270);
@@ -352,11 +351,11 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 
 
 	QHeaderView *tree_circuit_header = tree_circuit->header();
-	tree_circuit_header->setResizeMode(0,QHeaderView::ResizeToContents);
-	tree_circuit_header->setResizeMode(1,QHeaderView::Fixed);
-	tree_circuit_header->setResizeMode(2,QHeaderView::Fixed);
-	tree_circuit_header->setResizeMode(3,QHeaderView::Fixed);
-	tree_circuit_header->setMovable(false);
+	tree_circuit_header->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+	tree_circuit_header->setSectionResizeMode(1,QHeaderView::Fixed);
+	tree_circuit_header->setSectionResizeMode(2,QHeaderView::Fixed);
+	tree_circuit_header->setSectionResizeMode(3,QHeaderView::Fixed);
+	tree_circuit_header->setSectionsMovable(false);
 
 	tree_circuit_header->resizeSection(1,100);
 	tree_circuit_header->resizeSection(2,270);

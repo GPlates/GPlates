@@ -1454,7 +1454,7 @@ GPlatesFileIO::OgrReader::get_field_names(
 
 	for ( count=0; count< num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
-		d_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
+		d_field_names.push_back(QString::fromLatin1(field_def_ptr->GetNameRef()));
 	}
 
 }

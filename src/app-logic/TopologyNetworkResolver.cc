@@ -31,31 +31,16 @@
 #include <boost/foreach.hpp>
 #include <QDebug>
 
-#include "TopologyNetworkResolver.h"
-
-#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
-#	ifdef NDEBUG
-#		define HAVE_NDEBUG
-#		undef NDEBUG
-#	endif
-#endif
-
-#include "ResolvedTriangulationNetwork.h"
-
-#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
-#	ifdef HAVE_NDEBUG
-#		define NDEBUG
-#	endif
-#endif
-
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "ResolvedTriangulationNetwork.h"
 #include "ResolvedVertexSourceInfo.h"
 #include "TopologyInternalUtils.h"
+#include "TopologyNetworkResolver.h"
 #include "TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"

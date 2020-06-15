@@ -23,7 +23,6 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 #include <boost/test/unit_test.hpp>
-#include <boost/test/detail/unit_test_parameters.hpp>
 #include <boost/version.hpp>
 
 #include <QDebug>
@@ -31,7 +30,7 @@
 
 #include "app-logic/GPlatesQtMsgHandler.h"
 
-#include "global/Constants.h"
+#include "global/Version.h"
 
 #include "maths/MathsUtils.h"
 
@@ -104,7 +103,7 @@ namespace
 		// Print GPlates version if requested.
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
-			std::cout << GPlatesGlobal::VersionString << std::endl;
+			std::cout << GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData() << std::endl;
 			exit(1);
 		}
 		
@@ -117,9 +116,7 @@ namespace
 	}
 }
 
-boost::unit_test::test_suite*
-init_unit_test_suite(
-		int argc, char* argv[])
+bool init_unit_test()
 {
 	// Initialise Qt resources that exist in the static 'qt-resources' library.
 	Q_INIT_RESOURCE(opengl);
@@ -134,11 +131,13 @@ init_unit_test_suite(
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
 
 	BOOST_GLOBAL_FIXTURE( GPlatesGlobalFixture );
-	boost::unit_test::framework::master_test_suite().p_name.value = 
+	boost::unit_test::framework::master_test_suite().p_name.value =
 		"GPlates main test suite";
 
 	GPlatesUnitTest::TestSuiteFilter::instance().set_filter_string(
-			get_test_to_run_option(argc, argv));
+			get_test_to_run_option(
+					boost::unit_test::framework::master_test_suite().argc,
+					boost::unit_test::framework::master_test_suite().argv));
 	
 	/*
 	"DO NOT REMOVE THE NEW OPERATOR!
@@ -151,9 +150,32 @@ init_unit_test_suite(
 	/*
 	" DO NOT REMOVE THE NEW OPERATOR!
 	*/
-	
-	return 0;
+
+	return true;
 }
 
-
-
+//
+// We're using the dynamically-linked version of Boost unit test library (rather than statically linked)
+// because we use dynamic linking for other Boost libraries (such as Boost python) and it is error prone
+// to change the CMake variable "Boost_USE_STATIC_LIBS" from "OFF" (eg, for Boost python) to "ON"
+// (for Boost unit test). So we just set "Boost_USE_STATIC_LIBS" to "OFF" for all Boost libraries.
+//
+// We also defined "BOOST_TEST_DYN_LINK" in CMake to avoid having to define it before each <boost/test/unit_test.hpp> include.
+//
+// Apparently when dynamic linking we cannot use the obsolete initialisation function "init_unit_test_suite()"
+// that we used previously:
+//   https://www.boost.org/doc/libs/1_60_0/libs/test/doc/html/boost_test/adv_scenarios/obsolete_init_func.html
+//
+// Instead (for dynamic linking) we must use the alternative initialization function name and signature "bool init_unit_test();".
+// We're following the advice from here:
+//   https://www.boost.org/doc/libs/1_60_0/libs/test/doc/html/boost_test/adv_scenarios/shared_lib_customizations/init_func.html
+//
+//
+// To list the unit tests you can run 'gplates-unit-test --list_content'.
+// To run specific unit tests you can run 'gplates-unit-test --run_test=ScribeTestSuite,*/*/RealTest__test_zero', for example, to run
+// all tests in 'ScribeTestSuite' and also the test 'RealTest__test_zero' in the 'MathsTestSuite/RealTestSuite/' level of the test tree.
+//
+int main(int argc, char* argv[])
+{
+	return boost::unit_test::unit_test_main(&init_unit_test, argc, argv);
+}

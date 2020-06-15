@@ -27,6 +27,7 @@
 #ifndef GPLATES_GUI_TEXTOVERLAY_H
 #define GPLATES_GUI_TEXTOVERLAY_H
 
+#include <QPaintDevice>
 
 
 namespace GPlatesAppLogic
@@ -59,8 +60,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const TextOverlaySettings &settings,
-				int paint_device_width,
-				int paint_device_height,
+				const QPaintDevice &paint_device,
 				float scale);
 
 	private:

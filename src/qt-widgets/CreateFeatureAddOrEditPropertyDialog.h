@@ -29,7 +29,7 @@
 #include <boost/optional.hpp>
 #include <QDialog>
 
-#include "CreateFeatureAddOrEditPropertyDialogUi.h"
+#include "ui_CreateFeatureAddOrEditPropertyDialogUi.h"
 
 #include "model/GpgimProperty.h"
 #include "model/FeatureType.h"

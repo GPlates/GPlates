@@ -30,7 +30,7 @@
 
 #include "PoleSequenceTableWidget.h"
 #include "ReconstructionPoleWidget.h"
-#include "InsertVGPReconstructionPoleDialogUi.h"
+#include "ui_InsertVGPReconstructionPoleDialogUi.h"
 
 namespace GPlatesAppLogic
 {

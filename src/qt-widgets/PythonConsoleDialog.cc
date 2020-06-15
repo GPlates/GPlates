@@ -26,24 +26,24 @@
 #include <cstdio>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <QFont>
-#include <QKeyEvent>
-#include <QTextCharFormat>
-#include <QBrush>
-#include <QTextCursor>
-#include <QScrollBar>
-#include <QPalette>
-#include <QFontMetrics>
-#include <QKeyEvent>
-#include <QThread>
-#include <QEvent>
-#include <QCoreApplication>
-#include <QPainter>
-#include <QFile>
-#include <QTextBlock>
 #include <QAction>
-#include <QFileInfo>
+#include <QBrush>
+#include <QCoreApplication>
 #include <QDebug>
+#include <QEvent>
+#include <QFont>
+#include <QFontMetrics>
+#include <QFile>
+#include <QFileInfo>
+#include <QKeyEvent>
+#include <QPainter>
+#include <QPalette>
+#include <QScrollBar>
+#include <QTextBlock>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QtGlobal>
+#include <QThread>
 
 #include "PythonConsoleDialog.h"
 
@@ -61,10 +61,9 @@
 #include "app-logic/ApplicationState.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/Constants.h"
 #include "global/GPlatesAssert.h"
-#include "global/SubversionInfo.h"
 #include "global/python.h"
+#include "global/Version.h"
 
 #include "gui/PythonConsoleHistory.h"
 #include "gui/PythonManager.h"
@@ -73,7 +72,7 @@
 
 #include "utils/DeferredCallEvent.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 namespace
 {
 	const char *START_PROMPT_TEXT = QT_TR_NOOP(">>>\t");
@@ -83,7 +82,7 @@ namespace
 	build_fixed_width_font()
 	{
 		// FIXME: Improve on this.
-#if defined(Q_WS_X11)
+#if defined(Q_OS_LINUX)
 		QFont font("Droid Sans Mono");
 #else
 		QFont font("Consolas");
@@ -91,7 +90,7 @@ namespace
 		font.setStyleHint(QFont::Courier);
 
 
-// #if defined(Q_WS_MAC)
+// #if defined(Q_OS_MAC)
 // 		font.setPointSize(14);
 // #else
 // 		//font.setPointSize(9);
@@ -315,9 +314,9 @@ void
 GPlatesQtWidgets::PythonConsoleDialog::print_banner()
 {
 	QString banner_text;
-	banner_text += GPlatesGlobal::VersionString;
+	banner_text += GPlatesGlobal::Version::get_GPlates_version();
 	banner_text += tr(" (r");
-	QString version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+	QString version_number = GPlatesGlobal::Version::get_working_copy_version_number();
 	if (version_number.isEmpty())
 	{
 		version_number = tr("<unknown>");
@@ -759,7 +758,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 	}
 	else if (QtWidgetUtils::is_control_c(ev))
 	{
-#if !defined(Q_WS_MAC)
+#if !defined(Q_OS_MAC)
 		// If there is a selection, interpret the Ctrl+C as usual.
 		if (textCursor().hasSelection())
 		{
@@ -769,7 +768,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 #endif
 		Q_EMIT control_c_pressed(get_text());
 	}
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
 	else if (ev->key() == Qt::Key_Backspace && ev->modifiers() == Qt::ControlModifier)
 	{
 		// Delete to front of line.
@@ -1311,7 +1310,3 @@ GPlatesQtWidgets::PythonConsoleDialog::hide_cancel_widget()
 	d_monitor_widget = NULL;
 	return ret;
 }
-
-
-#endif // GPLATES_NO_PYTHON
-

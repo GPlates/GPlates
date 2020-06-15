@@ -31,7 +31,7 @@
 #include <list>
 #include <utility>
 #include <boost/shared_ptr.hpp>
-#include <QtXml/QXmlStreamReader>
+#include <QXmlStreamReader>
 
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"

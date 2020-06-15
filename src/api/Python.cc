@@ -29,7 +29,6 @@
 // Note: this .cc file has no corresponding .h file.
 //
 
-#if !defined(GPLATES_NO_PYTHON)
 
 // api directory.
 void export_console_reader();
@@ -79,11 +78,3 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_functions();
 	export_colour();
 }
-
-#else
-
-// Dummy variable so that this compilation unit isn't empty.
-void *dummy_gplates_can_haz_python = 0;
-
-#endif
-

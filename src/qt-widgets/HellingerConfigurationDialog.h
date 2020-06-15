@@ -25,7 +25,7 @@
 
 #include <QDialog>
 
-#include "HellingerConfigurationDialogUi.h"
+#include "ui_HellingerConfigurationDialogUi.h"
 #include "HellingerDialog.h"
 
 namespace GPlatesAppLogic

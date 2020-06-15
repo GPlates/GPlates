@@ -29,7 +29,7 @@
 #include <boost/static_assert.hpp>
 #include <QWidget>
 
-#include "ExportVelocityCalculationOptionsWidgetUi.h"
+#include "ui_ExportVelocityCalculationOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

@@ -29,7 +29,7 @@
 #include <QDebug>
 #include <QWidget>
 
-#include "TopologyToolsWidgetUi.h"
+#include "ui_TopologyToolsWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "app-logic/TopologyGeometryType.h"

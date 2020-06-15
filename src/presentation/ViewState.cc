@@ -134,7 +134,6 @@ GPlatesPresentation::ViewState::ViewState(
 	d_globe_camera(
 			new GPlatesGui::GlobeCamera(
 				*d_viewport_zoom)),
-	d_main_viewport_dimensions(0, 0),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(
 				*this)),
@@ -464,52 +463,6 @@ GPlatesPresentation::ViewState::get_globe_camera() const
 	return *d_globe_camera;
 }
 
-
-const std::pair<int, int> &
-GPlatesPresentation::ViewState::get_main_viewport_dimensions() const
-{
-	return d_main_viewport_dimensions;
-}
-
-
-void
-GPlatesPresentation::ViewState::set_main_viewport_dimensions(
-		const std::pair<int, int> &dimensions)
-{
-	d_main_viewport_dimensions = dimensions;
-}
-
-
-int
-GPlatesPresentation::ViewState::get_main_viewport_min_dimension() const
-{
-	int width = d_main_viewport_dimensions.first;
-	int height = d_main_viewport_dimensions.second;
-	if (width < height)
-	{
-		return width;
-	}
-	else
-	{
-		return height;
-	}
-}
-
-
-int
-GPlatesPresentation::ViewState::get_main_viewport_max_dimension() const
-{
-	int width = d_main_viewport_dimensions.first;
-	int height = d_main_viewport_dimensions.second;
-	if (width > height)
-	{
-		return width;
-	}
-	else
-	{
-		return height;
-	}
-}
 
 
 void

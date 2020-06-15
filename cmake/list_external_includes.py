@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
 
+from __future__ import print_function
 import sys
 import os
-import string
 import os.path
 import re
 import codecs
@@ -12,7 +12,7 @@ from optparse import OptionParser
 HELP_USAGE = "Usage: list_external_includes.py include_trace_file internal_ignore_path\n"
 
 __usage__ = "%prog [options] [-h --help] root_source_dir root_build_dir [platform]"
-__description__ = "Reads Visual Studio 'BuildLog.htm' files build with '/showIncludes' compiler option and "\
+__description__ = "Reads Visual Studio build log files build with '/showIncludes' compiler option and "\
                   "writes list of '#include's to '*_pch.h' pre-compiled header files.\n\n"\
                   "'root_source_dir' is root directory of GPlates source tree (has 'src/' as subdirectory).\n"\
                   "'root_build_dir' is root directory of GPlates build tree (same as root source dir if in-place build).\n"\
@@ -26,28 +26,8 @@ class ParserMSVC(IncludeParser):
     def __init__(self):
     
         self.locations = [
-            ('src', 'gplates'),
-            ('src', 'gplates-cli'),
-            ('src', 'gplates-unit-test'),
-			('src/api', 'api'),
-			('src/app-logic', 'app-logic'),
-            ('src/canvas-tools', 'canvas-tools'),
-			('src/cli', 'cli'),
-			('src/data-mining', 'data-mining'),
-            ('src/feature-visitors', 'feature-visitors'),
-            ('src/file-io', 'file-io'),
-            ('src/global', 'global'),
-            ('src/gui', 'gui'),
-            ('src/maths', 'maths'),
-            ('src/model', 'model'),
-            ('src/opengl', 'opengl'),
-            ('src/presentation', 'presentation'),
-            ('src/property-values', 'property-values'),
-            ('src/qt-resources', 'qt-resources'),
-            ('src/qt-widgets', 'qt-widgets'),
-            ('src/unit-test', 'unit-test'),
-            ('src/utils', 'utils'),
-            ('src/view-operations', 'view-operations'),
+            ('src', 'gplates-lib'),
+            ('src', 'pygplates'),
         ]
         
         # Include headers that look different across platforms or
@@ -94,8 +74,6 @@ class ParserMSVC(IncludeParser):
         # If any item in list are a substring in '#include' header then surround with 2nd and 3rd entries.
         # NOTE: make lower case.
         self.include_exceptions = [
-            # Some linux systems have issues with boost due to bug in anonymous namespaces with pre-compiled headers (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10591).
-            ('boost/', '#ifdef __WINDOWS__', '#endif // __WINDOWS__'),
             # Causes compiler error on windows platforms when included in precompiled headers.
             ('QtOpenGL/qgl.h', '#if 0', '#endif')
         ]
@@ -105,11 +83,11 @@ class ParserMSVC(IncludeParser):
             self.include_exceptions[i] = (search.lower(), prefix, suffix)
 
     def read_build_log(self, filename):
-        """ Reads Visual Studio generated 'BuildLog.htm' file. """
+        """ Reads Visual Studio generated build log file. """
         
         # Let user know if file doesn't exist before we open file and throw exception.
         if not os.path.exists(filename):
-            print >>sys.stderr, "File " + filename + " doesn't exist."
+            print("File " + filename + " doesn't exist.", file=sys.stderr)
         
         # See if file starts with BOM (byte-order marker).
         file_has_bom = 0
@@ -125,9 +103,9 @@ class ParserMSVC(IncludeParser):
             encoding = 'utf-8'
             file_has_bom = 3
         else:
-            encoding = 'ascii'
+            encoding = 'utf-8'
 
-        # The Visual Studio 'BuildLog.htm' files are encoded in UTF16 little-endian.
+        # The Visual Studio build log files are encoded in UTF16 little-endian.
         f = codecs.open(filename, "r", encoding)
 
         # Remove BOM marker if has one.
@@ -135,10 +113,6 @@ class ParserMSVC(IncludeParser):
             f.read(file_has_bom)
 
         lines = f.readlines()
-
-        # Convert from unicode to ascii.
-        for line in lines:
-            line = line.encode('ascii')
 
         f.close()
         
@@ -149,8 +123,8 @@ class ParserMSVC(IncludeParser):
         return path_regexp.sub('/', path)
 
     def convert_msvc_include_to_relative_include(self, msvc_include):
-        #  Because MSVC uses '\' in its paths and any '#include' lines in our sources files use '/' in their paths
-        # we can easily strip off the include paths
+        # Because MSVC uses '\' in its paths and any '#include' lines in our sources files use '/' in their paths
+        # we can easily strip off the include paths.
 		# An example of an include path being stripped is:
 		# "C:\SDK\boost\boost_1_36_0\boost/cstdint.hpp" converted to "boost/cstdint.hpp".
         msvc_include_regexp  = re.compile('\\\\([^\\\\]+)$')
@@ -166,7 +140,7 @@ class ParserMSVC(IncludeParser):
             # TODO: Test if 'src/global/config.h' file exists and if so look for those boost include paths and use that
             # as a prefix here that can be removed from the path to make it relative.
             # For example, to remove "C:/SDK/boost/boost_1_36_0/".
-			return msvc_include
+            return msvc_include
         
         return msvc_include_match.group(1)
 
@@ -175,20 +149,20 @@ class ParserMSVC(IncludeParser):
         
         # See if it's in the list of exceptions and if so surround with prefix and suffix lines in the output file.
         for include_exception, include_prefix, include_suffix in self.include_exceptions:
-            if string.find(include_lower, include_exception) != -1:
-                print >>output_file, include_prefix
-                print >>output_file, '#include <' + include + '>'
-                print >>output_file, include_suffix
+            if include_lower.find(include_exception) != -1:
+                print(include_prefix, file=output_file)
+                print('#include <' + include + '>', file=output_file)
+                print(include_suffix, file=output_file)
                 return
 
         # See if we need to replace the include with something else.
         for include_search, include_replace in self.include_varies_with_platform:
-            if string.find(include_lower, include_search) != -1:
+            if include_lower.find(include_search) != -1:
                 for line in include_replace:
-                    print >>output_file, line
+                    print(line, file=output_file)
                 return
 
-        print >>output_file, '#include <' + include + '>'
+        print('#include <' + include + '>', file=output_file)
 
     def parse_include(self, input_filename, output_filename, root_source_dir_lower_and_forward_slashes, root_build_tree_dir_lower_and_forward_slashes):
         
@@ -196,7 +170,7 @@ class ParserMSVC(IncludeParser):
         
         output_file = open(output_filename, 'w')
         
-        msvc_include_regexp  = re.compile('^Note\: including file\:(\s+)(.*)')
+        msvc_include_regexp  = re.compile('Note\: including file\:(\s+)(.*)')
         
         # Use a large number so that the next indent will be less than it.
         indent_of_last_toplevel_external_include = 1000
@@ -238,12 +212,12 @@ class ParserMSVC(IncludeParser):
                 # Any include path that matches the root source dir or root build directory is considered an
                 # internal header and won't be included in the PCH.
                 else:
-                    msvc_include = string.strip(msvc_include_match.group(2))
+                    msvc_include = msvc_include_match.group(2).strip()
                     msvc_include_lower_and_forward_slashes = self.convert_path_to_forward_slashes(msvc_include.lower())
                     
                     # Compare all paths using forward slashes in the pathname.
-                    if string.find(msvc_include_lower_and_forward_slashes, root_source_dir_lower_and_forward_slashes) != -1 or \
-                        string.find(msvc_include_lower_and_forward_slashes, root_build_tree_dir_lower_and_forward_slashes) != -1:
+                    if msvc_include_lower_and_forward_slashes.find(root_source_dir_lower_and_forward_slashes) != -1 or \
+                        msvc_include_lower_and_forward_slashes.find(root_build_tree_dir_lower_and_forward_slashes) != -1:
                         # The current include is an internal include so any external include after this will
                         # be the next toplevel external include.
                         # Use a large number so that the next indent will be less than it.
@@ -275,7 +249,7 @@ class ParserMSVC(IncludeParser):
         root_build_tree_dir_lower_and_forward_slashes = self.convert_path_to_forward_slashes(os.path.abspath(root_build_tree_dir).lower())
         
         for base_dir, proj in self.locations:
-            input_filename = os.path.join(root_build_tree_dir, base_dir, proj + '.dir', build_type, 'BuildLog.htm')
+            input_filename = os.path.join(root_build_tree_dir, base_dir, proj + '.dir', build_type, proj + '.log')
             output_filename = os.path.join(root_source_dir, base_dir, proj + '_pch.h')
             self.parse_include(input_filename, output_filename, root_source_dir_lower_and_forward_slashes, root_build_tree_dir_lower_and_forward_slashes)
 
@@ -283,7 +257,7 @@ def main(argv):
     # Parse the command-line options. 
     parser = OptionParser(usage = __usage__,
                           description = __description__)
-    # Add option MSVC build type used to generated 'BuildLog.htm' files.
+    # Add option MSVC build type used to generated build log files.
     parser.add_option("--msvc-build-type", action="store", type="string",\
                       dest="build_type",\
                       help="MSVC build type used to show included headers "\

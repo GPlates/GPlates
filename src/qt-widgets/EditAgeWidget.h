@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/GpmlAge.h"
 
-#include "EditAgeWidgetUi.h"
+#include "ui_EditAgeWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

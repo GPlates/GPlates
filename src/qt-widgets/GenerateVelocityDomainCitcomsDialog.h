@@ -29,7 +29,7 @@
 #include <QObject>
 #include <QDialog>
 
-#include "GenerateVelocityDomainCitcomsDialogUi.h"
+#include "ui_GenerateVelocityDomainCitcomsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"

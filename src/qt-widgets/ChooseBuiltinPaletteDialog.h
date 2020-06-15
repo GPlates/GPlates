@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ChooseBuiltinPaletteDialogUi.h"
+#include "ui_ChooseBuiltinPaletteDialogUi.h"
 
 #include "ColourScaleButton.h"
 #include "GPlatesDialog.h"

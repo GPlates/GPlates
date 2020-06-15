@@ -151,7 +151,6 @@ namespace GPlatesGui
 		Configuration d_cfg;
 	};
 
-#ifndef GPLATES_NO_PYTHON
 
 	namespace bp = boost::python;
 	
@@ -219,7 +218,6 @@ namespace GPlatesGui
 		mutable bp::object d_py_obj;
 	};
 
-#endif
 
 	/*
 	* This class is here for historical reason.

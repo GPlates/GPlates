@@ -35,7 +35,6 @@
 #include "global/python.h"
 #include "utils/CallStackTracker.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	class PythonExecutionMonitorNotInMainGUIThread : 
@@ -255,5 +254,5 @@ namespace GPlatesApi
 		QString d_exit_error_message;
 	};
 }
-#endif  //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_PYTHONEXECUTIONMONITOR_H

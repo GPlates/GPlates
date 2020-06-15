@@ -93,7 +93,6 @@
 #include "property-values/XsString.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {
@@ -733,7 +732,3 @@ GPlatesApi::Feature::plate_id()
 
 	return gpml_plate_id.get()->value();
 }
-
-
-#endif   //GPLATES_NO_PYTHON
-

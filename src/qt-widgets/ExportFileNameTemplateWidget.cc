@@ -54,7 +54,7 @@ GPlatesQtWidgets::ExportFileNameTemplateWidget::ExportFileNameTemplateWidget(
 
 	set_fixed_size_for_item_view(treeWidget_template);
 	treeWidget_template->setHeaderHidden(true);
-	treeWidget_template->header()->setResizeMode(0, QHeaderView::ResizeToContents);
+	treeWidget_template->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
 	clear_file_name_template();
 }

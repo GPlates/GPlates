@@ -30,8 +30,11 @@
 #include "LogToFileHandler.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
+
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
+#include "global/Version.h"
+
 #include "utils/Environment.h"
-#include "global/SubversionInfo.h"
 
 
 const QString GPlatesFileIO::LogToFileHandler::DEFAULT_LOG_FILENAME = "GPlates_log.txt";
@@ -47,7 +50,7 @@ namespace
 			int log_level = QtDebugMsg)
 	{
 		// Compiled-in default will always exclude "Debug" messages if we are on a release build.
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.
+#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 		if (log_level < QtWarningMsg) {
 			log_level = QtWarningMsg;
 		}
@@ -100,8 +103,8 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 
 	// Print message with timestamp and version so we know what made this log.
 	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::SubversionInfo::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::SubversionInfo::get_working_copy_version_number() << endl;
+			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
+			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
 }
 
 
@@ -118,8 +121,8 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	// Logging to stderr doesn't really need to care about what GPLATES_LOGLEVEL is set; that's really just for the log file.
 
 	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::SubversionInfo::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::SubversionInfo::get_working_copy_version_number() << endl;
+			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
+			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
 }
 
 
@@ -131,7 +134,8 @@ GPlatesFileIO::LogToFileHandler::~LogToFileHandler()
 void
 GPlatesFileIO::LogToFileHandler::handle_qt_message(
 		QtMsgType msg_type,
-		const char *msg)
+		const QMessageLogContext &context,
+		const QString &msg)
 {
 	// Only output log messages of the configured severity and up.
 	// The default, QtWarningMsg, will exclude Debug messages but let everything else through.

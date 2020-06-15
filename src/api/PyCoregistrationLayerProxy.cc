@@ -28,8 +28,6 @@
 #include "PyFeature.h"
 #include "PyCoregistrationLayerProxy.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "data-mining/DataMiningUtils.h"
 #include "opengl/GLContext.h"
@@ -143,6 +141,3 @@ export_coregistration_layer_proxy()
 		;
 
 }
-#endif   //GPLATES_NO_PYTHON
-
-

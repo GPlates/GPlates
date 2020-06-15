@@ -831,7 +831,7 @@ namespace GPlatesMaths
 			 * Creates a @a SphericalLuneTree.
 			 */
 			static
-			std::auto_ptr<SphericalLuneTree>
+			std::unique_ptr<SphericalLuneTree>
 			create(
 					const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
 					bool build_ologn_hint,
@@ -1105,7 +1105,7 @@ namespace GPlatesMaths
 		};
 
 
-		std::auto_ptr<SphericalLuneTree>
+		std::unique_ptr<SphericalLuneTree>
 		SphericalLuneTree::create(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
 				bool build_ologn_hint,
@@ -1126,7 +1126,7 @@ namespace GPlatesMaths
 				BoundsDataBuilder bounds_data_builder(polygon_centroid_antipodal, *polygon);
 				bounds_data_builder.d_antipodal_centroid_bounds_builder.add(*polygon);
 
-				return std::auto_ptr<SphericalLuneTree>(
+				return std::unique_ptr<SphericalLuneTree>(
 						new SphericalLuneTree(
 								polygon,
 								keep_shared_reference_to_polygon,
@@ -1141,7 +1141,7 @@ namespace GPlatesMaths
 			// Copy the built tree structures - copying also has the advantage of removing
 			// any excess memory usage caused by std::vector.
 			// Also copy the polygon bounds data built by the tree builder.
-			return std::auto_ptr<SphericalLuneTree>(
+			return std::unique_ptr<SphericalLuneTree>(
 					new SphericalLuneTree(
 							polygon,
 							keep_shared_reference_to_polygon,

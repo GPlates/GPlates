@@ -31,7 +31,7 @@
 #include <QWidget>
 #include <QTableWidget>
 
-#include "SearchResultsDockWidgetUi.h"
+#include "ui_SearchResultsDockWidgetUi.h"
 
 #include "DockWidget.h"
 

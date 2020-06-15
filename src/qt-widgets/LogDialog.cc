@@ -31,6 +31,9 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LogModel.h"
+
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
+
 #include "gui/LogFilterModel.h"
 
 #include "LogDialog.h"
@@ -47,7 +50,7 @@ GPlatesQtWidgets::LogDialog::LogDialog(
 	
 	// For public releases, switch the Debug checkbox off. Users can still see debug messages
 	// if they really must, but don't have to get swamped with them by default.
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.
+#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 
 	checkbox_show_debug->setChecked(false);
 	

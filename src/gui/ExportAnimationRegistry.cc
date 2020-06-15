@@ -1501,7 +1501,6 @@ namespace GPlatesGui
 			const ExportOptionsUtils::ExportFileOptions default_motion_path_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
-			const bool default_motion_path_wrap_to_dateline = true;
 
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(

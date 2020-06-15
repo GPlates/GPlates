@@ -27,10 +27,11 @@
 #include <QDateTime>
 #include <boost/shared_ptr.hpp>
 
-#include "LogToModelHandler.h"
-#include "global/SubversionInfo.h"
-
 #include "LogModel.h"
+
+#include "LogToModelHandler.h"
+
+#include "global/Version.h"
 
 
 const int GPlatesAppLogic::LogModel::SeverityRole = Qt::UserRole + 1;
@@ -131,8 +132,8 @@ GPlatesAppLogic::LogModel::LogModel(
 	// Start the log with the date and our version.
 	QString logmsg = QObject::tr("Log started at %1 by GPlates %2 %3")
 			.arg(QDateTime::currentDateTime().toString())
-			.arg(GPlatesGlobal::SubversionInfo::get_working_copy_branch_name())
-			.arg(GPlatesGlobal::SubversionInfo::get_working_copy_version_number());
+			.arg(GPlatesGlobal::Version::get_working_copy_branch_name())
+			.arg(GPlatesGlobal::Version::get_working_copy_version_number());
 	append(LogEntry(logmsg, LogEntry::OTHER, LogEntry::META));
 			
 	// As we get created by ApplicationState, we should now be ready to install

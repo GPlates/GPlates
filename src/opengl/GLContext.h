@@ -723,7 +723,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The width of the frame buffer currently attached to the OpenGL context.
+		 * The width (in device pixels) of the frame buffer currently attached to the OpenGL context.
+		 *
+		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		unsigned int
 		get_width() const
@@ -733,7 +735,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The height of the frame buffer currently attached to the OpenGL context.
+		 * The height (in device pixels) of the frame buffer currently attached to the OpenGL context.
+		 *
+		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		unsigned int
 		get_height() const

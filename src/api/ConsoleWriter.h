@@ -25,11 +25,11 @@
 
 #ifndef GPLATES_API_CONSOLEWRITER_H
 #define GPLATES_API_CONSOLEWRITER_H
+
 #include "global/python.h"
 
 #include "AbstractConsole.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -65,5 +65,5 @@ namespace GPlatesApi
 
 	};
 }
-#endif   //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_CONSOLEWRITER_H

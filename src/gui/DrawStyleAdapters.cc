@@ -32,7 +32,6 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "utils/Profile.h"
 
-#ifndef GPLATES_NO_PYTHON
 
 const GPlatesGui::DrawStyle
 GPlatesGui::PythonStyleAdapter::get_style(
@@ -293,8 +292,6 @@ GPlatesGui::PythonStyleAdapter::create_cfg_item(const std::map<QString, QString>
 }
 
 
-#endif 
-
 const GPlatesGui::DrawStyle
 GPlatesGui::ColourStyleAdapter::get_style(
 		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
@@ -308,25 +305,3 @@ GPlatesGui::ColourStyleAdapter::get_style(
 	}
 	return ds;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

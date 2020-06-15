@@ -30,7 +30,7 @@
 
 
 #include "HellingerModel.h"
-#include "HellingerPickWidgetUi.h"
+#include "ui_HellingerPickWidgetUi.h"
 
 
 namespace GPlatesQtWidgets

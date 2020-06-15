@@ -36,7 +36,7 @@
 #include <boost/optional.hpp>
 
 #include "GMenuButton.h"
-#include "ReconstructionViewWidgetUi.h"
+#include "ui_ReconstructionViewWidgetUi.h"
 #include "ZoomSliderWidget.h"
 #include "gui/ViewportZoom.h"
 #include "maths/LatLonPoint.h"
@@ -180,31 +180,27 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_globe_and_map_widget_resized(
-				int new_width, int new_height);
-
-		void
 		handle_projection_type_changed(
 				const GPlatesGui::ViewportProjection &viewport_projection);
 
 	private:
 		
-		std::auto_ptr<QWidget>
+		std::unique_ptr<QWidget>
 		construct_awesomebar_one(
 				GPlatesGui::AnimationController &animation_controller,
 				GPlatesQtWidgets::ViewportWindow &main_window);
 
-		std::auto_ptr<QWidget>
+		std::unique_ptr<QWidget>
 		construct_awesomebar_two(
 				GPlatesGui::ViewportZoom &vzoom,
 				GPlatesGui::ViewportProjection &vprojection);
 
-		std::auto_ptr<QWidget>
+		std::unique_ptr<QWidget>
 		construct_viewbar(
 				GPlatesGui::ViewportZoom &vzoom);
 
 		// Experiment with adding the proj combo-box to the lower toolbar. 
-		std::auto_ptr<QWidget>
+		std::unique_ptr<QWidget>
 		construct_viewbar_with_projections(
 				GPlatesGui::ViewportZoom &vzoom,
 				GPlatesGui::ViewportProjection &vprojection);

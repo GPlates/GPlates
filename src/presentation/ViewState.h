@@ -291,23 +291,6 @@ namespace GPlatesPresentation
 		const GPlatesGui::GlobeCamera &
 		get_globe_camera() const;
 
-
-		const std::pair<int, int> &
-		get_main_viewport_dimensions() const;
-
-
-		void
-		set_main_viewport_dimensions(
-				const std::pair<int, int> &dimensions);
-
-
-		int
-		get_main_viewport_min_dimension() const;
-
-		
-		int
-		get_main_viewport_max_dimension() const;
-
 		// TODO: the get_last_open_directory methods should be obsolete now, but retain
 		// until the FileIODirectoryConfiguration stuff has been tested further.
 		QString &
@@ -505,12 +488,6 @@ namespace GPlatesPresentation
 
 		//! Camera controls for the 3D globe view (3D orthographic and 3D perspective settings).
 		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;
-
-		/**
-		 * The dimensions (in pixels) of the main globe or map attached.
-		 * Used for scaling additional globes and maps.
-		 */
-		std::pair<int, int> d_main_viewport_dimensions;
 
 		/**
 		 * Stores the directory containing the files last opened, or the last opened

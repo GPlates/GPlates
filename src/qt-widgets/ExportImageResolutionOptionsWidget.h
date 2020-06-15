@@ -29,7 +29,7 @@
 #include <boost/optional.hpp>
 #include <QWidget>
 
-#include "ExportImageResolutionOptionsWidgetUi.h"
+#include "ui_ExportImageResolutionOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

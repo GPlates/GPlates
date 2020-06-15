@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
 #define GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
 
-#include "AddNewLayerDialogUi.h"
+#include "ui_AddNewLayerDialogUi.h"
 
 
 namespace GPlatesAppLogic

@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/XsInteger.h"
 
-#include "EditIntegerWidgetUi.h"
+#include "ui_EditIntegerWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

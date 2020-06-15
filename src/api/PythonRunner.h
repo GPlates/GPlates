@@ -34,7 +34,6 @@
 #include "api/PythonUtils.h"
 #include "global/python.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -184,7 +183,7 @@ namespace GPlatesApi
 		boost::python::object d_eval;
 	};
 }
-#endif //GPLATES_NO_PYTHON
+
 #endif // GPLATES_API_PYTHONRUNNER_H
 
 

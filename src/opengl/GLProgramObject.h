@@ -27,7 +27,7 @@
 #define GPLATES_OPENGL_GLPROGRAMOBJECT_H
 
 #include <map>
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <set>
 #include <string>
 #include <vector>
@@ -134,16 +134,16 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 *
 		 * See comment in @a create for details on @a shader_type.
 		 */
 		static
-		std::auto_ptr<GLProgramObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLProgramObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLProgramObject>(new GLProgramObject(renderer));
+			return std::unique_ptr<GLProgramObject>(new GLProgramObject(renderer));
 		}
 
 

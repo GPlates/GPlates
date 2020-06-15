@@ -116,14 +116,27 @@ namespace GPlatesMaths
 	/**
 	 * @brief calculate_velocity_vector_and_omega - as calculate_velocity_vector but
 	 * returns the angular velocity (radians per Ma) in addition to the velocity vector.
+	 *
+	 * Note: The sign of @a omega is always positive.
+	 *
+	 *       Previously the sign was positive when the stage rotation was counter-clockwise around
+	 *       the stage rotation 'pole' (and negative if clockwise). The stage rotation is what
+	 *       generates the angular velocity (vector) at a position on the globe.
+	 *       However a particular stage rotation can be represented by two different stage rotation
+	 *       'pole' and 'angle' pairs, where one pair is the negation of the other pair
+	 *       (ie, if you negate or flip the pole, and also negate the angle, you'll get the exact same stage rotation).
+	 *       So in this sense the stage rotation 'pole' could be either of two opposite pointing poles,
+	 *       which is why the angular velocity angle was sometimes negative.
+	 *       Note that this doesn't affect the velocity 'vector' though
+	 *       (ie, you'll always get the exact same velocity 'vector' regardless of which pole/angle pair you use).
+	 *       So values obtained from the velocity 'vector' like the azimuth, colat and lon are not affected by this pole/angle duality.
 	 */
 	std::pair<Vector3D,real_t /*omega (angular velocity) */>
 	calculate_velocity_vector_and_omega(
 			const PointOnSphere &point,
 			const FiniteRotation &fr_t1,
 			const FiniteRotation &fr_t2,
-			const double &delta_time,
-			const boost::optional<UnitVector3D> &axis_hint);
+			const double &delta_time);
 
 	/**
 	 * Convert a vector from X Y Z space to North East Down space and 

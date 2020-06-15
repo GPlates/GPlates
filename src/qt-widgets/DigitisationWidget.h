@@ -33,7 +33,7 @@
 #include <boost/none.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include "DigitisationWidgetUi.h"
+#include "ui_DigitisationWidgetUi.h"
 #include "LatLonCoordinatesTable.h"
 #include "TaskPanelWidget.h"
 #include "ViewportWindow.h"

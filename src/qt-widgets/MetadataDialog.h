@@ -34,10 +34,10 @@
 #include <QTextBrowser>
 #include <QTextEdit>
 
-#include "AddContributorWidgetUi.h"
-#include "AddCreatorWidgetUi.h"
-#include "AddGTSWidgetUi.h"
-#include "MetadataDialogUi.h"
+#include "ui_AddContributorWidgetUi.h"
+#include "ui_AddCreatorWidgetUi.h"
+#include "ui_AddGTSWidgetUi.h"
+#include "ui_MetadataDialogUi.h"
 
 #include "file-io/PlatesRotationFileProxy.h"
 

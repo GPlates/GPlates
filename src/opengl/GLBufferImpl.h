@@ -61,18 +61,18 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer).release());
+			return shared_ptr_type(create_as_unique_ptr(renderer).release());
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLBufferImpl>
-		create_as_auto_ptr(
+		std::unique_ptr<GLBufferImpl>
+		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLBufferImpl>(new GLBufferImpl(renderer));
+			return std::unique_ptr<GLBufferImpl>(new GLBufferImpl(renderer));
 		}
 
 

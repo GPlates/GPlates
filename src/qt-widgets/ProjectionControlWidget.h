@@ -30,7 +30,7 @@
 #include <QString>
 #include <QWidget>
 
-#include "ProjectionControlWidgetUi.h"
+#include "ui_ProjectionControlWidgetUi.h"
 
 
 namespace GPlatesGui

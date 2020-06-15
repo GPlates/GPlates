@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "DatelineWrapOptionsWidgetUi.h"
+#include "ui_DatelineWrapOptionsWidgetUi.h"
 
 
 namespace GPlatesQtWidgets

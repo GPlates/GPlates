@@ -32,7 +32,6 @@
 // to ensure <Python.h> is included before <ctype.h>.
 #include "global/python.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -99,5 +98,5 @@ namespace GPlatesApi
 
 	};
 }
-#endif  //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_PYTHONINTERPRETERLOCKER_H

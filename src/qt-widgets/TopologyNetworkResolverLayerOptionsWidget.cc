@@ -1126,7 +1126,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_strain_rate_
 					clamp_strain_rate_line_edit->text(), &ok);
 			if (!ok)
 			{
-				// It appears QString::toDouble() only uses C locale despite its documentation.
+				// QString::toDouble() only uses C locale.
 				scaled_max_total_strain_rate = clamp_strain_rate_line_edit->text().toDouble(&ok);
 			}
 			if (ok)
@@ -1161,7 +1161,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_rift_exponen
 					rift_exponential_stretching_constant_line_edit->text(), &ok);
 			if (!ok)
 			{
-				// It appears QString::toDouble() only uses C locale despite its documentation.
+				// QString::toDouble() only uses C locale.
 				exponential_stretching_constant = rift_exponential_stretching_constant_line_edit->text().toDouble(&ok);
 			}
 			if (ok)
@@ -1196,7 +1196,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_rift_strain_
 					rift_strain_rate_resolution_line_edit->text(), &ok);
 			if (!ok)
 			{
-				// It appears QString::toDouble() only uses C locale despite its documentation.
+				// QString::toDouble() only uses C locale.
 				scaled_rift_strain_rate_resolution = rift_strain_rate_resolution_line_edit->text().toDouble(&ok);
 			}
 			if (ok)
@@ -1231,7 +1231,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_rift_edge_le
 					rift_edge_length_threshold_line_edit->text(), &ok);
 			if (!ok)
 			{
-				// It appears QString::toDouble() only uses C locale despite its documentation.
+				// QString::toDouble() only uses C locale.
 				edge_length_threshold_degrees = rift_edge_length_threshold_line_edit->text().toDouble(&ok);
 			}
 			if (ok)

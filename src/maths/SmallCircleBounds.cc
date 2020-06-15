@@ -319,18 +319,29 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 	const double theta = 0.5 * (
 			angle_between_centres + angle_bounding_small_circle_2 - angle_bounding_small_circle_1);
 
-	const Vector3D c1_cross_c2 = cross(
+	Vector3D c1_cross_c2 = cross(
 			bounding_small_circle_1.get_centre(),
 			bounding_small_circle_2.get_centre());
-	// If both bounding small circles centres are coincident then once small circle should have
-	// been inside the other (because one will have a greater radius angle).
-	// This might not have been caught above due to numerical precision issues so we'll just
-	// return the small circle with the largest radius here.
+	// Avoid divide-by-zero later on, due to small circle centres being coincident or antipodal.
 	if (c1_cross_c2.magSqrd() <= 0)
 	{
-		return (angle_bounding_small_circle_1 > angle_bounding_small_circle_2)
-				? bounding_small_circle_1
-				: bounding_small_circle_2;
+		if (dot(bounding_small_circle_1.get_centre(), bounding_small_circle_2.get_centre()).dval() > 0)
+		{
+			// Both bounding small circle centres are coincident so one small circle should have
+			// been inside the other (because one will have a greater radius angle).
+			// This might not have been caught above due to numerical precision issues so we'll just
+			// return the small circle with the largest radius here.
+			return (angle_bounding_small_circle_1 > angle_bounding_small_circle_2)
+					? bounding_small_circle_1
+					: bounding_small_circle_2;
+		}
+
+		// Both bounding small circle centres are antipodal to each other.
+		// Since both small circles are symmetrical about the line joining the antipodal centres
+		// we can pick any vector perpendicular to the that joining line and it will be orthogonal
+		// to C1 and lie on a great circle arc between C1 and C2 (since essentially there are an
+		// infinite number of 180 degree great circle arcs joining the two small circle centres).
+		c1_cross_c2 = Vector3D(generate_perpendicular(bounding_small_circle_1.get_centre()));
 	}
 
 	// Get the direction orthogonal to the first bounding small circle centre but pointing

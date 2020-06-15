@@ -36,7 +36,7 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 
-#include "EditExportParametersDialogUi.h"
+#include "ui_EditExportParametersDialogUi.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/ExportAnimationType.h"

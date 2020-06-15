@@ -28,7 +28,7 @@
 
 #include <QWizardPage>
 
-#include "ScalarField3DFeatureCollectionPageUi.h"
+#include "ui_ScalarField3DFeatureCollectionPageUi.h"
 
 
 namespace GPlatesQtWidgets

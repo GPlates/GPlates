@@ -42,7 +42,7 @@
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "ViewportWindowUi.h"
+#include "ui_ViewportWindowUi.h"
 
 #include "canvas-tools/CanvasTool.h"
 

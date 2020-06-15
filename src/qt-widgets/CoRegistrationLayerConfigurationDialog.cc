@@ -784,7 +784,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 		if (target_layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
 		{
 			// Raster level-of-detail column.
-			std::auto_ptr<QComboBox> raster_level_of_detail_combo_box(new QComboBox());
+			std::unique_ptr<QComboBox> raster_level_of_detail_combo_box(new QComboBox());
 
 			// Only add the combo box if we were able to determine the number of raster levels of detail.
 			if (setup_raster_level_of_detail_combo_box(
@@ -1445,7 +1445,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_configuration_tabl
 		if (target_layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
 		{
 			// Raster level-of-detail column.
-			std::auto_ptr<QComboBox> raster_level_of_detail_combo_box(new QComboBox());
+			std::unique_ptr<QComboBox> raster_level_of_detail_combo_box(new QComboBox());
 
 			// Only add the combo box if we were able to determine the number of raster levels of detail.
 			if (setup_raster_level_of_detail_combo_box(

@@ -31,7 +31,7 @@
 
 #include "model/FeatureCollectionHandle.h"
 
-#include "ShapefileAttributeMapperDialogUi.h"
+#include "ui_ShapefileAttributeMapperDialogUi.h"
 #include "ShapefileAttributeWidget.h"
 
 

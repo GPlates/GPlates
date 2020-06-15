@@ -29,7 +29,7 @@
 #include <QWidget>
 #include <QString>
 
-#include "ChangePropertyWidgetUi.h"
+#include "ui_ChangePropertyWidgetUi.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"

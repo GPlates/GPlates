@@ -26,7 +26,7 @@
 
 #include <QWidget>
 
-#include "PreferencesPaneKinematicGraphsUi.h"
+#include "ui_PreferencesPaneKinematicGraphsUi.h"
 
 // TODO: Add suitable explanatory labels - check how the other panes are done.
 

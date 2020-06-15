@@ -46,7 +46,6 @@
 
 #include "model/Gpgim.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;
 namespace utils = GPlatesDataMining::DataMiningUtils;
 
@@ -300,11 +299,3 @@ export_functions()
 	bp::def("reconstruct", &reconstruct);
 	bp::def("reverse_reconstruct", &reverse_reconstruct);
 }
-#endif
-
-
-
-
-
-
-

@@ -29,7 +29,7 @@
 #include <QDir>	// for export settings dialog/backend.
 #include <QDialog>
 
-#include "ExportAnimationDialogUi.h"
+#include "ui_ExportAnimationDialogUi.h"
 
 #include "ConfigureExportParametersDialog.h"
 #include "EditExportParametersDialog.h"

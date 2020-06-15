@@ -46,7 +46,7 @@ namespace GPlatesDataMining
 			extract_opaque_data(first, last, data);
 			std::vector<double> buf;
 			DataMiningUtils::convert_to_double_vector(data.begin(),data.end(), buf); 
-			double ret = std::accumulate(buf.begin(),buf.end(),0) / buf.size();
+			double ret = std::accumulate(buf.begin(), buf.end(), 0.0) / buf.size();
 			return OpaqueData(ret);
 		}
 	};

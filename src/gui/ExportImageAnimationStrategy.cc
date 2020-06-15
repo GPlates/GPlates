@@ -101,7 +101,9 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 
 		// Render to the image file.
 		const QImage image = active_scene_view.render_to_qimage(
-				d_configuration->image_resolution_options.image_size);
+				d_configuration->image_resolution_options.image_size
+					? d_configuration->image_resolution_options.image_size.get()
+					: active_scene_view.get_viewport_size_in_device_pixels());
 		if (image.isNull())
 		{
 			// Most likely a memory allocation failure.

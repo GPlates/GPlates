@@ -24,7 +24,6 @@
  */
 #include "PyFeatureCollection.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::FeatureCollection::FeatureCollection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) :
 	d_feature_collection(feature_collection)
@@ -52,5 +51,3 @@ export_feature_collection()
 		.def("features", &GPlatesApi::FeatureCollection::features)
 		;
 }
-#endif   //GPLATES_NO_PYTHON
-

@@ -272,7 +272,7 @@ GPlatesModel::XmlElementNode::write_to(
 		QXmlStreamAttributes attributes;
 		std::transform(d_attributes.begin(), d_attributes.end(),
 				std::back_inserter(attributes),
-				std::ptr_fun(convert_attribute_to_qxmlstreamattribute));
+				[] (const Attribute &attr) { return convert_attribute_to_qxmlstreamattribute(attr); });
 		writer.writeAttributes(attributes);
 		std::for_each(d_children.begin(), d_children.end(),
 				boost::bind(&XmlNode::write_to, _1, boost::ref(writer)));
@@ -286,7 +286,7 @@ GPlatesModel::XmlElementNode::load_attributes(
 {
 	std::transform(attributes.begin(), attributes.end(),
 			std::inserter(d_attributes, d_attributes.begin()),
-			std::ptr_fun(convert_qxmlstreamattribute_to_attribute));
+			[] (const QXmlStreamAttribute &attr) { return convert_qxmlstreamattribute_to_attribute(attr); });
 }
 
 

@@ -214,8 +214,7 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &fr_t1,
 		const GPlatesMaths::FiniteRotation &fr_t2,
-		const double &delta_time,
-		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint)
+		const double &delta_time)
 {
 	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
 	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
@@ -252,7 +251,10 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 		return std::make_pair(Vector3D(0, 0, 0), real_t(0.0));
 	}
 
-	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(axis_hint);
+	// The axis hint does not affect our velocity 'vector' because, in our stage rotation calculation,
+	// the signs of the axis and angle cancel each other out so it doesn't matter if
+	// axis/angle or -axis/-angle...
+	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(boost::none/*axis_hint*/);
 
 	// Angular velocity of rotation.
 	// 'params.angle' is radians per 'delta_time' million years.
@@ -268,5 +270,8 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
 					cross(rotation_axis, point.position_vector());
 
-	return std::make_pair(velocity_xyz, omega);
+	// Note that an axis hint would only affect 'omega' since a negated axis and negated angle cancel
+	// each other out when calculating 'velocity_xyz'.
+	// Due to the arbitrariness of this effect on omega we will always return the absolute value of omega.
+	return std::make_pair(velocity_xyz, abs(omega));
 }

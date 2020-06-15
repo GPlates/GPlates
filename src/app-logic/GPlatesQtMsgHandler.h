@@ -67,13 +67,14 @@ namespace GPlatesAppLogic
 			void
 			handle_qt_message(
 					QtMsgType msg_type,
-					const char * msg) = 0;
+					const QMessageLogContext &context,
+					const QString &msg) = 0;
 		};
 
 		/**
-		 * Uses @a qInstallMsgHandler to @a install_qt_message_handler as the sole Qt message handler.
+		 * Uses @a qInstallMessageHandler to @a install_qt_message_handler as the sole Qt message handler.
 		 * NOTE: only installs handler if any of the following conditions are satisfied:
-		 *   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
+		 *   1) GPLATES_PUBLIC_RELEASE is defined in 'global/config.h' (automatically handled by CMake build system), or
 		 *   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
 		 *      "true", "1", "yes" or "on".
 		 * If handler is not installed then default Qt handler applies.
@@ -95,7 +96,8 @@ namespace GPlatesAppLogic
 		void
 		qt_message_handler(
 				QtMsgType msg_type,
-				const char *msg);
+				const QMessageLogContext &context,
+				const QString &msg);
 
 		/**
 		 * Add one of our own MessageHandler derivatives to the list of handlers that
@@ -119,7 +121,7 @@ namespace GPlatesAppLogic
 		//
 
 		//! Next Qt message handler in the chain of message handlers.
-		static QtMsgHandler s_prev_msg_handler;
+		static QtMessageHandler s_prev_msg_handler;
 		
 		//
 		// Instance member data
@@ -148,7 +150,8 @@ namespace GPlatesAppLogic
 		void
 		handle_qt_message(
 				QtMsgType msg_type,
-				const char *msg);
+				const QMessageLogContext &context,
+				const QString &msg);
 
 		/**
 		 * Returns true if should install message handler.

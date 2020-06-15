@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
 #include <ostream>
 #include <utility>
 #include <vector>
@@ -1449,7 +1449,7 @@ namespace GPlatesPresentation
 			const QString new_draw_style_name = get_new_draw_style_name(draw_style_name, draw_styles);
 
 			// Create a new draw style from the template.
-			std::auto_ptr<GPlatesGui::StyleAdapter> new_draw_style_owner(template_draw_style->deep_clone());
+			std::unique_ptr<GPlatesGui::StyleAdapter> new_draw_style_owner(template_draw_style->deep_clone());
 			GPlatesGui::StyleAdapter *new_draw_style = new_draw_style_owner.get();
 			if (new_draw_style == NULL)
 			{

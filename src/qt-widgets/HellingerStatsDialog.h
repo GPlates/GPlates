@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "HellingerStatsDialogUi.h"
+#include "ui_HellingerStatsDialogUi.h"
 
 namespace GPlatesQtWidgets
 {

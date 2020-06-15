@@ -31,7 +31,6 @@
 
 #include "global/python.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	// Forward declaration.
@@ -152,7 +151,5 @@ namespace GPlatesApi
 				PythonExecutionMonitor *monitor) = 0;
 	};
 }
-
-#endif //GPLATES_NO_PYTHON
 
 #endif  // GPLATES_API_ABSTRACTPYTHONRUNNER_H

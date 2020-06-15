@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "SetProjectionDialogUi.h"
+#include "ui_SetProjectionDialogUi.h"
 
 #include "GPlatesDialog.h"
 

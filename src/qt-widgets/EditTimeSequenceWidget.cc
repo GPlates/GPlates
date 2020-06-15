@@ -324,10 +324,10 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
     setupUi(this);
     // Set column widths and resizabilty.
     EditTableActionWidget dummy(this, NULL);
-    table_times->horizontalHeader()->setResizeMode(COLUMN_TIME, QHeaderView::Stretch);
-    table_times->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
+    table_times->horizontalHeader()->setSectionResizeMode(COLUMN_TIME, QHeaderView::Stretch);
+    table_times->horizontalHeader()->setSectionResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
     table_times->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
-    table_times->horizontalHeader()->setMovable(true);
+    table_times->horizontalHeader()->setSectionsMovable(true);
     // Set up a minimum row height as well, for the action widgets' sake.
     table_times->verticalHeader()->setDefaultSectionSize(dummy.height());
 

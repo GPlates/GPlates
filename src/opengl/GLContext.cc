@@ -62,7 +62,6 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// We need an alpha channel in case falling back to main frame buffer for render textures.
 	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
 
-#if QT_VERSION >= 0x040700 // Functions introduced in Qt 4.7...
 	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
 	format.setProfile(QGLFormat::CompatibilityProfile);
 	format.setOption(QGL::DeprecatedFunctions);
@@ -90,7 +89,6 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	{
 		format.setVersion(1, 1);
 	}
-#endif
 
 	return format;
 }
@@ -341,7 +339,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 
 	// Create a new object and add it to the cache.
 	const GLTexture::shared_ptr_type texture_object = texture_cache->allocate_object(
-			GLTexture::create_as_auto_ptr(renderer));
+			GLTexture::create_as_unique_ptr(renderer));
 
 	//
 	// Initialise the newly created texture object.
@@ -417,7 +415,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 
 	// Create a new object and add it to the cache.
 	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
-			GLPixelBuffer::create_as_auto_ptr(renderer, buffer));
+			GLPixelBuffer::create_as_unique_ptr(renderer, buffer));
 
 	return pixel_buffer;
 }
@@ -434,7 +432,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	{
 		// Create a new vertex array and add it to the cache.
 		vertex_array_opt = d_vertex_array_cache->allocate_object(
-				GLVertexArray::create_as_auto_ptr(renderer));
+				GLVertexArray::create_as_unique_ptr(renderer));
 	}
 	const GLVertexArray::shared_ptr_type &vertex_array = vertex_array_opt.get();
 
@@ -484,7 +482,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
 
 	// Create a new object and add it to the cache.
 	const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_cache->allocate_object(
-			GLRenderBufferObject::create_as_auto_ptr(renderer));
+			GLRenderBufferObject::create_as_unique_ptr(renderer));
 
 	// Initialise the newly created render buffer object.
 	render_buffer_object->gl_render_buffer_storage(renderer, internalformat, width, height);
@@ -536,7 +534,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 	// Create a new object and add it to the cache.
 	const GLRenderTarget::shared_ptr_type render_target =
 			render_target_cache->allocate_object(
-					GLRenderTarget::create_as_auto_ptr(
+					GLRenderTarget::create_as_unique_ptr(
 							renderer,
 							texture_internalformat,
 							include_depth_buffer,
@@ -843,7 +841,7 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 	// Create a new object and add it to the cache.
 	const GLFrameBufferObject::shared_ptr_type frame_buffer_object =
 			frame_buffer_object_cache->allocate_object(
-					GLFrameBufferObject::create_as_auto_ptr(renderer));
+					GLFrameBufferObject::create_as_unique_ptr(renderer));
 
 	return frame_buffer_object;
 }
@@ -909,7 +907,7 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_screen_render_target(
 	// Create a new object and add it to the cache.
 	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
 			screen_render_target_cache->allocate_object(
-					GLScreenRenderTarget::create_as_auto_ptr(
+					GLScreenRenderTarget::create_as_unique_ptr(
 							renderer,
 							texture_internalformat,
 							include_depth_buffer,

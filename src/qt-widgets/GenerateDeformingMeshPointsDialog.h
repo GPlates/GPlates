@@ -31,7 +31,7 @@
 #include <QDialog>
 #include <QString>
 
-#include "GenerateDeformingMeshPointsDialogUi.h"
+#include "ui_GenerateDeformingMeshPointsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"

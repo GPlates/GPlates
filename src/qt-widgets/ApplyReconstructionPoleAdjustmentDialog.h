@@ -29,7 +29,7 @@
 
 #include <vector>
 #include <QDialog>
-#include "ApplyReconstructionPoleAdjustmentDialogUi.h"
+#include "ui_ApplyReconstructionPoleAdjustmentDialogUi.h"
 #include "app-logic/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
 #include "maths/Rotation.h"

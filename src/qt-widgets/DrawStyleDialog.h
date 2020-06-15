@@ -33,7 +33,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 
-#include "DrawStyleDialogUi.h"
+#include "ui_DrawStyleDialogUi.h"
 #include "GPlatesDialog.h"
 #include "PythonArgumentWidget.h"
 #include "VisualLayersComboBox.h"
@@ -192,7 +192,6 @@ namespace GPlatesQtWidgets
 		void
 		refresh_current_icon();
 
-#if !defined(GPLATES_NO_PYTHON)			
 		QWidget *
 		create_cfg_widget(
 				GPlatesGui::PythonCfgItem* item)
@@ -210,7 +209,6 @@ namespace GPlatesQtWidgets
 		
 			return new PythonArgDefaultWidget(item,this);
 		}
-#endif
 
 		void
 		build_config_panel(const GPlatesGui::Configuration& cfg);
