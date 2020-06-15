@@ -44,8 +44,6 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -255,5 +253,3 @@ export_feature_collection_file_format_registry()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
-
-#endif // GPLATES_NO_PYTHON

@@ -43,8 +43,6 @@
 #include "property-values/ValueObjectType.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -1049,5 +1047,3 @@ export_qualified_xml_names()
 	export_scalar_type();
 	export_structural_type();
 }
-
-#endif // GPLATES_NO_PYTHON

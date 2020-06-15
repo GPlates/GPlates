@@ -24,7 +24,7 @@
  */
 #include "PyOldFeatureCollection.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 GPlatesApi::OldFeatureCollection::OldFeatureCollection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) :
 	d_feature_collection(feature_collection)
@@ -52,5 +52,4 @@ export_old_feature_collection()
 		.def("features", &GPlatesApi::OldFeatureCollection::features)
 		;
 }
-#endif   //GPLATES_NO_PYTHON
 

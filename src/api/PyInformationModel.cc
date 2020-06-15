@@ -28,8 +28,6 @@
 #include "global/python.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -41,5 +39,3 @@ export_information_model()
 			.value("yes", GPlatesApi::VerifyInformationModel::YES)
 			.value("no", GPlatesApi::VerifyInformationModel::NO);
 }
-
-#endif // GPLATES_NO_PYTHON

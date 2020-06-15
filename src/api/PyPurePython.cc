@@ -31,8 +31,6 @@
 #include "global/python.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -147,5 +145,3 @@ export_pure_python_api()
 	export_pure_python_code(":/python/api/PropertyValues.py");
 	export_pure_python_code(":/python/api/ReconstructionGeometries.py");
 }
-
-#endif // GPLATES_NO_PYTHON

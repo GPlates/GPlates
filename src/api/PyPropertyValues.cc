@@ -102,8 +102,6 @@
 #include "utils/UnicodeString.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -5195,5 +5193,3 @@ export_property_values()
 // This is here at the end of the layer because the problem appears to reside
 // in a template being instantiated at the end of the compilation unit.
 DISABLE_GCC_WARNING("-Wshadow")
-
-#endif // GPLATES_NO_PYTHON

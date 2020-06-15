@@ -33,8 +33,6 @@
 #include "maths/Real.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -143,5 +141,3 @@ export_real()
 	// Enable boost::optional<GPlatesMaths::Real> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::Real>();
 }
-
-#endif // GPLATES_NO_PYTHON

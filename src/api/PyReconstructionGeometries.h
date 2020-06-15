@@ -44,8 +44,6 @@
 #include "model/TopLevelProperty.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -668,7 +666,5 @@ namespace GPlatesApi
 		return wrapper.get_resolved_topological_section().get();
 	}
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYRECONSTRUCTIONGEOMETRIES_H

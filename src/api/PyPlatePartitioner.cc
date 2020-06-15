@@ -48,8 +48,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -678,5 +676,3 @@ export_plate_partitioner()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
-
-#endif // GPLATES_NO_PYTHON

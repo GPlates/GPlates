@@ -53,8 +53,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -719,5 +717,3 @@ export_rotation_model()
 	// Register converter from a rotation model or a sequence of feature collections to a @a RotationModelFunctionArgument.
 	GPlatesApi::register_rotation_model_function_argument_conversion();
 }
-
-#endif // GPLATES_NO_PYTHON

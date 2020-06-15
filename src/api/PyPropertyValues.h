@@ -31,8 +31,6 @@
 #include "property-values/GmlDataBlock.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -121,7 +119,5 @@ namespace GPlatesApi
 		return scalar_values_dict;
 	}
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYPROPERTYVALUES_H

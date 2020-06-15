@@ -40,8 +40,6 @@
 #include "global/Version.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -245,5 +243,3 @@ export_version()
 							QString::number(GPlatesApi::Version::get_imported_revision()));
 
 }
-
-#endif // GPLATES_NO_PYTHON

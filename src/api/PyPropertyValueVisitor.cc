@@ -61,8 +61,6 @@
 
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -975,5 +973,3 @@ export_property_value_visitor()
 				"  Visits a :class:`XsString` property value.\n")
 	;
 }
-
-#endif // GPLATES_NO_PYTHON

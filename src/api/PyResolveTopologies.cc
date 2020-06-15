@@ -72,8 +72,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -899,5 +897,3 @@ export_resolve_topologies()
 	// Enable boost::optional<resolved_topological_sections_argument_type> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::resolved_topological_sections_argument_type>();
 }
-
-#endif

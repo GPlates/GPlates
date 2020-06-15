@@ -45,8 +45,6 @@
 #include "maths/Vector3D.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -620,5 +618,3 @@ export_vector_3d()
 	// Registers the from-python converter from an (x,y,z) sequence.
 	GPlatesApi::ConversionVector3DFromXYZSequence();
 }
-
-#endif // GPLATES_NO_PYTHON

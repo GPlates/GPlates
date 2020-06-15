@@ -51,8 +51,6 @@
 #include "model/RevisionedVector.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -1574,7 +1572,5 @@ namespace GPlatesApi
 						::wrap(python_class, class_name);
 	}
 }
-
-#endif // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYREVISIONEDVECTOR_H

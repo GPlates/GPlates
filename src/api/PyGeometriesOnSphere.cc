@@ -67,8 +67,6 @@
 #include "utils/non_null_intrusive_ptr.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -3193,5 +3191,3 @@ export_geometries_on_sphere()
 	export_polyline_on_sphere();
 	export_polygon_on_sphere();
 }
-
-#endif // GPLATES_NO_PYTHON

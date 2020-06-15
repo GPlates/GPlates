@@ -54,8 +54,6 @@
 #include "model/TopLevelProperty.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -2671,5 +2669,3 @@ export_reconstruction_geometries()
 	export_resolved_topological_boundary();
 	export_resolved_topological_network();
 }
-
-#endif // GPLATES_NO_PYTHON

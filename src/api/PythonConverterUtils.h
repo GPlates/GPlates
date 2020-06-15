@@ -50,8 +50,6 @@
 #include "utils/non_null_intrusive_ptr.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	namespace PythonConverterUtils
@@ -739,7 +737,5 @@ namespace GPlatesApi
 		}
 	}
 }
-
-#endif   //GPLATES_NO_PYTHON)
 
 #endif // GPLATES_API_PYTHONCONVERTERUTILS_H

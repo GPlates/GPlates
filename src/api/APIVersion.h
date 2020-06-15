@@ -37,8 +37,6 @@
 #include "utils/QtStreamable.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -172,7 +170,5 @@ namespace GPlatesApi
 			std::ostream &os,
 			const Version &version);
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_APIVERSION_H

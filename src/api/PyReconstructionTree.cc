@@ -55,8 +55,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -1272,5 +1270,3 @@ export_reconstruction_tree()
 	//
 	//GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionGraphBuilder>();
 }
-
-#endif // GPLATES_NO_PYTHON

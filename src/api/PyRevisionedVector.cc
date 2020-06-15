@@ -26,8 +26,6 @@
 #include "PyRevisionedVector.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	std::string
@@ -71,5 +69,3 @@ namespace GPlatesApi
 		return python_list_docstring_stream.str();
 	}
 }
-
-#endif // GPLATES_NO_PYTHON

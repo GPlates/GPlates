@@ -48,8 +48,6 @@
 #include "utils/ReferenceCount.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -280,7 +278,5 @@ namespace GPlatesApi
 		RotationModel::non_null_ptr_type d_rotation_model;
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYROTATIONMODEL_H

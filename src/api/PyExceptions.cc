@@ -60,8 +60,6 @@
 #include "property-values/GmlTimePeriod.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -469,5 +467,3 @@ GPlatesApi::PythonExceptionHandler::get_exception_traceback() const
 
 	return bp::object(traceback);
 }
-
-#endif // GPLATES_NO_PYTHON

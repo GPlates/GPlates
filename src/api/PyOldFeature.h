@@ -32,7 +32,6 @@
 #include "data-mining/OpaqueDataToDouble.h"
 #include "data-mining/OpaqueDataToQString.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp=boost::python;
 
@@ -106,6 +105,6 @@ namespace GPlatesApi
 		GPlatesModel::FeatureHandle::weak_ref d_handle;
 	};
 }
-#endif   //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_OLDFEATURE_H
 

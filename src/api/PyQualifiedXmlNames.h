@@ -31,8 +31,6 @@
 #include "property-values/StructuralType.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -77,7 +75,5 @@ namespace GPlatesApi
 			Type::STRUCTURAL_TYPE);
 	}
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYQUALIFIEDXMLNAMES_H

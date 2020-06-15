@@ -70,8 +70,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -1227,5 +1225,3 @@ export_reconstruct()
 			"\n"
             "    pygplates.reconstruct(feature, rotation_model, 10)\n");
 }
-
-#endif
