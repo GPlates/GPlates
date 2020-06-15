@@ -588,9 +588,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 				# Suppress redeclared-class-member warnings from boost (from boost 1.47 at least), related to BOOST_BIMAP...
 				-Wno-redeclared-class-member
 				# Suppress warnings about command-line arguments unused by Clang...
-				-Qunused-arguments
+				-Qunused-arguments -Wno-unknown-warning-option
 				# We don't always use private data members...
-				-Wno-unused-private-field)
+				-Wno-unused-private-field
+				# We have a lot of boost-python 'bp::list' returned as 'bp::object', for example, which we won't std::move...
+				-Wno-return-std-move)
 		target_compile_options(gplates-lib PUBLIC ${_DISABLE_WARNINGS})
 		target_compile_options(pygplates PUBLIC ${_DISABLE_WARNINGS})
 		unset(_DISABLE_WARNINGS)
