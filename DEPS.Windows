@@ -132,6 +132,8 @@ Python
        download the 64-bit installer for a 64-bit build (eg, 'python-3.7.7.amd64.exe).
      * Note that GPlates (and pygplates) also support Python 2 (but it has reached end of life, so Python 3 is recommended).
   2. Add the root Python directory, and 'DLLs/' and 'Scripts/' sub-directories, to the PATH environment variable.
+     * Note: Make sure you add these higher in the PATH than "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps" because
+             Windows 10 May 2019 update now places a redirect python.exe in there that takes you straight to the Microsoft Store.
   3. Add the root Python directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\python\Python-3.7.7 )
      * CMAKE_PREFIX_PATH prevents GPlates finding a different Python installation (such as inside ArcGIS).
 
@@ -168,6 +170,7 @@ Boost
      And if you're using both Python 2 and 3 (ie, compiling one GPlates/pyGPlates for Python 2 and one for Python 3) then you might have something like...
         using python : 2.7 : C:\\SDK\\python\\Python-2.7.18 ;
         using python : 3.7 : C:\\SDK\\python\\Python-3.7.7 ;
+     ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
      
      You may get compile errors about '_snprintf' not being a member of 'std' when (later) compiling GPlates. This is typically due to some source code somewhere defining:
        #if defined(_MSC_VER)

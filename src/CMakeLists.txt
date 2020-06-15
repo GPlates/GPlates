@@ -419,6 +419,10 @@ endif()
 # A lot of "#include" statements are relative to the 'src' directory.
 target_include_directories(gplates-lib PUBLIC ${GPlates_SOURCE_DIR}/src)
 target_include_directories(pygplates PUBLIC ${GPlates_SOURCE_DIR}/src)
+# The 'src' directory exists in both the CMake source and binary trees (which, while same for in-place builds,
+# are different for out-of-place builds). This is so generated source files (like 'global/config.h') can be found.
+target_include_directories(gplates-lib PUBLIC ${GPlates_BINARY_DIR}/src)
+target_include_directories(pygplates PUBLIC ${GPlates_BINARY_DIR}/src)
 
 # External library include directories are treated as system include directories.
 # 'src/system-fixes' contains files copied from external libraries.
@@ -692,6 +696,10 @@ target_link_libraries(pygplates PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::Open
 # in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include_$<CONFIG>' for multi-configuration generators.
 # So to cover all CMake versions we add all three include paths.
 target_include_directories(gplates-lib PUBLIC
+	${CMAKE_CURRENT_BINARY_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include
+	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include_$<CONFIG>)
+target_include_directories(pygplates PUBLIC
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include
 	${CMAKE_CURRENT_BINARY_DIR}/gplates-lib_autogen/include_$<CONFIG>)
