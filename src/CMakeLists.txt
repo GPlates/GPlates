@@ -856,6 +856,7 @@ endif()
 
 
 include(GNUInstallDirs)
+if (FALSE)  # Temporarily disable gplates install until fully merged python-api branch to trunk.
 if (APPLE)
 	install(TARGETS gplates
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -865,6 +866,7 @@ else()
 	install(TARGETS gplates
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 		CONFIGURATIONS release)
+endif()
 endif()
 
 install(TARGETS pygplates
