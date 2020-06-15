@@ -1092,7 +1092,7 @@ namespace GPlatesApi
 				}
 				slice_list.append(*iter);
 			}
-			catch (std::invalid_argument)
+			catch (const std::invalid_argument &)
 			{
 				// Invalid slice - return empty list.
 				return bp::list();
@@ -1454,7 +1454,7 @@ namespace GPlatesApi
 					}
 					slice_list.append(*iter);
 				}
-				catch (std::invalid_argument)
+				catch (const std::invalid_argument &)
 				{
 					// Invalid slice - return empty list.
 					return bp::list();
@@ -1657,7 +1657,7 @@ namespace GPlatesApi
 					}
 					slice_list.append(*iter);
 				}
-				catch (std::invalid_argument)
+				catch (const std::invalid_argument &)
 				{
 					// Invalid slice - return empty list.
 					return bp::list();

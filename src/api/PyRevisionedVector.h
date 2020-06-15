@@ -1173,7 +1173,7 @@ namespace GPlatesApi
 			{
 				return slice.get_indicies(revisioned_vector->begin(), revisioned_vector->end());
 			}
-			catch (std::invalid_argument)
+			catch (const std::invalid_argument &)
 			{
 				// The range was empty.
 			}
