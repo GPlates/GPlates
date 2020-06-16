@@ -153,61 +153,39 @@ GPlatesGui::GlobeCamera::get_perspective_eye_position() const
 
 void
 GPlatesGui::GlobeCamera::get_orthographic_left_right_bottom_top(
-		unsigned int viewport_width,
-		unsigned int viewport_height,
+		const double &aspect_ratio,
 		double &ortho_left,
 		double &ortho_right,
 		double &ortho_bottom,
 		double &ortho_top) const
 {
-	// The smaller/larger of the viewport dimensions.
-	double smaller_dim;
-	double larger_dim;
-	if (viewport_width <= viewport_height)
-	{
-		smaller_dim = viewport_width;
-		larger_dim = viewport_height;
-	}
-	else
-	{
-		smaller_dim = viewport_height;
-		larger_dim = viewport_width;
-	}
-		
 	// This is used for the coordinates of the symmetrical clipping planes which bound the smaller dimension.
 	const double smaller_dim_clipping = FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT / d_viewport_zoom.zoom_factor();
 
-	// This is used for the coordinates of the symmetrical clipping planes which bound the larger dimension.
-	const double dim_ratio = larger_dim / smaller_dim;
-	const double larger_dim_clipping = smaller_dim_clipping * dim_ratio;
-
-	if (viewport_width <= viewport_height)
+	if (aspect_ratio > 1.0)
 	{
-		ortho_left = -smaller_dim_clipping;
-		ortho_right = smaller_dim_clipping;
-		ortho_bottom = -larger_dim_clipping;
-		ortho_top = larger_dim_clipping;
+		// right - left > top - bottom
+		ortho_left = -smaller_dim_clipping * aspect_ratio;
+		ortho_right = smaller_dim_clipping * aspect_ratio;
+		ortho_bottom = -smaller_dim_clipping;
+		ortho_top = smaller_dim_clipping;
 	}
 	else
 	{
-		ortho_left = -larger_dim_clipping;
-		ortho_right = larger_dim_clipping;
-		ortho_bottom = -smaller_dim_clipping;
-		ortho_top = smaller_dim_clipping;
+		// right - left <= top - bottom
+		ortho_left = -smaller_dim_clipping;
+		ortho_right = smaller_dim_clipping;
+		ortho_bottom = -smaller_dim_clipping / aspect_ratio;
+		ortho_top = smaller_dim_clipping / aspect_ratio;
 	}
 }
 
 
 void
-GPlatesGui::GlobeCamera::get_perspective_aspect_ratio_and_fovy(
-		unsigned int viewport_width,
-		unsigned int viewport_height,
-		double &aspect_ratio,
+GPlatesGui::GlobeCamera::get_perspective_fovy(
+		const double &aspect_ratio,
 		double &fovy_degrees) const
 {
-	// The aspect ratio (width/height) of the screen.
-	aspect_ratio = double(viewport_width) / viewport_height;
-
 	// Since 'glu_perspective()' accepts a 'y' field-of-view (along height dimension),
 	// if the height is the smaller dimension we don't need to do anything.
 	fovy_degrees = PERSPECTIVE_FIELD_OF_VIEW_DEGREES;

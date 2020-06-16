@@ -113,28 +113,25 @@ namespace GPlatesGui
 
 		/**
 		 * Returns the left/right/bottom/top parameters of the 'glOrtho()' function, given the
-		 * specified viewport dimensions.
+		 * specified viewport aspect ratio.
 		 *
 		 * The current viewport zoom affects these parameters.
 		 */
 		void
 		get_orthographic_left_right_bottom_top(
-				unsigned int viewport_width,
-				unsigned int viewport_height,
+				const double &aspect_ratio,
 				double &ortho_left,
 				double &ortho_right,
 				double &ortho_bottom,
 				double &ortho_top) const;
 
 		/**
-		 * Returns the aspect ratio and field-of-view (in y-axis) parameters of the 'gluPerspective()' function,
-		 * given the specified viewport dimensions.
+		 * Returns the field-of-view (in y-axis) parameters of the 'gluPerspective()' function,
+		 * given the specified viewport aspect ratio.
 		 */
 		void
-		get_perspective_aspect_ratio_and_fovy(
-				unsigned int viewport_width,
-				unsigned int viewport_height,
-				double &aspect_ratio,
+		get_perspective_fovy(
+				const double &aspect_ratio,
 				double &fovy_degrees) const;
 
 	Q_SIGNALS:

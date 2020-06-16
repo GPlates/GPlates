@@ -97,10 +97,16 @@ namespace
 			unsigned int viewport_height_in_device_pixels,
 			const GPlatesGui::GlobeCamera &camera,
 			GPlatesOpenGL::GLMatrix &view_transform,
+			// Note that these projection transforms are 'orthographic' or 'perspective', and hence are
+			// only affected by viewport *aspect ratio*, so they are independent of whether we're using
+			// device pixels or device *independent* pixels...
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+			// This is the only projection transform affected by viewport *pixel* dimensions,
+			// so it depends on whether we're using device pixels or device *independent* pixels.
+			// Here we need to use device pixels (since using OpenGL, and its viewport is in device pixels)..
 			GPlatesOpenGL::GLMatrix &projection_transform_text_overlay)
 	{
 		// NOTE: We ensure that the projection transforms calculated here can also be used when
@@ -164,12 +170,15 @@ namespace
 			// the orthographic viewing frustum (rectangular prism).
 			//
 
+			// The aspect ratio (width/height) of the screen.
+			const double aspect_ratio = double(viewport_width_in_device_pixels) / viewport_height_in_device_pixels;
+
 			double ortho_left;
 			double ortho_right;
 			double ortho_bottom;
 			double ortho_top;
 			camera.get_orthographic_left_right_bottom_top(
-					viewport_width_in_device_pixels, viewport_height_in_device_pixels,
+					aspect_ratio,
 					ortho_left, ortho_right, ortho_bottom, ortho_top);
 
 			projection_transform_include_front_half_globe.gl_ortho(
@@ -271,11 +280,11 @@ namespace
 			// positioned through the globe centre - so we don't want that to get clipped away either.
 			const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
-			double aspect_ratio;
+			// The aspect ratio (width/height) of the screen.
+			const double aspect_ratio = double(viewport_width_in_device_pixels) / viewport_height_in_device_pixels;
+
 			double fovy_degrees;
-			camera.get_perspective_aspect_ratio_and_fovy(
-					viewport_width_in_device_pixels, viewport_height_in_device_pixels,
-					aspect_ratio, fovy_degrees);
+			camera.get_perspective_fovy(aspect_ratio, fovy_degrees);
 
 			//
 			// Projection transforms.
@@ -535,8 +544,14 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	//
 	// Calculate the maximum distance on the unit-sphere subtended by one viewport pixel projected onto it.
 	GPlatesOpenGL::GLProjection gl_projection(
+			// Note: We don't multiply dimensions by device-pixel-ratio since we want our max pixel size to be
+			// in device *independent* coordinates. This way if a user has a high DPI display (like Apple Retina)
+			// the higher pixel resolution does not force them to have more accurate mouse clicks...
 			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
 			d_gl_view_transform,
+			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
+			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
+			// device pixels or device *independent* pixels...
 			d_gl_projection_transform_include_full_globe);
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
 			gl_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
@@ -1468,8 +1483,13 @@ GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
 
 	// Project screen coordinates into a ray into 3D scene.
 	GPlatesOpenGL::GLProjection gl_projection(
+			// Note: We don't multiply dimensions by device-pixel-ratio since we're using this for
+			// mouse/screen coordinates which are device *independent* pixels...
 			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
 			d_gl_view_transform,
+			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
+			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
+			// device pixels or device *independent* pixels...
 			d_gl_projection_transform_include_full_globe);
 	boost::optional<GPlatesOpenGL::GLIntersect::Ray> ray =
 			gl_projection.project_window_coords_into_ray(screen_x, screen_y);
