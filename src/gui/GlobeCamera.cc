@@ -195,7 +195,7 @@ GPlatesGui::GlobeCamera::get_perspective_fovy(
 	if (aspect_ratio < 1.0)
 	{
 		// Convert field-of-view in x-axis to field-of-view in y-axis by adjusting for the aspect ratio.
-		const double fovy_degrees = GPlatesMaths::convert_rad_to_deg(
+		fovy_degrees = GPlatesMaths::convert_rad_to_deg(
 				2.0 * std::atan(
 						std::tan(GPlatesMaths::convert_deg_to_rad(PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0) /
 						aspect_ratio));
