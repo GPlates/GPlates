@@ -88,7 +88,7 @@ namespace GPlatesGui
 		const GPlatesMaths::UnitVector3D &
 		get_look_at_position() const
 		{
-			return d_look_at_position;
+			return LOOK_AT_POSITION;
 		}
 
 		/**
@@ -148,12 +148,12 @@ namespace GPlatesGui
 		handle_zoom_changed();
 
 	private:
+
 		ViewportZoom &d_viewport_zoom;
 
 		GlobeProjection::Type d_projection_type;
 
 		GPlatesMaths::UnitVector3D d_view_direction;
-		GPlatesMaths::UnitVector3D d_look_at_position;
 		GPlatesMaths::UnitVector3D d_up_direction;
 
 		/**
@@ -163,7 +163,31 @@ namespace GPlatesGui
 		double d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom;
 
 
+		/**
+		 * Angle of field-of-view for perspective projection.
+		 */
 		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+
+		/**
+		 * The position on the sphere that the camera looks at.
+		 *
+		 * Note that it never actually changes. Ie, the camera always looks at the same position
+		 * in universe coordinates. The globe can still re-orient itself around the origin, but
+		 * the camera always looks at the same un-oriented position.
+		 */
+		static const GPlatesMaths::UnitVector3D LOOK_AT_POSITION;
+		/**
+		 * Initial view direction.
+		 *
+		 * Note that, unlike the look-at position, it can change as we rotate and tilt the view.
+		 */
+		static const GPlatesMaths::UnitVector3D INITIAL_VIEW_DIRECTION;
+		/**
+		 * Initial up direction (orthogonal to view direction).
+		 *
+		 * Note that, unlike the look-at position, it can change as we rotate and tilt the view.
+		 */
+		static const GPlatesMaths::UnitVector3D INITIAL_UP_DIRECTION;
 
 		static
 		double

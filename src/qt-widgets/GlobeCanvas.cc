@@ -255,18 +255,16 @@ namespace
 			// (to accomplish viewport zooming) we also don't want to clip away the closest part of the globe,
 			// and we don't want to clip away any objects sticking outside the globe as much as we
 			// can avoid it (such as rendered arrows). So we can't keep the near plane too far away.
-			// Currently we set it to half the distance between the eye and the globe.
-			// So as the view zooms further into the globe the near plane distance gets smaller.
-			//
-			// For example, a far distance f=(1.4 + 1.0 + 0.5)=2.9 and a near distance n=0.5*(1.4-1.0)/1000=0.0002
-			// (at a maximum zoom factor of 1000) and s=2^24 for a 24-bit depth buffer, we plug in the z_w values of
-			// 0, 1 and s, s-1 (which are the two closest and two furthest integer z-buffer values respectively)
-			// and get z_eye(0)-z_eye(1) = 1.2e-11 and z_eye(s)-z_eye(s-1) = 2.5e-3.
+			// If we set it to half the distance between the eye and the globe at maximum zoom (factor 1000)
+			// then near distance n=0.5*(1.4-1.0)/1000=0.0002. And if, for a far distance f=(1.4 + 1.0 + 0.5)=2.9
+			// and s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
+			// (which are the two closest and two furthest integer z-buffer values respectively)
+			// then we get z_eye(0)-z_eye(1) = 1.2e-11 and z_eye(s)-z_eye(s-1) = 2.5e-3.
 			// This corresponds to 0.08mm and 16km respectively.
 			// This also shows we get about 2e+8 times more z-buffer precision at the near plane compared to the far plane.
 			//
 
-			const GLdouble depth_in_front_of_globe = 0.001;
+			const GLdouble depth_in_front_of_globe = 0.001;  // ~6km (z-buffer resolution: ~0.37mm near and ~3.2km far)
 			// The 1.0 is the globe radius.
 			// The 0.5 is arbitrary and because we don't want to put the far clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
@@ -323,14 +321,6 @@ namespace
 				-1,
 				1);
 	}
-}
-
-
-const GPlatesMaths::PointOnSphere &
-GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
-{
-	static const GPlatesMaths::PointOnSphere centre_point(GPlatesMaths::UnitVector3D(1, 0, 0));
-	return centre_point;
 }
 
 
@@ -573,6 +563,13 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 	// Proximity threshold is expected to be a cosine.
 	return std::cos(distance_inclusion_threshold);
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesQtWidgets::GlobeCanvas::centre_of_viewport() const
+{
+	return GPlatesMaths::PointOnSphere(d_globe_camera.get_look_at_position());
 }
 
 

@@ -33,8 +33,24 @@
 
 
 const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT = 1.07;
+
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
+
+// Our universe coordinate system is:
+//
+//   Z points up
+//   Y points right
+//   X points out of the screen
+//
+// So we set up our initial camera view direction to look down the negative x-axis at the
+// position (1,0,0) on the globe (unit sphere), and set our 'up' direction along the y-axis.
+//
+// Note: Camera always looks at the same position (in universe coordinates).
+//
+const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::LOOK_AT_POSITION(1, 0, 0);
+const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::INITIAL_VIEW_DIRECTION(-1, 0, 0);
+const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::INITIAL_UP_DIRECTION(0, 0, 1);
 
 
 double
@@ -99,22 +115,11 @@ GPlatesGui::GlobeCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at
 
 
 GPlatesGui::GlobeCamera::GlobeCamera(
-		ViewportZoom &viewport_zoom) :
+	ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
 	d_projection_type(GlobeProjection::ORTHOGRAPHIC),
-	//
-	// Our universe coordinate system is:
-	//
-	//   Z points up
-	//   Y points right
-	//   X points out of the screen
-	//
-	// So we set up our initial camera view direction to look down the negative x-axis at the
-	// position (1,0,0) on the globe (unit sphere), and set our 'up' direction along the y-axis.
-	//
-	d_view_direction(-1, 0, 0),
-	d_look_at_position(1, 0, 0),
-	d_up_direction(0, 0, 1),
+	d_view_direction(INITIAL_VIEW_DIRECTION),
+	d_up_direction(INITIAL_UP_DIRECTION),
 	d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom(
 			calc_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom())
 {
@@ -147,7 +152,7 @@ GPlatesGui::GlobeCamera::get_perspective_eye_position() const
 	const double distance_eye_to_look_at =
 			d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom / d_viewport_zoom.zoom_factor();
 
-	return GPlatesMaths::Vector3D(d_look_at_position) - distance_eye_to_look_at * d_view_direction;
+	return GPlatesMaths::Vector3D(LOOK_AT_POSITION) - distance_eye_to_look_at * d_view_direction;
 }
 
 
