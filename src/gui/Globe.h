@@ -68,6 +68,7 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	class GlobeCamera;
 	class GlobeVisibilityTester;
 
 	class Globe
@@ -134,6 +135,12 @@ namespace GPlatesGui
 		orientation()
 		{
 			return *d_globe_orientation_ptr;
+		}
+
+		GlobeCamera &
+		get_globe_camera()
+		{
+			return d_globe_camera;
 		}
 
 
@@ -209,6 +216,8 @@ namespace GPlatesGui
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
 		 */
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
+
+		GlobeCamera &d_globe_camera;
 
 
 		/**

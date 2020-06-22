@@ -72,7 +72,8 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			visual_layers,
 			visibility_tester,
-			colour_scheme)
+			colour_scheme),
+	d_globe_camera(view_state.get_globe_camera())
 {  }
 
 
@@ -92,7 +93,8 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			d_visual_layers,
 			visibility_tester,
-			colour_scheme)
+			colour_scheme),
+	d_globe_camera(existing_globe.d_globe_camera)
 {  }
 
 

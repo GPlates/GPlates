@@ -29,6 +29,12 @@
 
 #include "ViewportZoom.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "opengl/GLIntersect.h"
+#include "opengl/GLIntersectPrimitives.h"
+
 #include "maths/MathsUtils.h"
 
 
@@ -43,12 +49,11 @@ const double GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
 //   Y points right
 //   X points out of the screen
 //
-// So we set up our initial camera view direction to look down the negative x-axis at the
-// position (1,0,0) on the globe (unit sphere), and set our 'up' direction along the y-axis.
+// We set up our initial camera look-at position where the globe (unit sphere) intersects the positive x-axis.
+// We set up our initial camera view direction to look down the negative x-axis.
+// We set up our initial camera 'up' direction along the z-axis.
 //
-// Note: Camera always looks at the same position (in universe coordinates).
-//
-const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::LOOK_AT_POSITION(1, 0, 0);
+const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::INITIAL_LOOK_AT_POSITION(1, 0, 0);
 const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::INITIAL_VIEW_DIRECTION(-1, 0, 0);
 const GPlatesMaths::UnitVector3D GPlatesGui::GlobeCamera::INITIAL_UP_DIRECTION(0, 0, 1);
 
@@ -118,6 +123,7 @@ GPlatesGui::GlobeCamera::GlobeCamera(
 	ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
 	d_projection_type(GlobeProjection::ORTHOGRAPHIC),
+	d_look_at_position(INITIAL_LOOK_AT_POSITION),
 	d_view_direction(INITIAL_VIEW_DIRECTION),
 	d_up_direction(INITIAL_UP_DIRECTION),
 	d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom(
@@ -152,7 +158,7 @@ GPlatesGui::GlobeCamera::get_perspective_eye_position() const
 	const double distance_eye_to_look_at =
 			d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom / d_viewport_zoom.zoom_factor();
 
-	return GPlatesMaths::Vector3D(LOOK_AT_POSITION) - distance_eye_to_look_at * d_view_direction;
+	return GPlatesMaths::Vector3D(d_look_at_position) - distance_eye_to_look_at * d_view_direction;
 }
 
 
@@ -206,6 +212,161 @@ GPlatesGui::GlobeCamera::get_perspective_fovy(
 						aspect_ratio));
 	}
 }
+
+
+void
+GPlatesGui::GlobeCamera::start_drag(
+		MouseDragMode mouse_drag_mode,
+		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe)
+{
+	d_mouse_drag_info = MouseDragInfo(
+			mouse_drag_mode,
+			mouse_pos_on_globe.position_vector(),
+			d_look_at_position,
+			d_view_direction,
+			d_up_direction);
+
+	switch (d_mouse_drag_info->mode)
+	{
+	case DRAG_NORMAL:
+		start_drag_normal();
+		break;
+	case DRAG_ROTATE:
+		start_drag_rotate();
+		break;
+	case DRAG_TILT:
+		start_drag_tilt();
+		break;
+	case DRAG_ROTATE_AND_TILT:
+		start_drag_rotate_and_tilt();
+		break;
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
+}
+
+
+void
+GPlatesGui::GlobeCamera::update_drag(
+		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe)
+{
+	if (!d_mouse_drag_info)
+	{
+		return;
+	}
+
+	switch (d_mouse_drag_info->mode)
+	{
+	case DRAG_NORMAL:
+		update_drag_normal(mouse_pos_on_globe.position_vector());
+		break;
+	case DRAG_ROTATE:
+		update_drag_rotate(mouse_pos_on_globe.position_vector());
+		break;
+	case DRAG_TILT:
+		update_drag_tilt(mouse_pos_on_globe.position_vector());
+		break;
+	case DRAG_ROTATE_AND_TILT:
+		update_drag_rotate_and_tilt(mouse_pos_on_globe.position_vector());
+		break;
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
+}
+
+
+void
+GPlatesGui::GlobeCamera::end_drag()
+{
+	d_mouse_drag_info = boost::none;
+}
+
+
+void
+GPlatesGui::GlobeCamera::start_drag_normal()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::update_drag_normal(
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::start_drag_rotate()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::update_drag_rotate(
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::start_drag_tilt()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::update_drag_tilt(
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::start_drag_rotate_and_tilt()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
+
+void
+GPlatesGui::GlobeCamera::update_drag_rotate_and_tilt(
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+}
+
 
 void
 GPlatesGui::GlobeCamera::handle_zoom_changed()
