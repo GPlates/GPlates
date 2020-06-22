@@ -219,16 +219,14 @@ namespace GPlatesGui
 			MouseDragMode mode;
 
 			GPlatesMaths::UnitVector3D start_mouse_pos_on_globe;
+
 			GPlatesMaths::UnitVector3D start_look_at_position;
 			GPlatesMaths::UnitVector3D start_view_direction;
 			GPlatesMaths::UnitVector3D start_up_direction;
 
-			GPlatesMaths::Rotation view_rotation_relative_to_start;
+			GPlatesMaths::real_t start_rotation_angle;
 
-			boost::optional<GPlatesMaths::real_t> intersect_cylinder_radius;
-			boost::optional<GPlatesMaths::UnitVector3D> start_cylinder_axis;
-			boost::optional<GPlatesMaths::real_t> start_tilt_angle;
-			boost::optional<GPlatesMaths::real_t> start_spin_angle;
+			GPlatesMaths::Rotation view_rotation_relative_to_start;
 		};
 
 
@@ -246,6 +244,10 @@ namespace GPlatesGui
 		void
 		update_drag_rotate(
 				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
+
+		GPlatesMaths::real_t
+		calc_drag_rotate_angle(
+				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe_relative_to_start_view) const;
 
 
 		void

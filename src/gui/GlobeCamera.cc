@@ -338,6 +338,9 @@ GPlatesGui::GlobeCamera::start_drag_rotate()
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// The rotation angle, around look-at position, at the start of the drag.
+	d_mouse_drag_info->start_rotation_angle =
+			calc_drag_rotate_angle(d_mouse_drag_info->start_mouse_pos_on_globe);
 }
 
 
@@ -349,6 +352,79 @@ GPlatesGui::GlobeCamera::update_drag_rotate(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// The current mouse position-on-globe is in global (universe) coordinates.
+	// It actually doesn't change (within numerical precision) when the view rotates.
+	// However, in the frame-of-reference of the view at the start of drag, it has changed.
+	// To detect how much change we need to rotate it by the reverse of the change in view frame
+	// (it's reverse because a change in view space is equivalent to the reverse change in model space
+	// and the globe, and points on it, are in model space).
+	const GPlatesMaths::UnitVector3D mouse_pos_on_globe_relative_to_start_view =
+			d_mouse_drag_info->view_rotation_relative_to_start.get_reverse() * mouse_pos_on_globe;
+
+	// The current rotation angle around look-at position.
+	const GPlatesMaths::real_t rotation_angle =
+			calc_drag_rotate_angle(mouse_pos_on_globe_relative_to_start_view);
+
+	// The model-space rotation from initial angle at start of drag to current angle.
+	const GPlatesMaths::Rotation globe_rotation_relative_to_start = GPlatesMaths::Rotation::create(
+			d_mouse_drag_info->start_look_at_position,
+			rotation_angle - d_mouse_drag_info->start_rotation_angle);
+
+	// Rotation in view space is reverse of rotation in model space.
+	const GPlatesMaths::Rotation view_rotation_relative_to_start = globe_rotation_relative_to_start.get_reverse();
+
+	// Rotation the view frame.
+	d_look_at_position = view_rotation_relative_to_start * d_mouse_drag_info->start_look_at_position;
+	d_view_direction = view_rotation_relative_to_start * d_mouse_drag_info->start_view_direction;
+	d_up_direction = view_rotation_relative_to_start * d_mouse_drag_info->start_up_direction;
+
+	// Keep track of the updated view rotation relative to the start.
+	d_mouse_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
+
+	Q_EMIT camera_changed();
+}
+
+
+GPlatesMaths::real_t
+GPlatesGui::GlobeCamera::calc_drag_rotate_angle(
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe_relative_to_start_view) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesMaths::UnitVector3D zero_rotation_direction = cross(
+			d_mouse_drag_info->start_view_direction,
+			d_mouse_drag_info->start_up_direction).get_normalisation();
+
+	const GPlatesMaths::Vector3D mouse_pos_on_globe_projected_onto_look_at_plane =
+			GPlatesMaths::Vector3D(mouse_pos_on_globe_relative_to_start_view) -
+				dot(mouse_pos_on_globe_relative_to_start_view, d_mouse_drag_info->start_look_at_position) *
+				d_mouse_drag_info->start_look_at_position;
+
+	GPlatesMaths::real_t rotation_angle;
+	if (!mouse_pos_on_globe_projected_onto_look_at_plane.is_zero_magnitude())
+	{
+		rotation_angle = acos(
+			dot(
+				mouse_pos_on_globe_projected_onto_look_at_plane.get_normalisation(),
+				zero_rotation_direction));
+		if (dot(
+				mouse_pos_on_globe_projected_onto_look_at_plane,
+				cross(d_mouse_drag_info->start_look_at_position, zero_rotation_direction)).dval() < 0)
+		{
+			rotation_angle = -rotation_angle;
+		}
+	}
+	else
+	{
+		// Arbitrarily select angle zero.
+		// When the mouse is very near the rotation axis then the rotation will spin wildly.
+		// So when the mouse is directly *on* the rotation axis the user won't notice this arbitrariness.
+		rotation_angle = 0;
+	}
+
+	return rotation_angle;
 }
 
 
