@@ -302,6 +302,32 @@ GPlatesGui::GlobeCamera::update_drag_normal(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// The current mouse position-on-globe is in global (universe) coordinates.
+	// It actually doesn't change (within numerical precision) when the view rotates.
+	// However, in the frame-of-reference of the view at the start of drag, it has changed.
+	// To detect how much change we need to rotate it by the reverse of the change in view frame
+	// (it's reverse because a change in view space is equivalent to the reverse change in model space
+	// and the globe, and points on it, are in model space).
+	const GPlatesMaths::UnitVector3D mouse_pos_on_globe_relative_to_start_view =
+			d_mouse_drag_info->view_rotation_relative_to_start.get_reverse() * mouse_pos_on_globe;
+
+	// The model-space rotation from initial position at start of drag to current position.
+	const GPlatesMaths::Rotation globe_rotation_relative_to_start = GPlatesMaths::Rotation::create(
+			d_mouse_drag_info->start_mouse_pos_on_globe,
+			mouse_pos_on_globe_relative_to_start_view);
+
+	// Rotation in view space is reverse of rotation in model space.
+	const GPlatesMaths::Rotation view_rotation_relative_to_start = globe_rotation_relative_to_start.get_reverse();
+
+	// Rotation the view frame.
+	d_look_at_position = view_rotation_relative_to_start * d_mouse_drag_info->start_look_at_position;
+	d_view_direction = view_rotation_relative_to_start * d_mouse_drag_info->start_view_direction;
+	d_up_direction = view_rotation_relative_to_start * d_mouse_drag_info->start_up_direction;
+
+	// Keep track of the updated view rotation relative to the start.
+	d_mouse_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
+
+	Q_EMIT camera_changed();
 }
 
 
