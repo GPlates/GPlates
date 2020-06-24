@@ -66,7 +66,6 @@ GPlatesGui::Globe::Globe(
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
-	d_globe_orientation_changing_during_mouse_drag(false),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
 			gl_visual_layers,
@@ -87,7 +86,6 @@ GPlatesGui::Globe::Globe(
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
-	d_globe_orientation_changing_during_mouse_drag(false),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
 			gl_visual_layers,
@@ -96,26 +94,6 @@ GPlatesGui::Globe::Globe(
 			colour_scheme),
 	d_globe_camera(existing_globe.d_globe_camera)
 {  }
-
-
-void
-GPlatesGui::Globe::set_new_handle_pos(
-		const GPlatesMaths::PointOnSphere &pos)
-{
-	d_globe_orientation_ptr->set_new_handle_at_pos(pos);
-}
-
-
-void
-GPlatesGui::Globe::update_handle_pos(
-		const GPlatesMaths::PointOnSphere &pos,
-		bool in_mouse_drag)
-{
-	// Gets set to true when mouse button (left) is pressed (during drag) and reset to false when released.
-	d_globe_orientation_changing_during_mouse_drag = in_mouse_drag;
-
-	d_globe_orientation_ptr->move_handle_to_pos(pos);
-}
 
 
 const GPlatesMaths::PointOnSphere
@@ -568,6 +546,7 @@ GPlatesGui::Globe::render_globe_sub_surface(
 					renderer,
 					viewport_zoom_factor,
 					surface_occlusion_texture,
-					d_globe_orientation_changing_during_mouse_drag/*improve_performance_reduce_quality_hint*/);
+					// TODO: When active globe canvas tool is currently in mouse drag, set to true...
+					false/*improve_performance_reduce_quality_hint*/);
 	cache_handle.push_back(rendered_geoms_cache_sub_surface_globe);
 }

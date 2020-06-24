@@ -107,20 +107,6 @@ namespace GPlatesGui
 		initialiseGL(
 				GPlatesOpenGL::GLRenderer &renderer);
 
-		void
-		set_new_handle_pos(
-				const GPlatesMaths::PointOnSphere &pos);
-
-		/**
-		 * @a in_mouse_drag should be set to true when the mouse button (left) is pressed (down)
-		 * and the mouse is moving and if it is set to true then it should subsequently be set back
-		 * to false when the mouse button (left) is released (up).
-		 */
-		void
-		update_handle_pos(
-				const GPlatesMaths::PointOnSphere &pos,
-				bool in_mouse_drag = false);
-
 		const GPlatesMaths::PointOnSphere
 		orient(
 				const GPlatesMaths::PointOnSphere &pos) const;
@@ -204,13 +190,6 @@ namespace GPlatesGui
 		 * The accumulated orientation of the globe.
 		 */
 		boost::shared_ptr<SimpleGlobeOrientation> d_globe_orientation_ptr;
-
-		/**
-		 * Is true when the mouse button (left) is pressed (down) and mouse is moving.
-		 *
-		 * This is currently used to temporarily reduce the sampling rate for 3D scalar field iso-surfaces.
-		 */
-		bool d_globe_orientation_changing_during_mouse_drag;
 
 		/**
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
