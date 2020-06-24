@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLINTERSECT_H
 #define GPLATES_OPENGL_GLINTERSECT_H
 
+#include <utility>  // std::pair
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
@@ -45,6 +46,7 @@ namespace GPlatesOpenGL
 	 */
 	namespace GLIntersect
 	{
+		class Cylinder;
 		class OrientedBoundingBox;
 		class Plane;
 		class Ray;
@@ -59,6 +61,46 @@ namespace GPlatesOpenGL
 		intersect_ray_sphere(
 				const Ray &ray,
 				const Sphere &sphere);
+
+		/**
+		 * Intersects an infinite line (specified as a ray) with a sphere and
+		 * returns the distance to both intersection points (if intersected).
+		 *
+		 * Note that although it's an infinite line we still need to define it using a point
+		 * (on the line) and a direction, which we specify as a ray. And distances are from
+		 * the ray's origin and can be negative when intersects behind ray origin.
+		 *
+		 * The smaller signed distance is returned 'first'.
+		 */
+		boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>>
+		intersect_line_sphere(
+				const Ray &ray,
+				const Sphere &sphere);
+
+
+		/**
+		 * Intersects a ray with an infinite cylinder and returns the closest distance from
+		 * the ray's origin to the cylinder's surface or false it doesn't intersect.
+		 */
+		boost::optional<GPlatesMaths::real_t>
+		intersect_ray_cylinder(
+				const Ray &ray,
+				const Cylinder &cylinder);
+
+		/**
+		 * Intersects an infinite line (specified as a ray) with an infinite cylinder and
+		 * returns the distance to both intersection points (if intersected).
+		 *
+		 * Note that although it's an infinite line we still need to define it using a point
+		 * (on the line) and a direction, which we specify as a ray. And distances are from
+		 * the ray's origin and can be negative when intersects behind ray origin.
+		 *
+		 * The smaller signed distance is returned 'first'.
+		 */
+		boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>>
+		intersect_line_cylinder(
+				const Ray &ray,
+				const Cylinder &cylinder);
 
 
 		/**

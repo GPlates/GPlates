@@ -113,6 +113,17 @@ GPlatesOpenGL::GLIntersect::Sphere::Sphere(
 }
 
 
+GPlatesOpenGL::GLIntersect::Cylinder::Cylinder(
+		const GPlatesMaths::Vector3D &cylinder_base_point,
+		const GPlatesMaths::UnitVector3D &cylinder_axis,
+		const GPlatesMaths::real_t &cylinder_radius) :
+	d_base_point(cylinder_base_point),
+	d_axis(cylinder_axis),
+	d_radius(cylinder_radius)
+{
+}
+
+
 GPlatesOpenGL::GLIntersect::OrientedBoundingBox::OrientedBoundingBox(
 		const GPlatesMaths::Vector3D &centre,
 		const GPlatesMaths::Vector3D &half_length_x_axis,

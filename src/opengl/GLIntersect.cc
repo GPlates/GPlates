@@ -30,6 +30,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+
 //
 // Algorithm from "Real-Time Rendering" book (1st edition).
 //
@@ -43,20 +44,122 @@ GPlatesOpenGL::GLIntersect::intersect_ray_sphere(
 
 	const GPlatesMaths::real_t l2 = dot(l, l);
 	const GPlatesMaths::real_t r2 = sphere.get_radius() * sphere.get_radius();
-	if (d < 0 && l2 > r2)
+	if (d.dval() < 0 && l2.dval() > r2.dval())
 	{
+		// Ray origin is outside sphere (l2>r2) and sphere is behind ray origin.
+		// So positive direction along ray cannot intersect sphere.
 		return boost::none;
 	}
 
 	const GPlatesMaths::real_t m2 = l2 - d * d;
-	if (m2 > r2)
+	if (m2.dval() > r2.dval())
 	{
+		// Infinite line along ray does not intersect the sphere.
 		return boost::none;
 	}
 
 	const GPlatesMaths::real_t q = sqrt(r2 - m2);
 
-	return (l2 > r2) ? (d - q) : (d + q);
+	// If ray origin is outside sphere (l2>r2) then we know sphere is also in front of ray origin
+	// (since we already know that 'd<0 && l2>r2' is not true, so must have 'd>=0').
+	// In this case we choose the first intersection since it's closest to ray origin.
+	// Otherwise ray origin is inside sphere (l2<=r2) and can only intersect sphere once.
+	// In this case we choose the second intersection (because first intersection is behind ray origin).
+	return (l2.dval() > r2.dval()) ? (d - q) : (d + q);
+}
+
+
+boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>>
+GPlatesOpenGL::GLIntersect::intersect_line_sphere(
+		const Ray &ray,
+		const Sphere &sphere)
+{
+	const GPlatesMaths::Vector3D l = sphere.get_centre() - ray.get_origin();
+	const GPlatesMaths::real_t d = dot(l, ray.get_direction());
+
+	const GPlatesMaths::real_t l2 = dot(l, l);
+	const GPlatesMaths::real_t r2 = sphere.get_radius() * sphere.get_radius();
+
+	const GPlatesMaths::real_t m2 = l2 - d * d;
+	if (m2.dval() > r2.dval())
+	{
+		// Infinite line along ray does not intersect the sphere.
+		return boost::none;
+	}
+
+	const GPlatesMaths::real_t q = sqrt(r2 - m2);
+
+	return std::make_pair(d - q, d + q);
+}
+
+
+//
+// Algorithm from "Real-Time Collision Detection" book.
+//
+boost::optional<GPlatesMaths::real_t>
+GPlatesOpenGL::GLIntersect::intersect_ray_cylinder(
+		const Ray &ray,
+		const Cylinder &cylinder)
+{
+	// First find intersections of infinite line with infinite cylinder.
+	boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>> intersect_result =
+			intersect_line_cylinder(ray, cylinder);
+	if (!intersect_result)
+	{
+		return boost::none;
+	}
+
+	// If the first intersection is in front of ray origin then return it.
+	if (intersect_result->first.dval() >= 0)
+	{
+		return intersect_result->first;
+	}
+
+	// The first intersection is behind ray origin.
+	// If the second (further) intersection is in front of ray origin then return it.
+	if (intersect_result->second.dval() >= 0)
+	{
+		return intersect_result->second;
+	}
+
+	// Both intersections are behind the ray origin, so no intersection with ray.
+	return boost::none;
+}
+
+
+boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>>
+GPlatesOpenGL::GLIntersect::intersect_line_cylinder(
+		const Ray &ray,
+		const Cylinder &cylinder)
+{
+	const GPlatesMaths::UnitVector3D &n = ray.get_direction();
+	const GPlatesMaths::UnitVector3D &d = cylinder.get_axis();
+	const GPlatesMaths::real_t r = cylinder.get_radius();
+
+	const GPlatesMaths::Vector3D m = ray.get_origin() - cylinder.get_base_point();
+	const GPlatesMaths::real_t n_d = dot(n, d);
+	const GPlatesMaths::real_t m_d = dot(m, d);
+
+	const GPlatesMaths::real_t a = 1.0 - n_d * n_d;
+	const GPlatesMaths::real_t b = dot(m, n) - n_d * m_d;
+	const GPlatesMaths::real_t c = dot(m, m) - r * r - m_d * m_d;
+
+	GPlatesMaths::real_t h = b * b - a * c;
+	if (h.dval() < 0.0)
+	{
+		// Infinite line along ray does not intersect the cylinder.
+		return boost::none;
+	}
+	const GPlatesMaths::real_t sqrt_h = sqrt(h);
+
+	if (a == 0)  // Note: this is an epsilon test.
+	{
+		// The line and cylinder are parallel and hence never intersect.
+		return boost::none;
+	}
+	const GPlatesMaths::real_t inv_a = 1.0 / a;
+
+	return std::make_pair(inv_a * (-b - sqrt_h), inv_a * (-b + sqrt_h));
 }
 
 

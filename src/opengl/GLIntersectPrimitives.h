@@ -326,6 +326,42 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * An infinite cylinder with an axis and radius, and a point somewhere along the axis.
+		 */
+		class Cylinder
+		{
+		public:
+			Cylinder(
+					const GPlatesMaths::Vector3D &cylinder_base_point,
+					const GPlatesMaths::UnitVector3D &cylinder_axis,
+					const GPlatesMaths::real_t &cylinder_radius);
+
+			const GPlatesMaths::Vector3D &
+			get_base_point() const
+			{
+				return d_base_point;
+			}
+
+			const GPlatesMaths::UnitVector3D &
+			get_axis() const
+			{
+				return d_axis;
+			}
+
+			const GPlatesMaths::real_t &
+			get_radius() const
+			{
+				return d_radius;
+			}
+
+		private:
+			GPlatesMaths::Vector3D d_base_point;
+			GPlatesMaths::UnitVector3D d_axis;
+			GPlatesMaths::real_t d_radius;
+		};
+
+
+		/**
 		 * A bounding box whose axes are orthogonal but not necessarily
 		 * aligned with the coordinate axes.
 		 */
