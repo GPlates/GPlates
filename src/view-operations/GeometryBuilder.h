@@ -387,7 +387,7 @@ namespace GPlatesViewOperations
 		UndoOperation
 		insert_point_into_current_geometry(
 				PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &pos_on_globe);
 
 		/**
 		 * Remove a point from the current geometry.
@@ -419,7 +419,7 @@ namespace GPlatesViewOperations
 		UndoOperation
 		move_point_in_current_geometry(
 				PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &new_pos_on_globe,
 				std::vector<SecondaryGeometry> &secondary_geometries,
 				std::vector<GPlatesMaths::PointOnSphere> &secondary_points,
 				bool is_intermediate_move = false);

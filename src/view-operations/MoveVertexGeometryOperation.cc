@@ -143,7 +143,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	//
@@ -152,7 +152,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 
 
 	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-		oriented_pos_on_sphere, closeness_inclusion_threshold);
+		pos_on_sphere, closeness_inclusion_threshold);
 
 	if (closest_hit)
 	{
@@ -179,12 +179,12 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	// If a vertex was selected when user first clicked mouse then move the vertex.
 	if (d_is_vertex_selected)
 	{
-		move_vertex(oriented_pos_on_sphere, true/*is_intermediate_move*/);
+		move_vertex(pos_on_sphere, true/*is_intermediate_move*/);
 
 		// Highlight the vertex the mouse is currently hovering over.
 		update_highlight_rendered_point(d_selected_vertex_index);
@@ -193,14 +193,14 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::end_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	// If a vertex was selected when user first clicked mouse then move the vertex.
 	if (d_is_vertex_selected)
 	{
 		// Do the final move vertex command to signal that this is the final
 		// move of this drag.
-		move_vertex(oriented_pos_on_sphere, false/*is_intermediate_move*/);
+		move_vertex(pos_on_sphere, false/*is_intermediate_move*/);
 
 		// Highlight the vertex the mouse is currently hovering over.
 		update_highlight_rendered_point(d_selected_vertex_index);
@@ -219,7 +219,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::end_drag(
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	//
@@ -230,7 +230,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 	d_highlight_point_layer_ptr->clear_rendered_geometries();
 
 	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-			oriented_pos_on_sphere, closeness_inclusion_threshold);
+			pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_hit)
 	{
 		const GeometryBuilder::PointIndex highlight_vertex_index = closest_hit->d_rendered_geom_index;
@@ -259,12 +259,12 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::MoveVertexGeometryOperation::test_proximity_to_points(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-			oriented_pos_on_sphere,
+			pos_on_sphere,
 			closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
@@ -339,7 +339,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::geometry_builder_stopped_upd
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		bool is_intermediate_move)
 {
 	// The command that does the actual moving of vertex.
@@ -347,7 +347,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 			new GeometryBuilderMovePointUndoCommand(
 					d_geometry_builder,
 					d_selected_vertex_index,
-					oriented_pos_on_sphere,
+					pos_on_sphere,
 					is_intermediate_move));
 					
 	// Command wraps move vertex command with handing canvas tool choice and
@@ -648,7 +648,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_rendered_secondary_ge
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::left_press(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere, 
+		const GPlatesMaths::PointOnSphere &pos_on_sphere, 
 		const double &closeness_inclusion_threshold)
 {
 #if 0

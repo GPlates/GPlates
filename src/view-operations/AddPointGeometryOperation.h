@@ -96,7 +96,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		add_point(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 	public Q_SLOTS:

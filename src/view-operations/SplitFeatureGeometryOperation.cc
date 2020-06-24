@@ -116,12 +116,12 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
+			*d_line_segments_layer_ptr, pos_on_sphere, closeness_inclusion_threshold);
 
 	if (!closest_line_hit)
 	{
@@ -132,7 +132,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 	const unsigned int line_segment_index = closest_line_hit->d_rendered_geom_index;
 
 	split_feature(
-			line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
+			line_segment_index, pos_on_sphere, closeness_inclusion_threshold);
 
 #if 0 //dont't do this. this will disable undo
 
@@ -144,19 +144,19 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 
 	// Render the highlight line segments to show user where the next mouse click split the feature geometry.
 	// We do this now in case the mouse doesn't move again for a while (ie, if we get no 'mouse_move' event).
-	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
+	update_highlight_rendered_layer(pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Test closeness to the points in the points rendered geometry layer.
 	boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit> hit= 
 		test_proximity_to_rendered_geom_layer(
-				*d_points_layer_ptr,  oriented_pos_on_sphere, closeness_inclusion_threshold);
+				*d_points_layer_ptr,  pos_on_sphere, closeness_inclusion_threshold);
 	if (!hit)
 	{
 		// Get the index of the point at the start of the line segment
@@ -168,14 +168,14 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 			index_of_start_point + 1;
 		
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
-				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
+				project_point_onto_line_segment(index_of_start_point, pos_on_sphere);
 
 		split_feature(index_of_point_to_insert_before, *point_to_insert);
 	}
 	else
 	{
 		GeometryBuilder::PointIndex index_of_point = 
-			*get_closest_geometry_point_to(oriented_pos_on_sphere);
+			*get_closest_geometry_point_to(pos_on_sphere);
 		split_feature(index_of_point, boost::none);
 	}
 }
@@ -183,7 +183,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 GPlatesViewOperations::SplitFeatureGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	// We currently only support one internal geometry so set geom index to zero.
 	const GeometryBuilder::GeometryIndex geom_index = 0;
@@ -209,22 +209,22 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::project_point_onto_line_se
 	const GPlatesMaths::GreatCircleArc line_segment = GPlatesMaths::GreatCircleArc::create(
 			*line_segment_start, *line_segment_end);
 
-	return line_segment.get_closest_point(oriented_pos_on_sphere);
+	return line_segment.get_closest_point(pos_on_sphere);
 }
 
 
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Render the highlight line segments to show user where the vertex will get inserted.
-	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
+	update_highlight_rendered_layer(pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::update_highlight_rendered_layer(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// First clear any highlight rendered geometries.
@@ -236,21 +236,21 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_highlight_rendered_
 
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
+			*d_line_segments_layer_ptr, pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_line_hit)
 	{
 		const unsigned int line_segment_index =
 				closest_line_hit->d_rendered_geom_index;
 
 		add_rendered_highlight_on_line_segment(
-				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
+				line_segment_index, pos_on_sphere, closeness_inclusion_threshold);
 	}
 }
 
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_on_line_segment(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Avoid highlighting line segment if too close to an existing point.
@@ -259,7 +259,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_on_
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
-			*d_points_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold))
+			*d_points_layer_ptr, pos_on_sphere, closeness_inclusion_threshold))
 	{
 		add_rendered_highlight_line_segment(line_segment_index);
 	}
@@ -346,11 +346,11 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_lin
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::SplitFeatureGeometryOperation::test_proximity_to_rendered_geom_layer(
 	const RenderedGeometryLayer &rendered_geom_layer,
-	const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+	const GPlatesMaths::PointOnSphere &pos_on_sphere,
 	const double &closeness_inclusion_threshold)
 {
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-		oriented_pos_on_sphere,
+		pos_on_sphere,
 		closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
@@ -367,7 +367,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::test_proximity_to_rendered
 
 boost::optional<const GPlatesViewOperations::GeometryBuilder::PointIndex>
 GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point_to(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_geometry_builder.get_num_geometries() == 0)
 	{
@@ -393,7 +393,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 		const GPlatesMaths::PointOnSphere &point_on_sphere = d_geometry_builder.get_geometry_point(
 				geom_index, point_on_sphere_index);
 
-		GPlatesMaths::real_t closeness = calculate_closeness(point_on_sphere, oriented_pos_on_sphere);
+		GPlatesMaths::real_t closeness = calculate_closeness(point_on_sphere, pos_on_sphere);
 
 		if (closeness.dval() > max_closeness.dval())
 		{

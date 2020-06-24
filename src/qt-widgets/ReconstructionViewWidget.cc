@@ -649,11 +649,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
-		const GPlatesMaths::PointOnSphere &new_virtual_pos,
+		const GPlatesMaths::PointOnSphere &new_pos,
 		bool is_on_globe)
 {
 	//std::cerr << "Updating pos pointer" << std::endl;
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(new_virtual_pos);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(new_pos);
 
 	QLocale locale_;
 	QString lat = locale_.toString(llp.latitude(), 'f', 2);

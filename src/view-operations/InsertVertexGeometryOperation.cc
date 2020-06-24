@@ -116,37 +116,37 @@ GPlatesViewOperations::InsertVertexGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::left_click(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
+			*d_line_segments_layer_ptr, pos_on_sphere, closeness_inclusion_threshold);
 
 	if (closest_line_hit)
 	{
 		const unsigned int line_segment_index = closest_line_hit->d_rendered_geom_index;
 
 		insert_vertex_on_line_segment(
-				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
+				line_segment_index, pos_on_sphere, closeness_inclusion_threshold);
 	}
 	else
 	{
 		// We are not close enough to any line segments.
-		insert_vertex_off_line_segment(oriented_pos_on_sphere);
+		insert_vertex_off_line_segment(pos_on_sphere);
 	}
 
 	// Render the highlight line segments to show user where the next mouse click will
 	// insert the next vertex.
 	// We do this now in case the mouse doesn't move again for a while (ie, if we get no
 	// 'mouse_move' event).
-	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
+	update_highlight_rendered_layer(pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segment(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// First make sure we are not too close to an existing point.
@@ -155,7 +155,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
-			*d_points_layer_ptr,  oriented_pos_on_sphere, closeness_inclusion_threshold))
+			*d_points_layer_ptr,  pos_on_sphere, closeness_inclusion_threshold))
 	{
 		// Get the index of the point at the start of the line segment
 		GeometryBuilder::PointIndex index_of_start_point = d_line_to_point_mapping[line_segment_index];
@@ -168,7 +168,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 		// This is useful if the user wants to insert directly on the line segment even
 		// though the mouse position might be off the line segment by a pixel or two.
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
-				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
+				project_point_onto_line_segment(index_of_start_point, pos_on_sphere);
 
 		insert_vertex(index_of_point_to_insert_before, *point_to_insert);
 	}
@@ -177,7 +177,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	// We currently only support one internal geometry so set geom index to zero.
 	const GeometryBuilder::GeometryIndex geom_index = 0;
@@ -203,12 +203,12 @@ GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_se
 	const GPlatesMaths::GreatCircleArc line_segment = GPlatesMaths::GreatCircleArc::create(
 			*line_segment_start, *line_segment_end);
 
-	return line_segment.get_closest_point(oriented_pos_on_sphere);
+	return line_segment.get_closest_point(pos_on_sphere);
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_segment(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	// We are not close enough to any line segments.
 	// NOTE: this also means we are not close enough to any of the points either so
@@ -233,7 +233,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 	if (num_points_in_geom == 1)
 	{
 		// Insert vertex at end of geometry for all geometry types.
-		insert_vertex(num_points_in_geom, oriented_pos_on_sphere);
+		insert_vertex(num_points_in_geom, pos_on_sphere);
 	}
 	else if (num_points_in_geom > 1)
 	{
@@ -244,32 +244,32 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 		{
 			// Get index of closest point to mouse position.
 			const ClosestEndPoint closest_geom_end_point =
-					*get_closest_geometry_end_point_to(oriented_pos_on_sphere);
+					*get_closest_geometry_end_point_to(pos_on_sphere);
 
 			insert_vertex(
 					(closest_geom_end_point == START_POINT) ? 0 : num_points_in_geom,
-					oriented_pos_on_sphere);
+					pos_on_sphere);
 		}
 		else // GPlatesMaths::GeometryType::POINT or GPlatesMaths::GeometryType::MULTIPOINT
 		{
 			// Insert vertex at end of POINT or MULTIPOINT.
-			insert_vertex(num_points_in_geom, oriented_pos_on_sphere);
+			insert_vertex(num_points_in_geom, pos_on_sphere);
 		}
 	}
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Render the highlight line segments to show user where the vertex will get inserted.
-	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
+	update_highlight_rendered_layer(pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::update_highlight_rendered_layer(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// First clear any highlight rendered geometries.
@@ -289,26 +289,26 @@ GPlatesViewOperations::InsertVertexGeometryOperation::update_highlight_rendered_
 
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
+			*d_line_segments_layer_ptr, pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_line_hit)
 	{
 		const unsigned int line_segment_index =
 				closest_line_hit->d_rendered_geom_index;
 
 		add_rendered_highlight_on_line_segment(
-				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
+				line_segment_index, pos_on_sphere, closeness_inclusion_threshold);
 	}
 	else
 	{
 		// We are not close enough to any line segments.
-		add_rendered_highlight_off_line_segment(oriented_pos_on_sphere);
+		add_rendered_highlight_off_line_segment(pos_on_sphere);
 	}
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_on_line_segment(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// First make sure we are not too close to an existing point.
@@ -317,7 +317,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_on_
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
-			*d_points_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold))
+			*d_points_layer_ptr, pos_on_sphere, closeness_inclusion_threshold))
 	{
 		add_rendered_highlight_line_segment(line_segment_index);
 	}
@@ -325,7 +325,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_on_
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off_line_segment(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	//
 	// Mouse position is not on an existing line segment.
@@ -368,7 +368,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 		// between that point and the mouse position.
 		add_rendered_highlight_line_segment(
 				d_geometry_builder.get_geometry_point(geom_index, 0/*point index*/),
-				oriented_pos_on_sphere);
+				pos_on_sphere);
 	}
 	else if (num_points_in_geom > 1)
 	{
@@ -382,18 +382,18 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 		{
 			// Get index of closest point to mouse position.
 			const ClosestEndPoint closest_geom_end_point =
-					*get_closest_geometry_end_point_to(oriented_pos_on_sphere);
+					*get_closest_geometry_end_point_to(pos_on_sphere);
 
 			// Add a highlight line segment from mouse position to closest end of polyline.
 			add_rendered_highlight_line_segment(
 					(closest_geom_end_point == START_POINT) ? first_point : last_point,
-					oriented_pos_on_sphere);
+					pos_on_sphere);
 		}
 		else // GPlatesMaths::GeometryType::POLYGON
 		{
 			// Add two highlight line segments from mouse position to both ends of polygon.
-			add_rendered_highlight_line_segment(first_point, oriented_pos_on_sphere);
-			add_rendered_highlight_line_segment(last_point, oriented_pos_on_sphere);
+			add_rendered_highlight_line_segment(first_point, pos_on_sphere);
+			add_rendered_highlight_line_segment(last_point, pos_on_sphere);
 		}
 	}
 }
@@ -481,14 +481,14 @@ boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered_geom_layer(
 		const RenderedGeometryLayer &rendered_geom_layer,
 		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	const double closeness_inclusion_threshold =
 		d_query_proximity_threshold->current_proximity_inclusion_threshold(
 				clicked_pos_on_sphere);
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-			oriented_pos_on_sphere,
+			pos_on_sphere,
 			closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
@@ -507,11 +507,11 @@ GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered_geom_layer(
 	const RenderedGeometryLayer &rendered_geom_layer,
-	const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+	const GPlatesMaths::PointOnSphere &pos_on_sphere,
 	const double &closeness_inclusion_threshold)
 {
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-		oriented_pos_on_sphere,
+		pos_on_sphere,
 		closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
@@ -528,7 +528,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered
 
 boost::optional<GPlatesViewOperations::InsertVertexGeometryOperation::ClosestEndPoint>
 GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_end_point_to(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_geometry_builder.get_num_geometries() == 0)
 	{
@@ -549,7 +549,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_end_p
 	const GPlatesMaths::PointOnSphere &start_point_on_sphere =
 			d_geometry_builder.get_geometry_point(geom_index, 0);
 	const GPlatesMaths::real_t closeness_of_start_point =
-			calculate_closeness(start_point_on_sphere, oriented_pos_on_sphere);
+			calculate_closeness(start_point_on_sphere, pos_on_sphere);
 
 	if (num_points_in_geom == 1)
 	{
@@ -559,7 +559,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_end_p
 	const GPlatesMaths::PointOnSphere &end_point_on_sphere =
 			d_geometry_builder.get_geometry_point(geom_index, num_points_in_geom - 1);
 	const GPlatesMaths::real_t closeness_of_end_point =
-			calculate_closeness(end_point_on_sphere, oriented_pos_on_sphere);
+			calculate_closeness(end_point_on_sphere, pos_on_sphere);
 
 	return (closeness_of_end_point.dval() > closeness_of_start_point.dval())
 			? END_POINT

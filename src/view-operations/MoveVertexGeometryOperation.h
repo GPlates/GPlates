@@ -202,25 +202,25 @@ namespace GPlatesViewOperations
 
 		void
 		left_press(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);		
 				
 
 		//! User has just clicked and dragged on the sphere.
 		void
 		start_drag(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 		//! User is currently in the middle of dragging the mouse.
 		void
 		update_drag(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 		//! User has released mouse button after dragging.
 		void
 		end_drag(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 				
 		/**
 		 * User has released the mouse without a drag.                                                                      
@@ -231,7 +231,7 @@ namespace GPlatesViewOperations
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 	public Q_SLOTS:
@@ -357,7 +357,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		move_vertex(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				bool is_intermediate_move);
 
 		/**
@@ -366,7 +366,7 @@ namespace GPlatesViewOperations
 		 */
 		boost::optional<RenderedGeometryProximityHit>
 		test_proximity_to_points(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 		void

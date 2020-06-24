@@ -107,7 +107,7 @@ GPlatesViewOperations::AddPointGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::AddPointGeometryOperation::add_point(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Get number of points in current geometry.
@@ -122,7 +122,7 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 			d_geometry_builder.get_current_geometry_index();
 		GPlatesMaths::PointOnSphere last_point_added =
 			*(d_geometry_builder.get_geometry_point_end(geom_index) - 1);
-		if (last_point_added == oriented_pos_on_sphere)
+		if (last_point_added == pos_on_sphere)
 		{
 			return;
 		}
@@ -133,7 +133,7 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 			new GeometryBuilderInsertPointUndoCommand(
 					d_geometry_builder,
 					num_geom_points,
-					oriented_pos_on_sphere));
+					pos_on_sphere));
 
 	// Command wraps add point command with handing canvas tool choice and
 	// add point tool activation.

@@ -626,7 +626,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::remove_geometry(
 void
 GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &pos_on_globe)
 {
 	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
 	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
@@ -637,7 +637,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_current_geometry(
 	const GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index =
 		d_current_geometry_builder->get_current_geometry_index();
 
-	insert_point_into_geometry(geometry_index, point_index, oriented_pos_on_globe);
+	insert_point_into_geometry(geometry_index, point_index, pos_on_globe);
 
 	// Update the QTreeWidget with our changes.
 	d_tree_widget_builder.update_qtree_widget_with_added_or_inserted_items();
@@ -647,7 +647,7 @@ void
 GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &pos_on_globe)
 {
 	// Figure out which 'geometry' QTreeWidgetItem is the one where we need to add
 	// this coordinate.
@@ -658,7 +658,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 			GPLATES_ASSERTION_SOURCE);
 
 	const GPlatesMaths::LatLonPoint& lat_lon_point =
-		GPlatesMaths::make_lat_lon_point(oriented_pos_on_globe);
+		GPlatesMaths::make_lat_lon_point(pos_on_globe);
 
 	// Create the 'coordinate' QTreeWidgetItem and add it.
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type coord_item_handle = create_lat_lon_item(
@@ -688,7 +688,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 void
 GPlatesQtWidgets::LatLonCoordinatesTable::move_point_in_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-		const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &new_pos_on_globe)
 {
 	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
 	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
@@ -708,7 +708,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::move_point_in_current_geometry(
 			GPLATES_ASSERTION_SOURCE);
 
 	const GPlatesMaths::LatLonPoint& lat_lon_point =
-		GPlatesMaths::make_lat_lon_point(new_oriented_pos_on_globe);
+		GPlatesMaths::make_lat_lon_point(new_pos_on_globe);
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type geom_item_handle =
 			get_top_level_item_handle(d_tree_widget_builder, geometry_index);

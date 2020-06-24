@@ -117,7 +117,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	}
 	
 	//we need to reverse reconstruct the inserted point to present day first
-	if (d_oriented_pos_on_globe)
+	if (d_pos_on_globe)
 	{
 		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
@@ -127,7 +127,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 		{
 			GPlatesMaths::PointOnSphere reconstructed_point =
 			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-					*d_oriented_pos_on_globe,
+					*d_pos_on_globe,
 					*rfg.get()->reconstruction_plate_id(),
 					*rfg.get()->get_reconstruction_tree(),
 					true);
@@ -140,7 +140,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 		{
 			points.insert(
 					points.begin()+ d_point_index_to_insert_at, 
-					*d_oriented_pos_on_globe);
+					*d_pos_on_globe);
 		}
 	}
 	else

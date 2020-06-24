@@ -90,7 +90,7 @@ namespace GPlatesViewOperations
 		void
 		move_point_in_current_geometry(
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &new_pos_on_globe,
 				bool is_intermediate_move);
 
 		/**

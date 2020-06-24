@@ -37,7 +37,7 @@ GPlatesViewOperations::GeometryBuilderInsertPointUndoCommand::redo()
 	// its observers.
 	d_undo_operation = d_geometry_builder.insert_point_into_current_geometry(
 		d_point_index_to_insert_at,
-		d_oriented_pos_on_globe);
+		d_pos_on_globe);
 }
 
 
@@ -95,12 +95,12 @@ GPlatesViewOperations::GeometryBuilderMovePointUndoCommand::redo()
 	std::vector<GPlatesMaths::PointOnSphere> secondary_points;
 	for (int i = 0; i < static_cast<int>(d_secondary_geometries.size()) ; ++i)
 	{
-		secondary_points.push_back(d_oriented_pos_on_globe);
+		secondary_points.push_back(d_pos_on_globe);
 	}
 
 	d_undo_operation = d_geometry_builder.move_point_in_current_geometry(
 		d_point_index_to_move,
-		d_oriented_pos_on_globe,
+		d_pos_on_globe,
 		d_secondary_geometries,
 		secondary_points,
 		d_is_intermediate_move);
@@ -136,7 +136,7 @@ GPlatesViewOperations::GeometryBuilderMovePointUndoCommand::mergeWith(
 		//
 
 		// Use the other command's destination vertex position.
-		d_oriented_pos_on_globe = other_move_command->d_oriented_pos_on_globe;
+		d_pos_on_globe = other_move_command->d_pos_on_globe;
 
 		// If the other command is not an intermediate move then the merged
 		// command is also not an intermediate move.

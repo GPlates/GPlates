@@ -101,7 +101,7 @@ namespace GPlatesViewOperations
 		//! The mouse has moved (in globe view) but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move_on_globe(
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const double &closeness_inclusion_threshold);
 
 		//! The mouse has moved (in map view) but it is not a drag because mouse button is not pressed.
@@ -119,7 +119,7 @@ namespace GPlatesViewOperations
 		 */
 		bool
 		start_drag_on_globe(
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				const double &closeness_inclusion_threshold);
 
 		/**
@@ -137,12 +137,12 @@ namespace GPlatesViewOperations
 		//! User is currently in the middle of dragging the mouse.
 		void
 		update_drag(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 		//! User has released mouse button after dragging.
 		void
 		end_drag(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 	private Q_SLOTS:
 
@@ -214,7 +214,7 @@ namespace GPlatesViewOperations
 
 		bool
 		test_proximity_to_pole_on_globe(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 		bool

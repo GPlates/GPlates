@@ -120,13 +120,13 @@ GPlatesViewOperations::MovePoleOperation::deactivate()
 
 void
 GPlatesViewOperations::MovePoleOperation::mouse_move_on_globe(
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const double &closeness_inclusion_threshold)
 {
 	// Render pole as either highlighted if mouse hovering near pole or unhighlighted.
 	const bool highlight =
 			test_proximity_to_pole_on_globe(
-					oriented_current_pos_on_globe,
+					current_pos_on_globe,
 					// Increase closeness inclusion so easier to select arrow instead of point...
 					adjust_closeness_inclusion_threshold(closeness_inclusion_threshold));
 
@@ -153,7 +153,7 @@ GPlatesViewOperations::MovePoleOperation::mouse_move_on_map(
 
 bool
 GPlatesViewOperations::MovePoleOperation::start_drag_on_globe(
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		const double &closeness_inclusion_threshold)
 {
 	if (!d_move_pole_widget.can_change_pole())
@@ -162,7 +162,7 @@ GPlatesViewOperations::MovePoleOperation::start_drag_on_globe(
 	}
 
 	if (!test_proximity_to_pole_on_globe(
-		oriented_initial_pos_on_globe,
+		initial_pos_on_globe,
 		// Increase closeness inclusion so easier to select arrow instead of point...
 		adjust_closeness_inclusion_threshold(closeness_inclusion_threshold)))
 	{
@@ -203,11 +203,11 @@ GPlatesViewOperations::MovePoleOperation::start_drag_on_map(
 
 void
 GPlatesViewOperations::MovePoleOperation::update_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_is_dragging_pole)
 	{
-		move_pole(oriented_pos_on_sphere);
+		move_pole(pos_on_sphere);
 
 		render_pole(true/*highlight*/);
 	}
@@ -216,11 +216,11 @@ GPlatesViewOperations::MovePoleOperation::update_drag(
 
 void
 GPlatesViewOperations::MovePoleOperation::end_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_is_dragging_pole)
 	{
-		move_pole(oriented_pos_on_sphere);
+		move_pole(pos_on_sphere);
 
 		render_pole(true/*highlight*/);
 
@@ -268,7 +268,7 @@ GPlatesViewOperations::MovePoleOperation::adjust_closeness_inclusion_threshold(
 
 bool
 GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_globe(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// If pole is not enabled then we cannot be close to it.
@@ -278,7 +278,7 @@ GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_globe(
 	}
 
 	const GPlatesMaths::real_t closeness = dot(
-			oriented_pos_on_sphere.position_vector(),
+			pos_on_sphere.position_vector(),
 			d_move_pole_widget.get_pole()->position_vector());
 
 	return closeness.is_precisely_greater_than(closeness_inclusion_threshold);

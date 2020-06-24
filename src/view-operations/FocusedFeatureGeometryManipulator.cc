@@ -228,7 +228,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::geometry_builder_stopp
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::move_point_in_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex /*point_index*/,
-		const GPlatesMaths::PointOnSphere &/*new_oriented_pos_on_globe*/,
+		const GPlatesMaths::PointOnSphere &/*new_pos_on_globe*/,
 		bool is_intermediate_move)
 {
 	// We're interested only in whether it is an intermediate move or not.

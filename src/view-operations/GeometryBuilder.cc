@@ -359,7 +359,7 @@ GPlatesViewOperations::GeometryBuilder::set_geometry_type_to_build(
 GPlatesViewOperations::GeometryBuilder::UndoOperation
 GPlatesViewOperations::GeometryBuilder::insert_point_into_current_geometry(
 		PointIndex point_index,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &pos_on_globe)
 {
 	// This gets put in all public methods that modify geometry state.
 	// It checks for geometry type changes and emits begin_update/end_update signals.
@@ -381,9 +381,9 @@ GPlatesViewOperations::GeometryBuilder::insert_point_into_current_geometry(
 	InternalGeometryBuilder::point_seq_type::iterator insert_iter =
 		geometry.get_point_seq().begin();
 	std::advance(insert_iter, point_index);
-	geometry.get_point_seq().insert(insert_iter, oriented_pos_on_globe);
+	geometry.get_point_seq().insert(insert_iter, pos_on_globe);
 
-	Q_EMIT inserted_point_into_current_geometry(point_index, oriented_pos_on_globe);
+	Q_EMIT inserted_point_into_current_geometry(point_index, pos_on_globe);
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
 			new GeometryBuilderInternal::InsertPointUndoImpl(point_index)) );
@@ -429,7 +429,7 @@ GPlatesViewOperations::GeometryBuilder::remove_point_from_current_geometry(
 GPlatesViewOperations::GeometryBuilder::UndoOperation
 GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 		PointIndex point_index,
-		const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &new_pos_on_globe,
 		std::vector<SecondaryGeometry> &secondary_geometries,
 		std::vector<GPlatesMaths::PointOnSphere> &secondary_points,
 		bool is_intermediate_move)
@@ -449,8 +449,8 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 		geometry.get_point_seq().begin();
 	std::advance(move_iter, point_index);
 
-	GPlatesMaths::PointOnSphere old_oriented_pos_on_globe = *move_iter;
-	*move_iter = new_oriented_pos_on_globe;
+	GPlatesMaths::PointOnSphere old_pos_on_globe = *move_iter;
+	*move_iter = new_pos_on_globe;
 	
 	std::vector<GPlatesMaths::PointOnSphere> old_secondary_points;
 	fill_secondary_points(old_secondary_points,secondary_geometries);
@@ -460,11 +460,11 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 	}
 
 	Q_EMIT moved_point_in_current_geometry(
-			point_index, new_oriented_pos_on_globe, is_intermediate_move);
+			point_index, new_pos_on_globe, is_intermediate_move);
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
 			new GeometryBuilderInternal::MovePointUndoImpl(
-					point_index, old_oriented_pos_on_globe,secondary_geometries,old_secondary_points)) );
+					point_index, old_pos_on_globe,secondary_geometries,old_secondary_points)) );
 }
 
 const GPlatesViewOperations::InternalGeometryBuilder&

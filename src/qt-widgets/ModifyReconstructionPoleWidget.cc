@@ -68,21 +68,21 @@
 namespace
 {
 	/**
-	 * Return the closest point on the horizon to @a oriented_point_within_horizon.
+	 * Return the closest point on the horizon to @a point_within_horizon.
 	 *
-	 * If @a oriented_point_within_horizon is either coincident with the centre of the
+	 * If @a point_within_horizon is either coincident with the centre of the
 	 * viewport, or (somehow) antipodal to the centre of the viewport, boost::none will be
 	 * returned.
 	 */
 	const boost::optional<GPlatesMaths::PointOnSphere>
 	get_closest_point_on_horizon(
-			const GPlatesMaths::PointOnSphere &oriented_point_within_horizon,
-			const GPlatesMaths::PointOnSphere &oriented_center_of_viewport)
+			const GPlatesMaths::PointOnSphere &point_within_horizon,
+			const GPlatesMaths::PointOnSphere &center_of_viewport)
 	{
 		using namespace GPlatesMaths;
 
-		if (collinear(oriented_point_within_horizon.position_vector(),
-				oriented_center_of_viewport.position_vector()))
+		if (collinear(point_within_horizon.position_vector(),
+				center_of_viewport.position_vector()))
 		{
 			// The point (which is meant to be) within the horizon is either coincident
 			// with the centre of the viewport, or (somehow) antipodal to the centre of
@@ -94,14 +94,14 @@ namespace
 			return boost::none;
 		}
 		Vector3D cross_result =
-				cross(oriented_point_within_horizon.position_vector(),
-						oriented_center_of_viewport.position_vector());
+				cross(point_within_horizon.position_vector(),
+						center_of_viewport.position_vector());
 		// Since the two unit-vectors are non-collinear, we can assume the cross-product is
 		// a non-zero vector.
 		UnitVector3D normal_to_plane = cross_result.get_normalisation();
 
 		Vector3D point_on_horizon =
-				cross(oriented_center_of_viewport.position_vector(), normal_to_plane);
+				cross(center_of_viewport.position_vector(), normal_to_plane);
 		// Since both the center-of-viewport and normal-to-plane are unit-vectors, and they
 		// are (by definition) perpendicular, we will assume the result is of unit length.
 		return PointOnSphere(point_on_horizon.get_normalisation());
@@ -452,7 +452,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries_at_act
 
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
-		const GPlatesMaths::PointOnSphere &current_oriented_position)
+		const GPlatesMaths::PointOnSphere &current_position)
 {
 	if ( ! d_accum_orientation)
 	{
@@ -462,7 +462,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
 	if (d_move_pole_widget.get_pole())
 	{
 		d_drag_start = get_closest_point_on_equator_of_pole(
-				current_oriented_position,
+				current_position,
 				d_move_pole_widget.get_pole().get());
 		if (d_drag_start)
 		{
@@ -473,15 +473,15 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
 	}
 	else
 	{
-		d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
+		d_accum_orientation->set_new_handle_at_pos(current_position);
 	}
 }
 
 
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
-		const GPlatesMaths::PointOnSphere &current_oriented_position,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &current_position,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (d_move_pole_widget.get_pole())
 	{
@@ -493,7 +493,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
 	}
 
 	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
-			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+			get_closest_point_on_horizon(current_position, centre_of_viewport);
 	if ( ! point_on_horizon)
 	{
 		// The mouse position could not be converted to a point on the horizon.  Presumably
@@ -510,7 +510,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
 
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
-		const GPlatesMaths::PointOnSphere &current_oriented_position)
+		const GPlatesMaths::PointOnSphere &current_position)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_accum_orientation != NULL,
@@ -524,7 +524,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 			// adjustment pole location (or its antipodal). The first thing we should try to do is
 			// start the drag now.
 			d_drag_start = get_closest_point_on_equator_of_pole(
-					current_oriented_position,
+					current_position,
 					d_move_pole_widget.get_pole().get());
 			if (d_drag_start)
 			{
@@ -538,7 +538,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> drag_update =
 					get_closest_point_on_equator_of_pole(
-							current_oriented_position,
+							current_position,
 							d_move_pole_widget.get_pole().get());
 			if (drag_update)
 			{
@@ -551,7 +551,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 	}
 	else
 	{
-		d_accum_orientation->move_handle_to_pos(current_oriented_position);
+		d_accum_orientation->move_handle_to_pos(current_position);
 	}
 
 	draw_dragged_geometries();
@@ -561,8 +561,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
-		const GPlatesMaths::PointOnSphere &current_oriented_position,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &current_position,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (d_move_pole_widget.get_pole())
 	{
@@ -581,7 +581,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
 	}
 
 	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
-			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+			get_closest_point_on_horizon(current_position, centre_of_viewport);
 	if ( ! point_on_horizon)
 	{
 		// The mouse position could not be converted to a point on the horizon.  Presumably

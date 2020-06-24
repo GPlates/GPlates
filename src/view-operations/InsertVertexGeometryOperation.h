@@ -97,13 +97,13 @@ namespace GPlatesViewOperations
 		//! User has just clicked on the sphere.
 		void
 		left_click(
-			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const GPlatesMaths::PointOnSphere &pos_on_sphere,
 			const double &closeness_inclusion_threshold);
 
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
 	public Q_SLOTS:
@@ -184,7 +184,7 @@ namespace GPlatesViewOperations
 		void
 			insert_vertex_on_line_segment(
 			const unsigned int line_segment_index,
-			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const GPlatesMaths::PointOnSphere &pos_on_sphere,
 			const double &closeness_inclusion_threshold);
 
 		/**
@@ -195,7 +195,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		insert_vertex_off_line_segment(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 		/**
 		 * Perform the actual insert vertex command.
@@ -214,7 +214,7 @@ namespace GPlatesViewOperations
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 		project_point_onto_line_segment(
 				const unsigned int line_segment_index,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 		/**
 		* Tests proximity of specified point to the rendered geometries
@@ -224,7 +224,7 @@ namespace GPlatesViewOperations
 		boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 			test_proximity_to_rendered_geom_layer(
 			const RenderedGeometryLayer &rendered_geom_layer,
-			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const GPlatesMaths::PointOnSphere &pos_on_sphere,
 			const double &closeness_inclusion_threshold);
 
 		/**
@@ -235,7 +235,7 @@ namespace GPlatesViewOperations
 		 */
 		boost::optional<ClosestEndPoint>
 		get_closest_geometry_end_point_to(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 
 		void
 		connect_to_geometry_builder_signals();
@@ -275,18 +275,18 @@ namespace GPlatesViewOperations
 
 		void
 		update_highlight_rendered_layer(
-			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const GPlatesMaths::PointOnSphere &pos_on_sphere,
 			const double &closeness_inclusion_threshold);
 
 		void
 			add_rendered_highlight_on_line_segment(
 			const unsigned int line_segment_index,
-			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const GPlatesMaths::PointOnSphere &pos_on_sphere,
 			const double &closeness_inclusion_threshold);
 
 		void
 		add_rendered_highlight_off_line_segment(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &pos_on_sphere);
 		void
 		add_rendered_highlight_line_segment(
 				const unsigned int highlight_line_segment_index);

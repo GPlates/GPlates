@@ -111,7 +111,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::DeleteVertexGeometryOperation::left_click(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Return early if user is not allowed to delete a vertex.
@@ -125,7 +125,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::left_click(
 	//
 
 	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-			oriented_pos_on_sphere, closeness_inclusion_threshold);
+			pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_hit)
 	{
 		// The index of the vertex selected corresponds to index of vertex in
@@ -141,7 +141,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::left_click(
 
 void
 GPlatesViewOperations::DeleteVertexGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Return early if user is not allowed to delete a vertex.
@@ -158,7 +158,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::mouse_move(
 	d_highlight_point_layer_ptr->clear_rendered_geometries();
 
 	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-			oriented_pos_on_sphere, closeness_inclusion_threshold);
+			pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_hit)
 	{
 		const GeometryBuilder::PointIndex highlight_vertex_index = closest_hit->d_rendered_geom_index;
@@ -223,12 +223,12 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::allow_delete_vertex() cons
 
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::DeleteVertexGeometryOperation::test_proximity_to_points(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-			oriented_pos_on_sphere,
+			pos_on_sphere,
 			closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;

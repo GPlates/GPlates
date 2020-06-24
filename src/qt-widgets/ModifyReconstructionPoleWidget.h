@@ -116,21 +116,21 @@ namespace GPlatesQtWidgets
 
 		void
 		start_new_drag(
-				const GPlatesMaths::PointOnSphere &current_oriented_position);
+				const GPlatesMaths::PointOnSphere &current_position);
 
 		void
 		update_drag_position(
-				const GPlatesMaths::PointOnSphere &current_oriented_position);
+				const GPlatesMaths::PointOnSphere &current_position);
 
 		void
 		start_new_rotation_drag(
-				const GPlatesMaths::PointOnSphere &current_oriented_position,
-				const GPlatesMaths::PointOnSphere &oriented_center_of_viewport);
+				const GPlatesMaths::PointOnSphere &current_position,
+				const GPlatesMaths::PointOnSphere &center_of_viewport);
 
 		void
 		update_rotation_drag_position(
-				const GPlatesMaths::PointOnSphere &current_oriented_position,
-				const GPlatesMaths::PointOnSphere &oriented_center_of_viewport);
+				const GPlatesMaths::PointOnSphere &current_position,
+				const GPlatesMaths::PointOnSphere &center_of_viewport);
 
 		void
 		end_drag();

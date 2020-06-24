@@ -100,13 +100,13 @@ GPlatesViewOperations::ChangeLightDirectionOperation::deactivate()
 
 void
 GPlatesViewOperations::ChangeLightDirectionOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Render light direction as either highlighted if mouse hovering near light direction or unhighlighted.
 	const bool highlight =
 			test_proximity_to_light_direction(
-					oriented_pos_on_sphere,
+					pos_on_sphere,
 					// Increase closeness inclusion so easier to select arrow instead of point...
 					adjust_closeness_inclusion_threshold(closeness_inclusion_threshold));
 
@@ -116,11 +116,11 @@ GPlatesViewOperations::ChangeLightDirectionOperation::mouse_move(
 
 void
 GPlatesViewOperations::ChangeLightDirectionOperation::start_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	if (test_proximity_to_light_direction(
-		oriented_pos_on_sphere,
+		pos_on_sphere,
 		// Increase closeness inclusion so easier to select arrow instead of point...
 		adjust_closeness_inclusion_threshold(closeness_inclusion_threshold)))
 	{
@@ -133,11 +133,11 @@ GPlatesViewOperations::ChangeLightDirectionOperation::start_drag(
 
 void
 GPlatesViewOperations::ChangeLightDirectionOperation::update_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_is_dragging_light_direction)
 	{
-		move_light_direction(oriented_pos_on_sphere.position_vector());
+		move_light_direction(pos_on_sphere.position_vector());
 
 		render_light_direction(true/*highlight*/);
 	}
@@ -146,11 +146,11 @@ GPlatesViewOperations::ChangeLightDirectionOperation::update_drag(
 
 void
 GPlatesViewOperations::ChangeLightDirectionOperation::end_drag(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &pos_on_sphere)
 {
 	if (d_is_dragging_light_direction)
 	{
-		move_light_direction(oriented_pos_on_sphere.position_vector());
+		move_light_direction(pos_on_sphere.position_vector());
 
 		render_light_direction(true/*highlight*/);
 
@@ -201,14 +201,14 @@ GPlatesViewOperations::ChangeLightDirectionOperation::adjust_closeness_inclusion
 
 bool
 GPlatesViewOperations::ChangeLightDirectionOperation::test_proximity_to_light_direction(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
 	// Convert light direction to world-space (from view-space) if necessary.
 	const GPlatesMaths::UnitVector3D world_space_light_direction = get_world_space_light_direction();
 
 	const GPlatesMaths::real_t closeness = dot(
-			oriented_pos_on_sphere.position_vector(),
+			pos_on_sphere.position_vector(),
 			world_space_light_direction);
 
 	return closeness.is_precisely_greater_than(closeness_inclusion_threshold);

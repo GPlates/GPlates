@@ -47,12 +47,12 @@ namespace GPlatesViewOperations
 		GeometryBuilderInsertPointUndoCommand(
 				GeometryBuilder &digitisation_state_ptr,
 				GeometryBuilder::PointIndex point_index_to_insert_at,
-				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &pos_on_globe,
 				QUndoCommand *parent = 0) :
 			QUndoCommand(parent),
 			d_geometry_builder(digitisation_state_ptr),
 			d_point_index_to_insert_at(point_index_to_insert_at),
-			d_oriented_pos_on_globe(oriented_pos_on_globe)
+			d_pos_on_globe(pos_on_globe)
 		{
 			setText(QObject::tr("add point"));
 		}
@@ -68,7 +68,7 @@ namespace GPlatesViewOperations
 	private:
 		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_insert_at;
-		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
+		GPlatesMaths::PointOnSphere d_pos_on_globe;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};
 
@@ -116,13 +116,13 @@ namespace GPlatesViewOperations
 		GeometryBuilderMovePointUndoCommand(
 				GeometryBuilder &geometry_builder,
 				GeometryBuilder::PointIndex point_index_to_move,
-				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &pos_on_globe,
 				bool is_intermediate_move,
 				QUndoCommand *parent = 0) :
 			QUndoCommand(parent),
 			d_geometry_builder(geometry_builder),
 			d_point_index_to_move(point_index_to_move),
-			d_oriented_pos_on_globe(oriented_pos_on_globe),
+			d_pos_on_globe(pos_on_globe),
 			d_secondary_geometries(geometry_builder.get_secondary_geometries()),
 			d_is_intermediate_move(is_intermediate_move)
 		{
@@ -153,7 +153,7 @@ namespace GPlatesViewOperations
 	private:
 		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_move;
-		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
+		GPlatesMaths::PointOnSphere d_pos_on_globe;
 		std::vector<GPlatesViewOperations::SecondaryGeometry> &d_secondary_geometries;
 		bool d_is_intermediate_move;
 		GeometryBuilder::UndoOperation d_undo_operation;

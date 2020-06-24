@@ -89,7 +89,7 @@ namespace GPlatesQtWidgets
 		void
 		insert_point_into_current_geometry(
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &pos_on_globe);
 
 		void
 		remove_point_from_current_geometry(
@@ -98,7 +98,7 @@ namespace GPlatesQtWidgets
 		void
 		move_point_in_current_geometry(
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &new_pos_on_globe);
 
 		/**
 		 * The geometry operation emitting signals has changed.
@@ -190,7 +190,7 @@ namespace GPlatesQtWidgets
 		insert_point_into_geometry(
 				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &pos_on_globe);
 
 		void
 		remove_point_from_geometry(
