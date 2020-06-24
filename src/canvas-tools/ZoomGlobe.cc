@@ -27,6 +27,8 @@
 
 #include "ZoomGlobe.h"
 
+#include "gui/Globe.h"
+#include "gui/GlobeCamera.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/LatLonPoint.h"
@@ -63,11 +65,7 @@ void
 GPlatesCanvasTools::ZoomGlobe::recentre_globe(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe)
 {
-	static const GPlatesMaths::PointOnSphere centre_of_canvas =
-			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
-
-	globe().set_new_handle_pos(click_pos_on_globe);
-	globe().update_handle_pos(centre_of_canvas);
+	globe().get_globe_camera().set_look_at_position(click_pos_on_globe);
 }
 
 

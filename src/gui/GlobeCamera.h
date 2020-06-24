@@ -199,7 +199,7 @@ namespace GPlatesGui
 	Q_SIGNALS:
 	
 		/**
-		 * This signal should only be emitted if the camera is actually different to what it was.
+		 * This signal is emitted when the camera changes.
 		 */
 		void
 		camera_changed();

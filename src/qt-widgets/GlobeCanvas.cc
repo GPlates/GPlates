@@ -1397,8 +1397,6 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 {
 	d_globe_camera.set_look_at_position(
 			GPlatesMaths::make_point_on_sphere(desired_centre));
-
-	update_canvas();
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
