@@ -247,6 +247,23 @@ GPlatesGui::GlobeCamera::set_projection_type(
 }
 
 
+void
+GPlatesGui::GlobeCamera::set_look_at_position(
+		const GPlatesMaths::PointOnSphere &look_at_position)
+{
+	// Rotation from current look-at position to specified look-at position.
+	const GPlatesMaths::Rotation rotation =
+			GPlatesMaths::Rotation::create(d_look_at_position, look_at_position.position_vector());
+
+	// Rotation the look-at position and associated view frame.
+	d_look_at_position = rotation * d_look_at_position;
+	d_view_direction = rotation * d_view_direction;
+	d_up_direction = rotation * d_up_direction;
+
+	Q_EMIT camera_changed();
+}
+
+
 GPlatesMaths::Vector3D
 GPlatesGui::GlobeCamera::get_perspective_eye_position() const
 {

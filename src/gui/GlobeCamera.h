@@ -109,11 +109,23 @@ namespace GPlatesGui
 		/**
 		 * The position on the globe that the view is looking at.
 		 */
-		const GPlatesMaths::UnitVector3D &
+		GPlatesMaths::PointOnSphere
 		get_look_at_position() const
 		{
-			return d_look_at_position;
+			return GPlatesMaths::PointOnSphere(d_look_at_position);
 		}
+
+		/**
+		 * Set the position on the globe that the view should look at.
+		 *
+		 * The current look-at position is rotated to the specified look-at position along the
+		 * great circle arc between them, and the view and up directions are rotated by same rotation.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		void
+		set_look_at_position(
+				const GPlatesMaths::PointOnSphere &look_at_position);
 
 		/**
 		 * The 'up' vector for the view orientation.

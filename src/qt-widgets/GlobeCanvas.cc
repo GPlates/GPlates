@@ -121,7 +121,7 @@ namespace
 		//
 
 		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
-		const GPlatesMaths::UnitVector3D &camera_look_at = camera.get_look_at_position();
+		const GPlatesMaths::UnitVector3D &camera_look_at = camera.get_look_at_position().position_vector();
 		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
 
 		if (camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
@@ -567,7 +567,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 GPlatesMaths::PointOnSphere
 GPlatesQtWidgets::GlobeCanvas::centre_of_viewport() const
 {
-	return GPlatesMaths::PointOnSphere(d_globe_camera.get_look_at_position());
+	return d_globe_camera.get_look_at_position();
 }
 
 
@@ -1393,16 +1393,10 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 
 void
 GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
-	const GPlatesMaths::LatLonPoint &desired_centre)
+		const GPlatesMaths::LatLonPoint &desired_centre)
 {
-	static const GPlatesMaths::PointOnSphere centre_of_canvas =
-			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
-
-	GPlatesMaths::PointOnSphere oriented_desired_centre = 
-	d_globe.orientation().orient_point(
-		GPlatesMaths::make_point_on_sphere(desired_centre));
-	d_globe.set_new_handle_pos(oriented_desired_centre);
-	d_globe.update_handle_pos(centre_of_canvas);
+	d_globe_camera.set_look_at_position(
+			GPlatesMaths::make_point_on_sphere(desired_centre));
 
 	update_canvas();
 }
@@ -1412,8 +1406,7 @@ GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 {
 	// This function returns a boost::optional for consistency with the base class virtual function.
 	// The globe always returns a valid camera llp though.
-	return GPlatesMaths::make_lat_lon_point(
-			GPlatesMaths::PointOnSphere(d_globe_camera.get_look_at_position()));
+	return GPlatesMaths::make_lat_lon_point(d_globe_camera.get_look_at_position());
 }
 
 void
