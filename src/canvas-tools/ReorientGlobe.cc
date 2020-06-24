@@ -121,3 +121,38 @@ GPlatesCanvasTools::ReorientGlobe::handle_shift_left_release_after_drag(
 			oriented_centre_of_viewport);
 }
 
+
+void
+GPlatesCanvasTools::ReorientGlobe::handle_alt_left_drag(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	tilt_globe_by_drag_update(initial_pos_on_globe,
+			oriented_initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe,
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
+}
+
+
+void
+GPlatesCanvasTools::ReorientGlobe::handle_alt_left_release_after_drag(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	tilt_globe_by_drag_release(initial_pos_on_globe,
+			oriented_initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe,
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
+}

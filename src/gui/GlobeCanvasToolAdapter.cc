@@ -86,6 +86,7 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 			break;
 
 		case Qt::ShiftModifier:
+		case Qt::AltModifier:
 		case Qt::ControlModifier:
 		default:
 			break;
@@ -121,6 +122,12 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_click(
+					click_pos_on_globe,
+					oriented_click_pos_on_globe, is_on_globe);
+			break;
+
+		case Qt::AltModifier:
+			get_active_globe_canvas_tool().handle_alt_left_click(
 					click_pos_on_globe,
 					oriented_click_pos_on_globe, is_on_globe);
 			break;
@@ -180,6 +187,15 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 					oriented_centre_of_viewport);
 			break;
 
+		case Qt::AltModifier:
+			get_active_globe_canvas_tool().handle_alt_left_drag(
+					initial_pos_on_globe,
+					oriented_initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
+			break;
+
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_drag(
 					initial_pos_on_globe,
@@ -197,6 +213,16 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 			{
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_drag(
+						initial_pos_on_globe,
+						oriented_initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe,
+						oriented_current_pos_on_globe, is_on_globe,
+						oriented_centre_of_viewport);
+			}
+			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
+			{
+				// The user was indeed holding the Alt and Control keys.
+				get_active_globe_canvas_tool().handle_alt_ctrl_left_drag(
 						initial_pos_on_globe,
 						oriented_initial_pos_on_globe, was_on_globe,
 						current_pos_on_globe,
@@ -250,6 +276,15 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 					oriented_centre_of_viewport);
 			break;
 
+		case Qt::AltModifier:
+			get_active_globe_canvas_tool().handle_alt_left_release_after_drag(
+					initial_pos_on_globe,
+					oriented_initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
+			break;
+
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_release_after_drag(
 					initial_pos_on_globe,
@@ -267,6 +302,16 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 			{
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_release_after_drag(
+						initial_pos_on_globe,
+						oriented_initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe,
+						oriented_current_pos_on_globe, is_on_globe,
+						oriented_centre_of_viewport);
+			}
+			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
+			{
+				// The user was indeed holding the Alt and Control keys.
+				get_active_globe_canvas_tool().handle_alt_ctrl_left_release_after_drag(
 						initial_pos_on_globe,
 						oriented_initial_pos_on_globe, was_on_globe,
 						current_pos_on_globe,

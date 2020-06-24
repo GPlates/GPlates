@@ -121,3 +121,45 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 	d_globe_ptr->get_globe_camera().end_drag();
 	d_is_in_reorientation_op = false;
 }
+
+
+void
+GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	if ( ! d_is_in_reorientation_op)
+	{
+		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_TILT, initial_pos_on_globe);
+		d_is_in_reorientation_op = true;
+	}
+
+	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_release(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	if ( ! d_is_in_reorientation_op)
+	{
+		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_TILT, initial_pos_on_globe);
+		d_is_in_reorientation_op = true;
+	}
+
+	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
+	d_globe_ptr->get_globe_camera().end_drag();
+	d_is_in_reorientation_op = false;
+}
