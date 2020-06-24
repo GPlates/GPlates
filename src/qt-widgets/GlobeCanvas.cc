@@ -463,11 +463,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	setFocusPolicy(Qt::StrongFocus);
 	setMinimumSize(100, 100);
 
-	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
-			this, SLOT(notify_of_orientation_change()));
-	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
-			this, SLOT(force_mouse_pointer_pos_change()));
-
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
@@ -485,6 +480,9 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	QObject::connect(
 			&d_globe_camera, SIGNAL(camera_changed()),
 			this, SLOT(handle_camera_change()));
+	QObject::connect(
+			&d_globe_camera, SIGNAL(camera_changed()),
+			this, SLOT(force_mouse_pointer_pos_change()));
 
 	handle_camera_change();
 
@@ -577,13 +575,6 @@ void
 GPlatesQtWidgets::GlobeCanvas::update_canvas()
 {
 	update();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
-{
-	update_canvas();
 }
 
 
@@ -1419,13 +1410,10 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 {
-// This returns a boost::optional for consistency with the virtual function. The globe
-// should always return a valid camera llp. 
-	static const GPlatesMaths::PointOnSphere centre_of_canvas =
-			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
-
-	GPlatesMaths::PointOnSphere oriented_centre = globe().orient(centre_of_canvas);
-	return GPlatesMaths::make_lat_lon_point(oriented_centre);
+	// This function returns a boost::optional for consistency with the base class virtual function.
+	// The globe always returns a valid camera llp though.
+	return GPlatesMaths::make_lat_lon_point(
+			GPlatesMaths::PointOnSphere(d_globe_camera.get_look_at_position()));
 }
 
 void

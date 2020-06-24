@@ -318,9 +318,6 @@ namespace GPlatesQtWidgets
 		update_canvas();
 
 		void
-		notify_of_orientation_change();
-
-		void
 		handle_mouse_pointer_pos_change();
 
 		void

@@ -34,23 +34,25 @@
 
 #include "ReconstructionViewWidget.h"
 
-#include "ViewportWindow.h"
-#include "GlobeCanvas.h"
 #include "AnimateControlWidget.h"
-#include "ZoomControlWidget.h"
-#include "TimeControlWidget.h"
-#include "ProjectionControlWidget.h"
+#include "GlobeAndMapWidget.h"
+#include "GlobeCanvas.h"
+#include "LeaveFullScreenButton.h"
 #include "MapCanvas.h"
 #include "MapView.h"
-#include "LeaveFullScreenButton.h"
-#include "GlobeAndMapWidget.h"
+#include "ProjectionControlWidget.h"
+#include "TimeControlWidget.h"
+#include "ViewportWindow.h"
+#include "ZoomControlWidget.h"
 
+#include "gui/Globe.h"
+#include "gui/GlobeCamera.h"
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
 #include "gui/ViewportProjection.h"
 
-#include "maths/PointOnSphere.h"
 #include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 
 #include "presentation/ViewState.h"
 
@@ -256,8 +258,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	// Handle signals to recalculate the camera position
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_globe_canvas().globe().orientation()),
-			SIGNAL(orientation_changed()),
+			&(d_globe_and_map_widget_ptr->get_globe_canvas().globe().get_globe_camera()),
+			SIGNAL(camera_changed()),
 			this,
 			SLOT(recalc_camera_position()));
 	QObject::connect(
