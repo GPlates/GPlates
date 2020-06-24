@@ -177,9 +177,9 @@ namespace GPlatesCanvasTools
 		handle_left_drag(
 				bool &is_in_drag,
 				GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				const double &closeness_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe);
 	};
 }
 

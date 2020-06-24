@@ -86,7 +86,6 @@ namespace GPlatesGui
 		void
 		handle_press(
 				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);	
@@ -94,7 +93,6 @@ namespace GPlatesGui
 		void
 		handle_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -102,24 +100,20 @@ namespace GPlatesGui
 		void
 		handle_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
 		void
 		handle_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -129,9 +123,8 @@ namespace GPlatesGui
 		void
 		handle_move_without_drag(
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 	private:
 

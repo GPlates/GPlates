@@ -131,21 +131,21 @@ void
 GPlatesCanvasTools::MoveVertex::handle_left_drag(
 		bool &is_in_drag,
 		GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		const double &closeness_inclusion_threshold,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe)
 {
 
 	if ( ! is_in_drag)
 	{
 		move_vertex_geometry_operation->start_drag(
-			oriented_initial_pos_on_globe,
+			initial_pos_on_globe,
 			closeness_inclusion_threshold);
 
 		is_in_drag = true;
 	}
 
-	move_vertex_geometry_operation->update_drag(oriented_current_pos_on_globe);
+	move_vertex_geometry_operation->update_drag(current_pos_on_globe);
 }
 
 void

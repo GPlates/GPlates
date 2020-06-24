@@ -72,7 +72,6 @@ GPlatesCanvasTools::ZoomGlobe::recentre_globe(
 void
 GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	recentre_globe(click_pos_on_globe);
@@ -83,7 +82,6 @@ GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 void
 GPlatesCanvasTools::ZoomGlobe::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	recentre_globe(click_pos_on_globe);

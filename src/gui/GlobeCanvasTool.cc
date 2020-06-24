@@ -42,12 +42,10 @@ GPlatesGui::GlobeCanvasTool::~GlobeCanvasTool()
 void
 GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (!d_is_in_reorientation_op)
 	{
@@ -62,12 +60,10 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 void
 GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (!d_is_in_reorientation_op)
 	{
@@ -84,12 +80,10 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 void
 GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op)
 	{
@@ -104,12 +98,10 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 void
 GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op)
 	{
@@ -126,12 +118,10 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 void
 GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op)
 	{
@@ -146,12 +136,10 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
 void
 GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op)
 	{

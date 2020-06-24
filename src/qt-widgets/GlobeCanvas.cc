@@ -343,7 +343,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
-	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
+	d_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(
 			view_state,
@@ -367,7 +367,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GlobeCanvas *existing_globe_canvas,
 		GPlatesPresentation::ViewState &view_state_,
-		GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
+		GPlatesMaths::PointOnSphere &mouse_pointer_pos_on_globe_,
 		bool mouse_pointer_is_on_globe_,
 		GPlatesGui::Globe &existing_globe_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
@@ -395,7 +395,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					d_gl_context,
 					existing_globe_canvas->d_gl_visual_layers,
 					view_state_.get_application_state())),
-	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
+	d_mouse_pointer_pos_on_globe(mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
 	d_globe(
 			existing_globe_,
@@ -497,7 +497,7 @@ GPlatesQtWidgets::GlobeCanvas::clone(
 	return new GlobeCanvas(
 			this,
 			d_view_state,
-			d_virtual_mouse_pointer_pos_on_globe,
+			d_mouse_pointer_pos_on_globe,
 			d_mouse_pointer_is_on_globe,
 			d_globe,
 			colour_scheme,
@@ -582,21 +582,20 @@ void
 GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 {
 	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
-			calc_virtual_globe_position(
+			calc_globe_position(
 					d_mouse_pointer_screen_pos_x,
 					d_mouse_pointer_screen_pos_y);
 
 	bool is_now_on_globe = new_pos_result.first;
 	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
 
-	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
-			is_now_on_globe != d_mouse_pointer_is_on_globe) {
-
-		d_virtual_mouse_pointer_pos_on_globe = new_pos;
+	if (new_pos != d_mouse_pointer_pos_on_globe ||
+		is_now_on_globe != d_mouse_pointer_is_on_globe)
+	{
+		d_mouse_pointer_pos_on_globe = new_pos;
 		d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
-		Q_EMIT mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+		Q_EMIT mouse_pointer_position_changed(new_pos, is_now_on_globe);
 	}
 }
 
@@ -605,18 +604,17 @@ void
 GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 {
 	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
-			calc_virtual_globe_position(
+			calc_globe_position(
 					d_mouse_pointer_screen_pos_x,
 					d_mouse_pointer_screen_pos_y);
 
 	bool is_now_on_globe = new_pos_result.first;
 	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
 
-	d_virtual_mouse_pointer_pos_on_globe = new_pos;
+	d_mouse_pointer_pos_on_globe = new_pos;
 	d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
-	Q_EMIT mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+	Q_EMIT mouse_pointer_position_changed(new_pos, is_now_on_globe);
 }
 
 
@@ -1108,14 +1106,13 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 			MousePressInfo(
 					press_event->x(),
 					press_event->y(),
-					virtual_mouse_pointer_pos_on_globe(),
+					mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
 					press_event->modifiers());
 
 	Q_EMIT mouse_pressed(
 		d_mouse_press_info->d_mouse_pointer_pos,
-		d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 		d_mouse_press_info->d_is_on_globe,
 		d_mouse_press_info->d_button,
 		d_mouse_press_info->d_modifiers);
@@ -1144,12 +1141,10 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		if (d_mouse_press_info->d_is_mouse_drag) {
 			Q_EMIT mouse_dragged(
 					d_mouse_press_info->d_mouse_pointer_pos,
-					d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 					d_mouse_press_info->d_is_on_globe,
-					virtual_mouse_pointer_pos_on_globe(),
-					d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
+					mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
-					d_globe.orient(centre_of_viewport()),
+					centre_of_viewport(),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
@@ -1164,10 +1159,9 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		// canvas tool operation.
 		//
 		Q_EMIT mouse_moved_without_drag(
-				virtual_mouse_pointer_pos_on_globe(),
-				d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
+				mouse_pointer_pos_on_globe(),
 				mouse_pointer_is_on_globe(),
-				d_globe.orient(centre_of_viewport()));
+				centre_of_viewport());
 	}
 }
 
@@ -1201,18 +1195,15 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 	if (d_mouse_press_info->d_is_mouse_drag) {
 		Q_EMIT mouse_released_after_drag(
 				d_mouse_press_info->d_mouse_pointer_pos,
-				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
-				virtual_mouse_pointer_pos_on_globe(),
-				d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
+				mouse_pointer_pos_on_globe(),
 				mouse_pointer_is_on_globe(),
-				d_globe.orient(centre_of_viewport()),
+				centre_of_viewport(),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	} else {
 		Q_EMIT mouse_clicked(
 				d_mouse_press_info->d_mouse_pointer_pos,
-				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
@@ -1450,7 +1441,7 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 }
 
 std::pair<bool, GPlatesMaths::PointOnSphere>
-GPlatesQtWidgets::GlobeCanvas::calc_virtual_globe_position(
+GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
 		int screen_x,
 		int screen_y) const
 {

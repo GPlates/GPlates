@@ -96,14 +96,6 @@ GPlatesGui::Globe::Globe(
 {  }
 
 
-const GPlatesMaths::PointOnSphere
-GPlatesGui::Globe::orient(
-		const GPlatesMaths::PointOnSphere &pos) const
-{
-	return d_globe_orientation_ptr->reverse_orient_point(pos);
-}
-
-
 void
 GPlatesGui::Globe::initialiseGL(
 		GPlatesOpenGL::GLRenderer &renderer)

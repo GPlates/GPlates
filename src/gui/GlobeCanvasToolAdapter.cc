@@ -68,7 +68,6 @@ GPlatesGui::GlobeCanvasToolAdapter::deactivate_canvas_tool()
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 	const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-	const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
 	bool is_on_globe,
 	Qt::MouseButton button,
 	Qt::KeyboardModifiers modifiers)
@@ -81,7 +80,6 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_press(
 					press_pos_on_globe,
-					oriented_press_pos_on_globe,
 					is_on_globe);
 			break;
 
@@ -104,7 +102,6 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -117,25 +114,25 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_click(
 					click_pos_on_globe,
-					oriented_click_pos_on_globe, is_on_globe);
+					is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_click(
 					click_pos_on_globe,
-					oriented_click_pos_on_globe, is_on_globe);
+					is_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_click(
 					click_pos_on_globe,
-					oriented_click_pos_on_globe, is_on_globe);
+					is_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_click(
 					click_pos_on_globe,
-					oriented_click_pos_on_globe, is_on_globe);
+					is_on_globe);
 			break;
 
 		default:
@@ -155,12 +152,10 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -171,38 +166,30 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 		{
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		default:
@@ -213,21 +200,17 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 			{
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_drag(
-						initial_pos_on_globe,
-						oriented_initial_pos_on_globe, was_on_globe,
-						current_pos_on_globe,
-						oriented_current_pos_on_globe, is_on_globe,
-						oriented_centre_of_viewport);
+						initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe, is_on_globe,
+						centre_of_viewport);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_globe_canvas_tool().handle_alt_ctrl_left_drag(
-						initial_pos_on_globe,
-						oriented_initial_pos_on_globe, was_on_globe,
-						current_pos_on_globe,
-						oriented_current_pos_on_globe, is_on_globe,
-						oriented_centre_of_viewport);
+						initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe, is_on_globe,
+						centre_of_viewport);
 			}
 			break;
 		}
@@ -244,12 +227,10 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -260,38 +241,30 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 		{
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_release_after_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_release_after_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_release_after_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_release_after_drag(
-					initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 			break;
 
 		default:
@@ -302,21 +275,17 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 			{
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_release_after_drag(
-						initial_pos_on_globe,
-						oriented_initial_pos_on_globe, was_on_globe,
-						current_pos_on_globe,
-						oriented_current_pos_on_globe, is_on_globe,
-						oriented_centre_of_viewport);
+						initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe, is_on_globe,
+						centre_of_viewport);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_globe_canvas_tool().handle_alt_ctrl_left_release_after_drag(
-						initial_pos_on_globe,
-						oriented_initial_pos_on_globe, was_on_globe,
-						current_pos_on_globe,
-						oriented_current_pos_on_globe, is_on_globe,
-						oriented_centre_of_viewport);
+						initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe, is_on_globe,
+						centre_of_viewport);
 			}
 			break;
 		}
@@ -333,14 +302,12 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_move_without_drag(
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	get_active_globe_canvas_tool().handle_move_without_drag(
-			current_pos_on_globe,
-			oriented_current_pos_on_globe, is_on_globe,
-			oriented_centre_of_viewport);
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 
@@ -351,13 +318,11 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			&d_globe_canvas,
 			SIGNAL(mouse_pressed(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &,
 					bool,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_press(
-					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &,
 					bool,
 					Qt::MouseButton,
@@ -367,60 +332,66 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			&d_globe_canvas,
 			SIGNAL(mouse_clicked(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+					bool,
+					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_click(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+					bool,
+					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
 	QObject::connect(
 			&d_globe_canvas,
 			SIGNAL(mouse_dragged(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
+					Qt::MouseButton,
+					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_drag(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)));
+					Qt::MouseButton,
+					Qt::KeyboardModifiers)));
 
 	QObject::connect(
 			&d_globe_canvas,
 			SIGNAL(mouse_released_after_drag(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
+					Qt::MouseButton,
+					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_release_after_drag(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)));
+					Qt::MouseButton,
+					Qt::KeyboardModifiers)));
 
 	QObject::connect(
 			&d_globe_canvas,
 			SIGNAL(mouse_moved_without_drag(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &)),
 			this,
 			SLOT(handle_move_without_drag(
 					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
+					bool,
 					const GPlatesMaths::PointOnSphere &)));
 }
 

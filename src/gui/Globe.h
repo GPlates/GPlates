@@ -107,10 +107,6 @@ namespace GPlatesGui
 		initialiseGL(
 				GPlatesOpenGL::GLRenderer &renderer);
 
-		const GPlatesMaths::PointOnSphere
-		orient(
-				const GPlatesMaths::PointOnSphere &pos) const;
-
 		const SimpleGlobeOrientation &
 		orientation() const
 		{

@@ -100,20 +100,12 @@ namespace GPlatesGui
 		/**
 		 * Handle a left mouse-button press.
 		 *
-		 * @a press_pos_on_globe is the position of the click on the globe, without taking
-		 * the globe-orientation into account:  (0, 0) is always in the centre of the
-		 * canvas; (0, -90) is always on the left-most point of the globe in the canvas;
-		 * (0, 90) is always on the right-most point of the globe in the canvas; etc.  This
-		 * position is used to determine the proximity inclusion threshold of clicks.
-		 *
-		 * @a oriented_press_pos_on_globe is the position of the click on the oriented
-		 * globe.  This is the position which should be compared to geometries on the globe
-		 * when testing for hits.
+		 * @a press_pos_on_globe is the position of the click on the globe.
 		 *
 		 * Note that the mouse pointer may not actually be on the globe:  If the mouse
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
-		 * positions reported in the previous two parameters will be the closest positions
-		 * on the globe to the actual mouse pointer position on-screen.
+		 * position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
 		 * This function is a no-op implementation which may be overridden in a derived
 		 * class.
@@ -122,27 +114,18 @@ namespace GPlatesGui
 		void
 		handle_left_press(
 			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
 			bool is_on_globe)
 		{  }
 
 		/**
 		 * Handle a left mouse-button click.
 		 *
-		 * @a click_pos_on_globe is the position of the click on the globe, without taking
-		 * the globe-orientation into account:  (0, 0) is always in the centre of the
-		 * canvas; (0, -90) is always on the left-most point of the globe in the canvas;
-		 * (0, 90) is always on the right-most point of the globe in the canvas; etc.  This
-		 * position is used to determine the proximity inclusion threshold of clicks.
-		 *
-		 * @a oriented_click_pos_on_globe is the position of the click on the oriented
-		 * globe.  This is the position which should be compared to geometries on the globe
-		 * when testing for hits.
+		 * @a click_pos_on_globe is the position of the click on the globe.
 		 *
 		 * Note that the mouse pointer may not actually be on the globe:  If the mouse
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
-		 * positions reported in the previous two parameters will be the closest positions
-		 * on the globe to the actual mouse pointer position on-screen.
+		 * position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
 		 * This function is a no-op implementation which may be overridden in a derived
 		 * class.
@@ -151,33 +134,27 @@ namespace GPlatesGui
 		void
 		handle_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed.
 		 *
-		 * @a initial_pos_on_globe is the position on the globe (without taking
-		 * globe-orientation into account) at which the mouse pointer was located when the
-		 * mouse button was pressed and held.
-		 *
-		 * @a oriented_initial_pos_on_globe is the position on the oriented globe.  This is
-		 * the position which should be compared to geometries on the globe when testing
-		 * for hits.
+		 * @a initial_pos_on_globe is the position on the globe at which the mouse pointer
+		 * was located when the mouse button was pressed and held.
 		 *
 		 * Note that the mouse pointer may not actually have been on the globe:  If the
 		 * mouse pointer was not actually on the globe, @a was_on_globe will be false, and
-		 * the positions reported in the previous two parameters will be the closest
-		 * positions on the globe to the actual mouse pointer position on-screen.
+		 * the position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
-		 * @a current_pos_on_globe is the position on the globe (without taking
-		 * globe-orientation into account) at which the mouse pointer is currently located.
+		 * @a current_pos_on_globe is the position on the globe at which the mouse pointer
+		 * is currently located.
 		 *
 		 * Note that the mouse pointer may not actually be on the globe:  If the mouse
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
-		 * position reported in the previous parameter will be the closest position on the
-		 * globe to the actual mouse pointer position on-screen.
+		 * position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
 		 * This function should be invoked in response to intermediate updates of the
 		 * mouse-pointer position (as the mouse-pointer is moved about with the
@@ -191,37 +168,30 @@ namespace GPlatesGui
 		void
 		handle_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag.
 		 *
-		 * @a initial_pos_on_globe is the position on the globe (without taking
-		 * globe-orientation into account) at which the mouse pointer was located when the
-		 * mouse button was pressed and held.
-		 *
-		 * @a oriented_initial_pos_on_globe is the position on the oriented globe.  This is
-		 * the position which should be compared to geometries on the globe when testing
-		 * for hits.
+		 * @a initial_pos_on_globe is the position on the globe at which the mouse pointer
+		 * was located when the mouse button was pressed and held.
 		 *
 		 * Note that the mouse pointer may not actually have been on the globe:  If the
 		 * mouse pointer was not actually on the globe, @a was_on_globe will be false, and
-		 * the positions reported in the previous two parameters will be the closest
-		 * positions on the globe to the actual mouse pointer position on-screen.
+		 * the position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
-		 * @a current_pos_on_globe is the position on the globe (without taking
-		 * globe-orientation into account) at which the mouse pointer is currently located.
+		 * @a current_pos_on_globe is the position on the globe at which the mouse pointer
+		 * is currently located.
 		 *
 		 * Note that the mouse pointer may not actually be on the globe:  If the mouse
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
-		 * position reported in the previous parameter will be the closest position on the
-		 * globe to the actual mouse pointer position on-screen.
+		 * position reported will be the closest position on the globe to the actual
+		 * mouse pointer position on-screen.
 		 *
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
@@ -236,12 +206,10 @@ namespace GPlatesGui
 		void
 		handle_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
@@ -254,7 +222,6 @@ namespace GPlatesGui
 		void
 		handle_shift_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -274,12 +241,10 @@ namespace GPlatesGui
 		void
 		handle_shift_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
@@ -299,12 +264,10 @@ namespace GPlatesGui
 		void
 		handle_shift_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
@@ -317,7 +280,6 @@ namespace GPlatesGui
 		void
 		handle_alt_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -337,12 +299,10 @@ namespace GPlatesGui
 		void
 		handle_alt_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
@@ -362,12 +322,10 @@ namespace GPlatesGui
 		void
 		handle_alt_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 		/**
@@ -380,7 +338,6 @@ namespace GPlatesGui
 		void
 		handle_ctrl_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -400,18 +357,15 @@ namespace GPlatesGui
 		void
 		handle_ctrl_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			reorient_globe_by_drag_update(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			reorient_globe_by_drag_update(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -431,18 +385,15 @@ namespace GPlatesGui
 		void
 		handle_ctrl_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			reorient_globe_by_drag_release(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			reorient_globe_by_drag_release(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -455,7 +406,6 @@ namespace GPlatesGui
 		void
 		handle_shift_ctrl_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -475,18 +425,15 @@ namespace GPlatesGui
 		void
 		handle_shift_ctrl_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			rotate_globe_by_drag_update(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			rotate_globe_by_drag_update(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -506,18 +453,15 @@ namespace GPlatesGui
 		void
 		handle_shift_ctrl_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			rotate_globe_by_drag_release(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			rotate_globe_by_drag_release(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -530,7 +474,6 @@ namespace GPlatesGui
 		void
 		handle_alt_ctrl_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -550,18 +493,15 @@ namespace GPlatesGui
 		void
 		handle_alt_ctrl_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			tilt_globe_by_drag_update(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			tilt_globe_by_drag_update(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -581,18 +521,15 @@ namespace GPlatesGui
 		void
 		handle_alt_ctrl_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{
-			tilt_globe_by_drag_release(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
+			tilt_globe_by_drag_release(
+					initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe,
+					centre_of_viewport);
 		}
 
 		/**
@@ -608,9 +545,8 @@ namespace GPlatesGui
 		void
 		handle_move_without_drag(
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
 	protected:
@@ -636,12 +572,10 @@ namespace GPlatesGui
 		void
 		reorient_globe_by_drag_update(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
 		 * Re-orient the globe by dragging the mouse pointer.
@@ -652,12 +586,10 @@ namespace GPlatesGui
 		void
 		reorient_globe_by_drag_release(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
 		 * Rotate the globe around the centre of the viewport by dragging the mouse
@@ -669,12 +601,10 @@ namespace GPlatesGui
 		void
 		rotate_globe_by_drag_update(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
 		 * Rotate the globe around the centre of the viewport by dragging the mouse
@@ -686,12 +616,10 @@ namespace GPlatesGui
 		void
 		rotate_globe_by_drag_release(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
 		 * Tilt the globe around the centre of the viewport by dragging the mouse
@@ -703,12 +631,10 @@ namespace GPlatesGui
 		void
 		tilt_globe_by_drag_update(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
 		 * Tilt the globe around the centre of the viewport by dragging the mouse
@@ -720,12 +646,10 @@ namespace GPlatesGui
 		void
 		tilt_globe_by_drag_release(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 	private:
 

@@ -61,13 +61,12 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_deactivation()
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_press(
 	const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-	const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 	bool is_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_press(
-			oriented_click_pos_on_globe,
+			click_pos_on_globe,
 			is_on_globe,
 			globe_canvas().current_proximity_inclusion_threshold(
 				click_pos_on_globe));
@@ -78,13 +77,12 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_press(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_click(
-				oriented_click_pos_on_globe,
+				click_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					click_pos_on_globe));
@@ -94,63 +92,58 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_click(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport);
+				centre_of_viewport);
 	}
 }
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_release_after_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport);
+				centre_of_viewport);
 	}
 }
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_click(
-				oriented_click_pos_on_globe,
+				click_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					click_pos_on_globe));
@@ -160,63 +153,58 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_click(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport);
+				centre_of_viewport);
 	}
 }
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_release_after_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport);
+				centre_of_viewport);
 	}
 }
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_ctrl_left_click(
-				oriented_click_pos_on_globe,
+				click_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					click_pos_on_globe));
@@ -226,35 +214,31 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_click(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		if (d_canvas_tool_ptr->handle_ctrl_left_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport))
+				centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_drag(
 					initial_pos_on_globe,
-					oriented_initial_pos_on_globe,
 					was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe,
 					is_on_globe,
-					oriented_centre_of_viewport);
+					centre_of_viewport);
 		}
 	}
 }
@@ -262,35 +246,31 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_drag(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		if (d_canvas_tool_ptr->handle_ctrl_left_release_after_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport))
+				centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_release_after_drag(
 					initial_pos_on_globe,
-					oriented_initial_pos_on_globe,
 					was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe,
 					is_on_globe,
-					oriented_centre_of_viewport);
+					centre_of_viewport);
 		}
 	}
 }
@@ -298,13 +278,12 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_release_after_dr
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_ctrl_left_click(
-				oriented_click_pos_on_globe,
+				click_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					click_pos_on_globe));
@@ -314,35 +293,31 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_click(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		if (d_canvas_tool_ptr->handle_shift_ctrl_left_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport))
+				centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_drag(
 					initial_pos_on_globe,
-					oriented_initial_pos_on_globe,
 					was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe,
 					is_on_globe,
-					oriented_centre_of_viewport);
+					centre_of_viewport);
 		}
 	}
 }
@@ -350,35 +325,31 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_drag(
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		if (d_canvas_tool_ptr->handle_shift_ctrl_left_release_after_drag(
-				oriented_initial_pos_on_globe,
+				initial_pos_on_globe,
 				was_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					initial_pos_on_globe),
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe),
-				oriented_centre_of_viewport))
+				centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
 					initial_pos_on_globe,
-					oriented_initial_pos_on_globe,
 					was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe,
 					is_on_globe,
-					oriented_centre_of_viewport);
+					centre_of_viewport);
 		}
 	}
 }
@@ -386,14 +357,13 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_release_af
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_move_without_drag(
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (globe_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_move_without_drag(
-				oriented_current_pos_on_globe,
+				current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe));

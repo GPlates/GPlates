@@ -138,7 +138,7 @@ namespace GPlatesQtWidgets
 		GlobeCanvas(
 				GlobeCanvas *existing_globe_canvas,
 				GPlatesPresentation::ViewState &view_state_,
-				GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
+				GPlatesMaths::PointOnSphere &mouse_pointer_pos_on_globe_,
 				bool mouse_pointer_is_on_globe_,
 				GPlatesGui::Globe &existing_globe_,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
@@ -214,9 +214,9 @@ namespace GPlatesQtWidgets
 		 * mouse pointer in the 3-D "universe".
 		 */
 		const GPlatesMaths::PointOnSphere &
-		virtual_mouse_pointer_pos_on_globe() const
+		mouse_pointer_pos_on_globe() const
 		{
-			return d_virtual_mouse_pointer_pos_on_globe;
+			return d_mouse_pointer_pos_on_globe;
 		}
 
 		/**
@@ -473,14 +473,13 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_pointer_position_changed(
-				const GPlatesMaths::PointOnSphere &new_virtual_pos,
+				const GPlatesMaths::PointOnSphere &new_pos,
 				bool is_on_globe);
 				
 				
 		void
 		mouse_pressed(
 			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
 			bool is_on_globe,
 			Qt::MouseButton button,
 			Qt::KeyboardModifiers modifiers);
@@ -488,7 +487,6 @@ namespace GPlatesQtWidgets
 		void
 		mouse_clicked(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -496,24 +494,20 @@ namespace GPlatesQtWidgets
 		void
 		mouse_dragged(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_released_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -523,9 +517,8 @@ namespace GPlatesQtWidgets
 		void
 		mouse_moved_without_drag(
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		void
 		repainted(
@@ -641,7 +634,7 @@ namespace GPlatesQtWidgets
 		 * Otherwise, this is the closest position on the globe to the position of the
 		 * mouse pointer in the 3-D "universe".
 		 */
-		GPlatesMaths::PointOnSphere d_virtual_mouse_pointer_pos_on_globe;
+		GPlatesMaths::PointOnSphere d_mouse_pointer_pos_on_globe;
 
 		//! Whether the mouse pointer is on the globe.
 		bool d_mouse_pointer_is_on_globe;
@@ -709,7 +702,7 @@ namespace GPlatesQtWidgets
 		 * on the globe to the position determined by @a y and @a z.
 		 */
 		std::pair<bool, GPlatesMaths::PointOnSphere>
-		calc_virtual_globe_position(
+		calc_globe_position(
 				int screen_x,
 				int screen_y) const;
 
