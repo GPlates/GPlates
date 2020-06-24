@@ -36,6 +36,8 @@
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
+#include "opengl/GLIntersectPrimitives.h"
+
 
 namespace GPlatesGui
 {
@@ -213,7 +215,8 @@ namespace GPlatesGui
 				start_look_at_position(start_look_at_pos_on_globe_),
 				start_view_direction(start_view_direction_),
 				start_up_direction(start_up_direction_),
-				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation())
+				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
+				in_upper_viewport(false/*arbitrary initialization value*/)
 			{  }
 
 			MouseDragMode mode;
@@ -224,7 +227,14 @@ namespace GPlatesGui
 			GPlatesMaths::UnitVector3D start_view_direction;
 			GPlatesMaths::UnitVector3D start_up_direction;
 
+			// For DRAG_ROTATE...
 			GPlatesMaths::real_t start_rotation_angle;
+
+			// For DRAG_TILT...
+			GPlatesMaths::real_t tilt_cylinder_radius;
+			bool in_upper_viewport;
+			GPlatesMaths::real_t start_cyl_intersect_relative_to_view_tilt_angle;
+			GPlatesMaths::real_t start_view_relative_to_globe_normal_tilt_angle;
 
 			GPlatesMaths::Rotation view_rotation_relative_to_start;
 		};
@@ -245,10 +255,6 @@ namespace GPlatesGui
 		update_drag_rotate(
 				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
 
-		GPlatesMaths::real_t
-		calc_drag_rotate_angle(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe_relative_to_start_view) const;
-
 
 		void
 		start_drag_tilt();
@@ -264,6 +270,14 @@ namespace GPlatesGui
 		void
 		update_drag_rotate_and_tilt(
 				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
+
+
+		/**
+		 * Returns ray from camera to the specified position on the globe.
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_pos_on_globe(
+				const GPlatesMaths::UnitVector3D &pos_on_globe);
 
 
 		ViewportZoom &d_viewport_zoom;

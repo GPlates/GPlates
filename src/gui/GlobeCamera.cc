@@ -38,6 +38,103 @@
 #include "maths/MathsUtils.h"
 
 
+namespace GPlatesGui
+{
+	namespace
+	{
+		/**
+		 * Find angle that rotates @a zero_rotation_direction to @a vec about @a rotation_axis.
+		 *
+		 * Note that @a zero_rotation_direction and @a vec should both be perpendicular to @a rotation_axis.
+		 */
+		GPlatesMaths::real_t
+		calc_rotation_angle(
+				const GPlatesMaths::UnitVector3D &vec,
+				const GPlatesMaths::UnitVector3D &rotation_axis,
+				const GPlatesMaths::UnitVector3D &zero_rotation_direction)
+		{
+			// Absolute angle.
+			GPlatesMaths::real_t angle = acos(dot(vec, zero_rotation_direction));
+
+			// Angles go clockwise around rotation axis, so negate when going anti-clockwise.
+			if (dot(vec, cross(rotation_axis, zero_rotation_direction)).dval() < 0)
+			{
+				angle = -angle;
+			}
+
+			return angle;
+		}
+
+		/**
+		 * Find angle that rotates @a zero_rotation_direction to @a vec about @a rotation_axis.
+		 *
+		 * Note that @a zero_rotation_direction and @a vec should both be perpendicular to @a rotation_axis.
+		 *
+		 * Returns none if @a vec has zero magnitude (and hence rotation angle cannot be determined).
+		 */
+		boost::optional<GPlatesMaths::real_t>
+		calc_rotation_angle(
+				const GPlatesMaths::Vector3D &vec,
+				const GPlatesMaths::UnitVector3D &rotation_axis,
+				const GPlatesMaths::UnitVector3D &zero_rotation_direction)
+		{
+			if (vec.is_zero_magnitude())
+			{
+				return boost::none;
+			}
+
+			return calc_rotation_angle(
+					vec.get_normalisation(),
+					rotation_axis,
+					zero_rotation_direction);
+		}
+
+
+		/**
+		 * Calculate the rotation angle around look-at position.
+		 *
+		 * The zero-angle reference direction is to the right of the view direction (ie, cross(view, up)).
+		 * And angles are clockwise around the look-at position/direction.
+		 */
+		GPlatesMaths::real_t
+		calc_drag_rotate_angle(
+				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe,
+				const GPlatesMaths::UnitVector3D &look_at_position,
+				const GPlatesMaths::UnitVector3D &view_direction,
+				const GPlatesMaths::UnitVector3D &up_direction)
+		{
+			// Plane of rotation passes through origin and has look-at direction as plane normal.
+			const GPlatesMaths::UnitVector3D &rotation_axis = look_at_position;
+
+			// Project mouse position onto plane of rotation (plane passes through origin and
+			// has look-at direction as plane normal).
+			const GPlatesMaths::Vector3D mouse_pos_on_globe_projected_onto_rotation_plane =
+					GPlatesMaths::Vector3D(mouse_pos_on_globe) -
+						dot(mouse_pos_on_globe, rotation_axis) * rotation_axis;
+
+			// Zero-angle reference direction (perpendicular to look-at position/direction).
+			const GPlatesMaths::UnitVector3D zero_rotation_direction = cross(
+					view_direction,
+					up_direction).get_normalisation();
+
+			boost::optional<GPlatesMaths::real_t> rotation_angle = calc_rotation_angle(
+					mouse_pos_on_globe_projected_onto_rotation_plane,
+					rotation_axis,
+					zero_rotation_direction);
+			if (!rotation_angle)
+			{
+				// Arbitrarily select angle zero.
+				// When the mouse is very near the rotation axis then the rotation will spin wildly.
+				// So when the mouse is directly *on* the rotation axis the user won't notice this arbitrariness.
+				rotation_angle = GPlatesMaths::real_t(0);
+			}
+
+			return rotation_angle.get();
+		}
+	}
+}
+
+
 const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT = 1.07;
 
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
@@ -280,7 +377,15 @@ GPlatesGui::GlobeCamera::update_drag(
 void
 GPlatesGui::GlobeCamera::end_drag()
 {
+	// Finished dragging mouse - no need for mouse drag info.
 	d_mouse_drag_info = boost::none;
+
+	// Make sure 'up' direction is orthogonal to 'view' direction.
+	//
+	// It should be, but after enough drag operations (like hours) it could eventually get slightly
+	// parallel to the view direction due to numerical precision since both 'up' and 'view' directions
+	// are independently rotated (albeit with the same rotation, but could still diverge).
+	d_up_direction = cross(cross(d_view_direction, d_up_direction), d_view_direction).get_normalisation();
 }
 
 
@@ -290,7 +395,6 @@ GPlatesGui::GlobeCamera::start_drag_normal()
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
-
 }
 
 
@@ -339,8 +443,11 @@ GPlatesGui::GlobeCamera::start_drag_rotate()
 			GPLATES_ASSERTION_SOURCE);
 
 	// The rotation angle, around look-at position, at the start of the drag.
-	d_mouse_drag_info->start_rotation_angle =
-			calc_drag_rotate_angle(d_mouse_drag_info->start_mouse_pos_on_globe);
+	d_mouse_drag_info->start_rotation_angle = calc_drag_rotate_angle(
+			d_mouse_drag_info->start_mouse_pos_on_globe,
+			d_mouse_drag_info->start_look_at_position,
+			d_mouse_drag_info->start_view_direction,
+			d_mouse_drag_info->start_up_direction);
 }
 
 
@@ -362,8 +469,11 @@ GPlatesGui::GlobeCamera::update_drag_rotate(
 			d_mouse_drag_info->view_rotation_relative_to_start.get_reverse() * mouse_pos_on_globe;
 
 	// The current rotation angle around look-at position.
-	const GPlatesMaths::real_t rotation_angle =
-			calc_drag_rotate_angle(mouse_pos_on_globe_relative_to_start_view);
+	const GPlatesMaths::real_t rotation_angle = calc_drag_rotate_angle(
+			mouse_pos_on_globe_relative_to_start_view,
+			d_mouse_drag_info->start_look_at_position,
+			d_mouse_drag_info->start_view_direction,
+			d_mouse_drag_info->start_up_direction);
 
 	// The model-space rotation from initial angle at start of drag to current angle.
 	const GPlatesMaths::Rotation globe_rotation_relative_to_start = GPlatesMaths::Rotation::create(
@@ -385,49 +495,6 @@ GPlatesGui::GlobeCamera::update_drag_rotate(
 }
 
 
-GPlatesMaths::real_t
-GPlatesGui::GlobeCamera::calc_drag_rotate_angle(
-		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe_relative_to_start_view) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
-	const GPlatesMaths::UnitVector3D zero_rotation_direction = cross(
-			d_mouse_drag_info->start_view_direction,
-			d_mouse_drag_info->start_up_direction).get_normalisation();
-
-	const GPlatesMaths::Vector3D mouse_pos_on_globe_projected_onto_look_at_plane =
-			GPlatesMaths::Vector3D(mouse_pos_on_globe_relative_to_start_view) -
-				dot(mouse_pos_on_globe_relative_to_start_view, d_mouse_drag_info->start_look_at_position) *
-				d_mouse_drag_info->start_look_at_position;
-
-	GPlatesMaths::real_t rotation_angle;
-	if (!mouse_pos_on_globe_projected_onto_look_at_plane.is_zero_magnitude())
-	{
-		rotation_angle = acos(
-			dot(
-				mouse_pos_on_globe_projected_onto_look_at_plane.get_normalisation(),
-				zero_rotation_direction));
-		if (dot(
-				mouse_pos_on_globe_projected_onto_look_at_plane,
-				cross(d_mouse_drag_info->start_look_at_position, zero_rotation_direction)).dval() < 0)
-		{
-			rotation_angle = -rotation_angle;
-		}
-	}
-	else
-	{
-		// Arbitrarily select angle zero.
-		// When the mouse is very near the rotation axis then the rotation will spin wildly.
-		// So when the mouse is directly *on* the rotation axis the user won't notice this arbitrariness.
-		rotation_angle = 0;
-	}
-
-	return rotation_angle;
-}
-
-
 void
 GPlatesGui::GlobeCamera::start_drag_tilt()
 {
@@ -435,6 +502,134 @@ GPlatesGui::GlobeCamera::start_drag_tilt()
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// The rotation axis that the view direction (and up direction) will tilt around.
+	// However note that the axis will pass through the look-at position on globe (not globe centre).
+	const GPlatesMaths::UnitVector3D tilt_axis = cross(
+			d_mouse_drag_info->start_view_direction,
+			d_mouse_drag_info->start_up_direction).get_normalisation();
+
+	// Create a cylinder that exactly contains the globe (unit sphere) and is aligned with the tilt axis.
+	const GPlatesOpenGL::GLIntersect::Cylinder globe_cylinder(
+			GPlatesMaths::Vector3D()/*globe origin*/,
+			tilt_axis,
+			1.0/*globe radius*/);
+
+	// Ray from camera eye to mouse position on globe.
+	const GPlatesOpenGL::GLIntersect::Ray ray =
+			get_camera_ray_at_pos_on_globe(d_mouse_drag_info->start_mouse_pos_on_globe);
+
+	// Intersect ray with globe cylinder (to find first intersection).
+	//
+	// Should only need first intersection (of ray with globe cylinder) because...
+	// The ray origin should be outside the globe since the camera eye is outside.
+	// And ray origin should then be outside cylinder since cylinder is along tilt axis which is
+	// perpendicular to the view direction.
+	boost::optional<GPlatesMaths::real_t> ray_distance_to_globe_cylinder =
+			intersect_ray_cylinder(ray, globe_cylinder);
+	if (!ray_distance_to_globe_cylinder)
+	{
+		// Ray should intersect cylinder because it should intersect globe.
+		// If we get here then we are dealing with numerical precision issues.
+		//
+		// TODO: Use closest point on ray to cylinder.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
+
+	const GPlatesMaths::Vector3D ray_intersect_globe_cylinder =
+			ray.get_point_on_ray(ray_distance_to_globe_cylinder.get());
+
+	// Project ray-cylinder intersection onto the tilt plane.
+	// The tilt plane passes through the globe origin and has a plane normal equal to the tilt axis.
+	const GPlatesMaths::Vector3D ray_intersect_globe_cylinder_projected_onto_tilt_plane = ray_intersect_globe_cylinder -
+			dot(ray_intersect_globe_cylinder, tilt_axis) * tilt_axis;
+
+	// Radius of tilt cylinder is distance from look-at position to ray-globe-cylinder intersection projected onto tilt plane.
+	// Note that the look-at position is already on the tilt plane (so doesn't need to be projected).
+	const GPlatesMaths::real_t tilt_cylinder_radius =
+			(ray_intersect_globe_cylinder_projected_onto_tilt_plane -
+					GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)).magnitude();
+
+	const GPlatesOpenGL::GLIntersect::Cylinder tilt_cylinder(
+			GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)/*cylinder_base_point*/,
+			tilt_axis,
+			tilt_cylinder_radius);
+
+	// Intersect ray, as an infinite line, with tilt cylinder (to find both intersections).
+	boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>> ray_distances_to_tilt_cylinder =
+			intersect_line_cylinder(ray, tilt_cylinder);
+	if (ray_distances_to_tilt_cylinder)
+	{
+		const GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder =
+				ray.get_point_on_ray(ray_distances_to_tilt_cylinder->first);
+		const GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder =
+				ray.get_point_on_ray(ray_distances_to_tilt_cylinder->second);
+
+		// Project each ray-cylinder intersection onto the tilt plane.
+		const GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder_projected_onto_tilt_plane =
+				front_ray_intersect_tilt_cylinder -
+					dot(front_ray_intersect_tilt_cylinder, tilt_axis) * tilt_axis;
+		const GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane =
+				back_ray_intersect_tilt_cylinder -
+					dot(back_ray_intersect_tilt_cylinder, tilt_axis) * tilt_axis;
+
+		// Determine which intersection matches the ray-globe-cylinder intersection projected onto tilt plane.
+		const bool is_front_ray_intersect_tilt_cylinder =
+				(front_ray_intersect_tilt_cylinder_projected_onto_tilt_plane - ray_intersect_globe_cylinder_projected_onto_tilt_plane).magSqrd() <
+				(back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane - ray_intersect_globe_cylinder_projected_onto_tilt_plane).magSqrd();
+		const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_projected_onto_tilt_plane =
+				is_front_ray_intersect_tilt_cylinder
+				? front_ray_intersect_tilt_cylinder_projected_onto_tilt_plane
+				: back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane;
+
+		const GPlatesMaths::UnitVector3D &zero_rotation_direction = d_mouse_drag_info->start_look_at_position;
+
+		GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_projected_onto_tilt_plane_rel_look_at =
+				ray_intersect_tilt_cylinder_projected_onto_tilt_plane -
+					GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position);
+
+		// Calculate rotation angle of cylinder intersection relative to the view direction.
+		boost::optional<GPlatesMaths::real_t> cyl_intersect_relative_to_view_tilt_angle_opt = calc_rotation_angle(
+				ray_intersect_tilt_cylinder_projected_onto_tilt_plane_rel_look_at,
+				tilt_axis/*rotation_axis*/,
+				d_mouse_drag_info->start_view_direction/*zero_rotation_direction*/);
+		const GPlatesMaths::real_t cyl_intersect_relative_to_view_tilt_angle =
+				cyl_intersect_relative_to_view_tilt_angle_opt
+				? cyl_intersect_relative_to_view_tilt_angle_opt.get()
+				// Arbitrarily select angle zero...
+				// When the mouse is very near the tilt axis then the globe will tilt wildly.
+				// So when the mouse is directly *on* the tilt axis the user won't notice this arbitrariness.
+				: GPlatesMaths::real_t(0);
+
+		// Calculate rotation angle of view direction relative to the globe normal (look-at direction).
+		const GPlatesMaths::real_t view_relative_to_globe_normal_tilt_angle = calc_rotation_angle(
+				d_mouse_drag_info->start_view_direction,  // Perpendicular to tilt axis.
+				tilt_axis/*rotation_axis*/,
+				-d_mouse_drag_info->start_look_at_position/*zero_rotation_direction*/);
+
+		d_mouse_drag_info->tilt_cylinder_radius = tilt_cylinder_radius;
+		d_mouse_drag_info->start_cyl_intersect_relative_to_view_tilt_angle = cyl_intersect_relative_to_view_tilt_angle;
+		d_mouse_drag_info->start_view_relative_to_globe_normal_tilt_angle = view_relative_to_globe_normal_tilt_angle;
+		qDebug() << "TILT CYLINDER RADIUS:" << tilt_cylinder_radius;
+		qDebug() << "start cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(cyl_intersect_relative_to_view_tilt_angle);
+		qDebug() << "start view_relative_to_globe_normal_tilt_angle:" << convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle);
+	}
+	else
+	{
+		// Ray should intersect cylinder because cylinder radius was based on it.
+		// If we get here then we are dealing with numerical precision issues.
+		//
+		// TODO: Use closest point on ray to cylinder.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
+
+	// See if mouse is in upper part of viewport.
+	// This will determine which way to tilt the globe when the mouse moves.
+	const GPlatesOpenGL::GLIntersect::Plane up_plane(
+			d_mouse_drag_info->start_up_direction/*normal*/,
+			GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)/*point_on_plane*/);
+	d_mouse_drag_info->in_upper_viewport = (
+			up_plane.classify_point(d_mouse_drag_info->start_mouse_pos_on_globe) ==
+				GPlatesOpenGL::GLIntersect::Plane::POSITIVE);
 }
 
 
@@ -446,6 +641,143 @@ GPlatesGui::GlobeCamera::update_drag_tilt(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Ray from camera eye to mouse position on globe.
+	const GPlatesOpenGL::GLIntersect::Ray ray = get_camera_ray_at_pos_on_globe(mouse_pos_on_globe);
+
+	// The rotation axis that the view direction (and up direction) will tilt around.
+	// However note that the axis will pass through the look-at position on globe (not globe centre).
+	const GPlatesMaths::UnitVector3D tilt_axis = cross(d_view_direction, d_up_direction).get_normalisation();
+
+	const GPlatesOpenGL::GLIntersect::Cylinder tilt_cylinder(
+			GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)/*cylinder_base_point*/,
+			tilt_axis,
+			d_mouse_drag_info->tilt_cylinder_radius);
+
+	// Intersect ray, as an infinite line, with tilt cylinder (to find both intersections).
+	boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>> ray_distances_to_tilt_cylinder =
+			intersect_line_cylinder(ray, tilt_cylinder);
+	if (ray_distances_to_tilt_cylinder)
+	{
+		const GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder =
+				ray.get_point_on_ray(ray_distances_to_tilt_cylinder->first);
+		const GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder =
+				ray.get_point_on_ray(ray_distances_to_tilt_cylinder->second);
+
+		// Project each ray-cylinder intersection onto the tilt plane.
+		const GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder_projected_onto_tilt_plane =
+				front_ray_intersect_tilt_cylinder -
+					dot(front_ray_intersect_tilt_cylinder, tilt_axis) * tilt_axis;
+		const GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane =
+				back_ray_intersect_tilt_cylinder -
+					dot(back_ray_intersect_tilt_cylinder, tilt_axis) * tilt_axis;
+
+		// Determine which intersection to use.
+		GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_projected_onto_tilt_plane;
+		if (d_mouse_drag_info->in_upper_viewport)
+		{
+			// Always use the back intersection.
+			// TODO: Explain why.
+			ray_intersect_tilt_cylinder_projected_onto_tilt_plane = back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane;
+			//qDebug() << "in upper viewport";
+		}
+		else
+		{
+			qDebug() << "NOT in upper viewport";
+			//
+			// TODO: Handle this case.
+		}
+
+		GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_projected_onto_tilt_plane_rel_look_at =
+				ray_intersect_tilt_cylinder_projected_onto_tilt_plane -
+					GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position);
+
+		// Calculate rotation angle of cylinder intersection relative to the *current* view direction.
+		boost::optional<GPlatesMaths::real_t> cyl_intersect_relative_to_view_tilt_angle_opt = calc_rotation_angle(
+				ray_intersect_tilt_cylinder_projected_onto_tilt_plane_rel_look_at,
+				tilt_axis/*rotation_axis*/,
+				d_view_direction/*zero_rotation_direction*/);
+		const GPlatesMaths::real_t cyl_intersect_relative_to_view_tilt_angle =
+				cyl_intersect_relative_to_view_tilt_angle_opt
+				? cyl_intersect_relative_to_view_tilt_angle_opt.get()
+				// Arbitrarily select angle zero...
+				// When the mouse is very near the tilt axis then the globe will tilt wildly.
+				// So when the mouse is directly *on* the tilt axis the user won't notice this arbitrariness.
+				: GPlatesMaths::real_t(0);
+
+		GPlatesMaths::real_t delta_cyl_intersect_relative_to_view_tilt_angle =
+				cyl_intersect_relative_to_view_tilt_angle -
+					d_mouse_drag_info->start_cyl_intersect_relative_to_view_tilt_angle;
+		// Restrict difference to the range [-PI, PI].
+		if (delta_cyl_intersect_relative_to_view_tilt_angle.dval() > GPlatesMaths::PI)
+		{
+			delta_cyl_intersect_relative_to_view_tilt_angle -= 2.0 * GPlatesMaths::PI;
+		}
+		else if (delta_cyl_intersect_relative_to_view_tilt_angle.dval() < -GPlatesMaths::PI)
+		{
+			delta_cyl_intersect_relative_to_view_tilt_angle += 2.0 * GPlatesMaths::PI;
+		}
+
+		// Need to tilt view in opposite direction to achieve same result as tilting the globe.
+		delta_cyl_intersect_relative_to_view_tilt_angle = -delta_cyl_intersect_relative_to_view_tilt_angle;
+
+		GPlatesMaths::real_t view_relative_to_globe_normal_tilt_angle =
+				d_mouse_drag_info->start_view_relative_to_globe_normal_tilt_angle +
+					delta_cyl_intersect_relative_to_view_tilt_angle;
+		if (view_relative_to_globe_normal_tilt_angle.dval() > GPlatesMaths::HALF_PI)
+		{
+			view_relative_to_globe_normal_tilt_angle = GPlatesMaths::HALF_PI;
+		}
+		else if (view_relative_to_globe_normal_tilt_angle.dval() < 0)
+		{
+			view_relative_to_globe_normal_tilt_angle = 0;
+		}
+		qDebug() << "delta_cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(delta_cyl_intersect_relative_to_view_tilt_angle);
+		qDebug() << "view_relative_to_globe_normal_tilt_angle:" << convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle);
+
+		// Calculate rotation angle of *current* view direction relative to the globe normal (look-at direction).
+		//const GPlatesMaths::real_t view_relative_to_globe_normal_tilt_angle = calc_rotation_angle(
+		//		d_view_direction,  // Perpendicular to tilt axis.
+		//		tilt_axis/*rotation_axis*/,
+		//		-d_look_at_position/*zero_rotation_direction*/);
+		//qDebug() << "cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(cyl_intersect_relative_to_view_tilt_angle);
+		//qDebug() << "start_cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(d_mouse_drag_info->start_cyl_intersect_relative_to_view_tilt_angle);
+		//qDebug() << "delta_cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(delta_cyl_intersect_relative_to_view_tilt_angle);
+		//qDebug() << "view_relative_to_globe_normal_tilt_angle:" << convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle);
+		//qDebug() << "view + delta_cyl tilt_angle:"
+		//	<< convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle + delta_cyl_intersect_relative_to_view_tilt_angle);
+		//
+		//if (delta_cyl_intersect_relative_to_view_tilt_angle.dval() >
+		//	GPlatesMaths::HALF_PI - view_relative_to_globe_normal_tilt_angle.dval())
+		//{
+		//	delta_cyl_intersect_relative_to_view_tilt_angle =
+		//			GPlatesMaths::HALF_PI - view_relative_to_globe_normal_tilt_angle;
+		//}
+		//else if (delta_cyl_intersect_relative_to_view_tilt_angle.dval() <
+		//		-view_relative_to_globe_normal_tilt_angle.dval())
+		//{
+		//	delta_cyl_intersect_relative_to_view_tilt_angle = -view_relative_to_globe_normal_tilt_angle;
+		//}
+
+		const GPlatesMaths::Rotation tilt_rotation = GPlatesMaths::Rotation::create(
+				tilt_axis,
+				view_relative_to_globe_normal_tilt_angle);
+
+		//qDebug() << "tilt_rotation:" << tilt_rotation.axis() << convert_rad_to_deg(tilt_rotation.angle());
+
+		d_view_direction = tilt_rotation * -d_look_at_position;
+		d_up_direction = cross(tilt_axis, d_view_direction).get_normalisation();
+
+		d_mouse_drag_info->start_cyl_intersect_relative_to_view_tilt_angle = cyl_intersect_relative_to_view_tilt_angle +
+				delta_cyl_intersect_relative_to_view_tilt_angle;
+
+		Q_EMIT camera_changed();
+	}
+	else
+	{
+		qDebug() << "Missed tilt cylinder";
+		//
+		// TODO: Handle this case - perhaps use closest point on ray to cylinder.
+	}
 }
 
 
@@ -467,6 +799,36 @@ GPlatesGui::GlobeCamera::update_drag_rotate_and_tilt(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+}
+
+
+GPlatesOpenGL::GLIntersect::Ray
+GPlatesGui::GlobeCamera::get_camera_ray_at_pos_on_globe(
+		const GPlatesMaths::UnitVector3D &pos_on_globe)
+{
+	if (d_projection_type == GlobeProjection::ORTHOGRAPHIC)
+	{
+		// In orthographic projection all view rays are parallel and so there's no real eye position.
+		// Instead place the ray origin an arbitrary distance (currently 1.0) back along the view direction.
+		const GPlatesMaths::Vector3D camera_eye =
+				GPlatesMaths::Vector3D(pos_on_globe) - GPlatesMaths::Vector3D(d_view_direction);
+
+		const GPlatesMaths::UnitVector3D &ray_direction = d_view_direction;
+
+		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
+	}
+	else  // perspective...
+	{
+		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
+
+		// Ray direction from camera eye to position on globe.
+		const GPlatesMaths::UnitVector3D ray_direction =
+				// Note that camera eye position should be outside the globe
+				// (and hence never coincide with pos_on_globe)...
+				(GPlatesMaths::Vector3D(pos_on_globe) - camera_eye).get_normalisation();
+
+		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
+	}
 }
 
 
