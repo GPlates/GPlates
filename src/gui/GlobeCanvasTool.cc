@@ -28,11 +28,20 @@
 #include "GlobeCanvasTool.h"
 
 #include "Globe.h"
-#include "GlobeCamera.h"
 
 #include "maths/PointOnSphere.h"
 
 #include "qt-widgets/GlobeCanvas.h"
+
+
+GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
+		Globe &globe_,
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas_) :
+	d_globe_ptr(&globe_),
+	d_globe_canvas_ptr(&globe_canvas_),
+	d_globe_view_operation(globe_.get_globe_camera()),
+	d_is_in_reorientation_op(false)
+{  }
 
 
 GPlatesGui::GlobeCanvasTool::~GlobeCanvasTool()
@@ -49,11 +58,13 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 {
 	if (!d_is_in_reorientation_op)
 	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_NORMAL, initial_pos_on_globe);
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_NORMAL,
+				initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
+	d_globe_view_operation.update_drag(current_pos_on_globe);
 }
 
 
@@ -65,14 +76,12 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (!d_is_in_reorientation_op)
-	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_NORMAL, initial_pos_on_globe);
-		d_is_in_reorientation_op = true;
-	}
+	reorient_globe_by_drag_update(
+			initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
-	d_globe_ptr->get_globe_camera().end_drag();
+	d_globe_view_operation.end_drag();
 	d_is_in_reorientation_op = false;
 }
 
@@ -87,11 +96,13 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 {
 	if ( ! d_is_in_reorientation_op)
 	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_ROTATE, initial_pos_on_globe);
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_ROTATE,
+				initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
+	d_globe_view_operation.update_drag(current_pos_on_globe);
 }
 
 
@@ -103,14 +114,12 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! d_is_in_reorientation_op)
-	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_ROTATE, initial_pos_on_globe);
-		d_is_in_reorientation_op = true;
-	}
+	rotate_globe_by_drag_update(
+			initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
-	d_globe_ptr->get_globe_camera().end_drag();
+	d_globe_view_operation.end_drag();
 	d_is_in_reorientation_op = false;
 }
 
@@ -125,11 +134,13 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
 {
 	if ( ! d_is_in_reorientation_op)
 	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_TILT, initial_pos_on_globe);
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_TILT,
+				initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
+	d_globe_view_operation.update_drag(current_pos_on_globe);
 }
 
 
@@ -141,13 +152,11 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! d_is_in_reorientation_op)
-	{
-		d_globe_ptr->get_globe_camera().start_drag(GlobeCamera::DRAG_TILT, initial_pos_on_globe);
-		d_is_in_reorientation_op = true;
-	}
+	tilt_globe_by_drag_update(
+			initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 
-	d_globe_ptr->get_globe_camera().update_drag(current_pos_on_globe);
-	d_globe_ptr->get_globe_camera().end_drag();
+	d_globe_view_operation.end_drag();
 	d_is_in_reorientation_op = false;
 }

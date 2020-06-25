@@ -28,6 +28,8 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "view-operations/GlobeViewOperation.h"
+
 
 namespace GPlatesMaths
 {
@@ -66,11 +68,7 @@ namespace GPlatesGui
 		explicit
 		GlobeCanvasTool(
 				Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
-			d_globe_ptr(&globe_),
-			d_globe_canvas_ptr(&globe_canvas_),
-			d_is_in_reorientation_op(false)
-		{  }
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_);
 
 		virtual
 		~GlobeCanvasTool() = 0;
@@ -662,6 +660,11 @@ namespace GPlatesGui
 		 * The globe canvas which will need to be updated after globe re-orientation.
 		 */
 		GPlatesQtWidgets::GlobeCanvas *d_globe_canvas_ptr;
+
+		/**
+		 * Used to orient/tilt the globe view.
+		 */
+		GPlatesViewOperations::GlobeViewOperation d_globe_view_operation;
 
 		/**
 		 * Whether or not this canvas tool is currently in the midst of a globe

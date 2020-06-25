@@ -29,6 +29,8 @@ set(srcs
     GeometryOperation.h
     GeometryOperationUndo.cc
     GeometryOperationUndo.h
+    GlobeViewOperation.cc
+    GlobeViewOperation.h
     InsertVertexGeometryOperation.cc
     InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc

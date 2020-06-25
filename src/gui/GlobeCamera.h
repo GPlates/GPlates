@@ -62,22 +62,6 @@ namespace GPlatesGui
 		static const double FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT;
 
 
-		/**
-		 * Mouse drag modes.
-		 */
-		enum MouseDragMode
-		{
-			// Rotate along great circle arcs (axes) as mouse is dragged across the globe...
-			DRAG_NORMAL,
-			// Rotate about the axis (from globe centre) through the look-at position on globe (centre of viewport)...
-			DRAG_ROTATE,
-			// Tilt the view around the axis (perpendicular to view and up directions) passing tangentially through the look-at position on globe...
-			DRAG_TILT,
-			// Rotate and tilt using same mouse drag motion...
-			DRAG_ROTATE_AND_TILT
-		};
-
-
 		explicit
 		GlobeCamera(
 				ViewportZoom &viewport_zoom);
@@ -96,27 +80,98 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * The position on the globe that the view is looking at.
+		 */
+		const GPlatesMaths::PointOnSphere &
+		get_look_at_position() const;
+
+		/**
 		 * The view direction.
 		 *
 		 * For perspective viewing this is from the eye position to the look-at position.
 		 */
 		const GPlatesMaths::UnitVector3D &
-		get_view_direction() const
-		{
-			return d_view_direction;
-		}
+		get_view_direction() const;
 
 		/**
-		 * The position on the globe that the view is looking at.
+		 * The 'up' vector for the view orientation.
 		 */
-		GPlatesMaths::PointOnSphere
-		get_look_at_position() const
+		const GPlatesMaths::UnitVector3D &
+		get_up_direction() const;
+
+
+		/**
+		 * The camera orientation (excluding tilt).
+		 *
+		 * This is the rotation of the moving camera around the fixed globe.
+		 *
+		 * Note that we don't actually rotate the globe, instead rotating the view frame
+		 * (look-at position and view/up directions) to achieve the same effect.
+		 */
+		const GPlatesMaths::Rotation &
+		get_view_orientation() const
 		{
-			return GPlatesMaths::PointOnSphere(d_look_at_position);
+			return d_view_orientation;
 		}
 
 		/**
-		 * Set the position on the globe that the view should look at.
+		 * The orientation of the fixed globe relative to the moving camera (excluding tilt).
+		 *
+		 * Even though the globe is fixed (in the global universe coordinate system) and the camera moves,
+		 * from the point of view of the camera it looks like the globe is rotating in the opposite direction
+		 * of camera movement.
+		 *
+		 * Note that we don't actually rotate the globe, instead rotating the view frame
+		 * (look-at position and view/up directions) to achieve the same effect.
+		 */
+		GPlatesMaths::Rotation
+		get_globe_orientation_relative_to_view() const
+		{
+			return d_view_orientation.get_reverse();
+		}
+
+		/**
+		 * Set the camera orientation (excluding tilt).
+		 *
+		 * This sets the inverse orientation set by @a set_globe_orientation_relative_to_view.
+		 */
+		void
+		set_view_orientation(
+				const GPlatesMaths::Rotation &view_orientation);
+
+		/**
+		 * Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
+		 *
+		 * This sets the inverse orientation set by @a set_view_orientation.
+		 */
+		void
+		set_globe_orientation_relative_to_view(
+				const GPlatesMaths::Rotation &globe_orientation_relative_to_view)
+		{
+			set_view_orientation(globe_orientation_relative_to_view.get_reverse());
+		}
+
+		/**
+		 * The angle that the view direction tilts.
+		 *
+		 * Zero angle implies looking straight down on the globe and 90 degrees means the view
+		 * direction is looking tangentially at the globe surface (at look-at position).
+		 */
+		GPlatesMaths::real_t
+		get_tilt_angle() const
+		{
+			return d_tilt_angle;
+		}
+
+		/**
+		 * Set the angle that the view direction tilts.
+		 */
+		void
+		set_tilt_angle(
+				const GPlatesMaths::real_t &tilt_angle);
+
+		/**
+		 * Rotate the current look-at position to the specified look-at position.
 		 *
 		 * The current look-at position is rotated to the specified look-at position along the
 		 * great circle arc between them, and the view and up directions are rotated by same rotation.
@@ -124,17 +179,9 @@ namespace GPlatesGui
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		set_look_at_position(
-				const GPlatesMaths::PointOnSphere &look_at_position);
+		rotate_look_at_position(
+				const GPlatesMaths::PointOnSphere &new_look_at_position);
 
-		/**
-		 * The 'up' vector for the view orientation.
-		 */
-		const GPlatesMaths::UnitVector3D &
-		get_up_direction() const
-		{
-			return d_up_direction;
-		}
 
 		/**
 		 * The camera (eye) location for perspective viewing.
@@ -172,29 +219,11 @@ namespace GPlatesGui
 
 
 		/**
-		 * Start a mouse drag, using the specified mode, at the specified position on the globe.
-		 *
-		 * Subsequent calls to @a update_drag will use the specified drag mode.
+		 * Returns ray from camera to the specified position on the globe.
 		 */
-		void
-		start_drag(
-				MouseDragMode mouse_drag_mode,
-				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe);
-
-		/**
-		 * Update the camera view using the specified mouse drag position on the globe.
-		 *
-		 * This uses the drag mode specified in the last call to @a start_drag.
-		 *
-		 * Depending on the drag mode, this can update the view direction, up direction, look-at position and
-		 * perspective eye position.
-		 */
-		void
-		update_drag(
-				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe);
-
-		void
-		end_drag();
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_pos_on_globe(
+				const GPlatesMaths::UnitVector3D &pos_on_globe);
 
 	Q_SIGNALS:
 	
@@ -211,105 +240,57 @@ namespace GPlatesGui
 
 	private:
 
-		/**
-		 * Information generated in @a start_drag and used in subsequent calls to @a update_drag.
-		 */
-		struct MouseDragInfo
+		struct ViewFrame
 		{
-			MouseDragInfo(
-					MouseDragMode mode_,
-					const GPlatesMaths::UnitVector3D &start_mouse_pos_on_globe_,
-					const GPlatesMaths::UnitVector3D &start_look_at_pos_on_globe_,
-					const GPlatesMaths::UnitVector3D &start_view_direction_,
-					const GPlatesMaths::UnitVector3D &start_up_direction_) :
-				mode(mode_),
-				start_mouse_pos_on_globe(start_mouse_pos_on_globe_),
-				start_look_at_position(start_look_at_pos_on_globe_),
-				start_view_direction(start_view_direction_),
-				start_up_direction(start_up_direction_),
-				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
-				in_upper_viewport(false/*arbitrary initialization value*/)
+			ViewFrame(
+					const GPlatesMaths::PointOnSphere &look_at_position_,
+					const GPlatesMaths::UnitVector3D &view_direction_,
+					const GPlatesMaths::UnitVector3D &up_direction_) :
+				look_at_position(look_at_position_),
+				view_direction(view_direction_),
+				up_direction(up_direction_)
 			{  }
 
-			MouseDragMode mode;
-
-			GPlatesMaths::UnitVector3D start_mouse_pos_on_globe;
-
-			GPlatesMaths::UnitVector3D start_look_at_position;
-			GPlatesMaths::UnitVector3D start_view_direction;
-			GPlatesMaths::UnitVector3D start_up_direction;
-
-			// For DRAG_ROTATE...
-			GPlatesMaths::real_t start_rotation_angle;
-
-			// For DRAG_TILT...
-			GPlatesMaths::real_t tilt_cylinder_radius;
-			bool in_upper_viewport;
-			GPlatesMaths::real_t start_cyl_intersect_relative_to_view_tilt_angle;
-			GPlatesMaths::real_t start_view_relative_to_globe_normal_tilt_angle;
-
-			GPlatesMaths::Rotation view_rotation_relative_to_start;
+			GPlatesMaths::PointOnSphere look_at_position;
+			GPlatesMaths::UnitVector3D view_direction;
+			GPlatesMaths::UnitVector3D up_direction;
 		};
-
-
-		void
-		start_drag_normal();
-
-		void
-		update_drag_normal(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
-
-
-		void
-		start_drag_rotate();
-
-		void
-		update_drag_rotate(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
-
-
-		void
-		start_drag_tilt();
-
-		void
-		update_drag_tilt(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
-
-
-		void
-		start_drag_rotate_and_tilt();
-
-		void
-		update_drag_rotate_and_tilt(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
-
-
-		/**
-		 * Returns ray from camera to the specified position on the globe.
-		 */
-		GPlatesOpenGL::GLIntersect::Ray
-		get_camera_ray_at_pos_on_globe(
-				const GPlatesMaths::UnitVector3D &pos_on_globe);
 
 
 		ViewportZoom &d_viewport_zoom;
 
 		GlobeProjection::Type d_projection_type;
 
-		GPlatesMaths::UnitVector3D d_look_at_position;
-		GPlatesMaths::UnitVector3D d_view_direction;
-		GPlatesMaths::UnitVector3D d_up_direction;
+		/**
+		 * The view-space orientation.
+		 *
+		 * This rotates the view about an axis that passes through the origin.
+		 *
+		 * Note that we don't actually rotate the globe, instead rotating the view frame
+		 * (look-at position and view/up directions) to achieve the same effect.
+		 */
+		GPlatesMaths::Rotation d_view_orientation;
 
 		/**
-		 * In perspective viewing mode, this is the distance from the eye position to the look-at
-		 * position for the default zoom (ie, a zoom factor of 1.0).
+		 * The angle that the view direction tilts.
+		 *
+		 * Zero angle implies looking straight down on the globe and 90 degrees means the view
+		 * direction is looking tangentially at the globe surface (at look-at position).
 		 */
-		double d_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom;
+		GPlatesMaths::real_t d_tilt_angle;
 
 		/**
-		 * Info generated in @a start_drag and used subsequently in @a update_drag.
+		 * The view frame (look-at position and view/up directions) is calculated/cached from the
+		 * view orientation and view tilt.
 		 */
-		boost::optional<MouseDragInfo> d_mouse_drag_info;
+		mutable boost::optional<ViewFrame> d_view_frame;
+
+
+		/**
+		 * Update @a d_view_frame using the current view orientation and view tilt.
+		 */
+		void
+		cache_view_frame() const;
 
 
 		/**
@@ -320,7 +301,7 @@ namespace GPlatesGui
 		/**
 		 * The initial position on the sphere that the camera looks at.
 		 */
-		static const GPlatesMaths::UnitVector3D INITIAL_LOOK_AT_POSITION;
+		static const GPlatesMaths::PointOnSphere INITIAL_LOOK_AT_POSITION;
 
 		/**
 		 * Initial view direction.
@@ -331,6 +312,14 @@ namespace GPlatesGui
 		 * Initial up direction (orthogonal to view direction).
 		 */
 		static const GPlatesMaths::UnitVector3D INITIAL_UP_DIRECTION;
+
+		/**
+		 * In perspective viewing mode, this is the distance from the eye position to the look-at
+		 * position for the default zoom (ie, a zoom factor of 1.0).
+		 */
+		static
+		double
+		get_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom();
 
 		static
 		double
