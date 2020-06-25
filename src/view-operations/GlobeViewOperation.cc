@@ -245,7 +245,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_normal(
 	// Rotation in view space is reverse of rotation in model space.
 	const GPlatesMaths::Rotation view_rotation_relative_to_start = globe_rotation_relative_to_start.get_reverse();
 
-	// Rotation the view frame.
+	// Rotate the view frame.
 	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_mouse_drag_info->start_view_orientation;
 
 	// Keep track of the updated view rotation relative to the start.
@@ -303,7 +303,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate(
 	// Rotation in view space is reverse of rotation in model space.
 	const GPlatesMaths::Rotation view_rotation_relative_to_start = globe_rotation_relative_to_start.get_reverse();
 
-	// Rotation the view frame.
+	// Rotate the view frame.
 	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_mouse_drag_info->start_view_orientation;
 
 	// Keep track of the updated view rotation relative to the start.

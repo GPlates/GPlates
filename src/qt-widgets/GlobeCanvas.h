@@ -658,6 +658,13 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
 
 
+
+		/**
+		 * How far to nudge or rotate the camera when incrementally moving the camera, in degrees.
+		 */
+		static const double NUDGE_CAMERA_DEGREES;
+
+
 		//! Calls 'initializeGL()' if it hasn't already been called.
 		void
 		initializeGL_if_necessary();

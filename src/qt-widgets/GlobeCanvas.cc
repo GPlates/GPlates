@@ -59,6 +59,7 @@
 #include "gui/VelocityLegendOverlay.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -322,6 +323,9 @@ namespace
 				1);
 	}
 }
+
+
+const double GPlatesQtWidgets::GlobeCanvas::NUDGE_CAMERA_DEGREES = 5.0;
 
 
 // Public constructor
@@ -1386,7 +1390,7 @@ void
 GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 		const GPlatesMaths::LatLonPoint &desired_centre)
 {
-	d_globe_camera.rotate_look_at_position(
+	d_globe_camera.move_look_at_position(
 			GPlatesMaths::make_point_on_sphere(desired_centre));
 }
 
@@ -1401,37 +1405,55 @@ GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_up()
 {
-	globe().orientation().move_camera_up(d_view_state.get_viewport_zoom().zoom_factor());
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_up(nudge_angle);
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_down()
 {
-	globe().orientation().move_camera_down(d_view_state.get_viewport_zoom().zoom_factor());
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_down(nudge_angle);
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_left()
 {
-	globe().orientation().move_camera_left(d_view_state.get_viewport_zoom().zoom_factor());
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_left(nudge_angle);
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_right()
 {
-	globe().orientation().move_camera_right(d_view_state.get_viewport_zoom().zoom_factor());
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_right(nudge_angle);
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
 {
-	globe().orientation().rotate_camera_clockwise();
+	// Note that we actually want to rotate the globe clockwise (not the camera).
+	// We achieve this by rotating the camera anti-clockwise...
+	d_globe_camera.rotate_anticlockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
 {
-	globe().orientation().rotate_camera_anticlockwise();
+	// Note that we actually want to rotate the globe anti-clockwise (not the camera).
+	// We achieve this by rotating the camera clockwise...
+	d_globe_camera.rotate_clockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
 }
 
 void
@@ -1572,7 +1594,7 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 	const GPlatesMaths::Rotation &rotation
 	/*bool should_emit_external_signal */)
 {
-	d_globe.get_globe_camera().set_globe_orientation_relative_to_view(rotation);
+	d_globe_camera.set_globe_orientation_relative_to_view(rotation);
 
 	update_canvas();
 }
@@ -1580,5 +1602,5 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 boost::optional<GPlatesMaths::Rotation>
 GPlatesQtWidgets::GlobeCanvas::orientation() const
 {
-	return d_globe.get_globe_camera().get_globe_orientation_relative_to_view();
+	return d_globe_camera.get_globe_orientation_relative_to_view();
 }

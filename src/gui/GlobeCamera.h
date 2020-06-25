@@ -152,9 +152,9 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * The angle that the view direction tilts.
+		 * The angle (in radians) that the view direction tilts.
 		 *
-		 * Zero angle implies looking straight down on the globe and 90 degrees means the view
+		 * Zero angle implies looking straight down on the globe and PI/2 (90 degrees) means the view
 		 * direction is looking tangentially at the globe surface (at look-at position).
 		 */
 		GPlatesMaths::real_t
@@ -164,23 +164,75 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * Set the angle that the view direction tilts.
+		 * Set the angle (in radians) that the view direction tilts.
 		 */
 		void
 		set_tilt_angle(
 				const GPlatesMaths::real_t &tilt_angle);
 
 		/**
-		 * Rotate the current look-at position to the specified look-at position.
+		 * Rotate the current look-at position to the specified look-at position along the
+		 * great circle arc between them.
 		 *
-		 * The current look-at position is rotated to the specified look-at position along the
-		 * great circle arc between them, and the view and up directions are rotated by same rotation.
+		 * The view and up directions are rotated by same rotation.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		rotate_look_at_position(
+		move_look_at_position(
 				const GPlatesMaths::PointOnSphere &new_look_at_position);
+
+		/**
+		 * Rotate the current look-at position "up" by the specified angle (in radians).
+		 *
+		 * The view and up directions are rotated by same rotation.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		void
+		rotate_up(
+				const GPlatesMaths::real_t &angle);
+
+		/**
+		 * Same as @a rotate_up but rotates "down".
+		 */
+		void
+		rotate_down(
+				const GPlatesMaths::real_t &angle);
+
+		/**
+		 * Rotate the current look-at position "left" by the specified angle (in radians).
+		 *
+		 * The view and up directions are rotated by same rotation.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		void
+		rotate_left(
+				const GPlatesMaths::real_t &angle);
+
+		/**
+		 * Same as @a rotate_left but rotates "right".
+		 */
+		void
+		rotate_right(
+				const GPlatesMaths::real_t &angle);
+
+		/**
+		 * Rotate the view "clockwise", around the current look-at position, by the specified angle (in radians).
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		void
+		rotate_clockwise(
+				const GPlatesMaths::real_t &angle);
+
+		/**
+		 * Same as @a rotate_clockwise but rotates "anti-clockwise".
+		 */
+		void
+		rotate_anticlockwise(
+				const GPlatesMaths::real_t &angle);
 
 
 		/**
