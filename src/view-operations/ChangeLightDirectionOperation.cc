@@ -28,8 +28,8 @@
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryParameters.h"
 
+#include "gui/GlobeCamera.h"
 #include "gui/SceneLightingParameters.h"
-#include "gui/SimpleGlobeOrientation.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/types.h"
@@ -58,12 +58,12 @@ const GPlatesViewOperations::RenderedRadialArrow::SymbolType GPlatesViewOperatio
 
 GPlatesViewOperations::ChangeLightDirectionOperation::ChangeLightDirectionOperation(
 		GPlatesGui::SceneLightingParameters &scene_lighting_parameters,
-		GPlatesGui::SimpleGlobeOrientation &globe_orientation,
+		GPlatesGui::GlobeCamera &globe_camera,
 		GPlatesGui::ViewportZoom &viewport_zoom,
 		RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_rendered_layer_type) :
 	d_scene_lighting_parameters(scene_lighting_parameters),
-	d_globe_orientation(globe_orientation),
+	d_globe_camera(globe_camera),
 	d_viewport_zoom(viewport_zoom),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_main_rendered_layer_type(main_rendered_layer_type),
@@ -179,7 +179,7 @@ GPlatesViewOperations::ChangeLightDirectionOperation::get_world_space_light_dire
 	return d_scene_lighting_parameters.is_light_direction_attached_to_view_frame()
 			? GPlatesGui::transform_globe_view_space_light_direction_to_world_space(
 					d_scene_lighting_parameters.get_globe_view_light_direction(),
-					d_globe_orientation.rotation())
+					d_globe_camera.get_globe_orientation_relative_to_view())
 			: d_scene_lighting_parameters.get_globe_view_light_direction();
 }
 
@@ -225,7 +225,7 @@ GPlatesViewOperations::ChangeLightDirectionOperation::move_light_direction(
 		const GPlatesMaths::UnitVector3D view_space_light_direction =
 				GPlatesGui::transform_globe_world_space_light_direction_to_view_space(
 						world_space_light_direction,
-						d_globe_orientation.rotation());
+						d_globe_camera.get_globe_orientation_relative_to_view());
 		d_scene_lighting_parameters.set_globe_view_light_direction(view_space_light_direction);
 	}
 	else

@@ -119,6 +119,12 @@ namespace GPlatesGui
 			return *d_globe_orientation_ptr;
 		}
 
+		const GlobeCamera &
+		get_globe_camera() const
+		{
+			return d_globe_camera;
+		}
+
 		GlobeCamera &
 		get_globe_camera()
 		{

@@ -33,6 +33,7 @@
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
 
+#include "gui/GlobeCamera.h"
 #include "gui/SceneLightingParameters.h"
 
 #include "presentation/ViewState.h"
@@ -158,8 +159,8 @@ GPlatesQtWidgets::LightingWidget::react_light_direction_attached_to_view_frame_c
 	const bool light_direction_attached_to_view_frame =
 			light_direction_attached_to_view_frame_check_box->isChecked();
 
-	const GPlatesMaths::Rotation &view_space_transform =
-			d_globe_and_map_widget.get_globe_canvas().globe().orientation().rotation();
+	const GPlatesMaths::Rotation &view_space_transform = d_globe_and_map_widget.get_globe_canvas()
+			.globe().get_globe_camera().get_globe_orientation_relative_to_view();
 
 	GPlatesGui::SceneLightingParameters &scene_lighting_parameters =
 			d_view_state.get_scene_lighting_parameters();

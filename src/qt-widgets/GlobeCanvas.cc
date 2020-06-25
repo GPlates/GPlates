@@ -1572,7 +1572,7 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 	const GPlatesMaths::Rotation &rotation
 	/*bool should_emit_external_signal */)
 {
-	d_globe.orientation().set_rotation(rotation);
+	d_globe.get_globe_camera().set_globe_orientation_relative_to_view(rotation);
 
 	update_canvas();
 }
@@ -1580,5 +1580,5 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 boost::optional<GPlatesMaths::Rotation>
 GPlatesQtWidgets::GlobeCanvas::orientation() const
 {
-	return d_globe.orientation().rotation();
+	return d_globe.get_globe_camera().get_globe_orientation_relative_to_view();
 }

@@ -41,8 +41,8 @@
 
 namespace GPlatesGui
 {
+	class GlobeCamera;
 	class SceneLightingParameters;
-	class SimpleGlobeOrientation;
 	class ViewportZoom;
 }
 
@@ -58,7 +58,7 @@ namespace GPlatesViewOperations
 
 		ChangeLightDirectionOperation(
 				GPlatesGui::SceneLightingParameters &scene_lighting_parameters,
-				GPlatesGui::SimpleGlobeOrientation &globe_orientation,
+				GPlatesGui::GlobeCamera &globe_camera,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				RenderedGeometryCollection &rendered_geometry_collection,
 				RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
@@ -114,7 +114,7 @@ namespace GPlatesViewOperations
 
 		GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;
 
-		GPlatesGui::SimpleGlobeOrientation &d_globe_orientation;
+		GPlatesGui::GlobeCamera &d_globe_camera;
 
 		GPlatesGui::ViewportZoom &d_viewport_zoom;
 
