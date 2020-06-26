@@ -39,7 +39,6 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "gui/Colour.h"
-#include "gui/SimpleGlobeOrientation.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
@@ -260,6 +259,69 @@ namespace GPlatesQtWidgets
 				reconstructed_feature_geometry_collection_type>
 						visual_layer_reconstructed_feature_geometry_collection_map_type;
 
+		/**
+		 * Orientation accumulated over (potentially) multiple mouse drag operations.
+		 */
+		class AccumOrientation
+		{
+		public:
+
+			AccumOrientation() :
+				d_current_drag_orientation(GPlatesMaths::Rotation::create_identity_rotation()),
+				d_accum_orientation(GPlatesMaths::Rotation::create_identity_rotation())
+			{  }
+
+			void
+			start_drag(
+					const GPlatesMaths::PointOnSphere &initial_pos_in_current_drag)
+			{
+				// If there was a previous drag operation then accumulate its orientation.
+				if (d_initial_pos_in_current_drag)
+				{
+					d_accum_orientation = d_current_drag_orientation * d_accum_orientation;
+					d_current_drag_orientation = GPlatesMaths::Rotation::create_identity_rotation();
+				}
+
+				d_initial_pos_in_current_drag = initial_pos_in_current_drag;
+			}
+
+			void
+			update_drag(
+					const GPlatesMaths::PointOnSphere &pos_in_current_drag)
+			{
+				// Orientation of current drag position relative to its initial position.
+				//
+				// Note that we no longer accumulate rotations *between* drag positions belonging
+				// to the *same* drag operation. This provides a more intuitive user experience.
+				d_current_drag_orientation = GPlatesMaths::Rotation::create(
+						d_initial_pos_in_current_drag.get(),
+						pos_in_current_drag);
+			}
+
+			GPlatesMaths::Rotation
+			get_accumulated_orientation() const
+			{
+				// Return the previous accumulated drag orientations and the current drag orientation.
+				return d_current_drag_orientation * d_accum_orientation;
+			}
+
+		private:
+			/**
+			 * The initial position at start of current drag.
+			 */
+			boost::optional<GPlatesMaths::PointOnSphere> d_initial_pos_in_current_drag;
+
+			/**
+			 * Current drag rotation from initial position to current position along great circle arc.
+			 */
+			GPlatesMaths::Rotation d_current_drag_orientation;
+
+			/**
+			 * Orientation accumulated from one or more drag operations.
+			 */
+			GPlatesMaths::Rotation d_accum_orientation;
+		};
+
 
 		//! Manages reconstructions.
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
@@ -327,15 +389,9 @@ namespace GPlatesQtWidgets
 		bool d_is_active;
 
 		/**
-		 * This accumulates the rotation for us.
-		 *
-		 * Ignore the fact that it looks like it's a @em globe orientation.  That's just
-		 * your eyes playing tricks on you.
-		 *
-		 * Since SimpleGlobeOrientation is non-copy-constructable and non-copy-assignable,
-		 * we have to use a boost:scoped_ptr here instead of a boost::optional.
+		 * Orientation accumulated over (potentially) multiple mouse drag operations.
 		 */
-		boost::scoped_ptr<GPlatesGui::SimpleGlobeOrientation> d_accum_orientation;
+		boost::optional<AccumOrientation> d_drag_orientation;
 
 		/**
 		 * The reconstruction plate ID from the reconstructed feature geometry (RFG).

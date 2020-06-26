@@ -454,9 +454,9 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
 		const GPlatesMaths::PointOnSphere &current_position)
 {
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
-		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+		d_drag_orientation = AccumOrientation();
 	}
 
 	if (d_move_pole_widget.get_pole())
@@ -466,14 +466,14 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
 				d_move_pole_widget.get_pole().get());
 		if (d_drag_start)
 		{
-			d_accum_orientation->set_new_handle_at_pos(d_drag_start.get());
+			d_drag_orientation->start_drag(d_drag_start.get());
 		}
 		// Else, the drag-start was at the adjustment pole location (or its antipodal), so there was no
 		// unique "closest" point to the equator; don't try to do anything until the drag leaves the poles.
 	}
 	else
 	{
-		d_accum_orientation->set_new_handle_at_pos(current_position);
+		d_drag_orientation->start_drag(current_position);
 	}
 }
 
@@ -500,11 +500,11 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
 		// the it was at the centre of the viewport.  Hence, nothing to be done.
 		return;
 	}
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
-		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+		d_drag_orientation = AccumOrientation();
 	}
-	d_accum_orientation->set_new_handle_at_pos(*point_on_horizon);
+	d_drag_orientation->start_drag(point_on_horizon.get());
 }
 
 
@@ -513,7 +513,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 		const GPlatesMaths::PointOnSphere &current_position)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_accum_orientation != NULL,
+			d_drag_orientation,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_move_pole_widget.get_pole())
@@ -528,7 +528,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 					d_move_pole_widget.get_pole().get());
 			if (d_drag_start)
 			{
-				d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
+				d_drag_orientation->start_drag(d_drag_start.get());
 			}
 			// Else, the drag-start was at the adjustment pole location (or its antipodal), so there
 			// was no unique "closest" point to the equator; don't try to do anything until the drag
@@ -542,7 +542,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 							d_move_pole_widget.get_pole().get());
 			if (drag_update)
 			{
-				d_accum_orientation->move_handle_to_pos(*drag_update);
+				d_drag_orientation->update_drag(drag_update.get());
 			}
 			// Else, the drag-update was at the adjustment pole location (or its antipodal), so
 			// there was no unique "closest" point to the equator; don't try to do anything until
@@ -551,7 +551,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 	}
 	else
 	{
-		d_accum_orientation->move_handle_to_pos(current_position);
+		d_drag_orientation->update_drag(current_position);
 	}
 
 	draw_dragged_geometries();
@@ -573,7 +573,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
 		return;
 	}
 
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
 		// We must be in the middle of a non-drag.  Perhaps the user tried to drag at the
 		// centre of the viewport, for instance.
@@ -588,7 +588,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
 		// the it was at the centre of the viewport.  Hence, nothing to be done.
 		return;
 	}
-	d_accum_orientation->move_handle_to_pos(*point_on_horizon);
+	d_drag_orientation->update_drag(point_on_horizon.get());
 
 	draw_dragged_geometries();
 	update_adjustment_fields();
@@ -603,7 +603,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::end_drag()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 {
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
 		// The user must have released the mouse button after a non-drag.  Perhaps the user
 		// tried to drag at the centre of the viewport, for instance.
@@ -638,13 +638,13 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	// Applicator, which will not do anything useful unless the Applicator has been set.
 	d_applicator_ptr->set(
 			sequence_choices,
-			d_accum_orientation->rotation(),
+			d_drag_orientation->get_accumulated_orientation(),
 			*d_reconstruction_tree);
 	d_dialog_ptr->setup_for_new_pole(
 			*d_plate_id,
 			d_application_state_ptr->get_current_reconstruction_time(),
 			sequence_choices,
-			d_accum_orientation->rotation());
+			d_drag_orientation->get_accumulated_orientation());
 
 	d_dialog_ptr->show();
 }
@@ -661,7 +661,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::reset()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::reset_adjustment()
 {
-	d_accum_orientation.reset();
+	d_drag_orientation = boost::none;
 
 	// Update the "Adjustment" fields in the TaskPanel pane.
 	field_adjustment_lat->clear();
@@ -949,7 +949,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
 	// Be careful that the boost::optional is not boost::none.
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
 		return;
 	}
@@ -960,7 +960,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	draw_geometries(
 			*d_dragged_geom_layer_ptr,
 			GPlatesGui::Colour::get_silver(),
-			d_accum_orientation->rotation());
+			d_drag_orientation->get_accumulated_orientation());
 }
 
 
@@ -1070,7 +1070,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::react_adjustment_pole_changed(
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_adjustment_fields()
 {
-	if ( ! d_accum_orientation)
+	if ( ! d_drag_orientation)
 	{
 		// No idea why the boost::optional is boost::none here, but let's not crash!
 		// FIXME:  Complain about this.
@@ -1078,7 +1078,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_adjustment_fields()
 	}
 	ApplyReconstructionPoleAdjustmentDialog::fill_in_fields_for_rotation(
 			field_adjustment_lat, field_adjustment_lon, spinbox_adjustment_angle,
-			d_accum_orientation->rotation());
+			d_drag_orientation->get_accumulated_orientation());
 }
 
 
