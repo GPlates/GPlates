@@ -191,7 +191,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_up(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle)
+		{
+			rotate_down(-angle);
+		}
 
 		/**
 		 * Same as @a rotate_up but rotates "down".
@@ -209,7 +212,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_left(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle)
+		{
+			rotate_right(-angle);
+		}
 
 		/**
 		 * Same as @a rotate_left but rotates "right".
@@ -225,7 +231,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_clockwise(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle)
+		{
+			rotate_anticlockwise(-angle);
+		}
 
 		/**
 		 * Same as @a rotate_clockwise but rotates "anti-clockwise".
@@ -272,9 +281,15 @@ namespace GPlatesGui
 
 		/**
 		 * Returns ray from camera to the specified position on the globe.
+		 *
+		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
+		 *
+		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
+		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the specified position
+		 * back along the view direction.
 		 */
 		GPlatesOpenGL::GLIntersect::Ray
-		get_camera_ray_at_pos_on_globe(
+		get_camera_ray_at_position_on_globe(
 				const GPlatesMaths::UnitVector3D &pos_on_globe);
 
 	Q_SIGNALS:

@@ -54,7 +54,6 @@
 #include "gui/ColourScheme.h"
 #include "gui/GlobeCamera.h"
 #include "gui/GlobeVisibilityTester.h"
-#include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 

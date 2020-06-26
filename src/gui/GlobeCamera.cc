@@ -247,22 +247,6 @@ GPlatesGui::GlobeCamera::move_look_at_position(
 
 
 void
-GPlatesGui::GlobeCamera::rotate_up(
-		const GPlatesMaths::real_t &angle)
-{
-	// Rotate the view around the axis perpendicular to the view and up directions.
-	const GPlatesMaths::UnitVector3D rotation_axis =
-			cross(get_view_direction(), get_up_direction()).get_normalisation();
-
-	// Rotate by negative angle to rotate the view "up".
-	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  -angle);
-
-	set_view_orientation(rotation * get_view_orientation());
-}
-
-
-void
 GPlatesGui::GlobeCamera::rotate_down(
 		const GPlatesMaths::real_t &angle)
 {
@@ -273,25 +257,6 @@ GPlatesGui::GlobeCamera::rotate_down(
 	// Rotate by positive angle to rotate the view "down".
 	const GPlatesMaths::Rotation rotation =
 			GPlatesMaths::Rotation::create(rotation_axis,  angle);
-
-	set_view_orientation(rotation * get_view_orientation());
-}
-
-
-void
-GPlatesGui::GlobeCamera::rotate_left(
-		const GPlatesMaths::real_t &angle)
-{
-	// Rotate the view around the axis 90 degrees away from the look-at position in the "up" direction.
-	const GPlatesMaths::UnitVector3D rotation_axis =
-			cross(
-					get_look_at_position().position_vector(),
-					cross(get_view_direction(), get_up_direction())
-			).get_normalisation();
-
-	// Rotate by negative angle to rotate the view "left".
-	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  -angle);
 
 	set_view_orientation(rotation * get_view_orientation());
 }
@@ -311,21 +276,6 @@ GPlatesGui::GlobeCamera::rotate_right(
 	// Rotate by positive angle to rotate the view "right".
 	const GPlatesMaths::Rotation rotation =
 			GPlatesMaths::Rotation::create(rotation_axis,  angle);
-
-	set_view_orientation(rotation * get_view_orientation());
-}
-
-
-void
-GPlatesGui::GlobeCamera::rotate_clockwise(
-		const GPlatesMaths::real_t &angle)
-{
-	// Rotate the view around the look-at position.
-	const GPlatesMaths::UnitVector3D &rotation_axis = get_look_at_position().position_vector();
-
-	// Rotate by negative angle to rotate the view "clockwise".
-	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  -angle);
 
 	set_view_orientation(rotation * get_view_orientation());
 }
@@ -412,7 +362,7 @@ GPlatesGui::GlobeCamera::get_perspective_fovy(
 
 
 GPlatesOpenGL::GLIntersect::Ray
-GPlatesGui::GlobeCamera::get_camera_ray_at_pos_on_globe(
+GPlatesGui::GlobeCamera::get_camera_ray_at_position_on_globe(
 		const GPlatesMaths::UnitVector3D &pos_on_globe)
 {
 	if (d_projection_type == GlobeProjection::ORTHOGRAPHIC)

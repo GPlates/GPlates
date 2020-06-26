@@ -334,7 +334,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt()
 
 	// Ray from camera eye to mouse position on globe.
 	const GPlatesOpenGL::GLIntersect::Ray ray =
-			d_globe_camera.get_camera_ray_at_pos_on_globe(d_mouse_drag_info->start_mouse_pos_on_globe);
+			d_globe_camera.get_camera_ray_at_position_on_globe(d_mouse_drag_info->start_mouse_pos_on_globe);
 
 	// Intersect ray with globe cylinder (to find first intersection).
 	//
@@ -461,7 +461,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 
 	// Ray from camera eye to mouse position on globe.
 	const GPlatesOpenGL::GLIntersect::Ray ray =
-			d_globe_camera.get_camera_ray_at_pos_on_globe(mouse_pos_on_globe);
+			d_globe_camera.get_camera_ray_at_position_on_globe(mouse_pos_on_globe);
 
 	// The rotation axis that the view direction (and up direction) will tilt around.
 	// However note that the axis will pass through the look-at position on globe (not globe centre).

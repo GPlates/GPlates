@@ -37,9 +37,9 @@
 #include "MapView.h"
 
 #include "gui/ColourScheme.h"
+#include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
 #include "gui/MapTransform.h"
-#include "gui/SimpleGlobeOrientation.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -520,8 +520,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::event(
 				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
 				if (is_globe_active())
 				{
-					GPlatesGui::SimpleGlobeOrientation &orientation = d_globe_canvas_ptr->globe().orientation();
-					orientation.rotate_camera(-angle);
+					GPlatesGui::GlobeCamera &globe_camera = d_globe_canvas_ptr->globe().get_globe_camera();
+					// We want to rotate the globe clockwise which means rotating the camera anticlockwise.
+					globe_camera.rotate_anticlockwise(angle);
 				}
 				else
 				{
