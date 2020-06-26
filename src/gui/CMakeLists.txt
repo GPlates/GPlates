@@ -149,7 +149,6 @@ set(srcs
     GlobeCanvasTool.h
     GlobeCanvasToolAdapter.cc
     GlobeCanvasToolAdapter.h
-    GlobeOrientation.h
     GlobeProjectionType.cc
     GlobeProjectionType.h
     GlobeRenderedGeometryCollectionPainter.cc
@@ -219,8 +218,6 @@ set(srcs
     SceneLightingParameters.h
     SessionMenu.cc
     SessionMenu.h
-    SimpleGlobeOrientation.cc
-    SimpleGlobeOrientation.h
     SingleColourScheme.cc
     SingleColourScheme.h
     SmallCircleCanvasToolWorkflow.cc
