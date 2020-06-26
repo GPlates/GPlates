@@ -133,6 +133,8 @@ namespace GPlatesGui
 		/**
 		 * Set the camera orientation (excluding tilt).
 		 *
+		 * Note that this does not change the current tilt angle.
+		 *
 		 * This sets the inverse orientation set by @a set_globe_orientation_relative_to_view.
 		 */
 		void
@@ -141,6 +143,8 @@ namespace GPlatesGui
 
 		/**
 		 * Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
+		 *
+		 * Note that this does not change the current tilt angle.
 		 *
 		 * This sets the inverse orientation set by @a set_view_orientation.
 		 */
@@ -154,8 +158,9 @@ namespace GPlatesGui
 		/**
 		 * The angle (in radians) that the view direction tilts.
 		 *
-		 * Zero angle implies looking straight down on the globe and PI/2 (90 degrees) means the view
-		 * direction is looking tangentially at the globe surface (at look-at position).
+		 * Zero angle implies looking straight down on the globe. And PI/2 (90 degrees) means the view
+		 * direction is looking tangentially at the globe surface (at look-at position) and the up
+		 * direction is pointing radially outward from the globe.
 		 */
 		GPlatesMaths::real_t
 		get_tilt_angle() const
@@ -165,6 +170,8 @@ namespace GPlatesGui
 
 		/**
 		 * Set the angle (in radians) that the view direction tilts.
+		 *
+		 * Note that this does not change the current view orientation (returned by @a get_view_orientation).
 		 */
 		void
 		set_tilt_angle(
@@ -174,7 +181,7 @@ namespace GPlatesGui
 		 * Rotate the current look-at position to the specified look-at position along the
 		 * great circle arc between them.
 		 *
-		 * The view and up directions are rotated by same rotation.
+		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
@@ -183,9 +190,23 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &new_look_at_position);
 
 		/**
+		 * Rotate the view around the look-at position so that the "up" direction points
+		 * towards the North pole when @a reorientation_angle is zero.
+		 *
+		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect
+		 * to North pole (note globe appears to rotate clockwise relative to camera), and [0,-PI] for
+		 * clockwise view orientation (note globe appears to rotate anti-clockwise relative to camera).
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		void
+		reorient_up_direction(
+				const GPlatesMaths::real_t &reorientation_angle = 0);
+
+		/**
 		 * Rotate the current look-at position "up" by the specified angle (in radians).
 		 *
-		 * The view and up directions are rotated by same rotation.
+		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
@@ -206,7 +227,7 @@ namespace GPlatesGui
 		/**
 		 * Rotate the current look-at position "left" by the specified angle (in radians).
 		 *
-		 * The view and up directions are rotated by same rotation.
+		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
@@ -226,6 +247,8 @@ namespace GPlatesGui
 
 		/**
 		 * Rotate the view "clockwise", around the current look-at position, by the specified angle (in radians).
+		 *
+		 * The view and up directions are rotated.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */

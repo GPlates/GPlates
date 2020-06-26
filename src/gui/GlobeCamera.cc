@@ -247,6 +247,43 @@ GPlatesGui::GlobeCamera::move_look_at_position(
 
 
 void
+GPlatesGui::GlobeCamera::reorient_up_direction(
+		const GPlatesMaths::real_t &reorientation_angle)
+{
+	// Rotate the view around the look-at position.
+	const GPlatesMaths::UnitVector3D &rotation_axis = get_look_at_position().position_vector();
+
+	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
+			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
+	if (vertical_orientation_unnormalised.is_zero_magnitude())
+	{
+		// The look-at position is at the North pole, we cannot reorient, so do nothing and return.
+		return;
+	}
+	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
+
+	const GPlatesMaths::UnitVector3D current_orientation =
+			cross(get_view_direction(), get_up_direction()).get_normalisation();
+
+	// Current orientation angle.
+	GPlatesMaths::real_t current_orientation_angle = acos(dot(current_orientation, vertical_orientation));
+
+	// Rotation angles go clockwise around rotation axis, so negate when going anti-clockwise.
+	if (dot(current_orientation, cross(rotation_axis, vertical_orientation)).dval() < 0)
+	{
+		current_orientation_angle = -current_orientation_angle;
+	}
+
+	const GPlatesMaths::real_t reorient_rotation_angle = reorientation_angle - current_orientation_angle;
+
+	const GPlatesMaths::Rotation reorient_rotation =
+			GPlatesMaths::Rotation::create(rotation_axis, reorient_rotation_angle);
+
+	set_view_orientation(reorient_rotation * get_view_orientation());
+}
+
+
+void
 GPlatesGui::GlobeCamera::rotate_down(
 		const GPlatesMaths::real_t &angle)
 {

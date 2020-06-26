@@ -1458,7 +1458,7 @@ GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
 void
 GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 {
-	globe().orientation().orient_poles_vertically();
+	d_globe_camera.reorient_up_direction();
 }
 
 std::pair<bool, GPlatesMaths::PointOnSphere>
