@@ -190,7 +190,7 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &new_look_at_position);
 
 		/**
-		 * Rotate the view around the look-at position so that the "up" direction points
+		 * Rotate the view around the view direction so that the "up" direction points
 		 * towards the North pole when @a reorientation_angle is zero.
 		 *
 		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect

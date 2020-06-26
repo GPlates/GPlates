@@ -250,14 +250,17 @@ void
 GPlatesGui::GlobeCamera::reorient_up_direction(
 		const GPlatesMaths::real_t &reorientation_angle)
 {
-	// Rotate the view around the look-at position.
-	const GPlatesMaths::UnitVector3D &rotation_axis = get_look_at_position().position_vector();
+	// Rotate the view around the view direction.
+	// It's negated so that it points towards the camera (from globe centre).
+	// This works regardless of whether the view is tilted or not.
+	const GPlatesMaths::UnitVector3D &rotation_axis = -get_view_direction();
 
 	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
 			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
 	if (vertical_orientation_unnormalised.is_zero_magnitude())
 	{
-		// The look-at position is at the North pole, we cannot reorient, so do nothing and return.
+		// The position on the globe from origin to globe surface along negative view direction
+		// happens to be the North pole. So we cannot reorient, hence do nothing and return.
 		return;
 	}
 	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
@@ -274,6 +277,7 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 		current_orientation_angle = -current_orientation_angle;
 	}
 
+	// If there's a difference between the desired angle and the current angle then we'll need to rotate.
 	const GPlatesMaths::real_t reorient_rotation_angle = reorientation_angle - current_orientation_angle;
 
 	const GPlatesMaths::Rotation reorient_rotation =
