@@ -303,12 +303,8 @@ void
 GPlatesGui::GlobeCamera::rotate_right(
 		const GPlatesMaths::real_t &angle)
 {
-	// Rotate the view around the axis 90 degrees away from the look-at position in the "up" direction.
-	const GPlatesMaths::UnitVector3D rotation_axis =
-			cross(
-					get_look_at_position().position_vector(),
-					cross(get_view_direction(), get_up_direction())
-			).get_normalisation();
+	// Rotate the view around the "up" direction axis.
+	const GPlatesMaths::UnitVector3D &rotation_axis = get_up_direction();
 
 	// Rotate by positive angle to rotate the view "right".
 	const GPlatesMaths::Rotation rotation =
