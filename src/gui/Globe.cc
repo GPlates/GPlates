@@ -31,6 +31,8 @@
 
 #include "Globe.h"
 
+#include "GlobeCamera.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -65,7 +67,6 @@ GPlatesGui::Globe::Globe(
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
-	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
 			gl_visual_layers,
@@ -85,7 +86,6 @@ GPlatesGui::Globe::Globe(
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
-	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
 			gl_visual_layers,
@@ -130,12 +130,9 @@ GPlatesGui::Globe::paint(
 	// The cached view is a sequence of caches for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<cache_handle_type> > cache_handle(new std::vector<cache_handle_type>());
 
-	// Set up the globe orientation transform.
+	// Set up the scene lighting if lighting is supported.
 	GPlatesOpenGL::GLMatrix globe_orientation_transform;
 	get_globe_orientation_transform(globe_orientation_transform);
-	renderer.gl_mult_matrix(GL_MODELVIEW, globe_orientation_transform);
-
-	// Set up the scene lighting if lighting is supported.
 	set_scene_lighting(renderer, globe_orientation_transform);
 
 	// Render stars.
@@ -314,9 +311,13 @@ void
 GPlatesGui::Globe::get_globe_orientation_transform(
 		GPlatesOpenGL::GLMatrix &transform) const
 {
-	GPlatesMaths::UnitVector3D axis = d_globe_orientation_ptr->rotation_axis();
-	GPlatesMaths::real_t angle_in_deg =
-			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle());
+	// TODO: Change this to 'view' orientation and investigate the effect of view tilt.
+	const GPlatesMaths::Rotation globe_orientation_relative_to_view =
+			d_globe_camera.get_globe_orientation_relative_to_view();
+
+	const GPlatesMaths::UnitVector3D &axis = globe_orientation_relative_to_view.axis();
+	const GPlatesMaths::real_t angle_in_deg = GPlatesMaths::convert_rad_to_deg(
+			globe_orientation_relative_to_view.angle());
 
 	transform.gl_rotate(angle_in_deg.dval(), axis.x().dval(), axis.y().dval(), axis.z().dval());
 }
@@ -391,10 +392,16 @@ GPlatesGui::Globe::render_sphere_background(
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
+	//
+	// TODO: Change this to 'view' orientation and investigate the effect of view tilt.
+	//       In fact, remove reliance on view orientation altogether and render as a sphere (not a disc)
+	//       using OpenGL fragment shaders to handle variation in opacity.
+	const GPlatesMaths::Rotation globe_orientation_relative_to_view =
+			d_globe_camera.get_globe_orientation_relative_to_view();
 	d_sphere->paint(
 			renderer,
-			d_globe_orientation_ptr->rotation_axis(),
-			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
+			globe_orientation_relative_to_view.axis(),
+			GPlatesMaths::convert_rad_to_deg(globe_orientation_relative_to_view.angle()).dval());
 }
 
 

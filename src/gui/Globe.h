@@ -36,7 +36,6 @@
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
-#include "SimpleGlobeOrientation.h"
 #include "Stars.h"
 
 #include "maths/UnitVector3D.h"
@@ -107,17 +106,6 @@ namespace GPlatesGui
 		initialiseGL(
 				GPlatesOpenGL::GLRenderer &renderer);
 
-		const SimpleGlobeOrientation &
-		orientation() const
-		{
-			return *d_globe_orientation_ptr;
-		}
-
-		SimpleGlobeOrientation &
-		orientation()
-		{
-			return *d_globe_orientation_ptr;
-		}
 
 		const GlobeCamera &
 		get_globe_camera() const
@@ -187,11 +175,6 @@ namespace GPlatesGui
 		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
 		boost::optional<SphericalGrid> d_grid;
-
-		/**
-		 * The accumulated orientation of the globe.
-		 */
-		boost::shared_ptr<SimpleGlobeOrientation> d_globe_orientation_ptr;
 
 		/**
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
