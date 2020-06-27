@@ -1102,13 +1102,14 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 	update_mouse_pointer_pos(press_event);
 
 	// Let's ignore all mouse buttons except the left mouse button.
-	if (press_event->button() != Qt::LeftButton) {
+	if (press_event->button() != Qt::LeftButton)
+	{
 		return;
 	}
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
+					press_event->localPos().x(),
+					press_event->localPos().y(),
 					mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
@@ -1128,20 +1129,23 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 {
 	update_mouse_pointer_pos(move_event);
 	
-	if (d_mouse_press_info) {
+	if (d_mouse_press_info)
+	{
 		// Call it a drag if EITHER:
 		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
 		// OR:
 		//  * the mouse moved at least 3 pixels in one direction.
 		//
 		// Otherwise, the user just has shaky hands or a very high-res screen.
-		int mouse_delta_x = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int mouse_delta_y = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
-		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4) {
+		int mouse_delta_x = move_event->localPos().x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int mouse_delta_y = move_event->localPos().y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4)
+		{
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
 
-		if (d_mouse_press_info->d_is_mouse_drag) {
+		if (d_mouse_press_info->d_is_mouse_drag)
+		{
 			Q_EMIT mouse_dragged(
 					d_mouse_press_info->d_mouse_pointer_pos,
 					d_mouse_press_info->d_is_on_globe,
@@ -1174,12 +1178,14 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		QMouseEvent *release_event)
 {
 	// Let's ignore all mouse buttons except the left mouse button.
-	if (release_event->button() != Qt::LeftButton) {
+	if (release_event->button() != Qt::LeftButton)
+	{
 		return;
 	}
 
 	// Let's do our best to avoid crash-inducing Boost assertions.
-	if ( ! d_mouse_press_info) {
+	if ( ! d_mouse_press_info)
+	{
 		// OK, something strange happened:  Our boost::optional MousePressInfo is not
 		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
 		// let's log a warning on the console and NOT crash.
@@ -1191,11 +1197,13 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	if (abs(release_event->localPos().x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(release_event->localPos().y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3)
+	{
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
-	if (d_mouse_press_info->d_is_mouse_drag) {
+	if (d_mouse_press_info->d_is_mouse_drag)
+	{
 		Q_EMIT mouse_released_after_drag(
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_mouse_press_info->d_is_on_globe,
@@ -1204,7 +1212,9 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				centre_of_viewport(),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
-	} else {
+	}
+	else
+	{
 		Q_EMIT mouse_clicked(
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_mouse_press_info->d_is_on_globe,
@@ -1302,8 +1312,8 @@ void
 GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 		QMouseEvent *mouse_event) 
 {
-	d_mouse_pointer_screen_pos_x = mouse_event->x();
-	d_mouse_pointer_screen_pos_y = mouse_event->y();
+	d_mouse_pointer_screen_pos_x = mouse_event->localPos().x();
+	d_mouse_pointer_screen_pos_y = mouse_event->localPos().y();
 
 	handle_mouse_pointer_pos_change();
 }
@@ -1463,8 +1473,8 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 
 std::pair<bool, GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
-		int screen_x,
-		int screen_y) const
+		qreal screen_x,
+		qreal screen_y) const
 {
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
 	screen_y = height() - screen_y;

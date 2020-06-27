@@ -41,6 +41,7 @@
 #include <QImage>
 #include <QPaintDevice>
 #include <QPainter>
+#include <QtGlobal>
 #include <QtOpenGL/qgl.h>
 
 #include "gui/ColourScheme.h"
@@ -100,8 +101,8 @@ namespace GPlatesQtWidgets
 		struct MousePressInfo
 		{
 			MousePressInfo(
-					int mouse_pointer_screen_pos_x,
-					int mouse_pointer_screen_pos_y,
+					qreal mouse_pointer_screen_pos_x,
+					qreal mouse_pointer_screen_pos_y,
 					const GPlatesMaths::PointOnSphere &mouse_pointer_pos,
 					bool is_on_globe,
 					Qt::MouseButton button,
@@ -115,8 +116,8 @@ namespace GPlatesQtWidgets
 				d_is_mouse_drag(false)
 			{  }
 
-			int d_mouse_pointer_screen_pos_x;
-			int d_mouse_pointer_screen_pos_y;
+			qreal d_mouse_pointer_screen_pos_x;
+			qreal d_mouse_pointer_screen_pos_y;
 			GPlatesMaths::PointOnSphere d_mouse_pointer_pos;
 			bool d_is_on_globe;
 			Qt::MouseButton d_button;
@@ -640,10 +641,10 @@ namespace GPlatesQtWidgets
 		bool d_mouse_pointer_is_on_globe;
 
 		//! The x-coord of the mouse pointer position on the screen.
-		int d_mouse_pointer_screen_pos_x;
+		qreal d_mouse_pointer_screen_pos_x;
 
 		//! The y-coord of the mouse pointer position on the screen.
-		int d_mouse_pointer_screen_pos_y;
+		qreal d_mouse_pointer_screen_pos_y;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
@@ -710,8 +711,8 @@ namespace GPlatesQtWidgets
 		 */
 		std::pair<bool, GPlatesMaths::PointOnSphere>
 		calc_globe_position(
-				int screen_x,
-				int screen_y) const;
+				qreal screen_x,
+				qreal screen_y) const;
 
 		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
