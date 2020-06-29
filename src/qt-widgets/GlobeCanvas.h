@@ -207,6 +207,18 @@ namespace GPlatesQtWidgets
 			return d_globe;
 		}
 
+		double
+		mouse_pointer_screen_pos_x() const
+		{
+			return d_mouse_pointer_screen_pos_x;
+		}
+
+		double
+		mouse_pointer_screen_pos_y() const
+		{
+			return d_mouse_pointer_screen_pos_y;
+		}
+
 		/**
 		 * If the mouse pointer is on the globe, return the position of the mouse pointer
 		 * on the globe.
@@ -474,19 +486,31 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_pointer_position_changed(
+				int screen_width,
+				int screen_height,
+				double screen_x,
+				double screen_y,
 				const GPlatesMaths::PointOnSphere &new_pos,
 				bool is_on_globe);
 				
 				
 		void
 		mouse_pressed(
-			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-			bool is_on_globe,
-			Qt::MouseButton button,
-			Qt::KeyboardModifiers modifiers);
+				int screen_width,
+				int screen_height,
+				double press_screen_x,
+				double press_screen_y,
+				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_clicked(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
@@ -494,8 +518,14 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_dragged(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport,
@@ -504,8 +534,14 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_released_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport,
@@ -517,6 +553,10 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		mouse_moved_without_drag(
+				int screen_width,
+				int screen_height,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);

@@ -79,8 +79,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_deactivation()
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -105,8 +111,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_left_drag(
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -118,10 +130,11 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_left_release_after_drag(
 
 	// In case clicked and released at same time.
 	handle_left_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	d_change_light_direction_operation.end_drag(current_pos_on_globe);
@@ -131,8 +144,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_left_release_after_drag(
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -144,10 +163,11 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_drag(
 
 	// Delegate default reorient handling to base class.
 	GPlatesGui::GlobeCanvasTool::handle_ctrl_left_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	// Make sure the light direction is in the correct location when it is attached to the
@@ -160,8 +180,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_drag(
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -173,10 +199,11 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_release_after_dr
 
 	// Delegate default reorient handling to base class.
 	GPlatesGui::GlobeCanvasTool::handle_ctrl_left_release_after_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	// Make sure the light direction is in the correct location when it is attached to the
@@ -189,8 +216,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_ctrl_left_release_after_dr
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -202,10 +235,11 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_drag(
 
 	// Delegate default reorient handling to base class.
 	GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	// Make sure the light direction is in the correct location when it is attached to the
@@ -218,8 +252,14 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_drag(
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -231,10 +271,11 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_release_af
 
 	// Delegate default reorient handling to base class.
 	GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	// Make sure the light direction is in the correct location when it is attached to the
@@ -247,6 +288,10 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_shift_ctrl_left_release_af
 
 void
 GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_move_without_drag(
+		int screen_width,
+		int screen_height,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)

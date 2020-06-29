@@ -81,21 +81,35 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_press(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				int screen_width,
+				int screen_height,
+				double press_screen_x,
+				double press_screen_y,
+				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
 				bool is_on_globe);
 
 
 		virtual
 		void
 		handle_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
 		void
 		handle_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -103,8 +117,14 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -112,14 +132,24 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_shift_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
 		void
 		handle_shift_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -127,8 +157,54 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_shift_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+
+		virtual
+		void
+		handle_alt_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				bool is_on_globe);
+
+		virtual
+		void
+		handle_alt_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+
+		virtual
+		void
+		handle_alt_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -136,14 +212,24 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_ctrl_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
 		void
 		handle_ctrl_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -151,8 +237,14 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_ctrl_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -160,14 +252,24 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_shift_ctrl_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
 		void
 		handle_shift_ctrl_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -175,8 +277,54 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_shift_ctrl_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+
+		virtual
+		void
+		handle_alt_ctrl_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				bool is_on_globe);
+
+		virtual
+		void
+		handle_alt_ctrl_left_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+
+		virtual
+		void
+		handle_alt_ctrl_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
@@ -184,6 +332,10 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_move_without_drag(
+				int screen_width,
+				int screen_height,
+				double current_screen_x,
+				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &_centre_of_viewport);

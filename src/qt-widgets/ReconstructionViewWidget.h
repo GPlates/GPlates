@@ -149,6 +149,10 @@ namespace GPlatesQtWidgets
 
 		void
 		update_mouse_pointer_position(
+				int screen_width,
+				int screen_height,
+				double screen_x,
+				double screen_y,
 				const GPlatesMaths::PointOnSphere &new_pos,
 				bool is_on_globe);
 

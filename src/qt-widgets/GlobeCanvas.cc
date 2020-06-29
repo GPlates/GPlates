@@ -598,7 +598,13 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 		d_mouse_pointer_pos_on_globe = new_pos;
 		d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-		Q_EMIT mouse_pointer_position_changed(new_pos, is_now_on_globe);
+		Q_EMIT mouse_pointer_position_changed(
+				width(),
+				height(),
+				d_mouse_pointer_screen_pos_x,
+				d_mouse_pointer_screen_pos_y,
+				new_pos,
+				is_now_on_globe);
 	}
 }
 
@@ -617,7 +623,13 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 	d_mouse_pointer_pos_on_globe = new_pos;
 	d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-	Q_EMIT mouse_pointer_position_changed(new_pos, is_now_on_globe);
+	Q_EMIT mouse_pointer_position_changed(
+			width(),
+			height(),
+			d_mouse_pointer_screen_pos_x,
+			d_mouse_pointer_screen_pos_y,
+			new_pos,
+			is_now_on_globe);
 }
 
 
@@ -1116,11 +1128,14 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					press_event->modifiers());
 
 	Q_EMIT mouse_pressed(
-		d_mouse_press_info->d_mouse_pointer_pos,
-		d_mouse_press_info->d_is_on_globe,
-		d_mouse_press_info->d_button,
-		d_mouse_press_info->d_modifiers);
-
+			width(),
+			height(),
+			d_mouse_press_info->d_mouse_pointer_screen_pos_x,
+			d_mouse_press_info->d_mouse_pointer_screen_pos_y,
+			d_mouse_press_info->d_mouse_pointer_pos,
+			d_mouse_press_info->d_is_on_globe,
+			d_mouse_press_info->d_button,
+			d_mouse_press_info->d_modifiers);
 }
 
 void
@@ -1147,8 +1162,14 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		if (d_mouse_press_info->d_is_mouse_drag)
 		{
 			Q_EMIT mouse_dragged(
+					width(),
+					height(),
+					d_mouse_press_info->d_mouse_pointer_screen_pos_x,
+					d_mouse_press_info->d_mouse_pointer_screen_pos_y,
 					d_mouse_press_info->d_mouse_pointer_pos,
 					d_mouse_press_info->d_is_on_globe,
+					mouse_pointer_screen_pos_x(),
+					mouse_pointer_screen_pos_y(),
 					mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
 					centre_of_viewport(),
@@ -1166,6 +1187,10 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		// canvas tool operation.
 		//
 		Q_EMIT mouse_moved_without_drag(
+				width(),
+				height(),
+				mouse_pointer_screen_pos_x(),
+				mouse_pointer_screen_pos_y(),
 				mouse_pointer_pos_on_globe(),
 				mouse_pointer_is_on_globe(),
 				centre_of_viewport());
@@ -1205,8 +1230,14 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 	if (d_mouse_press_info->d_is_mouse_drag)
 	{
 		Q_EMIT mouse_released_after_drag(
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_pointer_screen_pos_x,
+				d_mouse_press_info->d_mouse_pointer_screen_pos_y,
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_mouse_press_info->d_is_on_globe,
+				mouse_pointer_screen_pos_x(),
+				mouse_pointer_screen_pos_y(),
 				mouse_pointer_pos_on_globe(),
 				mouse_pointer_is_on_globe(),
 				centre_of_viewport(),
@@ -1216,6 +1247,10 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 	else
 	{
 		Q_EMIT mouse_clicked(
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_pointer_screen_pos_x,
+				d_mouse_press_info->d_mouse_pointer_screen_pos_y,
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_mouse_press_info->d_is_on_globe,
 				d_mouse_press_info->d_button,

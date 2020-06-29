@@ -82,12 +82,20 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
 		void
 		handle_shift_left_click(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe);
 

@@ -73,8 +73,14 @@ GPlatesCanvasTools::MovePoleGlobe::handle_deactivation()
 
 void
 GPlatesCanvasTools::MovePoleGlobe::handle_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
@@ -99,18 +105,25 @@ GPlatesCanvasTools::MovePoleGlobe::handle_left_drag(
 
 void
 GPlatesCanvasTools::MovePoleGlobe::handle_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
 		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	// In case clicked and released at same time.
 	handle_left_drag(
-			initial_pos_on_globe,
-			was_on_globe,
-			current_pos_on_globe,
-			is_on_globe,
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
 			centre_of_viewport);
 
 	d_move_pole_operation->end_drag(current_pos_on_globe);
@@ -120,6 +133,10 @@ GPlatesCanvasTools::MovePoleGlobe::handle_left_release_after_drag(
 
 void
 GPlatesCanvasTools::MovePoleGlobe::handle_move_without_drag(
+		int screen_width,
+		int screen_height,
+		double current_screen_x,
+		double current_screen_y,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
