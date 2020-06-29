@@ -73,11 +73,18 @@ namespace GPlatesViewOperations
 		 * Start a mouse drag, using the specified mode, at the specified position on the globe.
 		 *
 		 * Subsequent calls to @a update_drag will use the specified drag mode.
+		 *
+		 * Note that @a initial_mouse_pos_on_globe is the nearest position *on* the globe when
+		 * the mouse coordinate is *off* the globe.
 		 */
 		void
 		start_drag(
 				MouseDragMode mouse_drag_mode,
-				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &initial_mouse_pos_on_globe,
+				double initial_mouse_screen_x,
+				double initial_mouse_screen_y,
+				int screen_width,
+				int screen_height);
 
 		/**
 		 * Update the camera view using the specified mouse drag position on the globe.
@@ -86,10 +93,17 @@ namespace GPlatesViewOperations
 		 *
 		 * Depending on the drag mode, this can update the view direction, up direction, look-at position and
 		 * perspective eye position.
+		 *
+		 * Note that @a mouse_pos_on_globe is the nearest position *on* the globe when
+		 * the mouse coordinate is *off* the globe.
 		 */
 		void
 		update_drag(
-				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe,
+				double mouse_screen_x,
+				double mouse_screen_y,
+				int screen_width,
+				int screen_height);
 
 		void
 		end_drag();
@@ -104,12 +118,16 @@ namespace GPlatesViewOperations
 			MouseDragInfo(
 					MouseDragMode mode_,
 					const GPlatesMaths::UnitVector3D &start_mouse_pos_on_globe_,
+					const double &start_mouse_window_x_,
+					const double &start_mouse_window_y_,
 					const GPlatesMaths::UnitVector3D &start_look_at_pos_on_globe_,
 					const GPlatesMaths::UnitVector3D &start_view_direction_,
 					const GPlatesMaths::UnitVector3D &start_up_direction_,
 					const GPlatesMaths::Rotation &start_view_orientation_) :
 				mode(mode_),
 				start_mouse_pos_on_globe(start_mouse_pos_on_globe_),
+				start_mouse_window_x(start_mouse_window_x_),
+				start_mouse_window_y(start_mouse_window_y_),
 				start_look_at_position(start_look_at_pos_on_globe_),
 				start_view_direction(start_view_direction_),
 				start_up_direction(start_up_direction_),
@@ -121,6 +139,8 @@ namespace GPlatesViewOperations
 			MouseDragMode mode;
 
 			GPlatesMaths::UnitVector3D start_mouse_pos_on_globe;
+			double start_mouse_window_x;
+			double start_mouse_window_y;
 
 			GPlatesMaths::UnitVector3D start_look_at_position;
 			GPlatesMaths::UnitVector3D start_view_direction;
@@ -165,11 +185,16 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_tilt();
+		start_drag_tilt(
+				int window_width,
+				int window_height);
 
 		void
 		update_drag_tilt(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
+				double mouse_window_x,
+				double mouse_window_y,
+				int window_width,
+				int window_height);
 
 
 		void

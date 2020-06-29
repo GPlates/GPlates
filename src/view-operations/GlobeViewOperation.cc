@@ -142,11 +142,21 @@ GPlatesViewOperations::GlobeViewOperation::GlobeViewOperation(
 void
 GPlatesViewOperations::GlobeViewOperation::start_drag(
 		MouseDragMode mouse_drag_mode,
-		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &initial_mouse_pos_on_globe,
+		double initial_mouse_screen_x,
+		double initial_mouse_screen_y,
+		int screen_width,
+		int screen_height)
 {
+	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
+	const double initial_mouse_window_y = screen_height - initial_mouse_screen_y;
+	const double initial_mouse_window_x = initial_mouse_screen_x;
+
 	d_mouse_drag_info = MouseDragInfo(
 			mouse_drag_mode,
-			mouse_pos_on_globe.position_vector(),
+			initial_mouse_pos_on_globe.position_vector(),
+			initial_mouse_window_x,
+			initial_mouse_window_y,
 			d_globe_camera.get_look_at_position().position_vector(),
 			d_globe_camera.get_view_direction(),
 			d_globe_camera.get_up_direction(),
@@ -161,7 +171,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 		start_drag_rotate();
 		break;
 	case DRAG_TILT:
-		start_drag_tilt();
+		start_drag_tilt(screen_width, screen_height);
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		start_drag_rotate_and_tilt();
@@ -175,12 +185,20 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 
 void
 GPlatesViewOperations::GlobeViewOperation::update_drag(
-		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe,
+		double mouse_screen_x,
+		double mouse_screen_y,
+		int screen_width,
+		int screen_height)
 {
 	if (!d_mouse_drag_info)
 	{
 		return;
 	}
+
+	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
+	const double mouse_window_y = screen_height - mouse_screen_y;
+	const double mouse_window_x = mouse_screen_x;
 
 	switch (d_mouse_drag_info->mode)
 	{
@@ -191,8 +209,8 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 		update_drag_rotate(mouse_pos_on_globe.position_vector());
 		break;
 	case DRAG_TILT:
-		update_drag_tilt(mouse_pos_on_globe.position_vector());
-		break;
+		update_drag_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
+			break;
 	case DRAG_ROTATE_AND_TILT:
 		update_drag_rotate_and_tilt(mouse_pos_on_globe.position_vector());
 		break;
@@ -314,7 +332,9 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate(
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::start_drag_tilt()
+GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
+		int window_width,
+		int window_height)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
@@ -332,9 +352,16 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt()
 			tilt_axis,
 			1.0/*globe radius*/);
 
-	// Ray from camera eye to mouse position on globe.
-	const GPlatesOpenGL::GLIntersect::Ray ray =
-			d_globe_camera.get_camera_ray_at_position_on_globe(d_mouse_drag_info->start_mouse_pos_on_globe);
+	// Ray from camera eye to mouse position.
+	//
+	// Note that we use the mouse window coordinate (and not position on globe) because the window
+	// coordinate might be *off* the globe (whereas position on globe will be nearest position *on* globe)
+	// and we will be intersecting the ray with a cylinder that extends *off* the globe.
+	const GPlatesOpenGL::GLIntersect::Ray ray = d_globe_camera.get_camera_ray_at_window_coord(
+			d_mouse_drag_info->start_mouse_window_x,
+			d_mouse_drag_info->start_mouse_window_y,
+			window_width,
+			window_height);
 
 	// Intersect ray with globe cylinder (to find first intersection).
 	//
@@ -442,26 +469,30 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt()
 
 	// See if mouse is in upper part of viewport.
 	// This will determine which way to tilt the globe when the mouse moves.
-	const GPlatesOpenGL::GLIntersect::Plane up_plane(
-			d_mouse_drag_info->start_up_direction/*normal*/,
-			GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)/*point_on_plane*/);
-	d_mouse_drag_info->in_upper_viewport = (
-			up_plane.classify_point(d_mouse_drag_info->start_mouse_pos_on_globe) ==
-				GPlatesOpenGL::GLIntersect::Plane::POSITIVE);
+	d_mouse_drag_info->in_upper_viewport = (d_mouse_drag_info->start_mouse_window_y > window_height / 2.0);
 }
 
 
 void
 GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
-		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+		double mouse_window_x,
+		double mouse_window_y,
+		int window_width,
+		int window_height)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Ray from camera eye to mouse position on globe.
+	// Ray from camera eye to mouse position.
+	//
+	// Note that we use the mouse window coordinate (and not position on globe) because the window
+	// coordinate might be *off* the globe (whereas position on globe will be nearest position *on* globe)
+	// and we will be intersecting the ray with a cylinder that extends *off* the globe.
 	const GPlatesOpenGL::GLIntersect::Ray ray =
-			d_globe_camera.get_camera_ray_at_position_on_globe(mouse_pos_on_globe);
+			d_globe_camera.get_camera_ray_at_window_coord(
+					mouse_window_x, mouse_window_y,
+					window_width, window_height);
 
 	// The rotation axis that the view direction (and up direction) will tilt around.
 	// However note that the axis will pass through the look-at position on globe (not globe centre).
