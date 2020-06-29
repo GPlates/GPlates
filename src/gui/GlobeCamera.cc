@@ -34,6 +34,8 @@ const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT = 1.07;
 
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
+const double GPlatesGui::GlobeCamera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES =
+		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
 
 // Our universe coordinate system is:
 //
@@ -333,19 +335,6 @@ GPlatesGui::GlobeCamera::rotate_anticlockwise(
 }
 
 
-GPlatesMaths::Vector3D
-GPlatesGui::GlobeCamera::get_perspective_eye_position() const
-{
-	// Zooming brings us closer to the globe surface but never quite reaches it.
-	// Move 1/zoom_factor times the default zoom distance between the look-at location and the eye location.
-	const double distance_eye_to_look_at =
-			get_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom() / d_viewport_zoom.zoom_factor();
-
-	return GPlatesMaths::Vector3D(get_look_at_position().position_vector()) -
-			distance_eye_to_look_at * get_view_direction();
-}
-
-
 void
 GPlatesGui::GlobeCamera::get_orthographic_left_right_bottom_top(
 		const double &aspect_ratio,
@@ -376,6 +365,19 @@ GPlatesGui::GlobeCamera::get_orthographic_left_right_bottom_top(
 }
 
 
+GPlatesMaths::Vector3D
+GPlatesGui::GlobeCamera::get_perspective_eye_position() const
+{
+	// Zooming brings us closer to the globe surface but never quite reaches it.
+	// Move 1/zoom_factor times the default zoom distance between the look-at location and the eye location.
+	const double distance_eye_to_look_at =
+			get_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom() / d_viewport_zoom.zoom_factor();
+
+	return GPlatesMaths::Vector3D(get_look_at_position().position_vector()) -
+			distance_eye_to_look_at * get_view_direction();
+}
+
+
 void
 GPlatesGui::GlobeCamera::get_perspective_fovy(
 		const double &aspect_ratio,
@@ -391,16 +393,14 @@ GPlatesGui::GlobeCamera::get_perspective_fovy(
 	{
 		// Convert field-of-view in x-axis to field-of-view in y-axis by adjusting for the aspect ratio.
 		fovy_degrees = GPlatesMaths::convert_rad_to_deg(
-				2.0 * std::atan(
-						std::tan(GPlatesMaths::convert_deg_to_rad(PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0) /
-						aspect_ratio));
+				2.0 * std::atan(TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES / aspect_ratio));
 	}
 }
 
 
 GPlatesOpenGL::GLIntersect::Ray
 GPlatesGui::GlobeCamera::get_camera_ray_at_position_on_globe(
-		const GPlatesMaths::UnitVector3D &pos_on_globe)
+		const GPlatesMaths::UnitVector3D &pos_on_globe) const
 {
 	if (d_projection_type == GlobeProjection::ORTHOGRAPHIC)
 	{
@@ -422,6 +422,90 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_position_on_globe(
 				// Note that camera eye position should be outside the globe
 				// (and hence never coincide with pos_on_globe)...
 				(GPlatesMaths::Vector3D(pos_on_globe) - camera_eye).get_normalisation();
+
+		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
+	}
+}
+
+
+GPlatesOpenGL::GLIntersect::Ray
+GPlatesGui::GlobeCamera::get_camera_ray_at_window_coord(
+		double window_x,
+		double window_y,
+		int window_width,
+		int window_height) const
+{
+	// The aspect ratio (width/height) of the window.
+	const double aspect_ratio = double(window_width) / window_height;
+
+	// The view orientation axes.
+	const GPlatesMaths::Vector3D view_z_axis(get_view_direction());
+	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
+	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
+
+	if (d_projection_type == GlobeProjection::ORTHOGRAPHIC)
+	{
+		double ortho_left;
+		double ortho_right;
+		double ortho_bottom;
+		double ortho_top;
+		get_orthographic_left_right_bottom_top(
+				aspect_ratio,
+				ortho_left, ortho_right, ortho_bottom, ortho_top);
+
+		// Convert window coordinates to the range [0, 1] and then to [left, right] for x and
+		// [bottom, top] for y.
+		const GPlatesMaths::real_t view_x_component = ortho_left +
+				(window_x / window_width) * (ortho_right - ortho_left);
+		const GPlatesMaths::real_t view_y_component = ortho_bottom +
+				(window_y / window_height) * (ortho_top - ortho_bottom);
+
+		const GPlatesMaths::Vector3D look_at_position(get_look_at_position().position_vector());
+
+		// Choose an arbitrary position on the ray. We know the look-at position projects to the
+		// centre of the viewport (where 'view_x_component = 0' and 'view_y_component = 0').
+		const GPlatesMaths::Vector3D position_on_ray =
+				look_at_position +
+				view_x_component * view_x_axis +
+				view_y_component * view_y_axis;
+
+		// In orthographic projection all view rays are parallel and so there's no real eye position.
+		// Instead place the ray origin an arbitrary distance (currently 1.0) back along the view direction.
+		const GPlatesMaths::Vector3D camera_eye = position_on_ray - GPlatesMaths::Vector3D(get_view_direction());
+
+		const GPlatesMaths::UnitVector3D &ray_direction = get_view_direction();
+
+		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
+	}
+	else  // perspective...
+	{
+		double tan_fovx;
+		double tan_fovy;
+		// Field-of-view applies to smaller dimension.
+		if (aspect_ratio < 1.0)
+		{
+			// Width is smaller dimension.
+			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovy = tan_fovx / aspect_ratio;
+		}
+		else
+		{
+			// Height is smaller dimension.
+			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovx = tan_fovy * aspect_ratio;
+		}
+
+		const GPlatesMaths::real_t view_x_component = (2 * (window_x / window_width) - 1) * tan_fovx;
+		const GPlatesMaths::real_t view_y_component = (2 * (window_y / window_height) - 1) * tan_fovy;
+
+		// Ray direction.
+		const GPlatesMaths::UnitVector3D ray_direction = (
+				view_z_axis +
+				view_x_component * view_x_axis +
+				view_y_component * view_y_axis
+			).get_normalisation();
+
+		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
 
 		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
 	}

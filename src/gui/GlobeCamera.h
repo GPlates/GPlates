@@ -268,17 +268,6 @@ namespace GPlatesGui
 
 
 		/**
-		 * The camera (eye) location for perspective viewing.
-		 *
-		 * The current viewport zoom affects this eye location.
-		 *
-		 * NOTE: For orthographic viewing there is no real eye location since the view rays
-		 *       are parallel and hence the eye location is at infinity.
-		 */
-		GPlatesMaths::Vector3D
-		get_perspective_eye_position() const;
-
-		/**
 		 * Returns the left/right/bottom/top parameters of the 'glOrtho()' function, given the
 		 * specified viewport aspect ratio.
 		 *
@@ -293,6 +282,17 @@ namespace GPlatesGui
 				double &ortho_top) const;
 
 		/**
+		 * The camera (eye) location for perspective viewing.
+		 *
+		 * The current viewport zoom affects this eye location.
+		 *
+		 * NOTE: For orthographic viewing there is no real eye location since the view rays
+		 *       are parallel and hence the eye location is at infinity.
+		 */
+		GPlatesMaths::Vector3D
+		get_perspective_eye_position() const;
+
+		/**
 		 * Returns the field-of-view (in y-axis) parameters of the 'gluPerspective()' function,
 		 * given the specified viewport aspect ratio.
 		 */
@@ -303,7 +303,10 @@ namespace GPlatesGui
 
 
 		/**
-		 * Returns ray from camera to the specified position on the globe.
+		 * Returns ray from camera eye to the specified position on the globe.
+		 *
+		 * Note that the position on the globe could be outside the view frustum, in which case the ray
+		 * is not associated with a screen pixel inside the viewport (visible projected scene).
 		 *
 		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
 		 *
@@ -313,7 +316,35 @@ namespace GPlatesGui
 		 */
 		GPlatesOpenGL::GLIntersect::Ray
 		get_camera_ray_at_position_on_globe(
-				const GPlatesMaths::UnitVector3D &pos_on_globe);
+				const GPlatesMaths::UnitVector3D &pos_on_globe) const;
+
+
+		/**
+		 * Returns ray from camera eye into the projected scene at the specified window coordinate.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so a Qt mouse y coordinate (for example) needs be inverted
+		 * before passing to this method.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the ray is not associated with a window pixel inside the
+		 * viewport (visible projected scene).
+		 *
+		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
+		 *
+		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
+		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the look-at position
+		 * (more accurately the distance from the plane, orthogonal to view direction, containing look-at position)
+		 * back along the view direction.
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_window_coord(
+				double window_x,
+				double window_y,
+				int window_width,
+				int window_height) const;
 
 	Q_SIGNALS:
 	
@@ -387,6 +418,9 @@ namespace GPlatesGui
 		 * Angle of field-of-view for perspective projection.
 		 */
 		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+
+		//! Tangent of half of field-of-view angle.
+		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
 
 		/**
 		 * The initial position on the sphere that the camera looks at.
