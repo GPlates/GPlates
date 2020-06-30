@@ -32,6 +32,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/Rotation.h"
+
 #include "opengl/GLIntersect.h"
 
 
@@ -530,7 +532,7 @@ GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
 {
 	// Create a unit sphere representing the globe.
-	const GPlatesOpenGL::GLIntersect::Sphere globe(GPlatesMaths::Vector3D()/*origin*/, 1);
+	const GPlatesOpenGL::GLIntersect::Sphere globe(GPlatesMaths::Vector3D()/*origin*/, 1.0);
 
 	// Intersect the ray with the globe.
 	const boost::optional<GPlatesMaths::real_t> ray_distance_to_globe = intersect_ray_sphere(camera_ray, globe);
@@ -556,22 +558,43 @@ GPlatesMaths::PointOnSphere
 GPlatesGui::GlobeCamera::get_nearest_globe_horizon_position_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
 {
+	// Create a unit sphere representing the globe.
+	const GPlatesOpenGL::GLIntersect::Sphere globe(GPlatesMaths::Vector3D()/*origin*/, 1.0);
+
+	const GPlatesMaths::Vector3D horizon_point =
+			get_nearest_sphere_horizon_position_at_camera_ray(camera_ray, globe);
+
+	return GPlatesMaths::PointOnSphere(
+			// Since globe centre is at origin and has radius 1.0, the horizon point should already be unit length...
+			GPlatesMaths::UnitVector3D(horizon_point.x(), horizon_point.y(), horizon_point.z()));
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+		const GPlatesOpenGL::GLIntersect::Sphere &sphere) const
+{
 	if (get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 	{
-		// Find the position, along ray of projected screen pixel, closest to the globe (unit sphere).
-		// We'll project this towards the origin onto the globe, and consider that the horizon of the globe.
-		// Note that this works well for orthographic viewing since all screen pixel rays are parallel and
-		// hence all perpendicular to the horizon (circumference around globe).
+		// Find the position, along camera ray, closest to the sphere.
+		// We'll project this towards the origin onto the sphere, and consider that the horizon of the sphere.
+		// Note that this works well for orthographic viewing since all camera rays are parallel and
+		// hence all perpendicular to the horizon (circumference around sphere).
 
-		// Project line segment from globe origin to ray origin onto the ray direction.
-		// This gives us the distance along ray to that point on the ray that is closest to the globe.
+		// Project line segment from ray origin to sphere origin onto the ray direction.
+		// This gives us the distance along ray to that point on the ray that is closest to the sphere.
 		const GPlatesMaths::real_t ray_distance_to_closest_point =
-				dot(GPlatesMaths::Vector3D()/*origin*/ - camera_ray.get_origin(), camera_ray.get_direction());
+				dot(sphere.get_centre() - camera_ray.get_origin(), camera_ray.get_direction());
 		const GPlatesMaths::Vector3D closest_point = camera_ray.get_point_on_ray(ray_distance_to_closest_point);
 
-		// Normalise the closest point, to project it towards the origin onto the unit-sphere globe.
-		// Return false to indicate ray did not intersect the globe.
-		return GPlatesMaths::PointOnSphere(closest_point.get_normalisation());
+		// Project closest point on ray onto the sphere.
+		const GPlatesMaths::UnitVector3D sphere_direction_to_closest_point =
+				(closest_point - sphere.get_centre()).get_normalisation();
+		const GPlatesMaths::Vector3D horizon_point = sphere.get_centre() +
+				sphere.get_radius() * sphere_direction_to_closest_point;
+
+		return horizon_point;
 	}
 	else // perspective...
 	{
@@ -580,32 +603,35 @@ GPlatesGui::GlobeCamera::get_nearest_globe_horizon_position_at_camera_ray(
 				GPLATES_ASSERTION_SOURCE);
 
 		// For perspective viewing we want the equivalent of a ray, emanating from the eye location,
-		// that touches the globe surface tangentially - call this the horizon ray.
-		// Our current ray misses the surface, so we can't use that.
+		// that touches the sphere surface tangentially - call this the horizon ray.
 		//
-		// First we find the normal to the plane that contains our current ray and the globe centre.
-		// The plane intersects the globe surface to form a circle. We find the point on this circle
-		// that is perpendicular to the eye location (both with respect to globe centre). We then find
-		// the angle between this point and the globe centre (at the eye location). We then rotate
-		// this point by the angle around the globe centre (along the plane). The rotated point is
-		// the horizon point where the horizon ray touches the globe surface tangentially.
+		// First we find the normal to the plane that contains our current ray and the sphere centre.
+		// The plane intersects the sphere surface to form a circle. We find the point on this circle
+		// that is perpendicular to the eye location (both with respect to sphere centre). We then find
+		// the angle between this point and the sphere centre (at the eye location). We then rotate
+		// this point by the angle around the sphere centre (along the plane). The rotated point is
+		// the horizon point where the horizon ray touches the sphere surface tangentially.
 		
-		const GPlatesMaths::Vector3D ray_origin_to_globe_centre = GPlatesMaths::Vector3D()/*origin*/ - camera_ray.get_origin();
+		const GPlatesMaths::Vector3D ray_origin_to_sphere_centre = sphere.get_centre() - camera_ray.get_origin();
 		// Note that normalisation should never fail here since the current ray is not pointing
-		// at the globe centre because we already know it missed the entire globe.
+		// at the sphere centre because we already know it missed the sphere.
 		const GPlatesMaths::UnitVector3D horizon_rotation_axis =
-				cross(ray_origin_to_globe_centre, camera_ray.get_direction()).get_normalisation();
-		const GPlatesMaths::UnitVector3D ray_origin_to_globe_centre_perpendicular =
-				cross(horizon_rotation_axis, ray_origin_to_globe_centre).get_normalisation();
-		// The 1.0 is the radius of globe (unit sphere).
-		// And distance from globe centre to ray origin (eye) should be greater than 1.0 since eye is outside globe.
-		const GPlatesMaths::real_t horizon_rotation_angle = asin(1.0 / ray_origin_to_globe_centre.magnitude());
+				cross(ray_origin_to_sphere_centre, camera_ray.get_direction()).get_normalisation();
+		const GPlatesMaths::UnitVector3D ray_origin_to_sphere_centre_perpendicular =
+				cross(horizon_rotation_axis, ray_origin_to_sphere_centre).get_normalisation();
+		// And distance from sphere centre to ray origin (eye) should be greater than the sphere radius
+		// since the eye is outside sphere.
+		const GPlatesMaths::real_t horizon_rotation_angle = asin(
+				sphere.get_radius() / ray_origin_to_sphere_centre.magnitude());
 		const GPlatesMaths::Rotation horizon_rotation =
 				GPlatesMaths::Rotation::create(horizon_rotation_axis, horizon_rotation_angle);
-		const GPlatesMaths::UnitVector3D horizon_point = horizon_rotation * ray_origin_to_globe_centre_perpendicular;
+		const GPlatesMaths::UnitVector3D horizon_direction = horizon_rotation * ray_origin_to_sphere_centre_perpendicular;
 
-		// Return false to indicate ray did not intersect the globe.
-		return GPlatesMaths::PointOnSphere(horizon_point);
+		// Project closest point on ray onto the sphere.
+		const GPlatesMaths::Vector3D horizon_point = sphere.get_centre() +
+				sphere.get_radius() * horizon_direction;
+
+		return horizon_point;
 	}
 }
 

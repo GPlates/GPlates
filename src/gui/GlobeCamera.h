@@ -373,6 +373,17 @@ namespace GPlatesGui
 		get_nearest_globe_horizon_position_at_camera_ray(
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
 
+		/**
+		 * Returns the nearest point on sphere horizon (visible circumference) to the specified camera ray.
+		 *
+		 * This method is the same as @a get_nearest_globe_horizon_position_at_camera_ray except for an
+		 * arbitrary sphere (any centre, any radius).
+		 */
+		GPlatesMaths::Vector3D
+		get_nearest_sphere_horizon_position_at_camera_ray(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+				const GPlatesOpenGL::GLIntersect::Sphere &sphere) const;
+
 	Q_SIGNALS:
 	
 		/**
