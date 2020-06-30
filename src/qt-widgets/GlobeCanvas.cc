@@ -1519,12 +1519,12 @@ GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
 			d_globe_camera.get_camera_ray_at_window_coord(screen_x, screen_y, width(), height());
 
 	// See if camera ray intersects the globe.
-	boost::optional<GPlatesMaths::PointOnSphere> ray_globe_intersection =
+	boost::optional<GPlatesMaths::PointOnSphere> camera_ray_globe_intersection =
 			d_globe_camera.get_position_on_globe_at_camera_ray(camera_ray);
-	if (ray_globe_intersection)
+	if (camera_ray_globe_intersection)
 	{
 		// Return true to indicate camera ray intersected the globe.
-		return std::make_pair(true, GPlatesMaths::PointOnSphere(ray_globe_intersection.get()));
+		return std::make_pair(true, camera_ray_globe_intersection.get());
 	}
 
 	// Camera ray at screen pixel does not intersect unit sphere.

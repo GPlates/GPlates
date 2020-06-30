@@ -365,6 +365,9 @@ namespace GPlatesGui
 		 * Returns the nearest point on globe horizon (visible circumference) to the specified camera ray.
 		 *
 		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 *
+		 * NOTE: It is assumed that @a camera_ray is a valid camera ray (in that the ray origin is outside the globe)
+		 * and that it does not intersect the globe.
 		 */
 		GPlatesMaths::PointOnSphere
 		get_nearest_globe_horizon_position_at_camera_ray(
