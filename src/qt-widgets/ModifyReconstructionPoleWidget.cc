@@ -954,8 +954,6 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		return;
 	}
 
-	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
-
 	// Use a silver colour and rotate geometries in the RFGs.
 	draw_geometries(
 			*d_dragged_geom_layer_ptr,

@@ -341,7 +341,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 			GPLATES_ASSERTION_SOURCE);
 
 	// The rotation axis that the view direction (and up direction) will tilt around.
-	// However note that the axis will pass through the look-at position on globe (not globe centre).
+	// However note that the axis will pass through the look-at position on globe surface (not globe centre).
 	const GPlatesMaths::UnitVector3D tilt_axis = cross(
 			d_mouse_drag_info->start_view_direction,
 			d_mouse_drag_info->start_up_direction).get_normalisation();
@@ -425,8 +425,6 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 				is_front_ray_intersect_tilt_cylinder
 				? front_ray_intersect_tilt_cylinder_projected_onto_tilt_plane
 				: back_ray_intersect_tilt_cylinder_projected_onto_tilt_plane;
-
-		const GPlatesMaths::UnitVector3D &zero_rotation_direction = d_mouse_drag_info->start_look_at_position;
 
 		GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_projected_onto_tilt_plane_rel_look_at =
 				ray_intersect_tilt_cylinder_projected_onto_tilt_plane -
@@ -582,8 +580,8 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 		{
 			view_relative_to_globe_normal_tilt_angle = 0;
 		}
-		qDebug() << "delta_cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(delta_cyl_intersect_relative_to_view_tilt_angle);
-		qDebug() << "view_relative_to_globe_normal_tilt_angle:" << convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle);
+		//qDebug() << "delta_cyl_intersect_relative_to_view_tilt_angle:" << convert_rad_to_deg(delta_cyl_intersect_relative_to_view_tilt_angle);
+		//qDebug() << "view_relative_to_globe_normal_tilt_angle:" << convert_rad_to_deg(view_relative_to_globe_normal_tilt_angle);
 
 		// Calculate rotation angle of *current* view direction relative to the globe normal (look-at direction).
 		//const GPlatesMaths::real_t view_relative_to_globe_normal_tilt_angle = calc_rotation_angle(

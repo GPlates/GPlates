@@ -147,6 +147,8 @@ namespace GPlatesViewOperations
 			GPlatesMaths::UnitVector3D start_up_direction;
 			GPlatesMaths::Rotation start_view_orientation;
 
+			GPlatesMaths::Rotation view_rotation_relative_to_start;
+
 			// For DRAG_ROTATE...
 			GPlatesMaths::real_t start_rotation_angle;
 
@@ -155,8 +157,6 @@ namespace GPlatesViewOperations
 			bool in_upper_viewport;
 			GPlatesMaths::real_t start_cyl_intersect_relative_to_view_tilt_angle;
 			GPlatesMaths::real_t start_view_relative_to_globe_normal_tilt_angle;
-
-			GPlatesMaths::Rotation view_rotation_relative_to_start;
 		};
 
 
