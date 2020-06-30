@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_GLOBECAMERA_H
 #define GPLATES_GUI_GLOBECAMERA_H
 
+#include <utility>  // std::pair
 #include <boost/optional.hpp>
 #include <QObject>
 
@@ -303,23 +304,6 @@ namespace GPlatesGui
 
 
 		/**
-		 * Returns ray from camera eye to the specified position on the globe.
-		 *
-		 * Note that the position on the globe could be outside the view frustum, in which case the ray
-		 * is not associated with a screen pixel inside the viewport (visible projected scene).
-		 *
-		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
-		 *
-		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
-		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the specified position
-		 * back along the view direction.
-		 */
-		GPlatesOpenGL::GLIntersect::Ray
-		get_camera_ray_at_position_on_globe(
-				const GPlatesMaths::UnitVector3D &pos_on_globe) const;
-
-
-		/**
 		 * Returns ray from camera eye into the projected scene at the specified window coordinate.
 		 *
 		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
@@ -345,6 +329,46 @@ namespace GPlatesGui
 				double window_y,
 				int window_width,
 				int window_height) const;
+
+
+		/**
+		 * Returns ray from camera eye to the specified position on the globe.
+		 *
+		 * Note that the position on the globe could be outside the view frustum, in which case the ray
+		 * is not associated with a screen pixel inside the viewport (visible projected scene).
+		 *
+		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
+		 *
+		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
+		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the specified position
+		 * back along the view direction.
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_position_on_globe(
+				const GPlatesMaths::UnitVector3D &pos_on_globe) const;
+
+		/**
+		 * Returns the position on the globe where the specified camera ray intersects the globe, or
+		 * none if does not intersect.
+		 *
+		 * Note that the ray could be outside the view frustum (not associated with a visible screen pixel),
+		 * in which case the position on the globe is not visible either.
+		 *
+		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere>
+		get_position_on_globe_at_camera_ray(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
+
+
+		/**
+		 * Returns the nearest point on globe horizon (visible circumference) to the specified camera ray.
+		 *
+		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 */
+		GPlatesMaths::PointOnSphere
+		get_nearest_globe_horizon_position_at_camera_ray(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
 
 	Q_SIGNALS:
 	
