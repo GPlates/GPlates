@@ -397,6 +397,9 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 			tilt_cylinder_radius);
 
 	// Intersect centre-line camera ray, as an infinite line, with tilt cylinder (to find both intersections).
+	//
+	// Since the camera ray is on the centre line of viewport, we could have instead intersected with
+	// a sphere of the same radius (and centered at look-at position) to get the same result.
 	boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>> ray_distances_to_tilt_cylinder =
 			intersect_line_cylinder(centre_line_camera_ray, tilt_cylinder);
 	if (!ray_distances_to_tilt_cylinder)
@@ -506,19 +509,40 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 			tilt_axis,
 			d_mouse_drag_info->tilt_cylinder_radius);
 
+	GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder;
+	GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder;
 	// Intersect centre-line camera ray, as an infinite line, with tilt cylinder (to find both intersections).
+	//
+	// Since the camera ray is on the centre line of viewport, we could have instead intersected with
+	// a sphere of the same radius (and centered at look-at position) to get the same result.
 	boost::optional<std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t>> ray_distances_to_tilt_cylinder =
 			intersect_line_cylinder(centre_line_camera_ray, tilt_cylinder);
-	if (!ray_distances_to_tilt_cylinder)
+	if (ray_distances_to_tilt_cylinder)
 	{
-		// TODO: Handle this case.
-		return;
+		front_ray_intersect_tilt_cylinder =
+				centre_line_camera_ray.get_point_on_ray(ray_distances_to_tilt_cylinder->first);
+		back_ray_intersect_tilt_cylinder =
+				centre_line_camera_ray.get_point_on_ray(ray_distances_to_tilt_cylinder->second);
 	}
+	else
+	{
+		// Find point on horizon of tilt circle (sphere) with respect to the camera.
+		// As the mouse drags it can transition from intersecting the tilt circle to not intersecting it.
+		// When it no longer intersects we need to set the tilt as if the last intersection was at
+		// the very end of the circle (at horizon ray that touches circle tangentially).
+		const GPlatesOpenGL::GLIntersect::Sphere tilt_sphere(
+				GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)/*centre*/,
+				d_mouse_drag_info->tilt_cylinder_radius);
+		const GPlatesMaths::Vector3D cylinder_horizon_point =
+				d_globe_camera.get_nearest_sphere_horizon_position_at_camera_ray(
+						centre_line_camera_ray,
+						tilt_sphere);
 
-	const GPlatesMaths::Vector3D front_ray_intersect_tilt_cylinder =
-			centre_line_camera_ray.get_point_on_ray(ray_distances_to_tilt_cylinder->first);
-	const GPlatesMaths::Vector3D back_ray_intersect_tilt_cylinder =
-			centre_line_camera_ray.get_point_on_ray(ray_distances_to_tilt_cylinder->second);
+		// Both intersections are the same position since a camera ray to horizon point is
+		// tangential to the tilt circle.
+		front_ray_intersect_tilt_cylinder = cylinder_horizon_point;
+		back_ray_intersect_tilt_cylinder = cylinder_horizon_point;
+	}
 
 	// Determine which intersection to use.
 	GPlatesMaths::Vector3D ray_intersect_tilt_cylinder;
@@ -531,9 +555,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 	}
 	else
 	{
-		qDebug() << "NOT in upper viewport";
-		//
-		// TODO: Handle this case.
+		ray_intersect_tilt_cylinder = front_ray_intersect_tilt_cylinder;
 	}
 
 	const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_rel_look_at =
