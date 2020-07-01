@@ -207,7 +207,7 @@ GPlatesGui::GlobeCamera::set_view_orientation(
 	d_view_orientation = view_orientation;
 
 	// Invalidate view frame - it now needs updating.
-	d_view_frame = boost::none;
+	invalidate_view_frame();
 
 	Q_EMIT camera_changed();
 }
@@ -225,7 +225,7 @@ GPlatesGui::GlobeCamera::set_tilt_angle(
 	d_tilt_angle = tilt_angle;
 
 	// Invalidate view frame - it now needs updating.
-	d_view_frame = boost::none;
+	invalidate_view_frame();
 
 	Q_EMIT camera_changed();
 }
@@ -249,7 +249,7 @@ GPlatesGui::GlobeCamera::move_look_at_position(
 	d_view_orientation = view_rotation * d_view_orientation;
 
 	// Invalidate view frame - it now needs updating.
-	d_view_frame = boost::none;
+	invalidate_view_frame();
 
 	Q_EMIT camera_changed();
 }

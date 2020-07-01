@@ -456,6 +456,15 @@ namespace GPlatesGui
 		void
 		cache_view_frame() const;
 
+		/**
+		 * The view frame needs updating.
+		 */
+		void
+		invalidate_view_frame() const
+		{
+			d_view_frame = boost::none;
+		}
+
 
 		/**
 		 * Angle of field-of-view for perspective projection.
