@@ -111,6 +111,16 @@ namespace GPlatesViewOperations
 	private:
 
 		/**
+		 * The method used to tilt the view.
+		 */
+		enum class TiltMethod
+		{
+			USE_CYLINDER_FRONT_INTERSECTION,
+			USE_CYLINDER_BACK_INTERSECTION,
+			DONT_USE_CYLINDER_INTERSECTIONS
+		};
+
+		/**
 		 * Information generated in @a start_drag and used in subsequent calls to @a update_drag.
 		 */
 		struct MouseDragInfo
@@ -133,7 +143,7 @@ namespace GPlatesViewOperations
 				start_up_direction(start_up_direction_),
 				start_view_orientation(start_view_orientation_),
 				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
-				in_upper_viewport(false/*arbitrary initialization value*/)
+				tilt_method(TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS/*arbitrary initialization value*/)
 			{  }
 
 			MouseDragMode mode;
@@ -153,10 +163,10 @@ namespace GPlatesViewOperations
 			GPlatesMaths::real_t start_rotation_angle;
 
 			// For DRAG_TILT...
+			TiltMethod tilt_method;
 			GPlatesMaths::real_t tilt_cylinder_radius;
-			bool in_upper_viewport;
-			GPlatesMaths::real_t start_cyl_intersect_relative_to_view_tilt_angle;
-			GPlatesMaths::real_t start_view_relative_to_globe_normal_tilt_angle;
+			GPlatesMaths::real_t start_tilt_angle;
+			GPlatesMaths::real_t start_cylinder_intersect_angle_relative_to_view;
 		};
 
 

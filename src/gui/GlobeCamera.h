@@ -367,7 +367,7 @@ namespace GPlatesGui
 		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
 		 *
 		 * NOTE: It is assumed that @a camera_ray is a valid camera ray (in that the ray origin is outside the globe)
-		 * and that it does not intersect the globe.
+		 * and that the ray's line does not intersect the globe.
 		 */
 		GPlatesMaths::PointOnSphere
 		get_nearest_globe_horizon_position_at_camera_ray(
@@ -376,8 +376,13 @@ namespace GPlatesGui
 		/**
 		 * Returns the nearest point on sphere horizon (visible circumference) to the specified camera ray.
 		 *
-		 * This method is the same as @a get_nearest_globe_horizon_position_at_camera_ray except for an
-		 * arbitrary sphere (any centre, any radius).
+		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 *
+		 * NOTE: It is assumed that @a camera_ray is such that its ray origin is outside the sphere and
+		 * that the ray's line does not intersect the sphere.
+		 *
+		 * This method is similar to @a get_nearest_globe_horizon_position_at_camera_ray except it
+		 * accepts an arbitrary sphere (any centre, any radius).
 		 */
 		GPlatesMaths::Vector3D
 		get_nearest_sphere_horizon_position_at_camera_ray(
