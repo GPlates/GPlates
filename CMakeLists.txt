@@ -9,6 +9,11 @@
 #       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
 cmake_minimum_required(VERSION 3.5...3.15 FATAL_ERROR)
 
+# Set the minimum macOS version we support.
+# We select 10.9 because Apple is removing support for libstdc++ (the default prior to 10.9) in favour of libc++ (C++11).
+# Note that this needs to be set before project() and must be a cache variable (avoids project() overwriting it).
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "Minimum macOS deployment version")
+
 # The GPlates version goes here.
 project(GPlates VERSION 2.2.0 LANGUAGES C CXX)
 
