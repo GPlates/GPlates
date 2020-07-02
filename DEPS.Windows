@@ -127,7 +127,7 @@ GLEW
      add the GLEW \Bin\Release\x64 directory to the PATH environment variable for a 64-bit build.
 
 Python
-  1. Download, and install, the latest Python 3 Windows MSI installer (eg, 'http://www.python.org/downloads/').
+  1. Download, and install, the latest Python 3 Windows installer (eg, 'http://www.python.org/downloads/').
      * Download the 32-bit installer for a 32-bit build (eg, 'python-3.7.7.exe'), or
        download the 64-bit installer for a 64-bit build (eg, 'python-3.7.7.amd64.exe).
      * Note that GPlates (and pygplates) also support Python 2 (but it has reached end of life, so Python 3 is recommended).
@@ -147,12 +147,16 @@ Boost
      * Starting a Visual Studio command prompt (see above for 32-bit versus 64-bit).
      * Changing to the boost source code directory (eg, "cd C:\SDK\boost\boost_1_69_0").
      * Running '.\bootstrap.bat' (to create the BoostBuild tools).
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.7 toolset=msvc-14.0 address-model=64 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
+       where 'msvc-14.0' corresponds to Visual Studio 2015.
+       Note, change 'python=3.7' to your installed Python version (see below regarding compiling for multiple Python versions).
+       Note, use 'address-model=32' for a 32-bit build.
        This installs the headers and the 'shared' libraries (DLLs and their associated ".lib"s).
        These 'shared' libraries are used by GPlates.
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.7 toolset=msvc-14.0 address-model=64 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
+       where 'msvc-14.0' corresponds to Visual Studio 2015.
+       Note, change 'python=3.7' to your installed Python version (see below regarding compiling for multiple Python versions).
+       Note, use 'address-model=32' for a 32-bit build.
        This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
   2. Add the boost root directory to the BOOST_ROOT environment variable (eg, C:\SDK\boost\boost_1_69).
