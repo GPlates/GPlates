@@ -108,6 +108,10 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     Note that a Qt installer ( https://www.qt.io/download ) can be easier than using Macports due to the large number of software dependencies required by Qt.
   • Install GLEW with 'sudo port install glew' if you don't have GLEW.
   • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python36).
+    Note that you may need to set the Python3_ROOT_DIR environment variable to point to the Macports installation to avoid finding
+	the Python framework bundled inside the XCode app (which likely has a different Python minor version than the Python you've
+	compiled/activated Boost for, causing CMake to be unable to find boost_python3[x]). For example:
+	    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
   • Install Boost with 'sudo port install boost +python3[x]' if you don't have Boost - note the additional "+python3[x]".
     Where 'x' is the python minor version number - for example 'sudo port install boost+python36'.
   • Install CGAL with 'sudo port install cgal' if you don't  have CGAL.
