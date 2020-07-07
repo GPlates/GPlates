@@ -342,6 +342,18 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	// The rotation axis that the view direction (and up direction) will tilt around.
+	// However note that the axis will pass through the look-at position on globe surface (not globe centre).
+	const GPlatesMaths::UnitVector3D tilt_axis = cross(
+			d_mouse_drag_info->start_view_direction,
+			d_mouse_drag_info->start_up_direction).get_normalisation();
+
+	// Calculate tilt angle, which is angle of view direction relative to the globe normal (look-at direction).
+	d_mouse_drag_info->start_tilt_angle = calc_rotation_angle(
+			d_mouse_drag_info->start_view_direction,  // Satisfies precondition: perpendicular to rotation axis.
+			tilt_axis/*rotation_axis*/,
+			-d_mouse_drag_info->start_look_at_position/*zero_rotation_direction*/);
+
 	// Ray from camera eye to mouse position moved horizontally to centre line of viewport.
 	//
 	// Using the centre line of viewport removes any effect of the 'x' coordinate of the mouse coordinates
@@ -371,23 +383,18 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 	{
 		// The tilt cylinder surface will contain the ray-globe intersection.
 		position_on_tilt_cylinder = GPlatesMaths::Vector3D(globe_intersection->position_vector());
+
+		d_mouse_drag_info->start_intersects_globe_cylinder = true;
 	}
 	else // camera ray does not intersect globe...
 	{
-		// Choose the closest point on the ray's line to the globe since the ray misses the globe.
-		// This has the effect of pretending the globe has expanded radius until it just touches the ray,
-		// which in turn has the effect of selecting a tilt cylinder with a radius large enough to
-		// reach the start of the mouse drag thus ensuring the drag will have continuous tilt all the
-		// way from its start position.
+		// The ray misses the globe so we cannot use cylinder intersections.
+		// Instead we'll simply convert changes in mouse y-coordinate to changes in tilt angle.
+		d_mouse_drag_info->tilt_method = TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS;
 
-		// Project line segment from ray origin to globe origin onto the ray direction.
-		// This gives us the distance along ray to that point on the ray that is closest to the globe.
-		const GPlatesMaths::real_t ray_distance_to_closest_point = dot(
-				GPlatesMaths::Vector3D()/*origin*/ - centre_line_camera_ray.get_origin(),
-				centre_line_camera_ray.get_direction());
+		d_mouse_drag_info->start_intersects_globe_cylinder = false;
 
-		// The tilt cylinder surface will contain the point on the ray's line that is closest to the globe.
-		position_on_tilt_cylinder = centre_line_camera_ray.get_point_on_ray(ray_distance_to_closest_point);
+		return;
 	}
 
 	// Radius of tilt cylinder is distance from look-at position to centre-line ray globe intersection.
@@ -396,12 +403,6 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 	// ray happens to be tangential to the cylinder (due to numerical precision it might not have otherwise).
 	d_mouse_drag_info->tilt_cylinder_radius = 1e-4 +
 			(position_on_tilt_cylinder - GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position)).magnitude();
-
-	// The rotation axis that the view direction (and up direction) will tilt around.
-	// However note that the axis will pass through the look-at position on globe surface (not globe centre).
-	const GPlatesMaths::UnitVector3D tilt_axis = cross(
-			d_mouse_drag_info->start_view_direction,
-			d_mouse_drag_info->start_up_direction).get_normalisation();
 
 	// Create a tilt cylinder whose axis passes through the look-at position.
 	//
@@ -420,9 +421,9 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 	if (!ray_distances_to_tilt_cylinder)
 	{
 		// We've ensured that the centre-line camera ray intersects the tilt cylinder by defining
-		// a point on the cylinder surface that also intersects the ray's line, even if the ray
-		// misses the globe. We've also made the cylinder radius slightly larger to deal with any
-		// numerical precision issues). And so we should not get here.
+		// a point on the cylinder surface that also intersects the ray's line. We've also made the
+		// cylinder radius slightly larger to deal with any numerical precision issues).
+		// And so we should not get here.
 		//
 		// Disable the current drag operation, which renders 'update_drag()' a no-op.
 		d_mouse_drag_info = boost::none;
@@ -481,56 +482,46 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 			// cylinder intersections.
 			d_mouse_drag_info->tilt_method = TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS;
 
-			static int s_count = 0;
-			qDebug() << "DONT_USE_CYLINDER_INTERSECTIONS " << ++s_count;
-		}
-	}
-
-	// If we're using tilt cylinder intersections then calculate the initial cylinder intersection
-	// angle with respect to the view direction.
-	if (d_mouse_drag_info->tilt_method != TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS)
-	{
-		const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder = centre_line_camera_ray.get_point_on_ray(
-				(d_mouse_drag_info->tilt_method == TiltMethod::USE_CYLINDER_FRONT_INTERSECTION)
-				? ray_distances_to_tilt_cylinder->first/*front*/
-				: ray_distances_to_tilt_cylinder->second/*back*/);
-
-		const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_rel_look_at =
-				ray_intersect_tilt_cylinder - GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position);
-
-		// Calculate rotation angle, relative to view direction, of vector from ray-cylinder intersection to look-at position.
-		boost::optional<GPlatesMaths::real_t> cylinder_intersect_angle_relative_to_view_opt = calc_rotation_angle(
-				ray_intersect_tilt_cylinder_rel_look_at,  // Satisfies precondition: perpendicular to rotation axis.
-				tilt_axis/*rotation_axis*/,
-				// Set the direction associated with a zero rotation angle to avoid wraparound when differencing
-				// two angles. For front cylinder intersections this is achieved by placing the zero direction
-				// on the front of the cylinder with respect to the view direction (such as the negative view direction).
-				// For back intersections we place it on the back (such as positive view direction)...
-				(d_mouse_drag_info->tilt_method == TiltMethod::USE_CYLINDER_FRONT_INTERSECTION)
-					? -d_mouse_drag_info->start_view_direction
-					: d_mouse_drag_info->start_view_direction);
-		if (!cylinder_intersect_angle_relative_to_view_opt)
-		{
-			// The tilt cylinder intersection is at the look-at position. This can only happen if the cylinder
-			// radius is zero (within epsilon) since the cylinder axis passes through the look-at position.
-			// This shouldn't happen because the smallest cylinder radius is limited to 1e-4 above, which is
-			// big enough to give a non-zero magnitude (within the much smaller epsilons used for that).
-			// In any case, if the tilt radius is that small then the globe will tilt wildly for even tiny
-			// mouse drag movements, so we might as well disable the current drag operation.
-			//
-			// Disable the current drag operation, which renders 'update_drag()' a no-op.
-			d_mouse_drag_info = boost::none;
 			return;
 		}
-		d_mouse_drag_info->start_cylinder_intersect_angle_relative_to_view =
-				cylinder_intersect_angle_relative_to_view_opt.get();
 	}
 
-	// Calculate tilt angle, which is angle of view direction relative to the globe normal (look-at direction).
-	d_mouse_drag_info->start_tilt_angle = calc_rotation_angle(
-			d_mouse_drag_info->start_view_direction,  // Satisfies precondition: perpendicular to rotation axis.
+	// We're using tilt cylinder intersections (otherwise we would have returned from this method already)
+	// so calculate the initial cylinder intersection angle with respect to the view direction.
+	const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder = centre_line_camera_ray.get_point_on_ray(
+			(d_mouse_drag_info->tilt_method == TiltMethod::USE_CYLINDER_FRONT_INTERSECTION)
+			? ray_distances_to_tilt_cylinder->first/*front*/
+			: ray_distances_to_tilt_cylinder->second/*back*/);
+
+	const GPlatesMaths::Vector3D ray_intersect_tilt_cylinder_rel_look_at =
+			ray_intersect_tilt_cylinder - GPlatesMaths::Vector3D(d_mouse_drag_info->start_look_at_position);
+
+	// Calculate rotation angle, relative to view direction, of vector from ray-cylinder intersection to look-at position.
+	boost::optional<GPlatesMaths::real_t> cylinder_intersect_angle_relative_to_view_opt = calc_rotation_angle(
+			ray_intersect_tilt_cylinder_rel_look_at,  // Satisfies precondition: perpendicular to rotation axis.
 			tilt_axis/*rotation_axis*/,
-			-d_mouse_drag_info->start_look_at_position/*zero_rotation_direction*/);
+			// Set the direction associated with a zero rotation angle to avoid wraparound when differencing
+			// two angles. For front cylinder intersections this is achieved by placing the zero direction
+			// on the front of the cylinder with respect to the view direction (such as the negative view direction).
+			// For back intersections we place it on the back (such as positive view direction)...
+			(d_mouse_drag_info->tilt_method == TiltMethod::USE_CYLINDER_FRONT_INTERSECTION)
+				? -d_mouse_drag_info->start_view_direction
+				: d_mouse_drag_info->start_view_direction);
+	if (!cylinder_intersect_angle_relative_to_view_opt)
+	{
+		// The tilt cylinder intersection is at the look-at position. This can only happen if the cylinder
+		// radius is zero (within epsilon) since the cylinder axis passes through the look-at position.
+		// This shouldn't happen because the smallest cylinder radius is limited to 1e-4 above, which is
+		// big enough to give a non-zero magnitude (within the much smaller epsilons used for that).
+		// In any case, if the tilt radius is that small then the globe will tilt wildly for even tiny
+		// mouse drag movements, so we might as well disable the current drag operation.
+		//
+		// Disable the current drag operation, which renders 'update_drag()' a no-op.
+		d_mouse_drag_info = boost::none;
+		return;
+	}
+	d_mouse_drag_info->start_cylinder_intersect_angle_relative_to_view =
+			cylinder_intersect_angle_relative_to_view_opt.get();
 }
 
 
@@ -546,99 +537,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 			GPLATES_ASSERTION_SOURCE);
 
 	// If we're not using tilt cylinder intersections then just use the mouse y-coordinate for tilting.
+	// When the y-coordinate reaches half window height then tilting has reached its limit (either 0 or 90 degrees).
 	if (d_mouse_drag_info->tilt_method == TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS)
 	{
-		const GPlatesMaths::real_t half_window_height = window_height / 2.0;
-
-#if 0
-		GPlatesMaths::real_t delta_tilt_angle;
-		if (mouse_window_y > d_mouse_drag_info->start_mouse_window_y)
-		{
-			if (half_window_height == d_mouse_drag_info->start_mouse_window_y)  // this is an epsilon test
-			{
-				return;
-			}
-
-			const GPlatesMaths::real_t mouse_drag_speed =
-						(mouse_window_y - d_mouse_drag_info->start_mouse_window_y) /
-						(half_window_height - d_mouse_drag_info->start_mouse_window_y);
-
-			delta_tilt_angle = mouse_drag_speed * (GPlatesMaths::HALF_PI - d_mouse_drag_info->start_tilt_angle);
-		}
-		else
-		{
-			if (GPlatesMaths::real_t(0) == d_mouse_drag_info->start_mouse_window_y)  // this is an epsilon test
-			{
-				return;
-			}
-
-			const GPlatesMaths::real_t mouse_drag_speed =
-						(mouse_window_y - d_mouse_drag_info->start_mouse_window_y) /
-						(d_mouse_drag_info->start_mouse_window_y - 0);
-
-			delta_tilt_angle = mouse_drag_speed * d_mouse_drag_info->start_tilt_angle;
-		}
-
-		GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
-		if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
-		{
-			tilt_angle = GPlatesMaths::HALF_PI;
-		}
-		else if (tilt_angle.dval() < 0)
-		{
-			tilt_angle = 0;
-		}
-
-		d_globe_camera.set_tilt_angle(tilt_angle);
-#else
-		// If the mouse y-coordinate is not at the boundary between upper and lower viewport halves
-		// then determine the change in tilt angle since start of drag based on the change in
-		// mouse y-coordinate since start of drag.
-		if (half_window_height != d_mouse_drag_info->start_mouse_window_y)  // this is an epsilon test  (avoids divide-by-zero)
-		{
-			// This value increases from 0.0 at the initial mouse y-coordinate to 1.0 at half window height.
-			const GPlatesMaths::real_t mouse_drag_speed =
-						(mouse_window_y - d_mouse_drag_info->start_mouse_window_y) /
-						(half_window_height - d_mouse_drag_info->start_mouse_window_y);
-
-			GPlatesMaths::real_t delta_tilt_angle;
-			if (mouse_window_y > d_mouse_drag_info->start_mouse_window_y)
-			{
-				// Mouse y-coordinate is above its initial coordinate so increase the tilt to towards its maximum value (PI/2).
-				delta_tilt_angle = mouse_drag_speed * (GPlatesMaths::HALF_PI - d_mouse_drag_info->start_tilt_angle);
-			}
-			else
-			{
-				// Mouse y-coordinate is below its initial coordinate so decrease the tilt to towards its minimum value (0)
-				// at the same speed as when the mouse y-coordinate is above its initial coordinate.
-				//
-				// However, note that the initial tilt angle might be close (or equal) to the maximum (PI/2) in which case
-				// the change in tilt angle might be very slow (or not change at all). To combat this we choose the larger
-				// of 'start_tilt_angle' and 'PI/2 - start_tilt_angle'.
-				if (d_mouse_drag_info->start_tilt_angle.dval() > GPlatesMaths::HALF_PI / 2.0)
-				{
-					delta_tilt_angle = mouse_drag_speed * d_mouse_drag_info->start_tilt_angle;
-				}
-				else
-				{
-					delta_tilt_angle = mouse_drag_speed * (GPlatesMaths::HALF_PI - d_mouse_drag_info->start_tilt_angle);
-				}
-			}
-
-			// Increase or decrease the initial tilt angle (and clamp to [0, PI/2]).
-			GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
-			if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
-			{
-				tilt_angle = GPlatesMaths::HALF_PI;
-			}
-			else if (tilt_angle.dval() < 0)
-			{
-				tilt_angle = 0;
-			}
-
-			d_globe_camera.set_tilt_angle(tilt_angle);
-		}
-#endif
+		update_drag_tilt_without_cylinder_intersections(mouse_window_x, mouse_window_y, window_width, window_height);
 
 		return;
 	}
@@ -751,6 +653,82 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 	delta_cylinder_intersect_angle_relative_to_view = -delta_cylinder_intersect_angle_relative_to_view;
 
 	GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_cylinder_intersect_angle_relative_to_view;
+	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
+	{
+		tilt_angle = GPlatesMaths::HALF_PI;
+	}
+	else if (tilt_angle.dval() < 0)
+	{
+		tilt_angle = 0;
+	}
+
+	d_globe_camera.set_tilt_angle(tilt_angle);
+}
+
+
+void
+GPlatesViewOperations::GlobeViewOperation::update_drag_tilt_without_cylinder_intersections(
+		double mouse_window_x,
+		double mouse_window_y,
+		int window_width,
+		int window_height)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesMaths::real_t half_window_height = window_height / 2.0;
+
+	GPlatesMaths::real_t delta_tilt_angle;
+	if (d_mouse_drag_info->start_intersects_globe_cylinder)
+	{
+		// If the mouse y-coordinate is not at the boundary between upper and lower viewport halves.
+		// This is an epsilon test  (avoids divide-by-zero).
+		if (half_window_height == d_mouse_drag_info->start_mouse_window_y)
+		{
+			return;
+		}
+
+		// This value increases from 0.0 at the initial mouse y-coordinate to 1.0 at half window height.
+		// This way when the user drags the mouse from the initial y-coordinate to the centre y of the
+		// viewport they get a delta tilt of 90 degrees.
+		// This value is positive when the current y-coordinate is closer to half window height than
+		// the initial y-coordinate, and negative when its farther away.
+		const GPlatesMaths::real_t mouse_drag_distance =
+				(mouse_window_y - d_mouse_drag_info->start_mouse_window_y) /
+				(half_window_height - d_mouse_drag_info->start_mouse_window_y);
+
+		delta_tilt_angle = mouse_drag_distance * GPlatesMaths::HALF_PI;
+	}
+	else // start of drag did not intersect globe cylinder...
+	{
+		// If the mouse y-coordinate is not at the centre of the viewport.
+		// This is an epsilon test  (avoids divide-by-zero).
+		if (half_window_height == 0)
+		{
+			return;
+		}
+
+		// This value increases from 0.0 at the initial mouse y-coordinate to 1.0 at a y distance
+		// of half the window height away from the initial y-coordinate. This way when the user drags
+		// the mouse half the distance up or down the viewport they get a delta tilt of 90 degrees.
+		// If the initial mouse y-coordinate was in the lower viewport then this value is positive when
+		// the current y-coordinate is above it.
+		GPlatesMaths::real_t mouse_drag_distance =
+				(mouse_window_y - d_mouse_drag_info->start_mouse_window_y) /
+				half_window_height;
+		// If the initial mouse y-coordinate was in the upper viewport then this value is positive when
+		// the current y-coordinate is below it (so need to invert sign).
+		if (d_mouse_drag_info->start_mouse_window_y > half_window_height.dval())
+		{
+			mouse_drag_distance = -mouse_drag_distance;
+		}
+
+		delta_tilt_angle = mouse_drag_distance * GPlatesMaths::HALF_PI;
+	}
+
+	// Increase or decrease the initial tilt angle (and clamp to [0, PI/2]).
+	GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
 	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
 	{
 		tilt_angle = GPlatesMaths::HALF_PI;

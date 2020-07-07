@@ -143,7 +143,8 @@ namespace GPlatesViewOperations
 				start_up_direction(start_up_direction_),
 				start_view_orientation(start_view_orientation_),
 				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
-				tilt_method(TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS/*arbitrary initialization value*/)
+				tilt_method(TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS/*arbitrary initialization value*/),
+				start_intersects_globe_cylinder(false/*arbitrary initialization value*/)
 			{  }
 
 			MouseDragMode mode;
@@ -164,6 +165,7 @@ namespace GPlatesViewOperations
 
 			// For DRAG_TILT...
 			TiltMethod tilt_method;
+			bool start_intersects_globe_cylinder;
 			GPlatesMaths::real_t tilt_cylinder_radius;
 			GPlatesMaths::real_t start_tilt_angle;
 			GPlatesMaths::real_t start_cylinder_intersect_angle_relative_to_view;
@@ -201,6 +203,13 @@ namespace GPlatesViewOperations
 
 		void
 		update_drag_tilt(
+				double mouse_window_x,
+				double mouse_window_y,
+				int window_width,
+				int window_height);
+
+		void
+		update_drag_tilt_without_cylinder_intersections(
 				double mouse_window_x,
 				double mouse_window_y,
 				int window_width,
