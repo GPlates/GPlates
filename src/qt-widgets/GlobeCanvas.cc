@@ -348,6 +348,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
+	d_mouse_pointer_screen_pos_x(0),
+	d_mouse_pointer_screen_pos_y(0),
 	d_globe(
 			view_state,
 			d_gl_visual_layers,
@@ -372,6 +374,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesMaths::PointOnSphere &mouse_pointer_pos_on_globe_,
 		bool mouse_pointer_is_on_globe_,
+		const qreal &mouse_pointer_screen_pos_x_,
+		const qreal &mouse_pointer_screen_pos_y_,
 		GPlatesGui::Globe &existing_globe_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
@@ -400,6 +404,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					view_state_.get_application_state())),
 	d_mouse_pointer_pos_on_globe(mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
+	d_mouse_pointer_screen_pos_x(mouse_pointer_screen_pos_x_),
+	d_mouse_pointer_screen_pos_y(mouse_pointer_screen_pos_y_),
 	d_globe(
 			existing_globe_,
 			d_gl_visual_layers,
@@ -502,6 +508,8 @@ GPlatesQtWidgets::GlobeCanvas::clone(
 			d_view_state,
 			d_mouse_pointer_pos_on_globe,
 			d_mouse_pointer_is_on_globe,
+			d_mouse_pointer_screen_pos_x,
+			d_mouse_pointer_screen_pos_y,
 			d_globe,
 			colour_scheme,
 			parent_);

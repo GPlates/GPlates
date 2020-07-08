@@ -141,6 +141,8 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state_,
 				GPlatesMaths::PointOnSphere &mouse_pointer_pos_on_globe_,
 				bool mouse_pointer_is_on_globe_,
+				const qreal &mouse_pointer_screen_pos_x_,
+				const qreal &mouse_pointer_screen_pos_y_,
 				GPlatesGui::Globe &existing_globe_,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 				QWidget *parent_ = 0);
