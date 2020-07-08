@@ -330,11 +330,10 @@ namespace GPlatesGui
 				int window_width,
 				int window_height) const;
 
-
 		/**
-		 * Returns ray from camera eye to the specified position on the globe.
+		 * Returns ray from camera eye to the specified arbitrary position.
 		 *
-		 * Note that the position on the globe could be outside the view frustum, in which case the ray
+		 * Note that the position could be outside the view frustum, in which case the ray
 		 * is not associated with a screen pixel inside the viewport (visible projected scene).
 		 *
 		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
@@ -342,10 +341,66 @@ namespace GPlatesGui
 		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
 		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the specified position
 		 * back along the view direction.
+		 *
+		 * NOTE: A precondition, for perspective projection, is the camera eye must not coincide with the specified position.
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_position(
+				const GPlatesMaths::Vector3D &position) const;
+
+
+		/**
+		 * Returns ray from camera eye to the specified position on the globe.
+		 *
+		 * Same as @a get_camera_ray_at_position except the position is on the globe (unit sphere).
 		 */
 		GPlatesOpenGL::GLIntersect::Ray
 		get_camera_ray_at_position_on_globe(
-				const GPlatesMaths::UnitVector3D &pos_on_globe) const;
+				const GPlatesMaths::UnitVector3D &pos_on_globe) const
+		{
+			return get_camera_ray_at_position(GPlatesMaths::Vector3D(pos_on_globe));
+		}
+
+
+		/**
+		 * Returns the window coordinates that the specified arbitrary position projects onto.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so if a Qt mouse y-coordinate is desired then the returned
+		 * OpenGL y-coordinate needs be inverted.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the specified position is not visible (does not
+		 * project inside the viewport).
+		 *
+		 * Returns none if the projection is perspective and the specified position is on the plane
+		 * containing the camera eye with plane normal equal to view direction.
+		 */
+		boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+		get_window_coord_at_position(
+				const GPlatesMaths::Vector3D &position,
+				int window_width,
+				int window_height) const;
+
+		/**
+		 * Returns the window coordinates that the specified position on the globe projects onto.
+		 *
+		 * Same as @a get_window_coord_at_position except the position is on the globe (unit sphere).
+		 */
+		boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+		get_window_coord_at_pos_on_globe(
+				const GPlatesMaths::UnitVector3D &pos_on_globe,
+				int window_width,
+				int window_height) const
+		{
+			return get_window_coord_at_position(
+					GPlatesMaths::Vector3D(pos_on_globe),
+					window_width,
+					window_height);
+		}
+
 
 		/**
 		 * Returns the position on the globe where the specified camera ray intersects the globe, or

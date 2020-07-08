@@ -31,6 +31,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/Rotation.h"
 
@@ -494,15 +495,15 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_window_coord(
 
 
 GPlatesOpenGL::GLIntersect::Ray
-GPlatesGui::GlobeCamera::get_camera_ray_at_position_on_globe(
-		const GPlatesMaths::UnitVector3D &pos_on_globe) const
+GPlatesGui::GlobeCamera::get_camera_ray_at_position(
+		const GPlatesMaths::Vector3D &position) const
 {
 	if (get_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
 		// In orthographic projection all view rays are parallel and so there's no real eye position.
 		// Instead place the ray origin an arbitrary distance (currently 1.0) back along the view direction.
 		const GPlatesMaths::Vector3D camera_eye =
-				GPlatesMaths::Vector3D(pos_on_globe) - GPlatesMaths::Vector3D(get_view_direction());
+				position - GPlatesMaths::Vector3D(get_view_direction());
 
 		const GPlatesMaths::UnitVector3D &ray_direction = get_view_direction();
 
@@ -516,13 +517,109 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_position_on_globe(
 
 		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
 
-		// Ray direction from camera eye to position on globe.
-		const GPlatesMaths::UnitVector3D ray_direction =
-				// Note that camera eye position should be outside the globe
-				// (and hence never coincide with pos_on_globe)...
-				(GPlatesMaths::Vector3D(pos_on_globe) - camera_eye).get_normalisation();
+		// Ray direction from camera eye to position.
+		//
+		// A precondition is the camera eye position should not coincide with the specified position.
+		const GPlatesMaths::Vector3D ray_direction_unnormalised = position - camera_eye;
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				!ray_direction_unnormalised.is_zero_magnitude(),
+				GPLATES_ASSERTION_SOURCE);
+		const GPlatesMaths::UnitVector3D ray_direction = ray_direction_unnormalised.get_normalisation();
 
 		return GPlatesOpenGL::GLIntersect::Ray(camera_eye, ray_direction);
+	}
+}
+
+
+boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+GPlatesGui::GlobeCamera::get_window_coord_at_position(
+		const GPlatesMaths::Vector3D &position,
+		int window_width,
+		int window_height) const
+{
+	// The aspect ratio (width/height) of the window.
+	const double aspect_ratio = double(window_width) / window_height;
+
+	// The view orientation axes.
+	const GPlatesMaths::Vector3D view_z_axis(get_view_direction());
+	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
+	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
+
+	if (get_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	{
+		double ortho_left;
+		double ortho_right;
+		double ortho_bottom;
+		double ortho_top;
+		get_orthographic_left_right_bottom_top(
+				aspect_ratio,
+				ortho_left, ortho_right, ortho_bottom, ortho_top);
+
+		const GPlatesMaths::Vector3D look_at_position(get_look_at_position().position_vector());
+
+		// We know the look-at position projects to the centre of the viewport
+		// (where 'view_x_component = 0' and 'view_y_component = 0').
+		const GPlatesMaths::Vector3D position_rel_look_at = position - look_at_position;
+
+		// X and y components, in view frame, of position relative to look-at position.
+		const GPlatesMaths::real_t view_x_component = dot(position_rel_look_at, view_x_axis);
+		const GPlatesMaths::real_t view_y_component = dot(position_rel_look_at, view_y_axis);
+
+		// Convert view frame coordinates to projected window coordinates.
+		const GPlatesMaths::real_t window_x = window_width *
+				((view_x_component - ortho_left) / (ortho_right - ortho_left));
+		const GPlatesMaths::real_t window_y = window_height *
+				((view_y_component - ortho_bottom) / (ortho_top - ortho_bottom));
+
+		return std::make_pair(window_x.dval(), window_y.dval());
+	}
+	else  // perspective...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Get the projection field-of-view tans.
+		double tan_fovx;
+		double tan_fovy;
+		// Field-of-view applies to smaller dimension.
+		if (aspect_ratio < 1.0)
+		{
+			// Width is smaller dimension.
+			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovy = tan_fovx / aspect_ratio;
+		}
+		else
+		{
+			// Height is smaller dimension.
+			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovx = tan_fovy * aspect_ratio;
+		}
+
+		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
+
+		const GPlatesMaths::Vector3D position_rel_camera_eye = position - camera_eye;
+
+		// Z component, in view frame, of position relative to camera eye.
+		const GPlatesMaths::real_t view_z_component = dot(position_rel_camera_eye, view_z_axis);
+		if (view_z_component == 0) // epsilon test (avoids divide by zero)
+		{
+			return boost::none;
+		}
+
+		// X and y components, in view frame, of position relative to camera eye.
+		const GPlatesMaths::real_t view_x_component = dot(position_rel_camera_eye, view_x_axis);
+		const GPlatesMaths::real_t view_y_component = dot(position_rel_camera_eye, view_y_axis);
+
+		// X and y tans of view frame coordinate.
+		const GPlatesMaths::real_t tan_view_x_component = view_x_component / view_z_component;
+		const GPlatesMaths::real_t tan_view_y_component = view_y_component / view_z_component;
+
+		// Convert view frame coordinates to projected window coordinates.
+		const GPlatesMaths::real_t window_x = window_width * (((tan_view_x_component / tan_fovx) + 1.0) / 2.0);
+		const GPlatesMaths::real_t window_y = window_height * (((tan_view_y_component / tan_fovy) + 1.0) / 2.0);
+
+		return std::make_pair(window_x.dval(), window_y.dval());
 	}
 }
 
@@ -546,6 +643,7 @@ GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(
 	// Return the point on the globe where the ray first intersects.
 	// Due to numerical precision the ray may be slightly off the globe so we'll
 	// normalise it (otherwise can provide out-of-range for 'acos' later on).
+	// Also note the normalisation shouldn't fail since ray-globe intersection cannot be at the origin.
 	const GPlatesMaths::UnitVector3D projected_point_on_globe =
 			camera_ray.get_point_on_ray(ray_distance_to_globe.get()).get_normalisation();
 
@@ -564,6 +662,10 @@ GPlatesGui::GlobeCamera::get_nearest_globe_horizon_position_at_camera_ray(
 	const GPlatesMaths::Vector3D horizon_point =
 			get_nearest_sphere_horizon_position_at_camera_ray(camera_ray, globe);
 
+	// Getting a non-unit length assertion error in UnitVector3D somewhere (maybe not here though)...
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			horizon_point.magSqrd() == 1.0,
+			GPLATES_ASSERTION_SOURCE);
 	return GPlatesMaths::PointOnSphere(
 			// Since globe centre is at origin and has radius 1.0, the horizon point should already be unit length...
 			GPlatesMaths::UnitVector3D(horizon_point.x(), horizon_point.y(), horizon_point.z()));
@@ -575,6 +677,13 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
 		const GPlatesOpenGL::GLIntersect::Sphere &sphere) const
 {
+	const GPlatesMaths::Vector3D ray_origin_to_sphere_centre = sphere.get_centre() - camera_ray.get_origin();
+
+	// A precondition is the camera ray origin should be outside the sphere.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			ray_origin_to_sphere_centre.magnitude() > sphere.get_radius(),
+			GPLATES_ASSERTION_SOURCE);
+
 	if (get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 	{
 		// Find the position, along camera ray, closest to the sphere.
@@ -585,12 +694,20 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 		// Project line segment from ray origin to sphere origin onto the ray direction.
 		// This gives us the distance along ray to that point on the ray that is closest to the sphere.
 		const GPlatesMaths::real_t ray_distance_to_closest_point =
-				dot(sphere.get_centre() - camera_ray.get_origin(), camera_ray.get_direction());
+				dot(ray_origin_to_sphere_centre, camera_ray.get_direction());
 		const GPlatesMaths::Vector3D closest_point = camera_ray.get_point_on_ray(ray_distance_to_closest_point);
 
 		// Project closest point on ray onto the sphere.
+		//
+		// A precondition is the camera ray's line does not intersect the sphere and hence closest point
+		// cannot coincide with the sphere centre.
+		const GPlatesMaths::Vector3D sphere_direction_to_closest_point_unnormalised =
+				closest_point - sphere.get_centre();
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				!sphere_direction_to_closest_point_unnormalised.is_zero_magnitude(),
+				GPLATES_ASSERTION_SOURCE);
 		const GPlatesMaths::UnitVector3D sphere_direction_to_closest_point =
-				(closest_point - sphere.get_centre()).get_normalisation();
+				sphere_direction_to_closest_point_unnormalised.get_normalisation();
 		const GPlatesMaths::Vector3D horizon_point = sphere.get_centre() +
 				sphere.get_radius() * sphere_direction_to_closest_point;
 
@@ -611,14 +728,22 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 		// the angle between this point and the sphere centre (at the eye location). We then rotate
 		// this point by the angle around the sphere centre (along the plane). The rotated point is
 		// the horizon point where the horizon ray touches the sphere surface tangentially.
-		
-		const GPlatesMaths::Vector3D ray_origin_to_sphere_centre = sphere.get_centre() - camera_ray.get_origin();
+
 		// Note that normalisation should never fail here since the current ray is not pointing
-		// at the sphere centre because we already know it missed the sphere.
+		// at the sphere centre because, as a precondition, we already know it missed the sphere.
+		const GPlatesMaths::Vector3D horizon_rotation_axis_unnormalised =
+				cross(ray_origin_to_sphere_centre, camera_ray.get_direction());
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				!horizon_rotation_axis_unnormalised.is_zero_magnitude(),
+				GPLATES_ASSERTION_SOURCE);
 		const GPlatesMaths::UnitVector3D horizon_rotation_axis =
-				cross(ray_origin_to_sphere_centre, camera_ray.get_direction()).get_normalisation();
+				horizon_rotation_axis_unnormalised.get_normalisation();
+
+		// Normalisation should not fail since horizon axis is perpendicular to ray-origin-to-sphere-centre
+		// and both vectors are non-zero length.
 		const GPlatesMaths::UnitVector3D ray_origin_to_sphere_centre_perpendicular =
 				cross(horizon_rotation_axis, ray_origin_to_sphere_centre).get_normalisation();
+
 		// And distance from sphere centre to ray origin (eye) should be greater than the sphere radius
 		// since the eye is outside sphere.
 		const GPlatesMaths::real_t horizon_rotation_angle = asin(
