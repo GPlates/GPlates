@@ -28,6 +28,9 @@
 
 #include "GLMatrix.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "maths/MathsUtils.h"
 #include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
@@ -420,9 +423,17 @@ GPlatesOpenGL::GLMatrix::glu_look_at(
 	const GPlatesMaths::Vector3D center(centerx, centery, centerz);
 	const GPlatesMaths::Vector3D up(upx, upy, upz);
 
-	const GPlatesMaths::UnitVector3D f = (center - eye).get_normalisation();
+	const GPlatesMaths::Vector3D f_unnormalised = center - eye;
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!f_unnormalised.is_zero_magnitude(),
+			GPLATES_ASSERTION_SOURCE);
+	const GPlatesMaths::UnitVector3D f = f_unnormalised.get_normalisation();
 
-	const GPlatesMaths::UnitVector3D s( cross(f, up).get_normalisation() );
+	const GPlatesMaths::Vector3D s_unnormalised = cross(f, up);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!s_unnormalised.is_zero_magnitude(),
+			GPLATES_ASSERTION_SOURCE);
+	const GPlatesMaths::UnitVector3D s = s_unnormalised.get_normalisation();
 
 	const GPlatesMaths::Vector3D u( cross(s, f) );
 

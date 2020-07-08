@@ -186,11 +186,17 @@ GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
 	const GPlatesMaths::Vector3D near_point(near_objx, near_objy, near_objz);
 	const GPlatesMaths::Vector3D far_point(far_objx, far_objy, far_objz);
 
+	const GPlatesMaths::Vector3D near_to_far = far_point - near_point;
+	if (near_to_far.is_zero_magnitude())
+	{
+		return boost::none;
+	}
+
 	// Use the near and far 3D model-space points to form a ray with a ray origin
 	// at the near point and ray direction pointing to the far point.
 	return GLIntersect::Ray(
 			near_point,
-			(far_point - near_point).get_normalisation());
+			near_to_far.get_normalisation());
 }
 
 
@@ -221,6 +227,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 	// Return the point on the sphere where the ray first intersects.
 	// Due to numerical precision the ray may be slightly off the sphere so we'll
 	// normalise it (otherwise can provide out-of-range for 'acos' later on).
+	// Also note the normalisation shouldn't fail since ray-globe intersection cannot be at the origin.
 	return ray->get_point_on_ray(ray_distance.get()).get_normalisation();
 }
 

@@ -87,7 +87,7 @@ namespace GPlatesOpenGL
 		 * the near plane (of the projection transform) and the ray direction is towards the screen
 		 * pixel projected onto the far plane.
 		 *
-		 * Returns none is unable to invert model-view-projection transform.
+		 * Returns none if unable to invert model-view-projection transform.
 		 */
 		boost::optional<GLIntersect::Ray>
 		project_window_coords_into_ray(
