@@ -397,9 +397,9 @@ GPlatesGui::VelocityLegendOverlay::paint(
 
 
 	// The length of an arrow representing 2 cm per year. See comments in the GlobeCamera class for
-	// information about the FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT.
+	// information about the FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT.
 	double two_cm_per_year = *layer_scale * (std::min)(paint_device_width, paint_device_height) /
-			GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT;
+			GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT;
 
 	double arrow_length, velocity_scale;
 

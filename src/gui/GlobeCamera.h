@@ -54,13 +54,13 @@ namespace GPlatesGui
 
 	public:
 		/**
-		 * At the initial zoom, the smaller dimension of the viewport will be @a FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT
-		 * times the diameter of the globe. This creates a little space between the globe circumference and the viewport.
-		 * When the viewport is resized, the globe will be scaled accordingly.
+		 * At the initial zoom, the smaller dimension of the viewport will be @a FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT
+		 * times the diameter of the globe (in the orthographic projection). This creates a little space between
+		 * the globe circumference and the viewport. When the viewport is resized, the globe will be scaled accordingly.
 		 *
 		 * The value of this constant is purely cosmetic.
 		 */
-		static const double FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT;
+		static const double FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT;
 
 
 		explicit

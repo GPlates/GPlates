@@ -38,7 +38,7 @@
 #include "opengl/GLIntersect.h"
 
 
-const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT = 1.07;
+const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT = 1.07;
 
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
@@ -73,6 +73,39 @@ GPlatesGui::GlobeCamera::get_distance_eye_to_look_at_for_perspective_viewing_at_
 double
 GPlatesGui::GlobeCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom()
 {
+//
+// Defining this adjusts the the initial eye distance such that objects at the look-at position project
+// onto the viewport with the same projected size as they do in the orthographic projection.
+// This has the advantage that an object at the look-at position appears roughly the same size in both
+// projections regardless of the zoom level. The disadvantage is, in the initial view, the globe circumference
+// appears smaller in the perspective projection than in the orthographic projection.
+//
+// If not defined, then the initial eye distance is adjusted such that the globe, (perspectively) projected
+// onto the viewport, is just encompassed by the viewport (and a little extra due to the framing ratio).
+// This means the perspective projection of the globe onto the viewport almost fills it.
+// The advantage is, in the initial view, the globe circumference appears the same size in the perspective
+// projection as in the orthographic projection. The disadvantage is an object at the look-at position
+// appears bigger in the perspective projection than in the orthographic projection (for the same zoom level)
+// and this happens at all zoom levels.
+//
+#define PROJECTED_SCALE_AT_LOOKAT_POSITION_MATCHES_ORTHOGRAPHIC
+
+#if defined(PROJECTED_SCALE_AT_LOOKAT_POSITION_MATCHES_ORTHOGRAPHIC)
+	// Since the orthographic projection has parallel rays, it will project the globe onto a unit-radius
+	// circle in the view plane (where view plane normal is parallel to view direction), and there
+	// will be a little bit of space around the globe in the viewport according to
+	// FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT. In the perspective view, if we put that circle
+	// at the look-at position then we want it to fill the viewport in the same way. This doesn't mean
+	// the projection of the globe itself will fill the viewport in the same way as for the orthographic
+	// projection, it will actually appear smaller. But it does mean an object at the look-at position
+	// will scale to a similar size in the viewport as it does in the orthographic projection.
+	// This way, when we zoom into the view, an object at the look-at position will appear to be the
+	// same size in both the perspective and orthographic projections.
+	//
+	// This means 'tan(FOV/2) = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / distance', which means
+	// distance = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / tan(FOV/2).
+	return FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+#else
 	// Field-of-view for the smaller viewport dimension.
 	const double perspective_field_of_view_smaller_dim_radians =
 			GPlatesMaths::convert_deg_to_rad(PERSPECTIVE_FIELD_OF_VIEW_DEGREES);
@@ -123,11 +156,12 @@ GPlatesGui::GlobeCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at
 	//     = sin(fov/2) + framing_ratio * sin(fov/2)
 	//     = (1 + framing_ratio) * sin(fov/2)
 	//
-	const double eye_to_globe_centre_distance = (1.0 + FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT) *
+	const double eye_to_globe_centre_distance = (1.0 + FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT) *
 			std::sin(perspective_field_of_view_smaller_dim_radians / 2.0);
 
 	// Subtract 1.0 since we want distance to look-at point on globe surface (not globe origin).
 	return eye_to_globe_centre_distance - 1.0;
+#endif
 }
 
 
@@ -352,7 +386,7 @@ GPlatesGui::GlobeCamera::get_orthographic_left_right_bottom_top(
 		double &ortho_top) const
 {
 	// This is used for the coordinates of the symmetrical clipping planes which bound the smaller dimension.
-	const double smaller_dim_clipping = FRAMING_RATIO_OF_GLOBE_IN_VIEWPORT / d_viewport_zoom.zoom_factor();
+	const double smaller_dim_clipping = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / d_viewport_zoom.zoom_factor();
 
 	if (aspect_ratio > 1.0)
 	{
