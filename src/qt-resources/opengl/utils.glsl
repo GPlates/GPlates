@@ -312,3 +312,117 @@ hsv_to_rgb(
 
 	return rgb;
 }
+
+struct Ray
+{
+  vec3 origin;
+  vec3 direction;
+};
+
+// Position at given ray parameter
+vec3
+at(
+		const Ray ray,
+		float lambda)
+{
+  return ray.origin + lambda * ray.direction;
+}
+
+struct Interval
+{
+  float from;
+  float to;
+};
+
+bool
+is_valid(
+		const Interval interval)
+{
+  return interval.from <= interval.to;
+}
+
+void
+invalidate(
+		Interval interval)
+{
+  interval.from = 1;
+  interval.to = 0;
+}
+
+struct Sphere
+{
+  float radius;
+};
+
+// Intersect the infinite line of a ray with a sphere centred at the origin.
+bool
+intersect(
+		const Sphere sphere,
+		const Ray ray,
+		out Interval interval)
+{
+  float B = dot(ray.origin, ray.direction);
+  float C = dot(ray.origin, ray.origin) - sphere.radius * sphere.radius;
+  float D = B * B - C;
+  if (D < 0)
+  {
+	return false;
+  }
+  float sqrtD = sqrt(D);
+  interval = Interval(-B - sqrtD /*from*/, -B + sqrtD /*to*/);
+  return true;
+}
+
+bool
+contains(
+		const Sphere sphere,
+		const vec3 point)
+{
+  float distSq = dot(point, point);
+  return distSq <= sphere.radius * sphere.radius;
+}
+
+// Transformation of 3D screen-space coordinates (includes depth) to world coordinates.
+// These screen-space coordinates are post-projection coordinates in the range [-1,1] for x, y and z components.
+vec3
+screen_to_world(
+		const vec3 screen_coord,
+		const mat4 model_view_proj_inverse)
+{
+	 vec4 screen_position = vec4(screen_coord, 1.0);
+	 vec4 world_position = model_view_proj_inverse * screen_position;
+	 world_position /= world_position.w;
+
+	 return world_position.xyz;
+}
+
+// Ray initialization from screen-space coordinate.
+//
+// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
+// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
+// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
+// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
+// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
+Ray
+get_ray(
+		const vec2 screen_coord,
+		const mat4 model_view_proj_inverse)
+{
+	 vec3 ray_origin = screen_to_world(vec3(screen_coord, -2.0), model_view_proj_inverse);
+
+	 return Ray(
+		ray_origin,
+		normalize(screen_to_world(vec3(screen_coord, 0.0), model_view_proj_inverse) - ray_origin));
+}
+
+// Convert screen-space depth (in range [-1,1]) to ray distance/lambda.
+float
+convert_screen_space_depth_to_ray_lambda(
+		const float screen_space_depth,
+		const vec2 screen_coord,
+		const mat4 model_view_proj_inverse,
+		const vec3 ray_origin)
+{
+	vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_proj_inverse);
+	return length(world_position - ray_origin);
+}

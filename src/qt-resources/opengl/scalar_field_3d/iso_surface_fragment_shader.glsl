@@ -1470,7 +1470,7 @@ raycasting(
 	// Determine lambda min and max interval using inner and outer spheres
 
 	// declare outer_sphere radius, maximum given in "render_min_max_depth_radius_restriction".y component
-	Sphere outer_sphere = Sphere(render_min_max_depth_radius_restriction.y * render_min_max_depth_radius_restriction.y);
+	Sphere outer_sphere = Sphere(render_min_max_depth_radius_restriction.y);
 	Interval outer_sphere_interval;
 
 	// check for intersection points (at which point does the ray enter the sphere and at which does it leave the sphere)
@@ -1483,7 +1483,7 @@ raycasting(
 	lambda_min_max.x = outer_sphere_interval.from;
 	lambda_min_max.y = outer_sphere_interval.to;
 
-	Sphere inner_sphere = Sphere(render_min_max_depth_radius_restriction.x * render_min_max_depth_radius_restriction.x);
+	Sphere inner_sphere = Sphere(render_min_max_depth_radius_restriction.x);
 	Interval inner_sphere_interval;
 
 	if (intersect(inner_sphere,ray,inner_sphere_interval))
