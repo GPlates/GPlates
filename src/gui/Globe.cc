@@ -340,10 +340,7 @@ GPlatesGui::Globe::render_stars(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
 	// Disable depth testing and depth writes.
-	//
-	// This is because we are using a different projection transform and the depth buffer values
-	// depend on the projection transform.
-	// This means we avoid a subsequent depth buffer clear.
+	// Stars are rendered in the background and don't really need depth sorting.
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
 	renderer.gl_depth_mask(GL_FALSE);
 
@@ -360,10 +357,6 @@ GPlatesGui::Globe::render_sphere_background(
 	// Disable depth testing and depth writes.
 	// The opaque sphere is only used to render the sphere colour (and, for a transparent sphere,
 	// blend the sphere colour with the rendered geometries on the rear of the globe).
-	//
-	// NOTE: Because we are using a different projection transform and the depth buffer values depend
-	// on the projection transform then normally each projection transform needs its own depth buffer clear.
-	// However since we're not reading or writing to depth buffer we don't need to clear depth buffer.
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
 	renderer.gl_depth_mask(GL_FALSE);
 
@@ -392,17 +385,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
-	// NOTE: Because we are using a different projection transform and the depth buffer values depend
-	// on the projection transform then each projection transform needs its own depth buffer clear.
-	// We also clear the stencil buffer in case it is used.
-	renderer.gl_clear_depth(); // Clear depth to 1.0
-	renderer.gl_clear_stencil(); // Clear stencil to 0
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_stencil_mask(~0/*all ones*/);
-	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	// Enable depth testing but disable depth writes (for the grid lines).
+	// Enable depth testing but disable depth writes (for the grid lines, the globe sets its own state).
 	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
 	renderer.gl_depth_mask(GL_FALSE);
 
@@ -497,16 +480,6 @@ GPlatesGui::Globe::render_globe_sub_surface(
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
-	// NOTE: Because we are using a different projection transform and the depth buffer values depend
-	// on the projection transform then each projection transform needs its own depth buffer clear.
-	// We also clear the stencil buffer in case it is used.
-	renderer.gl_clear_depth(); // Clear depth to 1.0
-	renderer.gl_clear_stencil(); // Clear stencil to 0
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_stencil_mask(~0/*all ones*/);
-	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Draw the sub-surface geometries.
 	// Draw in normal layer order.

@@ -956,11 +956,18 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 {
 	PROFILE_FUNC();
 
-	// Clear the colour buffer of the main framebuffer.
-	// NOTE: We leave the depth clears to class Globe since it can do multiple
-	// depth buffer clears per render depending on the projection matrices it uses.
+	// Clear the colour and depth buffers of the main framebuffer.
+	// We also clear the stencil buffer in case it is used - also it's usually
+	// interleaved with depth so it's more efficient to clear both depth and stencil.
+	//
+	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
+	//       But these should be enabled by default anyway.
+	renderer.gl_depth_mask(GL_TRUE);
+	renderer.gl_stencil_mask(~0/*all ones*/);
 	renderer.gl_clear_color(); // Clear colour to (0,0,0,0).
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+	renderer.gl_clear_depth(); // Clear depth to 1.0
+	renderer.gl_clear_stencil(); // Clear stencil to 0
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Set the model-view-projection transform here.
 	renderer.gl_load_matrix(GL_MODELVIEW, view_transform);
