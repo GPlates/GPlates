@@ -75,6 +75,7 @@ namespace GPlatesGui
 
 		//! Shader program to render stars.
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program_object;
+
 		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_compiled_draw_state;
 	};
 }

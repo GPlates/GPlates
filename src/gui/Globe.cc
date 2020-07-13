@@ -358,20 +358,12 @@ GPlatesGui::Globe::render_sphere_background(
 	// The opaque sphere is only used to render the sphere colour (and, for a transparent sphere,
 	// blend the sphere colour with the rendered geometries on the rear of the globe).
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
-	renderer.gl_depth_mask(GL_FALSE);
+	const bool enable_depth_writes = false;
+	renderer.gl_depth_mask(enable_depth_writes);
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
-	//
-	// TODO: Change this to 'view' orientation and investigate the effect of view tilt.
-	//       In fact, remove reliance on view orientation altogether and render as a sphere (not a disc)
-	//       using OpenGL fragment shaders to handle variation in opacity.
-	const GPlatesMaths::Rotation globe_orientation_relative_to_view =
-			d_globe_camera.get_globe_orientation_relative_to_view();
-	d_sphere->paint(
-			renderer,
-			globe_orientation_relative_to_view.axis(),
-			GPlatesMaths::convert_rad_to_deg(globe_orientation_relative_to_view.angle()).dval());
+	d_sphere->paint(renderer, enable_depth_writes);
 }
 
 

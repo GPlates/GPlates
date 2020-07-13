@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_OPAQUESPHERE_H
 #define GPLATES_GUI_OPAQUESPHERE_H
 
+#include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 #include <opengl/OpenGL.h>
 
@@ -36,7 +37,7 @@
 #include "maths/UnitVector3D.h"
 
 #include "opengl/GLCompiledDrawState.h"
-#include "opengl/GLVertexArray.h"
+#include "opengl/GLProgramObject.h"
 
 
 namespace GPlatesOpenGL
@@ -57,14 +58,6 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Constructs an OpaqueSphere with a fixed @a colour.
-		 */
-		explicit
-		OpaqueSphere(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const Colour &colour);
-
-		/**
 		 * Constructs an OpaqueSphere that uses the background colour of @a view_state,
 		 * as it changes from time to time.
 		 */
@@ -75,19 +68,27 @@ namespace GPlatesGui
 
 		/**
 		 * Paints sphere.
+		 *
+		 * If @a depth_writes_enabled is true then sphere fragment shader outputs z-buffer depth.
+		 * The geometry is a full-screen quad (which does not output the depth of sphere), so it must
+		 * be calculated in the fragment shader if it's needed.
+		 * This is only needed if depth writes are currently enabled.
 		 */
 		void
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesMaths::UnitVector3D &axis,
-				double angle_in_deg);
+				bool depth_writes_enabled = true);
 
 	private:
-		const GPlatesPresentation::ViewState *d_view_state;
-		Colour d_colour;
+		const GPlatesPresentation::ViewState &d_view_state;
 
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
-		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_compiled_draw_state;
+		Colour d_background_colour;
+
+		//! Shader program to render sphere.
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program_object;
+
+		//! Used to draw a full-screen quad.
+		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad;
 	};
 }
 
