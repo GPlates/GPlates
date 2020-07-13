@@ -620,36 +620,19 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLMatrix d_gl_view_transform;
 
 		/**
-		 * The current projection transform for OpenGL rendering of the *front* visible half of the globe.
+		 * The current projection transform for OpenGL rendering.
 		 *
-		 * This is used for rendering an opaque globe (only the front half is visible) and for
-		 * rendering SVG output since it uses the OpenGL feedback mechanism which bypasses
-		 * rasterisation and hence the transformation pipeline is required for clipping
-		 * (ie, the far clip plane).
-		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_front_half_globe;
-
-		/**
-		 * The current projection transform for OpenGL rendering of the *rear* half of the globe.
+		 * This is used for rendering an opaque globe. It's also currently used for rendering SVG output
+		 * using the OpenGL feedback mechanism which bypasses rasterisation - this means the transformation
+		 * pipeline is required for clipping.
 		 *
-		 * This is used when rendering a transparent globe since the rear half of the globe then
-		 * becomes visible.
+		 * NOTE: We no longer use the frustum far clip plane to separate visible front half of globe
+		 *       from invisible rear half (since combining view tilt and perspective projection makes
+		 *       this not possible). Instead we will use a special clip plane in fragment shaders,
+		 *       but that is rasterisation and so will not affect OpenGL feedback. For now this means
+		 *       SVG will render front and rear halves of the globe (even though rear is not always visible).
 		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_rear_half_globe;
-
-		/**
-		 * The current projection transform for OpenGL rendering of the full globe.
-		 *
-		 * This is used when rendering sub-surface data (such as 3D scalar fields).
-		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_full_globe;
-
-		/**
-		 * The current projection transform for rendering stars.
-		 *
-		 * The far clip plane distance is large enough to include the stars.
-		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_stars;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform;
 
 		/**
 		 * The current projection transform for the screen text overlay.
@@ -733,10 +716,7 @@ namespace GPlatesQtWidgets
 		render_scene(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLMatrix &view_transform,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+				const GPlatesOpenGL::GLMatrix &projection_transform,
 				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
 				const QPaintDevice &paint_device);
 

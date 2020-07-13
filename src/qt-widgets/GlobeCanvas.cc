@@ -85,6 +85,17 @@
 namespace 
 {
 	/**
+	 * The distance to extend the view frustum (visible 3D region of the scene) to avoid clipping objects
+	 * that extend off the globe (such as rendered velocity arrows).
+	 *
+	 * If this is zero then the orthographic view frustum is such that the near and far frustum planes
+	 * touch the surface of the globe. For perspective viewing it is the far plane that touches globe.
+	 *
+	 * A value of 1.0 represents the globe radius.
+	 */
+	const double VIEW_DISTANCE_EXTENDED_OFF_GLOBE = 0.5;
+
+	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate projection transforms
 	 * needed to display the scene, and generate the orthographic/perspective view transform.
 	 *
@@ -97,29 +108,15 @@ namespace
 			unsigned int viewport_height_in_device_pixels,
 			const GPlatesGui::GlobeCamera &camera,
 			GPlatesOpenGL::GLMatrix &view_transform,
-			// Note that these projection transforms are 'orthographic' or 'perspective', and hence are
-			// only affected by viewport *aspect ratio*, so they are independent of whether we're using
+			// Note that this projection transform is 'orthographic' or 'perspective', and hence is
+			// only affected by viewport *aspect ratio*, so it's independent of whether we're using
 			// device pixels or device *independent* pixels...
-			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
-			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
-			GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-			GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+			GPlatesOpenGL::GLMatrix &projection_transform,
 			// This is the only projection transform affected by viewport *pixel* dimensions,
 			// so it depends on whether we're using device pixels or device *independent* pixels.
 			// Here we need to use device pixels (since using OpenGL, and its viewport is in device pixels)..
 			GPlatesOpenGL::GLMatrix &projection_transform_text_overlay)
 	{
-		// NOTE: We ensure that the projection transforms calculated here can also be used when
-		// rendering to SVG output. This is because SVG output ignores depth buffering -
-		// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
-		// opaque disc through the centre of the globe does not occlude vector geometry
-		// on the back side of the globe).
-		// The solution is to set the far or near clip planes to pass through the globe centre
-		// (depending on whether rendering front or rear half of globe.
-		// This is effectively does the equivalent culling of the opaque disc but in the
-		// transformation pipeline instead of the rasterisation pipeline.
-		//
-
 		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
 		const GPlatesMaths::UnitVector3D &camera_look_at = camera.get_look_at_position().position_vector();
 		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
@@ -149,18 +146,11 @@ namespace
 			const GLdouble eye_to_globe_centre_distance_along_view_direction = dot(globe_centre - camera_eye, camera_view_direction).dval();
 
 			// The 1.0 is the globe radius.
-			// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
+			// The VIEW_DISTANCE_EXTENDED_OFF_GLOBE is because we don't want to put the near clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
 			// Same applies to the far clipping plane.
-			const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance_along_view_direction - 1.0 - 0.5;
-			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + 0.5;
-			// The stars need a far clip plane further away.
-			const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-			const GLdouble depth_globe_centre = eye_to_globe_centre_distance_along_view_direction;
-			// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
-			// Also the opaque sphere is now rendered as a flat disk facing the camera and
-			// positioned through the globe centre - so we don't want that to get clipped away either.
-			const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
+			const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance_along_view_direction - 1.0 - VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
+			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
 
 			//
 			// Projection transform.
@@ -181,29 +171,11 @@ namespace
 					aspect_ratio,
 					ortho_left, ortho_right, ortho_bottom, ortho_top);
 
-			projection_transform_include_front_half_globe.gl_ortho(
-					ortho_left, ortho_right,
-					ortho_bottom, ortho_top,
-					depth_in_front_of_globe,
-					depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
-
-			projection_transform_include_rear_half_globe.gl_ortho(
-					ortho_left, ortho_right,
-					ortho_bottom, ortho_top,
-					depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
-					depth_behind_globe);
-
-			projection_transform_include_full_globe.gl_ortho(
+			projection_transform.gl_ortho(
 					ortho_left, ortho_right,
 					ortho_bottom, ortho_top,
 					depth_in_front_of_globe,
 					depth_behind_globe);
-
-			projection_transform_include_stars.gl_ortho(
-					ortho_left, ortho_right,
-					ortho_bottom, ortho_top,
-					depth_in_front_of_globe,
-					depth_behind_globe_and_including_stars);
 		}
 		else // perspective...
 		{
@@ -266,17 +238,10 @@ namespace
 
 			const GLdouble depth_in_front_of_globe = 0.001;  // ~6km (z-buffer resolution: ~0.37mm near and ~3.2km far)
 			// The 1.0 is the globe radius.
-			// The 0.5 is arbitrary and because we don't want to put the far clipping plane too close
+			// The VIEW_DISTANCE_EXTENDED_OFF_GLOBE is because we don't want to put the far clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
-			// Note that this only really matters if you can see them (if the globe is translucent).
-			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + 0.5;
-			// The stars need a far clip plane further away.
-			const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-			const GLdouble depth_globe_centre = eye_to_globe_centre_distance_along_view_direction;
-			// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
-			// Also the opaque sphere is now rendered as a flat disk facing the camera and
-			// positioned through the globe centre - so we don't want that to get clipped away either.
-			const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
+			// Note that this mostly only matters if you can see them (if the globe is translucent).
+			const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
 
 			// The aspect ratio (width/height) of the screen.
 			const double aspect_ratio = double(viewport_width_in_device_pixels) / viewport_height_in_device_pixels;
@@ -285,32 +250,14 @@ namespace
 			camera.get_perspective_fovy(aspect_ratio, fovy_degrees);
 
 			//
-			// Projection transforms.
+			// Projection transform.
 			//
 
-			projection_transform_include_front_half_globe.glu_perspective(
-					fovy_degrees,
-					aspect_ratio,
-					depth_in_front_of_globe,
-					depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
-
-			projection_transform_include_rear_half_globe.glu_perspective(
-					fovy_degrees,
-					aspect_ratio,
-					depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
-					depth_behind_globe);
-
-			projection_transform_include_full_globe.glu_perspective(
+			projection_transform.glu_perspective(
 					fovy_degrees,
 					aspect_ratio,
 					depth_in_front_of_globe,
 					depth_behind_globe);
-
-			projection_transform_include_stars.glu_perspective(
-					fovy_degrees,
-					aspect_ratio,
-					depth_in_front_of_globe,
-					depth_behind_globe_and_including_stars);
 		}
 
 		// The text overlay coordinates are specified in window coordinates.
@@ -551,7 +498,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
 			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
 			// device pixels or device *independent* pixels...
-			d_gl_projection_transform_include_full_globe);
+			d_gl_projection_transform);
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
 			gl_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
@@ -729,10 +676,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
 			d_gl_view_transform,
-			d_gl_projection_transform_include_front_half_globe,
-			d_gl_projection_transform_include_rear_half_globe,
-			d_gl_projection_transform_include_full_globe,
-			d_gl_projection_transform_include_stars,
+			d_gl_projection_transform,
 			d_gl_projection_transform_text_overlay,
 			*this);
 }
@@ -884,20 +828,14 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 
 	// Calculate the projection matrices associated with the current image dimensions.
 	GPlatesOpenGL::GLMatrix tile_view_transform;
-	GPlatesOpenGL::GLMatrix tile_projection_transform_include_front_half_globe(projection_matrix_tile);
-	GPlatesOpenGL::GLMatrix tile_projection_transform_include_rear_half_globe(projection_matrix_tile);
-	GPlatesOpenGL::GLMatrix tile_projection_transform_include_full_globe(projection_matrix_tile);
-	GPlatesOpenGL::GLMatrix tile_projection_transform_include_stars(projection_matrix_tile);
+	GPlatesOpenGL::GLMatrix tile_projection_transform(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_text_overlay(projection_matrix_tile);
 	calc_scene_view_projection_transforms(
 			image.width(),
 			image.height(),
 			d_globe_camera,
 			tile_view_transform,
-			tile_projection_transform_include_front_half_globe,
-			tile_projection_transform_include_rear_half_globe,
-			tile_projection_transform_include_full_globe,
-			tile_projection_transform_include_stars,
+			tile_projection_transform,
 			tile_projection_transform_text_overlay);
 
 	//
@@ -906,10 +844,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	const cache_handle_type tile_cache_handle = render_scene(
 			renderer,
 			tile_view_transform,
-			tile_projection_transform_include_front_half_globe,
-			tile_projection_transform_include_rear_half_globe,
-			tile_projection_transform_include_full_globe,
-			tile_projection_transform_include_stars,
+			tile_projection_transform,
 			tile_projection_transform_text_overlay,
 			image);
 
@@ -988,10 +923,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 
 	// Calculate the projection matrices associated with the feedback paint device dimensions.
 	GPlatesOpenGL::GLMatrix view_transform;
-	GPlatesOpenGL::GLMatrix projection_transform_include_front_half_globe;
-	GPlatesOpenGL::GLMatrix projection_transform_include_rear_half_globe;
-	GPlatesOpenGL::GLMatrix projection_transform_include_full_globe;
-	GPlatesOpenGL::GLMatrix projection_transform_include_stars;
+	GPlatesOpenGL::GLMatrix projection_transform;
 	GPlatesOpenGL::GLMatrix projection_transform_text_overlay;
 	calc_scene_view_projection_transforms(
 			// Convert from widget size to device pixels (used by OpenGL)...
@@ -999,10 +931,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio(),
 			d_globe_camera,
 			view_transform,
-			projection_transform_include_front_half_globe,
-			projection_transform_include_rear_half_globe,
-			projection_transform_include_full_globe,
-			projection_transform_include_stars,
+			projection_transform,
 			projection_transform_text_overlay);
 
 	// Render the scene to the feedback paint device.
@@ -1011,10 +940,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
 			view_transform,
-			projection_transform_include_front_half_globe,
-			projection_transform_include_rear_half_globe,
-			projection_transform_include_full_globe,
-			projection_transform_include_stars,
+			projection_transform,
 			projection_transform_text_overlay,
 			feedback_paint_device);
 }
@@ -1024,10 +950,7 @@ GPlatesQtWidgets::GlobeCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeCanvas::render_scene(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesOpenGL::GLMatrix &view_transform,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+		const GPlatesOpenGL::GLMatrix &projection_transform,
 		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
 		const QPaintDevice &paint_device)
 {
@@ -1039,11 +962,9 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	renderer.gl_clear_color(); // Clear colour to (0,0,0,0).
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
-	// NOTE: We only set the model-view transform here.
-	// The projection transform is set inside the globe renderer.
-	// This is because there are two projection transforms (with differing far clip planes)
-	// and the choice is determined by the globe renderer.
+	// Set the model-view-projection transform here.
 	renderer.gl_load_matrix(GL_MODELVIEW, view_transform);
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 	const float scale = calculate_scale(paint_device);
@@ -1057,14 +978,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	// Since the view direction usually differs little from one frame to the next there is a lot
 	// of overlap that we want to reuse (and not recalculate).
 	//
-	const cache_handle_type frame_cache_handle = d_globe.paint(
-			renderer,
-			viewport_zoom_factor,
-			scale,
-			projection_transform_include_front_half_globe,
-			projection_transform_include_rear_half_globe,
-			projection_transform_include_full_globe,
-			projection_transform_include_stars);
+	const cache_handle_type frame_cache_handle = d_globe.paint(renderer, viewport_zoom_factor, scale);
 
 	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
 	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
@@ -1332,10 +1246,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 	// Update the projection matrices.
 	d_gl_view_transform.gl_load_identity();
-	d_gl_projection_transform_include_front_half_globe.gl_load_identity();
-	d_gl_projection_transform_include_rear_half_globe.gl_load_identity();
-	d_gl_projection_transform_include_full_globe.gl_load_identity();
-	d_gl_projection_transform_include_stars.gl_load_identity();
+	d_gl_projection_transform.gl_load_identity();
 	d_gl_projection_transform_text_overlay.gl_load_identity();
 	calc_scene_view_projection_transforms(
 			// Convert from widget size to device pixels (used by OpenGL)...
@@ -1343,10 +1254,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 			height() * devicePixelRatio(),
 			d_globe_camera,
 			d_gl_view_transform,
-			d_gl_projection_transform_include_front_half_globe,
-			d_gl_projection_transform_include_rear_half_globe,
-			d_gl_projection_transform_include_full_globe,
-			d_gl_projection_transform_include_stars,
+			d_gl_projection_transform,
 			d_gl_projection_transform_text_overlay);
 }
 

@@ -135,11 +135,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
-				float scale,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
+				float scale);
 
 	private:
 
@@ -198,20 +194,17 @@ namespace GPlatesGui
 
 		void
 		render_stars(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
 		render_sphere_background(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
 		render_globe_hemisphere_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
-				const GPlatesOpenGL::GLMatrix &projection_transform,
 				bool is_front_half_globe);
 
 		void
@@ -224,7 +217,6 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
 	};
 }

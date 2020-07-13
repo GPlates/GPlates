@@ -118,11 +118,7 @@ GPlatesGui::Globe::cache_handle_type
 GPlatesGui::Globe::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
-		float scale,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars)
+		float scale)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
@@ -137,7 +133,7 @@ GPlatesGui::Globe::paint(
 
 	// Render stars.
 	// NOTE: We draw the stars first so they don't appear in front of the globe.
-	render_stars(renderer, projection_transform_include_stars);
+	render_stars(renderer);
 
 	// Determine whether the globe is transparent or not. This happens if either:
 	//  1) the background colour is transparent, or
@@ -175,18 +171,16 @@ GPlatesGui::Globe::paint(
 	// If the background colour is transparent then render the rear half of the globe.
 	if (has_transparent_background_colour)
 	{
-		// The globe is transparent so use the rear half globe projection transform to render
-		// the rear half of the globe.
+		// The globe is transparent so render the rear half of the globe.
 		render_globe_hemisphere_surface(
 				renderer,
 				*cache_handle,
 				viewport_zoom_factor,
-				projection_transform_include_rear_half_globe,
 				false/*is_front_half_globe*/);
 	}
 
 	// Render opaque sphere - can actually be transparent depending on the alpha value in its colour.
-	render_sphere_background(renderer, projection_transform_include_full_globe);
+	render_sphere_background(renderer);
 
 	// The rendering of sub-surface geometries and the front surface of the globe are intermingled
 	// because the latter can be used to occlude the former.
@@ -243,7 +237,6 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
-					projection_transform_include_front_half_globe,
 					true/*is_front_half_globe*/);
 
 			// Finished rendering surface occlusion texture.
@@ -259,7 +252,6 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
-					projection_transform_include_full_globe,
 					front_globe_surface_texture);
 
 			// Blend the front half of the globe surface (the surface occlusion texture) in the main framebuffer.
@@ -274,15 +266,13 @@ GPlatesGui::Globe::paint(
 			render_globe_sub_surface(
 					renderer,
 					*cache_handle,
-					viewport_zoom_factor,
-					projection_transform_include_full_globe);
+					viewport_zoom_factor);
 
 			// Render the front half of the globe surface next.
 			render_globe_hemisphere_surface(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
-					projection_transform_include_front_half_globe,
 					true/*is_front_half_globe*/);
 		}
 	}
@@ -293,7 +283,6 @@ GPlatesGui::Globe::paint(
 				renderer,
 				*cache_handle,
 				viewport_zoom_factor,
-				projection_transform_include_front_half_globe,
 				true/*is_front_half_globe*/);
 	}
 
@@ -345,8 +334,7 @@ GPlatesGui::Globe::set_scene_lighting(
 
 void
 GPlatesGui::Globe::render_stars(
-		GPlatesOpenGL::GLRenderer &renderer,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
@@ -359,17 +347,13 @@ GPlatesGui::Globe::render_stars(
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
 	renderer.gl_depth_mask(GL_FALSE);
 
-	// Set up the projection transform for the stars.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_stars);
-
 	d_stars->paint(renderer);
 }
 
 
 void
 GPlatesGui::Globe::render_sphere_background(
-		GPlatesOpenGL::GLRenderer &renderer,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
@@ -382,13 +366,6 @@ GPlatesGui::Globe::render_sphere_background(
 	// However since we're not reading or writing to depth buffer we don't need to clear depth buffer.
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
 	renderer.gl_depth_mask(GL_FALSE);
-
-	// Set up the projection transform for entire globe.
-	//
-	// NOTE: It's actually rendered as a disk facing the camera so it will be inside the rear half
-	// frustum (projection matrix) due to expansion by epsilon at globe centre distance.
-	// However we will use the full globe frustum in case this changes.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_full_globe);
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
@@ -410,13 +387,10 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
-		const GPlatesOpenGL::GLMatrix &projection_transform,
 		bool is_front_half_globe)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform);
 
 	// NOTE: Because we are using a different projection transform and the depth buffer values depend
 	// on the projection transform then each projection transform needs its own depth buffer clear.
@@ -519,13 +493,10 @@ GPlatesGui::Globe::render_globe_sub_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_full_globe);
 
 	// NOTE: Because we are using a different projection transform and the depth buffer values depend
 	// on the projection transform then each projection transform needs its own depth buffer clear.
