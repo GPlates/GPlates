@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 
 #include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLProgramObject.h"
 #include "opengl/GLVertexArray.h"
 
 
@@ -71,6 +72,9 @@ namespace GPlatesGui
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
 		unsigned int d_num_points;
+
+		//! Shader program to render stars.
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program_object;
 		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_compiled_draw_state;
 	};
 }

@@ -31,6 +31,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/utility/in_place_factory.hpp>
+#include <QString>
 
 #include "Stars.h"
 
@@ -41,6 +42,8 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GLRenderer.h"
+#include "opengl/GLShaderProgramUtils.h"
+#include "opengl/GLShaderSource.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertex.h"
 #include "opengl/GLVertexArray.h"
@@ -50,6 +53,10 @@
 
 namespace
 {
+	// Vertex and fragment shader source code to render render stars (points) in the 3D globe views (perspective and orthographic).
+	const QString RENDER_STARS_VERTEX_SHADER = ":/opengl/stars/render_stars_vertex_shader.glsl";
+	const QString RENDER_STARS_FRAGMENT_SHADER = ":/opengl/stars/render_stars_fragment_shader.glsl";
+
 	const GLfloat SMALL_STARS_SIZE = 1.4f;
 	const GLfloat LARGE_STARS_SIZE = 2.1f;
 
@@ -121,6 +128,7 @@ namespace
 	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
 	compile_stars_draw_state(
 			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GLProgramObject::shared_ptr_type program_object,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
 			unsigned int &num_points,
 			boost::function< double () > &rand,
@@ -197,6 +205,9 @@ namespace
 		// Start compiling draw state that includes OpenGL states and vertex array draw commands.
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
+		// Bind the shader program.
+		renderer.gl_bind_program_object(program_object);
+
 		// Set the alpha-blend state.
 		// Set up alpha blending for pre-multiplied alpha.
 		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
@@ -267,6 +278,28 @@ GPlatesGui::Stars::Stars(
 	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
 	d_num_points(0)
 {
+	// Vertex shader.
+	GPlatesOpenGL::GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(RENDER_STARS_VERTEX_SHADER);
+
+	// Fragment shader.
+	GPlatesOpenGL::GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(RENDER_STARS_FRAGMENT_SHADER);
+
+	// Vertex-fragment program.
+	d_program_object = GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+			renderer,
+			vertex_shader_source,
+			fragment_shader_source);
+	if (!d_program_object)
+	{
+		// If shader compilation/linking failed (eg, due to lack of runtime shader support) then
+		// return early. This means no stars will get rendered later.
+		return;
+	}
+
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
 	// Note that we use a fixed seed (0), so that the pattern of stars does not
@@ -279,7 +312,7 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, d_num_points, rand, rgba8_colour);
+	d_compiled_draw_state = compile_stars_draw_state(renderer, d_program_object.get(), *d_vertex_array, d_num_points, rand, rgba8_colour);
 }
 
 
