@@ -15,6 +15,8 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
+    BackgroundSphere.cc
+    BackgroundSphere.h
     BuiltinColourPalettes.cc
     BuiltinColourPalettes.h
     BuiltinColourPaletteType.cc
@@ -196,8 +198,6 @@ set(srcs
     MapTransform.h
     Mipmapper.cc
     Mipmapper.h
-    OpaqueSphere.cc
-    OpaqueSphere.h
     Palette.cc
     Palette.h
     PlateIdColourPalettes.cc

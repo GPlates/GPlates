@@ -31,7 +31,7 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <QString>
 
-#include "OpaqueSphere.h"
+#include "BackgroundSphere.h"
 
 #include "FeedbackOpenGLToQPainter.h"
 
@@ -60,7 +60,7 @@ namespace
 }
 
 
-GPlatesGui::OpaqueSphere::OpaqueSphere(
+GPlatesGui::BackgroundSphere::BackgroundSphere(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesPresentation::ViewState &view_state) :
 	d_view_state(view_state),
@@ -95,7 +95,7 @@ GPlatesGui::OpaqueSphere::OpaqueSphere(
 
 
 void
-GPlatesGui::OpaqueSphere::paint(
+GPlatesGui::BackgroundSphere::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		bool depth_writes_enabled)
 {
@@ -105,7 +105,7 @@ GPlatesGui::OpaqueSphere::paint(
 	// Bind the shader program.
 	renderer.gl_bind_program_object(d_program_object.get());
 
-	// If depth writes have been enabled then we need to calculate z-buffer depth.
+	// If depth writes have been enabled then the shader program needs to output z-buffer depth.
 	d_program_object.get()->gl_uniform1i(renderer, "write_depth", depth_writes_enabled);
 
 	// Check whether the view state's background colour has changed.
@@ -117,6 +117,7 @@ GPlatesGui::OpaqueSphere::paint(
 		d_program_object.get()->gl_uniform4f(renderer, "background_color", d_background_colour);
 	}
 
+	// If the background colour is transparent then set up alpha blending.
 	if (d_background_colour.alpha() < 1)
 	{
 		// Set up alpha blending for pre-multiplied alpha.

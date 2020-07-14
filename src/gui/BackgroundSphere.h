@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_OPAQUESPHERE_H
-#define GPLATES_GUI_OPAQUESPHERE_H
+#ifndef GPLATES_GUI_BACKGROUNDSPHERE_H
+#define GPLATES_GUI_BACKGROUNDSPHERE_H
 
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
@@ -52,22 +52,26 @@ namespace GPlatesPresentation
 
 namespace GPlatesGui
 {
-	class OpaqueSphere :
+	class BackgroundSphere :
 			public boost::noncopyable
 	{
 	public:
 
 		/**
-		 * Constructs an OpaqueSphere that uses the background colour of @a view_state,
+		 * Used to render a sphere with the background colour of @a view_state,
 		 * as it changes from time to time.
 		 */
 		explicit
-		OpaqueSphere(
+		BackgroundSphere(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesPresentation::ViewState &view_state);
 
 		/**
-		 * Paints sphere.
+		 * Paints sphere using the background colour of ViewState.
+		 *
+		 * If the background colour alpha is translucent then alpha is unmodified at visual centre
+		 * of globe but is increasingly opaque near the visual circumference (according to how much
+		 * material of a thin spherical shell, at globe surface, each view ray passes through).
 		 *
 		 * If @a depth_writes_enabled is true then sphere fragment shader outputs z-buffer depth.
 		 * The geometry is a full-screen quad (which does not output the depth of sphere), so it must
@@ -92,4 +96,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif  // GPLATES_GUI_OPAQUESPHERE_H
+#endif  // GPLATES_GUI_BACKGROUNDSPHERE_H

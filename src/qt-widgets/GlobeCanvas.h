@@ -622,7 +622,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The current projection transform for OpenGL rendering.
 		 *
-		 * This is used for rendering an opaque globe. It's also currently used for rendering SVG output
+		 * This is used for rendering the globe. It's also currently used for rendering SVG output
 		 * using the OpenGL feedback mechanism which bypasses rasterisation - this means the transformation
 		 * pipeline is required for clipping.
 		 *

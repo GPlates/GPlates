@@ -106,7 +106,7 @@ GPlatesGui::Globe::initialiseGL(
 
 	// Create these objects in place (some as non-copy-constructable).
 	d_stars = boost::in_place(boost::ref(renderer), boost::ref(d_view_state), STARS_COLOUR);
-	d_sphere = boost::in_place(boost::ref(renderer), boost::ref(d_view_state));
+	d_background_sphere = boost::in_place(boost::ref(renderer), boost::ref(d_view_state));
 	d_grid = boost::in_place(boost::ref(renderer), d_view_state.get_graticule_settings());
 
 	// Initialise the rendered geometry collection painter.
@@ -156,7 +156,7 @@ GPlatesGui::Globe::paint(
 		if (!has_transparent_background_colour)
 		{
 			// Temporarily change the background colour in the view state.
-			// This will get picked up by 'OpaqueSphere'.
+			// This will get picked up by 'BackgroundSphere'.
 			Colour transparent_background_colour = d_view_state.get_background_colour();
 			transparent_background_colour.alpha() = 0.3f;
 			d_view_state.set_background_colour(transparent_background_colour);
@@ -179,7 +179,7 @@ GPlatesGui::Globe::paint(
 				false/*is_front_half_globe*/);
 	}
 
-	// Render opaque sphere - can actually be transparent depending on the alpha value in its colour.
+	// Render background sphere - can actually be transparent depending on the alpha value in its colour.
 	render_sphere_background(renderer);
 
 	// The rendering of sub-surface geometries and the front surface of the globe are intermingled
@@ -355,7 +355,7 @@ GPlatesGui::Globe::render_sphere_background(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
 	// Disable depth testing and depth writes.
-	// The opaque sphere is only used to render the sphere colour (and, for a transparent sphere,
+	// The background sphere is only used to render the sphere colour (and, for a transparent sphere,
 	// blend the sphere colour with the rendered geometries on the rear of the globe).
 	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
 	const bool enable_depth_writes = false;
@@ -363,7 +363,7 @@ GPlatesGui::Globe::render_sphere_background(
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
-	d_sphere->paint(renderer, enable_depth_writes);
+	d_background_sphere->paint(renderer, enable_depth_writes);
 }
 
 

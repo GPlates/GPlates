@@ -31,10 +31,10 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "BackgroundSphere.h"
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
-#include "OpaqueSphere.h"
 #include "SphericalGrid.h"
 #include "Stars.h"
 
@@ -159,11 +159,11 @@ namespace GPlatesGui
 		boost::optional<Stars> d_stars;
 
 		/**
-		 * The solid earth.
+		 * The background sphere (can be opaque or translucent depending on the background colour's alpha).
 		 *
 		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
-		boost::optional<OpaqueSphere> d_sphere;
+		boost::optional<BackgroundSphere> d_background_sphere;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
