@@ -232,9 +232,11 @@ GPlatesGui::GlobeCamera::get_up_direction() const
 
 void
 GPlatesGui::GlobeCamera::set_view_orientation(
-		const GPlatesMaths::Rotation &view_orientation)
+		const GPlatesMaths::Rotation &view_orientation,
+		bool only_emit_if_changed)
 {
-	if (view_orientation.quat() == d_view_orientation.quat())
+	if (only_emit_if_changed &&
+		view_orientation.quat() == d_view_orientation.quat())
 	{
 		return;
 	}
@@ -250,9 +252,11 @@ GPlatesGui::GlobeCamera::set_view_orientation(
 
 void
 GPlatesGui::GlobeCamera::set_tilt_angle(
-		const GPlatesMaths::real_t &tilt_angle)
+		const GPlatesMaths::real_t &tilt_angle,
+		bool only_emit_if_changed)
 {
-	if (tilt_angle == d_tilt_angle)
+	if (only_emit_if_changed &&
+		tilt_angle == d_tilt_angle)
 	{
 		return;
 	}
@@ -268,9 +272,11 @@ GPlatesGui::GlobeCamera::set_tilt_angle(
 
 void
 GPlatesGui::GlobeCamera::move_look_at_position(
-		const GPlatesMaths::PointOnSphere &new_look_at_position)
+		const GPlatesMaths::PointOnSphere &new_look_at_position,
+		bool only_emit_if_changed)
 {
-	if (new_look_at_position == get_look_at_position())
+	if (only_emit_if_changed &&
+		new_look_at_position == get_look_at_position())
 	{
 		return;
 	}
@@ -292,7 +298,8 @@ GPlatesGui::GlobeCamera::move_look_at_position(
 
 void
 GPlatesGui::GlobeCamera::reorient_up_direction(
-		const GPlatesMaths::real_t &reorientation_angle)
+		const GPlatesMaths::real_t &reorientation_angle,
+		bool only_emit_if_changed)
 {
 	// Rotate the view around the view direction.
 	// It's negated so that it points towards the camera (from globe centre).
@@ -305,6 +312,13 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 	{
 		// The position on the globe from origin to globe surface along negative view direction
 		// happens to be the North pole. So we cannot reorient, hence do nothing and return.
+		
+		if (!only_emit_if_changed)
+		{
+			// Client wants this signal emitted regardless.
+			Q_EMIT camera_changed();
+		}
+
 		return;
 	}
 	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
@@ -327,13 +341,14 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 	const GPlatesMaths::Rotation reorient_rotation =
 			GPlatesMaths::Rotation::create(rotation_axis, reorient_rotation_angle);
 
-	set_view_orientation(reorient_rotation * get_view_orientation());
+	set_view_orientation(reorient_rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
 void
 GPlatesGui::GlobeCamera::rotate_down(
-		const GPlatesMaths::real_t &angle)
+		const GPlatesMaths::real_t &angle,
+		bool only_emit_if_changed)
 {
 	// Rotate the view around the axis perpendicular to the view and up directions.
 	const GPlatesMaths::UnitVector3D rotation_axis =
@@ -343,13 +358,14 @@ GPlatesGui::GlobeCamera::rotate_down(
 	const GPlatesMaths::Rotation rotation =
 			GPlatesMaths::Rotation::create(rotation_axis,  angle);
 
-	set_view_orientation(rotation * get_view_orientation());
+	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
 void
 GPlatesGui::GlobeCamera::rotate_right(
-		const GPlatesMaths::real_t &angle)
+		const GPlatesMaths::real_t &angle,
+		bool only_emit_if_changed)
 {
 	// Rotate the view around the "up" direction axis.
 	const GPlatesMaths::UnitVector3D &rotation_axis = get_up_direction();
@@ -358,13 +374,14 @@ GPlatesGui::GlobeCamera::rotate_right(
 	const GPlatesMaths::Rotation rotation =
 			GPlatesMaths::Rotation::create(rotation_axis,  angle);
 
-	set_view_orientation(rotation * get_view_orientation());
+	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
 void
 GPlatesGui::GlobeCamera::rotate_anticlockwise(
-		const GPlatesMaths::real_t &angle)
+		const GPlatesMaths::real_t &angle,
+		bool only_emit_if_changed)
 {
 	// Rotate the view around the look-at position.
 	const GPlatesMaths::UnitVector3D &rotation_axis = get_look_at_position().position_vector();
@@ -373,7 +390,7 @@ GPlatesGui::GlobeCamera::rotate_anticlockwise(
 	const GPlatesMaths::Rotation rotation =
 			GPlatesMaths::Rotation::create(rotation_axis,  angle);
 
-	set_view_orientation(rotation * get_view_orientation());
+	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 

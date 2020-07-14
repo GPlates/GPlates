@@ -137,10 +137,13 @@ namespace GPlatesGui
 		 * Note that this does not change the current tilt angle.
 		 *
 		 * This sets the inverse orientation set by @a set_globe_orientation_relative_to_view.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
 		void
 		set_view_orientation(
-				const GPlatesMaths::Rotation &view_orientation);
+				const GPlatesMaths::Rotation &view_orientation,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
@@ -173,10 +176,13 @@ namespace GPlatesGui
 		 * Set the angle (in radians) that the view direction tilts.
 		 *
 		 * Note that this does not change the current view orientation (returned by @a get_view_orientation).
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
 		void
 		set_tilt_angle(
-				const GPlatesMaths::real_t &tilt_angle);
+				const GPlatesMaths::real_t &tilt_angle,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Rotate the current look-at position to the specified look-at position along the
@@ -185,10 +191,13 @@ namespace GPlatesGui
 		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
 		void
 		move_look_at_position(
-				const GPlatesMaths::PointOnSphere &new_look_at_position);
+				const GPlatesMaths::PointOnSphere &new_look_at_position,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Rotate the view around the view direction so that the "up" direction points
@@ -202,7 +211,8 @@ namespace GPlatesGui
 		 */
 		void
 		reorient_up_direction(
-				const GPlatesMaths::real_t &reorientation_angle = 0);
+				const GPlatesMaths::real_t &reorientation_angle = 0,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Rotate the current look-at position "up" by the specified angle (in radians).
@@ -213,9 +223,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_up(
-				const GPlatesMaths::real_t &angle)
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true)
 		{
-			rotate_down(-angle);
+			rotate_down(-angle, only_emit_if_changed);
 		}
 
 		/**
@@ -223,7 +234,8 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_down(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Rotate the current look-at position "left" by the specified angle (in radians).
@@ -234,9 +246,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_left(
-				const GPlatesMaths::real_t &angle)
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true)
 		{
-			rotate_right(-angle);
+			rotate_right(-angle, only_emit_if_changed);
 		}
 
 		/**
@@ -244,7 +257,8 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_right(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true);
 
 		/**
 		 * Rotate the view "clockwise", around the current look-at position, by the specified angle (in radians).
@@ -255,9 +269,10 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_clockwise(
-				const GPlatesMaths::real_t &angle)
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true)
 		{
-			rotate_anticlockwise(-angle);
+			rotate_anticlockwise(-angle, only_emit_if_changed);
 		}
 
 		/**
@@ -265,7 +280,8 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_anticlockwise(
-				const GPlatesMaths::real_t &angle);
+				const GPlatesMaths::real_t &angle,
+				bool only_emit_if_changed = true);
 
 
 		/**

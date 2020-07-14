@@ -47,6 +47,7 @@
 
 #include "presentation/ViewState.h"
 
+#include "view-operations/GlobeViewOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -479,7 +480,9 @@ GPlatesGui::Globe::render_globe_sub_surface(
 					renderer,
 					viewport_zoom_factor,
 					surface_occlusion_texture,
-					// TODO: When active globe canvas tool is currently in mouse drag, set to true...
-					false/*improve_performance_reduce_quality_hint*/);
+					// Set to true when active globe canvas tool is currently in a
+					// mouse drag operation that changes the view.
+					// All globe canvas tools share the sole globe view operation...
+					d_view_state.get_globe_view_operation().in_drag()/*improve_performance_reduce_quality_hint*/);
 	cache_handle.push_back(rendered_geoms_cache_sub_surface_globe);
 }

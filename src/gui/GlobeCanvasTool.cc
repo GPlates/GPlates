@@ -74,7 +74,8 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 	d_globe_view_operation.update_drag(
 			current_pos_on_globe,
 			current_screen_x, current_screen_y,
-			screen_width, screen_height);
+			screen_width, screen_height,
+			false/*end_of_drag*/);
 }
 
 
@@ -92,15 +93,20 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	reorient_globe_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (!d_globe_view_operation.in_drag())
+	{
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_NORMAL,
+				initial_pos_on_globe,
+				initial_screen_x, initial_screen_y,
+				screen_width, screen_height);
+	}
 
-	d_globe_view_operation.end_drag();
+	d_globe_view_operation.update_drag(
+			current_pos_on_globe,
+			current_screen_x, current_screen_y,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
 }
 
 
@@ -130,7 +136,8 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 	d_globe_view_operation.update_drag(
 			current_pos_on_globe,
 			current_screen_x, current_screen_y,
-			screen_width, screen_height);
+			screen_width, screen_height,
+			false/*end_of_drag*/);
 }
 
 
@@ -148,15 +155,20 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	rotate_globe_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (!d_globe_view_operation.in_drag())
+	{
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_ROTATE,
+				initial_pos_on_globe,
+				initial_screen_x, initial_screen_y,
+				screen_width, screen_height);
+	}
 
-	d_globe_view_operation.end_drag();
+	d_globe_view_operation.update_drag(
+			current_pos_on_globe,
+			current_screen_x, current_screen_y,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
 }
 
 
@@ -186,7 +198,8 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
 	d_globe_view_operation.update_drag(
 			current_pos_on_globe,
 			current_screen_x, current_screen_y,
-			screen_width, screen_height);
+			screen_width, screen_height,
+			false/*end_of_drag*/);
 }
 
 
@@ -204,13 +217,18 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_release(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	tilt_globe_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (!d_globe_view_operation.in_drag())
+	{
+		d_globe_view_operation.start_drag(
+				GPlatesViewOperations::GlobeViewOperation::DRAG_TILT,
+				initial_pos_on_globe,
+				initial_screen_x, initial_screen_y,
+				screen_width, screen_height);
+	}
 
-	d_globe_view_operation.end_drag();
+	d_globe_view_operation.update_drag(
+			current_pos_on_globe,
+			current_screen_x, current_screen_y,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
 }

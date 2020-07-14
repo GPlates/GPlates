@@ -136,7 +136,8 @@ namespace GPlatesViewOperations
 GPlatesViewOperations::GlobeViewOperation::GlobeViewOperation(
 		GPlatesGui::GlobeCamera &globe_camera) :
 	d_globe_camera(globe_camera),
-	d_in_drag_operation(false)
+	d_in_drag_operation(false),
+	d_in_last_update_drag(false)
 {
 }
 
@@ -151,6 +152,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 {
 	// We've started a drag operation.
 	d_in_drag_operation = true;
+	d_in_last_update_drag = false;
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
 	const double initial_mouse_window_y = screen_height - initial_mouse_screen_y;
@@ -193,51 +195,60 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 		double mouse_screen_x,
 		double mouse_screen_y,
 		int screen_width,
-		int screen_height)
+		int screen_height,
+		bool end_of_drag)
 {
-	if (!d_mouse_drag_info)
+	// If we're finishing the drag operation.
+	if (end_of_drag)
 	{
-		// The drag operation was disabled in 'start_drag()' for some reason.
-		// So nothing to do, return early.
-		return;
+		// Set to false so that when clients call 'in_drag()' it will return true.
+		//
+		// It's important to do this at the start because this function can update
+		// the globe camera which in turn signals the globe to be rendered which in turn
+		// queries 'in_drag()' to see if it should optimise rendering *during* a mouse drag.
+		// And that all happens before we even leave the current function.
+		d_in_drag_operation = false;
+
+		d_in_last_update_drag = true;
 	}
 
-	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
-	const double mouse_window_y = screen_height - mouse_screen_y;
-	const double mouse_window_x = mouse_screen_x;
-
-	switch (d_mouse_drag_info->mode)
+	if (d_mouse_drag_info)  // drag operation might have been disabled in 'start_drag()' for some reason.
 	{
-	case DRAG_NORMAL:
-		update_drag_normal(mouse_pos_on_globe.position_vector());
-		break;
-	case DRAG_ROTATE:
-		update_drag_rotate(mouse_pos_on_globe.position_vector());
-		break;
-	case DRAG_TILT:
-		update_drag_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
+		// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
+		const double mouse_window_y = screen_height - mouse_screen_y;
+		const double mouse_window_x = mouse_screen_x;
+
+		switch (d_mouse_drag_info->mode)
+		{
+		case DRAG_NORMAL:
+			update_drag_normal(mouse_pos_on_globe.position_vector());
 			break;
-	case DRAG_ROTATE_AND_TILT:
-		update_drag_rotate_and_tilt(
-				mouse_pos_on_globe.position_vector(),
-				mouse_window_x, mouse_window_y,
-				screen_width, screen_height);
-		break;
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
+		case DRAG_ROTATE:
+			update_drag_rotate(mouse_pos_on_globe.position_vector());
+			break;
+		case DRAG_TILT:
+			update_drag_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
+				break;
+		case DRAG_ROTATE_AND_TILT:
+			update_drag_rotate_and_tilt(
+					mouse_pos_on_globe.position_vector(),
+					mouse_window_x, mouse_window_y,
+					screen_width, screen_height);
+			break;
+		default:
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
 	}
-}
 
+	// If we've finished the drag operation.
+	if (end_of_drag)
+	{
+		// Finished dragging mouse - no need for mouse drag info.
+		d_mouse_drag_info = boost::none;
 
-void
-GPlatesViewOperations::GlobeViewOperation::end_drag()
-{
-	// We've finished the drag operation.
-	d_in_drag_operation = false;
-
-	// Finished dragging mouse - no need for mouse drag info.
-	d_mouse_drag_info = boost::none;
+		d_in_last_update_drag = false;
+	}
 }
 
 
@@ -281,7 +292,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_normal(
 	// Keep track of the updated view rotation relative to the start.
 	d_mouse_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
 
-	d_globe_camera.set_view_orientation(view_orientation);
+	d_globe_camera.set_view_orientation(
+			view_orientation,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
 }
 
 
@@ -339,7 +353,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate(
 	// Keep track of the updated view rotation relative to the start.
 	d_mouse_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
 
-	d_globe_camera.set_view_orientation(view_orientation);
+	d_globe_camera.set_view_orientation(
+			view_orientation,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
 }
 
 
@@ -363,6 +380,24 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_tilt(
 			d_mouse_drag_info->start_view_direction,  // Satisfies precondition: perpendicular to rotation axis.
 			tilt_axis/*rotation_axis*/,
 			-d_mouse_drag_info->start_look_at_position/*zero_rotation_direction*/);
+
+#if 0
+	if (!d_globe_camera.get_position_on_globe_at_camera_ray(
+			d_globe_camera.get_camera_ray_at_window_coord(
+					d_mouse_drag_info->start_mouse_window_x,
+					d_mouse_drag_info->start_mouse_window_y,
+					window_width,
+					window_height)))
+	{
+		// The ray misses the globe so we cannot use cylinder intersections.
+		// Instead we'll simply convert changes in mouse y-coordinate to changes in tilt angle.
+		d_mouse_drag_info->tilt_method = TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS;
+
+		d_mouse_drag_info->start_intersects_globe_cylinder = false;
+
+		return;
+	}
+#endif
 
 	// Ray from camera eye to mouse position moved horizontally to centre line of viewport.
 	//
@@ -727,7 +762,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 		tilt_angle = 0;
 	}
 
-	d_globe_camera.set_tilt_angle(tilt_angle);
+	d_globe_camera.set_tilt_angle(
+			tilt_angle,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
 }
 
 
@@ -803,7 +841,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt_without_cylinder_int
 		tilt_angle = 0;
 	}
 
-	d_globe_camera.set_tilt_angle(tilt_angle);
+	d_globe_camera.set_tilt_angle(
+			tilt_angle,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
 }
 
 

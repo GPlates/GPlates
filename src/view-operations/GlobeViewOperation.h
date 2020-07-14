@@ -91,6 +91,9 @@ namespace GPlatesViewOperations
 		 *
 		 * This uses the drag mode specified in the last call to @a start_drag.
 		 *
+		 * If @a end_of_drag is true then this is the last update of the drag, and hence @a start_drag
+		 * must be called before the next @a update_drag.
+		 *
 		 * Depending on the drag mode, this can update the view direction, up direction, look-at position and
 		 * perspective eye position.
 		 *
@@ -103,13 +106,15 @@ namespace GPlatesViewOperations
 				double mouse_screen_x,
 				double mouse_screen_y,
 				int screen_width,
-				int screen_height);
-
-		void
-		end_drag();
+				int screen_height,
+				bool end_of_drag);
 
 		/**
-		 * Returns true if currently between @a start_drag and @a end_drag.
+		 * Returns true if currently in a drag, where @a start_drag has been called but the last
+		 * @a update_drag ('end_of_drag' is true) has not yet been called.
+		 *
+		 * Note that this means false is returned *during* the last update
+		 * (ie, during the call to @a update_drag where 'end_of_drag' is true).
 		 */
 		bool
 		in_drag() const
@@ -192,12 +197,18 @@ namespace GPlatesViewOperations
 		boost::optional<MouseDragInfo> d_mouse_drag_info;
 
 		/**
-		 * Is true between @a start_drag and @a end_drag.
+		 * Is true if we're currently between the start of drag (@a start_drag) and
+		 * end of drag ('end_of_drag' is true in call to @a update_drag).
 		 *
 		 * Note that this does not always coincide with @a d_mouse_drag_info which can
 		 * be none if the drag operation was disabled in 'start_drag()' for some reason.
 		 */
 		bool d_in_drag_operation;
+
+		/**
+		 * Is true if we're currently in the last call to @a update_drag.
+		 */
+		bool d_in_last_update_drag;
 
 
 		void
