@@ -853,6 +853,14 @@ internal_main(int argc, char* argv[])
 	//       And does not log messages to the console.
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,3,0)
+	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
+	//
+	// TODO: Remove this when we use QOpenGLFunctions to avoid native calls and hence avoid a direct
+	//       dependency on OpenGL (thus enabling use of Qt's graphics API fallback mechanisms).
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#endif
+
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
 	// For example this enables a QImage with a device pixel ratio of 2
