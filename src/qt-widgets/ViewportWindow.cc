@@ -1771,7 +1771,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_background_colour_picker()
 	if (new_colour)
 	{
 		get_view_state().set_background_colour(*new_colour);
-		reconstruction_view_widget().update();
+		reconstruction_view_widget().globe_and_map_widget().update_canvas();
 	}
 }
 
