@@ -131,7 +131,8 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					click_geometry_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -154,7 +155,8 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					manipulate_pole_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_manipulate_pole_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(

@@ -72,6 +72,7 @@
 
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
+#include "view-operations/GlobeViewOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
 
@@ -134,6 +135,9 @@ GPlatesPresentation::ViewState::ViewState(
 	d_globe_camera(
 			new GPlatesGui::GlobeCamera(
 				*d_viewport_zoom)),
+	d_globe_view_operation(
+			new GPlatesViewOperations::GlobeViewOperation(
+				*d_globe_camera)),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(
 				*this)),
@@ -461,6 +465,19 @@ const GPlatesGui::GlobeCamera &
 GPlatesPresentation::ViewState::get_globe_camera() const
 {
 	return *d_globe_camera;
+}
+
+
+GPlatesViewOperations::GlobeViewOperation &
+GPlatesPresentation::ViewState::get_globe_view_operation()
+{
+	return *d_globe_view_operation;
+}
+
+const GPlatesViewOperations::GlobeViewOperation &
+GPlatesPresentation::ViewState::get_globe_view_operation() const
+{
+	return *d_globe_view_operation;
 }
 
 

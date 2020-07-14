@@ -36,10 +36,11 @@
 
 GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
 		Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_) :
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		GPlatesViewOperations::GlobeViewOperation &globe_view_operation_) :
 	d_globe_ptr(&globe_),
 	d_globe_canvas_ptr(&globe_canvas_),
-	d_globe_view_operation(globe_.get_globe_camera())
+	d_globe_view_operation(globe_view_operation_)
 {  }
 
 

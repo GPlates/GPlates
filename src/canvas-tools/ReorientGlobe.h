@@ -58,11 +58,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_) :
-			GlobeCanvasTool(globe_, globe_canvas_),
-			d_rendered_geometry_collection(rendered_geometry_collection),
-			d_viewport_window_ptr(&viewport_window_)
-		{  }
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 		virtual
 		void

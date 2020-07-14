@@ -157,7 +157,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					click_geometry_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -184,7 +185,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_line_topology_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_line_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -211,7 +213,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_boundary_topology_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_boundary_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -238,7 +241,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_network_topology_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_network_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -264,7 +268,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					edit_topology_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_edit_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(

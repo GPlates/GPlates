@@ -92,7 +92,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					select_hellinger_geometries_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
@@ -118,7 +119,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 				new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					adjust_pole_estimate_tool,
 					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
+					viewport_window.globe_canvas(),
+					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_adjust_pole_estimate_tool.reset(
 				new GPlatesCanvasTools::CanvasToolAdapterForMap(

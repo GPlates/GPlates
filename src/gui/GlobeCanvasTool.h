@@ -68,7 +68,8 @@ namespace GPlatesGui
 		explicit
 		GlobeCanvasTool(
 				Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_);
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesViewOperations::GlobeViewOperation &globe_view_operation_);
 
 		virtual
 		~GlobeCanvasTool() = 0;
@@ -820,9 +821,11 @@ namespace GPlatesGui
 		GPlatesQtWidgets::GlobeCanvas *d_globe_canvas_ptr;
 
 		/**
-		 * Used to orient/tilt the globe view.
+		 * Used to orient/tilt the globe view (converts mouse drags to globe camera view changes).
+		 *
+		 * We reference the sole GlobeViewOperation shared by all globe canvas tools for manipulating the view.
 		 */
-		GPlatesViewOperations::GlobeViewOperation d_globe_view_operation;
+		GPlatesViewOperations::GlobeViewOperation &d_globe_view_operation;
 	};
 }
 

@@ -88,6 +88,7 @@ namespace GPlatesViewOperations
 {
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
+	class GlobeViewOperation;
 	class RenderedGeometryCollection;
 	class RenderedGeometryParameters;
 }
@@ -291,6 +292,14 @@ namespace GPlatesPresentation
 		const GPlatesGui::GlobeCamera &
 		get_globe_camera() const;
 
+
+		//! The sole GlobeViewOperation shared by all globe canvas tools for manipulating view with mouse drags.
+		GPlatesViewOperations::GlobeViewOperation &
+		get_globe_view_operation();
+
+		const GPlatesViewOperations::GlobeViewOperation &
+		get_globe_view_operation() const;
+
 		// TODO: the get_last_open_directory methods should be obsolete now, but retain
 		// until the FileIODirectoryConfiguration stuff has been tested further.
 		QString &
@@ -488,6 +497,9 @@ namespace GPlatesPresentation
 
 		//! Camera controls for the 3D globe view (3D orthographic and 3D perspective settings).
 		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;
+
+		//! Converts mouse drags to globe camera view changes.
+		boost::scoped_ptr<GPlatesViewOperations::GlobeViewOperation> d_globe_view_operation;
 
 		/**
 		 * Stores the directory containing the files last opened, or the last opened
