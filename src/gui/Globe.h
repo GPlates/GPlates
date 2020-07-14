@@ -107,19 +107,6 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 
-		const GlobeCamera &
-		get_globe_camera() const
-		{
-			return d_globe_camera;
-		}
-
-		GlobeCamera &
-		get_globe_camera()
-		{
-			return d_globe_camera;
-		}
-
-
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *
@@ -176,8 +163,6 @@ namespace GPlatesGui
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
 		 */
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
-
-		GlobeCamera &d_globe_camera;
 
 
 		/**

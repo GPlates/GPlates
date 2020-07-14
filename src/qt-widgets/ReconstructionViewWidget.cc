@@ -258,7 +258,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	// Handle signals to recalculate the camera position
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_globe_canvas().globe().get_globe_camera()),
+			&(view_state.get_globe_camera()),
 			SIGNAL(camera_changed()),
 			this,
 			SLOT(recalc_camera_position()));

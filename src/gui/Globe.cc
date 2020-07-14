@@ -72,8 +72,7 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			visual_layers,
 			visibility_tester,
-			colour_scheme),
-	d_globe_camera(view_state.get_globe_camera())
+			colour_scheme)
 {  }
 
 
@@ -91,8 +90,7 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			d_visual_layers,
 			visibility_tester,
-			colour_scheme),
-	d_globe_camera(existing_globe.d_globe_camera)
+			colour_scheme)
 {  }
 
 
@@ -302,7 +300,7 @@ GPlatesGui::Globe::get_globe_orientation_transform(
 {
 	// TODO: Change this to 'view' orientation and investigate the effect of view tilt.
 	const GPlatesMaths::Rotation globe_orientation_relative_to_view =
-			d_globe_camera.get_globe_orientation_relative_to_view();
+			d_view_state.get_globe_camera().get_globe_orientation_relative_to_view();
 
 	const GPlatesMaths::UnitVector3D &axis = globe_orientation_relative_to_view.axis();
 	const GPlatesMaths::real_t angle_in_deg = GPlatesMaths::convert_rad_to_deg(

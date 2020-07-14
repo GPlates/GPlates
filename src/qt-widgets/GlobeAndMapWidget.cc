@@ -520,7 +520,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::event(
 				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
 				if (is_globe_active())
 				{
-					GPlatesGui::GlobeCamera &globe_camera = d_globe_canvas_ptr->globe().get_globe_camera();
+					GPlatesGui::GlobeCamera &globe_camera = d_view_state.get_globe_camera();
 					// We want to rotate the globe clockwise which means rotating the camera anticlockwise.
 					globe_camera.rotate_anticlockwise(angle);
 				}

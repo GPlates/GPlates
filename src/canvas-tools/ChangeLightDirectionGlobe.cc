@@ -46,7 +46,7 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::ChangeLightDirectionGlobe(
 	d_viewport_window(&viewport_window_),
 	d_change_light_direction_operation(
 			view_state_.get_scene_lighting_parameters(),
-			globe_.get_globe_camera(),
+			view_state_.get_globe_camera(),
 			view_state_.get_viewport_zoom(),
 			rendered_geometry_collection,
 			main_rendered_layer_type),

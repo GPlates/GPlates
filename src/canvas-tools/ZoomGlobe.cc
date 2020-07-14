@@ -77,7 +77,7 @@ void
 GPlatesCanvasTools::ZoomGlobe::recentre_globe(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe)
 {
-	globe().get_globe_camera().move_look_at_position(click_pos_on_globe);
+	d_view_state.get_globe_camera().move_look_at_position(click_pos_on_globe);
 }
 
 
