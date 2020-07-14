@@ -135,7 +135,8 @@ namespace GPlatesViewOperations
 
 GPlatesViewOperations::GlobeViewOperation::GlobeViewOperation(
 		GPlatesGui::GlobeCamera &globe_camera) :
-	d_globe_camera(globe_camera)
+	d_globe_camera(globe_camera),
+	d_in_drag_operation(false)
 {
 }
 
@@ -148,6 +149,9 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 		int screen_width,
 		int screen_height)
 {
+	// We've started a drag operation.
+	d_in_drag_operation = true;
+
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
 	const double initial_mouse_window_y = screen_height - initial_mouse_screen_y;
 	const double initial_mouse_window_x = initial_mouse_screen_x;
@@ -174,7 +178,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 		start_drag_tilt(screen_width, screen_height);
 		break;
 	case DRAG_ROTATE_AND_TILT:
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(screen_width, screen_height);
 		break;
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -214,7 +218,10 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 		update_drag_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
 			break;
 	case DRAG_ROTATE_AND_TILT:
-		update_drag_rotate_and_tilt(mouse_pos_on_globe.position_vector());
+		update_drag_rotate_and_tilt(
+				mouse_pos_on_globe.position_vector(),
+				mouse_window_x, mouse_window_y,
+				screen_width, screen_height);
 		break;
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -226,6 +233,9 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 void
 GPlatesViewOperations::GlobeViewOperation::end_drag()
 {
+	// We've finished the drag operation.
+	d_in_drag_operation = false;
+
 	// Finished dragging mouse - no need for mouse drag info.
 	d_mouse_drag_info = boost::none;
 }
@@ -798,21 +808,33 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt_without_cylinder_int
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt()
+GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt(
+		int window_width,
+		int window_height)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	start_drag_rotate();
+	start_drag_tilt(window_width, window_height);
 }
 
 
 void
 GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
-		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe,
+		double mouse_window_x,
+		double mouse_window_y,
+		int window_width,
+		int window_height)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	update_drag_rotate(mouse_pos_on_globe);
+	update_drag_tilt(
+			mouse_window_x, mouse_window_y,
+			window_width, window_height);
 }

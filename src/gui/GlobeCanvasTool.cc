@@ -39,8 +39,7 @@ GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_) :
 	d_globe_ptr(&globe_),
 	d_globe_canvas_ptr(&globe_canvas_),
-	d_globe_view_operation(globe_.get_globe_camera()),
-	d_is_in_reorientation_op(false)
+	d_globe_view_operation(globe_.get_globe_camera())
 {  }
 
 
@@ -62,14 +61,13 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (!d_is_in_reorientation_op)
+	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_NORMAL,
 				initial_pos_on_globe,
 				initial_screen_x, initial_screen_y,
 				screen_width, screen_height);
-		d_is_in_reorientation_op = true;
 	}
 
 	d_globe_view_operation.update_drag(
@@ -102,7 +100,6 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 			centre_of_viewport);
 
 	d_globe_view_operation.end_drag();
-	d_is_in_reorientation_op = false;
 }
 
 
@@ -120,14 +117,13 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! d_is_in_reorientation_op)
+	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_ROTATE,
 				initial_pos_on_globe,
 				initial_screen_x, initial_screen_y,
 				screen_width, screen_height);
-		d_is_in_reorientation_op = true;
 	}
 
 	d_globe_view_operation.update_drag(
@@ -160,7 +156,6 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 			centre_of_viewport);
 
 	d_globe_view_operation.end_drag();
-	d_is_in_reorientation_op = false;
 }
 
 
@@ -178,14 +173,13 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_update(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! d_is_in_reorientation_op)
+	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_TILT,
 				initial_pos_on_globe,
 				initial_screen_x, initial_screen_y,
 				screen_width, screen_height);
-		d_is_in_reorientation_op = true;
 	}
 
 	d_globe_view_operation.update_drag(
@@ -218,5 +212,4 @@ GPlatesGui::GlobeCanvasTool::tilt_globe_by_drag_release(
 			centre_of_viewport);
 
 	d_globe_view_operation.end_drag();
-	d_is_in_reorientation_op = false;
 }

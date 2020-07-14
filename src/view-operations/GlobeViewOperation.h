@@ -108,6 +108,15 @@ namespace GPlatesViewOperations
 		void
 		end_drag();
 
+		/**
+		 * Returns true if currently between @a start_drag and @a end_drag.
+		 */
+		bool
+		in_drag() const
+		{
+			return d_in_drag_operation;
+		}
+
 	private:
 
 		/**
@@ -176,8 +185,19 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Info generated in @a start_drag and used subsequently in @a update_drag.
+		 *
+		 * Note that it can be none *during* a drag operation if the drag operation was
+		 * disabled in 'start_drag()' for some reason.
 		 */
 		boost::optional<MouseDragInfo> d_mouse_drag_info;
+
+		/**
+		 * Is true between @a start_drag and @a end_drag.
+		 *
+		 * Note that this does not always coincide with @a d_mouse_drag_info which can
+		 * be none if the drag operation was disabled in 'start_drag()' for some reason.
+		 */
+		bool d_in_drag_operation;
 
 
 		void
@@ -217,11 +237,17 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(
+				int window_width,
+				int window_height);
 
 		void
 		update_drag_rotate_and_tilt(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
+				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe,
+				double mouse_window_x,
+				double mouse_window_y,
+				int window_width,
+				int window_height);
 	};
 }
 

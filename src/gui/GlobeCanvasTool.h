@@ -823,12 +823,6 @@ namespace GPlatesGui
 		 * Used to orient/tilt the globe view.
 		 */
 		GPlatesViewOperations::GlobeViewOperation d_globe_view_operation;
-
-		/**
-		 * Whether or not this canvas tool is currently in the midst of a globe
-		 * re-orientation operation.
-		 */
-		bool d_is_in_reorientation_op;
 	};
 }
 
