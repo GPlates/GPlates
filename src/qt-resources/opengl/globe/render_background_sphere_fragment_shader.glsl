@@ -53,20 +53,7 @@ void main (void)
 	//
 	// Initialize ray associated with the current fragment.
 	//
-	// Create the ray starting at the ray origin and moving into direction through near plane.
-	//
-	// Normally the ray origin would be the eye/camera position, but for orthographic viewing the real eye position is at
-	// infinity and generates parallel rays for all pixels. Note that we also support perspective viewing, so it would be
-	// nice to calculate a ray origin that works for both orthographic and perspective viewing. Turns out it doesn't really
-	// matter where, along the ray, the ray origin is. As long as the ray line is correct. So the ray origin doesn't need to
-	// be the eye/camera position. The viewing transform is encoded in the model-view-projection transform so using that
-	// provides a way to support both orthographic and perspective viewing with the same code.
-	//
-	// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
-	// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
-	// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
-	// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
-	// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
+	// Create the ray starting on the near plane and moving towards the far plane.
 	//
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
@@ -74,9 +61,16 @@ void main (void)
 	// Intersect the ray with the globe (unit-radius sphere).
 	Sphere globe = Sphere(1.0);
 	Interval globe_interval;
-	if (!intersect(globe, ray, globe_interval))
+	if (!intersect_line(globe, ray, globe_interval))
 	{
 		// Fragment does not cover the globe so discard it.
+		discard;
+	}
+
+	if (globe_interval.from < 0)
+	{
+		// Globe is behind the ray, so discard fragment.
+		// This can happen with perspective viewing when the camera is close to the globe.
 		discard;
 	}
 
@@ -111,7 +105,7 @@ void main (void)
 	// Intersect the ray with the slightly expanded globe.
 	Sphere expanded_globe = Sphere(1.0 + shell_thickness);
 	Interval expanded_globe_interval;
-	if (!intersect(expanded_globe, ray, expanded_globe_interval))
+	if (!intersect_line(expanded_globe, ray, expanded_globe_interval))
 	{
 		// Shouldn't get here since this expanded sphere is bigger than globe and
 		// we already intersected the globe.

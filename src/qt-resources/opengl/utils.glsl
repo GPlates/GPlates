@@ -354,22 +354,71 @@ struct Sphere
   float radius;
 };
 
-// Intersect the infinite line of a ray with a sphere centred at the origin.
+// Intersect a ray with a sphere centred at the origin.
+//
+// If the ray intersects the sphere then true is returned, along with the
+// distance along the ray to the first intersection.
 bool
 intersect(
 		const Sphere sphere,
 		const Ray ray,
+		out float lambda)
+{
+  float D = -dot(ray.origin, ray.direction);
+  float L2 =  dot(ray.origin, ray.origin);
+  float R2 = sphere.radius * sphere.radius;
+  if (D < 0 && L2 > R2)
+  {
+	  // Ray origin is outside sphere (L2>R2) and sphere is behind ray origin.
+	  // So positive direction along ray cannot intersect sphere.
+	  return false;
+  }
+
+  float M2 = L2 - D * D;
+  if (M2 > R2)
+  {
+  	// Infinite line along ray does not intersect the sphere.
+  	return false;
+  }
+  
+  float Q = sqrt(R2 - M2);
+
+  // If ray origin is outside sphere (L2>R2) then we know sphere is also in front of ray origin
+  // (since we already know that 'D<0 && L2>R2' is not true, so must have 'D>=0').
+  // In this case we choose the first intersection since it's closest to ray origin.
+  // Otherwise ray origin is inside sphere (L2<=R2) and can only intersect sphere once.
+  // In this case we choose the second intersection (because first intersection is behind ray origin).
+  lambda = (L2 > R2) ? (D - Q) : (D + Q);
+
+  return true;
+}
+
+// Intersect the infinite line of a ray with a sphere centred at the origin.
+//
+// If the infinite line intersects the sphere then true is returned, along with the
+// interval containing the signed distance from ray origin to the two intersections
+// (in order of increasing signed distance).
+bool
+intersect_line(
+		const Sphere sphere,
+		const Ray ray,
 		out Interval interval)
 {
-  float B = dot(ray.origin, ray.direction);
-  float C = dot(ray.origin, ray.origin) - sphere.radius * sphere.radius;
-  float D = B * B - C;
-  if (D < 0)
+  float D = -dot(ray.origin, ray.direction);
+  float L2 =  dot(ray.origin, ray.origin);
+  float R2 = sphere.radius * sphere.radius;
+
+  float M2 = L2 - D * D;
+  if (M2 > R2)
   {
-	return false;
+  	// Infinite line along ray does not intersect the sphere.
+  	return false;
   }
-  float sqrtD = sqrt(D);
-  interval = Interval(-B - sqrtD /*from*/, -B + sqrtD /*to*/);
+  
+  float Q = sqrt(R2 - M2);
+
+  interval = Interval(D - Q /*from*/, D + Q /*to*/);
+
   return true;
 }
 
@@ -398,21 +447,27 @@ screen_to_world(
 
 // Ray initialization from screen-space coordinate.
 //
-// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
-// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
-// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
-// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
-// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
+// Create the ray starting on the near plane and moving towards the far plane.
+//
+// Normally the ray origin would be the eye/camera position, but for orthographic viewing the real eye position is at
+// infinity and generates parallel rays for all pixels. Note that we also support perspective viewing, so it would be
+// nice to use the same code for both orthographic and perspective viewing. The viewing transform is encoded in the
+// model-view-projection transform so using that supports both orthographic and perspective viewing.
+//
+// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-1) to
+// world space for the ray origin and (x,y,1) to world space to calculate (normalised) ray direction.
+// The screen-space depth of -1 is on the near clip plane of the view frustum [-1,1] (note: this is not eye location in perspective mode).
+// The screen-space depth of 1 is on the far clip plane of the view frustum [-1,1].
 Ray
 get_ray(
 		const vec2 screen_coord,
 		const mat4 model_view_proj_inverse)
 {
-	 vec3 ray_origin = screen_to_world(vec3(screen_coord, -2.0), model_view_proj_inverse);
+	 vec3 ray_origin = screen_to_world(vec3(screen_coord, -1.0), model_view_proj_inverse);
 
 	 return Ray(
 		ray_origin,
-		normalize(screen_to_world(vec3(screen_coord, 0.0), model_view_proj_inverse) - ray_origin));
+		normalize(screen_to_world(vec3(screen_coord, 1.0), model_view_proj_inverse) - ray_origin));
 }
 
 // Convert screen-space depth (in range [-1,1]) to ray distance/lambda.

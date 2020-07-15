@@ -1447,20 +1447,9 @@ raycasting(
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Initialize ray
 
-	// Create the ray starting at the ray origin and moving into direction through near plane.
+	// Create the ray starting on the near plane and moving towards the far plane.
 	//
-	// Normally the ray origin would be the eye/camera position, but for orthographic viewing the real eye position is at
-	// infinity and generates parallel rays for all pixels. Note that we also support perspective viewing, so it would be
-	// nice to calculate a ray origin that works for both orthographic and perspective viewing. Turns out it doesn't really
-	// matter where, along the ray, the ray origin is. As long as the ray line is correct. So the ray origin doesn't need to
-	// be the eye/camera position. The viewing transform is encoded in the model-view-projection transform so using that
-	// provides a way to support both orthographic and perspective viewing with the same code.
-	//
-	// The inverse model-view-projection transform is used to convert the current screen coordinate (x,y,-2) to
-	// world space for the ray origin and (x,y,0) to world space to calculate (normalised) ray direction.
-	// The screen-space depth of -2 is outside the view frustum [-1,1] and in front of the near clip plane.
-	// The screen-space depth of 0 is inside the view frustum [-1,1] between near and far clip planes.
-	// Both values are somewhat arbitrary actually (since we don't really care where the ray origin is along the ray line).
+	// For our purposes it doesn't really matter where, along the ray, the ray origin is. As long as the ray line is correct.
 	//
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
@@ -1474,7 +1463,7 @@ raycasting(
 	Interval outer_sphere_interval;
 
 	// check for intersection points (at which point does the ray enter the sphere and at which does it leave the sphere)
-	if (!intersect(outer_sphere,ray,outer_sphere_interval))
+	if (!intersect_line(outer_sphere,ray,outer_sphere_interval))
 	{
 		// if there's no intersection point, discard the pixel
 		return false;
@@ -1486,7 +1475,7 @@ raycasting(
 	Sphere inner_sphere = Sphere(render_min_max_depth_radius_restriction.x);
 	Interval inner_sphere_interval;
 
-	if (intersect(inner_sphere,ray,inner_sphere_interval))
+	if (intersect_line(inner_sphere,ray,inner_sphere_interval))
 	{
 		background_colour = vec4(1,1,1,1);
 
