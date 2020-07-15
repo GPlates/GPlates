@@ -544,7 +544,10 @@ namespace
 				current_tile_render_target_viewport.height());
 
 		// Clear the colour buffer (and we don't have a depth/stencil buffer).
-		renderer.gl_clear_color(); // Clear colour to (0,0,0,0).
+		//
+		// Note that we clear the colour to (0,0,0,0) and not (0,0,0,1) because we want any transparent
+		// parts of the raster (parts that we don't render) to have an alpha of zero.
+		renderer.gl_clear_color();
 		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
 		// Adjust the projection transform for the current tile.

@@ -226,11 +226,6 @@ GPlatesGui::Globe::paint(
 			// Also change the scissor rectangle in case scissoring is enabled.
 			renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
-			// Clear only the colour buffer.
-			// The depth buffer is cleared in 'render_globe_hemisphere_surface()'.
-			renderer.gl_clear_color();
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT);
-
 			// Render the front half of the globe surface to the viewport-size render texture.
 			render_globe_hemisphere_surface(
 					renderer,

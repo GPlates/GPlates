@@ -311,7 +311,7 @@ GPlatesGui::MapBackground::paint(
 			// Clear the main framebuffer (colour and depth) before rendering the image.
 			// We also clear the stencil buffer in case it is used - also it's usually interleaved
 			// with depth so it's more efficient to clear both depth and stencil.
-			renderer.gl_clear_color();
+			renderer.gl_clear_color();  // Clear to transparent (alpha=0) so regions outside map background are transparent.
 			renderer.gl_clear_depth();
 			renderer.gl_clear_stencil();
 			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

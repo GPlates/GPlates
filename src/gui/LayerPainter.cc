@@ -668,7 +668,7 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 				// Clear the framebuffer (colour and depth) before rendering each scalar field.
 				// We also clear the stencil buffer in case it is used - also it's usually
 				// interleaved with depth so it's more efficient to clear both depth and stencil.
-				renderer.gl_clear_color();
+				renderer.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no scalar field are transparent.
 				renderer.gl_clear_depth();
 				renderer.gl_clear_stencil();
 				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -758,7 +758,7 @@ GPlatesGui::LayerPainter::paint_rasters(
 				// Clear the framebuffer (colour and depth) before rendering each raster.
 				// We also clear the stencil buffer in case it is used - also it's usually
 				// interleaved with depth so it's more efficient to clear both depth and stencil.
-				renderer.gl_clear_color();
+				renderer.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no raster are transparent.
 				renderer.gl_clear_depth();
 				renderer.gl_clear_stencil();
 				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1181,7 +1181,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 			// Clear the framebuffer (colour and depth) before rendering the filled polygons.
 			// We also clear the stencil buffer since it is used when filling polygons - also it's
 			// usually interleaved with depth so it's more efficient to clear both depth and stencil.
-			renderer.gl_clear_color();
+			renderer.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no filled polygon are transparent.
 			renderer.gl_clear_depth();
 			renderer.gl_clear_stencil();
 			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

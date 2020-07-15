@@ -964,7 +964,15 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	//       But these should be enabled by default anyway.
 	renderer.gl_depth_mask(GL_TRUE);
 	renderer.gl_stencil_mask(~0/*all ones*/);
-	renderer.gl_clear_color(); // Clear colour to (0,0,0,0).
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+	// white on Mac but already black on Windows/Ubuntu.
+	renderer.gl_clear_color(0, 0, 0, 1); // Clear colour to opaque black
 	renderer.gl_clear_depth(); // Clear depth to 1.0
 	renderer.gl_clear_stencil(); // Clear stencil to 0
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
