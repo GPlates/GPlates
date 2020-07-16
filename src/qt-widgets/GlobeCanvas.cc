@@ -236,7 +236,28 @@ namespace
 			// This also shows we get about 2e+8 times more z-buffer precision at the near plane compared to the far plane.
 			//
 
-			const GLdouble depth_in_front_of_globe = 0.001;  // ~6km (z-buffer resolution: ~0.37mm near and ~3.2km far)
+			// The default distance from camera eye to near plane (along view direction).
+			GLdouble depth_in_front_of_globe = 0.001;  // ~6km (z-buffer resolution: ~0.37mm near and ~3.2km far)
+
+			// If camera eye gets too close to the globe surface then reduce near plane distance even further
+			// to prevent clipping of the globe by the near plane.
+			const GLdouble eye_to_globe_distance = camera_eye.magnitude().dval() - 1.0/*globe radius*/;
+			// We're essentially making it so that any possible near plane clipping only starts to happen
+			// at a distance halfway between eye and globe surface, which means the globe itself cannot
+			// be clipped but an object sticking out of the globe (like a velocity arrow) can be clipped
+			// (well, it'll get clipped regardless of near plane distance if it passes through the eye location).
+			//
+			// The division by 2.0 is because we are choosing the maximum distance from eye to visible near plane
+			// to be half the distance from eye to globe surface.
+			// And the sqrt(2.0) is because a standard perspective field-of-view of 90 degrees results in
+			// a maximum distance from eye to visible near plane (at corners of viewport) that is sqrt(2) times
+			// the minimum distance to near plane (at the centre of the viewport).
+			const GLdouble max_depth_in_front_of_globe = eye_to_globe_distance / (2.0 * std::sqrt(2.0));
+			if (depth_in_front_of_globe > max_depth_in_front_of_globe)
+			{
+				depth_in_front_of_globe = max_depth_in_front_of_globe;
+			}
+
 			// The 1.0 is the globe radius.
 			// The VIEW_DISTANCE_EXTENDED_OFF_GLOBE is because we don't want to put the far clipping plane too close
 			// to the globe because some objects are outside the globe such as rendered arrows.
