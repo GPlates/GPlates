@@ -48,15 +48,14 @@ uniform bool write_depth;
 // Screen-space coordinates are post-projection coordinates in the range [-1,1].
 varying vec2 screen_coord;
 
+
 void main (void)
 {
 	//
 	// Initialize ray associated with the current fragment.
 	//
 	// Create the ray starting on the near plane and moving towards the far plane.
-	//
-	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
+	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse);
 
 	// Intersect the ray with the globe (unit-radius sphere).
 	Sphere globe = Sphere(1.0);

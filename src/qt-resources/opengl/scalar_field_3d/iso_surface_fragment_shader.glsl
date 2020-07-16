@@ -1452,7 +1452,7 @@ raycasting(
 	// For our purposes it doesn't really matter where, along the ray, the ray origin is. As long as the ray line is correct.
 	//
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
+	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse);
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
