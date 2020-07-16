@@ -885,7 +885,7 @@ render_volume_fill_walls(
 	vec4 colour_wall = vec4(1,1,1,1);
 	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
+			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
 	vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
 	int cube_face_index_wall;
@@ -1075,7 +1075,7 @@ reduce_depth_range_to_volume_fill_walls(
 		{
 			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_min_depth = convert_screen_space_depth_to_ray_lambda(
-					min_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
+					min_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
 			lambda_min_max.x = max(lambda_min_max.x, lambda_min_depth);
 		}
 		
@@ -1084,7 +1084,7 @@ reduce_depth_range_to_volume_fill_walls(
 		{
 			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_max_depth = convert_screen_space_depth_to_ray_lambda(
-					max_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
+					max_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
 			lambda_min_max.y = min(lambda_min_max.y, lambda_max_depth);
 		}
 	}
@@ -1540,7 +1540,7 @@ raycasting(
 		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
 		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, ray.origin);
+				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
 		lambda_min_max.y = min(lambda_min_max.y, depth_texture_lambda);
 	}
 

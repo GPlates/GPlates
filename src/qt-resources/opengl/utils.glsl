@@ -431,49 +431,6 @@ contains(
   return distSq <= sphere.radius * sphere.radius;
 }
 
-// Transformation of 3D screen-space coordinates (includes depth) to world coordinates.
-// These screen-space coordinates are post-projection coordinates in the range [-1,1] for x, y and z components.
-//
-// Handles standard perspective and orthographic projections.
-vec4
-screen_to_world(
-		const vec3 screen_coord,
-		const mat4 model_view_proj_inverse)
-{
-	vec4 screen_position = vec4(screen_coord, 1.0);
-	vec4 world_position = model_view_proj_inverse * screen_position;
-	world_position /= world_position.w;
-
-	return world_position;
-}
-
-// Overload of 'screen_to_world()' that can be more accurate (due to numerical precision issues)
-// at the expense of an extra matrix-vector multiply.
-vec4
-screen_to_world(
-		const vec3 screen_coord,
-		const mat4 model_view_inverse,
-		const mat4 projection_inverse)
-{
-	return model_view_inverse * screen_to_world(screen_coord, projection_inverse);
-}
-
-// Transformation of 3D screen-space coordinates (includes depth) to view space coordinates.
-// These screen-space coordinates are post-projection coordinates in the range [-1,1] for x, y and z components.
-//
-// Handles standard perspective and orthographic projections.
-vec4
-screen_to_view(
-		const vec3 screen_coord,
-		const mat4 projection_inverse)
-{
-	vec4 screen_position = vec4(screen_coord, 1.0);
-	vec4 view_position = projection_inverse * screen_position;
-	view_position /= view_position.w;
-
-	return view_position;
-}
-
 // Convert screen NDC coordinates (in range [-1, 1]) to position in view space.
 //
 // This gives the same result as 'screen_to_view()' but uses the projection matrix (not its *inverse*).
@@ -572,6 +529,43 @@ view_from_screen(
 	return vec4(view_x, view_y, view_z, 1);
 }
 
+// Transformation of 3D screen-space coordinates (includes depth) to *view* coordinates.
+// These screen-space coordinates are post-projection coordinates in the range [-1,1] for x, y and z components.
+//
+// This gives the same result as 'view_from_screen()' but uses the *inverse* of projection matrix (not projection matrix).
+//
+// Handles standard perspective and orthographic projections.
+vec4
+screen_to_view(
+		const vec3 screen_coord,
+		const mat4 projection_inverse)
+{
+	vec4 screen_position = vec4(screen_coord, 1.0);
+	vec4 view_position = projection_inverse * screen_position;
+	view_position /= view_position.w;
+
+	return view_position;
+}
+
+// Transformation of 3D screen-space coordinates (includes depth) to *world* coordinates.
+// These screen-space coordinates are post-projection coordinates in the range [-1,1] for x, y and z components.
+//
+// Handles standard perspective and orthographic projections.
+//
+// NOTE: We avoid using the combined model-view-projection inverse matrix (model-view inverse multiplied by projection inverse)
+// since this can produce less accurate in certain situations (eg, ray direction derived using this function can be slightly
+// inaccurate when view is fully zoomed in and fully tilted in perspective viewing mode).
+// This might be due to using single-precision floating-point (instead of the double precision used on CPU).
+// So we get better accuracy at the expense of an extra matrix-vector multiply.
+vec4
+screen_to_world(
+		const vec3 screen_coord,
+		const mat4 model_view_inverse,
+		const mat4 projection_inverse)
+{
+	return model_view_inverse * screen_to_view(screen_coord, projection_inverse);
+}
+
 // Ray initialization from screen-space coordinate.
 //
 // Create the ray starting on the near plane and moving towards the far plane.
@@ -585,20 +579,6 @@ view_from_screen(
 // world space for the ray origin and (x,y,1) to world space to calculate (normalised) ray direction.
 // The screen-space depth of -1 is on the near clip plane of the view frustum [-1,1] (note: this is not eye location in perspective mode).
 // The screen-space depth of 1 is on the far clip plane of the view frustum [-1,1].
-Ray
-get_ray(
-		const vec2 screen_coord,
-		const mat4 model_view_proj_inverse)
-{
-	vec3 ray_origin = screen_to_world(vec3(screen_coord, -1.0), model_view_proj_inverse).xyz;
-
-	return Ray(
-		ray_origin,
-		normalize(screen_to_world(vec3(screen_coord, 1.0), model_view_proj_inverse).xyz - ray_origin));
-}
-
-// Overload of 'get_ray()' that can be more accurate (due to numerical precision issues)
-// at the expense of an extra matrix-vector multiply.
 Ray
 get_ray(
 		const vec2 screen_coord,
@@ -617,9 +597,10 @@ float
 convert_screen_space_depth_to_ray_lambda(
 		const float screen_space_depth,
 		const vec2 screen_coord,
-		const mat4 model_view_proj_inverse,
+		const mat4 model_view_inverse,
+		const mat4 projection_inverse,
 		const vec3 ray_origin)
 {
-	vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_proj_inverse).xyz;
+	vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_inverse, projection_inverse).xyz;
 	return length(world_position - ray_origin);
 }
