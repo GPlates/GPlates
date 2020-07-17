@@ -226,6 +226,14 @@ GPlatesGui::Globe::paint(
 			// Also change the scissor rectangle in case scissoring is enabled.
 			renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
+			// Clear the render target (colour and depth) before rendering the image.
+			// We also clear the stencil buffer in case it is used - also it's usually interleaved
+			// with depth so it's more efficient to clear both depth and stencil.
+			renderer.gl_clear_color(); // Clear to transparent (alpha=0) so regions not rendered are transparent.
+			renderer.gl_clear_depth(); // Clear depth to 1.0
+			renderer.gl_clear_stencil(); // Clear stencil to 0
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
 			// Render the front half of the globe surface to the viewport-size render texture.
 			render_globe_hemisphere_surface(
 					renderer,
