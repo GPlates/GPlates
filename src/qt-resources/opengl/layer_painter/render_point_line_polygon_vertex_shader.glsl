@@ -27,13 +27,14 @@
 // Vertex shader source code to render points, lines and polygons with lighting.
 //
 
-#ifndef MAP_VIEW
-    // The 3D globe view needs to calculate lighting across the geometry but the map view does not
-    // because the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
+// The 3D globe view needs to calculate lighting across the geometry but the map view does not
+// because the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
+uniform bool map_view_enabled;
 
-    // The world-space coordinates are interpolated across the geometry.
-    varying vec3 world_space_position;
-#endif
+uniform bool lighting_enabled;
+
+// The world-space coordinates are interpolated across the geometry.
+varying vec3 globe_view_world_space_position;
 
 void main (void)
 {
@@ -44,8 +45,12 @@ void main (void)
 	gl_FrontColor = gl_Color;
 	gl_BackColor = gl_Color;
 
-#ifndef MAP_VIEW
-    // This assumes the geometry does not need a model transform (eg, reconstruction rotation).
-    world_space_position = gl_Vertex.xyz / gl_Vertex.w;
-#endif
+    if (lighting_enabled)
+    {
+        if (!map_view_enabled)
+        {
+            // This assumes the geometry does not need a model transform (eg, reconstruction rotation).
+            globe_view_world_space_position = gl_Vertex.xyz / gl_Vertex.w;
+        }
+    }
 }

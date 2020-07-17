@@ -24,9 +24,10 @@
  */
 
 //
-// Fragment shader source code for lighting axially symmetric meshes.
+// Fragment shader source code for rendering axially symmetric meshes.
 //
 
+uniform bool lighting_enabled;
 uniform float light_ambient_contribution;
 uniform vec3 world_space_light_direction;
 
@@ -40,6 +41,13 @@ varying vec2 radial_and_axial_normal_weights;
 
 void main (void)
 {
+	// If lighting is disabled simply return the vertex colour.
+	if (!lighting_enabled)
+	{
+		gl_FragColor = gl_Color;
+		return;
+	}
+
 	// Calculate the model-space normal of the axially symmetric mesh at the current fragment location.
 	// The mesh, in model-space, is axially symmetric about its z-axis so we blend the radial (x,y) normal with the z-axis.
 	vec3 model_space_mesh_normal = vec3(

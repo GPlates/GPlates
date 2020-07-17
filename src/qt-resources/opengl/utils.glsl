@@ -553,9 +553,9 @@ screen_to_view(
 // Handles standard perspective and orthographic projections.
 //
 // NOTE: We avoid using the combined model-view-projection inverse matrix (model-view inverse multiplied by projection inverse)
-// since this can produce less accurate in certain situations (eg, ray direction derived using this function can be slightly
+// since this can be less accurate in certain situations (eg, ray direction derived using this function can be slightly
 // inaccurate when view is fully zoomed in and fully tilted in perspective viewing mode).
-// This might be due to using single-precision floating-point (instead of the double precision used on CPU).
+// This might be due to using single-precision floating-point in GPU (instead of the double precision used on CPU).
 // So we get better accuracy at the expense of an extra matrix-vector multiply.
 vec4
 screen_to_world(

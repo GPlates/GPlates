@@ -2,10 +2,10 @@
   <qresource prefix="/">
     <file>opengl/globe/render_background_sphere_fragment_shader.glsl</file>
     <file>opengl/globe/render_background_sphere_vertex_shader.glsl</file>
-    <file>opengl/layer_painter/render_axially_symmetric_mesh_lighting_fragment_shader.glsl</file>
-    <file>opengl/layer_painter/render_axially_symmetric_mesh_lighting_vertex_shader.glsl</file>
-    <file>opengl/layer_painter/render_point_line_polygon_lighting_fragment_shader.glsl</file>
-    <file>opengl/layer_painter/render_point_line_polygon_lighting_vertex_shader.glsl</file>
+    <file>opengl/layer_painter/render_axially_symmetric_mesh_fragment_shader.glsl</file>
+    <file>opengl/layer_painter/render_axially_symmetric_mesh_vertex_shader.glsl</file>
+    <file>opengl/layer_painter/render_point_line_polygon_fragment_shader.glsl</file>
+    <file>opengl/layer_painter/render_point_line_polygon_vertex_shader.glsl</file>
     <file>opengl/light/render_map_view_light_direction_fragment_shader.glsl</file>
     <file>opengl/light/render_map_view_light_direction_vertex_shader.glsl</file>
     <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl</file>

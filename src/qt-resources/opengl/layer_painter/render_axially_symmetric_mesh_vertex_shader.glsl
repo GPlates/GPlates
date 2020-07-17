@@ -24,8 +24,10 @@
  */
 
 //
-// Vertex shader source code for lighting axially symmetric meshes.
+// Vertex shader source code for rendering axially symmetric meshes.
 //
+
+uniform bool lighting_enabled;
 
 attribute vec3 world_space_position_attribute;
 attribute vec4 colour_attribute;
@@ -52,11 +54,14 @@ void main (void)
 	gl_FrontColor = colour_attribute;
 	gl_BackColor = colour_attribute;
 
-	// Pass to fragment shader.
-	world_space_sphere_normal = normalize(world_space_position_attribute);
-	world_space_x_axis = world_space_x_axis_attribute;
-	world_space_y_axis = world_space_y_axis_attribute;
-	world_space_z_axis = world_space_z_axis_attribute;
-	model_space_radial_position = model_space_radial_position_attribute;
-	radial_and_axial_normal_weights = radial_and_axial_normal_weights_attribute;
+	if (lighting_enabled)
+	{
+		// Pass to fragment shader.
+		world_space_sphere_normal = normalize(world_space_position_attribute);
+		world_space_x_axis = world_space_x_axis_attribute;
+		world_space_y_axis = world_space_y_axis_attribute;
+		world_space_z_axis = world_space_z_axis_attribute;
+		model_space_radial_position = model_space_radial_position_attribute;
+		radial_and_axial_normal_weights = radial_and_axial_normal_weights_attribute;
+	}
 }

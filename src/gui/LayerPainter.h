@@ -90,7 +90,7 @@ namespace GPlatesGui
 		/**
 		 * A vertex of an axially symmetric (about model-space z-axis) triangle mesh.
 		 *
-		 * This enables the mesh have correct surface lighting (when lighting is supported and enabled).
+		 * This enables the mesh have correct surface lighting (when lighting is enabled).
 		 * When the mesh is not lit then the extra lighting-specific vertex attributes are ignored.
 		 *
 		 * NOTE: In order for mesh surface lighting to work correctly the mesh must be axially
@@ -167,16 +167,11 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 					GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 					GPlatesOpenGL::GLVertexArray &vertex_array,
-					GPlatesOpenGL::GLVertexArray &unlit_axially_symmetric_mesh_vertex_array,
-					GPlatesOpenGL::GLVertexArray &lit_axially_symmetric_mesh_vertex_array,
+					GPlatesOpenGL::GLVertexArray &axially_symmetric_mesh_vertex_array,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_in_globe_view_program_object,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_in_map_view_program_object,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_axially_symmetric_mesh_lighting_program_object);
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -353,33 +348,27 @@ namespace GPlatesGui
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
-			 * Sets generic lighting for point/line/polygon primitives.
+			 * Sets state in shader program for point/line/polygon primitives.
 			 *
-			 * Returns true if lighting is supported and enabled for point/line/polygons,
-			 * otherwise does not set any state (ie, just uses existing state).
+			 * Returns false if shader program not supported by runtime system.
 			 */
 			bool
-			set_generic_point_line_polygon_lighting_state(
+			set_point_line_polygon_program_state(
 					GPlatesOpenGL::GLRenderer &renderer,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_in_globe_view_program_object,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_in_map_view_program_object);
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object);
 
 			/**
-			 * Sets lighting for axially symmetric meshes.
+			 * Sets state in shader program for axially symmetric meshes.
 			 *
-			 * Returns true if lighting is supported and enabled, otherwise does not set
-			 * any state (ie, just uses existing state).
+			 * Returns false if shader program not supported by runtime system.
 			 */
 			bool
-			set_axially_symmetric_mesh_lighting_state(
+			set_axially_symmetric_mesh_program_state(
 					GPlatesOpenGL::GLRenderer &renderer,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_axially_symmetric_mesh_lighting_program_object);
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object);
 		};
 
 
@@ -591,25 +580,16 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLVertexBuffer::shared_ptr_type d_vertex_buffer;
 
 		/**
-		 * Used when vertices of type @a coloured_vertex_type (streamed to @a d_vertex_buffer).
+		 * Used for vertices of type @a coloured_vertex_type (streamed to @a d_vertex_buffer).
 		 *
 		 * This is the standard vertex array - most vertex data is rendered this way.
 		 */
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
 
 		/**
-		 * Used when vertices of type @a AxiallySymmetricMeshVertex are rendered *without* lighting.
-		 *
-		 * This is the vertex array used for *unlit* axially symmetric meshes.
+		 * Used for vertices of type @a AxiallySymmetricMeshVertex.
 		 */
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_unlit_axially_symmetric_mesh_vertex_array;
-
-		/**
-		 * Used when vertices of type @a AxiallySymmetricMeshVertex are rendered *with* lighting.
-		 *
-		 * This is the vertex array used for *lit* axially symmetric meshes.
-		 */
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_lit_axially_symmetric_mesh_vertex_array;
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_axially_symmetric_mesh_vertex_array;
 
 		/**
 		 * Used for rendering to a 2D map view (is none for 3D globe view).
@@ -617,31 +597,18 @@ namespace GPlatesGui
 		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
 
 		/**
-		 * Shader program to render points/lines/polygons with lighting in a 3D *globe* view.
+		 * Shader program to render points/lines/polygons.
 		 *
-		 * Is boost::none if not supported by the runtime system -
-		 * the fixed-function pipeline is then used (with no lighting).
+		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				d_render_point_line_polygon_lighting_in_globe_view_program_object;
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_render_point_line_polygon_program_object;
 
 		/**
-		 * Shader program to render points/lines/polygons with lighting in a 2D *map* view.
+		 * Shader program for rendering axially symmetric meshes.
 		 *
-		 * Is boost::none if not supported by the runtime system -
-		 * the fixed-function pipeline is then used (with no lighting).
+		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				d_render_point_line_polygon_lighting_in_map_view_program_object;
-
-		/**
-		 * Shader program for lighting axially symmetric meshes.
-		 *
-		 * Is boost::none if not supported by the runtime system -
-		 * the fixed-function pipeline is then used (with no lighting).
-		 */
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				d_render_axially_symmetric_mesh_lighting_program_object;
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_render_axially_symmetric_mesh_program_object;
 	};
 }
 
