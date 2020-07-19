@@ -823,9 +823,14 @@ endif()
 set(GPLATES_MAIN_TARGET gplates)
 
 if (WIN32)
-	# Tell cmake to build the main target with as a GUI application (with a WinMain entry point).
-	# This also tells Qt5::Core to link in its WinMain.
-	set_target_properties(${GPLATES_MAIN_TARGET} PROPERTIES WIN32_EXECUTABLE TRUE)
+	# Don't make GPlates a GUI application (on Windows). This way it retains the extra console window,
+	# otherwise we don't see errors reported by dependency libraries that output to stderr
+	# (the internal log window in GPlates only picks up qDebug(), qWarning(), etc).
+	if (FALSE)
+		# Tell cmake to build the main target with as a GUI application (with a WinMain entry point).
+		# This also tells Qt5::Core to link in its WinMain.
+		set_target_properties(${GPLATES_MAIN_TARGET} PROPERTIES WIN32_EXECUTABLE TRUE)
+	endif()
 endif()
 
 if (APPLE)
