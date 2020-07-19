@@ -163,13 +163,23 @@ find_package(GDAL REQUIRED)
 #
 # First look for the CONFIG package (provided with the installed Proj library, as opposed to CMake itself).
 find_package(PROJ4 CONFIG QUIET)
-# If there was no CONFIG package then use our own "FindPROJ.cmake" (note that CMake does not provide one).
-# Proj version 4 does not have a CONFIG package but more recent versions should. Proj 4.9 is still used by Ubuntu Xenial (16.04).
+# Proj version 4 does not have a CONFIG package (at least not all platforms were installed as a CMake package)
+# but more recent versions should.
+# Proj 4.9 is still used by Ubuntu Xenial (16.04).
 if (NOT PROJ4_FOUND)
+  # There was no CONFIG package so use our own "FindPROJ.cmake" (note that CMake does not provide one).
   find_package(PROJ MODULE REQUIRED)  # Uses our own "FindPROJ.cmake".
-  # Use same variables as the modern CONFIG package.
+  # We now have a PROJ4::proj target but we should also use the same variables as the modern CONFIG package.
   set(PROJ4_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
   set(PROJ4_LIBRARIES ${PROJ_LIBRARY})
+elseif (NOT TARGET PROJ4::proj)
+  # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
+  # So make 'PROJ4::proj' alias 'proj'.
+  # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
+  set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
+  # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
+  set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
+  add_library(PROJ4::proj ALIAS proj)
 endif()
 
 
