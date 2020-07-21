@@ -60,35 +60,29 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// We turn *off* multisampling because lines actually look better without it...
 	// We need a stencil buffer for filling polygons.
 	// We need an alpha channel in case falling back to main frame buffer for render textures.
-	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
+	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::DepthBuffer | QGL::StencilBuffer | QGL::AlphaChannel);
 
-	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
-	format.setProfile(QGLFormat::CompatibilityProfile);
-	format.setOption(QGL::DeprecatedFunctions);
-
-	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
-
-	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
-	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
-	// only version supported by the Microsoft software renderer (fallback from hardware).
+	// Use the OpenGL 3.3 core profile with forward compatibility (ie, deprecated functions removed).
 	//
-	// NOTE: If GL_EXT_framebuffer_object is not supported (but the newer GL_ARB_framebuffer_object is)
-	// then a possible reason for this could be...
-	//
-	// From http://stackoverflow.com/questions/15017911/oes-ext-arb-framebuffer-object:
-	//  Issues with GL_EXT_framebuffer_object a) GL_EXT_framebuffer_object might not be listed in
-	//  GL 3.x contexts because FBO's are core. b) also, if have a GL 2.x context with newer hardware,
-	//  possible that GL_EXT_framebuffer_object is not listed but GL_ARB_framebuffer_object is.
-	//
-	// ...so this is another reason to set the OpenGL version to 1.1 (instead of 2.x, or 3.x) below.
-	// But it's possible (according to the above comment) that it may not be enough.
-	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
-	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
-	//
-	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
-	{
-		format.setVersion(1, 1);
-	}
+	// This is because we cannot easily access OpenGL 3 functionality (required for volume visualization)
+	// on macOS and still retain functionality in OpenGL 1 and 2. MacOS which gives you a choice of either
+	// 2.1 (which excludes volume visualization), or 3.2+ (their hardware supports 3.3/4.1) but only as a
+	// core profile which means no backward compatibility (and hence no fixed-function pipeline and hence
+	// no support for old graphics cards) and also only with forward compatibility (which removes support
+	// for wide lines). Previously we supported right back to OpenGL version 1.1 and used OpengGL extensions to
+	// provide optional support up to and including version 3 (eg, for volume visualization) when available.
+	// However we started running into problems with things like 'texture2D()' not working in GLSL
+	// (is called 'texture()' now). So it was easiest to move to OpenGL 3.3, and the time is right since
+	// (as of 2020) most hardware in last decade should support 3.3 (and it's also supported on Ubuntu 16.04,
+	// our current min Ubuntu requirement, by Mesa 11.2). It also gives us geometry shaders
+	// (which is useful for rendering wide lines and symbology in general). And removes the need to deal
+	// with all the various OpenGL extensions we've been dealing with. Eventually Apple with remove OpenGL though,
+	// and the hope is we will have access to the Rendering Hardware Interface (RHI) in the upcoming Qt6
+	// (it's currently in Qt5.14 but only accessible to Qt internally). RHI will allow us to use GLSL shaders,
+	// and will provide us with a higher-level interface/abstraction for setting the graphics pipeline state
+	// (that RHI then hands off to OpenGL/Vulkan/Direct3D/Metal). But for now it's OpenGL 3.3.
+	format.setProfile(QGLFormat::CoreProfile);
+	format.setVersion(3, 3);
 
 	return format;
 }
