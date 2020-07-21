@@ -142,7 +142,8 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_quad(
 	};
 
 	// The indices for the full-screen quad.
-	const GLushort quad_indices[4] = { 0, 1, 2, 3 };
+	// Rendered as two triangles (in a triangle strip).
+	const GLushort tri_strip_indices[4] = { 0, 1, 3, 2 };
 
 	// Create the vertex array.
 	const GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
@@ -156,8 +157,8 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_quad(
 			renderer,
 			*vertex_array,
 			std::vector<GLColourVertex>(quad_vertices, quad_vertices + 4),
-			std::vector<GLushort>(quad_indices, quad_indices + 4),
-			GL_QUADS);
+			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
+			GL_TRIANGLE_STRIP);
 }
 
 
@@ -176,7 +177,8 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_textured_quad(
 	};
 
 	// The indices for the full-screen quad.
-	const GLushort quad_indices[4] = { 0, 1, 2, 3 };
+	// Rendered as two triangles (in a triangle strip).
+	const GLushort tri_strip_indices[4] = { 0, 1, 3, 2 };
 
 	// Create the vertex array.
 	const GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
@@ -190,8 +192,8 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_textured_quad(
 			renderer,
 			*vertex_array,
 			std::vector<GLColourTextureVertex>(quad_vertices, quad_vertices + 4),
-			std::vector<GLushort>(quad_indices, quad_indices + 4),
-			GL_QUADS);
+			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
+			GL_TRIANGLE_STRIP);
 }
 
 

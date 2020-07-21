@@ -543,12 +543,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Attach to @a GLStreamPrimitives to stream quad primitives.
 		 *
-		 * WARNING: Even though quad primitives are streamed in, the final output is in the form of
-		 * triangles (ie, GL_TRIANGLES) and should *not* be rendered as GL_QUADS.
-		 * The reason for this is the graphics hardware breaks everything down to triangles anyway
-		 * (and, for this reason, OpenGL 3 has deprecated GL_QUADS) - most current hardware has
-		 * post transform-and-lighting hardware to convert quads to triangles but there is no
-		 * guarantee this special-purpose hardware will be there in future hardware.
+		 * NOTE: Even though quad primitives are streamed in, the final output is in the form of
+		 * triangles (ie, GL_TRIANGLES) since OpenGL 3 has deprecated GL_QUADS.
 		 */
 		class Quads
 		{
@@ -574,8 +570,8 @@ namespace GPlatesOpenGL
 			 * call that failed) in order to continue streaming into the same begin/end pair -
 			 * once new buffers have been provided.
 			 *
-			 * WARNING: Even though quad primitives are streamed in, the final output is in the form of
-			 * triangles (ie, GL_TRIANGLES) and should *not* be rendered as GL_QUADS.
+			 * NOTE: Even though quad primitives are streamed in, the final output is in the form of
+			 * triangles (ie, GL_TRIANGLES) since OpenGL 3 has deprecated GL_QUADS.
 			 */
 			bool
 			add_vertex(
@@ -762,7 +758,7 @@ namespace GPlatesOpenGL
 			 * If you used @a Triangles, @a TriangleStrips or @a TriangleFans for streaming then draw
 			 * the streamed vertices with GL_TRIANGLES.
 			 *
-			 * NOTE: If you use @a Quads then draw the streamed vertices with GL_TRIANGLES (not GL_QUADS).
+			 * NOTE: If you use @a Quads then draw the streamed vertices with GL_TRIANGLES (OpenGL 3 has deprecated GL_QUADS).
 			 */
 			void
 			stop_streaming();
