@@ -138,12 +138,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the buffer object resource manager.
 			 *
-			 * NOTE: Only use if the GL_ARB_vertex_buffer_object extension is supported.
-			 *
-			 * The returned resource manager can create an OpenGL object that supports the buffer object
-			 * OpenGL extension - well it's actually the GL_ARB_vertex_buffer_object extension because
-			 * its first use was for vertex buffers but it has since been extended to other objects
-			 * (such as pixel buffers, texture buffers).
+			 * The returned resource manager can create an OpenGL buffer object (eg, vertex, pixel).
 			 */
 			const boost::shared_ptr<GLBufferObject::resource_manager_type> &
 			get_buffer_object_resource_manager() const
@@ -154,13 +149,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the shader object resource manager for the specified shader type.
 			 *
-			 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
-			 *
-			 * Note that the 'GL_ARB_shader_objects' extension must be supported and also, for the
-			 * three shader types above, the following extensions must also be supported:
-			 *  - GL_ARB_vertex_shader (for GL_VERTEX_SHADER_ARB)... this is also core in OpenGL 2.0,
-			 *  - GL_ARB_fragment_shader (for GL_FRAGMENT_SHADER_ARB)... this is also core in OpenGL 2.0,
-			 *  - GL_EXT_geometry_shader4 (for GL_GEOMETRY_SHADER_EXT)... this is also core in OpenGL 3.2.
+			 * @a shader_type must be GL_VERTEX_SHADER, GL_FRAGMENT_SHADER or GL_GEOMETRY_SHADER.
 			 */
 			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
 			get_shader_object_resource_manager(
@@ -169,8 +158,6 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Returns the shader program object resource manager.
-			 *
-			 * Note that the 'GL_ARB_shader_objects' extension must be supported.
 			 */
 			const boost::shared_ptr<GLProgramObject::resource_manager_type> &
 			get_program_object_resource_manager(
@@ -381,11 +368,8 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
 			boost::shared_ptr<GLBufferObject::resource_manager_type> d_buffer_object_resource_manager;
 			boost::shared_ptr<GLShaderObject::resource_manager_type> d_vertex_shader_object_resource_manager;
+			boost::shared_ptr<GLShaderObject::resource_manager_type> d_geometry_shader_object_resource_manager;
 			boost::shared_ptr<GLShaderObject::resource_manager_type> d_fragment_shader_object_resource_manager;
-			// The *geometry* shader object resource manager is optional since it may not be possible
-			// to even create it if we have an old 'GLEW.h' file (since geometry shaders only added
-			// relatively recently to OpenGL in version 3.2).
-			boost::optional<boost::shared_ptr<GLShaderObject::resource_manager_type> > d_geometry_shader_object_resource_manager;
 
 			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_object_resource_manager;
 
@@ -891,12 +875,6 @@ namespace GPlatesOpenGL
 		 */
 		void
 		deallocate_queued_object_resources();
-
-		/**
-		 * Disable specific OpenGL extensions.
-		 */
-		void
-		disable_opengl_extensions();
 	};
 }
 

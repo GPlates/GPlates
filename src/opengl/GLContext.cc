@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <string>
 #include <utility>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -104,53 +105,55 @@ GPlatesOpenGL::GLContext::initialise()
 		if (GLEW_OK != err)
 		{
 			// glewInit failed.
-			//
-			// We'll assume all calls to test whether an extension is available
-			// (such as "if (get_capabilities().gl_ARB_multitexture) ..." will fail since they just
-			// test boolean variables which are assumed to be initialised by GLEW to zero.
-			// This just means we will be forced to fall back to OpenGL version 1.1.
-			qWarning() << "Error: " << reinterpret_cast<const char *>(glewGetErrorString(err));
+			std::string error_message = std::string("Unable to initialise GLEW: ") +
+					reinterpret_cast<const char *>(glewGetErrorString(err));
+			throw OpenGLException(
+					GPLATES_ASSERTION_SOURCE,
+					error_message.c_str());
 		}
 		//qDebug() << "Status: Using GLEW " << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
 
 		s_initialised_GLEW = true;
 
-		// Disable specific OpenGL extensions to either:
-		//  1) Test different code paths, or
-		//  2) An easy way to disable an already coded path that turns out to be faster or better
-		//     without the extension (an example is vertex array objects).
-		disable_opengl_extensions();
-
 		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
 		s_capabilities.initialise();
-
-		// Provide information about lack of framebuffer object support.
-		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
-		{
-			qDebug() << "Falling back to main frame buffer for render targets.";
-		}
 	}
 
-	// A lot of main frame buffer and render-target rendering uses an alpha channel so emit
-	// a warning if the frame buffer doesn't have an alpha channel.
-	if (!get_qgl_format().alpha())
+	// The QGLFormat of our OpenGL context.
+	const QGLFormat &qgl_format = get_qgl_format();
+
+	// Make sure we got OpenGL 3.3 or greater.
+	if (qgl_format.majorVersion() < 3 ||
+		(qgl_format.majorVersion() == 3 && qgl_format.minorVersion() < 3))
 	{
-		qWarning("Could not get alpha channel on main frame buffer.");
-
-		// If there's no framebuffer object support then the main framebuffer will be used
-		// to emulate render targets and lack of an alpha channel will affects the results.
-		if (!get_capabilities().framebuffer.gl_EXT_framebuffer_object)
-		{
-			qDebug("Render-target results will be suboptimal.");
-		}
+		throw OpenGLException(
+			GPLATES_ASSERTION_SOURCE,
+			"OpenGL 3.3 or greater is required.");
 	}
 
-	// A lot of main frame buffer and render-target rendering uses a stencil buffer so emit
-	// a warning if the frame buffer doesn't have a stencil buffer.
-	if (!get_qgl_format().stencil())
+	// We require a main framebuffer with an alpha channel.
+	// A lot of main frame buffer and render-target rendering uses an alpha channel.
+	//
+	// TODO: Now that we're guaranteed support framebuffer objects we no longer need the main framebuffer
+	//       for render-target rendering. Maybe we don't need alpha in main buffer.
+	//       But modern H/W will have it anyway.
+	if (!qgl_format.alpha())
 	{
-		qWarning("Could not get a stencil buffer on the main frame buffer.");
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				"Could not get alpha channel on main frame buffer.");
 	}
+
+	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
+	// A lot of main frame buffer and render-target rendering uses a stencil buffer.
+	if (!qgl_format.stencil())
+	{
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				"Could not get a stencil buffer on the main frame buffer.");
+	}
+
+	qDebug() << "Context QGLFormat:" << qgl_format;
 }
 
 
@@ -199,49 +202,20 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 }
 
 
-void
-GPlatesOpenGL::GLContext::disable_opengl_extensions()
-{
-#ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	// It turns out that using vertex array objects is slower than just setting the
-	// vertex attribute arrays (and vertex element buffer) at each vertex array bind.
-	__GLEW_ARB_vertex_array_object = 0;
-#endif
-
-	//
-	// For testing different code paths.
-	//
-	//__GLEW_ARB_vertex_buffer_object = 0; __GLEW_ARB_pixel_buffer_object = 0;
-	//__GLEW_ARB_pixel_buffer_object = 0;
-	//__GLEW_EXT_framebuffer_object = 0;
-	//__GLEW_EXT_packed_depth_stencil = 0;
-	//__GLEW_ARB_vertex_shader = 0;
-	//__GLEW_ARB_multitexture = 0;
-	//__GLEW_ARB_texture_non_power_of_two = 0;
-	//__GLEW_ARB_texture_float = 0;
-	//__GLEW_ARB_shader_objects = 0;
-	//__GLEW_ARB_fragment_shader = 0;
-	//__GLEW_EXT_texture_edge_clamp = 0; __GLEW_SGIS_texture_edge_clamp = 0;
-	//__GLEW_ARB_map_buffer_range = 0; __GLEW_APPLE_flush_buffer_range = 0;
-}
-
-
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_texture_object_resource_manager(GLTexture::resource_manager_type::create()),
 	d_buffer_object_resource_manager(GLBufferObject::resource_manager_type::create()),
 	d_vertex_shader_object_resource_manager(
 			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_VERTEX_SHADER_ARB))),
+					GLShaderObject::allocator_type(GL_VERTEX_SHADER))),
+	d_geometry_shader_object_resource_manager(
+			GLShaderObject::resource_manager_type::create(
+					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER))),
 	d_fragment_shader_object_resource_manager(
 			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_FRAGMENT_SHADER_ARB))),
+					GLShaderObject::allocator_type(GL_FRAGMENT_SHADER))),
 	d_program_object_resource_manager(GLProgramObject::resource_manager_type::create())
 {
-#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	d_geometry_shader_object_resource_manager =
-			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER_EXT));
-#endif
 }
 
 
@@ -254,25 +228,14 @@ GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
 
 	switch (shader_type)
 	{
-	case GL_VERTEX_SHADER_ARB:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader,
-				GPLATES_ASSERTION_SOURCE);
+	case GL_VERTEX_SHADER:
 		return d_vertex_shader_object_resource_manager;
 
-	case GL_FRAGMENT_SHADER_ARB:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_fragment_shader,
-				GPLATES_ASSERTION_SOURCE);
-		return d_fragment_shader_object_resource_manager;
+	case GL_GEOMETRY_SHADER:
+		return d_geometry_shader_object_resource_manager;
 
-#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_EXT:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_EXT_geometry_shader4,
-				GPLATES_ASSERTION_SOURCE);
-		return d_geometry_shader_object_resource_manager.get();
-#endif
+	case GL_FRAGMENT_SHADER:
+		return d_fragment_shader_object_resource_manager;
 
 	default:
 		break;
@@ -287,12 +250,6 @@ const boost::shared_ptr<GPlatesOpenGL::GLProgramObject::resource_manager_type> &
 GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager(
 		GLRenderer &renderer) const
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
-
 	return d_program_object_resource_manager;
 }
 
