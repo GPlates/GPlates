@@ -450,7 +450,7 @@ namespace
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
 					Qt::CaseInsensitive))
 			{
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
 				// '-psn...' command-line argument to the applications argument list
 				// (for example '-psn_0_548998').

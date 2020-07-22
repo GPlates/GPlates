@@ -46,7 +46,7 @@
 //#include <GL/glew.h>
 
 extern "C" {
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 /* Assume compilation on Mac OS X. */
 #define __CONVENTION__
 #include <OpenGL/gl.h>

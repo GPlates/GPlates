@@ -125,7 +125,7 @@ namespace
 		//
 		// Note that we end up ignoring the '-psn...' option.
 		// Also note that it doesn't actually appear in 'argv[]' for some reason.
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 		command_line_parser.allow_unregistered();
 
 		// Parse options.

@@ -95,7 +95,7 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 #if QT_VERSION >= QT_VERSION_CHECK(5,9,0)
 	format.setProfile(QGLFormat::CoreProfile);
 #else // Qt < 5.9 ...
-	#if defined(Q_OS_MAC)
+	#if defined(Q_OS_MACOS)
 		#error "macOS requires Qt5.9 or above."
 	#else //  not macOS ...
 		format.setProfile(QGLFormat::CompatibilityProfile);

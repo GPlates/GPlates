@@ -93,7 +93,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 	ActionButtonBox *action_button_box = new ActionButtonBox(2, 16, this);
 	action_button_box->add_action(clear_action);
 	action_button_box->add_action(undo_action);
-#ifndef Q_OS_MAC
+#ifndef Q_OS_MACOS
 	int desired_height = button_create_feature->sizeHint().height();
 	action_button_box->setFixedHeight(desired_height);
 	button_export_coordinates->setFixedHeight(desired_height);

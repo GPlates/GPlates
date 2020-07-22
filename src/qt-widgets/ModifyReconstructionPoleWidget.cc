@@ -384,7 +384,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	// Set up the action button box showing the reset button.
 	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
 	action_button_box->add_action(clear_action);
-#ifndef Q_OS_MAC
+#ifndef Q_OS_MACOS
 	action_button_box->setFixedHeight(button_apply->sizeHint().height());
 #endif
 	QtWidgetUtils::add_widget_to_placeholder(

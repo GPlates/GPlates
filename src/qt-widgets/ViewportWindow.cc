@@ -1752,7 +1752,7 @@ GPlatesQtWidgets::ViewportWindow::status_message(
 		const QString &message,
 		int timeout)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 	static const QString CLOVERLEAF(QChar(0x2318));
 	QString fixed_message = message;
 	fixed_message.replace(QString("ctrl"), CLOVERLEAF, Qt::CaseInsensitive);
