@@ -225,7 +225,7 @@ namespace GPlatesOpenGL
 			 * Returns a vertex array from an internal cache.
 			 *
 			 * NOTE: Even though vertex arrays cannot be shared across OpenGL contexts, the
-			 * @a GLVertexArray (and @a GLVertexArrayObject) wrapper can be shared.
+			 * @a GLVertexArray wrapper can be shared.
 			 *
 			 * Use this when you need a vertex array temporarily and want to promote
 			 * resource sharing by returning it for others to use.
@@ -257,8 +257,6 @@ namespace GPlatesOpenGL
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
-			 *
-			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
 			 */
 			GLRenderBufferObject::shared_ptr_type
 			acquire_render_buffer_object(
@@ -277,8 +275,6 @@ namespace GPlatesOpenGL
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
-			 *
-			 * Returns boost::none if 'GLRenderTarget::is_supported()' returns false.
 			 */
 			boost::optional<GLRenderTarget::shared_ptr_type>
 			acquire_render_target(
@@ -307,8 +303,6 @@ namespace GPlatesOpenGL
 			/**
 			 * Creates a compiled draw state that specifies no bound vertex element buffer, no bound
 			 * vertex attribute arrays (vertex buffers) and no enabled client vertex attribute state.
-			 *
-			 * This also includes the *generic* vertex attribute arrays (if 'GL_ARB_vertex_shader' supported).
 			 *
 			 * This method also makes state change detection in the renderer more efficient when
 			 * binding vertex arrays (implementation detail: because the individual immutable GLStateSet
@@ -454,8 +448,6 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the framebuffer object resource manager.
 			 *
-			 * NOTE: Only use if the GL_EXT_framebuffer_object extension is supported.
-			 *
 			 * Use this if you need to create your own framebuffer objects.
 			 */
 			const boost::shared_ptr<GLFrameBufferObject::resource_manager_type> &
@@ -465,7 +457,7 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns a framebuffer object from an internal cache (GL_EXT_framebuffer_object must be supported).
+			 * Returns a framebuffer object from an internal cache.
 			 *
 			 * Use this when you need a framebuffer object temporarily and want to promote
 			 * resource sharing by returning it for others to use.
@@ -501,8 +493,6 @@ namespace GPlatesOpenGL
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
-			 *
-			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
 			 */
 			GLFrameBufferObject::shared_ptr_type
 			acquire_frame_buffer_object(
@@ -561,8 +551,6 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Returns the render buffer object resource manager.
-			 *
-			 * NOTE: Only use if the GL_EXT_framebuffer_object extension is supported.
 			 */
 			const boost::shared_ptr<GLRenderBufferObject::resource_manager_type> &
 			get_render_buffer_object_resource_manager() const
@@ -573,8 +561,6 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Returns the vertex array object resource manager.
-			 *
-			 * NOTE: Only use if the GL_ARB_vertex_array_object extension is supported.
 			 *
 			 * Use this if you need to create your own vertex array objects.
 			 *

@@ -33,6 +33,7 @@
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
 #include <QDebug>
+#include <QtGlobal>
 
 #include "GLContext.h"
 
@@ -82,8 +83,26 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// (it's currently in Qt5.14 but only accessible to Qt internally). RHI will allow us to use GLSL shaders,
 	// and will provide us with a higher-level interface/abstraction for setting the graphics pipeline state
 	// (that RHI then hands off to OpenGL/Vulkan/Direct3D/Metal). But for now it's OpenGL 3.3.
-	format.setProfile(QGLFormat::CoreProfile);
+	//
 	format.setVersion(3, 3);
+	//
+	// Qt5 versions prior to 5.9 are unable to mix QPainter calls with OpenGL 3.x *core* profile calls:
+	//   https://www.qt.io/blog/2017/01/27/opengl-core-profile-context-support-qpainter
+	//
+	// This means we must fallback to an OpenGL *compatibility* profile for Qt5 versions less than 5.9.
+	// As mentioned above, this is not an option on macOS, which means macOS requires Qt5.9 or above.
+	//
+#if QT_VERSION >= QT_VERSION_CHECK(5,9,0)
+	format.setProfile(QGLFormat::CoreProfile);
+#else // Qt < 5.9 ...
+	#if defined(Q_OS_MAC)
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				"macOS requires Qt5.9 or above.");
+	#else //  not macOS ...
+		format.setProfile(QGLFormat::CompatibilityProfile);
+	#endif
+#endif
 
 	return format;
 }
@@ -401,11 +420,6 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
 		GLsizei width,
 		GLsizei height)
 {
-	// Must support GL_EXT_framebuffer_object.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
 	// Lookup the correct render buffer object cache (matching the specified client parameters).
 	const render_buffer_object_key_type render_buffer_object_key(internalformat, width, height);
 
@@ -451,7 +465,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 		unsigned int render_target_width,
 		unsigned int render_target_height)
 {
-	// Render targets must be supported.
+	// Render targets must be supported for the specified texture format.
 	if (!GLRenderTarget::is_supported(
 		renderer,
 		texture_internalformat,
@@ -608,9 +622,8 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 
 		//
 		// Note that we do *not* specifically unbind vertex buffer.
-		// A vertex buffer binding is recorded for each vertex attribute pointer above, both
-		// generic and non-generic, but a vertex array does not record which vertex buffer is
-		// currently bound - see http://www.opengl.org/wiki/Vertex_Array_Object for more details.
+		// A vertex buffer binding is recorded for each vertex attribute pointer above, but a
+		// vertex array does not record which vertex buffer is currently bound.
 		//
 		//renderer.gl_unbind_vertex_buffer_object();
 
@@ -760,11 +773,6 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 		GLRenderer &renderer,
 		const GLFrameBufferObject::Classification &classification)
 {
-	// Must support GL_EXT_framebuffer_object.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
 	// Lookup the correct framebuffer object cache (matching the specified classification).
 	const frame_buffer_object_key_type frame_buffer_object_key = classification.get_tuple();
 
