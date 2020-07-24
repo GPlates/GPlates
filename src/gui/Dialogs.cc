@@ -58,7 +58,6 @@
 #include "qt-widgets/CalculateReconstructionPoleDialog.h"
 #include "qt-widgets/FiniteRotationCalculatorDialog.h"
 #include "qt-widgets/ChooseFeatureCollectionDialog.h"
-#include "qt-widgets/ColouringDialog.h"
 #include "qt-widgets/ConfigureCanvasToolGeometryRenderParametersDialog.h"
 #include "qt-widgets/ConfigureGraticulesDialog.h"
 #include "qt-widgets/ConfigureTextOverlayDialog.h"
@@ -244,32 +243,6 @@ GPlatesGui::Dialogs::choose_feature_collection_dialog()
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
-}
-
-
-GPlatesQtWidgets::ColouringDialog &
-GPlatesGui::Dialogs::colouring_dialog()
-{
-	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_COLOURING;
-	typedef GPlatesQtWidgets::ColouringDialog dialog_typename;
-
-	if (d_dialogs[dialog_type].isNull())
-	{
-		d_dialogs[dialog_type] = new dialog_typename(
-				view_state(),
-				viewport_window().reconstruction_view_widget().globe_and_map_widget(),
-				read_error_accumulation_dialog(),
-				&viewport_window());
-	}
-
-	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
-}
-
-void
-GPlatesGui::Dialogs::pop_up_colouring_dialog()
-{
-	colouring_dialog().pop_up();
 }
 
 

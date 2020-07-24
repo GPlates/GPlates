@@ -58,7 +58,6 @@ namespace GPlatesQtWidgets
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
 	class ChooseFeatureCollectionDialog;
-	class ColouringDialog;
 	class ConfigureCanvasToolGeometryRenderParametersDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
@@ -152,9 +151,6 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::ChooseFeatureCollectionDialog &
 		choose_feature_collection_dialog();
-
-		GPlatesQtWidgets::ColouringDialog &
-		colouring_dialog();
 
 		GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog &
 		configure_canvas_tool_geometry_render_parameters_dialog();
@@ -280,9 +276,6 @@ namespace GPlatesGui
 
 		void
 		pop_up_calculate_reconstruction_pole_dialog();
-
-		void
-		pop_up_colouring_dialog();
 
 		void
 		pop_up_configure_canvas_tool_geometry_render_parameters_dialog();
