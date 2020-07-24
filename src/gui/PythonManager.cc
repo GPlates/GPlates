@@ -75,7 +75,6 @@ GPlatesGui::PythonManager::PythonManager() :
 	//this UserPreferences must be local.
 	//don't use global UserPreferences because it hasn't been constructed yet.
 	GPlatesAppLogic::UserPreferences user_pref(NULL);
-	d_show_python_init_fail_dlg = user_pref.get_value("python/show_python_init_fail_dialog").toBool();
 	d_python_home = user_pref.get_value("python/python_home").toString();
 
 	QRegExp rx("^\\d.\\d"); // Match d.d
@@ -188,17 +187,6 @@ GPlatesGui::PythonManager::~PythonManager()
 	delete d_python_console_dialog_ptr;
 	delete d_python_main_thread_runner;
 	delete d_sleeper;
-}
-
-
-void
-GPlatesGui::PythonManager::set_show_init_fail_dlg(
-		bool flag) 
-{
-	d_show_python_init_fail_dlg = flag;
-	GPlatesAppLogic::UserPreferences(NULL).set_value(
-			"python/show_python_init_fail_dialog",
-			flag);
 }
 
 
