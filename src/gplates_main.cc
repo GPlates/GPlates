@@ -97,7 +97,6 @@ namespace
 	public:
 		GuiCommandLineOptions() :
 			debug_gui(false),
-			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
@@ -107,7 +106,6 @@ namespace
 		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
 		bool debug_gui;
-		bool enable_python;
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
@@ -135,9 +133,6 @@ namespace
 
 	//! Enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
-
-	//! Enable python by secret command line option.
-	const char *NO_PYTHON_OPTION_NAME = "no-python";
 
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
@@ -307,10 +302,6 @@ namespace
 		//Add secret symbol-table options.
 		input_options.hidden_options.add_options()
 			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
-
-		//Add secret python options.
-		input_options.hidden_options.add_options()
-			(NO_PYTHON_OPTION_NAME, "Disable python");
 
 		// Add enable-external-syncing options
 		input_options.hidden_options.add_options()
@@ -506,12 +497,6 @@ namespace
 		if(vm.count(ENABLE_HELLINGER_THREE_PLATE_OPTION_NAME))
 		{
 			command_line_options.enable_hellinger_three_plate = true;
-		}
-
-		// Disable python if command line option specified.
-		if (vm.count(NO_PYTHON_OPTION_NAME))
-		{
-			command_line_options.enable_python = false;
 		}
 
 		return command_line_options;
@@ -711,7 +696,7 @@ namespace
 		throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	void
+	bool
 	initialise_python(
 			GPlatesPresentation::Application *app,
 			char* argv[])
@@ -738,9 +723,10 @@ namespace
 				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
 			}
 
-			GPlatesUtils::ComponentManager::instance().disable(
-				GPlatesUtils::ComponentManager::Component::python());
+			return false;
 		}
+
+		return true;
 	}
 
 	void
@@ -751,8 +737,6 @@ namespace
 		// is called then contained objects are destroyed in correct order.
 		// Also we should be careful about excessive use of singletons because they are essentially global data.
 
-		if(GPlatesUtils::ComponentManager::instance().is_enabled(
-				GPlatesUtils::ComponentManager::Component::python()))
 		{
 			GPlatesApi::PythonInterpreterLocker lock;
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
@@ -821,18 +805,6 @@ internal_main(int argc, char* argv[])
 				GPlatesUtils::ComponentManager::Component::symbology());
 	}
 
-	// Enable or disable python as specified on command-line.
-	if (gui_command_line_options->enable_python)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
-	else
-	{
-		GPlatesUtils::ComponentManager::instance().disable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
-
 	// Enable or disable hellinger tool.
 	if (gui_command_line_options->enable_hellinger_three_plate)
 	{
@@ -895,11 +867,13 @@ internal_main(int argc, char* argv[])
 	// Note that python references 'Application' so this should be instantiated before python is initialised.
 	GPlatesPresentation::Application application;
 
-	// Initialise python if it's enabled.
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
+	// Initialise Python.
+	//
+	// Exit on failure since we require Python.
+	if (!initialise_python(&application, argv))
 	{
-		initialise_python(&application,argv);
+		// A non-zero value indicates error.
+		exit(1);
 	}
 
 	// Also load a project file or any feature collection files specified on the command-line.

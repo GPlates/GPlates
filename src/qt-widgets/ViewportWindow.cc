@@ -764,16 +764,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 void
 GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 {
-	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-	{
-		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-				&dialogs(), SLOT(pop_up_colouring_dialog()));
-	}
-	else
-	{
-		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_draw_style_dialog()));
-	}
+	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
+		&dialogs(), SLOT(pop_up_draw_style_dialog()));
 	// ----
 	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_load_symbol_file()));
@@ -849,23 +841,15 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	}
 
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
-	{
-		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
-				menu_Utilities,
-				action_Open_Python_Console,
-				get_view_state().get_python_manager(),
-				this);
+	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+			menu_Utilities,
+			action_Open_Python_Console,
+			get_view_state().get_python_manager(),
+			this);
 		
-		// ----
-		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
-				this, SLOT(pop_up_python_console()));
-	}
-	else
-	{
-		hide_python_menu();
-	}
+	// ----
+	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+			this, SLOT(pop_up_python_console()));
 }
 
 

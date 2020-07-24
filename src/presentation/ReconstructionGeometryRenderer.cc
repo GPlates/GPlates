@@ -154,25 +154,15 @@ namespace
 			return GPlatesGui::ColourProxy(colour.get());
 		}
 
-		// If python colouring is enabled then use the python draw style.
-		if (GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		// Python colouring.
+		GPlatesGui::DrawStyle style;
+
+		if (style_adapter)
 		{
-			GPlatesGui::DrawStyle style;
-
-			if (style_adapter)
-			{
-				style = style_adapter->get_style(*reconstruction_geometry);
-			}
-
-			return GPlatesGui::ColourProxy(style.colour);
+			style = style_adapter->get_style(*reconstruction_geometry);
 		}
 
-		// Use the old method of colouring based on hard-coded (C++) colour schemes where the
-		// colour is determined using feature properties.
-		//
-		// Note: This also used to be deferred (under actual painting) colouring but not sure
-		// if that's still the case.
-		return GPlatesGui::ColourProxy(reconstruction_geometry);
+		return GPlatesGui::ColourProxy(style.colour);
 	}
 
 

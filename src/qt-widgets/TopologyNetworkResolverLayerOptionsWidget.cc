@@ -55,7 +55,6 @@
 #include "presentation/TopologyNetworkVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
-#include "utils/ComponentManager.h"
 #include "property-values/XsString.h"
 
 
@@ -517,10 +516,6 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_draw_style_setting_dlg()));
-	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-	{
-		draw_style_link->setVisible(false);
-	}
 }
 
 

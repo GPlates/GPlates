@@ -80,9 +80,6 @@ namespace GPlatesQtWidgets
 		handle_add_new_layer_button_clicked();
 
 		void
-		handle_colouring_button_clicked();
-
-		void
 		handle_show_all_button_clicked();
 
 		void

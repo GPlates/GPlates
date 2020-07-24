@@ -41,8 +41,6 @@
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
-#include "utils/ComponentManager.h"
-
 
 namespace
 {
@@ -169,11 +167,6 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(valueChanged(double)),
 			this,
 			SLOT(handle_fill_intensity_spinbox_changed(double)));
-
-	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-	{
-		draw_style_link->setVisible(false);
-	}
 }
 
 
