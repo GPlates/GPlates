@@ -634,6 +634,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		return;
 	}
 
+	// Hardwire colouring by plate ID for non-deforming regions.
+	// TODO: Allow user to configure when full symbology is implemented.
+	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type plate_id_palette =
+			GPlatesGui::DefaultPlateIdColourPalette::create();
+
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = mpvf->multi_point()->end();
 
@@ -641,14 +646,16 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
 	{
-		if ( ! *codomain_iter) {
+		if ( ! *codomain_iter)
+		{
 			// There is no codomain element at this position.
 			continue;
 		}
 		const GPlatesMaths::PointOnSphere &point = *domain_iter;
 		const GPlatesAppLogic::MultiPointVectorField::CodomainElement &velocity = **codomain_iter;
 
-		if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkDeformingRegion) {
+		if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkDeformingRegion)
+		{
 			// The point was in the deforming region of a deformation network.
 			// This means it was inside the network but outside any interior rigid blocks on the network.
 			// The arrow should be rendered black.
@@ -662,10 +669,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			// Render the rendered geometry.
 			render(rendered_arrow);
 
-		} else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkRigidBlock ||
+		}
+		else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkRigidBlock ||
 			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary ||
 			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon ||
-			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::ReconstructedDomainPoint) {
+			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::ReconstructedDomainPoint)
+		{
 			// The point was either:
 			//   - in a interior rigid block of a network, or
 			//   - in a plate boundary (or a reconstructed static polygon), or
@@ -678,21 +687,32 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 			const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type &plate_id_recon_geom =
 					velocity.d_plate_id_reconstruction_geometry;
-			if (plate_id_recon_geom) {
+			if (plate_id_recon_geom)
+			{
 				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg_non_null_ptr =
 						plate_id_recon_geom.get();
+
+				// Get the plate ID from the reconstruction geometry.
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(rg_non_null_ptr);
+				if (!plate_id)
+				{
+					plate_id = 0;
+				}
 
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
-								get_reconstruction_geometry_colour(rg_non_null_ptr, d_style_adapter, d_override_colour),
+								get_palette_colour(*plate_id_palette, plate_id.get(), d_override_colour),
 								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
-			} else {
+			}
+			else
+			{
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
