@@ -50,7 +50,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 #include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/RasterColourPalette.h"
@@ -247,16 +246,15 @@ namespace GPlatesPresentation
 		 * Created @a RenderedGeometry objects are added to the spatial partition of
 		 * rendered geometries @a rendered_geometry_spatial_partition.
 		 *
-		 * The colour of visited @a ReconstructionGeometry objects is determined at a later
-		 * time via class @a ColourProxy unless @a colour is specified in which case all
-		 * reconstruction geometries are drawn with that colour.
-		 *
 		 * @a render_params controls various rendering options.
 		 *
 		 * @a render_settings are show/hide settings that control geometry visibility.
 		 *
 		 * @a topological_sections are all topological sections referenced by loaded topologies.
 		 * Together with @a render_settings this determines whether to show/hide topological sections.
+		 *
+		 * @a override_colour (if specified) overrides the usual colour determined by visiting @a ReconstructionGeometry
+		 * objects (in which case all reconstruction geometries are drawn with that colour).
 		 *
 		 * @a reconstruction_adjustment is only used to rotate derived @a ReconstructionGeometry
 		 * objects that are reconstructed. Ignored by types not explicitly reconstructed.
@@ -269,7 +267,7 @@ namespace GPlatesPresentation
 				const GPlatesGui::RenderSettings &render_settings,
 				const ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser,
 				const std::set<GPlatesModel::FeatureId> &topological_sections,
-				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
+				const boost::optional<GPlatesGui::Colour> &override_colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
 				boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
 				boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor = boost::none);
@@ -417,7 +415,7 @@ namespace GPlatesPresentation
 		const GPlatesGui::RenderSettings &d_render_settings;
 		const ReconstructionGeometrySymboliser &d_reconstruction_geometry_symboliser;
 		const std::set<GPlatesModel::FeatureId> &d_topological_sections;
-		boost::optional<GPlatesGui::Colour> d_colour;
+		boost::optional<GPlatesGui::Colour> d_override_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<const GPlatesGui::symbol_map_type &> d_feature_type_symbol_map;
 		boost::optional<const GPlatesGui::StyleAdapter &> d_style_adapter;

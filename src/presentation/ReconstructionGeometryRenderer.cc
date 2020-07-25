@@ -93,19 +93,85 @@
 namespace
 {
 	/**
-	 * Returns true if the reconstruction geometry is used as a topological section
-	 * in any topology for any reconstruction time.
+	 * Transparent colour is used when not overriding (with a constant colour) and not using a draw style and
+	 * using a palette but no colour returned by palette (or palette cannot be found).
 	 */
-	template <typename ReconstructionGeometryPointer>
-	bool
-	is_topological_section(
-			const ReconstructionGeometryPointer &reconstruction_geometry,
-			const std::set<GPlatesModel::FeatureId> &topological_sections)
-	{
-		GPlatesModel::FeatureHandle *feature_handle = reconstruction_geometry->feature_handle_ptr();
+	const GPlatesGui::Colour TRANSPARENT_COLOUR(0, 0, 0, 0);
 
-		return feature_handle != NULL &&
-				topological_sections.find(feature_handle->feature_id()) != topological_sections.end();
+
+	/**
+	 * Returns the colour associated with the specified reconstruction geometry (determined by draw style),
+	 * or returns override colour (if specified).
+	 */
+	GPlatesGui::Colour
+	get_reconstruction_geometry_colour(
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
+			boost::optional<const GPlatesGui::StyleAdapter &> style_adapter,
+			const boost::optional<GPlatesGui::Colour> &override_colour)
+	{
+		// If on override colour has been provided then use that.
+		if (override_colour)
+		{
+			return override_colour.get();
+		}
+
+		// Python colouring.
+		GPlatesGui::DrawStyle style;
+
+		if (style_adapter)
+		{
+			style = style_adapter->get_style(*reconstruction_geometry);
+		}
+
+		return style.colour;
+	}
+
+
+	/**
+	 * Looks up the colour in a palette using a value, or returns override colour (if specified).
+	 *
+	 * If colour not overridden and no colour returned by palette then returns transparent colour.
+	 * For example, some but not all points in a scalar coverage might not have a colour.
+	 * With alpha blending the geometry with a transparent colour should effectively not get rendered.
+	 */
+	template <typename KeyType>
+	GPlatesGui::Colour
+	get_palette_colour(
+			const GPlatesGui::ColourPalette<KeyType> &colour_palette,
+			typename GPlatesGui::ColourPalette<KeyType>::value_type value,
+			const boost::optional<GPlatesGui::Colour> &override_colour)
+	{
+		// If on override colour has been provided then use that.
+		if (override_colour)
+		{
+			return override_colour.get();
+		}
+
+		boost::optional<GPlatesGui::Colour> colour = colour_palette.get_colour(value);
+		if (!colour)
+		{
+			return TRANSPARENT_COLOUR;
+		}
+
+		return colour.get();
+	}
+
+
+	/**
+	 * Returns specified colour unless override colour is specified.
+	 */
+	GPlatesGui::Colour
+	get_colour(
+			const GPlatesGui::Colour &colour,
+			const boost::optional<GPlatesGui::Colour> &override_colour)
+	{
+		// If on override colour has been provided then use that.
+		if (override_colour)
+		{
+			return override_colour.get();
+		}
+
+		return colour;
 	}
 
 
@@ -140,29 +206,19 @@ namespace
 
 
 	/**
-	 * Returns a GPlatesGui::ColourProxy.
+	 * Returns true if the reconstruction geometry is used as a topological section
+	 * in any topology for any reconstruction time.
 	 */
-	GPlatesGui::ColourProxy
-	get_colour(
-			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
-			const boost::optional<GPlatesGui::Colour> &colour,
-			boost::optional<const GPlatesGui::StyleAdapter &> style_adapter)
+	template <typename ReconstructionGeometryPointer>
+	bool
+	is_topological_section(
+			const ReconstructionGeometryPointer &reconstruction_geometry,
+			const std::set<GPlatesModel::FeatureId> &topological_sections)
 	{
-		// If on override colour has been provided then use that.
-		if (colour)
-		{
-			return GPlatesGui::ColourProxy(colour.get());
-		}
+		GPlatesModel::FeatureHandle *feature_handle = reconstruction_geometry->feature_handle_ptr();
 
-		// Python colouring.
-		GPlatesGui::DrawStyle style;
-
-		if (style_adapter)
-		{
-			style = style_adapter->get_style(*reconstruction_geometry);
-		}
-
-		return GPlatesGui::ColourProxy(style.colour);
+		return feature_handle != NULL &&
+				topological_sections.find(feature_handle->feature_id()) != topological_sections.end();
 	}
 
 
@@ -175,7 +231,7 @@ namespace
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
-			const GPlatesGui::ColourProxy &colour_proxy,
+			const GPlatesGui::Colour &colour,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
 			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none)
 	{
@@ -186,7 +242,7 @@ namespace
 		GPlatesViewOperations::RenderedGeometry rendered_geom =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						rotation ? rotation.get() * geometry : geometry,
-						colour_proxy,
+						colour,
 						render_params.reconstruction_point_size_hint,
 						render_params.reconstruction_line_width_hint,
 						render_params.fill_polygons,
@@ -359,10 +415,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometr
 									? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * point.get()
 									: point.get(),
 							symbol.get(),
-							get_colour(
+							get_reconstruction_geometry_colour(
 									d_reconstructed_feature_geometry,
-									d_reconstruction_geometry_renderer.d_colour,
-									d_reconstruction_geometry_renderer.d_style_adapter),
+									d_reconstruction_geometry_renderer.d_style_adapter,
+									d_reconstruction_geometry_renderer.d_override_colour),
 							simple_point->point_size);
 				}
 				else
@@ -371,10 +427,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometr
 							d_reconstruction_geometry_renderer.d_reconstruction_adjustment
 									? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * point.get()
 									: point.get(),
-							get_colour(
+							get_reconstruction_geometry_colour(
 									d_reconstructed_feature_geometry,
-									d_reconstruction_geometry_renderer.d_colour,
-									d_reconstruction_geometry_renderer.d_style_adapter),
+									d_reconstruction_geometry_renderer.d_style_adapter,
+									d_reconstruction_geometry_renderer.d_override_colour),
 							simple_point->point_size);
 				}
 
@@ -403,10 +459,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometr
 						d_reconstruction_geometry_renderer.d_reconstruction_adjustment
 								? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * multi_point.get()
 								: multi_point.get(),
-						get_colour(
-							d_reconstructed_feature_geometry,
-							d_reconstruction_geometry_renderer.d_colour,
-							d_reconstruction_geometry_renderer.d_style_adapter),
+						get_reconstruction_geometry_colour(
+								d_reconstructed_feature_geometry,
+								d_reconstruction_geometry_renderer.d_style_adapter,
+								d_reconstruction_geometry_renderer.d_override_colour),
 						simple_point->point_size);
 
 				// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
@@ -444,10 +500,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometr
 								d_reconstruction_geometry_renderer.d_reconstruction_adjustment
 										? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * polygon.get()
 										: polygon.get(),
-								get_colour(
+								get_reconstruction_geometry_colour(
 										d_reconstructed_feature_geometry,
-										d_reconstruction_geometry_renderer.d_colour,
-										d_reconstruction_geometry_renderer.d_style_adapter),
+										d_reconstruction_geometry_renderer.d_style_adapter,
+										d_reconstruction_geometry_renderer.d_override_colour),
 								simple_outline->line_width,
 								d_reconstruction_geometry_renderer.d_render_params.fill_polygons,
 								d_reconstruction_geometry_renderer.d_render_params.fill_modulate_colour);
@@ -487,10 +543,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructedFeatureGeometr
 								d_reconstruction_geometry_renderer.d_reconstruction_adjustment
 										? d_reconstruction_geometry_renderer.d_reconstruction_adjustment.get() * polyline.get()
 										: polyline.get(),
-								get_colour(
+								get_reconstruction_geometry_colour(
 										d_reconstructed_feature_geometry,
-										d_reconstruction_geometry_renderer.d_colour,
-										d_reconstruction_geometry_renderer.d_style_adapter),
+										d_reconstruction_geometry_renderer.d_style_adapter,
+										d_reconstruction_geometry_renderer.d_override_colour),
 								simple_line->line_width,
 								d_reconstruction_geometry_renderer.d_render_params.fill_polylines,
 								d_reconstruction_geometry_renderer.d_render_params.fill_modulate_colour);
@@ -513,7 +569,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const GPlatesGui::RenderSettings &render_settings,
 		const ReconstructionGeometrySymboliser &reconstruction_geometry_symboliser,
 		const std::set<GPlatesModel::FeatureId> &topological_sections,
-		const boost::optional<GPlatesGui::Colour> &colour,
+		const boost::optional<GPlatesGui::Colour> &override_colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
 		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
@@ -521,7 +577,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 	d_render_settings(render_settings),
 	d_reconstruction_geometry_symboliser(reconstruction_geometry_symboliser),
 	d_topological_sections(topological_sections),
-	d_colour(colour),
+	d_override_colour(override_colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
 	d_style_adapter(style_adaptor)
@@ -601,7 +657,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							point,
 							velocity.d_vector,
 							d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
-							GPlatesGui::Colour::get_black(),
+							get_colour(GPlatesGui::Colour::get_black(), d_override_colour),
 							d_render_params.ratio_arrowhead_size_to_globe_radius);
 			// Render the rendered geometry.
 			render(rendered_arrow);
@@ -616,7 +672,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			//   - a reconstructed domain point that used the domain features' plate ID.
 			// Colour the arrow according to the plate ID.
 			//
-			// The ReconstructionGeometry passed into the ColourProxy is either that of the plate
+			// The ReconstructionGeometry that determines the colour is either that of the plate
 			// boundary or that of the originating/domain feature depending on the 'reason'.
 			// But situations are handled the same though.
 
@@ -631,7 +687,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
-								GPlatesGui::ColourProxy(rg_non_null_ptr),
+								get_reconstruction_geometry_colour(rg_non_null_ptr, d_style_adapter, d_override_colour),
 								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.
@@ -642,7 +698,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
-								GPlatesGui::Colour::get_olive(),
+								get_colour(GPlatesGui::Colour::get_olive(), d_override_colour),
 								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.
@@ -681,7 +737,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
-	const GPlatesGui::ColourProxy dfg_colour_proxy =  get_colour(trfg, d_colour, d_style_adapter);
+	const GPlatesGui::Colour dfg_colour =  get_reconstruction_geometry_colour(trfg, d_style_adapter, d_override_colour);
 
 	if (d_render_params.show_topology_reconstructed_feature_geometries)
 	{
@@ -690,7 +746,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					trfg_geometry,
 					trfg,
 					d_render_params,
-					dfg_colour_proxy,
+					dfg_colour,
 					d_reconstruction_adjustment,
 					d_feature_type_symbol_map);
 
@@ -890,7 +946,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	}
 
 	// The RVGP feature-properties-based colour.
-	const GPlatesGui::ColourProxy rvgp_colour = get_colour(rvgp, d_colour, d_style_adapter);
+	const GPlatesGui::Colour rvgp_colour = get_reconstruction_geometry_colour(rvgp, d_style_adapter, d_override_colour);
 	
 	if(rvgp->vgp_params().d_vgp_point)
 	{
@@ -1013,7 +1069,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				rtg_geometry, 
 				rtg, 
 				d_render_params, 
-				get_colour(rtg, d_colour, d_style_adapter));
+				get_reconstruction_geometry_colour(rtg, d_style_adapter, d_override_colour));
 
 	// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);
@@ -1145,7 +1201,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_seed_point =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 			rf->left_flowline_points()->start_point(),
-			d_colour ? d_colour.get() : palette->get_colour(0),
+			get_palette_colour(*palette, 0, d_override_colour),
 			3); // experiment with a bigger point, so that it stands out in relation to the left/right lines. 
 
 	GPlatesViewOperations::RenderedGeometry seed_point_rendered_geometry =
@@ -1161,7 +1217,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry left_rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rf->left_flowline_points(),
-			d_colour ? d_colour.get() : palette->get_colour(rf->left_plate_id()));
+			get_palette_colour(*palette, rf->left_plate_id(), d_override_colour));
 
 	GPlatesViewOperations::RenderedGeometry left_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1175,7 +1231,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry right_rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rf->right_flowline_points(),
-			d_colour ? d_colour.get() : palette->get_colour(rf->right_plate_id()));
+			get_palette_colour(*palette, rf->right_plate_id(), d_override_colour));
 
 	GPlatesViewOperations::RenderedGeometry right_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1205,12 +1261,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	}
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
-	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
-	// using ColourProxy.
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rmp->motion_path_points(),
-			get_colour(rmp, d_colour, d_style_adapter));
+			get_reconstruction_geometry_colour(rmp, d_style_adapter, d_override_colour));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1256,15 +1310,16 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	unsigned int num_points = scalar_values.size();
 
 	// Convert the scalars to colours.
-	std::vector<GPlatesGui::ColourProxy> point_colours;
+	std::vector<GPlatesGui::Colour> point_colours;
 	point_colours.reserve(num_points);
 	for (unsigned int point_index = 0; point_index < num_points; ++point_index)
 	{
 		const double scalar = scalar_values[point_index];
 
 		// Look up the scalar value in the colour palette.
-		boost::optional<GPlatesGui::Colour> colour = scalar_colour_palette.get()->get_colour(scalar);
-		point_colours.push_back(GPlatesGui::ColourProxy(colour));
+		const GPlatesGui::Colour colour = get_palette_colour(*scalar_colour_palette.get(), scalar, d_override_colour);
+
+		point_colours.push_back(colour);
 	}
 
 	boost::optional<GPlatesGui::Symbol> symbol = get_symbol(d_feature_type_symbol_map, rsc);
@@ -1306,14 +1361,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	}
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
-	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
-	// using ColourProxy.
-
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 			GPlatesMaths::SmallCircle::create_colatitude(
 				rsc->centre()->position_vector(),rsc->radius()),
-			get_colour(rsc, d_colour, d_style_adapter));
+			get_reconstruction_geometry_colour(rsc, d_style_adapter, d_override_colour));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1538,13 +1590,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		const GPlatesMaths::PointOnSphere &point = vertex.first;
 		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face = vertex.second;
 
-		boost::optional<GPlatesGui::ColourProxy> vertex_colour;
+		boost::optional<GPlatesGui::Colour> vertex_colour;
 
-		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
-		{
-			vertex_colour = GPlatesGui::ColourProxy(d_colour.get());
-		}
-		else if (d_render_params.topological_network_triangulation_colour_palette)
+		if (d_render_params.topological_network_triangulation_colour_palette)
 		{
 			// We've only generated vertices from tessellated triangles that are in the deforming region
 			// so we can assume the tessellated vertices are in, or at least very close to, the deforming region.
@@ -1555,30 +1603,33 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_dilatation(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_second_invariant(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_style(),
+						d_override_colour);
 			}
 		}
 
 		if (!vertex_colour)
 		{
-			// Should always get a valid vertex colour - if not then return without rendering mesh.
-			return;
+			// Should always get a valid vertex colour - if not then use transparent colour.
+			vertex_colour = get_colour(TRANSPARENT_COLOUR, d_override_colour);
 		}
 
 		// Add the vertex colour.
@@ -1590,11 +1641,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
-			rendered_triangle_mesh_triangles,
-			rendered_triangle_mesh_vertices,
-			rendered_triangle_mesh_colours,
-			true/*use_vertex_colouring*/,
-			d_render_params.fill_modulate_colour);
+					rendered_triangle_mesh_triangles,
+					rendered_triangle_mesh_vertices,
+					rendered_triangle_mesh_colours,
+					true/*use_vertex_colouring*/,
+					d_render_params.fill_modulate_colour);
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
 	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1644,13 +1695,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			continue;
 		}
 
-		boost::optional<GPlatesGui::ColourProxy> face_colour;
+		boost::optional<GPlatesGui::Colour> face_colour;
 
-		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
-		{
-			face_colour = GPlatesGui::ColourProxy(d_colour.get());
-		}
-		else if (d_render_params.topological_network_triangulation_colour_palette)
+		if (d_render_params.topological_network_triangulation_colour_palette)
 		{
 			const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo &
 					deformation_info = finite_faces_2_iter->get_deformation_info();
@@ -1658,41 +1705,42 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
-				face_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
+				face_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_dilatation(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
-				face_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
+				face_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_second_invariant(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
 			{
-				face_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+				face_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_style(),
+						d_override_colour);
 			}
 		}
 
-		if (!face_colour)
+		// Should always get a valid face colour - if not then ignore face.
+		if (face_colour)
 		{
-			// Should always get a valid face colour - if not then return without rendering mesh.
-			return;
+			// Add the face colour.
+			rendered_triangle_mesh_colours.push_back(face_colour.get());
+
+			// Add the triangle.
+			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
+					vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
+					vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
+					vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)));
+			rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
 		}
-
-		// Add the face colour.
-		rendered_triangle_mesh_colours.push_back(face_colour.get());
-
-		// Add the triangle.
-		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
-				vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
-				vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
-				vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)));
-		rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
 	}
 
 	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
@@ -1848,13 +1896,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		const GPlatesMaths::PointOnSphere &point = vertex.first;
 		GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face = vertex.second;
 
-		boost::optional<GPlatesGui::ColourProxy> vertex_colour;
+		boost::optional<GPlatesGui::Colour> vertex_colour;
 
-		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
-		{
-			vertex_colour = GPlatesGui::ColourProxy(d_colour.get());
-		}
-		else if (d_render_params.topological_network_triangulation_colour_palette)
+		if (d_render_params.topological_network_triangulation_colour_palette)
 		{
 			// We've only generated vertices from tessellated edges that are in, or on the boundary of,
 			// the deforming region so we can assume the tessellated vertices are in, or at least
@@ -1866,30 +1910,33 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_dilatation()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_dilatation(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_second_invariant()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_second_invariant(),
+						d_override_colour);
 			}
 			else if (d_render_params.topological_network_triangulation_colour_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
 			{
-				vertex_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(deformation_info.get_strain_rate().get_strain_rate_style()));
+				vertex_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						deformation_info.get_strain_rate().get_strain_rate_style(),
+						d_override_colour);
 			}
 		}
 
 		if (!vertex_colour)
 		{
-			// Should always get a valid vertex colour - if not then return without rendering mesh.
-			return;
+			// Should always get a valid vertex colour - if not then use transparent colour.
+			vertex_colour = get_colour(TRANSPARENT_COLOUR, d_override_colour);
 		}
 
 		// Add the vertex colour.
@@ -1975,7 +2022,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			// Get the area of the face triangle.
 			face_area[t] = std::fabs(CGAL::to_double(delaunay_triangulation_2.triangle(face_handle[t]).area()));
 
-			if (!d_colour && // no override colour
+			if (!d_override_colour && // no override colour
 				d_render_params.topological_network_triangulation_colour_palette)
 			{
 				const GPlatesAppLogic::ResolvedTriangulation::DeformationInfo &
@@ -2015,11 +2062,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			continue;
 		}
 
-		boost::optional<GPlatesGui::ColourProxy> edge_colour;
+		boost::optional<GPlatesGui::Colour> edge_colour;
 
-		if (d_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
+		if (d_override_colour) // Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
 		{
-			edge_colour = GPlatesGui::ColourProxy(d_colour.get());
+			edge_colour = d_override_colour.get();
 		}
 		else if (face_strain_rate[0] || face_strain_rate[1])
 		{
@@ -2032,16 +2079,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					const double edge_strain_rate = (face_area[0].dval() * face_strain_rate[0].get() +
 							face_area[1].dval() * face_strain_rate[1].get()) / total_area;
 
-					edge_colour = GPlatesGui::ColourProxy(
-							d_render_params.topological_network_triangulation_colour_palette.get()
-									->get_colour(edge_strain_rate));
+					edge_colour = get_palette_colour(
+							*d_render_params.topological_network_triangulation_colour_palette.get(),
+							edge_strain_rate,
+							d_override_colour);
 				}
 			}
 			else // only one triangle adjacent to edge ...
 			{
-				edge_colour = GPlatesGui::ColourProxy(
-						d_render_params.topological_network_triangulation_colour_palette.get()
-								->get_colour(face_strain_rate[0] ? face_strain_rate[0].get() : face_strain_rate[1].get()));
+				edge_colour = get_palette_colour(
+						*d_render_params.topological_network_triangulation_colour_palette.get(),
+						face_strain_rate[0] ? face_strain_rate[0].get() : face_strain_rate[1].get(),
+						d_override_colour);
 			}
 		}
 
@@ -2105,7 +2154,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
 	// The entire mesh has the same colour (determined by draw style).
-	const GPlatesGui::ColourProxy colour = get_colour(rtn, d_colour, d_style_adapter);
+	const GPlatesGui::Colour colour = get_reconstruction_geometry_colour(rtn, d_style_adapter, d_override_colour);
 
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -2237,7 +2286,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 				network_boundary_with_rigid_block_holes,
 				rtn,
 				render_params,
-				get_colour(rtn, d_colour, d_style_adapter),
+				get_reconstruction_geometry_colour(rtn, d_style_adapter, d_override_colour),
 				d_reconstruction_adjustment,
 				d_feature_type_symbol_map);
 
@@ -2280,7 +2329,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					// rigid blocks is visible)...
 					rtn,
 					render_params,
-					get_colour(rigid_block_rfg, d_colour, d_style_adapter),
+					get_reconstruction_geometry_colour(rigid_block_rfg, d_style_adapter, d_override_colour),
 					d_reconstruction_adjustment,
 					d_feature_type_symbol_map);
 
@@ -2295,9 +2344,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_velocities(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
-	const GPlatesGui::Colour &velocity_colour = d_colour
-			? d_colour.get()
-			: GPlatesGui::Colour::get_white();
+	const GPlatesGui::Colour velocity_colour = get_colour(GPlatesGui::Colour::get_white(), d_override_colour);
 
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
