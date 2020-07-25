@@ -40,7 +40,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 
 
 namespace GPlatesViewOperations
@@ -77,8 +76,7 @@ namespace GPlatesViewOperations
 
 		typedef std::vector<GPlatesMaths::PointOnSphere> vertex_seq_type;
 
-		// TODO: Change this to Colour once the deferred (until painting) colouring has been removed.
-		typedef std::vector<GPlatesGui::ColourProxy> colour_seq_type;
+		typedef std::vector<GPlatesGui::Colour> colour_seq_type;
 
 
 		/**

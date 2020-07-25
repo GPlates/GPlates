@@ -30,10 +30,10 @@
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
 
-#include "maths/SmallCircle.h"
+#include "gui/Colour.h"
 
-#include "gui/ColourProxy.h"
 #include "maths/ProximityCriteria.h"
+#include "maths/SmallCircle.h"
 #include "maths/SmallCircleProximityHitDetail.h"
 
 
@@ -46,7 +46,7 @@ namespace GPlatesViewOperations
 
 		RenderedSmallCircle(
 				const GPlatesMaths::SmallCircle &small_circle,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 			float line_width_hint) :
 			d_small_circle(small_circle),
 			d_colour(colour),
@@ -109,7 +109,7 @@ namespace GPlatesViewOperations
 			return d_small_circle;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -125,7 +125,7 @@ namespace GPlatesViewOperations
 
 		GPlatesMaths::SmallCircle d_small_circle;
 
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_line_width_hint;
 	};
 }

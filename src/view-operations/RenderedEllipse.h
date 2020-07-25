@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/GreatCircle.h"
 
 
@@ -41,12 +41,12 @@ namespace GPlatesViewOperations
 	public:
 
 		RenderedEllipse(
-			const GPlatesMaths::PointOnSphere &centre,
-			const GPlatesMaths::Real &semi_major_axis_radians,
-			const GPlatesMaths::Real &semi_minor_axis_radians,
-			const GPlatesMaths::GreatCircle &axis,
-			const GPlatesGui::ColourProxy &colour,
-			float line_width_hint) :
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesMaths::Real &semi_major_axis_radians,
+				const GPlatesMaths::Real &semi_minor_axis_radians,
+				const GPlatesMaths::GreatCircle &axis,
+				const GPlatesGui::Colour &colour,
+				float line_width_hint) :
 			d_centre(centre),
 			d_semi_major_axis_radians(semi_major_axis_radians),
 			d_semi_minor_axis_radians(semi_minor_axis_radians),
@@ -98,7 +98,7 @@ namespace GPlatesViewOperations
 			return d_axis;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -124,7 +124,7 @@ namespace GPlatesViewOperations
 		//! The orientation of the ellipse. The semi-major axis will lie along the great circle @a d_axis
 		GPlatesMaths::GreatCircle d_axis;
 		
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_line_width_hint;
 	};
 }

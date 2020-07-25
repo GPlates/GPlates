@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -40,11 +40,11 @@ namespace GPlatesViewOperations
 	public:
 		RenderedPointOnSphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float point_size_hint) :
-		d_point_on_sphere(point_on_sphere),
-		d_colour(colour),
-		d_point_size_hint(point_size_hint)
+			d_point_on_sphere(point_on_sphere),
+			d_colour(colour),
+			d_point_size_hint(point_size_hint)
 		{  }
 
 		virtual
@@ -83,7 +83,7 @@ namespace GPlatesViewOperations
 			return d_point_on_sphere;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -97,7 +97,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_point_on_sphere;
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_point_size_hint;
 	};
 }

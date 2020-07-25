@@ -29,7 +29,6 @@ set(srcs
     ChooseCanvasToolUndoCommand.h
     Colour.cc
     Colour.h
-    ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
@@ -38,8 +37,6 @@ set(srcs
     ColourPaletteUtils.cc
     ColourPaletteUtils.h
     ColourPaletteVisitor.h
-    ColourProxy.cc
-    ColourProxy.h
     ColourRawRaster.h
     ColourScaleGenerator.cc
     ColourScaleGenerator.h

@@ -31,7 +31,6 @@
 #include "RenderedGeometryVisitor.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 
 #include "maths/PointInPolygon.h"
 #include "maths/PolygonOnSphere.h"
@@ -48,15 +47,15 @@ namespace GPlatesViewOperations
 	public:
 		RenderedPolylineOnSphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float line_width_hint,
 				bool filled,
 				const GPlatesGui::Colour &fill_modulate_colour) :
-		d_polyline_on_sphere(polyline_on_sphere),
-		d_colour(colour),
-		d_line_width_hint(line_width_hint),
-		d_is_filled(filled),
-		d_fill_modulate_colour(fill_modulate_colour)
+			d_polyline_on_sphere(polyline_on_sphere),
+			d_colour(colour),
+			d_line_width_hint(line_width_hint),
+			d_is_filled(filled),
+			d_fill_modulate_colour(fill_modulate_colour)
 		{  }
 
 		virtual
@@ -123,7 +122,7 @@ namespace GPlatesViewOperations
 			return d_polyline_on_sphere;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -149,7 +148,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_line_width_hint;
 		bool d_is_filled;
 		GPlatesGui::Colour d_fill_modulate_colour;

@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/MultiPointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -40,11 +40,11 @@ namespace GPlatesViewOperations
 	public:
 		RenderedMultiPointOnSphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float point_size_hint) :
-		d_multi_point_on_sphere(multi_point_on_sphere),
-		d_colour(colour),
-		d_point_size_hint(point_size_hint)
+			d_multi_point_on_sphere(multi_point_on_sphere),
+			d_colour(colour),
+			d_point_size_hint(point_size_hint)
 		{  }
 
 		virtual
@@ -77,7 +77,7 @@ namespace GPlatesViewOperations
 			return d_multi_point_on_sphere;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -91,7 +91,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type d_multi_point_on_sphere;
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_point_size_hint;
 	};
 }

@@ -384,7 +384,7 @@ namespace GPlatesGui
 					const double &world_y_,
 					int x_offset_,
 					int y_offset_,
-					boost::optional<Colour> colour_,
+					const Colour &colour_,
 					boost::optional<Colour> shadow_colour_) :
 				text(text_),
 				font(font_),
@@ -402,7 +402,7 @@ namespace GPlatesGui
 			double world_y;
 			int x_offset;
 			int y_offset;
-			boost::optional<Colour> colour;
+			Colour colour;
 			// render drop shadow, if any
 			boost::optional<Colour> shadow_colour;
 		};
@@ -421,7 +421,7 @@ namespace GPlatesGui
 					GPlatesMaths::UnitVector3D world_position_,
 					int x_offset_,
 					int y_offset_,
-					boost::optional<Colour> colour_,
+					const Colour &colour_,
 					boost::optional<Colour> shadow_colour_) :
 				text(text_),
 				font(font_),
@@ -437,7 +437,7 @@ namespace GPlatesGui
 			GPlatesMaths::UnitVector3D world_position;
 			int x_offset;
 			int y_offset;
-			boost::optional<Colour> colour;
+			Colour colour;
 			// render drop shadow, if any
 			boost::optional<Colour> shadow_colour;
 		};

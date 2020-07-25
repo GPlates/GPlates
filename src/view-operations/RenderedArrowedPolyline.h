@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PolylineOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -40,16 +40,15 @@ namespace GPlatesViewOperations
 	public:
 		RenderedArrowedPolyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float arrowhead_projected_size,
 				float max_arrowhead_size,
-				float arrowline_width_hint
-				) :
-		d_points(points),
-		d_colour(colour),
-		d_arrowhead_projected_size(arrowhead_projected_size),
-		d_max_arrowhead_size(max_arrowhead_size),
-		d_arrowline_width_hint(arrowline_width_hint)
+				float arrowline_width_hint) :
+			d_points(points),
+			d_colour(colour),
+			d_arrowhead_projected_size(arrowhead_projected_size),
+			d_max_arrowhead_size(max_arrowhead_size),
+			d_arrowline_width_hint(arrowline_width_hint)
 		{  }
 
 		virtual
@@ -83,7 +82,7 @@ namespace GPlatesViewOperations
 			return d_points;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -109,7 +108,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_points;
-		const GPlatesGui::ColourProxy d_colour;
+		const GPlatesGui::Colour d_colour;
 		const float d_arrowhead_projected_size;
 		const float d_max_arrowhead_size;
 		const float d_arrowline_width_hint;		

@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -45,17 +45,16 @@ namespace GPlatesViewOperations
 	public:
 
 		RenderedTriangleSymbol(
-			const GPlatesMaths::PointOnSphere &centre,
-			const GPlatesGui::ColourProxy &colour,
-			unsigned int size,
-                        bool filled,
-                        float line_width_hint) :
-                    d_centre(centre),
-                    d_colour(colour),
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::Colour &colour,
+				unsigned int size,
+				bool filled,
+				float line_width_hint) :
+			d_centre(centre),
+			d_colour(colour),
 		    d_size(size),
-                    d_is_filled(filled),
-                    d_line_width_hint(line_width_hint)
-
+			d_is_filled(filled),
+			d_line_width_hint(line_width_hint)
 		{  }		
 		
 
@@ -83,7 +82,7 @@ namespace GPlatesViewOperations
 		}
 		
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -95,27 +94,26 @@ namespace GPlatesViewOperations
 			return d_line_width_hint;
 		}
 
-        bool
-        get_is_filled() const
-        {
-            return d_is_filled;
-        }
+		bool
+		get_is_filled() const
+		{
+			return d_is_filled;
+		}
 
 		unsigned int
 		get_size() const
 		{
-		    return d_size;
+			return d_size;
 		}
 
 	private:
 
 		GPlatesMaths::PointOnSphere d_centre;
 
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		unsigned int d_size;
-                bool d_is_filled;
-                float d_line_width_hint;
-
+		bool d_is_filled;
+		float d_line_width_hint;
 	};
 }
 

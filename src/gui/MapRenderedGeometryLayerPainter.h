@@ -34,7 +34,6 @@
 #include <boost/noncopyable.hpp>
 
 #include "Colour.h"
-#include "ColourProxy.h"
 #include "LayerPainter.h"
 
 #include "maths/DateLineWrapper.h"

@@ -33,7 +33,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 
 
 namespace GPlatesViewOperations
@@ -55,7 +55,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::Vector3D &arrow_direction,
 				float arrowhead_projected_size,
 				float max_ratio_arrowhead_to_arrowline_length,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float globe_view_ratio_arrowline_width_to_arrowhead_size,
 				float map_view_arrowline_width_hint) :
 			d_start_position(start),
@@ -149,7 +149,7 @@ namespace GPlatesViewOperations
 		}
 
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -183,7 +183,7 @@ namespace GPlatesViewOperations
 		const GPlatesMaths::Vector3D d_arrow_direction;
 		const float d_arrowhead_projected_size;
 		const float d_max_ratio_arrowhead_to_arrowline_length;
-		const GPlatesGui::ColourProxy d_colour;
+		const GPlatesGui::Colour d_colour;
 		const float d_globe_view_ratio_arrowline_width_to_arrowhead_size;
 		const float d_map_view_arrowline_width_hint;
 	};

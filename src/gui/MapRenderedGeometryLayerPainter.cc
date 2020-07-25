@@ -368,7 +368,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point
 	// The multipoint and its associated per-point colours.
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 			rendered_coloured_multi_point_on_sphere.get_multi_point_on_sphere();
-	const std::vector<ColourProxy> &point_colours = rendered_coloured_multi_point_on_sphere.get_point_colours();
+	const std::vector<Colour> &point_colours = rendered_coloured_multi_point_on_sphere.get_point_colours();
 
 	const unsigned int num_points = multi_point_on_sphere->number_of_points();
 
@@ -524,7 +524,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_
 	// The polygon and its associated per-point colours.
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_coloured_polygon_on_sphere.get_polygon_on_sphere();
-	const std::vector<ColourProxy> &point_colours = rendered_coloured_polygon_on_sphere.get_point_colours();
+	const std::vector<Colour> &point_colours = rendered_coloured_polygon_on_sphere.get_point_colours();
 
 	const unsigned int num_points = polygon_on_sphere->number_of_vertices_in_exterior_ring();
 
@@ -608,7 +608,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on
 	// The polyline and its associated per-point colours.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_coloured_polyline_on_sphere.get_polyline_on_sphere();
-	const std::vector<ColourProxy> &point_colours = rendered_coloured_polyline_on_sphere.get_point_colours();
+	const std::vector<Colour> &point_colours = rendered_coloured_polyline_on_sphere.get_point_colours();
 
 	const unsigned int num_points = polyline_on_sphere->number_of_vertices();
 

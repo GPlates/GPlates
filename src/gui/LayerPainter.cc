@@ -751,19 +751,16 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		}
 
 		// render main text
-		if (text_drawable.colour)
-		{
-			GPlatesOpenGL::GLText::render_text_2D(
-					renderer,
-					text_drawable.world_x,
-					text_drawable.world_y,
-					text_drawable.text,
-					text_drawable.colour.get(),
-					text_drawable.x_offset,
-					text_drawable.y_offset,
-					text_drawable.font,
-					scale);
-		}
+		GPlatesOpenGL::GLText::render_text_2D(
+				renderer,
+				text_drawable.world_x,
+				text_drawable.world_y,
+				text_drawable.text,
+				text_drawable.colour,
+				text_drawable.x_offset,
+				text_drawable.y_offset,
+				text_drawable.font,
+				scale);
 	}
 
 	// Now that the text has been rendered we should clear the drawables list for the next render call.
@@ -796,20 +793,17 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		}
 
 		// render main text
-		if (text_drawable.colour)
-		{
-			GPlatesOpenGL::GLText::render_text_3D(
-					renderer,
-					text_drawable.world_position.x().dval(),
-					text_drawable.world_position.y().dval(),
-					text_drawable.world_position.z().dval(),
-					text_drawable.text,
-					text_drawable.colour.get(),
-					text_drawable.x_offset,
-					text_drawable.y_offset,
-					text_drawable.font,
-					scale);
-		}
+		GPlatesOpenGL::GLText::render_text_3D(
+				renderer,
+				text_drawable.world_position.x().dval(),
+				text_drawable.world_position.y().dval(),
+				text_drawable.world_position.z().dval(),
+				text_drawable.text,
+				text_drawable.colour,
+				text_drawable.x_offset,
+				text_drawable.y_offset,
+				text_drawable.font,
+				scale);
 	}
 
 	// Now that the text has been rendered we should clear the drawables list for the next render call.

@@ -27,7 +27,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -42,15 +42,14 @@ class RenderedCrossSymbol :
 public:
 
     RenderedCrossSymbol(
-	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
-	unsigned int size,
-	float line_width_hint) :
-	d_centre(centre),
-	d_colour(colour),
-	d_size(size),
-	d_line_width_hint(line_width_hint)
-
+			const GPlatesMaths::PointOnSphere &centre,
+			const GPlatesGui::Colour &colour,
+			unsigned int size,
+			float line_width_hint) :
+		d_centre(centre),
+		d_colour(colour),
+		d_size(size),
+		d_line_width_hint(line_width_hint)
     {  }
 
 
@@ -59,7 +58,7 @@ public:
     accept_visitor(
 	ConstRenderedGeometryVisitor& visitor)
     {
-	visitor.visit_rendered_cross_symbol(*this);
+		visitor.visit_rendered_cross_symbol(*this);
     }
 
     virtual
@@ -67,40 +66,40 @@ public:
     test_proximity(
 	const GPlatesMaths::ProximityCriteria &criteria) const
     {
-	return d_centre.test_proximity(criteria);
+		return d_centre.test_proximity(criteria);
     }
 
 
     const GPlatesMaths::PointOnSphere &
     get_centre() const
     {
-	return d_centre;
+		return d_centre;
     }
 
 
-    const GPlatesGui::ColourProxy &
+    const GPlatesGui::Colour &
     get_colour() const
     {
-	return d_colour;
+		return d_colour;
     }
 
     float
     get_line_width_hint() const
     {
-	return d_line_width_hint;
+		return d_line_width_hint;
     }
 
     unsigned int
     get_size() const
     {
-	return d_size;
+		return d_size;
     }
 
 private:
 
     GPlatesMaths::PointOnSphere d_centre;
 
-    GPlatesGui::ColourProxy d_colour;
+    GPlatesGui::Colour d_colour;
     unsigned int d_size;
     float d_line_width_hint;
 

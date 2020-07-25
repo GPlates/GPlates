@@ -32,7 +32,7 @@
 
 #include "maths/SmallCircleArc.h"
 
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 
 namespace GPlatesViewOperations
 {
@@ -42,11 +42,11 @@ namespace GPlatesViewOperations
 	public:
 		RenderedSmallCircleArc(
 				const GPlatesMaths::SmallCircleArc &small_circle_arc,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float line_width_hint) :
-		d_small_circle_arc(small_circle_arc),
-		d_colour(colour),
-		d_line_width_hint(line_width_hint)
+			d_small_circle_arc(small_circle_arc),
+			d_colour(colour),
+			d_line_width_hint(line_width_hint)
 		{  }
 
 		virtual
@@ -73,7 +73,7 @@ namespace GPlatesViewOperations
 			return d_small_circle_arc;
 		}			
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -89,7 +89,7 @@ namespace GPlatesViewOperations
 		//! The small circle arc.
 		GPlatesMaths::SmallCircleArc d_small_circle_arc;
 		
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_line_width_hint;
 	};
 }
