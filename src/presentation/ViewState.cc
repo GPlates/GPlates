@@ -42,8 +42,6 @@
 #include "file-io/TemporaryFileRegistry.h"
 
 #include "gui/AnimationController.h"
-#include "gui/ColourSchemeContainer.h"
-#include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
 #include "gui/ExportAnimationRegistry.h"
@@ -103,10 +101,6 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::FeatureTableModel(
 				*d_feature_focus,
 				*d_rendered_geometry_collection)),
-	d_colour_scheme_container(
-			new GPlatesGui::ColourSchemeContainer(application_state)),
-	d_colour_scheme(
-			new GPlatesGui::ColourSchemeDelegator(*d_colour_scheme_container)),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
@@ -335,45 +329,6 @@ const GPlatesViewOperations::GeometryBuilder &
 GPlatesPresentation::ViewState::get_focused_feature_geometry_builder() const
 {
 	return *d_focused_feature_geometry_builder;
-}
-
-
-GPlatesGui::ColourSchemeContainer &
-GPlatesPresentation::ViewState::get_colour_scheme_container()
-{
-	return *d_colour_scheme_container;
-}
-
-const GPlatesGui::ColourSchemeContainer &
-GPlatesPresentation::ViewState::get_colour_scheme_container() const
-{
-	return *d_colour_scheme_container;
-}
-
-
-GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
-GPlatesPresentation::ViewState::get_colour_scheme()
-{
-	return d_colour_scheme;
-}
-
-GPlatesGlobal::PointerTraits<const GPlatesGui::ColourScheme>::non_null_ptr_type
-GPlatesPresentation::ViewState::get_colour_scheme() const
-{
-	return d_colour_scheme;
-}
-
-
-GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
-GPlatesPresentation::ViewState::get_colour_scheme_delegator()
-{
-	return d_colour_scheme;
-}
-
-GPlatesGlobal::PointerTraits<const GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
-GPlatesPresentation::ViewState::get_colour_scheme_delegator() const
-{
-	return d_colour_scheme;
 }
 
 

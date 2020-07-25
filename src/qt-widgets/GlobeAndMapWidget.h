@@ -36,8 +36,6 @@
 
 #include "global/PointerTraits.h"
 
-#include "gui/ColourScheme.h"
-
 #include "maths/LatLonPoint.h"
 
 #include "view-operations/QueryProximityThreshold.h"
@@ -91,7 +89,6 @@ namespace GPlatesQtWidgets
 		//! Use this constructor if you want to make a clone of an existing GlobeAndMapWidget.
 		GlobeAndMapWidget(
 				const GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = NULL);
 
 		GlobeAndMapWidget *

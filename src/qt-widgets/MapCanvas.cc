@@ -118,7 +118,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesGui::ViewportZoom &viewport_zoom,
-		const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
 		QWidget *parent_) :
 	QGraphicsScene(parent_),
 	d_view_state(view_state),
@@ -133,8 +132,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			gl_visual_layers,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
-			viewport_zoom,
-			colour_scheme),
+			viewport_zoom),
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
 	// Do some OpenGL initialisation.

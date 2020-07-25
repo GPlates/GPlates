@@ -36,7 +36,6 @@
 #include "MapCanvas.h"
 #include "MapView.h"
 
-#include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
 #include "gui/MapTransform.h"
@@ -56,12 +55,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 	d_globe_canvas_ptr(
 			new GlobeCanvas(
 				d_view_state,
-				d_view_state.get_colour_scheme(),
 				this)),
 	d_map_view_ptr(
 			new MapView(
 				d_view_state,
-				d_view_state.get_colour_scheme(),
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
@@ -80,18 +77,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 // For cloning GlobeAndMapWidget
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 		const GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_view_state(existing_globe_and_map_widget_ptr->d_view_state),
 	d_globe_canvas_ptr(
-			existing_globe_and_map_widget_ptr->d_globe_canvas_ptr->clone(
-				colour_scheme,
-				this)),
+			existing_globe_and_map_widget_ptr->d_globe_canvas_ptr->clone(this)),
 	d_map_view_ptr(
 			new MapView(
 				d_view_state,
-				colour_scheme,
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
@@ -114,55 +107,6 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 	{
 		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
-}
-
-/*
-* This is an ugly hacking in order to clone a share-opengl-context GlobeAndMapWidget without a ColourScheme.
-* The ColourScheme argument is spread into many functions. But in some cases, we don't need ColourScheme in GlobeAndMapWidget at all.
-* Use the DummyColourScheme to fool compiler.
-*/
-#include "gui/SingleColourScheme.h"
-class DummyColourScheme :
-	public GPlatesGui::SingleColourScheme	
-{ };
-
-GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
-		const GlobeAndMapWidget *existing_widget,
-		QWidget *parent_) :
-	QWidget(parent_),
-	d_view_state(existing_widget->d_view_state),
-	d_layout(new QStackedLayout(this)),	
-	d_zoom_enabled(existing_widget->d_zoom_enabled)
-{
-	GPlatesGui::ColourScheme::non_null_ptr_type dummy_scheme(new DummyColourScheme());
-	
-	d_globe_canvas_ptr.reset(existing_widget->d_globe_canvas_ptr->clone(
-			dummy_scheme,
-			this));
-
-	d_map_view_ptr.reset( new MapView(	
-			d_view_state,
-			dummy_scheme,
-			this,
-			d_globe_canvas_ptr.get(),
-			d_globe_canvas_ptr->get_gl_context(),	
-			d_globe_canvas_ptr->get_gl_visual_layers()));
-
-	d_active_view_ptr =	existing_widget->is_globe_active()
-		? static_cast<SceneView *>(d_globe_canvas_ptr.get())
-		: static_cast<SceneView *>(d_map_view_ptr.get());
-
-		init();
-
-		// Copy which of globe and map is active.
-		if (existing_widget->is_globe_active())
-		{
-			d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
-		}
-		else
-		{
-			d_layout->setCurrentWidget(d_map_view_ptr.get());
-		}
 }
 
 

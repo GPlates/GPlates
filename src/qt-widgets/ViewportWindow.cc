@@ -107,7 +107,6 @@
 
 #include "gui/AnimationController.h"
 #include "gui/CanvasToolWorkflows.h"
-#include "gui/ColourSchemeDelegator.h"
 #include "gui/DockState.h"
 #include "gui/Dialogs.h"
 #include "gui/FeatureFocus.h"
@@ -412,13 +411,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
-
-	// Repaint the globe/map when the colour scheme delegator's target changes.
-	QObject::connect(
-			get_view_state().get_colour_scheme_delegator().get(),
-			SIGNAL(changed()),
-			this,
-			SLOT(handle_colour_scheme_delegator_changed()));
 
 	// Get notified about visual layers being added so we can open the layers dialog.
 	QObject::connect(
@@ -1646,13 +1638,6 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 			new GPlatesGui::GuiDebug(*this, get_view_state(), get_application_state(), this);
 
 	gui_debug->setObjectName("GuiDebug");
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
-{
-	d_reconstruction_view_widget_ptr->globe_and_map_widget().update_canvas();
 }
 
 

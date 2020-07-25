@@ -58,9 +58,6 @@ namespace GPlatesGui
 {
 	class AnimationController;
 	class Colour;
-	class ColourScheme;
-	class ColourSchemeContainer;
-	class ColourSchemeDelegator;
 	class ExportAnimationRegistry;
 	class FeatureTableModel;
 	class FeatureFocus;
@@ -211,37 +208,6 @@ namespace GPlatesPresentation
 
 		const GPlatesViewOperations::GeometryBuilder &
 		get_focused_feature_geometry_builder() const;
-
-
-		//! Returns all loaded colour schemes, sorted by category.
-		GPlatesGui::ColourSchemeContainer &
-		get_colour_scheme_container();
-
-		const GPlatesGui::ColourSchemeContainer &
-		get_colour_scheme_container() const;
-
-
-		/**
-		 * Returns the current colour scheme.
-		 *
-		 * When performing colour lookup with the returned colour scheme
-		 * it will always refer to the latest colour scheme selected.
-		 * This is because the returned colour scheme delegates colour lookup to an
-		 * actual colour scheme implementation which itself can be switched inside the
-		 * delegate.
-		 */
-		GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
-		get_colour_scheme();
-
-		GPlatesGlobal::PointerTraits<const GPlatesGui::ColourScheme>::non_null_ptr_type
-		get_colour_scheme() const;
-
-
-		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
-		get_colour_scheme_delegator();
-
-		GPlatesGlobal::PointerTraits<const GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
-		get_colour_scheme_delegator() const;
 
 
 		GPlatesGui::RenderSettings &
@@ -440,12 +406,6 @@ namespace GPlatesPresentation
 
 		//! The 'Clicked' table. Depends on FeatureFocus. NOTE: Not parented by Qt.	
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;
-
-		//! Holds all loaded colour schemes, sorted by category.
-		boost::scoped_ptr<GPlatesGui::ColourSchemeContainer> d_colour_scheme_container;
-
-		//! Keeps track of the currently selected colour scheme.
-		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type d_colour_scheme;
 
 		//! The viewport zoom state.
 		boost::scoped_ptr<GPlatesGui::ViewportZoom> d_viewport_zoom;

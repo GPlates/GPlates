@@ -51,7 +51,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourScheme.h"
 #include "gui/GlobeCamera.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/TextOverlay.h"
@@ -298,7 +297,6 @@ const double GPlatesQtWidgets::GlobeCanvas::NUDGE_CAMERA_DEGREES = 5.0;
 // Public constructor
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(
 			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
@@ -323,8 +321,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme),
+			GPlatesGui::GlobeVisibilityTester(*this)),
 	d_globe_camera(view_state.get_globe_camera()),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
@@ -345,7 +342,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		const qreal &mouse_pointer_screen_pos_x_,
 		const qreal &mouse_pointer_screen_pos_y_,
 		GPlatesGui::Globe &existing_globe_,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
 			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
@@ -377,8 +373,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_globe(
 			existing_globe_,
 			d_gl_visual_layers,
-			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme_),
+			GPlatesGui::GlobeVisibilityTester(*this)),
 	d_globe_camera(existing_globe_canvas->d_globe_camera),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
@@ -468,7 +463,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 
 GPlatesQtWidgets::GlobeCanvas *
 GPlatesQtWidgets::GlobeCanvas::clone(
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_)
 {
 	return new GlobeCanvas(
@@ -479,7 +473,6 @@ GPlatesQtWidgets::GlobeCanvas::clone(
 			d_mouse_pointer_screen_pos_x,
 			d_mouse_pointer_screen_pos_y,
 			d_globe,
-			colour_scheme,
 			parent_);
 }
 

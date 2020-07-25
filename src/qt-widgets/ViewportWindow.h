@@ -437,9 +437,6 @@ namespace GPlatesQtWidgets
 		pop_up_import_scalar_field_3d_dialog();
 
 		void
-		handle_colour_scheme_delegator_changed();
-
-		void
 		handle_visual_layer_added(
 				size_t index);
 

@@ -35,7 +35,6 @@
 
 #include "Colour.h"
 #include "ColourProxy.h"
-#include "ColourScheme.h"
 #include "LayerPainter.h"
 
 #include "maths/DateLineWrapper.h"
@@ -85,8 +84,7 @@ namespace GPlatesGui
 				const MapProjection::non_null_ptr_to_const_type &map_projection,
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const double &inverse_viewport_zoom_factor,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				const double &inverse_viewport_zoom_factor);
 
 
 		/**
@@ -413,9 +411,6 @@ namespace GPlatesGui
 
 		const double d_inverse_zoom_factor;
 
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
-
 		//! When rendering scaled maps that are meant to be a scaled version of another
 		float d_scale;
 
@@ -445,23 +440,6 @@ namespace GPlatesGui
 		void
 		visit_rendered_geometries(
 				GPlatesOpenGL::GLRenderer &renderer);
-
-		/**
-		 * Determines the colour of vector geometries.
-		 *
-		 * Returns colour of a ColourProxy using our colour scheme.
-		 *
-		 * TODO: Remove colour schemes when full symbology implemented.
-		 * We're no longer really using colour schemes (via colour proxies) anymore since
-		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
-		 * colours stored internally instead of delegating to a colour scheme).
-		 */
-		boost::optional<Colour>
-		get_vector_geometry_colour(
-				const ColourProxy &colour_proxy)
-		{
-			return colour_proxy.get_colour(d_colour_scheme);
-		}
 
 		/**
 		 * Dateline wraps and map projects polylines.

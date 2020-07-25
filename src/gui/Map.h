@@ -32,7 +32,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "ColourScheme.h"
 #include "MapBackground.h"
 #include "MapGrid.h"
 #include "MapProjection.h"
@@ -71,8 +70,7 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ViewportZoom &viewport_zoom,
-				const ColourScheme::non_null_ptr_type &colour_scheme);
+				ViewportZoom &viewport_zoom);
 
 		/**
 		 * Initialise any OpenGL state.
@@ -133,9 +131,6 @@ namespace GPlatesGui
 
 		//! For zoom-dependent rendered objects.                                                                     
 		GPlatesGui::ViewportZoom &d_viewport_zoom;		
-		
-		//! For giving colour to RenderedGeometry
-		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		/**
 		 * The coloured map background (behind the grid and rendered geometry data).

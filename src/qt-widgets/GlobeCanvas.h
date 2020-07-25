@@ -44,7 +44,6 @@
 #include <QtGlobal>
 #include <QtOpenGL/qgl.h>
 
-#include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
@@ -128,7 +127,6 @@ namespace GPlatesQtWidgets
 
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 		~GlobeCanvas();
@@ -144,7 +142,6 @@ namespace GPlatesQtWidgets
 				const qreal &mouse_pointer_screen_pos_x_,
 				const qreal &mouse_pointer_screen_pos_y_,
 				GPlatesGui::Globe &existing_globe_,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 				QWidget *parent_ = 0);
 
 		//! Common code for both constructors
@@ -155,7 +152,6 @@ namespace GPlatesQtWidgets
 
 		GlobeCanvas *
 		clone(
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 		/**

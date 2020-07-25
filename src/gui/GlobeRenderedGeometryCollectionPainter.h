@@ -31,7 +31,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Colour.h"
-#include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
@@ -78,8 +77,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				const GlobeVisibilityTester &visibility_tester);
 
 		/**
 		 * Initialise objects requiring @a GLRenderer.
@@ -217,9 +215,6 @@ namespace GPlatesGui
 
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;
-
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;

@@ -36,7 +36,6 @@
 #include <QTransform>
 
 #include "Colour.h"
-#include "ColourScheme.h"
 #include "MapRenderedGeometryLayerPainter.h"
 #include "MapProjection.h"
 
@@ -275,13 +274,11 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const MapProjection::non_null_ptr_to_const_type &map_projection,
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-		const double &inverse_viewport_zoom_factor,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		const double &inverse_viewport_zoom_factor) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(
 			GPlatesMaths::DateLineWrapper::create(
@@ -327,14 +324,10 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)	
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_multi_point_on_sphere.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_multi_point_on_sphere.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	const float point_size =
 			rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
@@ -390,14 +383,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point
 	vertex_colours.reserve(num_points);
 	for (unsigned int c = 0; c < num_points; ++c)
 	{
-		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
-		if (!vertex_colour)
-		{
-			// Should always get a valid vertex colour - if not then return without rendering.
-			return;
-		}
-
-		vertex_colours.push_back(vertex_colour.get());
+		vertex_colours.push_back(point_colours[c]);
 	}
 
 	const float point_size =
@@ -437,11 +423,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 			const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_point_on_sphere.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_point_on_sphere.get_colour();
 
 #if 0
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -480,7 +462,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Vertex representing the projected point's position and colour.
 	// Convert colour from floats to bytes to use less vertex memory.
-	const coloured_vertex_type vertex(proj_pos.x(), proj_pos.y(), 0/*z*/, Colour::to_rgba8(*colour));
+	const coloured_vertex_type vertex(proj_pos.x(), proj_pos.y(), 0/*z*/, Colour::to_rgba8(colour));
 
 	// Used to add points to the stream.
 	stream_primitives_type::Points stream_points(stream);
@@ -495,11 +477,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polygon_on_sphere.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_polygon_on_sphere.get_colour();
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_polygon_on_sphere.get_polygon_on_sphere();
@@ -511,7 +489,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 
 		// Modulate with the fill modulate colour.
 		const Colour fill_colour = Colour::modulate(
-				colour.get(),
+				colour,
 				rendered_polygon_on_sphere.get_fill_modulate_colour());
 
 		// Convert colour from floats to bytes to use less vertex memory.
@@ -534,7 +512,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	paint_line_geometry<GPlatesMaths::PolygonOnSphere>(polygon_on_sphere, rgba8_color, stream);
 }
@@ -564,14 +542,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_
 	vertex_colours.reserve(num_points);
 	for (unsigned int c = 0; c < num_points; ++c)
 	{
-		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
-		if (!vertex_colour)
-		{
-			// Should always get a valid vertex colour - if not then return without rendering.
-			return;
-		}
-
-		vertex_colours.push_back(vertex_colour.get());
+		vertex_colours.push_back(point_colours[c]);
 	}
 
 	const float line_width =
@@ -590,11 +561,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_polyline_on_sphere.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_polyline_on_sphere.get_colour();
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_polyline_on_sphere.get_polyline_on_sphere();
@@ -606,7 +573,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 
 		// Modulate with the fill modulate colour.
 		const Colour fill_colour = Colour::modulate(
-				colour.get(),
+				colour,
 				rendered_polyline_on_sphere.get_fill_modulate_colour());
 
 		// Convert colour from floats to bytes to use less vertex memory.
@@ -629,7 +596,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 			d_layer_painter->drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere, rgba8_color, stream);
 }
@@ -656,14 +623,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on
 	vertex_colours.reserve(num_points);
 	for (unsigned int c = 0; c < num_points; ++c)
 	{
-		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
-		if (!vertex_colour)
-		{
-			// Should always get a valid vertex colour - if not then return without rendering.
-			return;
-		}
-
-		vertex_colours.push_back(vertex_colour.get());
+		vertex_colours.push_back(point_colours[c]);
 	}
 
 	const float line_width =
@@ -706,14 +666,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 		vertex_colours.reserve(num_mesh_colours);
 		for (unsigned int c = 0; c < num_mesh_colours; ++c)
 		{
-			boost::optional<Colour> vertex_colour = get_vector_geometry_colour(mesh_colours[c]);
-			if (!vertex_colour)
-			{
-				// Should always get a valid vertex colour - if not then return without rendering mesh.
-				return;
-			}
-
-			vertex_colours.push_back(vertex_colour.get());
+			vertex_colours.push_back(mesh_colours[c]);
 		}
 
 		// Iterate over the mesh edges.
@@ -810,14 +763,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 		{
 			const mesh_type::Edge &mesh_edge = mesh_edges[e];
 
-			boost::optional<Colour> edge_colour = get_vector_geometry_colour(mesh_colours[e]);
-			if (!edge_colour)
-			{
-				continue;
-			}
+			const Colour &edge_colour = mesh_colours[e];
 
 			// Convert colour from floats to bytes to use less vertex memory.
-			const rgba8_t edge_rgba8_color = Colour::to_rgba8(edge_colour.get());
+			const rgba8_t edge_rgba8_color = Colour::to_rgba8(edge_colour);
 
 			// Create a polyline with two points for the current edge.
 			const GPlatesMaths::PointOnSphere edge_points[2] =
@@ -909,19 +858,13 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 		vertex_colours.reserve(num_mesh_colours);
 		for (unsigned int c = 0; c < num_mesh_colours; ++c)
 		{
-			boost::optional<Colour> vertex_colour = get_vector_geometry_colour(mesh_colours[c]);
-			if (!vertex_colour)
-			{
-				// Should always get a valid vertex colour - if not then return without rendering mesh.
-				return;
-			}
 
 			// Modulate with the fill modulate colour...
-			vertex_colour = Colour::modulate(
-					vertex_colour.get(),
+			Colour vertex_colour = Colour::modulate(
+					mesh_colours[c],
 					rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour());
 
-			vertex_colours.push_back(vertex_colour.get());
+			vertex_colours.push_back(vertex_colour);
 		}
 
 		// Iterate over the mesh triangles.
@@ -1267,15 +1210,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 		{
 			const mesh_type::Triangle &mesh_triangle = mesh_triangles[t];
 
-			boost::optional<Colour> colour = get_vector_geometry_colour(mesh_colours[t]);
-			if (!colour)
-			{
-				continue;
-			}
 
 			// Modulate with the fill modulate colour.
 			const Colour fill_colour = Colour::modulate(
-					colour.get(),
+					mesh_colours[t],
 					rendered_coloured_triangle_surface_mesh.get_fill_modulate_colour());
 
 			// Convert colour from floats to bytes to use less vertex memory.
@@ -1404,22 +1342,18 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_string(
 					proj_pos.y(),
 					rendered_string.get_x_offset(),
 					rendered_string.get_y_offset(),
-					get_vector_geometry_colour(rendered_string.get_colour()),
-					get_vector_geometry_colour(rendered_string.get_shadow_colour())));
+					rendered_string.get_colour(),
+					rendered_string.get_shadow_colour()));
 }
 
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_small_circle.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_small_circle.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Tessellate the small circle.
 	std::vector<GPlatesMaths::PointOnSphere> points;
@@ -1445,14 +1379,10 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 		const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_small_circle_arc.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_small_circle_arc.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Tessellate the small circle arc.
 	std::vector<GPlatesMaths::PointOnSphere> points;
@@ -1475,11 +1405,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_ellipse.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_ellipse.get_colour();
 
 	if (rendered_ellipse.get_semi_major_axis_radians() == 0 ||
 		rendered_ellipse.get_semi_minor_axis_radians() == 0)
@@ -1488,7 +1414,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 	}
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// See comments in the GlobeRenderedGeometryLayerPainter for possibilities
 	// of making the number of steps zoom-dependent.
@@ -1532,14 +1458,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 	// We don't render the radial arrow in the map view (it's radial and hence always pointing
 	// directly out of the map). We only render the symbol.
 
-    boost::optional<Colour> symbol_colour = get_vector_geometry_colour(rendered_radial_arrow.get_symbol_colour());
-    if (!symbol_colour)
-    {
-		return;
-	}
+    const Colour &symbol_colour = rendered_radial_arrow.get_symbol_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(*symbol_colour);
+	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(symbol_colour);
 
 	// Get the small circle position in scene coordinates.
 	const QPointF small_circle_centre = get_projected_unwrapped_position(rendered_radial_arrow.get_position());
@@ -1646,14 +1568,10 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 	const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_tangential_arrow.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_tangential_arrow.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Start of arrow.
 	const GPlatesMaths::UnitVector3D &start = rendered_tangential_arrow.get_start_position().position_vector();
@@ -1716,14 +1634,10 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_arrowed_polyline.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_arrowed_polyline.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 			rendered_arrowed_polyline.get_polyline_on_sphere();
@@ -1748,11 +1662,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_triangle_symbol.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_triangle_symbol.get_colour();
 
 	bool filled = rendered_triangle_symbol.get_is_filled();
 
@@ -1777,7 +1687,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	QPointF pc(pcentre.x()+0.86*r,pcentre.y()-0.5*r);
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	coloured_vertex_type va(pa.x(), pa.y(), 0, rgba8_color);
 	coloured_vertex_type vb(pb.x(), pb.y(), 0, rgba8_color);
@@ -1822,11 +1732,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_square_symbol.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_square_symbol.get_colour();
 
 	bool filled = rendered_square_symbol.get_is_filled();
 
@@ -1850,7 +1756,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	QPointF pe(pa.x()-size,pa.y()+size);
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	coloured_vertex_type va(pa.x(), pa.y(),0, rgba8_color);
 	coloured_vertex_type vb(pb.x(), pb.y(),0, rgba8_color);
@@ -1901,11 +1807,7 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 	const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
 {
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_circle_symbol.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_circle_symbol.get_colour();
 
 	bool filled = rendered_circle_symbol.get_is_filled();
 
@@ -1924,7 +1826,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		// Vertex representing the point's position and colour.
 		// Convert colour from floats to bytes to use less vertex memory.
-		const coloured_vertex_type vertex(pcentre.x(), pcentre.y(), 0, Colour::to_rgba8(*colour));
+		const coloured_vertex_type vertex(pcentre.x(), pcentre.y(), 0, Colour::to_rgba8(colour));
 
 		// Used to add points to the stream.
 		stream_primitives_type::Points stream_points(stream);
@@ -1945,7 +1847,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 							pcentre,
 							radius,
 							SMALL_CIRCLE_ANGULAR_INCREMENT,
-							Colour::to_rgba8(*colour));
+							Colour::to_rgba8(colour));
 
 		// Create a closed loop from the tessellated points.
 		vertices.push_back(vertices.front());
@@ -1977,14 +1879,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	// * we don't want to wrap symbols - if they occur right at the edge of the map, it's fine
 	// to have part of the symbol going off the edge of the map, and onto the rest of the canvas.
 
-	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_cross_symbol.get_colour());
-	if (!colour)
-	{
-		return;
-	}
+	const Colour &colour = rendered_cross_symbol.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
 	const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 

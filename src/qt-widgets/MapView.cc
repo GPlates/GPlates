@@ -105,7 +105,6 @@ namespace
 
 GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_,
 		const QGLWidget *share_gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
@@ -140,7 +139,6 @@ GPlatesQtWidgets::MapView::MapView(
 				d_gl_context,
 				d_gl_visual_layers,
 				view_state.get_viewport_zoom(),
-				colour_scheme,
 				this)),
 	d_map_transform(view_state.get_map_transform())
 {
