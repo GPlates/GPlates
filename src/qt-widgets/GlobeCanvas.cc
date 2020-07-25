@@ -329,74 +329,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_velocity_legend_overlay(
 			new GPlatesGui::VelocityLegendOverlay())
 {
-	init();
-}
-
-
-// Private constructor
-GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
-		GlobeCanvas *existing_globe_canvas,
-		GPlatesPresentation::ViewState &view_state_,
-		GPlatesMaths::PointOnSphere &mouse_pointer_pos_on_globe_,
-		bool mouse_pointer_is_on_globe_,
-		const qreal &mouse_pointer_screen_pos_x_,
-		const qreal &mouse_pointer_screen_pos_y_,
-		GPlatesGui::Globe &existing_globe_,
-		QWidget *parent_) :
-	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
-			parent_,
-			// Share texture objects, vertex buffer objects, etc...
-			existing_globe_canvas),
-	d_view_state(view_state_),
-	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
-			? GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)),
-					*existing_globe_canvas->d_gl_context)
-			: GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
-	d_make_context_current(*d_gl_context),
-	d_initialisedGL(false),
-	d_gl_visual_layers(
-			// Attempt to share OpenGL resources across contexts.
-			// This will depend on whether the two 'GLContext's share any state.
-			GPlatesOpenGL::GLVisualLayers::create(
-					d_gl_context,
-					existing_globe_canvas->d_gl_visual_layers,
-					view_state_.get_application_state())),
-	d_mouse_pointer_pos_on_globe(mouse_pointer_pos_on_globe_),
-	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
-	d_mouse_pointer_screen_pos_x(mouse_pointer_screen_pos_x_),
-	d_mouse_pointer_screen_pos_y(mouse_pointer_screen_pos_y_),
-	d_globe(
-			existing_globe_,
-			d_gl_visual_layers,
-			GPlatesGui::GlobeVisibilityTester(*this)),
-	d_globe_camera(existing_globe_canvas->d_globe_camera),
-	d_text_overlay(
-			new GPlatesGui::TextOverlay(
-				d_view_state.get_application_state())),
-	d_velocity_legend_overlay(
-			new GPlatesGui::VelocityLegendOverlay())
-{
-	if (!isSharing())
-	{
-		qWarning() << "Unable to share an OpenGL context between QGLWidgets.";
-	}
-
-	init();
-}
-
-
-GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
-{  }
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::init()
-{
 	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'paintGL()'
 	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
 	// front and back buffers after each 'paintGL()' call. This is because QPainter::end(),
@@ -459,21 +391,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	handle_camera_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
-}
-
-GPlatesQtWidgets::GlobeCanvas *
-GPlatesQtWidgets::GlobeCanvas::clone(
-		QWidget *parent_)
-{
-	return new GlobeCanvas(
-			this,
-			d_view_state,
-			d_mouse_pointer_pos_on_globe,
-			d_mouse_pointer_is_on_globe,
-			d_mouse_pointer_screen_pos_x,
-			d_mouse_pointer_screen_pos_y,
-			d_globe,
-			parent_);
 }
 
 

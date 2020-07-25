@@ -115,7 +115,10 @@ GPlatesQtWidgets::MapView::MapView(
 				this,
 				// Share texture objects, vertex buffer objects, etc...
 				share_gl_widget)),
-	d_gl_context(d_gl_widget_ptr->isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
+	d_gl_context(
+			// Mirror the sharing of OpenGL context state (if sharing).
+			// Both GLWidgets should be sharing since they were created with the same QGLFormat...
+			d_gl_widget_ptr->isSharing()
 			? GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*d_gl_widget_ptr)),
@@ -165,10 +168,6 @@ GPlatesQtWidgets::MapView::MapView(
 
 	make_signal_slot_connections();
 }
-
-
-GPlatesQtWidgets::MapView::~MapView()
-{  }
 
 
 void

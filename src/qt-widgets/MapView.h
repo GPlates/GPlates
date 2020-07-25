@@ -116,7 +116,6 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers);
 
-		~MapView();
 
 		/** 
 		 * Translates the view so that the LatLonPoint llp is centred on the viewport. 

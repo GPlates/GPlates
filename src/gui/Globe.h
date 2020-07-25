@@ -85,14 +85,6 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				const GlobeVisibilityTester &visibility_tester);
 
-		//! To clone a Globe
-		Globe(
-				Globe &existing_globe,
-				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const GlobeVisibilityTester &visibility_tester);
-
-		~Globe()
-		{  }
 
 		/**
 		 * Initialise any OpenGL state.

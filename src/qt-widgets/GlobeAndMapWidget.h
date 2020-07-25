@@ -86,15 +86,6 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
-		//! Use this constructor if you want to make a clone of an existing GlobeAndMapWidget.
-		GlobeAndMapWidget(
-				const GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
-				QWidget *parent_ = NULL);
-
-		GlobeAndMapWidget *
-		clone_with_shared_opengl_context(
-				QWidget *parent_ = NULL);
-
 		~GlobeAndMapWidget();
 
 		GlobeCanvas &
@@ -234,9 +225,6 @@ namespace GPlatesQtWidgets
 				QWheelEvent *event);
 
 	private Q_SLOTS:
-
-		void
-		init();
 
 		void
 		about_to_change_projection(
