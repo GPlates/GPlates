@@ -412,7 +412,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_state(
 	{
 		// See if the buffer offset has changed.
 		// NOTE: 'this' and 'last_applied_buffer' may refer to the *same* object.
-		const GLvoid *buffer_pointer = GPLATES_OPENGL_BUFFER_OFFSET(d_offset);
+		const GLvoid *buffer_pointer = BUFFER_OFFSET(d_offset);
 		if (buffer_pointer != last_applied_buffer.d_pointer_to_apply)
 		{
 			updated_buffer = true;
@@ -471,7 +471,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_from_default
 		updated_buffer = true;
 
 		// Update the buffer offset.
-		d_pointer_to_apply = GPLATES_OPENGL_BUFFER_OFFSET(d_offset);
+		d_pointer_to_apply = BUFFER_OFFSET(d_offset);
 	}
 
 	return updated_buffer;

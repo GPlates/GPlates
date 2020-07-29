@@ -59,4 +59,11 @@
 
 #include <GL/glew.h>
 
+/**
+ * Useful when converting a buffer offset to a 'void *' pointer.
+ */
+#ifndef BUFFER_OFFSET
+#define BUFFER_OFFSET(bytes) (reinterpret_cast<GLubyte *>(0) + (bytes))
+#endif
+
 #endif // GPLATES_OPENGL_OPENGL3_H

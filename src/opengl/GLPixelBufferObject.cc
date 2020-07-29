@@ -140,7 +140,7 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_1D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	glTexImage1D(target, level, internalformat, width, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexImage1D(target, level, internalformat, width, border, format, type, BUFFER_OFFSET(offset));
 }
 
 
@@ -172,7 +172,7 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_2D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	glTexImage2D(target, level, internalformat, width, height, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexImage2D(target, level, internalformat, width, height, border, format, type, BUFFER_OFFSET(offset));
 }
 
 
@@ -207,7 +207,7 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_3D(
 			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
-	glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, BUFFER_OFFSET(offset));
 }
 
 
@@ -231,7 +231,7 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_1D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	glTexSubImage1D(target, level, xoffset, width, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexSubImage1D(target, level, xoffset, width, format, type, BUFFER_OFFSET(offset));
 }
 
 
@@ -263,7 +263,7 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_2D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, BUFFER_OFFSET(offset));
 }
 
 
@@ -300,5 +300,5 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_3D(
 			GPLATES_ASSERTION_SOURCE);
 
 	glTexSubImage3D(
-			target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+			target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, BUFFER_OFFSET(offset));
 }

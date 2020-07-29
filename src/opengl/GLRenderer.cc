@@ -940,7 +940,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_elements(
 			// Apply all state - not just a subset.
 			state_to_apply.apply_state(capabilities, last_applied_state);
 
-			glDrawElements(mode, count, type, GPLATES_OPENGL_BUFFER_OFFSET(indices_offset));
+			glDrawElements(mode, count, type, BUFFER_OFFSET(indices_offset));
 		}
 
 		GLenum mode;
@@ -1058,7 +1058,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 
 			// NOTE: When using gDEBugger you'll need to change this to 'glDrawRangeElements' if you
 			// want to break on it since it doesn't allow you to break on 'glDrawRangeElementsEXT'.
-			glDrawRangeElementsEXT(mode, start, end, count, type, GPLATES_OPENGL_BUFFER_OFFSET(indices_offset));
+			glDrawRangeElementsEXT(mode, start, end, count, type, BUFFER_OFFSET(indices_offset));
 		}
 
 		GLenum mode;
@@ -1216,7 +1216,7 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 			// Apply only the subset of state needed by 'glReadPixels'.
 			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
 
-			glReadPixels(x, y, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+			glReadPixels(x, y, width, height, format, type, BUFFER_OFFSET(offset));
 		}
 
 		GLint x;
@@ -1375,7 +1375,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 				glRasterPos2i(x, y);
 			}
 
-			glDrawPixels(width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+			glDrawPixels(width, height, format, type, BUFFER_OFFSET(offset));
 
 			// Restore raster position to default value since calling OpenGL directly instead of using GLRenderer state.
 			//
