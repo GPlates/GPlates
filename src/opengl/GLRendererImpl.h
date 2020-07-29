@@ -30,7 +30,7 @@
 #include <map>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLCompiledDrawState.h"
 #include "GLRenderBufferObject.h"

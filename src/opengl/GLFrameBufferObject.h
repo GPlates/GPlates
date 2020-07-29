@@ -34,7 +34,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/weak_ptr.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLCapabilities.h"
 #include "GLObject.h"

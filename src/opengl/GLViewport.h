@@ -28,7 +28,7 @@
 #define GPLATES_OPENGL_GLVIEWPORT_H
 
 #include <boost/operators.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 
 namespace GPlatesOpenGL

@@ -36,7 +36,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLBufferImpl.h"
 #include "GLBufferObject.h"

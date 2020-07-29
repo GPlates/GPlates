@@ -27,7 +27,7 @@
 #ifndef GPLATES_OPENGL_GLCUBESUBDIVISION_H
 #define GPLATES_OPENGL_GLCUBESUBDIVISION_H
 
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLFrustum.h"
 #include "GLIntersectPrimitives.h"

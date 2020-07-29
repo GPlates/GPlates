@@ -33,7 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 #include <QDebug>
 
 #include "GLBuffer.h"

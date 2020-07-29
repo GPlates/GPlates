@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
 #include "GLCompiledDrawState.h"

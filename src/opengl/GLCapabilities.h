@@ -28,7 +28,7 @@
 
 #include <boost/noncopyable.hpp>
 
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 
 namespace GPlatesOpenGL
@@ -75,12 +75,10 @@ namespace GPlatesOpenGL
 			GLuint gl_sub_pixel_bits;
 
 			/**
-			 * Simply GL_COLOR_ATTACHMENT0_EXT.
+			 * Simply GL_COLOR_ATTACHMENT0.
 			 *
-			 * This is here solely so we can include <GL/glew.h>, which defines
-			 * GL_COLOR_ATTACHMENT0_EXT, in "GLCapabilities.cc" and hence avoid problems caused by
-			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
-			 * before OpenGL headers which means before Qt headers which is difficult).
+			 * Note that GL_COLOR_ATTACHMENT0 is not defined in <opengl/OpenGL1.h>, so this definition is here solely
+			 * to avoid forcing the include of <opengl/OpenGL3.h> which cannot be included from header files.
 			 */
 			static const GLenum gl_COLOR_ATTACHMENT0; // GL_COLOR_ATTACHMENT0
 
@@ -168,10 +166,9 @@ namespace GPlatesOpenGL
 			bool gl_ARB_vertex_attrib_64bit;
 
 			/**
-			 * The maximum number of generic vertex attributes supported by the
-			 * GL_ARB_vertex_shader extension (or zero if it's not supported).
+			 * The maximum number of generic vertex attributes supported.
 			 */
-			GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS_ARB query result
+			GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS query result
 		};
 
 		//! Parameters related to textures.
@@ -182,10 +179,8 @@ namespace GPlatesOpenGL
 			/**
 			 * Simply GL_TEXTURE0.
 			 *
-			 * This is here solely so we can include <GL/glew.h>, which defines
-			 * GL_TEXTURE0, in "GLCapabilities.cc" and hence avoid problems caused by
-			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
-			 * before OpenGL headers which means before Qt headers which is difficult).
+			 * Note that GL_TEXTURE0 is not defined in <opengl/OpenGL1.h>, so this definition is here solely
+			 * to avoid forcing the include of <opengl/OpenGL3.h> which cannot be included from header files.
 			 */
 			static const GLenum gl_TEXTURE0; // GL_TEXTURE0
 

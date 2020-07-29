@@ -164,7 +164,8 @@ set(srcs
     GLVisualLayers.h
     GLVisualRasterSource.cc
     GLVisualRasterSource.h
-    OpenGL.h
+    OpenGL1.h
+    OpenGL3.h
     OpenGLBadAllocException.h
     OpenGLException.h
 )

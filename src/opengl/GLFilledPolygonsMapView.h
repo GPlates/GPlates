@@ -28,7 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 #include <QPointF>
 
 #include "GLVertex.h"

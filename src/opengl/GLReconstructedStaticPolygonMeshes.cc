@@ -23,10 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <opengl/OpenGL.h>
 
 #include "GLReconstructedStaticPolygonMeshes.h"
 

@@ -30,7 +30,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
-#include <opengl/OpenGL.h>
 
 #include "Colour.h"
 

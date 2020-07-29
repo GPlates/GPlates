@@ -23,9 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <cmath>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
 
 #include "GLProjection.h"
 

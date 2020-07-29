@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <cmath>
 #include <limits>
 #include <new> // For placement new.
@@ -33,13 +35,6 @@
 #include <boost/foreach.hpp>
 #include <boost/scoped_array.hpp>
 
-/*
- * The OpenGL Extension Wrangler Library (GLEW).
- * Must be included before the OpenGL headers (which also means before Qt headers).
- * For this reason it's best to try and include it in ".cc" files only.
- */
-#include <GL/glew.h>
-#include <opengl/OpenGL.h>
 #include <QDebug>
 
 #include "GLMultiResolutionRaster.h"

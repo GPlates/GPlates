@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLPIXELBUFFERIMPL_H
 #define GPLATES_OPENGL_GLPIXELBUFFERIMPL_H
 
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLBufferImpl.h"
 #include "GLPixelBuffer.h"

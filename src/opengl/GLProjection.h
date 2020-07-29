@@ -29,7 +29,7 @@
 
 #include <utility>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"

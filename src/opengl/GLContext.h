@@ -33,7 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 #include <QGLFormat>
 
 #include "GLBuffer.h"

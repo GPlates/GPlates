@@ -24,13 +24,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <algorithm>
 #include <cmath>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <opengl/OpenGL.h>
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "LayerPainter.h"

@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -30,7 +32,6 @@
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
-#include <opengl/OpenGL.h>
 
 #include "MapBackground.h"
 

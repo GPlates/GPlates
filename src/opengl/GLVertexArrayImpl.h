@@ -28,7 +28,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLVertexArray.h"
 

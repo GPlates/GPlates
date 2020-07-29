@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_VERTEX_H
 #define GPLATES_OPENGL_VERTEX_H
 
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLVertexBuffer.h"
 

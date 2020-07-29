@@ -29,7 +29,6 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"

@@ -36,7 +36,7 @@
 #include "opengl/GLTileRender.h"
 #include "opengl/GLTransform.h"
 #include "opengl/GLViewport.h"
-#include "opengl/OpenGL.h"
+#include "opengl/OpenGL1.h"
 
 
 namespace GPlatesOpenGL

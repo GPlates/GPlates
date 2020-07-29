@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <QApplication>
 #include <QDebug>
 #include <QGLWidget>
@@ -32,7 +34,6 @@
 #include <QPaintDevice>
 #include <QPaintEngine>
 #include <QPainter>
-#include <opengl/OpenGL.h>
 
 #include "MapCanvas.h"
 #include "MapView.h"

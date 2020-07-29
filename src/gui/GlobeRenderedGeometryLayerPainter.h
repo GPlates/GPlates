@@ -33,7 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <QGLWidget>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "Colour.h"
 #include "GlobeVisibilityTester.h"

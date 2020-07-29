@@ -23,13 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-/*
- * The OpenGL Extension Wrangler Library (GLEW).
- * Must be included before the OpenGL headers (which also means before Qt headers).
- * For this reason it's best to try and include it in ".cc" files only.
- */
-#include <GL/glew.h>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <QDebug>
 
 #include "GLCapabilities.h"
@@ -273,23 +268,23 @@ GPlatesOpenGL::GLCapabilities::initialise_shader()
 		// We know they've been defined in the 'glew.h' file so check that they return non-null
 		// indicating they are available on the run-time system...
 		if (
-			GPLATES_OPENGL_BOOL(glUniform1d) &&
-			GPLATES_OPENGL_BOOL(glUniform1dv) &&
-			GPLATES_OPENGL_BOOL(glUniform2d) &&
-			GPLATES_OPENGL_BOOL(glUniform2dv) &&
-			GPLATES_OPENGL_BOOL(glUniform3d) &&
-			GPLATES_OPENGL_BOOL(glUniform3dv) &&
-			GPLATES_OPENGL_BOOL(glUniform4d) &&
-			GPLATES_OPENGL_BOOL(glUniform4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2x3dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2x4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3x2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3x4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4x2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4x3dv))
+			glUniform1d &&
+			glUniform1dv &&
+			glUniform2d &&
+			glUniform2dv &&
+			glUniform3d &&
+			glUniform3dv &&
+			glUniform4d &&
+			glUniform4dv &&
+			glUniformMatrix2dv &&
+			glUniformMatrix2x3dv &&
+			glUniformMatrix2x4dv &&
+			glUniformMatrix3dv &&
+			glUniformMatrix3x2dv &&
+			glUniformMatrix3x4dv &&
+			glUniformMatrix4dv &&
+			glUniformMatrix4x2dv &&
+			glUniformMatrix4x3dv)
 		{
 			shader.gl_ARB_gpu_shader_fp64 = true;
 

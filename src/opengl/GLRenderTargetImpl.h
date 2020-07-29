@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLFrameBufferObject.h"
 #include "GLRenderBufferObject.h"

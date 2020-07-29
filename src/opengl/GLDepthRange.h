@@ -27,7 +27,7 @@
 #define GPLATES_OPENGL_GLDEPTHRANGE_H
 
 #include <boost/operators.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "maths/types.h"
 

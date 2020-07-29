@@ -32,7 +32,7 @@
 #include <iosfwd>
 #include <boost/cstdint.hpp>
 #include <boost/operators.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 #include <QColor>
 #include <QDataStream>
 #include <QDebug>

@@ -27,7 +27,7 @@
 #ifndef GPLATES_OPENGL_GLUTILS_H
 #define GPLATES_OPENGL_GLUTILS_H
 
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 #include <boost/optional.hpp>
 
 #include "GLCompiledDrawState.h"

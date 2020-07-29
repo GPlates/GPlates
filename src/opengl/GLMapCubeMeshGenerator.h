@@ -29,7 +29,7 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL.h>
+#include <opengl/OpenGL1.h>
 
 #include "GLCubeMeshGenerator.h"
 
