@@ -9,6 +9,8 @@
 # so the build is unaware of the change.
 #
 set(srcs
+    GL.cc
+    GL.h
     GLAgeGridMaskSource.cc
     GLAgeGridMaskSource.h
     GLBuffer.cc
