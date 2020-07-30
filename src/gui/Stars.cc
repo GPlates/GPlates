@@ -43,10 +43,11 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "opengl/GLRenderer.h"
+#include "opengl/GL.h"
 #include "opengl/GLShaderProgramUtils.h"
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLStreamPrimitives.h"
+#include "opengl/GLUtils.h"
 #include "opengl/GLVertex.h"
 #include "opengl/GLVertexArray.h"
 
@@ -127,18 +128,19 @@ namespace
 	}
 
 
-	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
-	compile_stars_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer,
-			GPlatesOpenGL::GLVertexArray &vertex_array,
-			unsigned int &num_points,
+	void
+	create_stars(
+			std::vector<vertex_type> &vertices,
+			std::vector<vertex_element_type> &vertex_elements,
+			unsigned int &num_small_star_vertices,
+			unsigned int &num_small_star_indices,
+			unsigned int &num_large_star_vertices,
+			unsigned int &num_large_star_indices,
 			boost::function< double () > &rand,
 			const GPlatesGui::rgba8_t &colour)
 	{
 		stream_primitives_type stream;
 
-		std::vector<vertex_type> vertices;
-		std::vector<vertex_element_type> vertex_elements;
 		stream_primitives_type::StreamTarget stream_target(stream);
 
 		stream_target.start_streaming(
@@ -148,8 +150,8 @@ namespace
 		// Stream the small stars.
 		stream_stars(stream, rand, NUM_SMALL_STARS, colour);
 
-		const unsigned int num_small_star_vertices = stream_target.get_num_streamed_vertices();
-		const unsigned int num_small_star_indices = stream_target.get_num_streamed_vertex_elements();
+		num_small_star_vertices = stream_target.get_num_streamed_vertices();
+		num_small_star_indices = stream_target.get_num_streamed_vertex_elements();
 
 		stream_target.stop_streaming();
 
@@ -162,49 +164,74 @@ namespace
 		// Stream the large stars.
 		stream_stars(stream, rand, NUM_LARGE_STARS, colour);
 
-		const unsigned int num_large_star_vertices = stream_target.get_num_streamed_vertices();
-		const unsigned int num_large_star_indices = stream_target.get_num_streamed_vertex_elements();
+		num_large_star_vertices = stream_target.get_num_streamed_vertices();
+		num_large_star_indices = stream_target.get_num_streamed_vertex_elements();
 
 		stream_target.stop_streaming();
-
-		// Each point in GL_POINTS uses one vertex index (this is the total number of stars).
-		num_points = vertex_elements.size();
 
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
 				GPLATES_ASSERTION_SOURCE);
+	}
 
-		// Set up the vertex element buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer =
-				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
-		vertex_element_buffer->gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-				vertex_elements,
-				GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW);
-		// Attached vertex element buffer to the vertex array.
-		vertex_array.set_vertex_element_buffer(
-				renderer,
-				GPlatesOpenGL::GLVertexElementBuffer::create(renderer, vertex_element_buffer));
 
-		// Set up the vertex buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer =
-				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
-		vertex_buffer->gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
-				vertices,
-				GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW);
-		// Attached vertex buffer to the vertex array.
-		GPlatesOpenGL::bind_vertex_buffer_to_vertex_array<vertex_type>(
-				renderer,
-				vertex_array,
-				GPlatesOpenGL::GLVertexBuffer::create(renderer, vertex_buffer));
+	void
+	load_stars(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer,
+			const std::vector<vertex_type> &vertices,
+			const std::vector<vertex_element_type> &vertex_elements)
+	{
+		// Make sure we leave the OpenGL global state the way it was.
+		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-		// Start compiling draw state that includes OpenGL states and vertex array draw commands.
-		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+		// Bind vertex array.
+		gl.BindVertexArray(vertex_array);
+
+		// Bind vertex element buffer.
+		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
+
+		// Transfer vertex element data to bound vertex element buffer.
+		glBufferData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				vertex_elements.size() * sizeof(vertex_elements[0]),
+				vertex_elements.data(),
+				GL_STATIC_DRAW);
+
+		// Bind vertex buffer.
+		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+
+		// Transfer vertex data to bound vertex buffer.
+		glBufferData(
+				GL_ARRAY_BUFFER,
+				vertices.size() * sizeof(vertices[0]),
+				vertices.data(),
+				GL_STATIC_DRAW);
+
+		// Specify vertex attributes (position and colour) in bound vertex buffer.
+		gl.EnableVertexAttribArray(0);
+		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertices[0]), BUFFER_OFFSET(vertex_type, x));
+		gl.EnableVertexAttribArray(1);
+		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertices[0]), BUFFER_OFFSET(vertex_type, colour));
+	}
+
+
+	void
+	render_stars(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLProgramObject::shared_ptr_type program_object,
+			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+			unsigned int num_small_star_vertices,
+			unsigned int num_small_star_indices,
+			unsigned int num_large_star_vertices,
+			unsigned int num_large_star_indices)
+	{
+		// Make sure we leave the OpenGL global state the way it was.
+		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 		// Set the alpha-blend state.
 		// Set up alpha blending for pre-multiplied alpha.
@@ -216,65 +243,57 @@ namespace
 		//
 		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
 		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
-		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
-		{
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func_separate(
-					GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-					GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		}
-		else // otherwise resort to normal blending...
-		{
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		}
+		gl.Enable(GL_BLEND);
+		gl.BlendFuncSeparate(
+				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-		// Set the anti-aliased point state.
-		renderer.gl_enable(GL_POINT_SMOOTH);
-		renderer.gl_hint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+		// Use the shader program.
+		gl.UseProgram(program_object);
 
 		// Bind the vertex array.
-		vertex_array.gl_bind(renderer);
+		gl.BindVertexArray(vertex_array);
 
 		// Small stars size.
-		renderer.gl_point_size(SMALL_STARS_SIZE);
+		gl.PointSize(SMALL_STARS_SIZE);
 
 		// Draw the small stars.
-		vertex_array.gl_draw_range_elements(
-				renderer,
+		glDrawRangeElements(
 				GL_POINTS,
 				0/*start*/,
 				num_small_star_vertices - 1/*end*/,
 				num_small_star_indices/*count*/,
 				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
-				0/*indices_offset*/);
+				nullptr/*indices_offset*/);
 
 		// Large stars size.
-		renderer.gl_point_size(LARGE_STARS_SIZE);
+		gl.PointSize(LARGE_STARS_SIZE);
 
 		// Draw the large stars.
 		// They come after the small stars in the vertex array.
-		vertex_array.gl_draw_range_elements(
-				renderer,
+		glDrawRangeElements(
 				GL_POINTS,
 				num_small_star_vertices/*start*/,
 				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
 				num_large_star_indices/*count*/,
 				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
-				num_small_star_indices * sizeof(vertex_element_type)/*indices_offset*/);
-
-		return compile_draw_state_scope.get_compiled_draw_state();
+				GPlatesOpenGL::GLUtils::buffer_offset(num_small_star_indices * sizeof(vertex_element_type))/*indices_offset*/);
 	}
 }
 
 
 GPlatesGui::Stars::Stars(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
 	d_view_state(view_state),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
-	d_num_points(0)
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
+	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_num_small_star_vertices(0),
+	d_num_small_star_indices(0),
+	d_num_large_star_vertices(0),
+	d_num_large_star_indices(0)
 {
 	// Vertex shader.
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;
@@ -288,7 +307,7 @@ GPlatesGui::Stars::Stars(
 
 	// Vertex-fragment program.
 	d_program_object = GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-			renderer,
+			gl,
 			vertex_shader_source,
 			fragment_shader_source);
 	if (!d_program_object)
@@ -310,30 +329,40 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, d_num_points, rand, rgba8_colour);
+	std::vector<vertex_type> vertices;
+	std::vector<vertex_element_type> vertex_elements;
+	create_stars(
+			vertices,
+			vertex_elements,
+			d_num_small_star_vertices, d_num_small_star_indices,
+			d_num_large_star_vertices, d_num_large_star_indices,
+			rand,
+			rgba8_colour);
+
+	load_stars(gl, d_vertex_array, d_vertex_buffer, d_vertex_element_buffer, vertices, vertex_elements);
 }
 
 
 void
 GPlatesGui::Stars::paint(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	if (d_view_state.get_show_stars())
 	{
-		if (d_program_object &&
-			d_compiled_draw_state)
+		if (d_program_object)
 		{
-			// Make sure we leave the OpenGL state the way it was.
-			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
-
-			// Bind the shader program.
-			renderer.gl_bind_program_object(d_program_object.get());
-
 			// Either render directly to the framebuffer, or use OpenGL feedback to render to the
 			// QPainter's paint device.
-			if (renderer.rendering_to_context_framebuffer())
+			if (gl.rendering_to_context_framebuffer())
 			{
-				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+				render_stars(
+						gl,
+						d_program_object.get(),
+						d_vertex_array,
+						d_num_small_star_vertices,
+						d_num_small_star_indices,
+						d_num_large_star_vertices,
+						d_num_large_star_indices)
 			}
 			else
 			{
@@ -341,9 +370,16 @@ GPlatesGui::Stars::paint(
 				// We are rendering to the QPainter attached to GLRenderer.
 				FeedbackOpenGLToQPainter feedback_opengl;
 				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-						feedback_opengl, renderer, d_num_points, 0, 0);
+						feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
 
-				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+				render_stars(
+						gl,
+						d_program_object.get(),
+						d_vertex_array,
+						d_num_small_star_vertices,
+						d_num_small_star_indices,
+						d_num_large_star_vertices,
+						d_num_large_star_indices)
 			}
 		}
 	}
