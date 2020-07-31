@@ -44,17 +44,25 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Tracks OpenGL *global* state so it can be restored.
+	 * Tracks common OpenGL global context state so it can be automatically restored.
 	 *
-	 * Only those OpenGL calls that change the *global* state are routed through this class.
-	 * All remaining OpenGL calls can be made directly through OpenGL.
+	 * Only those OpenGL calls that change the global context state are routed through this class.
+	 * All remaining OpenGL calls should be made directly to OpenGL, including calls that change the
+	 * state of OpenGL objects (such as vertex arrays, buffers, textures, programs, framebuffers, etc).
 	 *
-	 * Some extra OpenGL calls (beyond tracking global state) are also routed through this class.
+	 * Note that only those global context state calls that are commonly used are catered for here.
+	 * Uncatered global context state calls will need to be made directly to OpenGL, and hence will
+	 * have no save/restore ability provided by this class.
+	 *
+	 * Some extra OpenGL calls (beyond tracking global context state) are also routed through this class.
 	 * For example, calls that set the state *inside* a vertex array object (hence not global state)
 	 * are also routed through this class so that a single @a GLVertexArray instance can have one
 	 * native vertex array object per OpenGL context. By tracking the state we can create a new
 	 * native object when switching to another context and set its state to match. This is needed
 	 * because vertex array objects (unlike buffer objects) cannot be shared across contexts.
+	 * Note that the default attribute state set by glVertexAttrib* (such as glVertexAttrib4f) are
+	 * actually global context state (they're not part of vertex array object state). Despite this they
+	 * are an example of context state not catered for in this class (so will need direct calls to OpenGL).
 	 */
 	class GL :
 			public GPlatesUtils::ReferenceCount<GL>
@@ -130,25 +138,16 @@ namespace GPlatesOpenGL
 		// Any calls not provided below can be called with direct native OpenGL calls (with 'gl' prefix).
 		//
 
-		//! Bind vertex array object.
+		//! Bind vertex array object (none means unbind).
 		void
 		BindVertexArray(
-				GPlatesOpenGL::GLVertexArray::shared_ptr_to_const_type array);
+				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
-		//! Bind vertex array object to zero.
-		void
-		BindVertexArray();
-
-		//! Bind buffer object target.
+		//! Bind buffer target to buffer object (none means unbind).
 		void
 		BindBuffer(
 				GLenum target,
-				GPlatesOpenGL::GLBuffer::shared_ptr_to_const_type buffer);
-
-		//! Bind buffer object target to zero.
-		void
-		BindBuffer(
-				GLenum target);
+				boost::optional<GLBuffer::shared_ptr_type> buffer);
 
 		void
 		EnableVertexAttribArray(
@@ -158,6 +157,10 @@ namespace GPlatesOpenGL
 		DisableVertexAttribArray(
 				GLuint index);
 
+		void
+		VertexAttribDivisor(
+				GLuint index,
+				GLuint divisor);
 
 		void
 		VertexAttribPointer(
@@ -166,7 +169,7 @@ namespace GPlatesOpenGL
 				GLenum type,
 				GLboolean normalized,
 				GLsizei stride,
-				GLvoid *pointer);
+				const GLvoid *pointer);
 
 		void
 		VertexAttribIPointer(
@@ -174,7 +177,7 @@ namespace GPlatesOpenGL
 				GLint size,
 				GLenum type,
 				GLsizei stride,
-				GLvoid *pointer);
+				const GLvoid *pointer);
 
 	private:
 
