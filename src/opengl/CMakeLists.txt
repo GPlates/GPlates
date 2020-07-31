@@ -145,10 +145,6 @@ set(srcs
     GLVertex.h
     GLVertexArray.cc
     GLVertexArray.h
-    GLVertexArrayImpl.cc
-    GLVertexArrayImpl.h
-    GLVertexArrayObject.cc
-    GLVertexArrayObject.h
     GLVertexBuffer.cc
     GLVertexBuffer.h
     GLVertexBufferImpl.cc

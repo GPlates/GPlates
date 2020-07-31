@@ -80,14 +80,14 @@ namespace GPlatesOpenGL
 		{
 			KEY_ACTIVE_TEXTURE,
 			KEY_ALPHA_FUNC,
-			KEY_BIND_ARRAY_BUFFER_OBJECT,
-			KEY_BIND_ELEMENT_ARRAY_BUFFER_OBJECT,
+			KEY_BIND_ARRAY_BUFFER,
+			KEY_BIND_ELEMENT_ARRAY_BUFFER,
 			KEY_BIND_FRAME_BUFFER,
-			KEY_BIND_PIXEL_PACK_BUFFER_OBJECT,
-			KEY_BIND_PIXEL_UNPACK_BUFFER_OBJECT,
+			KEY_BIND_PIXEL_PACK_BUFFER,
+			KEY_BIND_PIXEL_UNPACK_BUFFER,
 			KEY_BIND_PROGRAM_OBJECT,
-			KEY_BIND_TEXTURE_BUFFER_OBJECT,
-			KEY_BIND_VERTEX_ARRAY_OBJECT,
+			KEY_BIND_TEXTURE_BUFFER,
+			KEY_BIND_VERTEX_ARRAY,
 			KEY_BLEND_EQUATION,
 			KEY_BLEND_FUNC,
 			KEY_CLEAR_COLOR,
@@ -139,9 +139,9 @@ namespace GPlatesOpenGL
 		};
 
 
-		//! For binding buffer objects (objects that target GL_ARB_vertex_buffer_object extension).
+		//! For binding buffer objects.
 		key_type
-		get_bind_buffer_object_key(
+		get_bind_buffer_key(
 				GLenum target) const;
 
 		//! For glEnable with non-texture targets.

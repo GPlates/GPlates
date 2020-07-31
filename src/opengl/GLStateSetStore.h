@@ -65,11 +65,11 @@ namespace GPlatesOpenGL
 		// Alphabetically ordered...
 		GPlatesUtils::ObjectPool<GLActiveTextureStateSet> active_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLAlphaFuncStateSet> alpha_func_state_sets;
-		GPlatesUtils::ObjectPool<GLBindBufferObjectStateSet> bind_buffer_object_state_sets;
+		GPlatesUtils::ObjectPool<GLBindBufferStateSet> bind_buffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindFrameBufferObjectStateSet> bind_frame_buffer_object_state_sets;
 		GPlatesUtils::ObjectPool<GLBindProgramObjectStateSet> bind_program_object_state_sets;
 		GPlatesUtils::ObjectPool<GLBindTextureStateSet> bind_texture_state_sets;
-		GPlatesUtils::ObjectPool<GLBindVertexArrayObjectStateSet> bind_vertex_array_object_state_sets;
+		GPlatesUtils::ObjectPool<GLBindVertexArrayStateSet> bind_vertex_array_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendEquationStateSet> blend_equation_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendFuncStateSet> blend_func_state_sets;
 		GPlatesUtils::ObjectPool<GLClearColorStateSet> clear_color_state_sets;
@@ -77,16 +77,12 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLClearStencilStateSet> clear_stencil_state_sets;
 		GPlatesUtils::ObjectPool<GLClientActiveTextureStateSet> client_active_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLColorMaskStateSet> color_mask_state_sets;
-		GPlatesUtils::ObjectPool<GLColorPointerStateSet> color_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLCullFaceStateSet> cull_face_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthFuncStateSet> depth_func_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthMaskStateSet> depth_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthRangeStateSet> depth_range_state_sets;
-		GPlatesUtils::ObjectPool<GLEnableClientStateStateSet> enable_client_state_state_sets;
-		GPlatesUtils::ObjectPool<GLEnableClientTextureStateStateSet> enable_client_texture_state_state_sets;
 		GPlatesUtils::ObjectPool<GLEnableStateSet> enable_state_sets;
 		GPlatesUtils::ObjectPool<GLEnableTextureStateSet> enable_texture_state_sets;
-		GPlatesUtils::ObjectPool<GLEnableVertexAttribArrayStateSet> enable_vertex_attrib_array_state_sets;
 		GPlatesUtils::ObjectPool<GLFrontFaceStateSet> front_face_state_sets;
 		GPlatesUtils::ObjectPool<GLHintStateSet> hint_state_sets;
 		GPlatesUtils::ObjectPool<GLLineWidthStateSet> line_width_state_sets;
@@ -96,16 +92,12 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLPointSizeStateSet> point_size_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonModeStateSet> polygon_mode_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
-		GPlatesUtils::ObjectPool<GLNormalPointerStateSet> normal_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLScissorStateSet> scissor_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilMaskStateSet> stencil_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilOpStateSet> stencil_op_state_sets;
-		GPlatesUtils::ObjectPool<GLTexCoordPointerStateSet> tex_coord_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLTexGenStateSet> tex_gen_state_sets;
 		GPlatesUtils::ObjectPool<GLTexEnvStateSet> tex_env_state_sets;
-		GPlatesUtils::ObjectPool<GLVertexAttribPointerStateSet> vertex_attrib_array_state_sets;
-		GPlatesUtils::ObjectPool<GLVertexPointerStateSet> vertex_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLViewportStateSet> viewport_state_sets;
 
 	private:

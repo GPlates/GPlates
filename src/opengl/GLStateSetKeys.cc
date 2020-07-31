@@ -76,32 +76,32 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_object_key(
+GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 		GLenum target) const
 {
 	key_type key = 0;
 
 	switch (target)
 	{
-	case GL_ARRAY_BUFFER_ARB:
-		key = KEY_BIND_ARRAY_BUFFER_OBJECT;
+	case GL_ARRAY_BUFFER:
+		key = KEY_BIND_ARRAY_BUFFER;
 		break;
-	case GL_ELEMENT_ARRAY_BUFFER_ARB:
-		key = KEY_BIND_ELEMENT_ARRAY_BUFFER_OBJECT;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		key = KEY_BIND_ELEMENT_ARRAY_BUFFER;
 		break;
-	case GL_PIXEL_PACK_BUFFER_ARB:
-		key = KEY_BIND_PIXEL_PACK_BUFFER_OBJECT;
+	case GL_PIXEL_PACK_BUFFER:
+		key = KEY_BIND_PIXEL_PACK_BUFFER;
 		break;
-	case GL_PIXEL_UNPACK_BUFFER_ARB:
-		key = KEY_BIND_PIXEL_UNPACK_BUFFER_OBJECT;
+	case GL_PIXEL_UNPACK_BUFFER:
+		key = KEY_BIND_PIXEL_UNPACK_BUFFER;
 		break;
-	case GL_TEXTURE_BUFFER_ARB:
-		key = KEY_BIND_TEXTURE_BUFFER_OBJECT;
+	case GL_TEXTURE_BUFFER:
+		key = KEY_BIND_TEXTURE_BUFFER;
 		break;
 
 	default:
 		// Unsupported capability.
-		qWarning() << "binding of specified GL_ARB_vertex_buffer_object target not currently supported - should be easy to add though.";
+		qWarning() << "binding of specified buffer object target not currently supported - should be easy to add though.";
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}

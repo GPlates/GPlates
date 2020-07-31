@@ -36,8 +36,6 @@
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL1.h>
 
-#include "utils/SubjectObserverToken.h"
-
 
 namespace GPlatesOpenGL
 {
@@ -553,59 +551,15 @@ namespace GPlatesOpenGL
 			GLvoid *d_data;
 		};
 
-
-		/////////////////////////////////////////////////////////////
-		//                                                         //
-		// The following are support for the render framework only //
-		//                                                         //
-		/////////////////////////////////////////////////////////////
-
-
-		//! Typedef for an observer of buffer allocations.
-		typedef GPlatesUtils::ObserverToken buffer_allocation_observer_type;
-
-
-		/**
-		 * Returns true if a buffer has been allocated (ie, is @a gl_buffer_data has been called)
-		 * since @a buffer_allocation_observer was last passed to this method.
-		 *
-		 * NOTE: Only buffer allocations are considered here (this does *not* include)
-		 * @a gl_buffer_sub_data or the buffer mapping methods since they operate on an existing
-		 * (already allocated) buffer. The only method to allocate a new buffer is @a gl_buffer_data.
-		 */
-		bool
-		has_buffer_been_allocated_since(
-				const buffer_allocation_observer_type &buffer_allocation_observer) const
-		{
-			return !d_buffer_allocation_subject.is_observer_up_to_date(buffer_allocation_observer);
-		}
-
-		/**
-		 * Updates the specified buffer allocation observer so that a call to
-		 * @a has_buffer_been_allocated_since will subsequently return false.
-		 */
-		void
-		update_buffer_allocation_observer(
-				buffer_allocation_observer_type &buffer_allocation_observer) const
-		{
-			d_buffer_allocation_subject.update_observer(buffer_allocation_observer);
-		}
-
-	protected:
-		//! Derived classes can notify clients that a buffer allocation has occurred.
-		void
-		allocated_buffer()
-		{
-			d_buffer_allocation_subject.invalidate();
-		}
-
 	private:
-		//! Typedef for a subject of buffer allocations.
-		typedef GPlatesUtils::SubjectToken buffer_allocation_subject_type;
 
+	public:  // For use by the OpenGL framework...
 
-		//! Keeps track of buffer allocations (ie, calls to 'gl_buffer_data').
-		buffer_allocation_subject_type d_buffer_allocation_subject;
+		/**
+		 * Returns the buffer resource handle.
+		 */
+		GLuint
+		get_resource_handle() const;
 	};
 }
 

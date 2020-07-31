@@ -122,7 +122,7 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state)
 		{
 			// Make sure the correct buffer object is currently bound.
-			if (last_applied_state.get_bind_buffer_object_resource(target) != buffer_object_resource)
+			if (last_applied_state.get_bind_buffer_resource(target) != buffer_object_resource)
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						capabilities.buffer.gl_ARB_vertex_buffer_object,
@@ -147,7 +147,7 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state)
 		{
 			// Make sure the no buffer object is currently bound.
-			if (last_applied_state.get_bind_buffer_object_resource(target))
+			if (last_applied_state.get_bind_buffer_resource(target))
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						capabilities.buffer.gl_ARB_vertex_buffer_object,
@@ -387,180 +387,6 @@ namespace GPlatesOpenGL
 }
 
 
-bool
-GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_state(
-		const GLVertexAttributeBuffer &last_applied_buffer) const
-{
-	bool updated_buffer = false;
-
-	// Determine if we're using a vertex buffer object or client memory.
-	const GLBufferImpl::shared_ptr_to_const_type *buffer_impl =
-			boost::get<GLBufferImpl::shared_ptr_to_const_type>(&d_buffer_variant);
-
-	if (buffer_impl) // using client memory...
-	{
-		// See if the client memory array has changed.
-		// NOTE: 'this' and 'last_applied_buffer' may refer to the *same* object.
-		const GLvoid *buffer_pointer = (*buffer_impl)->get_buffer_resource() + d_offset;
-		if (buffer_pointer != last_applied_buffer.d_pointer_to_apply)
-		{
-			updated_buffer = true;
-		}
-		d_pointer_to_apply = buffer_pointer;
-	}
-	else // using buffer object...
-	{
-		// See if the buffer offset has changed.
-		// NOTE: 'this' and 'last_applied_buffer' may refer to the *same* object.
-		const GLvoid *buffer_pointer = BUFFER_OFFSET(d_offset);
-		if (buffer_pointer != last_applied_buffer.d_pointer_to_apply)
-		{
-			updated_buffer = true;
-		}
-		d_pointer_to_apply = buffer_pointer;
-	}
-
-	// The following applies to *both* types of buffers.
-	//
-	// If it's a different buffer (includes changing from buffer object to client memory or vice versa) *or*
-	// (it's the same buffer *and* it has been allocated since last specified to OpenGL).
-	//
-	// If it's the same buffer then see if the internal buffer has been reallocated
-	// (ie, if 'glBufferData' has been called).
-	// This shouldn't be necessary for native buffer objects (ie, the GLBufferObject type) - seems
-	// to work fine without this on nVidia hardware but ATI hardware seems to need it (at least the
-	// Macbook AMD HD6750 tested on) - seems needs the vertex array pointers to be rebound whenever
-	// 'glBufferData' is called.
-	// Maybe this isn't in the spec and nVidia do it anyway - not sure what the spec says?
-	// 
-	if (d_buffer != last_applied_buffer.d_buffer ||
-		d_buffer->has_buffer_been_allocated_since(d_buffer_allocation_observer))
-	{
-		updated_buffer = true;
-	}
-
-	return updated_buffer;
-}
-
-
-bool
-GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_from_default_state() const
-{
-	bool updated_buffer = false;
-
-	// Determine if we're using a vertex buffer object or client memory.
-	const GLBufferImpl::shared_ptr_to_const_type *buffer_impl =
-			boost::get<GLBufferImpl::shared_ptr_to_const_type>(&d_buffer_variant);
-
-	if (buffer_impl) // using client memory...
-	{
-		// No need to check for a different buffer because the default is a NULL client memory array.
-
-		// See if the client memory array has changed.
-		const GLvoid *buffer_pointer = (*buffer_impl)->get_buffer_resource() + d_offset;
-		if (buffer_pointer != NULL/*default client memory pointer*/)
-		{
-			updated_buffer = true;
-		}
-		d_pointer_to_apply = buffer_pointer;
-	}
-	else // using buffer object...
-	{
-		// The very fact we're using a buffer object means we're different than the default
-		// (which is client memory arrays).
-		updated_buffer = true;
-
-		// Update the buffer offset.
-		d_pointer_to_apply = BUFFER_OFFSET(d_offset);
-	}
-
-	return updated_buffer;
-}
-
-
-bool
-GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_to_default_state() const
-{
-	bool updated_buffer = false;
-
-	// Determine if we're using a vertex buffer object or client memory.
-	const GLBufferImpl::shared_ptr_to_const_type *buffer_impl =
-			boost::get<GLBufferImpl::shared_ptr_to_const_type>(&d_buffer_variant);
-
-	if (buffer_impl) // using client memory...
-	{
-		// No need to check for a different buffer because the default is a NULL client memory array.
-
-		// We are the last applied state - we're going *to* the default state.
-		// See if the client memory array has changed.
-		if (d_pointer_to_apply != NULL/*default client memory pointer*/)
-		{
-			updated_buffer = true;
-			d_pointer_to_apply = NULL; // Not really used - but just in case.
-		}
-	}
-	else // using buffer object...
-	{
-		// The very fact we're using a buffer object means we're different than the default
-		// (which is client memory arrays).
-		updated_buffer = true;
-
-		// Not really used - but just in case.
-		d_pointer_to_apply = NULL;
-
-		// We are the last applied state - we're going *to* the default state.
-	}
-
-	return updated_buffer;
-}
-
-
-void
-GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Determine if we're using a vertex buffer object or client memory.
-	const GLBufferImpl::shared_ptr_to_const_type *buffer_impl =
-			boost::get<GLBufferImpl::shared_ptr_to_const_type>(&d_buffer_variant);
-
-	if (buffer_impl) // using client memory...
-	{
-		// Make sure we're using client memory by unbinding any currently bound buffer object.
-		unbind_buffer_object(
-				capabilities,
-				GLVertexBufferObject::get_target_type(),
-				last_applied_state);
-	}
-	else // using buffer object...
-	{
-		const GLBufferObject::shared_ptr_to_const_type &buffer_object =
-				boost::get<GLBufferObject::shared_ptr_to_const_type>(d_buffer_variant);
-
-		// Bind the buffer object.
-		bind_buffer_object(
-				capabilities,
-				buffer_object->get_buffer_resource_handle(),
-				buffer_object,
-				GLVertexBufferObject::get_target_type(),
-				last_applied_state);
-	}
-}
-
-
-void
-GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::unbind_buffer(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Make sure we're using client memory by unbinding any currently bound buffer object.
-	unbind_buffer_object(
-			capabilities,
-			GLVertexBufferObject::get_target_type(),
-			last_applied_state);
-}
-
-
 GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 		const GLCapabilities &capabilities,
 		GLenum active_texture) :
@@ -683,71 +509,51 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_to_default_state(
 
 
 void
-GPlatesOpenGL::GLBindBufferObjectStateSet::apply_state(
+GPlatesOpenGL::GLBindBufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_buffer_object_resource ==
+	if (d_buffer_resource ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindBufferObjectStateSet &>(last_applied_state_set).d_buffer_object_resource)
+			dynamic_cast<const GLBindBufferStateSet &>(current_state_set).d_buffer_resource)
 	{
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_buffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	if (d_buffer_object_resource)
-	{
-		// Bind the buffer object.
-		glBindBufferARB(d_target, d_buffer_object_resource.get());
-	}
-	else
-	{
-		// No buffer object - back to client memory arrays.
-		glBindBufferARB(d_target, 0);
-	}
+	// Bind the buffer object (can be zero).
+	glBindBuffer(d_target, d_buffer_resource);
 }
 
 void
-GPlatesOpenGL::GLBindBufferObjectStateSet::apply_from_default_state(
+GPlatesOpenGL::GLBindBufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_buffer_object_resource)
+	if (d_buffer_resource == 0)
 	{
 		return;
 	}
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_buffer_object,
-			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the buffer object.
-	glBindBufferARB(d_target, d_buffer_object_resource.get());
+	glBindBuffer(d_target, d_buffer_resource);
 }
 
 void
-GPlatesOpenGL::GLBindBufferObjectStateSet::apply_to_default_state(
+GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_buffer_object_resource)
+	if (d_buffer_resource == 0)
 	{
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_buffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The default is zero (no buffer object - back to client memory arrays).
-	glBindBufferARB(d_target, 0);
+	// The default is zero (no buffer object).
+	glBindBuffer(d_target, 0);
 }
 
 
@@ -988,106 +794,51 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 
 
 void
-GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_state(
+GPlatesOpenGL::GLBindVertexArrayStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_resource_handle ==
+	if (d_array_resource ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindVertexArrayObjectStateSet &>(last_applied_state_set).d_resource_handle)
+			dynamic_cast<const GLBindVertexArrayStateSet &>(current_state_set).d_array_resource)
 	{
 		return;
 	}
 
-#ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_array_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	if (d_resource_handle)
-	{
-		// Bind the vertex array object.
-		glBindVertexArray(d_resource_handle.get());
-	}
-	else
-	{
-		// No vertex array object - back to managing individual vertex attribute arrays.
-		glBindVertexArray(0);
-	}
-#else
-	throw OpenGLException(GPLATES_EXCEPTION_SOURCE, "Internal Error: GL_ARB_vertex_array_object not supported");
-#endif
-
-	// The above binding effectively brings in a bunch of state such as buffer bindings, client
-	// enable/disable state, etc, so we mirror this in our shadowed state.
-	// That way those individual states won't try to apply themselves thinking the underlying
-	// OpenGL state is different than it is.
-	//
-	// NOTE: It doesn't matter if binding a non-zero vertex array object or zero.
-	// The zero object means *no* vertex array object (or the default object) is targeted/accessed.
-	// This means reverting to the state that exists before a non-zero object was bound.
- 	last_applied_state.copy_vertex_array_state(*d_current_resource_state);
+	// Bind the vertex array object (can be zero).
+	glBindVertexArray(d_array_resource);
 }
 
 void
-GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_from_default_state(
+GPlatesOpenGL::GLBindVertexArrayStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_resource_handle)
+	if (d_array_resource == 0)
 	{
 		return;
 	}
-
-#ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_array_object,
-			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the vertex array object.
-	glBindVertexArray(d_resource_handle.get());
-#else
-	throw OpenGLException(GPLATES_EXCEPTION_SOURCE, "Internal Error: GL_ARB_vertex_array_object not supported");
-#endif
-
-	// The above binding effectively brings in a bunch of state such as buffer bindings, client
-	// enable/disable state, etc, so we mirror this in our shadowed state.
-	// That way those individual states won't try to apply themselves thinking the underlying
-	// OpenGL state is different than it is.
-	//
-	// NOTE: It doesn't matter if binding a non-zero vertex array object or zero.
-	// The zero object means *no* vertex array object (or the default object) is targeted/accessed.
-	// This means reverting to the state that exists before a non-zero object was bound.
- 	last_applied_state.copy_vertex_array_state(*d_current_resource_state);
+	glBindVertexArray(d_array_resource);
 }
 
 void
-GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
+GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_resource_handle)
+	if (d_array_resource == 0)
 	{
 		return;
 	}
 
-#ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_vertex_array_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The default is zero (no vertex array object - back to managing individual vertex attribute arrays).
+	// The default is zero (no vertex array object).
     glBindVertexArray(0);
-#else
-	throw OpenGLException(GPLATES_EXCEPTION_SOURCE, "Internal Error: GL_ARB_vertex_array_object not supported");
-#endif
-
-	// Mirror the fact that the above bind has just reverted to the current default vertex array state.
- 	last_applied_state.copy_vertex_array_state(*d_current_default_state);
 }
 
 
@@ -1560,79 +1311,6 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 
 
 void
-GPlatesOpenGL::GLColorPointerStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Throws exception if downcast fails...
-	const GLColorPointerStateSet &last_applied = dynamic_cast<const GLColorPointerStateSet &>(last_applied_state_set);
-
-	// Return early if no state change...
-	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
-		d_size == last_applied.d_size &&
-		d_type == last_applied.d_type &&
-		d_stride == last_applied.d_stride)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLColorPointerStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_from_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLColorPointerStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_to_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(capabilities, last_applied_state);
-
-	// These are the default parameters.
-	glColorPointer(4, GL_FLOAT, 0, NULL);
-	d_buffer.applied_buffer_pointer_to_opengl();
-
-	// Any GL_COLOR_ARRAY_BUFFER_BINDING binding to a vertex buffer object (if any) is now released.
-}
-
-
-void
 GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
@@ -1890,121 +1568,6 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 
 
 void
-GPlatesOpenGL::GLEnableClientStateStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (d_enable ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLEnableClientStateStateSet &>(last_applied_state_set).d_enable)
-	{
-		return;
-	}
-
-	if (d_enable)
-	{
-		glEnableClientState(d_array);
-	}
-	else
-	{
-		glDisableClientState(d_array);
-	}
-}
-
-void
-GPlatesOpenGL::GLEnableClientStateStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	glEnableClientState(d_array);
-}
-
-void
-GPlatesOpenGL::GLEnableClientStateStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	glDisableClientState(d_array);
-}
-
-
-void
-GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (d_enable ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLEnableClientTextureStateStateSet &>(last_applied_state_set).d_enable)
-	{
-		return;
-	}
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	if (d_enable)
-	{
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	}
-	else
-	{
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	}
-}
-
-void
-GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-
-void
-GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-
-
-void
 GPlatesOpenGL::GLEnableStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
@@ -2143,59 +1706,6 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	glDisable(d_texture_target);
-}
-
-
-void
-GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (d_enable ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLEnableVertexAttribArrayStateSet &>(last_applied_state_set).d_enable)
-	{
-		return;
-	}
-
-	if (d_enable)
-	{
-		glEnableVertexAttribArrayARB(d_attribute_index);
-	}
-	else
-	{
-		glDisableVertexAttribArrayARB(d_attribute_index);
-	}
-}
-
-void
-GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	glEnableVertexAttribArrayARB(d_attribute_index);
-}
-
-void
-GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_enable)
-	{
-		return;
-	}
-
-	glDisableVertexAttribArrayARB(d_attribute_index);
 }
 
 
@@ -2495,76 +2005,6 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_to_default_state(
 	}
 
 	glMatrixMode(GL_MODELVIEW);
-}
-
-
-void
-GPlatesOpenGL::GLNormalPointerStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Throws exception if downcast fails...
-	const GLNormalPointerStateSet &last_applied = dynamic_cast<const GLNormalPointerStateSet &>(last_applied_state_set);
-
-	// Return early if no state change...
-	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
-		d_type == last_applied.d_type &&
-		d_stride == last_applied.d_stride)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLNormalPointerStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_from_default_state() &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLNormalPointerStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_to_default_state() &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(capabilities, last_applied_state);
-
-	// These are the default parameters.
-	glNormalPointer(GL_FLOAT, 0, NULL);
-	d_buffer.applied_buffer_pointer_to_opengl();
-
-	// Any GL_NORMAL_ARRAY_BUFFER_BINDING binding to a vertex buffer object (if any) is now released.
 }
 
 
@@ -2998,91 +2438,6 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 }
 
 
-void
-GPlatesOpenGL::GLTexCoordPointerStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Throws exception if downcast fails...
-	const GLTexCoordPointerStateSet &last_applied = dynamic_cast<const GLTexCoordPointerStateSet &>(last_applied_state_set);
-
-	// Return early if no state change...
-	// No need to compare texture unit - different units go into different state-set slots.
-	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
-		d_size == last_applied.d_size &&
-		d_type == last_applied.d_type &&
-		d_stride == last_applied.d_stride)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	// GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glTexCoordPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLTexCoordPointerStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	// No need to compare texture unit - different units go into different state-set slots.
-	if (!d_buffer.has_changed_from_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	// GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glTexCoordPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLTexCoordPointerStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	// No need to compare texture unit - different units go into different state-set slots.
-	if (!d_buffer.has_changed_to_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(capabilities, last_applied_state);
-
-	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
-
-	// These are the default parameters.
-	glTexCoordPointer(4, GL_FLOAT, 0, NULL);
-	d_buffer.applied_buffer_pointer_to_opengl();
-
-	// Any GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING binding to a vertex buffer object (if any) is now released.
-}
-
-
 const GPlatesOpenGL::GLTexGenStateSet::param_type GPlatesOpenGL::GLTexGenStateSet::DEFAULT_GEN_MODE = GL_EYE_LINEAR;
 const GPlatesOpenGL::GLTexGenStateSet::param_type GPlatesOpenGL::GLTexGenStateSet::DEFAULT_S_PLANE =
 		GPlatesOpenGL::GLTexGenStateSet::initialise_plane(1, 0, 0, 0);
@@ -3341,305 +2696,6 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 
 	// To keep compiler happy - shouldn't be able to get here.
 	return GLint(0);
-}
-
-
-GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
-		const GLCapabilities &capabilities,
-		GLuint attribute_index,
-		VertexAttribAPIType vertex_attrib_api,
-		GLint size,
-		GLenum type,
-		boost::optional<GLboolean> normalized,
-		GLsizei stride,
-		GLint offset,
-		const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
-	d_buffer(offset, buffer_object),
-	d_attribute_index(attribute_index),
-	d_vertex_attrib_api(vertex_attrib_api),
-	d_size(size),
-	d_type(type),
-	d_normalized(normalized),
-	d_stride(stride)
-{
-	// The relevant extension(s) must be supported...
-	switch (d_vertex_attrib_api)
-	{
-	case VERTEX_ATTRIB_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader && normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	case VERTEX_ATTRIB_I_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader &&
-					capabilities.shader.gl_EXT_gpu_shader4 &&
-					!normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	case VERTEX_ATTRIB_L_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader &&
-					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
-					!normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
-	}
-}
-
-GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
-		const GLCapabilities &capabilities,
-		GLuint attribute_index,
-		VertexAttribAPIType vertex_attrib_api,
-		GLint size,
-		GLenum type,
-		boost::optional<GLboolean> normalized,
-		GLsizei stride,
-		GLint offset,
-		const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
-	d_buffer(offset, buffer_impl),
-	d_attribute_index(attribute_index),
-	d_vertex_attrib_api(vertex_attrib_api),
-	d_size(size),
-	d_type(type),
-	d_normalized(normalized),
-	d_stride(stride)
-{
-	// The relevant extension(s) must be supported...
-	switch (d_vertex_attrib_api)
-	{
-	case VERTEX_ATTRIB_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader && normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	case VERTEX_ATTRIB_I_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader &&
-					capabilities.shader.gl_EXT_gpu_shader4 &&
-					!normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	case VERTEX_ATTRIB_L_POINTER:
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				capabilities.shader.gl_ARB_vertex_shader &&
-					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
-					!normalized,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
-	}
-}
-
-
-void
-GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Throws exception if downcast fails...
-	const GLVertexAttribPointerStateSet &last_applied = dynamic_cast<const GLVertexAttribPointerStateSet &>(last_applied_state_set);
-
-	// Return early if no state change...
-	// No need to compare attribute index - different indices go into different state-set slots.
-	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
-		d_vertex_attrib_api == last_applied.d_vertex_attrib_api &&
-		d_size == last_applied.d_size &&
-		d_type == last_applied.d_type &&
-		d_normalized == last_applied.d_normalized &&
-		d_stride == last_applied.d_stride)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	switch (d_vertex_attrib_api)
-	{
-	case VERTEX_ATTRIB_POINTER:
-		glVertexAttribPointerARB(
-				d_attribute_index, d_size, d_type, d_normalized.get(), d_stride, d_buffer.get_buffer_pointer_to_apply());
-		break;
-	case VERTEX_ATTRIB_I_POINTER:
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-		glVertexAttribIPointerEXT(
-				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-#endif
-		break;
-	case VERTEX_ATTRIB_L_POINTER:
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-		glVertexAttribLPointer(
-				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-#endif
-		break;
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
-	}
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
-	// No need to compare attribute index - different indices go into different state-set slots.
-	if (!d_buffer.has_changed_from_default_state() &&
-		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		static_cast<bool>(d_normalized) == GL_FALSE &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	switch (d_vertex_attrib_api)
-	{
-	case VERTEX_ATTRIB_POINTER:
-		glVertexAttribPointerARB(
-				d_attribute_index, d_size, d_type, d_normalized.get(), d_stride, d_buffer.get_buffer_pointer_to_apply());
-		break;
-	case VERTEX_ATTRIB_I_POINTER:
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-		glVertexAttribIPointerEXT(
-				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-#endif
-		break;
-	case VERTEX_ATTRIB_L_POINTER:
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-		glVertexAttribLPointer(
-				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-#endif
-		break;
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
-	}
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
-	// No need to compare attribute index - different indices go into different state-set slots.
-	if (!d_buffer.has_changed_to_default_state() &&
-		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		static_cast<bool>(d_normalized) == GL_FALSE &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(capabilities, last_applied_state);
-
-	// These are the default parameters.
-	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
-	glVertexAttribPointerARB(d_attribute_index, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	d_buffer.applied_buffer_pointer_to_opengl();
-
-	// Any GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING binding to a vertex buffer object (if any) is now released.
-}
-
-
-void
-GPlatesOpenGL::GLVertexPointerStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
-{
-	// Throws exception if downcast fails...
-	const GLVertexPointerStateSet &last_applied = dynamic_cast<const GLVertexPointerStateSet &>(last_applied_state_set);
-
-	// Return early if no state change...
-	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
-		d_size == last_applied.d_size &&
-		d_type == last_applied.d_type &&
-		d_stride == last_applied.d_stride)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLVertexPointerStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_from_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(capabilities, last_applied_state);
-
-	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
-	d_buffer.applied_buffer_pointer_to_opengl();
-}
-
-void
-GPlatesOpenGL::GLVertexPointerStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
-{
-	// Return early if no state change...
-	if (!d_buffer.has_changed_to_default_state() &&
-		d_size == 4 &&
-		d_type == GL_FLOAT &&
-		d_stride == 0)
-	{
-		return;
-	}
-
-	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(capabilities, last_applied_state);
-
-	// These are the default parameters.
-	glVertexPointer(4, GL_FLOAT, 0, NULL);
-	d_buffer.applied_buffer_pointer_to_opengl();
-
-	// Any GL_VERTEX_ARRAY_BUFFER_BINDING binding to a vertex buffer object (if any) is now released.
 }
 
 

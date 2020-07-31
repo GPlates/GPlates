@@ -167,6 +167,12 @@ GPlatesOpenGL::GLCapabilities::initialise_framebuffer()
 void
 GPlatesOpenGL::GLCapabilities::initialise_shader()
 {
+	// Get the maximum supported number of generic vertex attributes.
+	GLint max_vertex_attribs;
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &max_vertex_attribs);
+	// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+	shader.gl_max_vertex_attribs = max_vertex_attribs;
+
 	if (GLEW_ARB_shader_objects)
 	{
 		shader.gl_ARB_shader_objects = true;
@@ -177,12 +183,6 @@ GPlatesOpenGL::GLCapabilities::initialise_shader()
 	if (GLEW_ARB_vertex_shader)
 	{
 		shader.gl_ARB_vertex_shader = true;
-
-		// Get the maximum supported number of generic vertex attributes.
-		GLint max_vertex_attribs;
-		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &max_vertex_attribs);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		shader.gl_max_vertex_attribs = max_vertex_attribs;
 
 		qDebug() << "  GL_ARB_vertex_shader";
 	}

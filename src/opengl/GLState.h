@@ -38,14 +38,13 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL1.h>
 
-#include "GLBufferImpl.h"
-#include "GLBufferObject.h"
+#include "GLBuffer.h"
 #include "GLCapabilities.h"
 #include "GLDepthRange.h"
 #include "GLFrameBufferObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
-#include "GLVertexArrayObject.h"
+#include "GLVertexArray.h"
 #include "GLVertexBufferObject.h"
 #include "GLViewport.h"
 
@@ -649,124 +648,50 @@ namespace GPlatesOpenGL
 					&GLBindTextureStateSet::d_texture_object);
 		}
 
-		//! Binds the vertex array object to the active OpenGL context.
+
+		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
 		void
-		set_bind_vertex_array_object(
-				GLVertexArrayObject::resource_handle_type resource_handle,
-				const shared_ptr_type &current_resource_state,
-				const shared_ptr_to_const_type &target_resource_state,
-				// NOTE: This is *only* here for @a get_bind_vertex_array_object and to keep it alive until rendered.
-				// The resource handle is what is used to do the actual binding....
-				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object)
+		bind_vertex_array(
+				boost::optional<GLVertexArray::shared_ptr_type> array,
+				// Array resource handle associated with the current OpenGL context...
+				GLuint array_resource)
 		{
 			set_state_set(
-					d_state_set_store->bind_vertex_array_object_state_sets,
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT,
-					boost::in_place(
-							resource_handle,
-							current_resource_state,
-							d_shared_data->default_vertex_array_object_current_context_state,
-							vertex_array_object));
-			// Also set the individual state-sets of the buffer bindings, client enable/disable, etc
-			// that the vertex array object is supposed to represent which is 'target_resource_state'.
-			// What it currently represents is 'current_resource_state'.
-			// That way any difference between current and target will get applied if necessary.
-			// Most of the time the two states will be in sync and nothing need be done except
-			// bind the native vertex array object itself (which is its main purpose).
-			merge_state_change(*target_resource_state);
-		}
-
-		//! Same as @a set_bind_vertex_array_object but also applies directly to OpenGL.
-		void
-		set_bind_vertex_array_object_and_apply(
-				const GLCapabilities &capabilities,
-				GLVertexArrayObject::resource_handle_type resource_handle,
-				const shared_ptr_type &current_resource_state,
-				const shared_ptr_to_const_type &target_resource_state,
-				// NOTE: This is *only* here for @a get_bind_vertex_array_object and to keep it alive until rendered.
-				// The resource handle is what is used to do the actual binding....
-				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object,
-				GLState &last_applied_state)
-		{
-			set_bind_vertex_array_object(resource_handle, current_resource_state, target_resource_state, vertex_array_object);
-			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
-		}
-
-		//! Unbinds any vertex array object currently bound.
-		void
-		set_unbind_vertex_array_object()
-		{
-			set_state_set(
-					d_state_set_store->bind_vertex_array_object_state_sets,
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT,
-					boost::in_place(d_shared_data->default_vertex_array_object_current_context_state));
+					d_state_set_store->bind_vertex_array_state_sets,
+					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
+					boost::in_place(array, array_resource));
 		}
 
 		//! Returns the currently bound vertex array object - boost::none implies the default no binding.
-		boost::optional<GLVertexArrayObject::shared_ptr_to_const_type>
-		get_bind_vertex_array_object() const
+		boost::optional<GLVertexArray::shared_ptr_type>
+		get_bind_vertex_array() const
 		{
-			return get_state_set_query<GLVertexArrayObject::shared_ptr_to_const_type>(
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT,
-					&GLBindVertexArrayObjectStateSet::d_vertex_array_object);
+			return get_state_set_query<GLVertexArray::shared_ptr_type>(
+					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
+					&GLBindVertexArrayStateSet::d_array);
 		}
+
 
 		//! Binds the buffer object (at the specified target) to the active OpenGL context.
 		void
-		set_bind_buffer_object(
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum target)
+		bind_buffer(
+				GLenum target,
+				boost::optional<GLBuffer::shared_ptr_type> buffer)
 		{
 			set_state_set(
-					d_state_set_store->bind_buffer_object_state_sets,
-					d_state_set_keys->get_bind_buffer_object_key(target),
-					boost::in_place(buffer_object, target));
+					d_state_set_store->bind_buffer_state_sets,
+					d_state_set_keys->get_bind_buffer_key(target),
+					boost::in_place(buffer, target));
 		}
-
-		//! Same as @a set_bind_buffer_object but also applies directly to OpenGL.
-		void
-		set_bind_buffer_object_and_apply(
-				const GLCapabilities &capabilities,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum target,
-				GLState &last_applied_state);
-
-		//! Unbinds any buffer object currently bound at the specified target.
-		void
-		set_unbind_buffer_object(
-				GLenum target)
-		{
-			set_state_set(
-					d_state_set_store->bind_buffer_object_state_sets,
-					d_state_set_keys->get_bind_buffer_object_key(target),
-					boost::in_place(target));
-		}
-
-		//! Same as @a set_unbind_buffer_object but also applies directly to OpenGL.
-		void
-		set_unbind_buffer_object_and_apply(
-				const GLCapabilities &capabilities,
-				GLenum target,
-				GLState &last_applied_state);
 
 		//! Returns the bound buffer object, or boost::none if no object bound.
-		boost::optional<GLBufferObject::shared_ptr_to_const_type>
-		get_bind_buffer_object(
+		boost::optional<GLBuffer::shared_ptr_type>
+		get_bind_buffer(
 				GLenum target) const
 		{
-			return get_state_set_query<GLBufferObject::shared_ptr_to_const_type>(
-					d_state_set_keys->get_bind_buffer_object_key(target),
-					&GLBindBufferObjectStateSet::d_buffer_object);
-		}
-
-		//! Returns the bound buffer object resource, or boost::none if no object bound.
-		boost::optional<GLBufferObject::resource_handle_type>
-		get_bind_buffer_object_resource(
-				GLenum target) const
-		{
-			return get_state_set_query<GLBufferObject::resource_handle_type>(
-					d_state_set_keys->get_bind_buffer_object_key(target),
-					&GLBindBufferObjectStateSet::d_buffer_object_resource);
+			return get_state_set_query<GLBuffer::shared_ptr_type>(
+					d_state_set_keys->get_bind_buffer_key(target),
+					&GLBindBufferStateSet::d_buffer);
 		}
 
 
@@ -1218,344 +1143,6 @@ namespace GPlatesOpenGL
 					boost::in_place(texture_unit, coord, pname, param));
 		}
 
-		/**
-		 * Enables the specified (@a array) vertex array (in the fixed-function pipeline).
-		 */
-		void
-		set_enable_client_state(
-				GLenum array,
-				bool enable)
-		{
-			set_state_set(
-					d_state_set_store->enable_client_state_state_sets,
-					d_state_set_keys->get_enable_client_state_key(array),
-					boost::in_place(array, enable));
-		}
-
-		//! Enables the vertex attribute array GL_TEXTURE_COORD_ARRAY on the specified texture unit.
-		void
-		set_enable_client_texture_state(
-				GLenum texture_unit,
-				bool enable)
-		{
-			set_state_set(
-					d_state_set_store->enable_client_texture_state_state_sets,
-					d_state_set_keys->get_enable_client_texture_state_key(texture_unit),
-					boost::in_place(texture_unit, enable));
-		}
-
-		/**
-		 * Specify the source of vertex position data (from a buffer object).
-		 */
-		void
-		set_vertex_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->vertex_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER,
-					boost::in_place(size, type, stride, offset, buffer_object));
-		}
-
-		/**
-		 * Specify the source of vertex position data (from client memory).
-		 */
-		void
-		set_vertex_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->vertex_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER,
-					boost::in_place(size, type, stride, offset, buffer_impl));
-		}
-
-		//! Specify the source of vertex color data (from a buffer object).
-		void
-		set_color_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->color_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_COLOR_POINTER,
-					boost::in_place(size, type, stride, offset, buffer_object));
-		}
-
-		//! Specify the source of vertex color data (from client memory).
-		void
-		set_color_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->color_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_COLOR_POINTER,
-					boost::in_place(size, type, stride, offset, buffer_impl));
-		}
-
-		//! Specify the source of vertex normal data (from a buffer object).
-		void
-		set_normal_pointer(
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->normal_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_NORMAL_POINTER,
-					boost::in_place(type, stride, offset, buffer_object));
-		}
-
-		//! Specify the source of vertex normal data (from client memory).
-		void
-		set_normal_pointer(
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->normal_pointer_state_sets,
-					GLStateSetKeys::KEY_VERTEX_ARRAY_NORMAL_POINTER,
-					boost::in_place(type, stride, offset, buffer_impl));
-		}
-
-		//! Specify the source of vertex texture coordinate data (from a buffer object).
-		void
-		set_tex_coord_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum texture_unit)
-		{
-			set_state_set(
-					d_state_set_store->tex_coord_pointer_state_sets,
-					d_state_set_keys->get_tex_coord_pointer_state_key(texture_unit),
-					boost::in_place(size, type, stride, offset, buffer_object, texture_unit));
-		}
-
-		//! Specify the source of vertex texture coordinate data (from client memory).
-		void
-		set_tex_coord_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl,
-				GLenum texture_unit)
-		{
-			set_state_set(
-					d_state_set_store->tex_coord_pointer_state_sets,
-					d_state_set_keys->get_tex_coord_pointer_state_key(texture_unit),
-					boost::in_place(size, type, stride, offset, buffer_impl, texture_unit));
-		}
-
-		//! Enables the specified *generic* vertex attribute array (for use in a shader program).
-		void
-		set_enable_vertex_attrib_array(
-				GLuint attribute_index,
-				bool enable)
-		{
-			set_state_set(
-					d_state_set_store->enable_vertex_attrib_array_state_sets,
-					d_state_set_keys->get_enable_vertex_attrib_array_key(attribute_index),
-					boost::in_place(attribute_index, enable));
-		}
-
-		/**
-		 * Specify the source of *generic* vertex attribute array (for use in a shader program "from a buffer object").
-		 *
-		 * Also note that @a set_vertex_pointer maps to @a set_vertex_attrib_pointer with attribute index 0.
-		 * So they will both do the same thing.
-		 */
-		void
-		set_vertex_attrib_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLboolean normalized,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
-							size,
-							type,
-							normalized,
-							stride,
-							offset,
-							buffer_object));
-		}
-
-		/**
-		 * Specify the source of *generic* vertex attribute array (for use in a shader program "from client memory").
-		 *
-		 * Also note that @a set_vertex_pointer maps to @a set_vertex_attrib_pointer with attribute index 0.
-		 * So they will both do the same thing.
-		 */
-		void
-		set_vertex_attrib_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLboolean normalized,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
-							size,
-							type,
-							normalized,
-							stride,
-							offset,
-							buffer_impl));
-		}
-
-		/**
-		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
-		 */
-		void
-		set_vertex_attrib_i_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
-							size,
-							type,
-							boost::none/*normalized*/,
-							stride,
-							offset,
-							buffer_object));
-		}
-
-		/**
-		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
-		 */
-		void
-		set_vertex_attrib_i_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
-							size,
-							type,
-							boost::none/*normalized*/,
-							stride,
-							offset,
-							buffer_impl));
-		}
-
-		/**
-		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
-		 */
-		void
-		set_vertex_attrib_l_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
-							size,
-							type,
-							boost::none/*normalized*/,
-							stride,
-							offset,
-							buffer_object));
-		}
-
-		/**
-		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
-		 */
-		void
-		set_vertex_attrib_l_pointer(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
-		{
-			set_state_set(
-					d_state_set_store->vertex_attrib_array_state_sets,
-					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(
-							boost::cref(capabilities),
-							attribute_index,
-							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
-							size,
-							type,
-							boost::none/*normalized*/,
-							stride,
-							offset,
-							buffer_impl));
-		}
-
 
 		//! Specifies which matrix stack is the target for matrix operations.
 		void
@@ -1705,12 +1292,20 @@ namespace GPlatesOpenGL
 				state_set_key_type state_set_key,
 				const InPlaceFactoryType &state_set_constructor_args)
 		{
+			immutable_state_set_ptr_type current_state_set = d_state_sets[state_set_key];
+
 			// Create a new GLStateSet of appropriate derived type and store as an immutable state set.
 			// If there's an existing state set in the current slot then it gets thrown out.
 			//
 			// NOTE: The use of boost::in_place_factory means the derived state set object is created
 			// directly in the object pool.
-			d_state_sets[state_set_key] = state_set_pool.add_with_auto_release(state_set_constructor_args);
+			immutable_state_set_ptr_type new_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
+
+			// Apply the new state set.
+			apply_state_set(new_state_set, current_state_set);
+
+			// Store the new state set.
+			d_state_sets[state_set_key] = new_state_set;
 
 			// Mark the state set slot as not empty.
 			// This is a slightly optimised version of 'set_state_set_slot_flag()'.

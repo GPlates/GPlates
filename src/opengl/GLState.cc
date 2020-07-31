@@ -187,65 +187,6 @@ GPlatesOpenGL::GLState::clear()
 
 
 void
-GPlatesOpenGL::GLState::set_bind_buffer_object_and_apply(
-		const GLCapabilities &capabilities,
-		const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-		GLenum target,
-		GLState &last_applied_state)
-{
-	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_object_key(target);
-
-	set_state_set(
-			d_state_set_store->bind_buffer_object_state_sets,
-			state_set_key,
-			boost::in_place(buffer_object, target));
-
-	// If the buffer object is bound to the vertex element target then it will get recorded into the
-	// currently bound vertex array object so we need to track this change with the vertex array object.
-	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
-	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
-	{
-		begin_bind_vertex_array_object(capabilities, last_applied_state);
-		apply_state(capabilities, last_applied_state, state_set_key);
-		end_bind_vertex_array_object(capabilities, last_applied_state);
-	}
-	else
-	{
-		apply_state(capabilities, last_applied_state, state_set_key);
-	}
-}
-
-
-void
-GPlatesOpenGL::GLState::set_unbind_buffer_object_and_apply(
-		const GLCapabilities &capabilities,
-		GLenum target,
-		GLState &last_applied_state)
-{
-	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_object_key(target);
-
-	set_state_set(
-			d_state_set_store->bind_buffer_object_state_sets,
-			state_set_key,
-			boost::in_place(target));
-
-	// If the buffer object target is the vertex element target then it will get recorded into the
-	// currently bound vertex array object so we need to track this change with the vertex array object.
-	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
-	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
-	{
-		begin_bind_vertex_array_object(capabilities, last_applied_state);
-		apply_state(capabilities, last_applied_state, state_set_key);
-		end_bind_vertex_array_object(capabilities, last_applied_state);
-	}
-	else
-	{
-		apply_state(capabilities, last_applied_state, state_set_key);
-	}
-}
-
-
-void
 GPlatesOpenGL::GLState::apply_state(
 		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
@@ -721,7 +662,7 @@ GPlatesOpenGL::GLState::begin_bind_vertex_array_object(
  #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
-		apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
+		apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY);
 	}
 #endif
 }
@@ -739,14 +680,14 @@ GPlatesOpenGL::GLState::end_bind_vertex_array_object(
 		// Get the bind vertex array object state-set.
 		// Note that we get this from the last applied state as that is the state that OpenGL currently sees.
 		const immutable_state_set_ptr_type &bind_vertex_array_object_state_set =
-				last_applied_state.d_state_sets[GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT];
+				last_applied_state.d_state_sets[GLStateSetKeys::KEY_BIND_VERTEX_ARRAY];
 
 		// If there's a bind-vertex-array-object state-set then use its resource state otherwise
 		// use the vertex array state of the default vertex array object (resource handle zero).
 		const shared_ptr_type current_vertex_array_state =
 				bind_vertex_array_object_state_set
 				// Downcast to the expected GLStateSet derived type...
-				? dynamic_cast<const GLBindVertexArrayObjectStateSet &>(*bind_vertex_array_object_state_set)
+				? dynamic_cast<const GLBindVertexArrayStateSet &>(*bind_vertex_array_object_state_set)
 						.d_current_resource_state
 				: d_shared_data->default_vertex_array_object_current_context_state;
 
@@ -863,7 +804,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 	dependent_slots[GLStateSetKeys::KEY_MATRIX_MODE] = true;
 	dependent_slots[GLStateSetKeys::KEY_ACTIVE_TEXTURE] = true;
 	dependent_slots[GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE] = true;
-	dependent_slots[GLStateSetKeys::KEY_BIND_ARRAY_BUFFER_OBJECT] = true;
+	dependent_slots[GLStateSetKeys::KEY_BIND_ARRAY_BUFFER] = true;
 
 	// Iterate over all the slots and add to the dependent or inverse-dependent sequence.
 	for (state_set_key_type state_set_slot = 0;
@@ -871,7 +812,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 		++state_set_slot)
 	{
 		// Remove the bind vertex array object state-set slot from both since it gets its own apply pass.
-		if (state_set_slot == GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT)
+		if (state_set_slot == GLStateSetKeys::KEY_BIND_VERTEX_ARRAY)
 		{
 			continue;
 		}
@@ -946,7 +887,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	// The vertex element buffer, unlike the vertex buffer, *is* recorded in the vertex array.
 	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
 	//
-	vertex_array_slots[GLStateSetKeys::KEY_BIND_ELEMENT_ARRAY_BUFFER_OBJECT] = true;
+	vertex_array_slots[GLStateSetKeys::KEY_BIND_ELEMENT_ARRAY_BUFFER] = true;
 
 	// Iterate over all the slots and add to the vertex-array or inverse-vertex-array sequence.
 	for (state_set_key_type state_set_slot = 0;
@@ -991,7 +932,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_read_pixels_state_set_slots(
 {
 	// Specify the state set keys representing states needed by 'glReadPixels'.
 	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
-	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_PIXEL_PACK_BUFFER_OBJECT);
+	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_PIXEL_PACK_BUFFER);
 }
 
 
@@ -1050,6 +991,6 @@ GPlatesOpenGL::GLState::SharedData::initialise_mutable_state_set_slots(
 	// Remove the bind vertex array object state-set slot since it gets its own apply pass.
 	if (mutable_state_set_slots)
 	{
-		clear_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
+		clear_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_BIND_VERTEX_ARRAY);
 	}
 }

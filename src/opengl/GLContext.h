@@ -51,7 +51,6 @@
 #include "GLStateSetStore.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
-#include "GLVertexArrayObject.h"
 
 #include "global/PointerTraits.h"
 
@@ -115,10 +114,10 @@ namespace GPlatesOpenGL
 		 * OpenGL state that can be shared between contexts (such as texture objects, vertex buffer objects, etc).
 		 *
 		 * Note that while native vertex array objects in OpenGL cannot be shared across contexts,
-		 * the @a GLVertexArrayObject wrapper can (because internally it creates a native vertex
-		 * array object for each context that it encounters - that uses it). Although the resource
-		 * manager for it is still in @a NonSharedState in order that each native resource be released
-		 * back to the context it was created in (ie, released when that context is active).
+		 * the @a GLVertexArray wrapper can (because internally it creates a native vertex array object
+		 * for each context that it encounters - that uses it). Although the resource manager for it is
+		 * still in @a NonSharedState in order that each native resource be released back to the context
+		 * it was created in (ie, released when that context is active).
 		 */
 		class SharedState
 		{
@@ -300,21 +299,6 @@ namespace GPlatesOpenGL
 			get_full_screen_2D_textured_quad(
 					GLRenderer &renderer);
 
-			/**
-			 * Creates a compiled draw state that specifies no bound vertex element buffer, no bound
-			 * vertex attribute arrays (vertex buffers) and no enabled client vertex attribute state.
-			 *
-			 * This method also makes state change detection in the renderer more efficient when
-			 * binding vertex arrays (implementation detail: because the individual immutable GLStateSet
-			 * objects, that specify unbound/disabled state, are shared by multiple vertex arrays resulting
-			 * in a simple pointer comparison versus a virtual function call with comparison logic).
-			 *
-			 * So this method is built into @a GLVertexArray.
-			 */
-			GLCompiledDrawState::non_null_ptr_to_const_type
-			get_unbound_vertex_array_compiled_draw_state(
-					GLRenderer &renderer);
-
 		private:
 
 			//! Typedef for a key made up of the parameters of @a acquire_texture.
@@ -377,7 +361,7 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Even though vertex arrays cannot be shared across OpenGL contexts, the @a GLVertexArray
-			 * (and @a GLVertexArrayObject) wrapper can be shared.
+			 * wrapper can be shared.
 			 */
 			GPlatesUtils::ObjectCache<GLVertexArray>::shared_ptr_type d_vertex_array_cache;
 
@@ -393,17 +377,6 @@ namespace GPlatesOpenGL
 			 * The compiled draw state representing a full screen textured quad.
 			 */
 			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_full_screen_2D_textured_quad;
-
-			/**
-			 * The compiled draw state representing a vertex array with no bound vertex attribute
-			 * arrays (to vertex buffer objects), no bound vertex element buffer object and all
-			 * vertex attribute client state disabled.
-			 *
-			 * NOTE: By sharing a single compiled draw state amongst multiple client vertex arrays
-			 * we gain efficiency in detecting state changes.
-			 * See comment on @a get_unbound_vertex_array_compiled_draw_state.
-			 */
-			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_unbound_vertex_array_compiled_draw_state;
 
 			// To access @a d_state_set_store and @a d_state_set_keys without exposing to clients.
 			friend class GLContext;
@@ -560,19 +533,19 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * Returns the vertex array object resource manager.
+			 * Returns the vertex array resource manager.
 			 *
 			 * Use this if you need to create your own vertex array objects.
 			 *
-			 * Note that even though @a GLVertexArray (and hence @a GLVertexArrayObject) objects
-			 * are cached in @a SharedState the allocator for native vertex array objects (resources)
-			 * is here (in @a NonSharedState). This ensures the native resources are deallocated
-			 * in the context they were allocated in (ie, deallocated when the correct context is active).
+			 * Note that even though @a GLVertexArray objects are cached in @a SharedState the allocator
+			 * for native vertex array objects (resources) is here (in @a NonSharedState).
+			 * This ensures the native resources are deallocated in the context they were allocated in
+			 (ie, deallocated when the correct context is active).
 			 */
-			const boost::shared_ptr<GLVertexArrayObject::resource_manager_type> &
-			get_vertex_array_object_resource_manager() const
+			const boost::shared_ptr<GLVertexArray::resource_manager_type> &
+			get_vertex_array_resource_manager() const
 			{
-				return d_vertex_array_object_resource_manager;
+				return d_vertex_array_resource_manager;
 			}
 
 		private:
@@ -612,7 +585,7 @@ namespace GPlatesOpenGL
 
 			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 
-			boost::shared_ptr<GLVertexArrayObject::resource_manager_type> d_vertex_array_object_resource_manager;
+			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
 
 
 			screen_render_target_cache_type::shared_ptr_type

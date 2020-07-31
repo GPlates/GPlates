@@ -36,15 +36,14 @@
 #include <boost/variant.hpp>
 #include <opengl/OpenGL1.h>
 
-#include "GLBufferImpl.h"
-#include "GLBufferObject.h"
+#include "GLBuffer.h"
 #include "GLDepthRange.h"
 #include "GLFrameBufferObject.h"
 #include "GLMatrix.h"
 #include "GLProgramObject.h"
 #include "GLStateSet.h"
 #include "GLTexture.h"
-#include "GLVertexArrayObject.h"
+#include "GLVertexArray.h"
 #include "GLVertexBufferObject.h"
 #include "GLViewport.h"
 
@@ -59,136 +58,6 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 namespace GPlatesOpenGL
 {
 	class GLCapabilities;
-
-	namespace Implementation
-	{
-		/**
-		 * Utility class for tracking state changes of vertex attribute pointers (both generic and non-generic).
-		 *
-		 * Also tracks state changes from buffer objects to/from client memory arrays.
-		 */
-		class GLVertexAttributeBuffer
-		{
-		public:
-			//! Binds to a vertex buffer object.
-			GLVertexAttributeBuffer(
-					GLint offset,
-					const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
-				d_offset(offset),
-				d_buffer_variant(buffer_object),
-				d_buffer(buffer_object),
-				d_pointer_to_apply(NULL)
-			{  }
-
-			//! No binding to a vertex buffer object (using client memory array).
-			GLVertexAttributeBuffer(
-					GLint offset,
-					const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
-				d_offset(offset),
-				d_buffer_variant(buffer_impl),
-				d_buffer(buffer_impl),
-				d_pointer_to_apply(NULL)
-			{  }
-
-
-			/**
-			 * Returns true if a buffer pointer state change is necessary.
-			 *
-			 * For buffer objects a change is switching buffer objects (or switching from
-			 * using client memory arrays, ie, buffer object zero).
-			 *
-			 * For client memory arrays a change is switching away from a buffer object.
-			 *
-			 * NOTE: This also updates the buffer pointer to apply (see @a get_buffer_pointer_to_apply).
-			 */
-			bool
-			has_changed_state(
-					const GLVertexAttributeBuffer &last_applied_buffer) const;
-
-			/**
-			 * Returns true if a buffer pointer state change from the default state is necessary.
-			 *
-			 * NOTE: This also updates the buffer pointer to apply (see @a get_buffer_pointer_to_apply).
-			 */
-			bool
-			has_changed_from_default_state() const;
-
-			/**
-			 * Returns true if a buffer pointer state change to the default state is necessary.
-			 *
-			 * NOTE: This also updates the buffer pointer to apply (see @a get_buffer_pointer_to_apply).
-			 */
-			bool
-			has_changed_to_default_state() const;
-
-			/**
-			 * Binds the current buffer.
-			 *
-			 * If the current buffer is a client memory buffer then ensures no buffer objects are bound.
-			 * If the current buffer is a buffer object then ensures it is currently bound.
-			 */
-			void
-			bind_buffer(
-					const GLCapabilities &capabilities,
-					GLState &last_applied_state) const;
-
-			/**
-			 * Unbinds the current buffer.
-			 *
-			 * Regardless of whether the current buffer is a client memory buffer or a buffer object
-			 * this method ensures no buffer objects are bound (returns to default client memory arrays).
-			 */
-			void
-			unbind_buffer(
-					const GLCapabilities &capabilities,
-					GLState &last_applied_state) const;
-
-			/**
-			 * Returns the buffer pointer (to an attribute array with offset added) that needs to be applied.
-			 *
-			 * NOTE: For buffer objects the returned pointer is actually just the offset.
-			 */
-			const GLvoid *
-			get_buffer_pointer_to_apply() const
-			{
-				return d_pointer_to_apply;
-			}
-
-			/**
-			 * Call this when you've just specified a vertex array pointer.
-			 */
-			void
-			applied_buffer_pointer_to_opengl() const
-			{
-				// Keep the buffer allocation observer up-to-date with the latest buffer allocation.
-				d_buffer->update_buffer_allocation_observer(d_buffer_allocation_observer);
-			}
-
-		private:
-			//! Typedef for a variant of @a GLBufferObject or @a GLBufferImpl.
-			typedef boost::variant<GLBufferObject::shared_ptr_to_const_type, GLBufferImpl::shared_ptr_to_const_type> buffer_type;
-
-			//! The offset into the buffer.
-			GLint d_offset;
-
-			//! The derived GLBuffer type (used to access methods existing only in derived classes).
-			buffer_type d_buffer_variant;
-
-			//! The base GLBuffer pointer.
-			GLBuffer::shared_ptr_to_const_type d_buffer;
-
-			//! Keeps track of the last applied buffer (array) pointer.
-			mutable const GLvoid *d_pointer_to_apply;
-
-			/**
-			 * Keeps track of internal buffer (re)allocations (ie, calls to 'GLBuffer::gl_buffer_data').
-			 *
-			 * When these happen we need to re-specify vertex array pointers/bindings.
-			 */
-			mutable GLBuffer::buffer_allocation_observer_type d_buffer_allocation_observer;
-		};
-	}
-
 
 	//
 	// NOTE: These classes are ordered alphabetically.
@@ -267,50 +136,48 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to bind a framebuffer object.
+	 * Used to bind a buffer object.
 	 */
-	struct GLBindBufferObjectStateSet :
+	struct GLBindBufferStateSet :
 			public GLStateSet
 	{
 		//! Binds a buffer object.
-		GLBindBufferObjectStateSet(
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum target) :
-			d_buffer_object(buffer_object),
-			d_buffer_object_resource(buffer_object->get_buffer_resource_handle()),
-			d_target(target)
-		{  }
-
-		//! Specifies no bound buffer object (at the specified target).
-		explicit
-		GLBindBufferObjectStateSet(
-				GLenum target) :
-			d_target(target)
-		{  }
+		GLBindBufferStateSet(
+				GLenum target,
+				boost::optional<GLBuffer::shared_ptr_type> buffer) :
+			d_target(target),
+			d_buffer(buffer),
+			d_buffer_resource(0)
+		{
+			if (buffer)
+			{
+				d_buffer_resource = buffer.get()->get_resource_handle();
+			}
+		}
 
 		virtual
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
+				const GLStateSet &current_state_set,
+				GLState &current_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
+				GLState &current_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
+				GLState &current_state) const;
 
 
-		boost::optional<GLBufferObject::shared_ptr_to_const_type> d_buffer_object;
-		boost::optional<GLBufferObject::resource_handle_type> d_buffer_object_resource;
 		GLenum d_target;
+		boost::optional<GLBuffer::shared_ptr_type> d_buffer;
+		GLuint d_buffer_resource;
 	};
 
 	/**
@@ -436,98 +303,41 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to bind a vertex array object.
 	 */
-	struct GLBindVertexArrayObjectStateSet :
+	struct GLBindVertexArrayStateSet :
 			public GLStateSet
 	{
-		/**
-		 * Binds a vertex array object.
-		 *
-		 * @a current_resource_state represents the vertex array state of the vertex array object.
-		 *
-		 * @a current_default_state represents the vertex array state of the default
-		 * vertex array object (resource handle zero).
-		 * It is needed in case we are asked to switch *from* the object state *to* the default state.
-		 *
-		 * NOTE: We pass in @a resource_handle instead of requesting it internally.
-		 * This is because 'GLVertexArrayObject::get_vertex_array_resource_handle()' is not a simple
-		 * handle retrieval function but instead can create a new resource handle (for a specific
-		 * OpenGL context). In essence it's a higher level function in the renderer framework and
-		 * doesn't belong at this low level.
-		 */
-		GLBindVertexArrayObjectStateSet(
-				GLVertexArrayObject::resource_handle_type resource_handle,
-				const boost::shared_ptr<GLState> &current_resource_state,
-				const boost::shared_ptr<GLState> &current_default_state,
-				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object) :
-			d_resource_handle(resource_handle),
-			d_current_resource_state(current_resource_state),
-			d_current_default_state(current_default_state),
-			d_vertex_array_object(vertex_array_object)
-		{  }
-
-		/**
-		 * Unbinds any vertex array object (switches to using the default vertex array object with
-		 * resource handle zero).
-		 *
-		 * @a current_default_state represents the vertex array state of the default
-		 * vertex array object (resource handle zero).
-		 */
-		explicit
-		GLBindVertexArrayObjectStateSet(
-				const boost::shared_ptr<GLState> &current_default_state) :
-			d_current_resource_state(current_default_state),
-			d_current_default_state(current_default_state)
+		//! Binds a vertex array object (none and 0 mean unbind).
+		GLBindVertexArrayStateSet(
+				boost::optional<GLVertexArray::shared_ptr_type> array,
+				// Array resource handle associated with the current OpenGL context...
+				GLuint array_resource) :
+			d_array(array),
+			d_array_resource(array_resource)
 		{  }
 
 		virtual
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
+				const GLStateSet &current_state_set,
+				GLState &current_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
+				GLState &current_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
+				GLState &current_state) const;
 
 
-		boost::optional<GLVertexArrayObject::resource_handle_type> d_resource_handle;
-
-		/**
-		 * Represents the current vertex array object state as seen by the underlying OpenGL.
-		 *
-		 * NOTE: This is *always* non-null - even for the default vertex array object (resource handle zero).
-		 * Even the default vertex array object represents vertex array state.
-		 * In which case @a d_current_resource_state and @a d_current_default_state are the same.
-		 */
-		mutable boost::shared_ptr<GLState> d_current_resource_state;
-
-		/**
-		 * Represents the current vertex array state for the default vertex array object with
-		 * resource handle zero (as seen by the underlying OpenGL).
-		 *
-		 * NOTE: This is *always* non-null - even for the default vertex array object (resource handle zero).
-		 */
-		mutable boost::shared_ptr<GLState> d_current_default_state;
-
-		// NOTE: This is *only* here for clients to retrieve - so they can know what
-		// @a GLVertexArrayObject the resource handle came from - we don't actually use it in
-		// the implementation of this class.
-		// The resource handle is what is used to do the actual binding.
-		//
-		// NOTE: 'GLVertexArrayObject::get_vertex_array_resource_handle()' cannot be called on this
-		// here since it requires a 'GLRenderer' (since it can create a new vertex array object
-		// for the current OpenGL context and perform some buffer bindings - and we're way past
-		// that at this level of the code).
-		boost::optional<GLVertexArrayObject::shared_ptr_to_const_type> d_vertex_array_object;
+		boost::optional<GLVertexArray::shared_ptr_type> d_array;
+		//! Array resource handle associated with the current OpenGL context.
+		GLuint d_array_resource;
 	};
 
 	/**
@@ -817,65 +627,6 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to set the vertex color array source.
-	 */
-	struct GLColorPointerStateSet :
-			public GLStateSet
-	{
-		//! Binds to a vertex buffer object.
-		GLColorPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
-			d_buffer(offset, buffer_object),
-			d_size(size),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		//! No binding to a vertex buffer object (using client memory array).
-		GLColorPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
-			d_buffer(offset, buffer_impl),
-			d_size(size),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-	private:
-		Implementation::GLVertexAttributeBuffer d_buffer;
-		GLint d_size;
-		GLenum d_type;
-		GLsizei d_stride;
-	};
-
-	/**
 	 * Used glCullFace.
 	 */
 	struct GLCullFaceStateSet :
@@ -1036,80 +787,6 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to enable/disable client state vertex arrays.
-	 */
-	struct GLEnableClientStateStateSet :
-			public GLStateSet
-	{
-		GLEnableClientStateStateSet(
-				GLenum array,
-				bool enable) :
-			d_array(array),
-			d_enable(enable)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-		GLenum d_array;
-		bool d_enable;
-	};
-
-	/**
-	 * Used to enable/disable client state texture coordinate vertex arrays.
-	 */
-	struct GLEnableClientTextureStateStateSet :
-			public GLStateSet
-	{
-		GLEnableClientTextureStateStateSet(
-				GLenum texture_unit,
-				bool enable) :
-			d_texture_unit(texture_unit),
-			d_enable(enable)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-		GLenum d_texture_unit;
-		bool d_enable;
-	};
-
-	/**
 	 * Used to enable/disable capabilities (except texturing - use @a GLEnableTextureStateSet for that).
 	 */
 	struct GLEnableStateSet :
@@ -1188,43 +865,6 @@ namespace GPlatesOpenGL
 
 		GLenum d_texture_unit;
 		GLenum d_texture_target;
-		bool d_enable;
-	};
-
-	/**
-	 * Used to enable/disable *generic* vertex attribute arrays.
-	 */
-	struct GLEnableVertexAttribArrayStateSet :
-			public GLStateSet
-	{
-		GLEnableVertexAttribArrayStateSet(
-				GLuint attribute_index,
-				bool enable) :
-			d_attribute_index(attribute_index),
-			d_enable(enable)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-		GLuint d_attribute_index;
 		bool d_enable;
 	};
 
@@ -1442,60 +1082,6 @@ namespace GPlatesOpenGL
 
 
 		GLenum d_mode;
-	};
-
-	/**
-	 * Used to set the vertex normal array source.
-	 */
-	struct GLNormalPointerStateSet :
-			public GLStateSet
-	{
-		//! Binds to a vertex buffer object.
-		GLNormalPointerStateSet(
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
-			d_buffer(offset, buffer_object),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		//! No binding to a vertex buffer object (using client memory array).
-		GLNormalPointerStateSet(
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
-			d_buffer(offset, buffer_impl),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-	private:
-		Implementation::GLVertexAttributeBuffer d_buffer;
-		GLenum d_type;
-		GLsizei d_stride;
 	};
 
 	/**
@@ -1796,71 +1382,6 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to set the vertex texture coordinate array source.
-	 */
-	struct GLTexCoordPointerStateSet :
-			public GLStateSet
-	{
-		//! Binds to a vertex buffer object.
-		GLTexCoordPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum texture_unit) :
-			d_buffer(offset, buffer_object),
-			d_size(size),
-			d_type(type),
-			d_stride(stride),
-			d_texture_unit(texture_unit)
-		{  }
-
-		//! No binding to a vertex buffer object (using client memory array).
-		GLTexCoordPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl,
-				GLenum texture_unit) :
-			d_buffer(offset, buffer_impl),
-			d_size(size),
-			d_type(type),
-			d_stride(stride),
-			d_texture_unit(texture_unit)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-	private:
-		Implementation::GLVertexAttributeBuffer d_buffer;
-		GLint d_size;
-		GLenum d_type;
-		GLsizei d_stride;
-
-		GLenum d_texture_unit;
-	};
-
-	/**
 	 * Used set texture coordinate generation state.
 	 */
 	struct GLTexGenStateSet :
@@ -1989,137 +1510,6 @@ namespace GPlatesOpenGL
 		//! Returns the default @a param_type for 'this' state.
 		param_type
 		get_default_param() const;
-	};
-
-	/**
-	 * Used to set the *generic* vertex attribute array source.
-	 */
-	struct GLVertexAttribPointerStateSet :
-			public GLStateSet
-	{
-		//! The vertex attribute API to use...
-		enum VertexAttribAPIType
-		{
-			VERTEX_ATTRIB_POINTER, // Used for 'glVertexAttribPointer'
-			VERTEX_ATTRIB_I_POINTER, // Used for 'glVertexAttribIPointer'
-			VERTEX_ATTRIB_L_POINTER // Used for 'glVertexAttribLPointer'
-		};
-
-		//! Binds to a vertex buffer object.
-		GLVertexAttribPointerStateSet(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				VertexAttribAPIType vertex_attrib_api,
-				GLint size,
-				GLenum type,
-				// Only used for 'VERTEX_ATTRIB_POINTER', not 'VERTEX_ATTRIB_I_POINTER' or 'VERTEX_ATTRIB_L_POINTER'...
-				boost::optional<GLboolean> normalized,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object);
-
-		//! No binding to a vertex buffer object (using client memory array).
-		GLVertexAttribPointerStateSet(
-				const GLCapabilities &capabilities,
-				GLuint attribute_index,
-				VertexAttribAPIType vertex_attrib_api,
-				GLint size,
-				GLenum type,
-				// Only used for 'VERTEX_ATTRIB_POINTER', not 'VERTEX_ATTRIB_I_POINTER' or 'VERTEX_ATTRIB_L_POINTER'...
-				boost::optional<GLboolean> normalized,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl);
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-	private:
-		Implementation::GLVertexAttributeBuffer d_buffer;
-		GLuint d_attribute_index;
-		VertexAttribAPIType d_vertex_attrib_api;
-		GLint d_size;
-		GLenum d_type;
-		// Is optional since only used for 'glVertexAttribPointer' but not
-		// 'glVertexAttribIPointer' or 'glVertexAttribLPointer'...
-		boost::optional<GLboolean> d_normalized;
-		GLsizei d_stride;
-	};
-
-	/**
-	 * Used to set the vertex position array source.
-	 */
-	struct GLVertexPointerStateSet :
-			public GLStateSet
-	{
-		//! Binds to a vertex buffer object.
-		GLVertexPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
-			d_buffer(offset, buffer_object),
-			d_size(size),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		//! No binding to a vertex buffer object (using client memory array).
-		GLVertexPointerStateSet(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint offset,
-				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
-			d_buffer(offset, buffer_impl),
-			d_size(size),
-			d_type(type),
-			d_stride(stride)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-	private:
-		Implementation::GLVertexAttributeBuffer d_buffer;
-		GLint d_size;
-		GLenum d_type;
-		GLsizei d_stride;
 	};
 
 	/**

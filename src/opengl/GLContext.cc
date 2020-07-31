@@ -208,7 +208,7 @@ void
 GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 {
 	get_non_shared_state()->get_frame_buffer_object_resource_manager()->deallocate_queued_resources();
-	get_non_shared_state()->get_vertex_array_object_resource_manager()->deallocate_queued_resources();
+	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_texture_object_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_buffer_object_resource_manager()->deallocate_queued_resources();
 }
@@ -518,123 +518,6 @@ GPlatesOpenGL::GLContext::SharedState::get_full_screen_2D_textured_quad(
 }
 
 
-GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
-GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_state(
-		GLRenderer &renderer)
-{
-	// Create the sole unbound vertex array compile state if it hasn't already been created.
-	if (!d_unbound_vertex_array_compiled_draw_state)
-	{
-		GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
-
-		// Create a 'GLBufferImpl' (even though GLBufferObject might be supported).
-		// This represents client memory arrays which is the default state in OpenGL.
-		// Using buffer objects (ie, GLBufferObject) is non-default.
-		// We'll use the GLBufferImpl with an empty array (un-allocated) to set the default.
-		// It wouldn't matter if it was allocated (and subsequently de-allocated at the end of
-		// this method) because it will never get dereferenced by OpenGL (if it does then it's
-		// a bug in our use of OpenGL somewhere).
-		GLBufferImpl::shared_ptr_to_const_type default_client_memory_buffer = GLBufferImpl::create(renderer);
-
-		/////////////////////////
-		//
-		// Non-generic attributes
-		//
-		/////////////////////////
-
-		//
-		// Disable all vertex attribute client state.
-		//
-		renderer.gl_enable_client_state(GL_VERTEX_ARRAY, false);
-		renderer.gl_enable_client_state(GL_COLOR_ARRAY, false);
-		renderer.gl_enable_client_state(GL_NORMAL_ARRAY, false);
-		// Iterate over the enable texture coordinate client state flags.
-		const unsigned int MAX_TEXTURE_COORDS = renderer.get_capabilities().texture.gl_max_texture_coords;
-		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
-		{
-			renderer.gl_enable_client_texture_state(GL_TEXTURE0 + texture_coord_index, false);
-		}
-
-		//
-		// Unbind all vertex attribute arrays.
-		//
-		// This releases any GL_*_ARRAY_BUFFER_BINDING binding to vertex buffer objects.
-		//
-		// NOTE: By specifying a client memory pointer (which is also NULL) we effectively unbind
-		// a vertex attribute array from a vertex buffer.
-		//
-		renderer.gl_vertex_pointer(4, GL_FLOAT, 0, 0, default_client_memory_buffer);
-		renderer.gl_color_pointer(4, GL_FLOAT, 0, 0, default_client_memory_buffer);
-		renderer.gl_normal_pointer(GL_FLOAT, 0, 0, default_client_memory_buffer);
-		// Iterate over the texture coordinate arrays.
-		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
-		{
-			renderer.gl_tex_coord_pointer(4, GL_FLOAT, 0, 0, default_client_memory_buffer, GL_TEXTURE0 + texture_coord_index);
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////
-		//
-		// Generic attributes
-		//
-		// NOTE: nVidia hardware aliases the built-in attributes with the generic attributes -
-		// see 'GLProgramObject::gl_bind_attrib_location' for more details - so, eg, setting generic
-		// attribute index 0 affects the non-generic 'GL_VERTEX_ARRAY' attribute also - which
-		// can lead to one overwriting the other (we have them assigned to different GLStateSet slots,
-		// in GLState, but nVidia hardware sees them as the same). However the filtering of redundant
-		// state-sets in GLState is quite robust at filtering all state changes, so as long as only one
-		// of the two slots (that map to each other on nVidia hardware) differs from the default OpenGL
-		// state then no overwriting should occur at the OpenGL level (GLState wraps OpenGL).
-		// In other words, eg, use gl_vertex_pointer or gl_vertex_attrib_pointer(0,...) but not both.
-		//
-		/////////////////////////////////////////////////////////////////////////////////////
-
-		//
-		// Disable all *generic* vertex attribute arrays.
-		//
-		const GLuint MAX_VERTEX_ATTRIBS = renderer.get_capabilities().shader.gl_max_vertex_attribs;
-		// Iterate over the supported number of generic vertex attribute arrays.
-		for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
-		{
-			renderer.gl_enable_vertex_attrib_array(attribute_index, false);
-		}
-
-		//
-		// Unbind all *generic* vertex attribute arrays.
-		//
-		// This releases any GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING binding to vertex buffer objects.
-		//
-		// NOTE: By specifying a client memory pointer (which is also NULL) we effectively unbind
-		// a vertex attribute array from a vertex buffer.
-		//
-		// Iterate over the supported number of generic vertex attribute arrays.
-		for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
-		{
-			renderer.gl_vertex_attrib_pointer(attribute_index, 4, GL_FLOAT, GL_FALSE, 0, 0, default_client_memory_buffer);
-		}
-
-
-		//
-		// Note that we do *not* specifically unbind vertex buffer.
-		// A vertex buffer binding is recorded for each vertex attribute pointer above, but a
-		// vertex array does not record which vertex buffer is currently bound.
-		//
-		//renderer.gl_unbind_vertex_buffer_object();
-
-		//
-		// No bound vertex element buffer.
-		//
-		// The vertex element buffer, unlike the vertex buffer, *is* recorded in the vertex array.
-		//
-		renderer.gl_unbind_vertex_element_buffer_object();
-
-		// Cache the sole unbound vertex array compiled state for reuse.
-		d_unbound_vertex_array_compiled_draw_state = compile_draw_state_scope.get_compiled_draw_state();
-	}
-
-	return d_unbound_vertex_array_compiled_draw_state.get();
-}
-
-
 GPlatesOpenGL::GLContext::SharedState::texture_cache_type::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::get_texture_cache(
 		const texture_key_type &texture_key)
@@ -756,7 +639,7 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 	d_frame_buffer_object_resource_manager(GLFrameBufferObject::resource_manager_type::create()),
 	// Start off with an initial cache size of 1 - it'll grow as needed...
 	d_render_buffer_object_resource_manager(GLRenderBufferObject::resource_manager_type::create()),
-	d_vertex_array_object_resource_manager(GLVertexArrayObject::resource_manager_type::create())
+	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
 {
 }
 
