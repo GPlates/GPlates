@@ -106,12 +106,19 @@ void
 GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 		GL &gl)
 {
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+
+	// Return early if the current context state is already up-to-date.
+	// This is an optimisation (it's not strictly necessary).
+	if (d_object_state_subject.is_observer_up_to_date(current_context_object_state.object_state_observer))
+	{
+		return;
+	}
+
 	// Make sure we leave the OpenGL global state the way it was.
 	// This is because we may call 'gl.BindBuffer(GL_ARRAY_BUFFER, ...)' below, and it's part of the
 	// global state (unlike binding the GL_ELEMENT_ARRAY_BUFFER target, which is part of vertex array state).
 	GL::StateScope save_restore_state(gl);
-
-	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
 
 	//
 	// Synchronise the element array buffer binding.
@@ -203,6 +210,9 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 			context_attribute_array = attribute_array;
 		}
 	}
+
+	// The current context state is now up-to-date.
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
 }
 
 
@@ -220,7 +230,13 @@ GPlatesOpenGL::GLVertexArray::bind_element_array_buffer(
 	d_object_state.element_array_buffer = buffer;
 
 	// Vertex array object in current context has been updated.
-	get_object_state_for_current_context(gl).object_state.element_array_buffer = d_object_state.element_array_buffer;
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+	current_context_object_state.object_state.element_array_buffer = d_object_state.element_array_buffer;
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
 }
 
 
@@ -354,6 +370,11 @@ GPlatesOpenGL::GLVertexArray::update_attribute_array(
 				d_object_state.attribute_arrays.size(),
 			GPLATES_ASSERTION_SOURCE);
 	current_context_object_state.object_state.attribute_arrays[index] = attribute_array;
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
 }
 
 

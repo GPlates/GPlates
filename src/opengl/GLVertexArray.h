@@ -40,6 +40,8 @@
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
 
+#include "utils/SubjectObserverToken.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -75,7 +77,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a @a GLVertexArray object with no array data.
+		 * Creates a @a GLVertexArray object.
 		 */
 		static
 		shared_ptr_type
@@ -114,7 +116,7 @@ namespace GPlatesOpenGL
 		clear(
 				GL &gl);
 
-	private:
+	public:  // For use by the OpenGL framework...
 
 		/**
 		 * Policy class to allocate and deallocate OpenGL vertex array objects.
@@ -137,6 +139,7 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
+	private:
 
 		/**
 		 * Keep track of the vertex array object state.
@@ -219,6 +222,11 @@ namespace GPlatesOpenGL
 			 * updated and then we switched to this context (required this native object to be updated).
 			 */
 			ObjectState object_state;
+
+			/**
+			 * Determines if our context state needs updating.
+			 */
+			GPlatesUtils::ObserverToken object_state_observer;
 		};
 
 		/**
@@ -241,6 +249,11 @@ namespace GPlatesOpenGL
 		 * in that native object must match this state.
 		 */
 		ObjectState d_object_state;
+
+		/**
+		 * Subject token is invalidated when object state is updated, meaning all contexts need updating.
+		 */
+		GPlatesUtils::SubjectToken d_object_state_subject;
 
 
 		//! Constructor.
