@@ -25,201 +25,42 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
-#include <exception>
-#include <QDebug>
-
 #include "GLBuffer.h"
 
-#include "GLBufferImpl.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
-
-#include "global/CompilerWarnings.h"
-#include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
-
-#include "utils/Profile.h"
-
-const GPlatesOpenGL::GLBuffer::buffers_type GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX(1 << GPlatesOpenGL::GLBuffer::VERTEX_BUFFER);
-const GPlatesOpenGL::GLBuffer::buffers_type GPlatesOpenGL::GLBuffer::BUFFER_TYPE_PIXEL(1 << GPlatesOpenGL::GLBuffer::PIXEL_BUFFER);
-
-const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER_ARB;
-const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER = GL_ELEMENT_ARRAY_BUFFER_ARB;
-const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_PIXEL_UNPACK_BUFFER = GL_PIXEL_UNPACK_BUFFER_ARB;
-const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_PIXEL_PACK_BUFFER = GL_PIXEL_PACK_BUFFER_ARB;
-
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW = GL_STATIC_DRAW_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STATIC_READ = GL_STATIC_READ_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STATIC_COPY = GL_STATIC_COPY_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_DYNAMIC_DRAW = GL_DYNAMIC_DRAW_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_DYNAMIC_READ = GL_DYNAMIC_READ_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_DYNAMIC_COPY = GL_DYNAMIC_COPY_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW = GL_STREAM_DRAW_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STREAM_READ = GL_STREAM_READ_ARB;
-const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STREAM_COPY = GL_STREAM_COPY_ARB;
-
-const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_ONLY = GL_READ_ONLY_ARB;
-const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_WRITE_ONLY = GL_WRITE_ONLY_ARB;
-const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_WRITE = GL_READ_WRITE_ARB;
+#include "GL.h"
 
 
-std::unique_ptr<GPlatesOpenGL::GLBuffer>
-GPlatesOpenGL::GLBuffer::create_as_unique_ptr(
-		GLRenderer &renderer,
-		const buffers_type &buffer_types)
-{
-	// Make sure at least one buffer type was specified.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			buffer_types.any(),
-			GPLATES_ASSERTION_SOURCE);
-
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Create an OpenGL buffer object that supports the specified buffer types if we can.
-	// Otherwise create a buffer that uses client-side memory arrays.
-
-	if (buffer_types.test(VERTEX_BUFFER) &&
-		!capabilities.buffer.gl_ARB_vertex_buffer_object)
-	{
-		return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
-				GLBufferImpl::create_as_unique_ptr(renderer));
-	}
-
-	if (buffer_types.test(PIXEL_BUFFER) &&
-		!capabilities.buffer.gl_ARB_pixel_buffer_object)
-	{
-		return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
-				GLBufferImpl::create_as_unique_ptr(renderer));
-	}
-
-	return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
-			GLBufferObject::create_as_unique_ptr(renderer, buffer_types));
-}
-
-
-GPlatesOpenGL::GLBuffer::MapBufferScope::MapBufferScope(
-		GLRenderer &renderer,
-		GLBuffer &buffer,
-		target_type target) :
-	d_renderer(renderer),
-	d_buffer(buffer),
-	d_target(target),
-	d_data(NULL)
+GPlatesOpenGL::GLBuffer::GLBuffer(
+		GL &gl) :
+	d_resource(
+			resource_type::create(
+					gl.get_capabilities(),
+					gl.get_context().get_shared_state()->get_buffer_resource_manager()))
 {
 }
 
 
-GPlatesOpenGL::GLBuffer::MapBufferScope::~MapBufferScope()
+GLuint
+GPlatesOpenGL::GLBuffer::get_resource_handle() const
 {
-	if (d_data)
-	{
-		// Since this is a destructor we cannot let any exceptions escape.
-		// If one is thrown we just have to lump it and continue on.
-		try
-		{
-			gl_unmap_buffer();
-		}
-		catch (std::exception &exc)
-		{
-			qWarning() << "GLBuffer: exception thrown during map buffer scope: " << exc.what();
-		}
-		catch (...)
-		{
-			qWarning() << "GLBuffer: exception thrown during map buffer scope: Unknown error";
-		}
-	}
+	return d_resource->get_resource_handle();
 }
 
 
-GLvoid *
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_static(
-		access_type access)
+GLuint
+GPlatesOpenGL::GLBuffer::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
-	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data == NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_data = d_buffer.gl_map_buffer_static(d_renderer, d_target, access);
-
-	return d_data;
-}
-
-
-GLvoid *
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_dynamic()
-{
-	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data == NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_data = d_buffer.gl_map_buffer_dynamic(d_renderer, d_target);
-
-	return d_data;
-}
-
-
-GLvoid *
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
-		unsigned int minimum_bytes_to_stream,
-		unsigned int stream_alignment,
-		unsigned int &stream_offset,
-		unsigned int &stream_bytes_available)
-{
-	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data == NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_data = d_buffer.gl_map_buffer_stream(
-			d_renderer,
-			d_target,
-			minimum_bytes_to_stream,
-			stream_alignment,
-			stream_offset,
-			stream_bytes_available);
-
-	return d_data;
+	GLuint buffer_object;
+	glGenBuffers(1, &buffer_object);
+	return buffer_object;
 }
 
 
 void
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_dynamic(
-		unsigned int offset,
-		unsigned int length/*in bytes*/)
+GPlatesOpenGL::GLBuffer::Allocator::deallocate(
+		GLuint buffer_object)
 {
-	// Make sure 'gl_map_buffer_dynamic' was called and was successful.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_buffer.gl_flush_buffer_dynamic(d_renderer, d_target, offset, length);
-}
-
-
-void
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_stream(
-		unsigned int bytes_written)
-{
-	// Make sure 'gl_map_buffer_stream' was called and was successful.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_buffer.gl_flush_buffer_stream(d_renderer, d_target, bytes_written);
-}
-
-
-GLboolean
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_unmap_buffer()
-{
-	// Make sure 'gl_map_buffer_static' was called and was successful.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_data,
-			GPLATES_ASSERTION_SOURCE);
-
-	d_data = NULL;
-
-	return d_buffer.gl_unmap_buffer(d_renderer, d_target);
+	glDeleteBuffers(1, &buffer_object);
 }
