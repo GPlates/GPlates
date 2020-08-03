@@ -37,6 +37,7 @@
 
 #include "GLScalarField3D.h"
 
+#include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLPixelBuffer.h"
 #include "GLRenderer.h"
@@ -614,9 +615,13 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_colour_palette_texture(GLTexture::create(renderer)),
 	d_surface_fill_mask_resolution(SURFACE_FILL_MASK_RESOLUTION),
 	d_streaming_vertex_element_buffer(
-			GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+			GLStreamBuffer::create(
+					GLBuffer::create(renderer),
+					NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER)),
 	d_streaming_vertex_buffer(
-			GLVertexBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+			GLStreamBuffer::create(
+					GLBuffer::create(renderer),
+					NUM_BYTES_IN_STREAMING_VERTEX_BUFFER)),
 	d_cross_section_vertex_array(GLVertexArray::create(renderer)),
 	d_surface_fill_mask_vertex_array(GLVertexArray::create(renderer)),
 	d_volume_fill_boundary_vertex_array(GLVertexArray::create(renderer)),
@@ -655,10 +660,6 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	// It's also used when rendering depth range of volume fill walls.
 	// However it's rendered implicitly by ray-tracing when rendering iso-surface.
 	initialise_inner_sphere(renderer);
-
-	// Allocate memory for the vertex buffers used to render cross-section geometry and
-	// surface geometry for surface fill mask texture array.
-	allocate_streaming_vertex_buffers(renderer);
 
 	// Initialise the shader program and vertex arrays for rendering cross-section geometry.
 	initialise_cross_section_rendering(renderer);
@@ -1900,7 +1901,6 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 			renderer,
 			d_streaming_vertex_element_buffer,
 			d_streaming_vertex_buffer,
-			d_cross_section_vertex_array,
 			cross_sections);
 
 	// Surface polylines/polygons are vertically extruded to create 2D triangular meshes.
@@ -1908,7 +1908,6 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 			renderer,
 			d_streaming_vertex_element_buffer,
 			d_streaming_vertex_buffer,
-			d_cross_section_vertex_array,
 			cross_sections);
 }
 
@@ -1916,17 +1915,15 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 void
 GPlatesOpenGL::GLScalarField3D::render_cross_sections_1d(
 		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 		const cross_sections_seq_type &cross_sections)
 {
 	// Visitor to render 1D cross-section geometries.
 	CrossSection1DGeometryOnSphereVisitor cross_section_1d_visitor(
 			renderer,
 			streaming_vertex_element_buffer,
-			streaming_vertex_buffer,
-			cross_section_vertex_array);
+			streaming_vertex_buffer);
 
 	// Start rendering.
 	cross_section_1d_visitor.begin_rendering();
@@ -1949,17 +1946,15 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections_1d(
 void
 GPlatesOpenGL::GLScalarField3D::render_cross_sections_2d(
 		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 		const cross_sections_seq_type &cross_sections)
 {
 	// Visitor to render 2D cross-section geometries.
 	CrossSection2DGeometryOnSphereVisitor cross_section_2d_visitor(
 			renderer,
 			streaming_vertex_element_buffer,
-			streaming_vertex_buffer,
-			cross_section_vertex_array);
+			streaming_vertex_buffer);
 
 	// Start rendering.
 	cross_section_2d_visitor.begin_rendering();
@@ -2317,33 +2312,6 @@ GPlatesOpenGL::GLScalarField3D::set_shader_test_variables(
 					test_variables[variable_index]);
 		}
 	}
-}
-
-
-
-void
-GPlatesOpenGL::GLScalarField3D::allocate_streaming_vertex_buffers(
-		GLRenderer &renderer)
-{
-	//
-	// Allocate memory for the streaming vertex buffer.
-	//
-
-	// Allocate the buffer data in the vertex element buffer.
-	d_streaming_vertex_element_buffer->get_buffer()->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER,
-			NULL,
-			GLBuffer::USAGE_STREAM_DRAW);
-
-	// Allocate the buffer data in the vertex buffer.
-	d_streaming_vertex_buffer->get_buffer()->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_BUFFER,
-			NULL,
-			GLBuffer::USAGE_STREAM_DRAW);
 }
 
 
@@ -3439,21 +3407,16 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMask::SurfaceFillMask(
 
 
 GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::CrossSection1DGeometryOnSphereVisitor(
-		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &vertex_array) :
-	d_renderer(renderer),
-	d_vertex_array(vertex_array),
-	d_map_vertex_element_buffer_scope(
-			renderer,
-			*streaming_vertex_element_buffer->get_buffer(),
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER),
-	d_map_vertex_buffer_scope(
-			renderer,
-			*streaming_vertex_buffer->get_buffer(),
-			GLBuffer::TARGET_ARRAY_BUFFER),
-	d_stream_target(d_stream),
+		GL &gl,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer) :
+	d_gl(gl),
+	d_map_stream_buffer_scope(
+			d_stream,
+			*streaming_vertex_element_buffer,
+			*streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream)
 {
 }
@@ -3463,13 +3426,7 @@ void
 GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::begin_rendering()
 {
 	// Start streaming cross-section 1D geometries.
-	begin_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			d_map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	d_map_stream_buffer_scope.start_streaming();
 }
 
 
@@ -3477,18 +3434,11 @@ void
 GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::end_rendering()
 {
 	// Stop streaming cross-section 1D geometries so we can render the last batch.
-	end_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			d_map_vertex_buffer_scope);
-
-	// Render the last batch of streamed cross-section 1D geometries (if any).
-	render_vertex_array_stream<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_vertex_array,
-			GL_LINES);
+	if (d_map_stream_buffer_scope.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
+		// Render the last batch of streamed cross-section 1D geometries (if any).
+		render_stream();
+	}
 }
 
 
@@ -3521,17 +3471,12 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::render_cr
 	// Each surface point is vertically extruded to form a line.
 	if (!d_stream_primitives.begin_primitive(2/*max_num_vertices*/, 2/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				d_map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_vertex_array,
-				GL_LINES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (d_map_stream_buffer_scope.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			render_stream();
+		}
+		d_map_stream_buffer_scope.start_streaming();
 
 		d_stream_primitives.begin_primitive(2/*max_num_vertices*/, 2/*max_num_vertex_elements*/);
 	}
@@ -3565,22 +3510,37 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::render_cr
 }
 
 
+void
+GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::render_stream()
+{
+	// Only render if we've got some data to render.
+	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
+	{
+		glDrawRangeElements(
+				GL_LINES,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
+						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
+				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
+				GLVertexElementTraits<streaming_vertex_element_type>::type,
+				GLUtils::buffer_offset(
+						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
+								sizeof(CrossSectionVertex)/*indices_offset*/));
+	}
+}
+
+
 GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::CrossSection2DGeometryOnSphereVisitor(
-		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &vertex_array) :
-	d_renderer(renderer),
-	d_vertex_array(vertex_array),
-	d_map_vertex_element_buffer_scope(
-			renderer,
-			*streaming_vertex_element_buffer->get_buffer(),
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER),
-	d_map_vertex_buffer_scope(
-			renderer,
-			*streaming_vertex_buffer->get_buffer(),
-			GLBuffer::TARGET_ARRAY_BUFFER),
-	d_stream_target(d_stream),
+		GL &gl,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer) :
+	d_gl(gl),
+	d_map_stream_buffer_scope(
+			d_stream,
+			*streaming_vertex_element_buffer,
+			*streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream)
 {
 }
@@ -3590,13 +3550,7 @@ void
 GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::begin_rendering()
 {
 	// Start streaming cross-section 2D geometries.
-	begin_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			d_map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	d_map_stream_buffer_scope.start_streaming();
 }
 
 
@@ -3604,18 +3558,11 @@ void
 GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::end_rendering()
 {
 	// Stop streaming cross-section 2D geometries so we can render the last batch.
-	end_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			d_map_vertex_buffer_scope);
-
-	// Render the last batch of streamed cross-section 2D geometries (if any).
-	render_vertex_array_stream<CrossSectionVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_vertex_array,
-			GL_TRIANGLES/*rendering each quad as two triangles*/);
+	if (d_map_stream_buffer_scope.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
+		// Render the last batch of streamed cross-section 1D geometries (if any).
+		render_stream();
+	}
 }
 
 
@@ -3694,17 +3641,12 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::render_cr
 	// Each surface great circle arc is vertically extruded to form a 2D quad (two triangles).
 	if (!d_stream_primitives.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<CrossSectionVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				d_map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_vertex_array,
-				GL_TRIANGLES/*rendering each quad as two triangles*/);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (d_map_stream_buffer_scope.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			render_stream();
+		}
+		d_map_stream_buffer_scope.start_streaming();
 
 		d_stream_primitives.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/);
 	}
@@ -3774,23 +3716,38 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::render_cr
 }
 
 
+void
+GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::render_stream()
+{
+	// Only render if we've got some data to render.
+	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
+	{
+		glDrawRangeElements(
+				GL_TRIANGLES/*rendering each quad as two triangles*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
+						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
+				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
+				GLVertexElementTraits<streaming_vertex_element_type>::type,
+				GLUtils::buffer_offset(
+						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
+								sizeof(CrossSectionVertex)/*indices_offset*/));
+	}
+}
+
+
 GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::SurfaceFillMaskGeometryOnSphereVisitor(
-		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &vertex_array,
+		GL &gl,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 		bool include_polylines) :
-	d_renderer(renderer),
-	d_vertex_array(vertex_array),
-	d_map_vertex_element_buffer_scope(
-			renderer,
-			*streaming_vertex_element_buffer->get_buffer(),
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER),
-	d_map_vertex_buffer_scope(
-			renderer,
-			*streaming_vertex_buffer->get_buffer(),
-			GLBuffer::TARGET_ARRAY_BUFFER),
-	d_stream_target(d_stream),
+	d_gl(gl),
+	d_map_stream_buffer_scope(
+			d_stream,
+			*streaming_vertex_element_buffer,
+			*streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream),
 	d_include_polylines(include_polylines)
 {
@@ -3862,40 +3819,23 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 	// If the entire geometry is already in the stream then we only need to issue a draw call.
 	if (entire_geometry_is_in_stream_target)
 	{
-		render_vertex_array_stream<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_vertex_array,
-				GL_TRIANGLES);
+		render_stream();
 
 		// Entire geometry is still in the stream buffer.
 		return;
 	}
 
 	// Start streaming the current surface fill mask geometry.
-	begin_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			d_map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	d_map_stream_buffer_scope.start_streaming();
 
 	stream_surface_fill_mask_geometry(line_geometry, entire_geometry_is_in_stream_target);
 
 	// Stop streaming the current surface fill mask geometry.
-	end_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			d_map_vertex_buffer_scope);
-
-	// Render the current surface fill mask geometry.
-	render_vertex_array_stream<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_vertex_array,
-			GL_TRIANGLES);
+	if (d_map_stream_buffer_scope.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
+		// Render the current surface fill mask geometry.
+		render_stream();
+	}
 }
 
 
@@ -4064,7 +4004,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 {
 	//
 	// Here we use the less efficient path of rendering a triangle fan in order to have the
-	// stream take of copying the fan apex vertex whenever the stream fills up mid-triangle-fan.
+	// stream take care of copying the fan apex vertex whenever the stream fills up mid-triangle-fan.
 	// It also makes things easier by allowing us to simply add vertices.
 	//
 
@@ -4081,15 +4021,13 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 	vertex.surface_point[2] = centroid.z().dval();
 	if (!fill_stream_triangle_fans.add_vertex(vertex))
 	{
-		suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				d_map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (d_map_stream_buffer_scope.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			render_stream();
+		}
+		d_map_stream_buffer_scope.start_streaming();
+
 		fill_stream_triangle_fans.add_vertex(vertex);
 	}
 
@@ -4104,15 +4042,13 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 		vertex.surface_point[2] = point_position.z().dval();
 		if (!fill_stream_triangle_fans.add_vertex(vertex))
 		{
-			suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-					d_renderer,
-					d_stream_target,
-					d_map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					d_map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_vertex_array,
-					GL_TRIANGLES);
+			// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+			if (d_map_stream_buffer_scope.stop_streaming())
+			{	// Only render if buffer contents are not undefined...
+				render_stream();
+			}
+			d_map_stream_buffer_scope.start_streaming();
+
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 	}
@@ -4124,15 +4060,13 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 	vertex.surface_point[2] = first_point_position.z().dval();
 	if (!fill_stream_triangle_fans.add_vertex(vertex))
 	{
-		suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				d_map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (d_map_stream_buffer_scope.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			render_stream();
+		}
+		d_map_stream_buffer_scope.start_streaming();
+
 		fill_stream_triangle_fans.add_vertex(vertex);
 	}
 
@@ -4140,23 +4074,38 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 }
 
 
+void
+GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_stream()
+{
+	// Only render if we've got some data to render.
+	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
+	{
+		glDrawRangeElements(
+				GL_TRIANGLES,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
+						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
+				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
+				GLVertexElementTraits<streaming_vertex_element_type>::type,
+				GLUtils::buffer_offset(
+						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
+								sizeof(SurfaceFillMaskVertex)/*indices_offset*/));
+	}
+}
+
+
 GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::VolumeFillBoundaryGeometryOnSphereVisitor(
-		GLRenderer &renderer,
-		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-		const GLVertexArray::shared_ptr_type &vertex_array,
+		GL &gl,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 		bool include_polylines) :
-	d_renderer(renderer),
-	d_vertex_array(vertex_array),
-	d_map_vertex_element_buffer_scope(
-			renderer,
-			*streaming_vertex_element_buffer->get_buffer(),
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER),
-	d_map_vertex_buffer_scope(
-			renderer,
-			*streaming_vertex_buffer->get_buffer(),
-			GLBuffer::TARGET_ARRAY_BUFFER),
-	d_stream_target(d_stream),
+	d_gl(gl),
+	d_map_stream_buffer_scope(
+			d_stream,
+			*streaming_vertex_element_buffer,
+			*streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream),
 	d_include_polylines(include_polylines)
 {
@@ -4167,13 +4116,7 @@ void
 GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::begin_rendering()
 {
 	// Start streaming volume fill boundary geometries.
-	begin_vertex_array_streaming<VolumeFillBoundaryVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			d_map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	d_map_stream_buffer_scope.start_streaming();
 }
 
 
@@ -4181,26 +4124,11 @@ void
 GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::end_rendering()
 {
 	// Stop streaming volume fill boundary geometries so we can render the last batch.
-	end_vertex_array_streaming<VolumeFillBoundaryVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_map_vertex_element_buffer_scope,
-			d_map_vertex_buffer_scope);
-
-	// Render the current contents of the stream.
-	render_stream();
-}
-
-
-void
-GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::render_stream()
-{
-	// Render a batch of streamed volume fill boundary geometries (if any).
-	render_vertex_array_stream<VolumeFillBoundaryVertex, streaming_vertex_element_type>(
-			d_renderer,
-			d_stream_target,
-			d_vertex_array,
-			GL_LINES/*geometry shader converts lines to triangles*/);
+	if (d_map_stream_buffer_scope.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
+		// Render the current contents of the stream.
+		render_stream();
+	}
 }
 
 
@@ -4315,23 +4243,14 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::rende
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 
 		// Stop streaming volume fill boundary geometries so we can render the last batch.
-		end_vertex_array_streaming<VolumeFillBoundaryVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				d_map_vertex_buffer_scope);
-
-		// Render current contents of the stream.
-		render_stream();
+		if (d_map_stream_buffer_scope.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			// Render current contents of the stream.
+			render_stream();
+		}
 
 		// Start streaming volume fill boundary geometries.
-		begin_vertex_array_streaming<VolumeFillBoundaryVertex, streaming_vertex_element_type>(
-				d_renderer,
-				d_stream_target,
-				d_map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				d_map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+		d_map_stream_buffer_scope.start_streaming();
 
 		d_stream_primitives.begin_primitive(2/*max_num_vertices*/, 2/*max_num_vertex_elements*/);
 	}
@@ -4355,6 +4274,27 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::rende
 	d_stream_primitives.add_vertex_element(1);
 
 	d_stream_primitives.end_primitive();
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::render_stream()
+{
+	// Render a batch of streamed volume fill boundary geometries (if any).
+	// Only render if we've got some data to render.
+	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
+	{
+		glDrawRangeElements(
+				GL_LINES/*geometry shader converts lines to triangles*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
+				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
+						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
+				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
+				GLVertexElementTraits<streaming_vertex_element_type>::type,
+				GLUtils::buffer_offset(
+						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
+								sizeof(VolumeFillBoundaryVertex)/*indices_offset*/));
+	}
 }
 
 

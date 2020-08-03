@@ -33,7 +33,6 @@
 #include <opengl/OpenGL1.h>
 #include <QString>
 
-#include "GLBuffer.h"
 #include "GLCompiledDrawState.h"
 #include "GLCubeSubdivision.h"
 #include "GLFrameBufferObject.h"
@@ -43,12 +42,11 @@
 #include "GLShaderObject.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
+#include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "GLVertexBuffer.h"
-#include "GLVertexElementBuffer.h"
 #include "GLViewport.h"
 
 #include "file-io/ScalarField3DFileFormatReader.h"
@@ -68,7 +66,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A 3D sub-surface scalar field represented as a cube map of concentric depth layers.
@@ -470,10 +468,9 @@ namespace GPlatesOpenGL
 		public:
 
 			CrossSection1DGeometryOnSphereVisitor(
-					GLRenderer &renderer,
-					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-					const GLVertexArray::shared_ptr_type &vertex_array);
+					GL &gl,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer);
 
 			void
 			begin_rendering();
@@ -497,12 +494,12 @@ namespace GPlatesOpenGL
 			render_cross_section_1d(
 					const GPlatesMaths::UnitVector3D &surface_point);
 
-			GLRenderer &d_renderer;
-			GLVertexArray::shared_ptr_type d_vertex_array;
-			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
-			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;
+			void
+			render_stream();
+
+			GL &d_gl;
 			cross_section_stream_primitives_type d_stream;
-			cross_section_stream_primitives_type::StreamTarget d_stream_target;
+			cross_section_stream_primitives_type::MapStreamBufferScope d_map_stream_buffer_scope;
 			cross_section_stream_primitives_type::Primitives d_stream_primitives;
 		};
 
@@ -515,10 +512,9 @@ namespace GPlatesOpenGL
 		public:
 
 			CrossSection2DGeometryOnSphereVisitor(
-					GLRenderer &renderer,
-					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-					const GLVertexArray::shared_ptr_type &vertex_array);
+					GL &gl,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer);
 
 			void
 			begin_rendering();
@@ -549,12 +545,12 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::UnitVector3D &start_surface_point,
 					const GPlatesMaths::UnitVector3D &end_surface_point);
 
-			GLRenderer &d_renderer;
-			GLVertexArray::shared_ptr_type d_vertex_array;
-			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
-			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;
+			void
+			render_stream();
+
+			GL &d_gl;
 			cross_section_stream_primitives_type d_stream;
-			cross_section_stream_primitives_type::StreamTarget d_stream_target;
+			cross_section_stream_primitives_type::MapStreamBufferScope d_map_stream_buffer_scope;
 			cross_section_stream_primitives_type::Primitives d_stream_primitives;
 		};
 
@@ -579,10 +575,9 @@ namespace GPlatesOpenGL
 		public:
 
 			SurfaceFillMaskGeometryOnSphereVisitor(
-					GLRenderer &renderer,
-					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-					const GLVertexArray::shared_ptr_type &vertex_array,
+					GL &gl,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 					bool include_polylines);
 
 			virtual
@@ -633,13 +628,13 @@ namespace GPlatesOpenGL
 					const unsigned int num_points,
 					const GPlatesMaths::UnitVector3D &centroid);
 
+			void
+			render_stream();
 
-			GLRenderer &d_renderer;
-			GLVertexArray::shared_ptr_type d_vertex_array;
-			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
-			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;
+
+			GL &d_gl;
 			surface_fill_mask_stream_primitives_type d_stream;
-			surface_fill_mask_stream_primitives_type::StreamTarget d_stream_target;
+			surface_fill_mask_stream_primitives_type::MapStreamBufferScope d_map_stream_buffer_scope;
 			surface_fill_mask_stream_primitives_type::Primitives d_stream_primitives;
 			bool d_include_polylines;
 		};
@@ -667,10 +662,9 @@ namespace GPlatesOpenGL
 		public:
 
 			VolumeFillBoundaryGeometryOnSphereVisitor(
-					GLRenderer &renderer,
-					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-					const GLVertexArray::shared_ptr_type &vertex_array,
+					GL &gl,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+					const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 					bool include_polylines);
 
 			void
@@ -707,12 +701,9 @@ namespace GPlatesOpenGL
 			void
 			render_stream();
 
-			GLRenderer &d_renderer;
-			GLVertexArray::shared_ptr_type d_vertex_array;
-			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
-			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;
+			GL &d_gl;
 			volume_fill_boundary_stream_primitives_type d_stream;
-			volume_fill_boundary_stream_primitives_type::StreamTarget d_stream_target;
+			volume_fill_boundary_stream_primitives_type::MapStreamBufferScope d_map_stream_buffer_scope;
 			volume_fill_boundary_stream_primitives_type::Primitives d_stream_primitives;
 			bool d_include_polylines;
 		};
@@ -872,12 +863,12 @@ namespace GPlatesOpenGL
 		/**
 		 * Used to stream indices (vertex elements) for cross-section geometry and surface fill masks.
 		 */
-		GLVertexElementBuffer::shared_ptr_type d_streaming_vertex_element_buffer;
+		GLStreamBuffer::shared_ptr_type d_streaming_vertex_element_buffer;
 
 		/**
 		 * Used to stream vertices for cross-section geometry and surface fill masks.
 		 */
-		GLVertexBuffer::shared_ptr_type d_streaming_vertex_buffer;
+		GLStreamBuffer::shared_ptr_type d_streaming_vertex_buffer;
 
 		/**
 		 * Used to contain cross-section geometries.
@@ -930,10 +921,6 @@ namespace GPlatesOpenGL
 
 		void
 		initialise_inner_sphere(
-				GLRenderer &renderer);
-
-		void
-		allocate_streaming_vertex_buffers(
 				GLRenderer &renderer);
 
 		void
@@ -1047,17 +1034,15 @@ namespace GPlatesOpenGL
 		void
 		render_cross_sections_1d(
 				GLRenderer &renderer,
-				const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-				const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-				const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
+				const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+				const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const cross_sections_seq_type &cross_sections);
 
 		void
 		render_cross_sections_2d(
 				GLRenderer &renderer,
-				const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
-				const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
-				const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
+				const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
+				const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const cross_sections_seq_type &cross_sections);
 
 		void

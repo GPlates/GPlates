@@ -44,6 +44,7 @@
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLStreamPrimitives.h"
+#include "GLUtils.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
@@ -147,9 +148,13 @@ GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 		GLRenderer &renderer) :
 	d_framebuffer_object(renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer)),
 	d_streaming_vertex_element_buffer(
-			GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+			GLStreamBuffer::create(
+					GLBuffer::create(renderer),
+					NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER)),
 	d_streaming_vertex_buffer(
-			GLVertexBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+			GLStreamBuffer::create(
+					GLBuffer::create(renderer),
+					NUM_BYTES_IN_STREAMING_VERTEX_BUFFER)),
 	d_point_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_line_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_fill_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
@@ -194,26 +199,6 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_vertex_arrays_and_shader_programs(
 		GLRenderer &renderer)
 {
-	//
-	// Allocate memory for the streaming vertex buffer.
-	//
-
-	// Allocate the buffer data in the seed geometries vertex element buffer.
-	d_streaming_vertex_element_buffer->get_buffer()->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER,
-			NULL,
-			GLBuffer::USAGE_STREAM_DRAW);
-
-	// Allocate the buffer data in the seed geometries vertex buffer.
-	d_streaming_vertex_buffer->get_buffer()->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_BUFFER,
-			NULL,
-			GLBuffer::USAGE_STREAM_DRAW);
-
 	//
 	// Create the shader programs (and configure vertex attributes in vertex arrays to match programs).
 	//
@@ -2446,16 +2431,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// Set up for streaming vertices/indices into region-of-interest vertex/index buffers.
 	//
 
-	// Used when mapping the vertex/index buffers for streaming.
-	GLBuffer::MapBufferScope map_vertex_element_buffer_scope(
-			renderer,
-			*d_streaming_vertex_element_buffer->get_buffer(),
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER);
-	GLBuffer::MapBufferScope map_vertex_buffer_scope(
-			renderer,
-			*d_streaming_vertex_buffer->get_buffer(),
-			GLBuffer::TARGET_ARRAY_BUFFER);
-
 	//
 	// Prepare for rendering into the region-of-interest mask fixed-point texture.
 	//
@@ -2509,8 +2484,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	{
 		render_fill_region_of_interest_geometries(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				geometry_lists);
 	}
 
@@ -2529,8 +2502,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			// The seed geometry is bounded by a loose cube quad tree tile.
 			render_bounded_line_region_of_interest_geometries(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					geometry_lists,
 					operation.d_region_of_interest_radius);
 		}
@@ -2540,8 +2511,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			// The seed geometry is *not* bounded by a loose cube quad tree tile.
 			render_unbounded_line_region_of_interest_geometries(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					geometry_lists,
 					operation.d_region_of_interest_radius);
 		}
@@ -2557,8 +2526,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			// The seed geometry is bounded by a loose cube quad tree tile.
 			render_bounded_point_region_of_interest_geometries(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					geometry_lists,
 					operation.d_region_of_interest_radius);
 		}
@@ -2568,8 +2535,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			// The seed geometry is *not* bounded by a loose cube quad tree tile.
 			render_unbounded_point_region_of_interest_geometries(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					geometry_lists,
 					operation.d_region_of_interest_radius);
 		}
@@ -2583,8 +2548,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// which can be used to indicate point-sampling (along the line) rather than area sampling.
 	render_single_pixel_wide_line_region_of_interest_geometries(
 			renderer,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope,
 			geometry_lists);
 
 	// As an extra precaution we also render the point region-of-interest geometries as points (not quads) of
@@ -2595,8 +2558,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// which can be used to indicate point-sampling rather than area sampling.
 	render_single_pixel_size_point_region_of_interest_geometries(
 			renderer,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope,
 			geometry_lists);
 
 	//debug_fixed_point_render_target(renderer, "region_of_interest_mask");
@@ -2662,8 +2623,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			cube_face_centre,
 			target_raster_texture,
 			region_of_interest_mask_texture,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope,
 			geometry_lists);
 
 	//debug_floating_point_render_target(
@@ -2674,8 +2633,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
@@ -2710,16 +2667,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
-	point_region_of_interest_stream_primitives_type::StreamTarget point_stream_target(point_stream);
+	point_region_of_interest_stream_primitives_type::MapStreamBufferScope point_stream_target(
+			point_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming point region-of-interest geometries.
-	begin_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	point_stream_target.start_streaming();
 
 	point_region_of_interest_stream_primitives_type::Primitives point_stream_quads(point_stream);
 
@@ -2740,8 +2696,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 		render_bounded_point_region_of_interest_geometry(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				point_stream_target,
 				point_stream_quads,
 				point_on_sphere.position_vector(),
@@ -2773,8 +2727,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 			render_bounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
 					point.position_vector(),
@@ -2809,8 +2761,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 			// that are *not* constant across the seed geometry.
 			render_bounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
 					point.position_vector(),
@@ -2845,8 +2795,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 			// that are *not* constant across the seed geometry.
 			render_bounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
 					point.position_vector(),
@@ -2870,8 +2818,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 				// that are *not* constant across the seed geometry.
 				render_bounded_point_region_of_interest_geometry(
 						renderer,
-						map_vertex_element_buffer_scope,
-						map_vertex_buffer_scope,
 						point_stream_target,
 						point_stream_quads,
 						point.position_vector(),
@@ -2882,27 +2828,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 	}
 
 	// Stop streaming point region-of-interest geometries so we can render the last batch.
-	end_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (point_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch of streamed point region-of-interest geometries (if any).
-	render_vertex_array_stream<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			d_point_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch of streamed point region-of-interest geometries (if any).
+		if (point_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					point_stream_target.get_start_streaming_vertex_count()/*start*/,
+					point_stream_target.get_start_streaming_vertex_count() +
+							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							point_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_geometry(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-		point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
+		point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 		point_region_of_interest_stream_primitives_type::Primitives &point_stream_quads,
 		const GPlatesMaths::UnitVector3D &point,
 		PointRegionOfInterestVertex &vertex,
@@ -2912,21 +2862,25 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 	// There are four vertices for the current point (each point gets a quad) and
 	// two triangles (three indices each).
-	if (!point_stream_quads.begin_primitive(
-			4/*max_num_vertices*/,
-			6/*max_num_vertex_elements*/))
+	if (!point_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_point_region_of_interest_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (point_stream_target.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					point_stream_target.get_start_streaming_vertex_count()/*start*/,
+					point_stream_target.get_start_streaming_vertex_count() +
+							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							point_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
+		}
+		point_stream_target.start_streaming();
+
+		point_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/);
 	}
 
 	vertex.point_centre[0] = point.x().dval();
@@ -2969,8 +2923,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
@@ -3033,16 +2985,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
-	point_region_of_interest_stream_primitives_type::StreamTarget point_stream_target(point_stream);
+	point_region_of_interest_stream_primitives_type::MapStreamBufferScope point_stream_target(
+			point_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming point region-of-interest geometries.
-	begin_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	point_stream_target.start_streaming();
 
 	point_region_of_interest_stream_primitives_type::Primitives point_stream_meshes(point_stream);
 
@@ -3063,8 +3014,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 		render_unbounded_point_region_of_interest_geometry(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				point_stream_target,
 				point_stream_meshes,
 				point_on_sphere.position_vector(),
@@ -3097,8 +3046,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 			render_unbounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
 					point.position_vector(),
@@ -3134,8 +3081,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 			// that are *not* constant across the seed geometry.
 			render_unbounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
 					point.position_vector(),
@@ -3171,8 +3116,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 			// that are *not* constant across the seed geometry.
 			render_unbounded_point_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
 					point.position_vector(),
@@ -3197,8 +3140,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 				// that are *not* constant across the seed geometry.
 				render_unbounded_point_region_of_interest_geometry(
 						renderer,
-						map_vertex_element_buffer_scope,
-						map_vertex_buffer_scope,
 						point_stream_target,
 						point_stream_meshes,
 						point.position_vector(),
@@ -3210,27 +3151,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 	}
 
 	// Stop streaming point region-of-interest geometries so we can render the last batch.
-	end_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (point_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch of streamed point region-of-interest geometries (if any).
-	render_vertex_array_stream<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			point_stream_target,
-			d_point_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch of streamed point region-of-interest geometries (if any).
+		if (point_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					point_stream_target.get_start_streaming_vertex_count()/*start*/,
+					point_stream_target.get_start_streaming_vertex_count() +
+							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							point_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest_geometry(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-		point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
+		point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 		point_region_of_interest_stream_primitives_type::Primitives &point_stream_meshes,
 		const GPlatesMaths::UnitVector3D &point,
 		PointRegionOfInterestVertex &vertex,
@@ -3241,21 +3186,25 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 	// There are five vertices for the current point (each point gets a fan mesh) and
 	// four triangles (three indices each).
-	if (!point_stream_meshes.begin_primitive(
-			5/*max_num_vertices*/,
-			12/*max_num_vertex_elements*/))
+	if (!point_stream_meshes.begin_primitive(5/*max_num_vertices*/, 12/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex, streaming_vertex_element_type>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_point_region_of_interest_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (point_stream_target.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					point_stream_target.get_start_streaming_vertex_count()/*start*/,
+					point_stream_target.get_start_streaming_vertex_count() +
+							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							point_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
+		}
+		point_stream_target.start_streaming();
+
+		point_stream_meshes.begin_primitive(5/*max_num_vertices*/, 12/*max_num_vertex_elements*/);
 	}
 
 	vertex.point_centre[0] = point.x().dval();
@@ -3329,8 +3278,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
@@ -3371,16 +3318,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
-	line_region_of_interest_stream_primitives_type::StreamTarget line_stream_target(line_stream);
+	line_region_of_interest_stream_primitives_type::MapStreamBufferScope line_stream_target(
+			line_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming line region-of-interest geometries.
-	begin_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	line_stream_target.start_streaming();
 
 	line_region_of_interest_stream_primitives_type::Primitives line_stream_quads(line_stream);
 
@@ -3417,8 +3363,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 
 			render_bounded_line_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_quads,
 					line,
@@ -3460,8 +3404,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 
 			render_bounded_line_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_quads,
 					line,
@@ -3492,8 +3434,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 
 				render_bounded_line_region_of_interest_geometry(
 						renderer,
-						map_vertex_element_buffer_scope,
-						map_vertex_buffer_scope,
 						line_stream_target,
 						line_stream_quads,
 						line,
@@ -3504,27 +3444,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	}
 
 	// Stop streaming line region-of-interest geometries so we can render the last batch.
-	end_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (line_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch of streamed line region-of-interest geometries (if any).
-	render_vertex_array_stream<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			d_line_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch of streamed line region-of-interest geometries (if any).
+		if (line_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					line_stream_target.get_start_streaming_vertex_count()/*start*/,
+					line_stream_target.get_start_streaming_vertex_count() +
+							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							line_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_geometry(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-		line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
+		line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 		line_region_of_interest_stream_primitives_type::Primitives &line_stream_quads,
 		const GPlatesMaths::GreatCircleArc &line,
 		LineRegionOfInterestVertex &vertex,
@@ -3532,21 +3476,25 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 {
 	// There are four vertices for the current line (each line gets a quad) and
 	// two triangles (three indices each).
-	if (!line_stream_quads.begin_primitive(
-			4/*max_num_vertices*/,
-			6/*max_num_vertex_elements*/))
+	if (!line_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_line_region_of_interest_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (line_stream_target.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					line_stream_target.get_start_streaming_vertex_count()/*start*/,
+					line_stream_target.get_start_streaming_vertex_count() +
+							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							line_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
+		}
+		line_stream_target.start_streaming();
+
+		line_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/);
 	}
 
 	// We should only be called if line (arc) has a rotation axis.
@@ -3608,8 +3556,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
@@ -3678,16 +3624,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
-	line_region_of_interest_stream_primitives_type::StreamTarget line_stream_target(line_stream);
+	line_region_of_interest_stream_primitives_type::MapStreamBufferScope line_stream_target(
+			line_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming line region-of-interest geometries.
-	begin_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	line_stream_target.start_streaming();
 
 	line_region_of_interest_stream_primitives_type::Primitives line_stream_meshes(line_stream);
 
@@ -3724,8 +3669,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 			render_unbounded_line_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_meshes,
 					line,
@@ -3768,8 +3711,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 			render_unbounded_line_region_of_interest_geometry(
 					renderer,
-					map_vertex_element_buffer_scope,
-					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_meshes,
 					line,
@@ -3801,8 +3742,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 				render_unbounded_line_region_of_interest_geometry(
 						renderer,
-						map_vertex_element_buffer_scope,
-						map_vertex_buffer_scope,
 						line_stream_target,
 						line_stream_meshes,
 						line,
@@ -3814,27 +3753,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	}
 
 	// Stop streaming line region-of-interest geometries so we can render the last batch.
-	end_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (line_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch of streamed line region-of-interest geometries (if any).
-	render_vertex_array_stream<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			line_stream_target,
-			d_line_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch of streamed line region-of-interest geometries (if any).
+		if (line_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					line_stream_target.get_start_streaming_vertex_count()/*start*/,
+					line_stream_target.get_start_streaming_vertex_count() +
+							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							line_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_geometry(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-		line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
+		line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 		line_region_of_interest_stream_primitives_type::Primitives &line_stream_meshes,
 		const GPlatesMaths::GreatCircleArc &line,
 		LineRegionOfInterestVertex &vertex,
@@ -3843,21 +3786,25 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 {
 	// There are six vertices for the current line (each line gets a mesh) and 
 	// four triangles (three indices each).
-	if (!line_stream_meshes.begin_primitive(
-			6/*max_num_vertices*/,
-			12/*max_num_vertex_elements*/))
+	if (!line_stream_meshes.begin_primitive(6/*max_num_vertices*/, 12/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex, streaming_vertex_element_type>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_line_region_of_interest_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (line_stream_target.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					line_stream_target.get_start_streaming_vertex_count()/*start*/,
+					line_stream_target.get_start_streaming_vertex_count() +
+							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							line_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
+		}
+		line_stream_target.start_streaming();
+
+		line_stream_meshes.begin_primitive(6/*max_num_vertices*/, 12/*max_num_vertex_elements*/);
 	}
 
 	// We should only be called if line (arc) has a rotation axis.
@@ -3976,8 +3923,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
 	//PROFILE_FUNC();
@@ -3997,16 +3942,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
-	fill_region_of_interest_stream_primitives_type::StreamTarget fill_stream_target(fill_stream);
+	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			fill_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming fill region-of-interest geometries.
-	begin_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	fill_stream_target.start_streaming();
 
 	// Input points for the vertices of the seed geometries.
 	fill_region_of_interest_stream_primitives_type::Points fill_stream_points(fill_stream);
@@ -4034,16 +3978,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 		if (!fill_stream_points.add_vertex(vertex))
 		{
-			suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-					renderer,
-					fill_stream_target,
-					map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_fill_region_of_interest_vertex_array,
-					// These are actually rasterised points not quads (triangles)...
-					GL_POINTS);
+			if (fill_stream_target.stop_streaming())
+			{	// Only render if buffer contents are not undefined...
+				glDrawRangeElements(
+						// These are actually rasterised points not quads (triangles)...
+						GL_POINTS,
+						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+						fill_stream_target.get_start_streaming_vertex_count() +
+								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+						GLVertexElementTraits<streaming_vertex_element_type>::type,
+						GLUtils::buffer_offset(
+								fill_stream_target.get_start_streaming_vertex_element_count() *
+										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+			}
+			fill_stream_target.start_streaming();
+
 			fill_stream_points.add_vertex(vertex);
 		}
 	}
@@ -4076,16 +4026,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 			if (!fill_stream_points.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						// These are actually rasterised points not quads (triangles)...
-						GL_POINTS);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							// These are actually rasterised points not quads (triangles)...
+							GL_POINTS,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_points.add_vertex(vertex);
 			}
 		}
@@ -4119,16 +4075,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 			if (!fill_stream_points.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						// These are actually rasterised points not quads (triangles)...
-						GL_POINTS);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							// These are actually rasterised points not quads (triangles)...
+							GL_POINTS,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_points.add_vertex(vertex);
 			}
 		}
@@ -4162,16 +4124,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 			if (!fill_stream_points.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						// These are actually rasterised points not quads (triangles)...
-						GL_POINTS);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							// These are actually rasterised points not quads (triangles)...
+							GL_POINTS,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_points.add_vertex(vertex);
 			}
 		}
@@ -4194,16 +4162,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 				if (!fill_stream_points.add_vertex(vertex))
 				{
-					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-							renderer,
-							fill_stream_target,
-							map_vertex_element_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-							map_vertex_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-							d_fill_region_of_interest_vertex_array,
-							// These are actually rasterised points not quads (triangles)...
-							GL_POINTS);
+					if (fill_stream_target.stop_streaming())
+					{	// Only render if buffer contents are not undefined...
+						glDrawRangeElements(
+								// These are actually rasterised points not quads (triangles)...
+								GL_POINTS,
+								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+								fill_stream_target.get_start_streaming_vertex_count() +
+										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+								GLVertexElementTraits<streaming_vertex_element_type>::type,
+								GLUtils::buffer_offset(
+										fill_stream_target.get_start_streaming_vertex_element_count() *
+												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+					}
+					fill_stream_target.start_streaming();
+
 					fill_stream_points.add_vertex(vertex);
 				}
 			}
@@ -4213,27 +4187,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 	fill_stream_points.end_points();
 
 	// Stop streaming so we can render the last batch.
-	end_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (fill_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch (if any).
-	render_vertex_array_stream<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			d_fill_region_of_interest_vertex_array,
-			// These are actually rasterised points not quads (triangles)...
-			GL_POINTS);
+		// Render the last batch (if any).
+		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					// These are actually rasterised points not quads (triangles)...
+					GL_POINTS,
+					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+					fill_stream_target.get_start_streaming_vertex_count() +
+							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							fill_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
 	//PROFILE_FUNC();
@@ -4260,16 +4238,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
-	fill_region_of_interest_stream_primitives_type::StreamTarget fill_stream_target(fill_stream);
+	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			fill_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming fill region-of-interest geometries.
-	begin_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	fill_stream_target.start_streaming();
 
 	// Input a line strip for each polyline.
 	fill_region_of_interest_stream_primitives_type::LineStrips fill_stream_line_strips(fill_stream);
@@ -4303,16 +4280,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 			vertex.fill_position[2] = point_position.z().dval();
 			if (!fill_stream_line_strips.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						// These are actually rasterised lines not quads (triangles)...
-						GL_LINES);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							// These are actually rasterised lines not quads (triangles)...
+							GL_LINES,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_line_strips.add_vertex(vertex);
 			}
 		}
@@ -4352,16 +4335,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 			vertex.fill_position[2] = point_position.z().dval();
 			if (!fill_stream_line_loops.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						// These are actually rasterised lines not quads (triangles)...
-						GL_LINES);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							// These are actually rasterised lines not quads (triangles)...
+							GL_LINES,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_line_loops.add_vertex(vertex);
 			}
 		}
@@ -4387,16 +4376,22 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 				vertex.fill_position[2] = point_position.z().dval();
 				if (!fill_stream_line_loops.add_vertex(vertex))
 				{
-					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-							renderer,
-							fill_stream_target,
-							map_vertex_element_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-							map_vertex_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-							d_fill_region_of_interest_vertex_array,
-							// These are actually rasterised lines not quads (triangles)...
-							GL_LINES);
+					if (fill_stream_target.stop_streaming())
+					{	// Only render if buffer contents are not undefined...
+						glDrawRangeElements(
+								// These are actually rasterised lines not quads (triangles)...
+								GL_LINES,
+								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+								fill_stream_target.get_start_streaming_vertex_count() +
+										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+								GLVertexElementTraits<streaming_vertex_element_type>::type,
+								GLUtils::buffer_offset(
+										fill_stream_target.get_start_streaming_vertex_element_count() *
+												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+					}
+					fill_stream_target.start_streaming();
+
 					fill_stream_line_loops.add_vertex(vertex);
 				}
 			}
@@ -4406,27 +4401,31 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 	}
 
 	// Stop streaming so we can render the last batch.
-	end_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (fill_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch (if any).
-	render_vertex_array_stream<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			d_fill_region_of_interest_vertex_array,
-			// These are actually rasterised lines not quads (triangles)...
-			GL_LINES);
+		// Render the last batch (if any).
+		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					// These are actually rasterised lines not quads (triangles)...
+					GL_LINES,
+					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+					fill_stream_target.get_start_streaming_vertex_count() +
+							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							fill_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
 	//PROFILE_FUNC();
@@ -4452,16 +4451,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
-	fill_region_of_interest_stream_primitives_type::StreamTarget fill_stream_target(fill_stream);
+	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			fill_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming fill region-of-interest geometries.
-	begin_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	fill_stream_target.start_streaming();
 
 	// Render each polygon as a triangle fan with the fan apex being the polygon centroid.
 	fill_region_of_interest_stream_primitives_type::TriangleFans fill_stream_triangle_fans(fill_stream);
@@ -4491,15 +4489,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		vertex.fill_position[2] = centroid.z().dval();
 		if (!fill_stream_triangle_fans.add_vertex(vertex))
 		{
-			suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-					renderer,
-					fill_stream_target,
-					map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_fill_region_of_interest_vertex_array,
-					GL_TRIANGLES);
+			if (fill_stream_target.stop_streaming())
+			{	// Only render if buffer contents are not undefined...
+				glDrawRangeElements(
+						GL_TRIANGLES,
+						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+						fill_stream_target.get_start_streaming_vertex_count() +
+								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+						GLVertexElementTraits<streaming_vertex_element_type>::type,
+						GLUtils::buffer_offset(
+								fill_stream_target.get_start_streaming_vertex_element_count() *
+										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+			}
+			fill_stream_target.start_streaming();
+
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 
@@ -4519,15 +4523,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			vertex.fill_position[2] = point_position.z().dval();
 			if (!fill_stream_triangle_fans.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						GL_TRIANGLES);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							GL_TRIANGLES,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_triangle_fans.add_vertex(vertex);
 			}
 		}
@@ -4539,15 +4549,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		vertex.fill_position[2] = first_exterior_point_position.z().dval();
 		if (!fill_stream_triangle_fans.add_vertex(vertex))
 		{
-			suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-					renderer,
-					fill_stream_target,
-					map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_fill_region_of_interest_vertex_array,
-					GL_TRIANGLES);
+			if (fill_stream_target.stop_streaming())
+			{	// Only render if buffer contents are not undefined...
+				glDrawRangeElements(
+						GL_TRIANGLES,
+						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+						fill_stream_target.get_start_streaming_vertex_count() +
+								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+						GLVertexElementTraits<streaming_vertex_element_type>::type,
+						GLUtils::buffer_offset(
+								fill_stream_target.get_start_streaming_vertex_element_count() *
+										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+			}
+			fill_stream_target.start_streaming();
+
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 
@@ -4565,15 +4581,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			vertex.fill_position[2] = centroid.z().dval();
 			if (!fill_stream_triangle_fans.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						GL_TRIANGLES);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							GL_TRIANGLES,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_triangle_fans.add_vertex(vertex);
 			}
 
@@ -4593,15 +4615,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 				vertex.fill_position[2] = point_position.z().dval();
 				if (!fill_stream_triangle_fans.add_vertex(vertex))
 				{
-					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-							renderer,
-							fill_stream_target,
-							map_vertex_element_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-							map_vertex_buffer_scope,
-							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-							d_fill_region_of_interest_vertex_array,
-							GL_TRIANGLES);
+					if (fill_stream_target.stop_streaming())
+					{	// Only render if buffer contents are not undefined...
+						glDrawRangeElements(
+								GL_TRIANGLES,
+								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+								fill_stream_target.get_start_streaming_vertex_count() +
+										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+								GLVertexElementTraits<streaming_vertex_element_type>::type,
+								GLUtils::buffer_offset(
+										fill_stream_target.get_start_streaming_vertex_element_count() *
+												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+					}
+					fill_stream_target.start_streaming();
+
 					fill_stream_triangle_fans.add_vertex(vertex);
 				}
 			}
@@ -4613,15 +4641,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			vertex.fill_position[2] = first_interior_point_position.z().dval();
 			if (!fill_stream_triangle_fans.add_vertex(vertex))
 			{
-				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-						renderer,
-						fill_stream_target,
-						map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_fill_region_of_interest_vertex_array,
-						GL_TRIANGLES);
+				if (fill_stream_target.stop_streaming())
+				{	// Only render if buffer contents are not undefined...
+					glDrawRangeElements(
+							GL_TRIANGLES,
+							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+							fill_stream_target.get_start_streaming_vertex_count() +
+									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+							GLVertexElementTraits<streaming_vertex_element_type>::type,
+							GLUtils::buffer_offset(
+									fill_stream_target.get_start_streaming_vertex_element_count() *
+											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+				}
+				fill_stream_target.start_streaming();
+
 				fill_stream_triangle_fans.add_vertex(vertex);
 			}
 
@@ -4630,18 +4664,24 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 	}
 
 	// Stop streaming so we can render the last batch.
-	end_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (fill_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch streamed (if any).
-	render_vertex_array_stream<FillRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			fill_stream_target,
-			d_fill_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch streamed (if any).
+		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
+					fill_stream_target.get_start_streaming_vertex_count() +
+							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							fill_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 
 	// Set the blend state back to the default state.
 	renderer.gl_enable(GL_BLEND, false);
@@ -4656,8 +4696,6 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		const GPlatesMaths::UnitVector3D &cube_face_centre,
 		const GLTexture::shared_ptr_type &target_raster_texture,
 		const GLTexture::shared_ptr_type &region_of_interest_mask_texture,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
 	//PROFILE_FUNC();
@@ -4706,16 +4744,15 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 
 	// For streaming MaskRegionOfInterestVertex vertices.
 	mask_region_of_interest_stream_primitives_type mask_stream;
-	mask_region_of_interest_stream_primitives_type::StreamTarget mask_stream_target(mask_stream);
+	mask_region_of_interest_stream_primitives_type::MapStreamBufferScope mask_stream_target(
+			mask_stream,
+			*d_streaming_vertex_element_buffer,
+			*d_streaming_vertex_buffer,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
 	// Start streaming point region-of-interest geometries.
-	begin_vertex_array_streaming<MaskRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			mask_stream_target,
-			map_vertex_element_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-			map_vertex_buffer_scope,
-			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
+	mask_stream_target.start_streaming();
 
 	mask_region_of_interest_stream_primitives_type::Primitives mask_stream_quads(mask_stream);
 
@@ -4729,8 +4766,6 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				mask_stream_target,
 				mask_stream_quads,
 				seed_co_registration);
@@ -4746,8 +4781,6 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				mask_stream_target,
 				mask_stream_quads,
 				seed_co_registration);
@@ -4763,8 +4796,6 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				mask_stream_target,
 				mask_stream_quads,
 				seed_co_registration);
@@ -4780,54 +4811,60 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
 				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
 				mask_stream_target,
 				mask_stream_quads,
 				seed_co_registration);
 	}
 
 	// Stop streaming so we can render the last batch.
-	end_vertex_array_streaming<MaskRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			mask_stream_target,
-			map_vertex_element_buffer_scope,
-			map_vertex_buffer_scope);
+	if (mask_stream_target.stop_streaming())
+	{	// Only render if buffer contents are not undefined...
 
-	// Render the last batch of streamed primitives (if any).
-	render_vertex_array_stream<MaskRegionOfInterestVertex, streaming_vertex_element_type>(
-			renderer,
-			mask_stream_target,
-			d_mask_region_of_interest_vertex_array,
-			GL_TRIANGLES);
+		// Render the last batch of streamed primitives (if any).
+		if (mask_stream_target.get_num_streamed_vertex_elements() > 0)
+		{
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					mask_stream_target.get_start_streaming_vertex_count()/*start*/,
+					mask_stream_target.get_start_streaming_vertex_count() +
+							mask_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					mask_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							mask_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(MaskRegionOfInterestVertex)/*indices_offset*/));
+		}
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_region_of_interest(
 		GLRenderer &renderer,
-		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-		mask_region_of_interest_stream_primitives_type::StreamTarget &mask_stream_target,
+		mask_region_of_interest_stream_primitives_type::MapStreamBufferScope &mask_stream_target,
 		mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 		const SeedCoRegistration &seed_co_registration)
 {
 	// There are four vertices for the current quad and two triangles (three indices each).
-	if (!mask_stream_quads.begin_primitive(
-			4/*max_num_vertices*/,
-			6/*max_num_vertex_elements*/))
+	if (!mask_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/))
 	{
-		// There's not enough vertices or indices so render what we have so far and
-		// obtain new stream buffers.
-		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex, streaming_vertex_element_type>(
-				renderer,
-				mask_stream_target,
-				map_vertex_element_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-				map_vertex_buffer_scope,
-				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-				d_mask_region_of_interest_vertex_array,
-				GL_TRIANGLES);
+		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
+		if (mask_stream_target.stop_streaming())
+		{	// Only render if buffer contents are not undefined...
+			glDrawRangeElements(
+					GL_TRIANGLES,
+					mask_stream_target.get_start_streaming_vertex_count()/*start*/,
+					mask_stream_target.get_start_streaming_vertex_count() +
+							mask_stream_target.get_num_streamed_vertices() - 1/*end*/,
+					mask_stream_target.get_num_streamed_vertex_elements()/*count*/,
+					GLVertexElementTraits<streaming_vertex_element_type>::type,
+					GLUtils::buffer_offset(
+							mask_stream_target.get_start_streaming_vertex_element_count() *
+									sizeof(MaskRegionOfInterestVertex)/*indices_offset*/));
+		}
+		mask_stream_target.start_streaming();
+
+		mask_stream_quads.begin_primitive(4/*max_num_vertices*/, 6/*max_num_vertex_elements*/);
 	}
 
 	// Some of the vertex data is the same for all vertices for the current quad.

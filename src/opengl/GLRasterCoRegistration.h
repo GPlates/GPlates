@@ -39,14 +39,13 @@
 #include "GLMultiResolutionRasterInterface.h"
 #include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
+#include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
 #include "GLTransform.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "GLVertexBuffer.h"
-#include "GLVertexElementBuffer.h"
 
 #include "app-logic/ReconstructContext.h"
 
@@ -1264,12 +1263,12 @@ namespace GPlatesOpenGL
 		/**
 		 * Used to stream indices (vertex elements) such as region-of-interest geometries.
 		 */
-		GLVertexElementBuffer::shared_ptr_type d_streaming_vertex_element_buffer;
+		GLStreamBuffer::shared_ptr_type d_streaming_vertex_element_buffer;
 
 		/**
 		 * Used to stream vertices such as region-of-interest geometries.
 		 */
-		GLVertexBuffer::shared_ptr_type d_streaming_vertex_buffer;
+		GLStreamBuffer::shared_ptr_type d_streaming_vertex_buffer;
 
 		/**
 		 * Used to contain *point* region-of-interest geometries.
@@ -1527,17 +1526,13 @@ namespace GPlatesOpenGL
 		void
 		render_bounded_point_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_bounded_point_region_of_interest_geometry(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
+				point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 				point_region_of_interest_stream_primitives_type::Primitives &point_stream_quads,
 				const GPlatesMaths::UnitVector3D &point,
 				PointRegionOfInterestVertex &vertex,
@@ -1546,17 +1541,13 @@ namespace GPlatesOpenGL
 		void
 		render_unbounded_point_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_unbounded_point_region_of_interest_geometry(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
+				point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 				point_region_of_interest_stream_primitives_type::Primitives &point_stream_meshes,
 				const GPlatesMaths::UnitVector3D &point,
 				PointRegionOfInterestVertex &vertex,
@@ -1566,17 +1557,13 @@ namespace GPlatesOpenGL
 		void
 		render_bounded_line_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_bounded_line_region_of_interest_geometry(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
+				line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 				line_region_of_interest_stream_primitives_type::Primitives &line_stream_quads,
 				const GPlatesMaths::GreatCircleArc &line,
 				LineRegionOfInterestVertex &vertex,
@@ -1585,17 +1572,13 @@ namespace GPlatesOpenGL
 		void
 		render_unbounded_line_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_unbounded_line_region_of_interest_geometry(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
+				line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 				line_region_of_interest_stream_primitives_type::Primitives &line_stream_meshes,
 				const GPlatesMaths::GreatCircleArc &line,
 				LineRegionOfInterestVertex &vertex,
@@ -1605,22 +1588,16 @@ namespace GPlatesOpenGL
 		void
 		render_single_pixel_size_point_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		render_single_pixel_wide_line_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		render_fill_region_of_interest_geometries(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
@@ -1630,16 +1607,12 @@ namespace GPlatesOpenGL
 				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTexture::shared_ptr_type &region_of_interest_mask_texture,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		mask_target_raster_with_region_of_interest(
 				GLRenderer &renderer,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				mask_region_of_interest_stream_primitives_type::StreamTarget &mask_stream_target,
+				mask_region_of_interest_stream_primitives_type::MapStreamBufferScope &mask_stream_target,
 				mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 				const SeedCoRegistration &seed_co_registration);
 
