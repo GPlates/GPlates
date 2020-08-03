@@ -128,6 +128,8 @@ set(srcs
     GLStateSetStore.h
     GLStateStore.cc
     GLStateStore.h
+    GLStreamBuffer.cc
+    GLStreamBuffer.h
     GLStreamPrimitives.h
     GLStreamPrimitiveWriters.h
     GLText.cc
