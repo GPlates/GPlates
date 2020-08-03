@@ -110,58 +110,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		/**
-		 * Ensures the currently bound buffer object (for its target type) is @a buffer_object_resource.
-		 */
-		void
-		bind_buffer_object(
-				const GLCapabilities &capabilities,
-				GLBufferObject::resource_handle_type buffer_object_resource,
-				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
-				GLenum target,
-				GLState &last_applied_state)
-		{
-			// Make sure the correct buffer object is currently bound.
-			if (last_applied_state.get_bind_buffer_resource(target) != buffer_object_resource)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						capabilities.buffer.gl_ARB_vertex_buffer_object,
-						GPLATES_ASSERTION_SOURCE);
-
-				// Bind the buffer object.
-				glBindBufferARB(target, buffer_object_resource);
-
-				// And record the change we've made.
-				last_applied_state.set_bind_buffer_object(buffer_object, target);
-			}
-		}
-
-
-		/**
-		 * Ensures there is no currently bound buffer object for the specified target type.
-		 */
-		void
-		unbind_buffer_object(
-				const GLCapabilities &capabilities,
-				GLenum target,
-				GLState &last_applied_state)
-		{
-			// Make sure the no buffer object is currently bound.
-			if (last_applied_state.get_bind_buffer_resource(target))
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						capabilities.buffer.gl_ARB_vertex_buffer_object,
-						GPLATES_ASSERTION_SOURCE);
-
-				// No buffer object - back to client memory arrays.
-				glBindBufferARB(target, 0);
-
-				// And record the change we've made.
-				last_applied_state.set_unbind_buffer_object(target);
-			}
-		}
-
-
 		//! Applies texture coordinate generation state based on param variant type.
 		class TexGenVisitor :
 				public boost::static_visitor<>

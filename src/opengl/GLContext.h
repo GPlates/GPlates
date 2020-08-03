@@ -37,7 +37,6 @@
 #include <QGLFormat>
 
 #include "GLBuffer.h"
-#include "GLBufferObject.h"
 #include "GLCapabilities.h"
 #include "GLCompiledDrawState.h"
 #include "GLFrameBufferObject.h"
@@ -135,14 +134,14 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns the buffer object resource manager.
+			 * Returns the buffer resource manager.
 			 *
 			 * The returned resource manager can create an OpenGL buffer object (eg, vertex, pixel).
 			 */
-			const boost::shared_ptr<GLBufferObject::resource_manager_type> &
-			get_buffer_object_resource_manager() const
+			const boost::shared_ptr<GLBuffer::resource_manager_type> &
+			get_buffer_resource_manager() const
 			{
-				return d_buffer_object_resource_manager;
+				return d_buffer_resource_manager;
 			}
 
 			/**
@@ -344,7 +343,7 @@ namespace GPlatesOpenGL
 
 
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
-			boost::shared_ptr<GLBufferObject::resource_manager_type> d_buffer_object_resource_manager;
+			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
 			boost::shared_ptr<GLShaderObject::resource_manager_type> d_vertex_shader_object_resource_manager;
 			boost::shared_ptr<GLShaderObject::resource_manager_type> d_geometry_shader_object_resource_manager;
 			boost::shared_ptr<GLShaderObject::resource_manager_type> d_fragment_shader_object_resource_manager;

@@ -210,13 +210,13 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 	get_non_shared_state()->get_frame_buffer_object_resource_manager()->deallocate_queued_resources();
 	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_texture_object_resource_manager()->deallocate_queued_resources();
-	get_shared_state()->get_buffer_object_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources();
 }
 
 
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_texture_object_resource_manager(GLTexture::resource_manager_type::create()),
-	d_buffer_object_resource_manager(GLBufferObject::resource_manager_type::create()),
+	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
 	d_vertex_shader_object_resource_manager(
 			GLShaderObject::resource_manager_type::create(
 					GLShaderObject::allocator_type(GL_VERTEX_SHADER))),
@@ -395,7 +395,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	{
 		// Create a new vertex array and add it to the cache.
 		vertex_array_opt = d_vertex_array_cache->allocate_object(
-				GLVertexArray::create_as_unique_ptr(renderer));
+				GLVertexArray::create_unique(renderer));
 	}
 	const GLVertexArray::shared_ptr_type &vertex_array = vertex_array_opt.get();
 

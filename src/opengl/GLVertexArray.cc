@@ -71,6 +71,14 @@ GPlatesOpenGL::GLVertexArray::clear(
 }
 
 
+GLuint
+GPlatesOpenGL::GLVertexArray::get_resource_handle(
+		GL &gl) const
+{
+	return get_object_state_for_current_context(gl).resource->get_resource_handle();
+}
+
+
 GPlatesOpenGL::GLVertexArray::ContextObjectState &
 GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
 		GL &gl) const
@@ -91,14 +99,6 @@ GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
 	d_context_object_states.push_back(ContextObjectState(current_context, gl));
 
 	return d_context_object_states.back();
-}
-
-
-GLuint
-GPlatesOpenGL::GLVertexArray::get_resource_handle(
-		GL &gl) const
-{
-	return get_object_state_for_current_context(gl).resource->get_resource_handle();
 }
 
 

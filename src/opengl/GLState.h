@@ -681,7 +681,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_buffer_state_sets,
 					d_state_set_keys->get_bind_buffer_key(target),
-					boost::in_place(buffer, target));
+					boost::in_place(target, buffer));
 		}
 
 		//! Returns the bound buffer object, or boost::none if no object bound.
@@ -1302,7 +1302,7 @@ namespace GPlatesOpenGL
 			immutable_state_set_ptr_type new_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
 
 			// Apply the new state set.
-			apply_state_set(new_state_set, current_state_set);
+			//apply_state_set(new_state_set, current_state_set);
 
 			// Store the new state set.
 			d_state_sets[state_set_key] = new_state_set;

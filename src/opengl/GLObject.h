@@ -30,10 +30,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
-
 
 namespace GPlatesOpenGL
 {

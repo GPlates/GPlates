@@ -33,6 +33,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
@@ -115,6 +116,17 @@ namespace GPlatesOpenGL
 		void
 		clear(
 				GL &gl);
+
+
+		/**
+		 * Returns the vertex array resource handle associated with the current OpenGL context.
+		 *
+		 * Since vertex array objects cannot be shared across OpenGL contexts a separate
+		 * vertex array object resource is created for each context encountered.
+		 */
+		GLuint
+		get_resource_handle(
+				GL &gl) const;
 
 	public:  // For use by the OpenGL framework...
 
@@ -276,16 +288,6 @@ namespace GPlatesOpenGL
 				const ObjectState::AttributeArray &attribute_array);
 
 	public:  // For use by the OpenGL framework...
-
-		/**
-		 * Returns the vertex array resource handle associated with the current OpenGL context.
-		 *
-		 * Since vertex array objects cannot be shared across OpenGL contexts a separate
-		 * vertex array object resource is created for each context encountered.
-		 */
-		GLuint
-		get_resource_handle(
-				GL &gl) const;
 
 		/**
 		 * Ensure the native vertex array object associated with the current OpenGL context has

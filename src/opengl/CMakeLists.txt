@@ -15,10 +15,6 @@ set(srcs
     GLAgeGridMaskSource.h
     GLBuffer.cc
     GLBuffer.h
-    GLBufferImpl.cc
-    GLBufferImpl.h
-    GLBufferObject.cc
-    GLBufferObject.h
     GLCapabilities.cc
     GLCapabilities.h
     GLCompiledDrawState.cc
