@@ -63,7 +63,7 @@ namespace GPlatesOpenGL
 	/**
 	 * Stream writer class to write to a fixed size buffer.
 	 *
-	 * This is one way to write to a vertex buffer (using its gl_map_buffer_static/gl_unmap_buffer interface).
+	 * This is one way to write to a vertex buffer (using glMapBuffer/glMapBufferRange).
 	 *
 	 * This is useful when you don't know how many vertices/indices you're going to stream and
 	 * you're not going to re-use the vertices/indices.
@@ -136,10 +136,10 @@ namespace GPlatesOpenGL
 	 * Stream writer class to write to a variable size buffer using a std::vector.
 	 *
 	 * This is one way to write to a vertex buffer - by streaming the data into a std::vector
-	 * and then finally passing that to the vertex buffer using its gl_buffer_data interface.
+	 * and then finally passing that to the vertex buffer using glBufferData.
 	 *
 	 * This is useful when you don't know how many vertices/indices you're going to stream but
-	 * you only need to do it once (such as initialised a static vertex buffer that gets reused
+	 * you only need to do it once (such as initialising a static vertex buffer that gets reused
 	 * many times).
 	 */
 	template <typename StreamElementType>
