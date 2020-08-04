@@ -91,6 +91,10 @@ namespace GPlatesOpenGL
 		//! Typedef for an object cache of @a GLState objects.
 		typedef GPlatesUtils::ObjectCache<GLState> state_cache_type;
 
+		/**
+		 * Context capabilities.
+		 */
+		const GLCapabilities &d_capabilities;
 
 		/**
 		 * Used by @a GLState objects to efficiently allocate its state-set objects.

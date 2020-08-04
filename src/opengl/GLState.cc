@@ -35,9 +35,11 @@
 
 
 GPlatesOpenGL::GLState::GLState(
+		const GLCapabilities &capabilities,
 		const GLStateSetStore::non_null_ptr_type &state_set_store,
 		const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
 		const GLStateStore::weak_ptr_type &state_store) :
+	d_capabilities(capabilities),
 	d_state_set_store(state_set_store),
 	d_state_set_keys(state_set_keys),
 	d_state_store(state_store),
@@ -66,7 +68,7 @@ GPlatesOpenGL::GLState::clone() const
 	else
 	{
 		// Allocate on the heap since the state store does not exist anymore.
-		cloned_state = create(d_state_set_store, d_state_set_keys, d_state_store);
+		cloned_state = create(d_capabilities, d_state_set_store, d_state_set_keys, d_state_store);
 	}
 
 	//
@@ -186,18 +188,16 @@ GPlatesOpenGL::GLState::clear()
 
 void
 GPlatesOpenGL::GLState::apply_state(
-		const GLCapabilities &capabilities,
 		GLState &current_state) const
 {
 	PROFILE_FUNC();
 
-	apply_state(capabilities, current_state, state_set_slot_flags_type());
+	apply_state(current_state, state_set_slot_flags_type());
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state(
-		const GLCapabilities &capabilities,
 		GLState &current_state,
 		const state_set_slot_flags_type &state_set_slots_mask) const
 {
@@ -279,7 +279,7 @@ GPlatesOpenGL::GLState::apply_state(
 											// This is a transition from an existing state to another (possibly different)
 											// existing state - if the two states are the same then it's possible for this
 											// to do nothing.
-											new_state_set->apply_state(capabilities, *current_state_set, current_state);
+											new_state_set->apply_state(d_capabilities, *current_state_set, current_state);
 
 											// Update the current state so subsequent state-sets can see it.
 											current_state_set = new_state_set;
@@ -288,7 +288,7 @@ GPlatesOpenGL::GLState::apply_state(
 										{
 											// Only the current state set exists - get it to set the default state.
 											// This is a transition from an existing state to the default state.
-											current_state_set->apply_to_default_state(capabilities, current_state);
+											current_state_set->apply_to_default_state(d_capabilities, current_state);
 
 											// Update the current state so subsequent state-sets can see it.
 											current_state_set.reset();
@@ -301,7 +301,7 @@ GPlatesOpenGL::GLState::apply_state(
 
 										// Only the new state set exists - get it to apply its internal state.
 										// This is a transition from the default state to a new state.
-										new_state_set->apply_from_default_state(capabilities, current_state);
+										new_state_set->apply_from_default_state(d_capabilities, current_state);
 
 										// Update the current state so subsequent state-sets can see it.
 										current_state_set = new_state_set;

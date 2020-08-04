@@ -50,9 +50,7 @@ void
 GPlatesOpenGL::GL::ActiveTexture(
 		GLenum active_texture_)
 {
-	d_current_state->active_texture(
-			d_context->get_capabilities(),
-			active_texture_);
+	d_current_state->active_texture(active_texture_);
 }
 
 
@@ -93,7 +91,6 @@ GPlatesOpenGL::GL::BindTexture(
 		boost::optional<GLTexture::shared_ptr_type> texture_object)
 {
 	d_current_state->bind_texture(
-			d_context->get_capabilities(),
 			texture_target,
 			// Bind to the currently active texture unit (glActiveTexture)...
 			d_current_state->get_active_texture()/*texture_unit*/,
@@ -289,7 +286,7 @@ GPlatesOpenGL::GL::StateScope::end_scope()
 	{
 		// Restore the global state to what it was on scope entry.
 		// On returning 'd_gl.d_current_state' will be equivalent to 'd_entry_state'.
-		d_entry_state->apply_state(d_gl.get_capabilities(), *d_gl.d_current_state);
+		d_entry_state->apply_state(*d_gl.d_current_state);
 
 		d_have_exited_scope = true;
 	}

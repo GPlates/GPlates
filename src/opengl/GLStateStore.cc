@@ -34,6 +34,7 @@ GPlatesOpenGL::GLStateStore::GLStateStore(
 		const GLCapabilities &capabilities,
 		const GLStateSetStore::non_null_ptr_type &state_set_store,
 		const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys) :
+	d_capabilities(capabilities),
 	d_state_set_store(state_set_store),
 	d_state_set_keys(state_set_keys),
 	d_state_cache(state_cache_type::create())
@@ -50,6 +51,7 @@ GPlatesOpenGL::GLStateStore::allocate_state()
 		// No unused 'GLstate' object so create a new one...
 		state = d_state_cache->allocate_object(
 				GLState::create_unique(
+						d_capabilities,
 						d_state_set_store,
 						d_state_set_keys,
 						// This is so 'GLState' objects can allocate through us when cloning themselves...

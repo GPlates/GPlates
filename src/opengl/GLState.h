@@ -91,8 +91,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a copy of this object that shares the same immutable state sets.
 		 *
-		 * Since the state sets are immutable once created, the clone state cannot be changed
-		 * except by calling @a set_state_set (on the cloned @a GLState) to replace an existing
+		 * Since the state sets are immutable once created, the clone state cannot be changed except
+		 * by calling @a set_and_apply_state_set (on the cloned @a GLState) to replace an existing
 		 * @a GLStateSet with a newly created one.
 		 */
 		shared_ptr_type
@@ -118,7 +118,6 @@ namespace GPlatesOpenGL
 		 */
 		void
 		apply_state(
-				const GLCapabilities &capabilities,
 				GLState &current_state) const;
 
 
@@ -148,13 +147,12 @@ namespace GPlatesOpenGL
 		//! Sets the active texture unit.
 		void
 		active_texture(
-				const GLCapabilities &capabilities,
 				GLenum active_texture_)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->active_texture_state_sets,
 					GLStateSetKeys::KEY_ACTIVE_TEXTURE,
-					boost::in_place(boost::cref(capabilities), active_texture_));
+					boost::in_place(boost::cref(d_capabilities), active_texture_));
 		}
 
 		//! Returns the active texture unit.
@@ -176,7 +174,7 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLBuffer::shared_ptr_type> buffer)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_buffer_state_sets,
 					d_state_set_keys->get_bind_buffer_key(target),
 					boost::in_place(target, buffer));
@@ -195,15 +193,14 @@ namespace GPlatesOpenGL
 		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
 		void
 		bind_texture(
-				const GLCapabilities &capabilities,
 				GLenum texture_target,
 				GLenum texture_unit,
 				boost::optional<GLTexture::shared_ptr_type> texture_object)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_texture_state_sets,
 					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
-					boost::in_place(boost::cref(capabilities), texture_target, texture_unit, texture_object));
+					boost::in_place(boost::cref(d_capabilities), texture_target, texture_unit, texture_object));
 		}
 
 		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
@@ -225,7 +222,7 @@ namespace GPlatesOpenGL
 				// Array resource handle associated with the current OpenGL context...
 				GLuint array_resource)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_vertex_array_state_sets,
 					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
 					boost::in_place(array, array_resource));
@@ -249,7 +246,7 @@ namespace GPlatesOpenGL
 				GLboolean blue,
 				GLboolean alpha)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->color_mask_state_sets,
 					GLStateSetKeys::KEY_COLOR_MASK,
 					boost::in_place(red, green, blue, alpha));
@@ -260,7 +257,7 @@ namespace GPlatesOpenGL
 		set_depth_mask(
 				GLboolean flag)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->depth_mask_state_sets,
 					GLStateSetKeys::KEY_DEPTH_MASK,
 					boost::in_place(flag));
@@ -282,7 +279,7 @@ namespace GPlatesOpenGL
 		set_stencil_mask(
 				GLuint stencil)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->stencil_mask_state_sets,
 					GLStateSetKeys::KEY_STENCIL_MASK,
 					boost::in_place(stencil));
@@ -307,7 +304,7 @@ namespace GPlatesOpenGL
 				GLclampf blue,
 				GLclampf alpha)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->clear_color_state_sets,
 					GLStateSetKeys::KEY_CLEAR_COLOR,
 					boost::in_place(red, green, blue, alpha));
@@ -318,7 +315,7 @@ namespace GPlatesOpenGL
 		set_clear_depth(
 				GLclampd depth)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->clear_depth_state_sets,
 					GLStateSetKeys::KEY_CLEAR_DEPTH,
 					boost::in_place(depth));
@@ -329,7 +326,7 @@ namespace GPlatesOpenGL
 		set_clear_stencil(
 				GLint stencil)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->clear_stencil_state_sets,
 					GLStateSetKeys::KEY_CLEAR_STENCIL,
 					boost::in_place(stencil));
@@ -340,7 +337,7 @@ namespace GPlatesOpenGL
 		set_bind_frame_buffer(
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
 					boost::in_place(frame_buffer_object));
@@ -350,7 +347,7 @@ namespace GPlatesOpenGL
 		void
 		set_unbind_frame_buffer()
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
 					// Seems it doesn't like 'boost::none'...
@@ -371,7 +368,7 @@ namespace GPlatesOpenGL
 		set_bind_program_object(
 				const GLProgramObject::shared_ptr_to_const_type &program_object)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					boost::in_place(program_object));
@@ -381,7 +378,7 @@ namespace GPlatesOpenGL
 		void
 		set_unbind_program_object()
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					// Seems it doesn't like 'boost::none'...
@@ -409,14 +406,13 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_scissor(
-				const GLCapabilities &capabilities,
 				const GLViewport &scissor,
 				const GLViewport &default_viewport)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->scissor_state_sets,
 					GLStateSetKeys::KEY_SCISSOR,
-					boost::in_place(boost::cref(capabilities), scissor, default_viewport));
+					boost::in_place(boost::cref(d_capabilities), scissor, default_viewport));
 		}
 
 		/**
@@ -426,27 +422,25 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_scissor_array(
-				const GLCapabilities &capabilities,
 				const std::vector<GLViewport> &all_scissor_rectangles,
 				const GLViewport &default_viewport)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->scissor_state_sets,
 					GLStateSetKeys::KEY_SCISSOR,
-					boost::in_place(boost::cref(capabilities), all_scissor_rectangles, default_viewport));
+					boost::in_place(boost::cref(d_capabilities), all_scissor_rectangles, default_viewport));
 		}
 
 		//! Returns the scissor rectangle for the specified viewport index.
 		boost::optional<const GLViewport &>
 		get_scissor(
-				const GLCapabilities &capabilities,
 				unsigned int viewport_index) const
 		{
 			const boost::optional<const GLViewport &> scissor =
 					query_state_set<const GLViewport &, GLScissorStateSet>(
 							GLStateSetKeys::KEY_SCISSOR,
 							boost::bind(&GLScissorStateSet::get_scissor,
-									_1, boost::cref(capabilities), viewport_index));
+									_1, boost::cref(d_capabilities), viewport_index));
 			return scissor;
 		}
 
@@ -457,14 +451,13 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_viewport(
-				const GLCapabilities &capabilities,
 				const GLViewport &viewport,
 				const GLViewport &default_viewport)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->viewport_state_sets,
 					GLStateSetKeys::KEY_VIEWPORT,
-					boost::in_place(boost::cref(capabilities), viewport, default_viewport));
+					boost::in_place(boost::cref(d_capabilities), viewport, default_viewport));
 		}
 
 		/**
@@ -474,27 +467,25 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_viewport_array(
-				const GLCapabilities &capabilities,
 				const std::vector<GLViewport> &all_viewports,
 				const GLViewport &default_viewport)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->viewport_state_sets,
 					GLStateSetKeys::KEY_VIEWPORT,
-					boost::in_place(boost::cref(capabilities), all_viewports, default_viewport));
+					boost::in_place(boost::cref(d_capabilities), all_viewports, default_viewport));
 		}
 
 		//! Returns the viewport for the specified viewport index.
 		boost::optional<const GLViewport &>
 		get_viewport(
-				const GLCapabilities &capabilities,
 				unsigned int viewport_index) const
 		{
 			const boost::optional<const GLViewport &> viewport =
 					query_state_set<const GLViewport &, GLViewportStateSet>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							boost::bind(&GLViewportStateSet::get_viewport,
-									_1, boost::cref(capabilities), viewport_index));
+									_1, boost::cref(d_capabilities), viewport_index));
 			return viewport;
 		}
 
@@ -504,13 +495,12 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_depth_range(
-				const GLCapabilities &capabilities,
 				const GLDepthRange &depth_range)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->depth_range_state_sets,
 					GLStateSetKeys::KEY_DEPTH_RANGE,
-					boost::in_place(boost::cref(capabilities), depth_range));
+					boost::in_place(boost::cref(d_capabilities), depth_range));
 		}
 
 		/**
@@ -518,13 +508,12 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_depth_range_array(
-				const GLCapabilities &capabilities,
 				const std::vector<GLDepthRange> &all_depth_ranges)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->depth_range_state_sets,
 					GLStateSetKeys::KEY_DEPTH_RANGE,
-					boost::in_place(boost::cref(capabilities), all_depth_ranges));
+					boost::in_place(boost::cref(d_capabilities), all_depth_ranges));
 		}
 
 
@@ -537,7 +526,7 @@ namespace GPlatesOpenGL
 				GLint ref,
 				GLuint mask)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->stencil_func_state_sets,
 					GLStateSetKeys::KEY_STENCIL_FUNC,
 					boost::in_place(func, ref, mask));
@@ -553,7 +542,7 @@ namespace GPlatesOpenGL
 				GLenum zfail,
 				GLenum zpass)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->stencil_op_state_sets,
 					GLStateSetKeys::KEY_STENCIL_OP,
 					boost::in_place(fail, zfail, zpass));
@@ -566,7 +555,7 @@ namespace GPlatesOpenGL
 				GLenum cap,
 				bool enable)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->enable_state_sets,
 					d_state_set_keys->get_enable_key(cap),
 					boost::in_place(cap, enable));
@@ -590,7 +579,7 @@ namespace GPlatesOpenGL
 		set_point_size(
 				GLfloat size)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->point_size_state_sets,
 					GLStateSetKeys::KEY_POINT_SIZE,
 					boost::in_place(size));
@@ -601,7 +590,7 @@ namespace GPlatesOpenGL
 		set_line_width(
 				GLfloat width)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->line_width_state_sets,
 					GLStateSetKeys::KEY_LINE_WIDTH,
 					boost::in_place(width));
@@ -616,18 +605,18 @@ namespace GPlatesOpenGL
 			if (face == GL_FRONT_AND_BACK)
 			{
 				// All state sets need to be orthogonal so split into separate front and back states.
-				set_state_set(
+				set_and_apply_state_set(
 						d_state_set_store->polygon_mode_state_sets,
 						d_state_set_keys->get_polygon_mode_key(GL_FRONT),
 						boost::in_place(GL_FRONT, mode));
-				set_state_set(
+				set_and_apply_state_set(
 						d_state_set_store->polygon_mode_state_sets,
 						d_state_set_keys->get_polygon_mode_key(GL_BACK),
 						boost::in_place(GL_BACK, mode));
 			}
 			else
 			{
-				set_state_set(
+				set_and_apply_state_set(
 						d_state_set_store->polygon_mode_state_sets,
 						d_state_set_keys->get_polygon_mode_key(face),
 						boost::in_place(face, mode));
@@ -638,7 +627,7 @@ namespace GPlatesOpenGL
 		set_front_face(
 				GLenum mode)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->front_face_state_sets,
 					GLStateSetKeys::KEY_FRONT_FACE,
 					boost::in_place(mode));
@@ -648,7 +637,7 @@ namespace GPlatesOpenGL
 		set_cull_face(
 				GLenum mode)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->cull_face_state_sets,
 					GLStateSetKeys::KEY_CULL_FACE,
 					boost::in_place(mode));
@@ -659,7 +648,7 @@ namespace GPlatesOpenGL
 				GLfloat factor,
 				GLfloat units)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->polygon_offset_state_sets,
 					GLStateSetKeys::KEY_POLYGON_OFFSET,
 					boost::in_place(factor, units));
@@ -671,7 +660,7 @@ namespace GPlatesOpenGL
 				GLenum target,
 				GLenum mode)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->hint_state_sets,
 					d_state_set_keys->get_hint_key(target),
 					boost::in_place(target, mode));
@@ -680,26 +669,24 @@ namespace GPlatesOpenGL
 		//! Sets the alpha-blend equation (glBlendEquation).
 		void
 		set_blend_equation(
-				const GLCapabilities &capabilities,
 				GLenum mode)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->blend_equation_state_sets,
 					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(boost::cref(capabilities), mode));
+					boost::in_place(boost::cref(d_capabilities), mode));
 		}
 
 		//! Sets the alpha-blend equation (glBlendEquationSeparate).
 		void
 		set_blend_equation_separate(
-				const GLCapabilities &capabilities,
 				GLenum modeRGB,
 				GLenum modeAlpha)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->blend_equation_state_sets,
 					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(boost::cref(capabilities), modeRGB, modeAlpha));
+					boost::in_place(boost::cref(d_capabilities), modeRGB, modeAlpha));
 		}
 
 		//! Sets the alpha-blend function (glBlendFunc).
@@ -708,7 +695,7 @@ namespace GPlatesOpenGL
 				GLenum sfactor,
 				GLenum dfactor)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->blend_func_state_sets,
 					GLStateSetKeys::KEY_BLEND_FUNC,
 					boost::in_place(sfactor, dfactor));
@@ -717,16 +704,15 @@ namespace GPlatesOpenGL
 		//! Sets the alpha-blend function (glBlendFuncSeparate).
 		void
 		set_blend_func_separate(
-				const GLCapabilities &capabilities,
 				GLenum sfactorRGB,
 				GLenum dfactorRGB,
 				GLenum sfactorAlpha,
 				GLenum dfactorAlpha)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->blend_func_state_sets,
 					GLStateSetKeys::KEY_BLEND_FUNC,
-					boost::in_place(boost::cref(capabilities), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
+					boost::in_place(boost::cref(d_capabilities), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
 		}
 
 		//! Set the depth function.
@@ -734,7 +720,7 @@ namespace GPlatesOpenGL
 		set_depth_func(
 				GLenum func)
 		{
-			set_state_set(
+			set_and_apply_state_set(
 					d_state_set_store->depth_func_state_sets,
 					GLStateSetKeys::KEY_DEPTH_FUNC,
 					boost::in_place(func));
@@ -750,11 +736,12 @@ namespace GPlatesOpenGL
 		static
 		shared_ptr_type
 		create(
+				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
 				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
 		{
-			return shared_ptr_type(new GLState(state_set_store, state_set_keys, state_store));
+			return shared_ptr_type(new GLState(capabilities, state_set_store, state_set_keys, state_store));
 		}
 
 		/**
@@ -765,11 +752,12 @@ namespace GPlatesOpenGL
 		static
 		std::unique_ptr<GLState>
 		create_unique(
+				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
 				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
 		{
-			return std::unique_ptr<GLState>(new GLState(state_set_store, state_set_keys, state_store));
+			return std::unique_ptr<GLState>(new GLState(capabilities, state_set_store, state_set_keys, state_store));
 		}
 
 	private:
@@ -812,6 +800,7 @@ namespace GPlatesOpenGL
 		//! Typedef for a sequence of immutable @a GLStateSet pointers.
 		typedef std::vector<state_set_ptr_type> state_set_seq_type;
 
+		const GLCapabilities &d_capabilities;
 
 		GLStateSetStore::non_null_ptr_type d_state_set_store;
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
@@ -848,19 +837,20 @@ namespace GPlatesOpenGL
 
 		//! Default constructor.
 		GLState(
+				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
 				const boost::weak_ptr<GLStateStore> &state_store);
 
 		/**
-		 * Sets a derived @a GLStateSet type at the specified state set key slot.
+		 * Sets a derived @a GLStateSet type at the specified state set key slot, and applies the state.
 		 *
 		 * The constructor arguments of the derived @a GLStateSet type are passed in
 		 * @a state_set_constructor_args and it is created in the @a state_set_pool object pool.
 		 */
 		template <class GLStateSetType, class InPlaceFactoryType>
 		void
-		set_state_set(
+		set_and_apply_state_set(
 				GPlatesUtils::ObjectPool<GLStateSetType> &state_set_pool,
 				state_set_key_type state_set_key,
 				const InPlaceFactoryType &state_set_constructor_args)
@@ -875,7 +865,19 @@ namespace GPlatesOpenGL
 			state_set_ptr_type new_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
 
 			// Apply the new state set.
-			//apply_state_set(new_state_set, current_state_set);
+			if (current_state_set)
+			{
+				// Both state sets exist - this is a transition from an existing state to another
+				// (possibly different) existing state - if the two states are the same then it's
+				// possible for this to do nothing.
+				new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/);
+			}
+			else
+			{
+				// Only the new state set exists - get it to apply its internal state.
+				// This is a transition from the default state to a new state.
+				new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/);
+			}
 
 			// Store the new state set.
 			d_state_sets[state_set_key] = new_state_set;
@@ -953,7 +955,6 @@ namespace GPlatesOpenGL
 		 */
 		void
 		apply_state(
-				const GLCapabilities &capabilities,
 				GLState &current_state,
 				const state_set_slot_flags_type &state_set_slots_mask) const;
 
