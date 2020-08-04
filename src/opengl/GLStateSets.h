@@ -44,7 +44,6 @@
 #include "GLStateSet.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
-#include "GLVertexBufferObject.h"
 #include "GLViewport.h"
 
 #include "global/CompilerWarnings.h"

@@ -217,7 +217,7 @@ namespace GPlatesOpenGL
 			acquire_pixel_buffer(
 					GLRenderer &renderer,
 					unsigned int size,
-					GLBuffer::usage_type usage);
+					GLenum usage);
 
 			/**
 			 * Returns a vertex array from an internal cache.
@@ -311,7 +311,7 @@ namespace GPlatesOpenGL
 
 
 			//! Typedef for a key made up of the parameters of @a acquire_pixel_buffer.
-			typedef boost::tuple<unsigned int, GLBuffer::usage_type> pixel_buffer_key_type;
+			typedef boost::tuple<unsigned int, GLenum/*usage*/> pixel_buffer_key_type;
 
 			//! Typedef for a pixel buffer cache.
 			typedef GPlatesUtils::ObjectCache<GLPixelBuffer> pixel_buffer_cache_type;

@@ -80,10 +80,9 @@ namespace GPlatesOpenGL
 		 *
 		 * Attempts to reuse an recycled @a GLState object, otherwise creates a new one.
 		 *
-		 * Note that the returned @a GLState object is recycled when all shared pointers to
-		 * it are destroyed.
-		 * And when it's recycled 'GLState::clear()' will be called on it - ie, when the last
-		 * (returned) shared_ptr to it is destroyed.
+		 * Note that the returned @a GLState object is recycled when all shared pointers to it are destroyed.
+		 * And when it's recycled 'GLState::clear()' will be called on it - ie, when the last (returned)
+		 * shared_ptr to it is destroyed.
 		 */
 		GLState::shared_ptr_type
 		allocate_state();
@@ -102,14 +101,6 @@ namespace GPlatesOpenGL
 		 * Used by @a GLState objects to determine state-set slots.
 		 */
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
-
-		/**
-		 * Constant data shared by instances of @a GLState allocated by us.
-		 *
-		 * The sharing is a memory optimisation to reduce memory usage of potentially
-		 * tens of thousands of @a GLState objects.
-		 */
-		GLState::SharedData::shared_ptr_type d_state_shared_data;
 
 		//! Cache of @a GLState objects.
 		state_cache_type::shared_ptr_type d_state_cache;

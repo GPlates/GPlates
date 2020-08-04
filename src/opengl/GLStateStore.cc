@@ -36,17 +36,8 @@ GPlatesOpenGL::GLStateStore::GLStateStore(
 		const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys) :
 	d_state_set_store(state_set_store),
 	d_state_set_keys(state_set_keys),
-	d_state_shared_data(GLState::SharedData::create(capabilities, *state_set_keys, GLState::shared_ptr_type())),
 	d_state_cache(state_cache_type::create())
 {
-	// The vertex array state for the default vertex array object (resource handle zero) is initially all clear.
-	// This gets modified as state is applied to OpenGL while the zero handle vertex array object is bound.
-	//
-	// NOTE: We cannot call 'allocated_state' because it uses 'shared_from_this()' which only works
-	// if there's a boost::shared_ptr referencing us (but we're in the constructor).
-	// So we create the GLState object on the heap (by not passing a weak ptr to ourselves).
-	d_state_shared_data->default_vertex_array_object_current_context_state =
-			GLState::create(d_state_set_store, d_state_set_keys, d_state_shared_data);
 }
 
 
@@ -58,10 +49,9 @@ GPlatesOpenGL::GLStateStore::allocate_state()
 	{
 		// No unused 'GLstate' object so create a new one...
 		state = d_state_cache->allocate_object(
-				GLState::create_as_unique_ptr(
+				GLState::create_unique(
 						d_state_set_store,
 						d_state_set_keys,
-						d_state_shared_data,
 						// This is so 'GLState' objects can allocate through us when cloning themselves...
 						shared_from_this()),
 				// Calls 'GLState::clear()' every time a GLState object is returned to the cache...

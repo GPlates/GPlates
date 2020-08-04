@@ -151,6 +151,70 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
+
+		/**
+		 * Ensure the native vertex array object associated with the current OpenGL context has
+		 * up-to-date internal state.
+		 *
+		 * It's possible the state of this vertex array was modified in a different context and
+		 * hence a different native vertex array object was modified (there's a separate one for
+		 * each context since they cannot be shared across contexts) and now we're in a different
+		 * context so the native vertex array object of the current context must be updated to match.
+		 *
+		 * NOTE: This vertex array must currently be bound.
+		 */
+		void
+		synchronise_current_context(
+				GL &gl);
+
+		//! Equivalent to glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, <buffer>) where none corresponds to zero.
+		void
+		bind_element_array_buffer(
+				GL &gl,
+				boost::optional<GLBuffer::shared_ptr_type> buffer);
+
+		//! Equivalent to glEnableVertexAttribArray.
+		void
+		enable_vertex_attrib_array(
+				GL &gl,
+				GLuint index);
+
+		//! Equivalent to glDisableVertexAttribArray.
+		void
+		disable_vertex_attrib_array(
+				GL &gl,
+				GLuint index);
+
+		//! Equivalent to glVertexAttribDivisor.
+		void
+		vertex_attrib_divisor(
+				GL &gl,
+				GLuint index,
+				GLuint divisor);
+
+		//! Equivalent to glVertexAttribPointer.
+		void
+		vertex_attrib_pointer(
+				GL &gl,
+				GLuint index,
+				GLint size,
+				GLenum type,
+				GLboolean normalized,
+				GLsizei stride,
+				const GLvoid *pointer,
+				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
+
+		//! Equivalent to glVertexAttribIPointer.
+		void
+		vertex_attrib_i_pointer(
+				GL &gl,
+				GLuint index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				const GLvoid *pointer,
+				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
+
 	private:
 
 		/**
@@ -286,71 +350,6 @@ namespace GPlatesOpenGL
 				GL &gl,
 				GLuint index,
 				const ObjectState::AttributeArray &attribute_array);
-
-	public:  // For use by the OpenGL framework...
-
-		/**
-		 * Ensure the native vertex array object associated with the current OpenGL context has
-		 * up-to-date internal state.
-		 *
-		 * It's possible the state of this vertex array was modified in a different context and
-		 * hence a different native vertex array object was modified (there's a separate one for
-		 * each context since they cannot be shared across contexts) and now we're in a different
-		 * context so the native vertex array object of the current context must be updated to match.
-		 *
-		 * NOTE: This vertex array must currently be bound.
-		 */
-		void
-		synchronise_current_context(
-				GL &gl);
-
-		//! Equivalent to glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, <buffer>) where none corresponds to zero.
-		void
-		bind_element_array_buffer(
-				GL &gl,
-				boost::optional<GLBuffer::shared_ptr_type> buffer);
-
-		//! Equivalent to glEnableVertexAttribArray.
-		void
-		enable_vertex_attrib_array(
-				GL &gl,
-				GLuint index);
-
-		//! Equivalent to glDisableVertexAttribArray.
-		void
-		disable_vertex_attrib_array(
-				GL &gl,
-				GLuint index);
-
-		//! Equivalent to glVertexAttribDivisor.
-		void
-		vertex_attrib_divisor(
-				GL &gl,
-				GLuint index,
-				GLuint divisor);
-
-		//! Equivalent to glVertexAttribPointer.
-		void
-		vertex_attrib_pointer(
-				GL &gl,
-				GLuint index,
-				GLint size,
-				GLenum type,
-				GLboolean normalized,
-				GLsizei stride,
-				const GLvoid *pointer,
-				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
-
-		//! Equivalent to glVertexAttribIPointer.
-		void
-		vertex_attrib_i_pointer(
-				GL &gl,
-				GLuint index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				const GLvoid *pointer,
-				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
 	};
 }
 

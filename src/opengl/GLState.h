@@ -45,7 +45,6 @@
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
 #include "GLVertexArray.h"
-#include "GLVertexBufferObject.h"
 #include "GLViewport.h"
 
 #include "global/AssertionFailureException.h"
@@ -66,35 +65,14 @@ namespace GPlatesOpenGL
 	 * part of the global state.
 	 *
 	 * Any @a GLStateSet slots that are not set represent the default OpenGL state for those slots.
+	 *
+	 * Note that only commonly used global state is shadowed here (and accessible via class @a GL).
+	 * Global state that is not shadowed will need to be modified directly via OpenGL, and hence will
+	 * have no save/restore ability (via GL::StateScope).
 	 */
 	class GLState :
 			private boost::noncopyable
 	{
-	private:
-		/**
-		 * Typedef for a group of 32 boolean flags indicating if 32 state set slots have been initialised.
-		 */
-		typedef boost::uint32_t state_set_slot_flag32_type;
-
-		/**
-		 * Typedef for a set of flags indicating which state set slots have been initialised.
-		 *
-		 * NOTE: This used to be a boost::dynamic_bitset<> but the searching for the next non-zero
-		 * flag was consuming too much CPU.
-		 * Next a std::vector was used instead because blasting through all ~200 state-sets ended up
-		 * being noticeably faster which is important since applying state shows high on the CPU profile
-		 * for some rendering paths such as reconstructing rasters with age-grid smoothing.
-		 * However the number of slots jumped from ~250 to ~750 when switching from 'old-style'
-		 * texture units to 'new-style' texture units (for shaders) increasing the max number of
-		 * texture units from 4 to 32 (on latest nVidia hardware).
-		 * So next switched to a packed bit flags approach similar to boost::dynamic_bitset but blasting
-		 * through our own collection of 32-bit integers instead of the slow searching through the bit
-		 * flags done by boost::dynamic_bitset. This enables us to rapidly skip past up to 32 slots
-		 * in one test (which is useful considering most of those 32 texture units typically are not
-		 * used by clients and hence are empty slots).
-		 */
-		typedef std::vector<state_set_slot_flag32_type> state_set_slot_flags_type;
-
 	public:
 		//
 		// Note that the reason boost::shared_ptr is used instead of non_null_intrusive_ptr
@@ -108,166 +86,6 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a weak pointer to a @a GLState.
 		typedef boost::weak_ptr<GLState> weak_ptr_type;
 		typedef boost::weak_ptr<const GLState> weak_ptr_to_const_type;
-
-
-		/**
-		 * Constant data that is shared across @a GLState instances.
-		 *
-		 * This is shared since @a GLState is already reasonably memory intensive due to the
-		 * potentially large number of instances that are currently generated.
-		 */
-		class SharedData
-		{
-		public:
-			typedef boost::shared_ptr<SharedData> shared_ptr_type;
-			typedef boost::shared_ptr<const SharedData> shared_ptr_to_const_type;
-
-			/**
-			 * Creates a 'const' @a SharedData object.
-			 */
-			static
-			shared_ptr_type
-			create(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys,
-					const GLState::shared_ptr_type &default_vertex_array_object_current_context_state_)
-			{
-				return shared_ptr_type(
-						new SharedData(
-								capabilities,
-								state_set_keys,
-								default_vertex_array_object_current_context_state_));
-			}
-
-		private:
-			/**
-			 * These slots are used indirectly via other regular GLStateSet's and hence are
-			 * treated as special cases.
-			 */
-			state_set_slot_flags_type dependent_state_set_slots;
-
-			/**
-			 * The inverse of @a dependent_state_set_slots (an optimisation).
-			 */
-			state_set_slot_flags_type inverse_dependent_state_set_slots;
-
-			/**
-			 * These slots represent the state that gets recorded into a native vertex array object.
-			 */
-			state_set_slot_flags_type vertex_array_state_set_slots;
-
-			/**
-			 * The inverse of @a vertex_array_state_set_slots (an optimisation).
-			 */
-			state_set_slot_flags_type inverse_vertex_array_state_set_slots;
-
-			/**
-			 * These slots represent states needed by 'glClear'.
-			 */
-			state_set_slot_flags_type gl_clear_state_set_slots;
-
-			/**
-			 * These slots represent states needed by 'glReadPixels'.
-			 */
-			state_set_slot_flags_type gl_read_pixels_state_set_slots;
-
-			/**
-			 * The majority of GLStateSet's are immutable, however a special few are effectively
-			 * mutable. Currently this happens if we emulate buffer objects (to make it easier for
-			 * clients to use vertex buffers and vertex element buffers since they form the basis
-			 * of OpenGL rendering).
-			 *
-			 * This is boost::none if there are no mutable state set slots.
-			 * Currently there are no mutable state sets if 'GL_ARB_vertex_buffer_object' is supported.
-			 */
-			boost::optional<state_set_slot_flags_type> mutable_state_set_slots;
-
-			/**
-			 * The shadowed state of the default vertex array object (resource handle zero).
-			 *
-			 * This is used to keep track of the vertex array state that OpenGL currently sees.
-			 */
-			GLState::shared_ptr_type default_vertex_array_object_current_context_state;
-
-			// So can access the shared data.
-			friend class GLState;
-			friend class GLStateStore;
-
-
-			explicit
-			SharedData(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys,
-					const GLState::shared_ptr_type &default_vertex_array_object_current_context_state_);
-
-			//! Initialise state set slots that other state-sets depend upon.
-			void
-			initialise_dependent_state_set_slots(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys);
-
-			//! Initialise state set slots that represent vertex array state.
-			void
-			initialise_vertex_array_state_set_slots(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys);
-
-			//! Initialise state set slots representing states needed by 'glClear'.
-			void
-			initialise_gl_clear_state_set_slots(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys);
-
-			//! Initialise state set slots representing states needed by 'glReadPixels'.
-			void
-			initialise_gl_read_pixels_state_set_slots(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys);
-
-			/**
-			 * Initialise state set slots for those @a GLStateSet objects that are not immutable.
-			 *
-			 * Most state-sets are immutable objects but a rare few can change state internally and
-			 * must be treated as special cases during the state change filtering logic.
-			 */
-			void
-			initialise_mutable_state_set_slots(
-					const GLCapabilities &capabilities,
-					const GLStateSetKeys &state_set_keys);
-		};
-
-
-		/**
-		 * Creates a @a GLState object - call 'GLStateStore::allocate_state()' instead.
-		 *
-		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
-		 */
-		static
-		shared_ptr_type
-		create(
-				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const SharedData::shared_ptr_to_const_type &shared_data,
-				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
-		{
-			return shared_ptr_type(new GLState(state_set_store, state_set_keys, shared_data, state_store));
-		}
-
-		/**
-		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
-		 *
-		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
-		 */
-		static
-		std::unique_ptr<GLState>
-		create_as_unique_ptr(
-				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const SharedData::shared_ptr_to_const_type &shared_data,
-				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
-		{
-			return std::unique_ptr<GLState>(new GLState(state_set_store, state_set_keys, shared_data, state_store));
-		}
 
 
 		/**
@@ -306,27 +124,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The same as @a apply_state except only those GLStateSet's needed by 'glClear' are applied.
-		 */
-		void
-		apply_state_used_by_gl_clear(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		/**
-		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels' are applied.
-		 *
-		 * We don't have a corresponding special case for 'glDrawPixels' because colour and depth data
-		 * (but maybe not stencil) passes through texture mapping and all fragment operations so
-		 * (unlike 'glReadPixels') there's a lot of state that affects 'glDrawPixels'.
-		 */
-		void
-		apply_state_used_by_gl_read_pixels(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-
-		/**
 		 * Merges the specified state change into 'this' state.
 		 *
 		 * Only those states that have been set on @a state_change are merged.
@@ -336,19 +133,6 @@ namespace GPlatesOpenGL
 		void
 		merge_state_change(
 				const GLState &state_change);
-
-
-		/**
-		 * Copies the state-sets of @a state that represent vertex array state into 'this'.
-		 *
-		 * This differs from merging in that both non-null *and* null GLStateSet's are copied across
-		 * whereas with merging only the non-null GLStateSet's are copied across.
-		 * This means if a vertex attribute array pointer GLStateSet, for example, is not present
-		 * in @a state then it will also not be present in 'this'.
-		 */
-		void
-		copy_vertex_array_state(
-				const GLState &state);
 
 
 		//
@@ -391,7 +175,7 @@ namespace GPlatesOpenGL
 		get_depth_mask() const
 		{
 			const boost::optional<GLboolean> depth_mask =
-					get_state_set_query<GLboolean>(
+					query_state_set<GLboolean>(
 							GLStateSetKeys::KEY_DEPTH_MASK,
 							&GLDepthMaskStateSet::d_flag);
 			return depth_mask ? depth_mask.get() : GL_TRUE/*default*/;
@@ -413,7 +197,7 @@ namespace GPlatesOpenGL
 		get_stencil_mask() const
 		{
 			const boost::optional<GLuint> stencil_mask =
-					get_state_set_query<GLuint>(
+					query_state_set<GLuint>(
 							GLStateSetKeys::KEY_STENCIL_MASK,
 							&GLStencilMaskStateSet::d_stencil);
 			return stencil_mask ? stencil_mask.get() : ~0/*all ones is the default*/;
@@ -466,20 +250,6 @@ namespace GPlatesOpenGL
 					boost::in_place(frame_buffer_object));
 		}
 
-		//! Same as @a set_bind_frame_buffer but also applies directly to OpenGL.
-		void
-		set_bind_frame_buffer_and_apply(
-				const GLCapabilities &capabilities,
-				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
-				GLState &last_applied_state)
-		{
-			set_state_set(
-					d_state_set_store->bind_frame_buffer_object_state_sets,
-					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					boost::in_place(frame_buffer_object));
-			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
-		}
-
 		//! Unbinds any framebuffer object currently bound.
 		void
 		set_unbind_frame_buffer()
@@ -491,25 +261,11 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 		}
 
-		//! Same as @a set_unbind_frame_buffer but also applies directly to OpenGL.
-		void
-		set_unbind_frame_buffer_and_apply(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state)
-		{
-			set_state_set(
-					d_state_set_store->bind_frame_buffer_object_state_sets,
-					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
-			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
-		}
-
 		//! Returns the framebuffer object to bind to the active OpenGL context - boost::none implies default main framebuffer.
 		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>
 		get_bind_frame_buffer() const
 		{
-			return get_state_set_query<GLFrameBufferObject::shared_ptr_to_const_type>(
+			return query_state_set<GLFrameBufferObject::shared_ptr_to_const_type>(
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
 					&GLBindFrameBufferObjectStateSet::d_frame_buffer_object);
 		}
@@ -525,20 +281,6 @@ namespace GPlatesOpenGL
 					boost::in_place(program_object));
 		}
 
-		//! Same as @a set_bind_program_object but also applies directly to OpenGL.
-		void
-		set_bind_program_object_and_apply(
-				const GLCapabilities &capabilities,
-				const GLProgramObject::shared_ptr_to_const_type &program_object,
-				GLState &last_applied_state)
-		{
-			set_state_set(
-					d_state_set_store->bind_program_object_state_sets,
-					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					boost::in_place(program_object));
-			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT);
-		}
-
 		//! Unbinds any shader program object currently bound.
 		void
 		set_unbind_program_object()
@@ -550,20 +292,6 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
 		}
 
-		//! Same as @a set_unbind_program_object but also applies directly to OpenGL.
-		void
-		set_unbind_program_object_and_apply(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state)
-		{
-			set_state_set(
-					d_state_set_store->bind_program_object_state_sets,
-					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
-			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT);
-		}
-
 		/**
 		 * Returns the shader program object bound (or to bind if not yet applied) to the active OpenGL context.
 		 *
@@ -572,7 +300,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_to_const_type>
 		get_bind_program_object() const
 		{
-			return get_state_set_query<GLProgramObject::shared_ptr_to_const_type>(
+			return query_state_set<GLProgramObject::shared_ptr_to_const_type>(
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					&GLBindProgramObjectStateSet::d_program_object);
 		}
@@ -591,23 +319,6 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::cref(capabilities), texture_object, texture_unit, texture_target));
 		}
 
-		//! Same as @a set_bind_texture but also applies directly to OpenGL.
-		void
-		set_bind_texture_and_apply(
-				const GLCapabilities &capabilities,
-				const GLTexture::shared_ptr_to_const_type &texture_object,
-				GLenum texture_unit,
-				GLenum texture_target,
-				GLState &last_applied_state)
-		{
-			const state_set_key_type state_set_key = d_state_set_keys->get_bind_texture_key(texture_unit, texture_target);
-			set_state_set(
-					d_state_set_store->bind_texture_state_sets,
-					state_set_key,
-					boost::in_place(boost::cref(capabilities), texture_object, texture_unit, texture_target));
-			apply_state(capabilities, last_applied_state, state_set_key);
-		}
-
 		//! Unbinds any texture object currently bound to the specified target and texture unit.
 		void
 		set_unbind_texture(
@@ -621,29 +332,13 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::cref(capabilities), texture_unit, texture_target));
 		}
 
-		//! Same as @a set_unbind_texture but also applies directly to OpenGL.
-		void
-		set_unbind_texture_and_apply(
-				const GLCapabilities &capabilities,
-				GLenum texture_unit,
-				GLenum texture_target,
-				GLState &last_applied_state)
-		{
-			const state_set_key_type state_set_key = d_state_set_keys->get_bind_texture_key(texture_unit, texture_target);
-			set_state_set(
-					d_state_set_store->bind_texture_state_sets,
-					state_set_key,
-					boost::in_place(boost::cref(capabilities), texture_unit, texture_target));
-			apply_state(capabilities, last_applied_state, state_set_key);
-		}
-
 		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
 		boost::optional<GLTexture::shared_ptr_to_const_type>
 		get_bind_texture(
 				GLenum texture_unit,
 				GLenum texture_target) const
 		{
-			return get_state_set_query<GLTexture::shared_ptr_to_const_type>(
+			return query_state_set<GLTexture::shared_ptr_to_const_type>(
 					d_state_set_keys->get_bind_texture_key(texture_unit, texture_target),
 					&GLBindTextureStateSet::d_texture_object);
 		}
@@ -666,7 +361,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLVertexArray::shared_ptr_type>
 		get_bind_vertex_array() const
 		{
-			return get_state_set_query<GLVertexArray::shared_ptr_type>(
+			return query_state_set<GLVertexArray::shared_ptr_type>(
 					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
 					&GLBindVertexArrayStateSet::d_array);
 		}
@@ -689,7 +384,7 @@ namespace GPlatesOpenGL
 		get_bind_buffer(
 				GLenum target) const
 		{
-			return get_state_set_query<GLBuffer::shared_ptr_type>(
+			return query_state_set<GLBuffer::shared_ptr_type>(
 					d_state_set_keys->get_bind_buffer_key(target),
 					&GLBindBufferStateSet::d_buffer);
 		}
@@ -736,7 +431,7 @@ namespace GPlatesOpenGL
 				unsigned int viewport_index) const
 		{
 			const boost::optional<const GLViewport &> scissor =
-					get_state_set_query<const GLViewport &, GLScissorStateSet>(
+					query_state_set<const GLViewport &, GLScissorStateSet>(
 							GLStateSetKeys::KEY_SCISSOR,
 							boost::bind(&GLScissorStateSet::get_scissor,
 									_1, boost::cref(capabilities), viewport_index));
@@ -784,7 +479,7 @@ namespace GPlatesOpenGL
 				unsigned int viewport_index) const
 		{
 			const boost::optional<const GLViewport &> viewport =
-					get_state_set_query<const GLViewport &, GLViewportStateSet>(
+					query_state_set<const GLViewport &, GLViewportStateSet>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							boost::bind(&GLViewportStateSet::get_viewport,
 									_1, boost::cref(capabilities), viewport_index));
@@ -871,7 +566,7 @@ namespace GPlatesOpenGL
 				GLenum cap) const
 		{
 			const boost::optional<bool> enabled =
-					get_state_set_query<bool>(
+					query_state_set<bool>(
 							d_state_set_keys->get_enable_key(cap),
 							&GLEnableStateSet::d_enable);
 			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
@@ -1076,7 +771,7 @@ namespace GPlatesOpenGL
 		get_active_texture() const
 		{
 			const boost::optional<GLenum> active_texture =
-					get_state_set_query<GLenum>(
+					query_state_set<GLenum>(
 							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
 							&GLActiveTextureStateSet::d_active_texture);
 			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
@@ -1101,7 +796,7 @@ namespace GPlatesOpenGL
 		get_client_active_texture() const
 		{
 			const boost::optional<GLenum> client_active_texture =
-					get_state_set_query<GLenum>(
+					query_state_set<GLenum>(
 							GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE,
 							&GLClientActiveTextureStateSet::d_client_active_texture);
 			// The default of no client_active texture unit means the default unit GL_TEXTURE0 is active.
@@ -1160,7 +855,7 @@ namespace GPlatesOpenGL
 		get_matrix_mode() const
 		{
 			const boost::optional<GLenum> mode =
-					get_state_set_query<GLenum>(
+					query_state_set<GLenum>(
 							GLStateSetKeys::KEY_MATRIX_MODE,
 							&GLMatrixModeStateSet::d_mode);
 			// The default of no matrix mode means GL_MODELVIEW.
@@ -1185,7 +880,7 @@ namespace GPlatesOpenGL
 				GLenum mode) const
 		{
 			const boost::optional<const GLMatrix &> matrix =
-					get_state_set_query<const GLMatrix &>(
+					query_state_set<const GLMatrix &>(
 							d_state_set_keys->get_load_matrix_key(mode),
 							&GLLoadMatrixStateSet::d_matrix);
 			return matrix;
@@ -1209,13 +904,70 @@ namespace GPlatesOpenGL
 				GLenum texture_unit) const
 		{
 			const boost::optional<const GLMatrix &> texture_matrix =
-					get_state_set_query<const GLMatrix &>(
+					query_state_set<const GLMatrix &>(
 							d_state_set_keys->get_load_texture_matrix_key(texture_unit),
 							&GLLoadTextureMatrixStateSet::d_matrix);
 			return texture_matrix;
 		}
 
+	public: // For use by GLStateStore ...
+
+		/**
+		 * Creates a @a GLState object - call 'GLStateStore::allocate_state()' instead.
+		 *
+		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
+		 */
+		static
+		shared_ptr_type
+		create(
+				const GLStateSetStore::non_null_ptr_type &state_set_store,
+				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
+				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
+		{
+			return shared_ptr_type(new GLState(state_set_store, state_set_keys, state_store));
+		}
+
+		/**
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
+		 *
+		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
+		 */
+		static
+		std::unique_ptr<GLState>
+		create_unique(
+				const GLStateSetStore::non_null_ptr_type &state_set_store,
+				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
+				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
+		{
+			return std::unique_ptr<GLState>(new GLState(state_set_store, state_set_keys, state_store));
+		}
+
 	private:
+
+		/**
+		 * Typedef for a group of 32 boolean flags indicating if 32 state set slots have been initialised.
+		 */
+		typedef boost::uint32_t state_set_slot_flag32_type;
+
+		/**
+		 * Typedef for a set of flags indicating which state set slots have been initialised.
+		 *
+		 * NOTE: This used to be a boost::dynamic_bitset<> but the searching for the next non-zero
+		 * flag was consuming too much CPU.
+		 * Next a std::vector was used instead because blasting through all ~200 state-sets ended up
+		 * being noticeably faster which is important since applying state shows high on the CPU profile
+		 * for some rendering paths such as reconstructing rasters with age-grid smoothing.
+		 * However the number of slots jumped from ~250 to ~750 when switching from 'old-style'
+		 * texture units to 'new-style' texture units (for shaders) increasing the max number of
+		 * texture units from 4 to 32 (on latest nVidia hardware).
+		 * So next switched to a packed bit flags approach similar to boost::dynamic_bitset but blasting
+		 * through our own collection of 32-bit integers instead of the slow searching through the bit
+		 * flags done by boost::dynamic_bitset. This enables us to rapidly skip past up to 32 slots
+		 * in one test (which is useful considering most of those 32 texture units typically are not
+		 * used by clients and hence are empty slots).
+		 */
+		typedef std::vector<state_set_slot_flag32_type> state_set_slot_flags_type;
+
 		//! Typedef for a state set key.
 		typedef GLStateSetKeys::key_type state_set_key_type;
 
@@ -1225,10 +977,10 @@ namespace GPlatesOpenGL
 		 * NOTE: There is only a pointer-to-const since we're treating @a GLStateSet objects
 		 * as immutable once created.
 		 */
-		typedef boost::shared_ptr<const GLStateSet> immutable_state_set_ptr_type;
+		typedef boost::shared_ptr<const GLStateSet> state_set_ptr_type;
 
 		//! Typedef for a sequence of immutable @a GLStateSet pointers.
-		typedef std::vector<immutable_state_set_ptr_type> state_set_seq_type;
+		typedef std::vector<state_set_ptr_type> state_set_seq_type;
 
 
 		GLStateSetStore::non_null_ptr_type d_state_set_store;
@@ -1255,7 +1007,7 @@ namespace GPlatesOpenGL
 		 *
 		 * A flag value of true indicates non-null entries in @a d_state_sets.
 		 *
-		 * WARNING: The number of flags is rounded up to the nearest multiple of 32 so care
+		 * WARNING: The number of flags is rounded up to the nearest multiple of 32, so care
 		 * should be taken to ensure @a d_state_sets isn't dereferenced beyond the total number
 		 * of state-set slots.
 		 * We could have added extra code to take care of the last 32 state-set slots but it's
@@ -1263,20 +1015,11 @@ namespace GPlatesOpenGL
 		 */
 		state_set_slot_flags_type d_state_set_slots;
 
-		/**
-		 * Constant data that is shared by all @a GLState instances (allocated by our state store).
-		 *
-		 * Note that it can't be 'static' because it depends on the number of state set keys which
-		 * depends on the OpenGL extensions supported by the runtime system.
-		 */
-		SharedData::shared_ptr_to_const_type d_shared_data;
-
 
 		//! Default constructor.
 		GLState(
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const SharedData::shared_ptr_to_const_type &shared_data,
 				const boost::weak_ptr<GLStateStore> &state_store);
 
 		/**
@@ -1292,14 +1035,14 @@ namespace GPlatesOpenGL
 				state_set_key_type state_set_key,
 				const InPlaceFactoryType &state_set_constructor_args)
 		{
-			immutable_state_set_ptr_type current_state_set = d_state_sets[state_set_key];
+			state_set_ptr_type current_state_set = d_state_sets[state_set_key];
 
 			// Create a new GLStateSet of appropriate derived type and store as an immutable state set.
 			// If there's an existing state set in the current slot then it gets thrown out.
 			//
 			// NOTE: The use of boost::in_place_factory means the derived state set object is created
 			// directly in the object pool.
-			immutable_state_set_ptr_type new_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
+			state_set_ptr_type new_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
 
 			// Apply the new state set.
 			//apply_state_set(new_state_set, current_state_set);
@@ -1320,7 +1063,7 @@ namespace GPlatesOpenGL
 		 */
 		template <typename QueryReturnType, class GLStateSetType, class QueryMemberDataType>
 		boost::optional<QueryReturnType>
-		get_state_set_query(
+		query_state_set(
 				state_set_key_type state_set_key,
 				QueryMemberDataType GLStateSetType::*query_member) const
 		{
@@ -1351,7 +1094,7 @@ namespace GPlatesOpenGL
 		 */
 		template <typename QueryReturnType, class GLStateSetType, class QueryFunctionType>
 		boost::optional<QueryReturnType>
-		get_state_set_query(
+		query_state_set(
 				state_set_key_type state_set_key,
 				const QueryFunctionType &query_function) const
 		{
@@ -1383,32 +1126,6 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				GLState &last_applied_state,
 				const state_set_slot_flags_type &state_set_slots_mask) const;
-
-		/**
-		 * Applies 'this' state (from @a last_applied_state) for the specified *single* state-set slot.
-		 */
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state,
-				state_set_key_type state_set_slot_to_apply) const;
-
-		/**
-		 * Bind (or unbind) a vertex array object if necessary.
-		 */
-		void
-		begin_bind_vertex_array_object(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
-
-		/**
-		 * Update the shadowed state of the currently bound vertex array object to mirror
-		 * any vertex array state set after @a begin_bind_vertex_array_object.
-		 */
-		void
-		end_bind_vertex_array_object(
-				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
 
 		/**
 		 * Returns the number of groups of 32 state-set slots required.

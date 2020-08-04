@@ -79,29 +79,6 @@ GPlatesOpenGL::GLVertexArray::get_resource_handle(
 }
 
 
-GPlatesOpenGL::GLVertexArray::ContextObjectState &
-GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
-		GL &gl) const
-{
-	const GLContext &current_context = gl.get_context();
-
-	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
-	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
-	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
-	{
-		if (context_object_state_iter->context == &current_context)
-		{
-			return *context_object_state_iter;
-		}
-	}
-
-	// Context not yet encountered so create a new context object state.
-	d_context_object_states.push_back(ContextObjectState(current_context, gl));
-
-	return d_context_object_states.back();
-}
-
-
 void
 GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 		GL &gl)
@@ -333,6 +310,29 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_i_pointer(
 	// NOTE: 'array_buffer' is the currently bound array buffer - we're just recording that...
 	attribute_array.array_buffer = array_buffer;
 	update_attribute_array(gl, index, attribute_array);
+}
+
+
+GPlatesOpenGL::GLVertexArray::ContextObjectState &
+GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
+		GL &gl) const
+{
+	const GLContext &current_context = gl.get_context();
+
+	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
+	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
+	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
+	{
+		if (context_object_state_iter->context == &current_context)
+		{
+			return *context_object_state_iter;
+		}
+	}
+
+	// Context not yet encountered so create a new context object state.
+	d_context_object_states.push_back(ContextObjectState(current_context, gl));
+
+	return d_context_object_states.back();
 }
 
 

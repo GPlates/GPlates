@@ -342,7 +342,7 @@ GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 		GLRenderer &renderer,
 		unsigned int size,
-		GLBuffer::usage_type usage)
+		GLenum usage)
 {
 	// Lookup the correct pixel buffer cache (matching the specified client parameters).
 	const pixel_buffer_key_type pixel_buffer_key(size, usage);

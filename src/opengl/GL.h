@@ -179,6 +179,20 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				const GLvoid *pointer);
 
+	public: // For use by @a GLContext...
+
+		/**
+		 * Creates a @a GL object.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const GLContext::non_null_ptr_type &context,
+				const boost::shared_ptr<GLStateStore> &state_store)
+		{
+			return non_null_ptr_type(new GL(context, state_store));
+		}
+
 	private:
 
 		//! Constructor.
@@ -214,20 +228,6 @@ namespace GPlatesOpenGL
 		 * NOTE: This must be declared after @a d_state_set_store.
 		 */
 		GLState::shared_ptr_type d_current_state;
-
-	public: // For use by @a GLContext...
-
-		/**
-		 * Creates a @a GL object.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const GLContext::non_null_ptr_type &context,
-				const boost::shared_ptr<GLStateStore> &state_store)
-		{
-			return non_null_ptr_type(new GL(context, state_store));
-		}
 	};
 }
 

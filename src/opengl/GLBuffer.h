@@ -117,7 +117,6 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
-
 	private:
 
 		resource_type::non_null_ptr_to_const_type d_resource;
