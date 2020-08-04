@@ -187,18 +187,18 @@ GPlatesOpenGL::GLState::clear()
 void
 GPlatesOpenGL::GLState::apply_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	PROFILE_FUNC();
 
-	apply_state(capabilities, last_applied_state, state_set_slot_flags_type());
+	apply_state(capabilities, current_state, state_set_slot_flags_type());
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state,
+		GLState &current_state,
 		const state_set_slot_flags_type &state_set_slots_mask) const
 {
 	//
@@ -208,10 +208,10 @@ GPlatesOpenGL::GLState::apply_state(
 
 	// Iterate over the state set slots.
 	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
-	const state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
-	state_set_slot_flag32_type *const last_applied_state_set_slots = &last_applied_state.d_state_set_slots[0];
-	const state_set_ptr_type *const state_sets = &d_state_sets[0];
-	state_set_ptr_type *const last_applied_state_sets = &last_applied_state.d_state_sets[0];
+	const state_set_slot_flag32_type *const new_state_set_slots = &d_state_set_slots[0];
+	state_set_slot_flag32_type *const current_state_set_slots = &current_state.d_state_set_slots[0];
+	const state_set_ptr_type *const new_state_sets = &d_state_sets[0];
+	state_set_ptr_type *const current_state_sets = &current_state.d_state_sets[0];
 	const state_set_slot_flag32_type *const state_set_slots_mask_array = &state_set_slots_mask[0];
 
 	// Iterate over groups of 32 slots.
@@ -222,19 +222,19 @@ GPlatesOpenGL::GLState::apply_state(
 		const state_set_slot_flag32_type state_set_slot_flag32_mask =
 				state_set_slots_mask_array[state_set_slot_flag32_index];
 
-		// Are any of the current 32 slots non-null in the mask?
+		// Are any of the 32 slots non-null in the mask?
 		if (state_set_slot_flag32_mask != 0)
 		{
-			const state_set_slot_flag32_type state_set_slot_flag32_to_apply =
-					state_set_slots[state_set_slot_flag32_index];
+			const state_set_slot_flag32_type new_state_set_slot_flag32 =
+					new_state_set_slots[state_set_slot_flag32_index];
 
 			// Include state-set slots that exist in either state (or both).
 			// Only those state-sets that don't exist in either state are excluded here (not visited/applied).
-			// If state set slot is set in either in 'this' state or the last applied state then apply it.
+			// If state set slot is set in either in the new state or the current state then apply it.
 			state_set_slot_flag32_type state_set_slot_flag32 = state_set_slot_flag32_mask &
-					(state_set_slot_flag32_to_apply | last_applied_state_set_slots[state_set_slot_flag32_index]);
+					(new_state_set_slot_flag32 | current_state_set_slots[state_set_slot_flag32_index]);
 
-			// Are any of the current 32 slots non-null in the combined flag?
+			// Are any of these 32 slots non-null in the combined flag?
 			if (state_set_slot_flag32 != 0)
 			{
 				const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
@@ -243,7 +243,7 @@ GPlatesOpenGL::GLState::apply_state(
 				// Iterate over the 4 groups of 8 slots each.
 				for (int i = 0; i < 4; ++i, byte_mask <<= 8)
 				{
-					// Are any of the current 8 slots non-null?
+					// Are any of these 8 slots non-null?
 					if ((state_set_slot_flag32 & byte_mask) != 0)
 					{
 						unsigned int bit32 = (i << 3);
@@ -252,14 +252,14 @@ GPlatesOpenGL::GLState::apply_state(
 						// Iterate over 8 slots.
 						for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
 						{
-							// Is the current slot non-null?
+							// Is this slot non-null?
 							if ((state_set_slot_flag32 & flag32) != 0)
 							{
 								const state_set_key_type state_set_slot = state_set_slot32 + bit32;
 
 								// Note that either of these could be NULL.
-								const state_set_ptr_type &current_state_set = state_sets[state_set_slot];
-								state_set_ptr_type &last_applied_state_set = last_applied_state_sets[state_set_slot];
+								const state_set_ptr_type &new_state_set = new_state_sets[state_set_slot];
+								state_set_ptr_type &current_state_set = current_state_sets[state_set_slot];
 
 								// Also including a cheap test of pointers since GLState objects can share the
 								// same immutable GLStateSet objects - if they are the same object (or both NULL)
@@ -267,56 +267,56 @@ GPlatesOpenGL::GLState::apply_state(
 								//
 								// Note that both state set slots cannot be null since we've excluded that
 								// possibility with the combined flag.
-								if (current_state_set != last_applied_state_set)
+								if (new_state_set != current_state_set)
 								{
-									if (last_applied_state_set)
+									if (current_state_set)
 									{
-										if (current_state_set)
+										if (new_state_set)
 										{
-											// Both the current and last applied state sets exist.
+											// Both state sets exist.
 
 											// This is a transition from an existing state to another (possibly different)
 											// existing state - if the two states are the same then it's possible for this
 											// to do nothing.
-											current_state_set->apply_state(capabilities, *last_applied_state_set, last_applied_state);
+											new_state_set->apply_state(capabilities, *current_state_set, current_state);
 
-											// Update the last applied state so subsequent state-sets can see it.
-											last_applied_state_set = current_state_set;
+											// Update the current state so subsequent state-sets can see it.
+											current_state_set = new_state_set;
 										}
 										else
 										{
-											// Only the last applied state set exists - get it to set the default state.
+											// Only the current state set exists - get it to set the default state.
 											// This is a transition from an existing state to the default state.
-											last_applied_state_set->apply_to_default_state(capabilities, last_applied_state);
+											current_state_set->apply_to_default_state(capabilities, current_state);
 
-											// Update the last applied state so subsequent state-sets can see it.
-											last_applied_state_set.reset();
+											// Update the current state so subsequent state-sets can see it.
+											current_state_set.reset();
 											// Clear the bit flag.
 											// Note that this is set immediately after the state is applied
 											// in case the state-sets look at it.
-											last_applied_state_set_slots[state_set_slot_flag32_index] &= ~flag32;
+											current_state_set_slots[state_set_slot_flag32_index] &= ~flag32;
 										}
 									}
 									else
 									{
-										// Since both state-sets cannot be null then 'current_state_set' must be non-null.
+										// Since both state-sets cannot be null then 'new_state_set' must be non-null.
 
-										// Only the current state set exists - get it to apply its internal state.
+										// Only the new state set exists - get it to apply its internal state.
 										// This is a transition from the default state to a new state.
-										current_state_set->apply_from_default_state(capabilities, last_applied_state);
+										new_state_set->apply_from_default_state(capabilities, current_state);
 
-										// Update the last applied state so subsequent state-sets can see it.
-										last_applied_state_set = current_state_set;
+										// Update the current state so subsequent state-sets can see it.
+										current_state_set = new_state_set;
 										// Set the bit flag.
 										// Note that this is set immediately after the state is applied
 										// in case the state-sets look at it.
-										last_applied_state_set_slots[state_set_slot_flag32_index] |= flag32;
+										current_state_set_slots[state_set_slot_flag32_index] |= flag32;
 									}
 
-									// It's also possible that other state-sets in 'last_applied_state'
-									// were modified and they might be in the current group of 32 slots.
+									// It's also possible that other state-sets in 'current_state'
+									// were modified and they might be in this group of 32 slots.
 									state_set_slot_flag32 = state_set_slot_flag32_mask &
-											(state_set_slot_flag32_to_apply | last_applied_state_set_slots[state_set_slot_flag32_index]);
+											(new_state_set_slot_flag32 | current_state_set_slots[state_set_slot_flag32_index]);
 								}
 							}
 						}

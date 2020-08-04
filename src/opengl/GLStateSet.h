@@ -44,8 +44,7 @@ namespace GPlatesOpenGL
 	 * The state stored in OpenGL objects (such as texture objects, vertex buffer objects, etc)
 	 * is not handled here. Those states are manipulated by setting state directly on those objects
 	 * (although this does need the object to be bound to the OpenGL context which means setting
-	 * a global state - the binding state for the type of object - since only one object of any
-	 * type, or target, can be bound to an OpenGL context at any particular time).
+	 * a global state - the binding state for the type of object).
 	 */
 	class GLStateSet :
 			private boost::noncopyable
@@ -58,22 +57,22 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Applies the internal state (of derived class instance) directly to OpenGL if a state change
-		 * is detected when compared to @a last_applied_state_set.
+		 * is detected when compared to @a current_state_set.
 		 *
 		 * If it is difficult or costly (or otherwise doesn't serve any gain) to detect if the
 		 * state set has changed then simply apply the internal state without comparison.
 		 * In that case 'this' state set will get applied - so if it hasn't changed then the worst
 		 * is a redundant state is set to OpenGL (which logically does nothing).
 		 *
-		 * @a last_applied_state_set can be downcast to the derived class type of 'this'.
+		 * @a current_state_set can be downcast to the derived class type of 'this'.
 		 * The caller guarantees they are of the same type.
 		 */
 		virtual
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
-				const GLStateSet &last_applied_state_set,
-				GLState &last_applied_state) const = 0;
+				const GLStateSet &current_state_set,
+				GLState &current_state) const = 0;
 
 
 		/**
@@ -88,7 +87,7 @@ namespace GPlatesOpenGL
 		 * The caller guarantees that, for this particular @a GLStateSet, that OpenGL is currently
 		 * in the default state before this method is called.
 		 *
-		 * @a last_applied_state is the container for all state sets (including 'this' actually).
+		 * @a current_state is the container for all state sets (including 'this' actually).
 		 * It represents the current OpenGL state (as applied to the OpenGL context).
 		 * It is only provided in case 'this' state set needs to modify state other than itself
 		 * in order to achieve its goal.
@@ -102,7 +101,7 @@ namespace GPlatesOpenGL
 		void
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const = 0;
+				GLState &current_state) const = 0;
 
 
 		/**
@@ -127,7 +126,7 @@ namespace GPlatesOpenGL
 		void
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const = 0;
+				GLState &current_state) const = 0;
 	};
 }
 

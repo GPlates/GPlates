@@ -108,19 +108,18 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Applies the current state (internal to 'this' object).
+		 * Applies the state in 'this' object.
 		 *
-		 * @a last_applied_state is the last applied state (ie, it represents the
-		 * current state as seen by the OpenGL library).
+		 * @a current_state represents the current state as seen by OpenGL.
 		 * Only the difference in state needs to be applied to OpenGL.
 		 *
-		 * Note that upon return, @a last_applied_state will have been modified to be equal to
+		 * Note that upon return, @a current_state will have been modified to be equal to
 		 * the internal state of 'this' (which itself is not modified - this is a 'const' method).
 		 */
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state) const;
+				GLState &current_state) const;
 
 
 		/**
@@ -1119,12 +1118,12 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Applies 'this' state (from @a last_applied_state) for the specified state-set slots.
+		 * Applies 'this' state (from @a current_state) for the specified state-set slots (in the mask).
 		 */
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
-				GLState &last_applied_state,
+				GLState &current_state,
 				const state_set_slot_flags_type &state_set_slots_mask) const;
 
 		/**

@@ -46,16 +46,16 @@ namespace GPlatesOpenGL
 		void
 		set_matrix_mode(
 				GLenum mode,
-				GLState &last_applied_state)
+				GLState &current_state)
 		{
 			// Make sure the correct matrix mode is set.
-			if (last_applied_state.get_matrix_mode() != mode)
+			if (current_state.get_matrix_mode() != mode)
 			{
 				// Apply the change to OpenGL.
 				glMatrixMode(mode);
 
 				// And record the change we've made.
-				last_applied_state.set_matrix_mode(mode);
+				current_state.set_matrix_mode(mode);
 			}
 		}
 
@@ -67,10 +67,10 @@ namespace GPlatesOpenGL
 		set_active_texture(
 				const GLCapabilities &capabilities,
 				GLenum texture_unit,
-				GLState &last_applied_state)
+				GLState &current_state)
 		{
 			// Make sure the correct texture unit is currently active.
-			if (last_applied_state.get_active_texture() != texture_unit)
+			if (current_state.get_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
 				if (capabilities.texture.gl_ARB_multitexture)
@@ -79,7 +79,7 @@ namespace GPlatesOpenGL
 					glActiveTextureARB(texture_unit);
 
 					// And record the change we've made.
-					last_applied_state.set_active_texture(capabilities, texture_unit);
+					current_state.set_active_texture(capabilities, texture_unit);
 				}
 			}
 		}
@@ -92,10 +92,10 @@ namespace GPlatesOpenGL
 		set_client_active_texture(
 				const GLCapabilities &capabilities,
 				GLenum texture_unit,
-				GLState &last_applied_state)
+				GLState &current_state)
 		{
 			// Make sure the correct texture unit is currently active.
-			if (last_applied_state.get_client_active_texture() != texture_unit)
+			if (current_state.get_client_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
 				if (capabilities.texture.gl_ARB_multitexture)
@@ -104,7 +104,7 @@ namespace GPlatesOpenGL
 					glClientActiveTextureARB(texture_unit);
 
 					// And record the change we've made.
-					last_applied_state.set_client_active_texture(capabilities, texture_unit);
+					current_state.set_client_active_texture(capabilities, texture_unit);
 				}
 			}
 		}
@@ -350,13 +350,13 @@ GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_active_texture ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLActiveTextureStateSet &>(last_applied_state_set).d_active_texture)
+			dynamic_cast<const GLActiveTextureStateSet &>(current_state_set).d_active_texture)
 	{
 		return;
 	}
@@ -371,7 +371,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_active_texture == GL_TEXTURE0)
@@ -389,7 +389,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (GL_TEXTURE0 == d_active_texture)
@@ -409,15 +409,15 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLAlphaFuncStateSet &last_applied = dynamic_cast<const GLAlphaFuncStateSet &>(last_applied_state_set);
+	const GLAlphaFuncStateSet &current = dynamic_cast<const GLAlphaFuncStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Note that 'd_ref' is an epsilon comparison.
-	if (d_alpha_func == last_applied.d_alpha_func && d_ref == last_applied.d_ref)
+	if (d_alpha_func == current.d_alpha_func && d_ref == current.d_ref)
 	{
 		return;
 	}
@@ -428,7 +428,7 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_state(
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that 'd_ref' is an epsilon comparison.
@@ -443,7 +443,7 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that 'd_ref' is an epsilon comparison.
@@ -508,13 +508,13 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_frame_buffer_object ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindFrameBufferObjectStateSet &>(last_applied_state_set).d_frame_buffer_object)
+			dynamic_cast<const GLBindFrameBufferObjectStateSet &>(current_state_set).d_frame_buffer_object)
 	{
 		return;
 	}
@@ -538,7 +538,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_frame_buffer_object)
@@ -557,7 +557,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_frame_buffer_object)
@@ -577,13 +577,13 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_program_object ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindProgramObjectStateSet &>(last_applied_state_set).d_program_object)
+			dynamic_cast<const GLBindProgramObjectStateSet &>(current_state_set).d_program_object)
 	{
 		return;
 	}
@@ -607,7 +607,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_program_object)
@@ -626,7 +626,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_program_object)
@@ -674,23 +674,23 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
-	// Note that we're only comparing the applied state (which is the texture object).
+	// Note that we're only comparing the current state (which is the texture object).
 	// It's the texture object we're interested in binding - the other parameters are expected
-	// to be the same across 'this' and 'last_applied_state_set'.
+	// to be the same across 'this' and 'current_state_set'.
 	//
 	// Return early if no state change...
 	if (d_texture_object ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindTextureStateSet &>(last_applied_state_set).d_texture_object)
+			dynamic_cast<const GLBindTextureStateSet &>(current_state_set).d_texture_object)
 	{
 		return;
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	if (d_texture_object)
 	{
@@ -707,7 +707,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_texture_object)
@@ -716,7 +716,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Bind the texture.
 	glBindTexture(d_texture_target, d_texture_object.get()->get_texture_resource_handle());
@@ -725,7 +725,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_texture_object)
@@ -734,7 +734,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Bind the default unnamed texture 0.
 	glBindTexture(d_texture_target, 0);
@@ -821,15 +821,15 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLBlendEquationStateSet &last_applied = dynamic_cast<const GLBlendEquationStateSet &>(last_applied_state_set);
+	const GLBlendEquationStateSet &current = dynamic_cast<const GLBlendEquationStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_mode_RGB == last_applied.d_mode_RGB &&
-		d_mode_A == last_applied.d_mode_A)
+	if (d_mode_RGB == current.d_mode_RGB &&
+		d_mode_A == current.d_mode_A)
 	{
 		return;
 	}
@@ -848,7 +848,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
@@ -871,7 +871,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
@@ -906,17 +906,17 @@ GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLBlendFuncStateSet &last_applied = dynamic_cast<const GLBlendFuncStateSet &>(last_applied_state_set);
+	const GLBlendFuncStateSet &current = dynamic_cast<const GLBlendFuncStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_src_factor_RGB == last_applied.d_src_factor_RGB &&
-		d_dst_factor_RGB == last_applied.d_dst_factor_RGB &&
-		d_src_factor_A == last_applied.d_src_factor_A &&
-		d_dst_factor_A == last_applied.d_dst_factor_A)
+	if (d_src_factor_RGB == current.d_src_factor_RGB &&
+		d_dst_factor_RGB == current.d_dst_factor_RGB &&
+		d_src_factor_A == current.d_src_factor_A &&
+		d_dst_factor_A == current.d_dst_factor_A)
 	{
 		return;
 	}
@@ -935,7 +935,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_src_factor_RGB == GL_ONE &&
@@ -960,7 +960,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_src_factor_RGB == GL_ONE &&
@@ -979,18 +979,18 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLClearColorStateSet &last_applied = dynamic_cast<const GLClearColorStateSet &>(last_applied_state_set);
+	const GLClearColorStateSet &current = dynamic_cast<const GLClearColorStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
-	if (d_red == last_applied.d_red &&
-		d_green == last_applied.d_green &&
-		d_blue == last_applied.d_blue &&
-		d_alpha == last_applied.d_alpha)
+	if (d_red == current.d_red &&
+		d_green == current.d_green &&
+		d_blue == current.d_blue &&
+		d_alpha == current.d_alpha)
 	{
 		return;
 	}
@@ -1005,7 +1005,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1024,7 +1024,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1040,15 +1040,15 @@ GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLClearDepthStateSet &last_applied = dynamic_cast<const GLClearDepthStateSet &>(last_applied_state_set);
+	const GLClearDepthStateSet &current = dynamic_cast<const GLClearDepthStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
-	if (d_depth == last_applied.d_depth)
+	if (d_depth == current.d_depth)
 	{
 		return;
 	}
@@ -1059,7 +1059,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1074,7 +1074,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1090,15 +1090,15 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLClearStencilStateSet &last_applied = dynamic_cast<const GLClearStencilStateSet &>(last_applied_state_set);
+	const GLClearStencilStateSet &current = dynamic_cast<const GLClearStencilStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
-	if (d_stencil == last_applied.d_stencil)
+	if (d_stencil == current.d_stencil)
 	{
 		return;
 	}
@@ -1109,7 +1109,7 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1124,7 +1124,7 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Note that these are epsilon comparisons.
@@ -1152,13 +1152,13 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::GLClientActiveTextureStateSet(
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_client_active_texture ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLClientActiveTextureStateSet &>(last_applied_state_set).d_client_active_texture)
+			dynamic_cast<const GLClientActiveTextureStateSet &>(current_state_set).d_client_active_texture)
 	{
 		return;
 	}
@@ -1173,7 +1173,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_client_active_texture == GL_TEXTURE0)
@@ -1191,7 +1191,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (GL_TEXTURE0 == d_client_active_texture)
@@ -1211,17 +1211,17 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLColorMaskStateSet &last_applied = dynamic_cast<const GLColorMaskStateSet &>(last_applied_state_set);
+	const GLColorMaskStateSet &current = dynamic_cast<const GLColorMaskStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_red == last_applied.d_red &&
-		d_green == last_applied.d_green &&
-		d_blue == last_applied.d_blue &&
-		d_alpha == last_applied.d_alpha)
+	if (d_red == current.d_red &&
+		d_green == current.d_green &&
+		d_blue == current.d_blue &&
+		d_alpha == current.d_alpha)
 	{
 		return;
 	}
@@ -1232,7 +1232,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_red && d_green && d_blue && d_alpha)
@@ -1246,7 +1246,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_red && d_green && d_blue && d_alpha)
@@ -1261,14 +1261,14 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLCullFaceStateSet &last_applied = dynamic_cast<const GLCullFaceStateSet &>(last_applied_state_set);
+	const GLCullFaceStateSet &current = dynamic_cast<const GLCullFaceStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_mode == last_applied.d_mode)
+	if (d_mode == current.d_mode)
 	{
 		return;
 	}
@@ -1279,7 +1279,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_BACK)
@@ -1293,7 +1293,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_BACK)
@@ -1308,14 +1308,14 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLDepthFuncStateSet &last_applied = dynamic_cast<const GLDepthFuncStateSet &>(last_applied_state_set);
+	const GLDepthFuncStateSet &current = dynamic_cast<const GLDepthFuncStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_depth_func == last_applied.d_depth_func)
+	if (d_depth_func == current.d_depth_func)
 	{
 		return;
 	}
@@ -1326,7 +1326,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_depth_func == GL_LESS)
@@ -1340,7 +1340,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_depth_func == GL_LESS)
@@ -1355,14 +1355,14 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLDepthMaskStateSet &last_applied = dynamic_cast<const GLDepthMaskStateSet &>(last_applied_state_set);
+	const GLDepthMaskStateSet &current = dynamic_cast<const GLDepthMaskStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_flag == last_applied.d_flag)
+	if (d_flag == current.d_flag)
 	{
 		return;
 	}
@@ -1373,7 +1373,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_flag == GL_TRUE)
@@ -1387,7 +1387,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_flag == GL_TRUE)
@@ -1423,17 +1423,17 @@ GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLDepthRangeStateSet &last_applied = dynamic_cast<const GLDepthRangeStateSet &>(last_applied_state_set);
+	const GLDepthRangeStateSet &current = dynamic_cast<const GLDepthRangeStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Only comparing depth ranges if both states have one set of depth range parameters for all viewports.
-	if (d_all_depth_ranges_are_the_same && last_applied.d_all_depth_ranges_are_the_same)
+	if (d_all_depth_ranges_are_the_same && current.d_all_depth_ranges_are_the_same)
 	{
-		if (d_depth_ranges.front() == last_applied.d_depth_ranges.front())
+		if (d_depth_ranges.front() == current.d_depth_ranges.front())
 		{
 			return;
 		}
@@ -1445,7 +1445,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing depth ranges if have one set of depth range parameters for all viewports.
@@ -1463,7 +1463,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing depth ranges if have one set of depth range parameters for all viewports.
@@ -1518,13 +1518,13 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 void
 GPlatesOpenGL::GLEnableStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_enable ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLEnableStateSet &>(last_applied_state_set).d_enable)
+			dynamic_cast<const GLEnableStateSet &>(current_state_set).d_enable)
 	{
 		return;
 	}
@@ -1542,7 +1542,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 void
 GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const bool enable_default = get_default(d_cap);
 
@@ -1565,7 +1565,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const bool enable_default = get_default(d_cap);
 
@@ -1598,19 +1598,19 @@ GPlatesOpenGL::GLEnableStateSet::get_default(
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_enable ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLEnableTextureStateSet &>(last_applied_state_set).d_enable)
+			dynamic_cast<const GLEnableTextureStateSet &>(current_state_set).d_enable)
 	{
 		return;
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	if (d_enable)
 	{
@@ -1625,7 +1625,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_state(
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_enable)
@@ -1634,7 +1634,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	glEnable(d_texture_target);
 }
@@ -1642,7 +1642,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (!d_enable)
@@ -1651,7 +1651,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	glDisable(d_texture_target);
 }
@@ -1660,12 +1660,12 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
-	if (d_mode == dynamic_cast<const GLFrontFaceStateSet &>(last_applied_state_set).d_mode)
+	if (d_mode == dynamic_cast<const GLFrontFaceStateSet &>(current_state_set).d_mode)
 	{
 		return;
 	}
@@ -1676,7 +1676,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_CCW)
@@ -1690,7 +1690,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_CCW)
@@ -1705,12 +1705,12 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLHintStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
-	if (d_mode == dynamic_cast<const GLHintStateSet &>(last_applied_state_set).d_mode)
+	if (d_mode == dynamic_cast<const GLHintStateSet &>(current_state_set).d_mode)
 	{
 		return;
 	}
@@ -1721,7 +1721,7 @@ GPlatesOpenGL::GLHintStateSet::apply_state(
 void
 GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_DONT_CARE)
@@ -1735,7 +1735,7 @@ GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_DONT_CARE)
@@ -1750,13 +1750,13 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
 	// NOTE: This is an epsilon test.
-	if (d_width == dynamic_cast<const GLLineWidthStateSet &>(last_applied_state_set).d_width)
+	if (d_width == dynamic_cast<const GLLineWidthStateSet &>(current_state_set).d_width)
 	{
 		return;
 	}
@@ -1767,7 +1767,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -1782,7 +1782,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -1798,17 +1798,17 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_matrix == dynamic_cast<const GLLoadMatrixStateSet &>(last_applied_state_set).d_matrix)
+	if (d_matrix == dynamic_cast<const GLLoadMatrixStateSet &>(current_state_set).d_matrix)
 	{
 		return;
 	}
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(d_mode, last_applied_state);
+	set_matrix_mode(d_mode, current_state);
 
 	glLoadMatrixd(d_matrix.get_matrix());
 }
@@ -1816,7 +1816,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_state(
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_matrix == GLMatrix::IDENTITY)
@@ -1825,7 +1825,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(d_mode, last_applied_state);
+	set_matrix_mode(d_mode, current_state);
 
 	glLoadMatrixd(d_matrix.get_matrix());
 }
@@ -1833,7 +1833,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_matrix == GLMatrix::IDENTITY)
@@ -1842,7 +1842,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(d_mode, last_applied_state);
+	set_matrix_mode(d_mode, current_state);
 
 	glLoadIdentity();
 }
@@ -1851,20 +1851,20 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_matrix == dynamic_cast<const GLLoadTextureMatrixStateSet &>(last_applied_state_set).d_matrix)
+	if (d_matrix == dynamic_cast<const GLLoadTextureMatrixStateSet &>(current_state_set).d_matrix)
 	{
 		return;
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(GL_TEXTURE, last_applied_state);
+	set_matrix_mode(GL_TEXTURE, current_state);
 
 	glLoadMatrixd(d_matrix.get_matrix());
 }
@@ -1872,7 +1872,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_state(
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_matrix == GLMatrix::IDENTITY)
@@ -1881,10 +1881,10 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(GL_TEXTURE, last_applied_state);
+	set_matrix_mode(GL_TEXTURE, current_state);
 
 	glLoadMatrixd(d_matrix.get_matrix());
 }
@@ -1892,7 +1892,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_matrix == GLMatrix::IDENTITY)
@@ -1901,10 +1901,10 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Make sure the correct matrix mode is set.
-	set_matrix_mode(GL_TEXTURE, last_applied_state);
+	set_matrix_mode(GL_TEXTURE, current_state);
 
 	glLoadIdentity();
 }
@@ -1913,13 +1913,13 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLMatrixModeStateSet &>(last_applied_state_set).d_mode)
+			dynamic_cast<const GLMatrixModeStateSet &>(current_state_set).d_mode)
 	{
 		return;
 	}
@@ -1930,7 +1930,7 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_state(
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_MODELVIEW)
@@ -1944,7 +1944,7 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_MODELVIEW)
@@ -1959,13 +1959,13 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
 	// NOTE: This is an epsilon test.
-	if (d_size == dynamic_cast<const GLPointSizeStateSet &>(last_applied_state_set).d_size)
+	if (d_size == dynamic_cast<const GLPointSizeStateSet &>(current_state_set).d_size)
 	{
 		return;
 	}
@@ -1976,7 +1976,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -1991,7 +1991,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -2007,12 +2007,12 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
-	if (d_mode == dynamic_cast<const GLPolygonModeStateSet &>(last_applied_state_set).d_mode)
+	if (d_mode == dynamic_cast<const GLPolygonModeStateSet &>(current_state_set).d_mode)
 	{
 		return;
 	}
@@ -2023,7 +2023,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_FILL)
@@ -2037,7 +2037,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_mode == GL_FILL)
@@ -2053,15 +2053,15 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLPolygonOffsetStateSet &last_applied = dynamic_cast<const GLPolygonOffsetStateSet &>(last_applied_state_set);
+	const GLPolygonOffsetStateSet &current = dynamic_cast<const GLPolygonOffsetStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
-	if (d_factor == last_applied.d_factor && d_units == last_applied.d_units)
+	if (d_factor == current.d_factor && d_units == current.d_units)
 	{
 		return;
 	}
@@ -2072,7 +2072,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -2087,7 +2087,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// NOTE: This is an epsilon test.
@@ -2127,17 +2127,17 @@ GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
 void
 GPlatesOpenGL::GLScissorStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLScissorStateSet &last_applied = dynamic_cast<const GLScissorStateSet &>(last_applied_state_set);
+	const GLScissorStateSet &current = dynamic_cast<const GLScissorStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Only comparing scissor rectangles if both states have one set of scissor parameters for all rectangles.
-	if (d_all_scissor_rectangles_are_the_same && last_applied.d_all_scissor_rectangles_are_the_same)
+	if (d_all_scissor_rectangles_are_the_same && current.d_all_scissor_rectangles_are_the_same)
 	{
-		if (d_scissor_rectangles.front() == last_applied.d_scissor_rectangles.front())
+		if (d_scissor_rectangles.front() == current.d_scissor_rectangles.front())
 		{
 			return;
 		}
@@ -2149,7 +2149,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 void
 GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing scissor rectangles if there's only one set of scissor parameters for all rectangles.
@@ -2167,7 +2167,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing scissor rectangles if there's only one set of scissor parameters for all rectangles.
@@ -2236,16 +2236,16 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 void
 GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLStencilFuncStateSet &last_applied = dynamic_cast<const GLStencilFuncStateSet &>(last_applied_state_set);
+	const GLStencilFuncStateSet &current = dynamic_cast<const GLStencilFuncStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_func == last_applied.d_func &&
-		d_ref == last_applied.d_ref &&
-		d_mask == last_applied.d_mask)
+	if (d_func == current.d_func &&
+		d_ref == current.d_ref &&
+		d_mask == current.d_mask)
 	{
 		return;
 	}
@@ -2256,7 +2256,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 void
 GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_func == GL_ALWAYS &&
@@ -2272,7 +2272,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_func == GL_ALWAYS &&
@@ -2289,14 +2289,14 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLStencilMaskStateSet &last_applied = dynamic_cast<const GLStencilMaskStateSet &>(last_applied_state_set);
+	const GLStencilMaskStateSet &current = dynamic_cast<const GLStencilMaskStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_stencil == last_applied.d_stencil)
+	if (d_stencil == current.d_stencil)
 	{
 		return;
 	}
@@ -2307,7 +2307,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_stencil == ~GLuint(0)/*all ones*/)
@@ -2321,7 +2321,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_stencil == ~GLuint(0)/*all ones*/)
@@ -2336,16 +2336,16 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 void
 GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLStencilOpStateSet &last_applied = dynamic_cast<const GLStencilOpStateSet &>(last_applied_state_set);
+	const GLStencilOpStateSet &current = dynamic_cast<const GLStencilOpStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	if (d_fail == last_applied.d_fail &&
-		d_zfail == last_applied.d_zfail &&
-		d_zpass == last_applied.d_zpass)
+	if (d_fail == current.d_fail &&
+		d_zfail == current.d_zfail &&
+		d_zpass == current.d_zpass)
 	{
 		return;
 	}
@@ -2356,7 +2356,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 void
 GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_fail == GL_KEEP &&
@@ -2372,7 +2372,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	if (d_fail == GL_KEEP &&
@@ -2414,21 +2414,21 @@ GPlatesOpenGL::GLTexGenStateSet::initialise_plane(
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLTexGenStateSet &last_applied = dynamic_cast<const GLTexGenStateSet &>(last_applied_state_set);
+	const GLTexGenStateSet &current = dynamic_cast<const GLTexGenStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Determine if the texture coordinate generation state is the same or not.
-	if (boost::apply_visitor(EqualityVisitor(), d_param, last_applied.d_param))
+	if (boost::apply_visitor(EqualityVisitor(), d_param, current.d_param))
 	{
 		return;
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), d_param);
@@ -2437,7 +2437,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_state(
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const param_type default_param = get_default_param();
 
@@ -2449,7 +2449,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), d_param);
@@ -2458,7 +2458,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const param_type default_param = get_default_param();
 
@@ -2470,7 +2470,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), default_param);
@@ -2518,21 +2518,21 @@ GPlatesOpenGL::GLTexGenStateSet::get_default_param() const
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLTexEnvStateSet &last_applied = dynamic_cast<const GLTexEnvStateSet &>(last_applied_state_set);
+	const GLTexEnvStateSet &current = dynamic_cast<const GLTexEnvStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Determine if the texture environment state is the same or not.
-	if (boost::apply_visitor(EqualityVisitor(), d_param, last_applied.d_param))
+	if (boost::apply_visitor(EqualityVisitor(), d_param, current.d_param))
 	{
 		return;
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), d_param);
@@ -2541,7 +2541,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_state(
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const param_type default_param = get_default_param();
 
@@ -2553,7 +2553,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), d_param);
@@ -2562,7 +2562,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	const param_type default_param = get_default_param();
 
@@ -2574,7 +2574,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(capabilities, d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, current_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), default_param);
@@ -2674,17 +2674,17 @@ GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
 void
 GPlatesOpenGL::GLViewportStateSet::apply_state(
 		const GLCapabilities &capabilities,
-		const GLStateSet &last_applied_state_set,
-		GLState &last_applied_state) const
+		const GLStateSet &current_state_set,
+		GLState &current_state) const
 {
 	// Throws exception if downcast fails...
-	const GLViewportStateSet &last_applied = dynamic_cast<const GLViewportStateSet &>(last_applied_state_set);
+	const GLViewportStateSet &current = dynamic_cast<const GLViewportStateSet &>(current_state_set);
 
 	// Return early if no state change...
 	// Only comparing viewports if both states have one set of viewport parameters for all viewports.
-	if (d_all_viewports_are_the_same && last_applied.d_all_viewports_are_the_same)
+	if (d_all_viewports_are_the_same && current.d_all_viewports_are_the_same)
 	{
-		if (d_viewports.front() == last_applied.d_viewports.front())
+		if (d_viewports.front() == current.d_viewports.front())
 		{
 			return;
 		}
@@ -2696,7 +2696,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 void
 GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing viewports if there's only one set of viewport parameters for all rectangles.
@@ -2714,7 +2714,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 void
 GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
-		GLState &last_applied_state) const
+		GLState &current_state) const
 {
 	// Return early if no state change...
 	// Only comparing viewports if there's only one set of viewport parameters for all rectangles.
