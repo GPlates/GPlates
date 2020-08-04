@@ -585,19 +585,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		//! Enable/disable texturing for the specified target and texture unit.
-		void
-		set_enable_texture(
-				GLenum texture_unit,
-				GLenum texture_target,
-				bool enable)
-		{
-			set_state_set(
-					d_state_set_store->enable_texture_state_sets,
-					d_state_set_keys->get_texture_enable_key(texture_unit, texture_target),
-					boost::in_place(texture_unit, texture_target, enable));
-		}
-
 		//! Specify point size.
 		void
 		set_point_size(
@@ -690,18 +677,6 @@ namespace GPlatesOpenGL
 					boost::in_place(target, mode));
 		}
 
-		//! Sets the alpha test function.
-		void
-		set_alpha_func(
-				GLenum func,
-				GLclampf ref)
-		{
-			set_state_set(
-					d_state_set_store->alpha_func_state_sets,
-					GLStateSetKeys::KEY_ALPHA_FUNC,
-					boost::in_place(func, ref));
-		}
-
 		//! Sets the alpha-blend equation (glBlendEquation).
 		void
 		set_blend_equation(
@@ -763,138 +738,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->depth_func_state_sets,
 					GLStateSetKeys::KEY_DEPTH_FUNC,
 					boost::in_place(func));
-		}
-
-
-		//! Sets the client active texture unit.
-		void
-		set_client_active_texture(
-				const GLCapabilities &capabilities,
-				GLenum client_active_texture)
-		{
-			set_state_set(
-					d_state_set_store->client_active_texture_state_sets,
-					GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE,
-					boost::in_place(boost::cref(capabilities), client_active_texture));
-		}
-
-		//! Returns the client active texture unit.
-		GLenum
-		get_client_active_texture() const
-		{
-			const boost::optional<GLenum> client_active_texture =
-					query_state_set<GLenum>(
-							GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE,
-							&GLClientActiveTextureStateSet::d_client_active_texture);
-			// The default of no client_active texture unit means the default unit GL_TEXTURE0 is active.
-			return client_active_texture ? client_active_texture.get() : GLCapabilities::Texture::gl_TEXTURE0;
-		}
-
-
-		/**
-		 * Sets the specified texture environment state to the specified parameter on the specified texture unit.
-		 */
-		template <typename ParamType>
-		void
-		set_tex_env(
-				GLenum texture_unit,
-				GLenum target,
-				GLenum pname,
-				const ParamType &param)
-		{
-			set_state_set(
-					d_state_set_store->tex_env_state_sets,
-					d_state_set_keys->get_tex_env_key(texture_unit, target, pname),
-					boost::in_place(texture_unit, target, pname, param));
-		}
-
-		/**
-		 * Sets the specified texture coordinate generation state to the specified parameter on the specified texture unit.
-		 */
-		template <typename ParamType>
-		void
-		set_tex_gen(
-				GLenum texture_unit,
-				GLenum coord,
-				GLenum pname,
-				const ParamType &param)
-		{
-			set_state_set(
-					d_state_set_store->tex_gen_state_sets,
-					d_state_set_keys->get_tex_gen_key(texture_unit, coord, pname),
-					boost::in_place(texture_unit, coord, pname, param));
-		}
-
-
-		//! Specifies which matrix stack is the target for matrix operations.
-		void
-		set_matrix_mode(
-				GLenum mode)
-		{
-			set_state_set(
-					d_state_set_store->matrix_mode_state_sets,
-					GLStateSetKeys::KEY_MATRIX_MODE,
-					boost::in_place(mode));
-		}
-
-		//! Returns the matrix stack targeted for matrix operations.
-		GLenum
-		get_matrix_mode() const
-		{
-			const boost::optional<GLenum> mode =
-					query_state_set<GLenum>(
-							GLStateSetKeys::KEY_MATRIX_MODE,
-							&GLMatrixModeStateSet::d_mode);
-			// The default of no matrix mode means GL_MODELVIEW.
-			return mode ? mode.get() : GL_MODELVIEW;
-		}
-
-		//! Loads the specified matrix into the specified matrix mode.
-		void
-		set_load_matrix(
-				GLenum mode,
-				const GLMatrix &matrix)
-		{
-			set_state_set(
-					d_state_set_store->load_matrix_state_sets,
-					d_state_set_keys->get_load_matrix_key(mode),
-					boost::in_place(mode, matrix));
-		}
-
-		//! Returns the matrix for the specified matrix mode.
-		boost::optional<const GLMatrix &>
-		get_load_matrix(
-				GLenum mode) const
-		{
-			const boost::optional<const GLMatrix &> matrix =
-					query_state_set<const GLMatrix &>(
-							d_state_set_keys->get_load_matrix_key(mode),
-							&GLLoadMatrixStateSet::d_matrix);
-			return matrix;
-		}
-
-		//! Loads the specified texture matrix into the specified texture unit.
-		void
-		set_load_texture_matrix(
-				GLenum texture_unit,
-				const GLMatrix &matrix)
-		{
-			set_state_set(
-					d_state_set_store->load_texture_matrix_state_sets,
-					d_state_set_keys->get_load_texture_matrix_key(texture_unit),
-					boost::in_place(texture_unit, matrix));
-		}
-
-		//! Returns the texture matrix for the specified texture unit.
-		boost::optional<const GLMatrix &>
-		get_load_texture_matrix(
-				GLenum texture_unit) const
-		{
-			const boost::optional<const GLMatrix &> texture_matrix =
-					query_state_set<const GLMatrix &>(
-							d_state_set_keys->get_load_texture_matrix_key(texture_unit),
-							&GLLoadTextureMatrixStateSet::d_matrix);
-			return texture_matrix;
 		}
 
 	public: // For use by GLStateStore ...

@@ -64,7 +64,6 @@ namespace GPlatesOpenGL
 
 		// Alphabetically ordered...
 		GPlatesUtils::ObjectPool<GLActiveTextureStateSet> active_texture_state_sets;
-		GPlatesUtils::ObjectPool<GLAlphaFuncStateSet> alpha_func_state_sets;
 		GPlatesUtils::ObjectPool<GLBindBufferStateSet> bind_buffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindFrameBufferObjectStateSet> bind_frame_buffer_object_state_sets;
 		GPlatesUtils::ObjectPool<GLBindProgramObjectStateSet> bind_program_object_state_sets;
@@ -75,20 +74,15 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLClearColorStateSet> clear_color_state_sets;
 		GPlatesUtils::ObjectPool<GLClearDepthStateSet> clear_depth_state_sets;
 		GPlatesUtils::ObjectPool<GLClearStencilStateSet> clear_stencil_state_sets;
-		GPlatesUtils::ObjectPool<GLClientActiveTextureStateSet> client_active_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLColorMaskStateSet> color_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLCullFaceStateSet> cull_face_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthFuncStateSet> depth_func_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthMaskStateSet> depth_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLDepthRangeStateSet> depth_range_state_sets;
 		GPlatesUtils::ObjectPool<GLEnableStateSet> enable_state_sets;
-		GPlatesUtils::ObjectPool<GLEnableTextureStateSet> enable_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLFrontFaceStateSet> front_face_state_sets;
 		GPlatesUtils::ObjectPool<GLHintStateSet> hint_state_sets;
 		GPlatesUtils::ObjectPool<GLLineWidthStateSet> line_width_state_sets;
-		GPlatesUtils::ObjectPool<GLLoadMatrixStateSet> load_matrix_state_sets;
-		GPlatesUtils::ObjectPool<GLLoadTextureMatrixStateSet> load_texture_matrix_state_sets;
-		GPlatesUtils::ObjectPool<GLMatrixModeStateSet> matrix_mode_state_sets;
 		GPlatesUtils::ObjectPool<GLPointSizeStateSet> point_size_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonModeStateSet> polygon_mode_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
@@ -96,8 +90,6 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilMaskStateSet> stencil_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilOpStateSet> stencil_op_state_sets;
-		GPlatesUtils::ObjectPool<GLTexGenStateSet> tex_gen_state_sets;
-		GPlatesUtils::ObjectPool<GLTexEnvStateSet> tex_env_state_sets;
 		GPlatesUtils::ObjectPool<GLViewportStateSet> viewport_state_sets;
 
 	private:
