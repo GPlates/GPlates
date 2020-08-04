@@ -47,28 +47,12 @@ GPlatesOpenGL::GL::GL(
 
 
 void
-GPlatesOpenGL::GL::BindVertexArray(
-		boost::optional<GLVertexArray::shared_ptr_type> vertex_array)
+GPlatesOpenGL::GL::ActiveTexture(
+		GLenum active_texture_)
 {
-	if (vertex_array)
-	{
-		// Bind.
-		d_current_state->bind_vertex_array(
-				vertex_array.get(),
-				// Array resource handle associated with the current OpenGL context...
-				vertex_array.get()->get_resource_handle(*this));
-
-		// Ensure the vertex array's internal state is reflected in the current context.
-		// Each 'GLVertexArray' instance has one native vertex array object per OpenGL context.
-		//
-		// NOTE: This must be done after binding.
-		vertex_array.get()->synchronise_current_context(*this);
-	}
-	else
-	{
-		// Unbind.
-		d_current_state->bind_vertex_array(boost::none, 0);
-	}
+	d_current_state->active_texture(
+			d_context->get_capabilities(),
+			active_texture_);
 }
 
 
@@ -104,22 +88,42 @@ GPlatesOpenGL::GL::BindBuffer(
 
 
 void
-GPlatesOpenGL::GL::EnableVertexAttribArray(
-		GLuint index)
+GPlatesOpenGL::GL::BindTexture(
+		GLenum texture_target,
+		boost::optional<GLTexture::shared_ptr_type> texture_object)
 {
-	// Re-route attribute arrays to the currently bound vertex array object
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	d_current_state->bind_texture(
+			d_context->get_capabilities(),
+			texture_target,
+			// Bind to the currently active texture unit (glActiveTexture)...
+			d_current_state->get_active_texture()/*texture_unit*/,
+			texture_object);
+}
 
-	// Get the currently bound vertex array object.
-	boost::optional<GLVertexArray::shared_ptr_type> vertex_array = d_current_state->get_bind_vertex_array();
 
-	// Can only enable an attribute array when a vertex array object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			vertex_array,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot enable vertex attribute array because a vertex array object is not currently bound.");
+void
+GPlatesOpenGL::GL::BindVertexArray(
+		boost::optional<GLVertexArray::shared_ptr_type> vertex_array)
+{
+	if (vertex_array)
+	{
+		// Bind.
+		d_current_state->bind_vertex_array(
+				vertex_array.get(),
+				// Array resource handle associated with the current OpenGL context...
+				vertex_array.get()->get_resource_handle(*this));
 
-	vertex_array.get()->enable_vertex_attrib_array(*this, index);
+		// Ensure the vertex array's internal state is reflected in the current context.
+		// Each 'GLVertexArray' instance has one native vertex array object per OpenGL context.
+		//
+		// NOTE: This must be done after binding.
+		vertex_array.get()->synchronise_current_context(*this);
+	}
+	else
+	{
+		// Unbind.
+		d_current_state->bind_vertex_array(boost::none, 0);
+	}
 }
 
 
@@ -144,6 +148,26 @@ GPlatesOpenGL::GL::DisableVertexAttribArray(
 
 
 void
+GPlatesOpenGL::GL::EnableVertexAttribArray(
+		GLuint index)
+{
+	// Re-route attribute arrays to the currently bound vertex array object
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the currently bound vertex array object.
+	boost::optional<GLVertexArray::shared_ptr_type> vertex_array = d_current_state->get_bind_vertex_array();
+
+	// Can only enable an attribute array when a vertex array object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			vertex_array,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot enable vertex attribute array because a vertex array object is not currently bound.");
+
+	vertex_array.get()->enable_vertex_attrib_array(*this, index);
+}
+
+
+void
 GPlatesOpenGL::GL::VertexAttribDivisor(
 		GLuint index,
 		GLuint divisor)
@@ -161,6 +185,38 @@ GPlatesOpenGL::GL::VertexAttribDivisor(
 			"Cannot set vertex attribute divisor because a vertex array object is not currently bound.");
 
 	vertex_array.get()->vertex_attrib_divisor(*this, index, divisor);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexAttribIPointer(
+		GLuint index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		const GLvoid *pointer)
+{
+	// Re-route attribute arrays to the currently bound vertex array object
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	//
+	// The currently bound array buffer, along with the attribute array parameters, are stored in the
+	// currently bound vertex array object. And it's invalid to specify an attribute array when no
+	// vertex array object is bound.
+
+	// Get the currently bound vertex array object.
+	boost::optional<GLVertexArray::shared_ptr_type> vertex_array = d_current_state->get_bind_vertex_array();
+
+	// Can only specify an attribute array when a vertex array object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			vertex_array,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot specify vertex attribute array because a vertex array object is not currently bound.");
+
+	vertex_array.get()->vertex_attrib_i_pointer(
+			*this,
+			index, size, type, stride, pointer,
+			// The currently bound array buffer...
+			d_current_state->get_bind_buffer(GL_ARRAY_BUFFER));
 }
 
 
@@ -192,38 +248,6 @@ GPlatesOpenGL::GL::VertexAttribPointer(
 	vertex_array.get()->vertex_attrib_pointer(
 			*this,
 			index, size, type, normalized, stride, pointer,
-			// The currently bound array buffer...
-			d_current_state->get_bind_buffer(GL_ARRAY_BUFFER));
-}
-
-
-void
-GPlatesOpenGL::GL::VertexAttribIPointer(
-		GLuint index,
-		GLint size,
-		GLenum type,
-		GLsizei stride,
-		const GLvoid *pointer)
-{
-	// Re-route attribute arrays to the currently bound vertex array object
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
-	//
-	// The currently bound array buffer, along with the attribute array parameters, are stored in the
-	// currently bound vertex array object. And it's invalid to specify an attribute array when no
-	// vertex array object is bound.
-
-	// Get the currently bound vertex array object.
-	boost::optional<GLVertexArray::shared_ptr_type> vertex_array = d_current_state->get_bind_vertex_array();
-
-	// Can only specify an attribute array when a vertex array object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			vertex_array,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot specify vertex attribute array because a vertex array object is not currently bound.");
-
-	vertex_array.get()->vertex_attrib_i_pointer(
-			*this,
-			index, size, type, stride, pointer,
 			// The currently bound array buffer...
 			d_current_state->get_bind_buffer(GL_ARRAY_BUFFER));
 }

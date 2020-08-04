@@ -273,8 +273,8 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_enable_key(
 
 GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
-		GLenum texture_unit,
-		GLenum texture_target) const
+		GLenum texture_target,
+		GLenum texture_unit) const
 {
 	// Note that other texture targets (like GL_TEXTURE_2D_ARRAY) are not supported by 'glEnable' and
 	// 'glDisable' since they are used by shaders which don't require 'glEnable' and 'glDisable'.

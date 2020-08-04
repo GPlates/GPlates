@@ -144,6 +144,103 @@ namespace GPlatesOpenGL
 		// object pool it was created from (ie, the @a GLStateSetStore we're referencing).
 		//
 
+
+		//! Sets the active texture unit.
+		void
+		active_texture(
+				const GLCapabilities &capabilities,
+				GLenum active_texture_)
+		{
+			set_state_set(
+					d_state_set_store->active_texture_state_sets,
+					GLStateSetKeys::KEY_ACTIVE_TEXTURE,
+					boost::in_place(boost::cref(capabilities), active_texture_));
+		}
+
+		//! Returns the active texture unit.
+		GLenum
+		get_active_texture() const
+		{
+			const boost::optional<GLenum> active_texture_ =
+					query_state_set<GLenum>(
+							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
+							&GLActiveTextureStateSet::d_active_texture);
+			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
+			return active_texture_ ? active_texture_.get() : GLCapabilities::Texture::gl_TEXTURE0;
+		}
+
+
+		//! Binds the buffer object (at the specified target) to the active OpenGL context.
+		void
+		bind_buffer(
+				GLenum target,
+				boost::optional<GLBuffer::shared_ptr_type> buffer)
+		{
+			set_state_set(
+					d_state_set_store->bind_buffer_state_sets,
+					d_state_set_keys->get_bind_buffer_key(target),
+					boost::in_place(target, buffer));
+		}
+
+		//! Returns the bound buffer object, or boost::none if no object bound.
+		boost::optional<GLBuffer::shared_ptr_type>
+		get_bind_buffer(
+				GLenum target) const
+		{
+			return query_state_set<GLBuffer::shared_ptr_type>(
+					d_state_set_keys->get_bind_buffer_key(target),
+					&GLBindBufferStateSet::d_buffer);
+		}
+
+		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
+		void
+		bind_texture(
+				const GLCapabilities &capabilities,
+				GLenum texture_target,
+				GLenum texture_unit,
+				boost::optional<GLTexture::shared_ptr_type> texture_object)
+		{
+			set_state_set(
+					d_state_set_store->bind_texture_state_sets,
+					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
+					boost::in_place(boost::cref(capabilities), texture_target, texture_unit, texture_object));
+		}
+
+		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
+		boost::optional<GLTexture::shared_ptr_type>
+		get_bind_texture(
+				GLenum texture_target,
+				GLenum texture_unit) const
+		{
+			return query_state_set<GLTexture::shared_ptr_type>(
+					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
+					&GLBindTextureStateSet::d_texture_object);
+		}
+
+
+		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
+		void
+		bind_vertex_array(
+				boost::optional<GLVertexArray::shared_ptr_type> array,
+				// Array resource handle associated with the current OpenGL context...
+				GLuint array_resource)
+		{
+			set_state_set(
+					d_state_set_store->bind_vertex_array_state_sets,
+					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
+					boost::in_place(array, array_resource));
+		}
+
+		//! Returns the currently bound vertex array object - boost::none implies the default no binding.
+		boost::optional<GLVertexArray::shared_ptr_type>
+		get_bind_vertex_array() const
+		{
+			return query_state_set<GLVertexArray::shared_ptr_type>(
+					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
+					&GLBindVertexArrayStateSet::d_array);
+		}
+
+
 		//! Sets the OpenGL colour mask.
 		void
 		set_color_mask(
@@ -302,90 +399,6 @@ namespace GPlatesOpenGL
 			return query_state_set<GLProgramObject::shared_ptr_to_const_type>(
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					&GLBindProgramObjectStateSet::d_program_object);
-		}
-
-		//! Sets the texture bound on the specified target and texture unit.
-		void
-		set_bind_texture(
-				const GLCapabilities &capabilities,
-				const GLTexture::shared_ptr_to_const_type &texture_object,
-				GLenum texture_unit,
-				GLenum texture_target)
-		{
-			set_state_set(
-					d_state_set_store->bind_texture_state_sets,
-					d_state_set_keys->get_bind_texture_key(texture_unit, texture_target),
-					boost::in_place(boost::cref(capabilities), texture_object, texture_unit, texture_target));
-		}
-
-		//! Unbinds any texture object currently bound to the specified target and texture unit.
-		void
-		set_unbind_texture(
-				const GLCapabilities &capabilities,
-				GLenum texture_unit,
-				GLenum texture_target)
-		{
-			set_state_set(
-					d_state_set_store->bind_texture_state_sets,
-					d_state_set_keys->get_bind_texture_key(texture_unit, texture_target),
-					boost::in_place(boost::cref(capabilities), texture_unit, texture_target));
-		}
-
-		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
-		boost::optional<GLTexture::shared_ptr_to_const_type>
-		get_bind_texture(
-				GLenum texture_unit,
-				GLenum texture_target) const
-		{
-			return query_state_set<GLTexture::shared_ptr_to_const_type>(
-					d_state_set_keys->get_bind_texture_key(texture_unit, texture_target),
-					&GLBindTextureStateSet::d_texture_object);
-		}
-
-
-		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
-		void
-		bind_vertex_array(
-				boost::optional<GLVertexArray::shared_ptr_type> array,
-				// Array resource handle associated with the current OpenGL context...
-				GLuint array_resource)
-		{
-			set_state_set(
-					d_state_set_store->bind_vertex_array_state_sets,
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
-					boost::in_place(array, array_resource));
-		}
-
-		//! Returns the currently bound vertex array object - boost::none implies the default no binding.
-		boost::optional<GLVertexArray::shared_ptr_type>
-		get_bind_vertex_array() const
-		{
-			return query_state_set<GLVertexArray::shared_ptr_type>(
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
-					&GLBindVertexArrayStateSet::d_array);
-		}
-
-
-		//! Binds the buffer object (at the specified target) to the active OpenGL context.
-		void
-		bind_buffer(
-				GLenum target,
-				boost::optional<GLBuffer::shared_ptr_type> buffer)
-		{
-			set_state_set(
-					d_state_set_store->bind_buffer_state_sets,
-					d_state_set_keys->get_bind_buffer_key(target),
-					boost::in_place(target, buffer));
-		}
-
-		//! Returns the bound buffer object, or boost::none if no object bound.
-		boost::optional<GLBuffer::shared_ptr_type>
-		get_bind_buffer(
-				GLenum target) const
-		{
-			return query_state_set<GLBuffer::shared_ptr_type>(
-					d_state_set_keys->get_bind_buffer_key(target),
-					&GLBindBufferStateSet::d_buffer);
 		}
 
 
@@ -750,31 +763,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->depth_func_state_sets,
 					GLStateSetKeys::KEY_DEPTH_FUNC,
 					boost::in_place(func));
-		}
-
-
-		//! Sets the active texture unit.
-		void
-		set_active_texture(
-				const GLCapabilities &capabilities,
-				GLenum active_texture)
-		{
-			set_state_set(
-					d_state_set_store->active_texture_state_sets,
-					GLStateSetKeys::KEY_ACTIVE_TEXTURE,
-					boost::in_place(boost::cref(capabilities), active_texture));
-		}
-
-		//! Returns the active texture unit.
-		GLenum
-		get_active_texture() const
-		{
-			const boost::optional<GLenum> active_texture =
-					query_state_set<GLenum>(
-							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
-							&GLActiveTextureStateSet::d_active_texture);
-			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
-			return active_texture ? active_texture.get() : GLCapabilities::Texture::gl_TEXTURE0;
 		}
 
 

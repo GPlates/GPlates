@@ -66,13 +66,15 @@ namespace GPlatesOpenGL
 		 *
 		 * @a current_state_set can be downcast to the derived class type of 'this'.
 		 * The caller guarantees they are of the same type.
+		 *
+		 * @a current_state enables querying other state sets in the current state.
 		 */
 		virtual
 		void
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				GLState &current_state) const = 0;
+				const GLState &current_state) const = 0;
 
 
 		/**
@@ -88,11 +90,11 @@ namespace GPlatesOpenGL
 		 * in the default state before this method is called.
 		 *
 		 * @a current_state is the container for all state sets (including 'this' actually).
-		 * It represents the current OpenGL state (as applied to the OpenGL context).
-		 * It is only provided in case 'this' state set needs to modify state other than itself
-		 * in order to achieve its goal.
-		 * For example changing the active texture unit is required in order to bind a texture
-		 * to a specific texture unit (and the active texture unit is managed by another @a GLStateSet).
+		 * It represents the current OpenGL state (as applied to the OpenGL context) and enables
+		 * querying other state sets in the current state. For example, in order to bind a texture to
+		 * a specific texture unit the active texture unit (that binding applies to) might need to be
+		 * changed temporarily if it's currently different than the texture unit being bound - the
+		 * active texture unit should be restored to what it was though (after the texture is bound).
 		 *
 		 * Note that this method is 'const' since 'this' object should not change because if it
 		 * gets called again later it should apply the same state to OpenGL.
@@ -101,7 +103,7 @@ namespace GPlatesOpenGL
 		void
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				GLState &current_state) const = 0;
+				const GLState &current_state) const = 0;
 
 
 		/**
@@ -121,12 +123,14 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: If the internal state of 'this' instance is already in the default state then
 		 * nothing needs to be applied.
+		 *
+		 * @a current_state enables querying other state sets in the current state.
 		 */
 		virtual
 		void
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				GLState &current_state) const = 0;
+				const GLState &current_state) const = 0;
 	};
 }
 

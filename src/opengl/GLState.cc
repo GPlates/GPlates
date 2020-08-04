@@ -203,7 +203,6 @@ GPlatesOpenGL::GLState::apply_state(
 {
 	//
 	// NOTE: This code is written in an optimised manner since it shows high on the CPU profile.
-	// And there's a bit of copy'n'paste going on from the single slot version of 'apply_state'.
 	//
 
 	// Iterate over the state set slots.
@@ -227,12 +226,14 @@ GPlatesOpenGL::GLState::apply_state(
 		{
 			const state_set_slot_flag32_type new_state_set_slot_flag32 =
 					new_state_set_slots[state_set_slot_flag32_index];
+			state_set_slot_flag32_type &current_state_set_slot_flag32 =
+					current_state_set_slots[state_set_slot_flag32_index];
 
 			// Include state-set slots that exist in either state (or both).
 			// Only those state-sets that don't exist in either state are excluded here (not visited/applied).
 			// If state set slot is set in either in the new state or the current state then apply it.
-			state_set_slot_flag32_type state_set_slot_flag32 = state_set_slot_flag32_mask &
-					(new_state_set_slot_flag32 | current_state_set_slots[state_set_slot_flag32_index]);
+			const state_set_slot_flag32_type state_set_slot_flag32 = state_set_slot_flag32_mask &
+					(new_state_set_slot_flag32 | current_state_set_slot_flag32);
 
 			// Are any of these 32 slots non-null in the combined flag?
 			if (state_set_slot_flag32 != 0)
@@ -291,10 +292,7 @@ GPlatesOpenGL::GLState::apply_state(
 
 											// Update the current state so subsequent state-sets can see it.
 											current_state_set.reset();
-											// Clear the bit flag.
-											// Note that this is set immediately after the state is applied
-											// in case the state-sets look at it.
-											current_state_set_slots[state_set_slot_flag32_index] &= ~flag32;
+											current_state_set_slot_flag32 &= ~flag32;  // Clear the bit flag.
 										}
 									}
 									else
@@ -307,16 +305,8 @@ GPlatesOpenGL::GLState::apply_state(
 
 										// Update the current state so subsequent state-sets can see it.
 										current_state_set = new_state_set;
-										// Set the bit flag.
-										// Note that this is set immediately after the state is applied
-										// in case the state-sets look at it.
-										current_state_set_slots[state_set_slot_flag32_index] |= flag32;
+										current_state_set_slot_flag32 |= flag32;  // Set the bit flag.
 									}
-
-									// It's also possible that other state-sets in 'current_state'
-									// were modified and they might be in this group of 32 slots.
-									state_set_slot_flag32 = state_set_slot_flag32_mask &
-											(new_state_set_slot_flag32 | current_state_set_slots[state_set_slot_flag32_index]);
 								}
 							}
 						}

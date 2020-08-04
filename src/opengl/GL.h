@@ -35,6 +35,7 @@
 #include "GLContext.h"
 #include "GLState.h"
 #include "GLStateStore.h"
+#include "GLTexture.h"
 #include "GLVertexArray.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -138,10 +139,9 @@ namespace GPlatesOpenGL
 		// Any calls not provided below can be called with direct native OpenGL calls (with 'gl' prefix).
 		//
 
-		//! Bind vertex array object (none means unbind).
 		void
-		BindVertexArray(
-				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
+		ActiveTexture(
+				GLenum active_texture);
 
 		//! Bind buffer target to buffer object (none means unbind).
 		void
@@ -149,12 +149,23 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLBuffer::shared_ptr_type> buffer);
 
+		//! Bind texture target and active texture unit to texture object (none means unbind).
 		void
-		EnableVertexAttribArray(
-				GLuint index);
+		BindTexture(
+				GLenum texture_target,
+				boost::optional<GLTexture::shared_ptr_type> texture_object);
+
+		//! Bind vertex array object (none means unbind).
+		void
+		BindVertexArray(
+				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
 		void
 		DisableVertexAttribArray(
+				GLuint index);
+
+		void
+		EnableVertexAttribArray(
 				GLuint index);
 
 		void
@@ -163,19 +174,19 @@ namespace GPlatesOpenGL
 				GLuint divisor);
 
 		void
+		VertexAttribIPointer(
+				GLuint index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				const GLvoid *pointer);
+
+		void
 		VertexAttribPointer(
 				GLuint index,
 				GLint size,
 				GLenum type,
 				GLboolean normalized,
-				GLsizei stride,
-				const GLvoid *pointer);
-
-		void
-		VertexAttribIPointer(
-				GLuint index,
-				GLint size,
-				GLenum type,
 				GLsizei stride,
 				const GLvoid *pointer);
 

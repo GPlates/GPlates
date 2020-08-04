@@ -176,8 +176,8 @@ namespace GPlatesOpenGL
 
 		key_type
 		get_bind_texture_key(
-				GLenum texture_unit,
-				GLenum texture_target) const;
+				GLenum texture_target,
+				GLenum texture_unit) const;
 
 		key_type
 		get_tex_env_key(
