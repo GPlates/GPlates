@@ -1034,11 +1034,12 @@ namespace GPlatesOpenGL
 			 * @a min_bytes_to_stream_in_vertex_buffer is the smallest amount of bytes (for vertices) that
 			 * you will want to stream (ideally the vertex buffer size should ideally be multiple times larger than this).
 			 *
-			 * NOTE: The buffer, returned by 'vertex_element_stream_buffer.get_buffer()', should currently be bound on the
-			 *       GL_ELEMENT_ARRAY_BUFFER target (and remain bound for the duration of this scope) which means
-			 *       the vertex array containing it should currently be bound.
-			 *       The buffer, returned by 'vertex_stream_buffer.get_buffer()', should currently be bound on the
-			 *       GL_ARRAY_BUFFER target (and remain bound for the duration of this scope).
+			 * NOTE: The buffer, returned by 'vertex_element_stream_buffer.get_buffer()', should be bound on the
+			 *       GL_ELEMENT_ARRAY_BUFFER target before @a start_streaming is first called (and remain bound
+			 *       for the duration of this scope) which means the vertex array containing it should be bound.
+			 *       And similarly the buffer, returned by 'vertex_stream_buffer.get_buffer()', should be bound
+			 *       on the GL_ARRAY_BUFFER target before @a start_streaming is first called (and remain bound
+			 *       for the duration of this scope).
 			 */
 			MapStreamBufferScope(
 					GLStaticStreamPrimitives &stream_primitives,
@@ -1060,9 +1061,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Map the buffers and start streaming into them.
 			 *
-			 * NOTE: The buffer, returned by 'GLStreamBuffer::get_buffer()', should currently be bound.
-			 *       If the buffer contains vertex elements (GL_ELEMENT_ARRAY_BUFFER target) then
-			 *       this means the vertex array containing it should currently be bound.
+			 * Note: See constructor comment about buffer binding.
 			 */
 			void
 			start_streaming();
@@ -1073,6 +1072,8 @@ namespace GPlatesOpenGL
 			 *
 			 * Returns GL_FALSE if 'glUnmapBuffer()' returned false (internally), which usually
 			 * happens when buffer contents become corrupted (due to a windowing event).
+			 *
+			 * Note: See constructor comment about buffer binding.
 			 */
 			bool
 			stop_streaming();

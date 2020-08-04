@@ -37,10 +37,10 @@
 
 #include "GLScalarField3D.h"
 
+#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLPixelBuffer.h"
-#include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
@@ -1889,7 +1889,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 	}
 
 	// Bind the cross-section vertex array.
-	d_cross_section_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_cross_section_vertex_array);
 
 	// Line anti-aliasing shouldn't be on, but turn it off to be sure.
 	renderer.gl_enable(GL_LINE_SMOOTH, false);
@@ -3419,6 +3419,11 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::CrossSect
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream)
 {
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	gl.BindBuffer(GL_ARRAY_BUFFER, streaming_vertex_buffer->get_buffer());
 }
 
 
@@ -3543,6 +3548,11 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::CrossSect
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER),
 	d_stream_primitives(d_stream)
 {
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	gl.BindBuffer(GL_ARRAY_BUFFER, streaming_vertex_buffer->get_buffer());
 }
 
 
@@ -3751,6 +3761,11 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::SurfaceF
 	d_stream_primitives(d_stream),
 	d_include_polylines(include_polylines)
 {
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	gl.BindBuffer(GL_ARRAY_BUFFER, streaming_vertex_buffer->get_buffer());
 }
 
 
@@ -4109,6 +4124,11 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::Volum
 	d_stream_primitives(d_stream),
 	d_include_polylines(include_polylines)
 {
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	gl.BindBuffer(GL_ARRAY_BUFFER, streaming_vertex_buffer->get_buffer());
 }
 
 

@@ -57,10 +57,10 @@ namespace GPlatesOpenGL
 			 * It should be in the half-open range (0, <buffer size>].
 			 * @a stream_alignment is typically the size of vertex (or vertex index for element array buffers).
 			 *
-			 * NOTE: The buffer, returned by 'stream_buffer.get_buffer()', should currently be bound on the
-			 *       specified target (and remain bound for the duration of this scope).
+			 * NOTE: The buffer, returned by 'stream_buffer.get_buffer()', should be bound on the specified
+			 *       target before @a map is first called (and remain bound for the duration of this scope).
 			 *       If the buffer contains vertex elements (GL_ELEMENT_ARRAY_BUFFER target) then
-			 *       this means the vertex array containing it should currently be bound.
+			 *       this means the vertex array containing it should be bound.
 			 */
 			MapScope(
 					GLenum target,
@@ -83,6 +83,8 @@ namespace GPlatesOpenGL
 			 *
 			 * Note: The returned pointer is non-NULL.
 			 *       @throws OpenGLException if unable to map buffer.
+			 *
+			 * Note: See constructor comment about buffer binding.
 			 */
 			GLvoid *
 			map(
@@ -96,6 +98,8 @@ namespace GPlatesOpenGL
 			 *
 			 * Returns GL_FALSE if 'glUnmapBuffer()' returned false (internally), which usually
 			 * happens when buffer contents become corrupted (due to a windowing event).
+			 *
+			 * Note: See constructor comment about buffer binding.
 			 */
 			GLboolean
 			unmap(

@@ -2663,7 +2663,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 			renderer, "tan_squared_region_of_interest_angle", tan_squared_region_of_interest_angle);
 
 	// Bind the point region-of-interest vertex array.
-	d_point_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_point_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
@@ -2981,7 +2987,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 			: sin_region_of_interest_angle;
 
 	// Bind the point region-of-interest vertex array.
-	d_point_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_point_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
@@ -3314,7 +3326,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 			renderer, "sin_region_of_interest_angle", sin_region_of_interest_angle);
 
 	// Bind the line region-of-interest vertex array.
-	d_line_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_line_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
@@ -3620,7 +3638,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	const double tangent_weight = sin_region_of_interest_angle;
 
 	// Bind the line region-of-interest vertex array.
-	d_line_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_line_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
@@ -3938,7 +3962,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
 
 	// Bind the fill region-of-interest vertex array.
-	d_fill_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
@@ -4234,7 +4264,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
 
 	// Bind the fill region-of-interest vertex array.
-	d_fill_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
@@ -4436,18 +4472,24 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		return;
 	}
 
-	// Bind the shader program for rendering fill regions-of-interest.
-	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
-
-	// Bind the fill region-of-interest vertex array.
-	d_fill_region_of_interest_vertex_array->gl_bind(renderer);
-
 	// Alpha-blend state set to invert destination alpha (and colour) every time a pixel
 	// is rendered (this means we get 1 where a pixel is covered by an odd number of triangles
 	// and 0 by an even number of triangles).
 	// The end result is zero outside the polygon and one inside.
 	renderer.gl_enable(GL_BLEND);
 	renderer.gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
+
+	// Bind the shader program for rendering fill regions-of-interest.
+	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
+
+	// Bind the fill region-of-interest vertex array.
+	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming LineRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
@@ -4740,7 +4782,13 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	renderer.gl_bind_texture(region_of_interest_mask_texture, GL_TEXTURE1, GL_TEXTURE_2D);
 
 	// Bind the mask target raster with regions-of-interest vertex array.
-	d_mask_region_of_interest_vertex_array->gl_bind(renderer);
+	renderer.BindVertexArray(d_mask_region_of_interest_vertex_array);
+
+	// Need to bind vertex buffer before streaming into it.
+	//
+	// Note that we don't bind the vertex element buffer since binding the vertex array does that
+	// (however it does not bind the GL_ARRAY_BUFFER, only records vertex attribute buffers).
+	renderer.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
 
 	// For streaming MaskRegionOfInterestVertex vertices.
 	mask_region_of_interest_stream_primitives_type mask_stream;
