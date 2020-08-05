@@ -1187,12 +1187,12 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
-	if (d_mode == dynamic_cast<const GLFrontFaceStateSet &>(current_state_set).d_mode)
+	if (d_dir == dynamic_cast<const GLFrontFaceStateSet &>(current_state_set).d_dir)
 	{
 		return;
 	}
 
-	glFrontFace(d_mode);
+	glFrontFace(d_dir);
 }
 
 void
@@ -1201,12 +1201,12 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_mode == GL_CCW)
+	if (d_dir == GL_CCW)
 	{
 		return;
 	}
 
-	glFrontFace(d_mode);
+	glFrontFace(d_dir);
 }
 
 void
@@ -1215,7 +1215,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_mode == GL_CCW)
+	if (d_dir == GL_CCW)
 	{
 		return;
 	}
@@ -1232,12 +1232,12 @@ GPlatesOpenGL::GLHintStateSet::apply_state(
 {
 	// Return early if no state change...
 	// Throws exception if downcast fails...
-	if (d_mode == dynamic_cast<const GLHintStateSet &>(current_state_set).d_mode)
+	if (d_hint == dynamic_cast<const GLHintStateSet &>(current_state_set).d_hint)
 	{
 		return;
 	}
 
-	glHint(d_target, d_mode);
+	glHint(d_target, d_hint);
 }
 
 void
@@ -1246,12 +1246,12 @@ GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_mode == GL_DONT_CARE)
+	if (d_hint == GL_DONT_CARE)
 	{
 		return;
 	}
 
-	glHint(d_target, d_mode);
+	glHint(d_target, d_hint);
 }
 
 void
@@ -1260,7 +1260,7 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_mode == GL_DONT_CARE)
+	if (d_hint == GL_DONT_CARE)
 	{
 		return;
 	}
@@ -1378,7 +1378,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 		return;
 	}
 
-	glPolygonMode(d_face, d_mode);
+	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
 }
 
 void
@@ -1392,7 +1392,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 		return;
 	}
 
-	glPolygonMode(d_face, d_mode);
+	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
 }
 
 void
@@ -1406,8 +1406,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 		return;
 	}
 
-	// Note that we only set the state for our 'd_face' which is either front *or* back but not both.
-	glPolygonMode(d_face, GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 

@@ -125,6 +125,68 @@ GPlatesOpenGL::GL::BindVertexArray(
 
 
 void
+GPlatesOpenGL::GL::ClearColor(
+		GLclampf red,
+		GLclampf green,
+		GLclampf blue,
+		GLclampf alpha)
+{
+	d_current_state->clear_color(red, green, blue, alpha);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearDepth(
+		GLclampd depth)
+{
+	d_current_state->clear_depth(depth);
+}
+
+
+void
+GPlatesOpenGL::GL::ColorMask(
+		GLboolean red,
+		GLboolean green,
+		GLboolean blue,
+		GLboolean alpha)
+{
+	d_current_state->color_mask(red, green, blue, alpha);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearStencil(
+		GLint stencil)
+{
+	d_current_state->clear_stencil(stencil);
+}
+
+
+void
+GPlatesOpenGL::GL::CullFace(
+		GLenum mode)
+{
+	d_current_state->cull_face(mode);
+}
+
+
+void
+GPlatesOpenGL::GL::DepthMask(
+		GLboolean flag)
+{
+	d_current_state->depth_mask(flag);
+}
+
+
+void
+GPlatesOpenGL::GL::Disable(
+		GLenum cap)
+{
+	d_current_state->disable(cap);
+}
+
+
+void
 GPlatesOpenGL::GL::DisableVertexAttribArray(
 		GLuint index)
 {
@@ -145,6 +207,14 @@ GPlatesOpenGL::GL::DisableVertexAttribArray(
 
 
 void
+GPlatesOpenGL::GL::Enable(
+		GLenum cap)
+{
+	d_current_state->enable(cap);
+}
+
+
+void
 GPlatesOpenGL::GL::EnableVertexAttribArray(
 		GLuint index)
 {
@@ -161,6 +231,61 @@ GPlatesOpenGL::GL::EnableVertexAttribArray(
 			"Cannot enable vertex attribute array because a vertex array object is not currently bound.");
 
 	vertex_array.get()->enable_vertex_attrib_array(*this, index);
+}
+
+
+void
+GPlatesOpenGL::GL::FrontFace(
+		GLenum dir)
+{
+	d_current_state->front_face(dir);
+}
+
+
+void
+GPlatesOpenGL::GL::Hint(
+		GLenum target,
+		GLenum hint)
+{
+	d_current_state->hint(target, hint);
+}
+
+
+void
+GPlatesOpenGL::GL::LineWidth(
+		GLfloat width)
+{
+	d_current_state->line_width(width);
+}
+
+
+void
+GPlatesOpenGL::GL::PointSize(
+		GLfloat size)
+{
+	d_current_state->point_size(size);
+}
+
+
+void
+GPlatesOpenGL::GL::PolygonMode(
+		GLenum face,
+		GLenum mode)
+{
+	// OpenGL 3.3 core requires 'face' to be 'GL_FRONT_AND_BACK'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			face == GL_FRONT_AND_BACK,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_current_state->polygon_mode(mode);
+}
+
+
+void
+GPlatesOpenGL::GL::StencilMask(
+		GLuint mask)
+{
+	d_current_state->stencil_mask(mask);
 }
 
 

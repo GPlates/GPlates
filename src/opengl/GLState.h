@@ -134,17 +134,10 @@ namespace GPlatesOpenGL
 
 
 		//
-		// The remaining public methods get and set @a GLStateSet type specific state.
-		//
-
-		//
-		// NOTE: In the state-set specific methods below we are not returning a shared pointer
-		// to a @a GLStateSet type because a @a GLStateSet instance cannot live longer than the
-		// object pool it was created from (ie, the @a GLStateSetStore we're referencing).
+		// Set state methods.
 		//
 
 
-		//! Sets the active texture unit.
 		void
 		active_texture(
 				GLenum active_texture_)
@@ -154,19 +147,6 @@ namespace GPlatesOpenGL
 					GLStateSetKeys::KEY_ACTIVE_TEXTURE,
 					boost::in_place(boost::cref(d_capabilities), active_texture_));
 		}
-
-		//! Returns the active texture unit.
-		GLenum
-		get_active_texture() const
-		{
-			const boost::optional<GLenum> active_texture_ =
-					query_state_set<GLenum>(
-							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
-							&GLActiveTextureStateSet::d_active_texture);
-			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
-			return active_texture_ ? active_texture_.get() : GLCapabilities::Texture::gl_TEXTURE0;
-		}
-
 
 		//! Binds the buffer object (at the specified target) to the active OpenGL context.
 		void
@@ -178,16 +158,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->bind_buffer_state_sets,
 					d_state_set_keys->get_bind_buffer_key(target),
 					boost::in_place(target, buffer));
-		}
-
-		//! Returns the bound buffer object, or boost::none if no object bound.
-		boost::optional<GLBuffer::shared_ptr_type>
-		get_bind_buffer(
-				GLenum target) const
-		{
-			return query_state_set<GLBuffer::shared_ptr_type>(
-					d_state_set_keys->get_bind_buffer_key(target),
-					&GLBindBufferStateSet::d_buffer);
 		}
 
 		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
@@ -203,18 +173,6 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::cref(d_capabilities), texture_target, texture_unit, texture_object));
 		}
 
-		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
-		boost::optional<GLTexture::shared_ptr_type>
-		get_bind_texture(
-				GLenum texture_target,
-				GLenum texture_unit) const
-		{
-			return query_state_set<GLTexture::shared_ptr_type>(
-					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
-					&GLBindTextureStateSet::d_texture_object);
-		}
-
-
 		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
 		void
 		bind_vertex_array(
@@ -228,77 +186,8 @@ namespace GPlatesOpenGL
 					boost::in_place(array, array_resource));
 		}
 
-		//! Returns the currently bound vertex array object - boost::none implies the default no binding.
-		boost::optional<GLVertexArray::shared_ptr_type>
-		get_bind_vertex_array() const
-		{
-			return query_state_set<GLVertexArray::shared_ptr_type>(
-					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
-					&GLBindVertexArrayStateSet::d_array);
-		}
-
-
-		//! Sets the OpenGL colour mask.
 		void
-		set_color_mask(
-				GLboolean red,
-				GLboolean green,
-				GLboolean blue,
-				GLboolean alpha)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->color_mask_state_sets,
-					GLStateSetKeys::KEY_COLOR_MASK,
-					boost::in_place(red, green, blue, alpha));
-		}
-
-		//! Sets the OpenGL depth mask.
-		void
-		set_depth_mask(
-				GLboolean flag)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->depth_mask_state_sets,
-					GLStateSetKeys::KEY_DEPTH_MASK,
-					boost::in_place(flag));
-		}
-
-		//! Returns the current depth mask.
-		GLboolean
-		get_depth_mask() const
-		{
-			const boost::optional<GLboolean> depth_mask =
-					query_state_set<GLboolean>(
-							GLStateSetKeys::KEY_DEPTH_MASK,
-							&GLDepthMaskStateSet::d_flag);
-			return depth_mask ? depth_mask.get() : GL_TRUE/*default*/;
-		}
-
-		//! Sets the OpenGL stencil mask.
-		void
-		set_stencil_mask(
-				GLuint stencil)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->stencil_mask_state_sets,
-					GLStateSetKeys::KEY_STENCIL_MASK,
-					boost::in_place(stencil));
-		}
-
-		//! Returns the current stencil mask.
-		GLuint
-		get_stencil_mask() const
-		{
-			const boost::optional<GLuint> stencil_mask =
-					query_state_set<GLuint>(
-							GLStateSetKeys::KEY_STENCIL_MASK,
-							&GLStencilMaskStateSet::d_stencil);
-			return stencil_mask ? stencil_mask.get() : ~0/*all ones is the default*/;
-		}
-
-		//! Sets the OpenGL clear colour.
-		void
-		set_clear_color(
+		clear_color(
 				GLclampf red,
 				GLclampf green,
 				GLclampf blue,
@@ -310,9 +199,8 @@ namespace GPlatesOpenGL
 					boost::in_place(red, green, blue, alpha));
 		}
 
-		//! Sets the OpenGL clear depth value.
 		void
-		set_clear_depth(
+		clear_depth(
 				GLclampd depth)
 		{
 			set_and_apply_state_set(
@@ -321,15 +209,133 @@ namespace GPlatesOpenGL
 					boost::in_place(depth));
 		}
 
-		//! Sets the OpenGL clear stencil value.
 		void
-		set_clear_stencil(
+		clear_stencil(
 				GLint stencil)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->clear_stencil_state_sets,
 					GLStateSetKeys::KEY_CLEAR_STENCIL,
 					boost::in_place(stencil));
+		}
+
+		void
+		color_mask(
+				GLboolean red,
+				GLboolean green,
+				GLboolean blue,
+				GLboolean alpha)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->color_mask_state_sets,
+					GLStateSetKeys::KEY_COLOR_MASK,
+					boost::in_place(red, green, blue, alpha));
+		}
+
+		void
+		cull_face(
+				GLenum mode)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->cull_face_state_sets,
+					GLStateSetKeys::KEY_CULL_FACE,
+					boost::in_place(mode));
+		}
+
+		void
+		depth_mask(
+				GLboolean flag)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->depth_mask_state_sets,
+					GLStateSetKeys::KEY_DEPTH_MASK,
+					boost::in_place(flag));
+		}
+
+		void
+		disable(
+				GLenum cap)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->enable_state_sets,
+					d_state_set_keys->get_enable_key(cap),
+					boost::in_place(cap, false/*enable*/));
+		}
+
+		void
+		enable(
+				GLenum cap)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->enable_state_sets,
+					d_state_set_keys->get_enable_key(cap),
+					boost::in_place(cap, true/*enable*/));
+		}
+
+		void
+		front_face(
+				GLenum dir)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->front_face_state_sets,
+					GLStateSetKeys::KEY_FRONT_FACE,
+					boost::in_place(dir));
+		}
+
+		void
+		hint(
+				GLenum target,
+				GLenum hint_)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->hint_state_sets,
+					d_state_set_keys->get_hint_key(target),
+					boost::in_place(target, hint_));
+		}
+
+		void
+		line_width(
+				GLfloat width)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->line_width_state_sets,
+					GLStateSetKeys::KEY_LINE_WIDTH,
+					boost::in_place(width));
+		}
+
+		void
+		point_size(
+				GLfloat size)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->point_size_state_sets,
+					GLStateSetKeys::KEY_POINT_SIZE,
+					boost::in_place(size));
+		}
+
+		/**
+		 * glPolygonMode.
+		 *
+		 * NOTE: OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
+		 */
+		void
+		polygon_mode(
+				GLenum mode)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->polygon_mode_state_sets,
+					GLStateSetKeys::KEY_POLYGON_MODE_FRONT_AND_BACK,
+					boost::in_place(mode));
+		}
+
+		void
+		stencil_mask(
+				GLuint mask)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->stencil_mask_state_sets,
+					GLStateSetKeys::KEY_STENCIL_MASK,
+					boost::in_place(mask));
 		}
 
 		//! Sets the framebuffer object to bind to the active OpenGL context.
@@ -548,101 +554,6 @@ namespace GPlatesOpenGL
 					boost::in_place(fail, zfail, zpass));
 		}
 
-
-		//! Enable/disable a capability - *except* texturing (use @a set_enable_texture for that).
-		void
-		set_enable(
-				GLenum cap,
-				bool enable)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->enable_state_sets,
-					d_state_set_keys->get_enable_key(cap),
-					boost::in_place(cap, enable));
-		}
-
-		//! Returns true if the specified capability is currently enabled.
-		bool
-		get_enable(
-				GLenum cap) const
-		{
-			const boost::optional<bool> enabled =
-					query_state_set<bool>(
-							d_state_set_keys->get_enable_key(cap),
-							&GLEnableStateSet::d_enable);
-			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
-		}
-
-
-		//! Specify point size.
-		void
-		set_point_size(
-				GLfloat size)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->point_size_state_sets,
-					GLStateSetKeys::KEY_POINT_SIZE,
-					boost::in_place(size));
-		}
-
-		//! Specify line width.
-		void
-		set_line_width(
-				GLfloat width)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->line_width_state_sets,
-					GLStateSetKeys::KEY_LINE_WIDTH,
-					boost::in_place(width));
-		}
-
-		//! Specify polygon mode.
-		void
-		set_polygon_mode(
-				GLenum face,
-				GLenum mode)
-		{
-			if (face == GL_FRONT_AND_BACK)
-			{
-				// All state sets need to be orthogonal so split into separate front and back states.
-				set_and_apply_state_set(
-						d_state_set_store->polygon_mode_state_sets,
-						d_state_set_keys->get_polygon_mode_key(GL_FRONT),
-						boost::in_place(GL_FRONT, mode));
-				set_and_apply_state_set(
-						d_state_set_store->polygon_mode_state_sets,
-						d_state_set_keys->get_polygon_mode_key(GL_BACK),
-						boost::in_place(GL_BACK, mode));
-			}
-			else
-			{
-				set_and_apply_state_set(
-						d_state_set_store->polygon_mode_state_sets,
-						d_state_set_keys->get_polygon_mode_key(face),
-						boost::in_place(face, mode));
-			}
-		}
-
-		void
-		set_front_face(
-				GLenum mode)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->front_face_state_sets,
-					GLStateSetKeys::KEY_FRONT_FACE,
-					boost::in_place(mode));
-		}
-
-		void
-		set_cull_face(
-				GLenum mode)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->cull_face_state_sets,
-					GLStateSetKeys::KEY_CULL_FACE,
-					boost::in_place(mode));
-		}
-
 		void
 		set_polygon_offset(
 				GLfloat factor,
@@ -652,18 +563,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->polygon_offset_state_sets,
 					GLStateSetKeys::KEY_POLYGON_OFFSET,
 					boost::in_place(factor, units));
-		}
-
-		//! Specify a hint.
-		void
-		set_hint(
-				GLenum target,
-				GLenum mode)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->hint_state_sets,
-					d_state_set_keys->get_hint_key(target),
-					boost::in_place(target, mode));
 		}
 
 		//! Sets the alpha-blend equation (glBlendEquation).
@@ -725,6 +624,69 @@ namespace GPlatesOpenGL
 					GLStateSetKeys::KEY_DEPTH_FUNC,
 					boost::in_place(func));
 		}
+
+
+		//
+		// Get state methods.
+		//
+		// Note: Unlike the set state methods, these are only provided where needed by the OpenGL framework.
+		//
+
+
+		//! Returns the active texture unit.
+		GLenum
+		get_active_texture() const
+		{
+			const boost::optional<GLenum> active_texture_ =
+					query_state_set<GLenum>(
+							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
+							&GLActiveTextureStateSet::d_active_texture);
+			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
+			return active_texture_ ? active_texture_.get() : GLCapabilities::Texture::gl_TEXTURE0;
+		}
+
+		//! Returns the bound buffer object, or boost::none if no object bound.
+		boost::optional<GLBuffer::shared_ptr_type>
+		get_bind_buffer(
+				GLenum target) const
+		{
+			return query_state_set<GLBuffer::shared_ptr_type>(
+					d_state_set_keys->get_bind_buffer_key(target),
+					&GLBindBufferStateSet::d_buffer);
+		}
+
+		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
+		boost::optional<GLTexture::shared_ptr_type>
+		get_bind_texture(
+				GLenum texture_target,
+				GLenum texture_unit) const
+		{
+			return query_state_set<GLTexture::shared_ptr_type>(
+					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
+					&GLBindTextureStateSet::d_texture_object);
+		}
+
+		//! Returns the currently bound vertex array object - boost::none implies the default no binding.
+		boost::optional<GLVertexArray::shared_ptr_type>
+		get_bind_vertex_array() const
+		{
+			return query_state_set<GLVertexArray::shared_ptr_type>(
+					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
+					&GLBindVertexArrayStateSet::d_array);
+		}
+
+		//! Returns true if the specified capability is currently enabled.
+		bool
+		get_enable(
+				GLenum cap) const
+		{
+			const boost::optional<bool> enabled =
+					query_state_set<bool>(
+							d_state_set_keys->get_enable_key(cap),
+							&GLEnableStateSet::d_enable);
+			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
+		}
+
 
 	public: // For use by GLStateStore ...
 

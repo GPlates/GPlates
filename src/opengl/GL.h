@@ -161,12 +161,76 @@ namespace GPlatesOpenGL
 				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
 		void
+		ClearColor(
+				GLclampf red,
+				GLclampf green,
+				GLclampf blue,
+				GLclampf alpha);
+
+		void
+		ClearDepth(
+				GLclampd depth);
+
+		void
+		ColorMask(
+				GLboolean red,
+				GLboolean green,
+				GLboolean blue,
+				GLboolean alpha);
+
+		void
+		ClearStencil(
+				GLint stencil);
+
+		void
+		CullFace(
+				GLenum mode);
+
+		void
+		DepthMask(
+				GLboolean flag);
+
+		void
+		Disable(
+				GLenum cap);
+
+		void
 		DisableVertexAttribArray(
 				GLuint index);
 
 		void
+		Enable(
+				GLenum cap);
+
+		void
 		EnableVertexAttribArray(
 				GLuint index);
+
+		void
+		FrontFace(
+				GLenum dir);
+
+		void
+		Hint(
+				GLenum target,
+				GLenum hint);
+
+		void
+		LineWidth(
+				GLfloat width);
+
+		void
+		PointSize(
+				GLfloat size);
+
+		void
+		PolygonMode(
+				GLenum face,
+				GLenum mode);
+
+		void
+		StencilMask(
+				GLuint mask);
 
 		void
 		VertexAttribDivisor(

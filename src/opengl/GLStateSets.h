@@ -709,7 +709,7 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to enable/disable capabilities (except texturing - use @a GLEnableTextureStateSet for that).
+	 * Used to enable/disable capabilities.
 	 */
 	struct GLEnableStateSet :
 			public GLStateSet
@@ -740,7 +740,7 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const;
 
-		//! Utilitiy function to return the default for the specified capability.
+		//! Utility function to return the default for the specified capability.
 		static
 		bool
 		get_default(
@@ -758,8 +758,8 @@ namespace GPlatesOpenGL
 	{
 		explicit
 		GLFrontFaceStateSet(
-				GLenum mode) :
-			d_mode(mode)
+				GLenum dir) :
+			d_dir(dir)
 		{  }
 
 		virtual
@@ -782,7 +782,7 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		GLenum d_mode;
+		GLenum d_dir;
 	};
 
 	/**
@@ -793,9 +793,9 @@ namespace GPlatesOpenGL
 	{
 		GLHintStateSet(
 				GLenum target,
-				GLenum mode) :
+				GLenum hint) :
 			d_target(target),
-			d_mode(mode)
+			d_hint(hint)
 		{  }
 
 		virtual
@@ -819,7 +819,7 @@ namespace GPlatesOpenGL
 
 
 		GLenum d_target;
-		GLenum d_mode;
+		GLenum d_hint;
 	};
 
 	/**
@@ -895,15 +895,14 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to set the polygon mode.
 	 *
-	 * NOTE: Caller must detect 'GL_FRONT_AND_BACK' and specify separate objects for 'GL_FRONT' and 'GL_BACK'.
+	 * NOTE: OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
 	 */
 	struct GLPolygonModeStateSet :
 			public GLStateSet
 	{
+		explicit
 		GLPolygonModeStateSet(
-				GLenum face,
 				GLenum mode) :
-			d_face(face),
 			d_mode(mode)
 		{  }
 
@@ -927,7 +926,6 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		GLenum d_face;
 		GLenum d_mode;
 	};
 
