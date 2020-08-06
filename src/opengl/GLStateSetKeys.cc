@@ -145,6 +145,9 @@ GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 	case GL_POLYGON_SMOOTH:
 		key = KEY_ENABLE_POLYGON_SMOOTH;
 		break;
+	case GL_PRIMITIVE_RESTART:
+		key = KEY_ENABLE_PRIMITIVE_RESTART;
+		break;
 	case GL_RASTERIZER_DISCARD:
 		key = KEY_ENABLE_RASTERIZER_DISCARD;
 		break;

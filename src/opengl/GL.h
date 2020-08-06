@@ -83,26 +83,34 @@ namespace GPlatesOpenGL
 				private boost::noncopyable
 		{
 		public:
+			/**
+			 * Save the current OpenGL state (so it can be restored on exiting the current scope).
+			 *
+			 * If @a reset_to_default_state is true then reset to the default OpenGL state after saving.
+			 * This results in the default OpenGL state when entering the current scope.
+			 * Note that this does not affect the state that is saved (and hence restored).
+			 * By default it is not reset (to the default OpenGL state).
+			 */
 			explicit
 			StateScope(
 					GL &gl,
 					bool reset_to_default_state = false);
 
+			/**
+			 * Restores the OpenGL state to what it was on entering the current scope
+			 * (unless @a restore has been called).
+			 */
 			~StateScope();
 
 			/**
-			 * Opportunity to end the current state scope before the scope actually exits (when destructor is called).
+			 * Opportunity to restore the OpenGL state before the scope actually exits (when destructor is called).
 			 */
 			void
-			end_scope();
+			restore();
 
 		private:
 			GL &d_gl;
-
-			//! Snapshot of the OpenGL state on scope entry.
-			GLState::shared_ptr_type d_entry_state;
-
-			bool d_have_exited_scope;
+			bool d_have_restored;
 		};
 
 

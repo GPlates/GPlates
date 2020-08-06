@@ -28,6 +28,7 @@
 #define GPLATES_OPENGL_GLSTATE_H
 
 #include <memory> // For std::unique_ptr
+#include <stack>
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/cstdint.hpp>
@@ -59,25 +60,20 @@ namespace GPlatesOpenGL
 	class GLStateStore;
 
 	/**
-	 * Contains a snapshot of the global state of OpenGL.
+	 * Shadows the current global state of an OpenGL context.
 	 *
-	 * This is represented as a container of @a GLStateSet objects each representing a different
-	 * part of the global state.
+	 * A container of @a GLStateSet objects each representing a different part of the global state.
 	 *
 	 * Any @a GLStateSet slots that are not set represent the default OpenGL state for those slots.
 	 *
 	 * Note that only commonly used global state is shadowed here (and accessible via class @a GL).
 	 * Global state that is not shadowed will need to be modified directly via OpenGL, and hence will
-	 * have no save/restore ability (via GL::StateScope).
+	 * have no save/restore ability.
 	 */
 	class GLState :
 			private boost::noncopyable
 	{
 	public:
-		//
-		// Note that the reason boost::shared_ptr is used instead of non_null_intrusive_ptr
-		// is so these objects can be used with GPlatesUtils::ObjectCache.
-		//
 
 		//! A convenience typedef for a shared pointer to a @a GLState.
 		typedef boost::shared_ptr<GLState> shared_ptr_type;
@@ -89,52 +85,32 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a copy of this object that shares the same immutable state sets.
-		 *
-		 * Since the state sets are immutable once created, the clone state cannot be changed except
-		 * by calling @a set_and_apply_state_set (on the cloned @a GLState) to replace an existing
-		 * @a GLStateSet with a newly created one.
+		 * Reset the current state to the default OpenGL state.
 		 */
-		shared_ptr_type
-		clone() const;
+		void
+		reset_to_default();
+
+		/**
+		 * Saves a snapshot of the current state, so it can be restored later with @a restore.
+		 *
+		 * Each save should be paired with a @a restore, and nesting of save/restore pairs is allowed.
+		 */
+		void
+		save() const;
 
 
 		/**
-		 * Clears references to @a GLStateSet objects such that 'this' object behaves the
-		 * same as a newly allocated @a GLState object.
+		 * Restores the current state to the snapshot saved by the most recent @a save.
+		 *
+		 * @throws PreconditionViolationError if this method has been called more times than @a save
+		 *         (in other words each @a restore should be paired with a corresponding @a save).
 		 */
 		void
-		clear();
-
-
-		/**
-		 * Applies the state in 'this' object.
-		 *
-		 * @a current_state represents the current state as seen by OpenGL.
-		 * Only the difference in state needs to be applied to OpenGL.
-		 *
-		 * Note that upon return, @a current_state will have been modified to be equal to
-		 * the internal state of 'this' (which itself is not modified - this is a 'const' method).
-		 */
-		void
-		apply_state(
-				GLState &current_state) const;
-
-
-		/**
-		 * Merges the specified state change into 'this' state.
-		 *
-		 * Only those states that have been set on @a state_change are merged.
-		 * Any states that have not been set on @a state_changed are ignored.
-		 * This is consistent with a state *change* rather than a *full* state.
-		 */
-		void
-		merge_state_change(
-				const GLState &state_change);
+		restore();
 
 
 		//
-		// Set state methods.
+		// Set state methods (modifies individual @a GLStateSet objects).
 		//
 
 
@@ -627,7 +603,7 @@ namespace GPlatesOpenGL
 
 
 		//
-		// Get state methods.
+		// Get state methods (queries individual @a GLStateSet objects).
 		//
 		// Note: Unlike the set state methods, these are only provided where needed by the OpenGL framework.
 		//
@@ -730,7 +706,7 @@ namespace GPlatesOpenGL
 		typedef boost::uint32_t state_set_slot_flag32_type;
 
 		/**
-		 * Typedef for a set of flags indicating which state set slots have been initialised.
+		 * Typedef for a set of flags indicating a set of state set slots.
 		 *
 		 * NOTE: This used to be a boost::dynamic_bitset<> but the searching for the next non-zero
 		 * flag was consuming too much CPU.
@@ -762,6 +738,75 @@ namespace GPlatesOpenGL
 		//! Typedef for a sequence of immutable @a GLStateSet pointers.
 		typedef std::vector<state_set_ptr_type> state_set_seq_type;
 
+		/**
+		 * A snapshot of the OpenGL state.
+		 *
+		 * This represents either the current or the state recorded at a @a save.
+		 */
+		struct Snapshot :
+				private boost::noncopyable
+		{
+		public:
+			//
+			// Note that the reason boost::shared_ptr is used instead of non_null_intrusive_ptr
+			// is so these objects can be used with GPlatesUtils::ObjectCache.
+			//
+
+			//! A convenience typedef for a shared pointer to a @a Snapshot.
+			typedef boost::shared_ptr<Snapshot> shared_ptr_type;
+			typedef boost::shared_ptr<const Snapshot> shared_ptr_to_const_type;
+
+			//! A convenience typedef for a weak pointer to a @a Snapshot.
+			typedef boost::weak_ptr<Snapshot> weak_ptr_type;
+			typedef boost::weak_ptr<const Snapshot> weak_ptr_to_const_type;
+
+
+			static
+			shared_ptr_type
+			create(
+					const GLStateSetKeys &state_set_keys)
+			{
+				return shared_ptr_type(new Snapshot(state_set_keys));
+			}
+
+
+			/**
+			 * Contains the actual state sets indexed by @a state_set_key_type.
+			 *
+			 * NOTE: Unused state set slots have NULL pointers.
+			 */
+			state_set_seq_type state_sets;
+
+			/**
+			 * A flag for each state set (indexed by state set key).
+			 *
+			 * A flag value of true indicates non-null entries in @a d_state_sets.
+			 *
+			 * WARNING: The number of flags is rounded up to the nearest multiple of 32, so care
+			 * should be taken to ensure @a d_state_sets isn't dereferenced beyond the total number
+			 * of state-set slots.
+			 * We could have added extra code to take care of the last 32 state-set slots but it's
+			 * easier to just treat them as flags that are always null.
+			 */
+			state_set_slot_flags_type state_set_slots;
+
+			/**
+			 * The state set slots that have been changed since the last snapshot
+			 * (either at the last @a save or the default startup state or no saved snapshots).
+			 */
+			state_set_slot_flags_type state_set_slots_changed_since_last_snapshot;
+
+		private:
+
+			explicit
+			Snapshot(
+					const GLStateSetKeys &state_set_keys);
+		};
+
+		//! Typedef for a stack of save/restore snapshots.
+		typedef std::stack<Snapshot::shared_ptr_type> save_restore_stack_type;
+
+
 		const GLCapabilities &d_capabilities;
 
 		GLStateSetStore::non_null_ptr_type d_state_set_store;
@@ -777,24 +822,14 @@ namespace GPlatesOpenGL
 		boost::weak_ptr<GLStateStore> d_state_store;
 
 		/**
-		 * Contains the actual state sets indexed by @a state_set_key_type.
-		 *
-		 * NOTE: Unused state set slots have NULL pointers.
+		 * Snapshot representing the current OpenGL state.
 		 */
-		state_set_seq_type d_state_sets;
+		Snapshot::shared_ptr_type d_current_state;
 
 		/**
-		 * A flag for each state set (indexed by state set key).
-		 *
-		 * A flag value of true indicates non-null entries in @a d_state_sets.
-		 *
-		 * WARNING: The number of flags is rounded up to the nearest multiple of 32, so care
-		 * should be taken to ensure @a d_state_sets isn't dereferenced beyond the total number
-		 * of state-set slots.
-		 * We could have added extra code to take care of the last 32 state-set slots but it's
-		 * easier to just treat them as flags that are always null.
+		 * Stack of save/restore snapshots.
 		 */
-		state_set_slot_flags_type d_state_set_slots;
+		mutable save_restore_stack_type d_save_restore_state;
 
 
 		//! Default constructor.
@@ -817,7 +852,7 @@ namespace GPlatesOpenGL
 				state_set_key_type state_set_key,
 				const InPlaceFactoryType &state_set_constructor_args)
 		{
-			state_set_ptr_type current_state_set = d_state_sets[state_set_key];
+			state_set_ptr_type current_state_set = d_current_state->state_sets[state_set_key];
 
 			// Create a new GLStateSet of appropriate derived type and store as an immutable state set.
 			// If there's an existing state set in the current slot then it gets thrown out.
@@ -842,11 +877,12 @@ namespace GPlatesOpenGL
 			}
 
 			// Store the new state set.
-			d_state_sets[state_set_key] = new_state_set;
+			d_current_state->state_sets[state_set_key] = new_state_set;
 
 			// Mark the state set slot as not empty.
-			// This is a slightly optimised version of 'set_state_set_slot_flag()'.
-			d_state_set_slots[state_set_key >> 5] |= (1 << (state_set_key & 31));
+			set_state_set_slot_flag(d_current_state->state_set_slots, state_set_key);
+			// Also mark that the state set has changed since the last snapshot.
+			set_state_set_slot_flag(d_current_state->state_set_slots_changed_since_last_snapshot, state_set_key);
 		}
 
 
@@ -862,14 +898,13 @@ namespace GPlatesOpenGL
 				QueryMemberDataType GLStateSetType::*query_member) const
 		{
 			// If no state set on the key slot then it means that state is the default state.
-			// This is a slightly optimised version of 'is_state_set_slot_set()'.
-			if ((d_state_set_slots[state_set_key >> 5] & (1 << (state_set_key & 31))) == 0)
+			if (!is_state_set_slot_set(d_current_state->state_set_slots, state_set_key))
 			{
 				return boost::none;
 			}
 
 			const GLStateSetType *state_set =
-					dynamic_cast<const GLStateSetType *>(d_state_sets[state_set_key].get());
+					dynamic_cast<const GLStateSetType *>(d_current_state->state_sets[state_set_key].get());
 
 			// The state set derived type should match the state set slot.
 			// If not then there's a programming error somewhere.
@@ -893,14 +928,13 @@ namespace GPlatesOpenGL
 				const QueryFunctionType &query_function) const
 		{
 			// If no state set on the key slot then it means that state is the default state.
-			// This is a slightly optimised version of 'is_state_set_slot_set()'.
-			if ((d_state_set_slots[state_set_key >> 5] & (1 << (state_set_key & 31))) == 0)
+			if (!is_state_set_slot_set(d_current_state->state_set_slots, state_set_key))
 			{
 				return boost::none;
 			}
 
 			const GLStateSetType *state_set =
-					dynamic_cast<const GLStateSetType *>(d_state_sets[state_set_key].get());
+					dynamic_cast<const GLStateSetType *>(d_current_state->state_sets[state_set_key].get());
 
 			// The state set derived type should match the state set slot.
 			// If not then there's a programming error somewhere.
@@ -913,12 +947,78 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Applies 'this' state (from @a current_state) for the specified state-set slots (in the mask).
+		 * Applies @a new_state so that it becomes the current OpenGL state.
+		 *
+		 * @a state_set_slots_changed identifies which slots have changed between the current and new states.
+		 * It is used as an optimisation to avoid checking all slots.
 		 */
 		void
 		apply_state(
-				GLState &current_state,
-				const state_set_slot_flags_type &state_set_slots_mask) const;
+				const Snapshot &new_state,
+				const state_set_slot_flags_type &state_set_slots_changed);
+
+		/**
+		 * Returns an index into @a state_set_slot_flags_type for the specified state set slot.
+		 */
+		static
+		constexpr
+		unsigned int
+		state_set_slot_flag32_index(
+				state_set_key_type state_set_key)
+		{
+			return state_set_key >> 5;
+		}
+
+		/**
+		 * Returns an index into @a state_set_slot_flags_type for the specified state set slot.
+		 */
+		static
+		constexpr
+		state_set_slot_flag32_type
+		state_set_slot_flag32(
+				state_set_key_type state_set_key)
+		{
+			return 1 << (state_set_key & 31);
+		}
+
+		/**
+		 * Returns true if specified state set slot flag is set.
+		 */
+		static
+		inline
+		bool
+		is_state_set_slot_set(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_key)
+		{
+			return (state_set_slots[state_set_slot_flag32_index(state_set_key)] & state_set_slot_flag32(state_set_key)) != 0;
+		}
+
+		/**
+		 * Sets the specified state set slot flag.
+		 */
+		static
+		inline
+		void
+		set_state_set_slot_flag(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_key)
+		{
+			state_set_slots[state_set_slot_flag32_index(state_set_key)] |= state_set_slot_flag32(state_set_key);
+		}
+
+		/**
+		 * Clears the specified state set slot flag.
+		 */
+		static
+		inline
+		void
+		clear_state_set_slot_flag(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_key)
+		{
+			state_set_slots[state_set_slot_flag32_index(state_set_key)] &= ~state_set_slot_flag32(state_set_key);
+		}
 
 		/**
 		 * Returns the number of groups of 32 state-set slots required.
@@ -928,34 +1028,12 @@ namespace GPlatesOpenGL
 		static
 		unsigned int
 		get_num_state_set_slot_flag32s(
-				const GLStateSetKeys &state_set_keys);
-
-		/**
-		 * Returns true if the specified state set slot flag is set.
-		 */
-		static
-		bool
-		is_state_set_slot_set(
-				state_set_slot_flags_type &state_set_slots,
-				state_set_key_type state_set_slot);
-
-		/**
-		 * Sets the specified state set slot flag.
-		 */
-		static
-		void
-		set_state_set_slot_flag(
-				state_set_slot_flags_type &state_set_slots,
-				state_set_key_type state_set_slot);
-
-		/**
-		 * Clears the specified state set slot flag.
-		 */
-		static
-		void
-		clear_state_set_slot_flag(
-				state_set_slot_flags_type &state_set_slots,
-				state_set_key_type state_set_slot);
+				const GLStateSetKeys &state_set_keys)
+		{
+			// Slot flags go into groups of 32 (since using 32-bit integer bitmasks)...
+			return (state_set_keys.get_num_state_set_keys() >> 5) +
+				((state_set_keys.get_num_state_set_keys() & 31) != 0 ? 1 : 0);
+		}
 	};
 }
 

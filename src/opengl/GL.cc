@@ -379,9 +379,14 @@ GPlatesOpenGL::GL::StateScope::StateScope(
 		GL &gl,
 		bool reset_to_default_state) :
 	d_gl(gl),
-	d_entry_state(gl.d_current_state->clone()),
-	d_have_exited_scope(false)
+	d_have_restored(false)
 {
+	gl.d_current_state->save();
+
+	if (reset_to_default_state)
+	{
+		gl.d_current_state->reset_to_default();
+	}
 }
 
 
@@ -391,7 +396,7 @@ GPlatesOpenGL::GL::StateScope::~StateScope()
 	// But we log the exception and the location it was emitted.
 	try
 	{
-		end_scope();
+		restore();
 	}
 	catch (std::exception &exc)
 	{
@@ -405,14 +410,13 @@ GPlatesOpenGL::GL::StateScope::~StateScope()
 
 
 void
-GPlatesOpenGL::GL::StateScope::end_scope()
+GPlatesOpenGL::GL::StateScope::restore()
 {
-	if (!d_have_exited_scope)
+	if (!d_have_restored)
 	{
 		// Restore the global state to what it was on scope entry.
-		// On returning 'd_gl.d_current_state' will be equivalent to 'd_entry_state'.
-		d_entry_state->apply_state(*d_gl.d_current_state);
+		d_gl.d_current_state->restore();
 
-		d_have_exited_scope = true;
+		d_have_restored = true;
 	}
 }
