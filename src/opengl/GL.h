@@ -271,7 +271,7 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLContext::non_null_ptr_type &context,
-				const boost::shared_ptr<GLStateStore> &state_store)
+				const GLStateStore::non_null_ptr_type &state_store)
 		{
 			return non_null_ptr_type(new GL(context, state_store));
 		}
@@ -281,29 +281,13 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GL(
 				const GLContext::non_null_ptr_type &context,
-				const GLStateStore::shared_ptr_type &state_store);
+				const GLStateStore::non_null_ptr_type &state_store);
 
 
 		/**
 		 * Manages objects associated with the current OpenGL context.
 		 */
 		GLContext::non_null_ptr_type d_context;
-
-		/**
-		 * Used to efficiently allocate @a GLState objects.
-		 */
-		GLStateStore::shared_ptr_type d_state_store;
-
-		/**
-		 * Represents the default OpenGL state.
-		 *
-		 * Typically it won't have any states set which means it's the default state.
-		 * One exception is the default viewport which represents the dimensions of the window
-		 * currently attached to the OpenGL context.
-		 *
-		 * NOTE: This must be declared after @a d_state_set_store.
-		 */
-		GLState::shared_ptr_type d_default_state;
 		
 		/**
 		 * Tracks the current OpenGL global state.

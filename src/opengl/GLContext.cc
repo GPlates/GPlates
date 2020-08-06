@@ -619,14 +619,13 @@ GPlatesOpenGL::GLContext::SharedState::get_render_target_cache(
 }
 
 
-GPlatesOpenGL::GLStateStore::shared_ptr_type
+GPlatesOpenGL::GLStateStore::non_null_ptr_type
 GPlatesOpenGL::GLContext::SharedState::get_state_store(
 		const GLCapabilities &capabilities)
 {
 	if (!d_state_store)
 	{
 		d_state_store = GLStateStore::create(
-				capabilities,
 				GLStateSetStore::create(),
 				GLStateSetKeys::create(capabilities));
 	}

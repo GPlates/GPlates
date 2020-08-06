@@ -122,7 +122,6 @@ set(srcs
     GLStateSets.cc
     GLStateSets.h
     GLStateSetStore.h
-    GLStateStore.cc
     GLStateStore.h
     GLStreamBuffer.cc
     GLStreamBuffer.h

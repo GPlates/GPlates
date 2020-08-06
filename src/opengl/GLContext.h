@@ -48,6 +48,7 @@
 #include "GLShaderObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
+#include "GLStateStore.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
 
@@ -60,7 +61,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GLStateStore;
 	class GLRenderer;
 
 	/**
@@ -370,7 +370,7 @@ namespace GPlatesOpenGL
 			 * It's optional because we can't create it until we have a valid OpenGL context.
 			 * NOTE: Access using @a get_state_store.
 			 */
-			boost::optional<boost::shared_ptr<GLStateStore> > d_state_store;
+			boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
 
 			/**
 			 * The compiled draw state representing a full screen textured quad.
@@ -398,7 +398,7 @@ namespace GPlatesOpenGL
 					const render_target_key_type &render_target_key);
 
 			//! Create state store if not yet done - an OpenGL context must be valid.
-			boost::shared_ptr<GLStateStore>
+			GLStateStore::non_null_ptr_type
 			get_state_store(
 					const GLCapabilities &capabilities);
 		};

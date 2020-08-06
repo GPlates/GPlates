@@ -45,6 +45,7 @@
 #include "GLFrameBufferObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
+#include "GLStateStore.h"
 #include "GLVertexArray.h"
 #include "GLViewport.h"
 
@@ -57,8 +58,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GLStateStore;
-
 	/**
 	 * Shadows the current global state of an OpenGL context.
 	 *
@@ -82,6 +81,19 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a weak pointer to a @a GLState.
 		typedef boost::weak_ptr<GLState> weak_ptr_type;
 		typedef boost::weak_ptr<const GLState> weak_ptr_to_const_type;
+
+
+		/**
+		 * Creates a @a GLState object.
+		 */
+		static
+		shared_ptr_type
+		create(
+				const GLCapabilities &capabilities,
+				const GLStateStore::non_null_ptr_type &state_store)
+		{
+			return shared_ptr_type(new GLState(capabilities, state_store));
+		}
 
 
 		/**
@@ -663,41 +675,6 @@ namespace GPlatesOpenGL
 			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
 		}
 
-
-	public: // For use by GLStateStore ...
-
-		/**
-		 * Creates a @a GLState object - call 'GLStateStore::allocate_state()' instead.
-		 *
-		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
-		 */
-		static
-		shared_ptr_type
-		create(
-				const GLCapabilities &capabilities,
-				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
-		{
-			return shared_ptr_type(new GLState(capabilities, state_set_store, state_set_keys, state_store));
-		}
-
-		/**
-		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
-		 *
-		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
-		 */
-		static
-		std::unique_ptr<GLState>
-		create_unique(
-				const GLCapabilities &capabilities,
-				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
-		{
-			return std::unique_ptr<GLState>(new GLState(capabilities, state_set_store, state_set_keys, state_store));
-		}
-
 	private:
 
 		/**
@@ -813,15 +790,6 @@ namespace GPlatesOpenGL
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
 
 		/**
-		 * Used to efficiently allocate new @a GLState objects when cloning.
-		 *
-		 * NOTE: It's a weak reference to avoid circular shared pointers (memory island leak).
-		 * If we're asked to clone ourself *after* the state store is destroyed then we'll just
-		 * allocate on the heap instead of via the state store.
-		 */
-		boost::weak_ptr<GLStateStore> d_state_store;
-
-		/**
 		 * Snapshot representing the default OpenGL state.
 		 *
 		 * Note that the default state is represented by null state set for all slots.
@@ -842,9 +810,7 @@ namespace GPlatesOpenGL
 		//! Default constructor.
 		GLState(
 				const GLCapabilities &capabilities,
-				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
-				const boost::weak_ptr<GLStateStore> &state_store);
+				const GLStateStore::non_null_ptr_type &state_store);
 
 		/**
 		 * Sets a derived @a GLStateSet type at the specified state set key slot, and applies the state.

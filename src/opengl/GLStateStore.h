@@ -26,75 +26,54 @@
 #ifndef GPLATES_OPENGL_GLSTATESTORE_H
 #define GPLATES_OPENGL_GLSTATESTORE_H
 
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
-#include "GLState.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/ObjectCache.h"
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLCapabilities;
-
 	/**
-	 * Manages allocation of derived @a GLState classes using an object cache.
+	 * Contains @a GLStateStore and @a GLStateSetKeys.
 	 */
 	class GLStateStore :
-			public boost::enable_shared_from_this<GLStateStore>,
-			private boost::noncopyable
+			public GPlatesUtils::ReferenceCount<GLStateStore>
 	{
 	public:
-		//! A convenience typedef for a shared pointer to a @a GLStateStore.
-		typedef boost::shared_ptr<GLStateStore> shared_ptr_type;
-		typedef boost::shared_ptr<const GLStateStore> shared_ptr_to_const_type;
-
-		//! A convenience typedef for a weak pointer to a @a GLStateStore.
-		typedef boost::weak_ptr<GLStateStore> weak_ptr_type;
-		typedef boost::weak_ptr<const GLStateStore> weak_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLStateStore> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLStateStore> non_null_ptr_to_const_type;
 
 
 		/**
 		 * Creates a @a GLStateStore object.
 		 */
 		static
-		shared_ptr_type
+		non_null_ptr_type
 		create(
-				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys)
 		{
-			return shared_ptr_type(new GLStateStore(capabilities, state_set_store, state_set_keys));
+			return non_null_ptr_type(new GLStateStore(state_set_store, state_set_keys));
 		}
 
 
-		/**
-		 * Allocates a @a GLState object (that contains no state sets).
-		 *
-		 * Attempts to reuse an recycled @a GLState object, otherwise creates a new one.
-		 *
-		 * Note that the returned @a GLState object is recycled when all shared pointers to it are destroyed.
-		 * And when it's recycled 'GLState::clear()' will be called on it - ie, when the last (returned)
-		 * shared_ptr to it is destroyed.
-		 */
-		GLState::shared_ptr_type
-		allocate_state();
+		GLStateSetStore::non_null_ptr_type
+		get_state_set_store()
+		{
+			return d_state_set_store;
+		}
+
+		GLStateSetKeys::non_null_ptr_to_const_type
+		get_state_set_keys() const
+		{
+			return d_state_set_keys;
+		}
 
 	private:
-		//! Typedef for an object cache of @a GLState objects.
-		typedef GPlatesUtils::ObjectCache<GLState> state_cache_type;
-
-		/**
-		 * Context capabilities.
-		 */
-		const GLCapabilities &d_capabilities;
 
 		/**
 		 * Used by @a GLState objects to efficiently allocate its state-set objects.
@@ -106,15 +85,14 @@ namespace GPlatesOpenGL
 		 */
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
 
-		//! Cache of @a GLState objects.
-		state_cache_type::shared_ptr_type d_state_cache;
-
 
 		//! Constructor.
 		GLStateStore(
-				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
-				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys);
+				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys) :
+			d_state_set_store(state_set_store),
+			d_state_set_keys(state_set_keys)
+		{  }
 	};
 }
 

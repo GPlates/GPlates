@@ -37,11 +37,9 @@
 
 GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
-		const GLStateStore::shared_ptr_type &state_store) :
+		const GLStateStore::non_null_ptr_type &state_store) :
 	d_context(context),
-	d_state_store(state_store),
-	d_default_state(d_state_store->allocate_state()),
-	d_current_state(d_state_store->allocate_state())
+	d_current_state(GLState::create(context->get_capabilities(), state_store))
 {
 }
 
