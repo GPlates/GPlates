@@ -822,6 +822,13 @@ namespace GPlatesOpenGL
 		boost::weak_ptr<GLStateStore> d_state_store;
 
 		/**
+		 * Snapshot representing the default OpenGL state.
+		 *
+		 * Note that the default state is represented by null state set for all slots.
+		 */
+		Snapshot::shared_ptr_to_const_type d_default_state;
+
+		/**
 		 * Snapshot representing the current OpenGL state.
 		 */
 		Snapshot::shared_ptr_type d_current_state;

@@ -46,6 +46,7 @@ GPlatesOpenGL::GLState::GLState(
 	d_state_set_store(state_set_store),
 	d_state_set_keys(state_set_keys),
 	d_state_store(state_store),
+	d_default_state(Snapshot::create(*state_set_keys)), // Note that default state is empty (and remains so).
 	d_current_state(Snapshot::create(*state_set_keys))
 {
 }
@@ -54,6 +55,12 @@ GPlatesOpenGL::GLState::GLState(
 void
 GPlatesOpenGL::GLState::reset_to_default()
 {
+	// Apply the default state so that it becomes the current state.
+	apply_state(
+			*d_default_state,
+			// The state slots that change between the current state and default state are actually all
+			// the non-null state set slots of the current state because the default state is all nulls...
+			d_current_state->state_set_slots);
 }
 
 
