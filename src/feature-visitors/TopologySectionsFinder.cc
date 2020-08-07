@@ -187,8 +187,8 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 
 	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &boundary_sections = gpml_topological_network.boundary_sections();
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections.begin();
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections.end();
-	for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end_ = boundary_sections.end();
+	for ( ; boundary_sections_iter != boundary_sections_end_; ++boundary_sections_iter)
 	{
 		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = boundary_sections_iter->get();
 
