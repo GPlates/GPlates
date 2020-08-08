@@ -191,7 +191,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					GLint texture_internal_format,
 					GLenum texture_target = GL_TEXTURE_1D,
-					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
 			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
 			void
@@ -199,7 +199,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					GLint texture_internal_format,
 					GLenum texture_target = GL_TEXTURE_2D,
-					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
 			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
 			void
@@ -207,21 +207,21 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					GLint texture_internal_format,
 					GLenum texture_target,
-					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
 			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
 			void
 			set_attached_texture_array_layer(
 					GLRenderer &renderer,
 					GLint texture_internal_format,
-					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
 			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
 			void
 			set_attached_texture_array(
 					GLRenderer &renderer,
 					GLint texture_internal_format,
-					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
 			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
 			void

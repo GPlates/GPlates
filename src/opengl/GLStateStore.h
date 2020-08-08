@@ -31,7 +31,6 @@
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
 
-#include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
 
