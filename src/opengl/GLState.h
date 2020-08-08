@@ -84,9 +84,10 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLCapabilities &capabilities,
-				const GLStateStore::non_null_ptr_type &state_store)
+				const GLStateStore::non_null_ptr_type &state_store,
+				const GLViewport &default_viewport)
 		{
-			return non_null_ptr_type(new GLState(capabilities, state_store));
+			return non_null_ptr_type(new GLState(capabilities, state_store, default_viewport));
 		}
 
 
@@ -323,6 +324,16 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		scissor(
+				const GLViewport &scissor)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->scissor_state_sets,
+					GLStateSetKeys::KEY_SCISSOR,
+					boost::in_place(scissor, d_default_viewport));
+		}
+
+		void
 		stencil_mask(
 				GLuint mask)
 		{
@@ -330,6 +341,16 @@ namespace GPlatesOpenGL
 					d_state_set_store->stencil_mask_state_sets,
 					GLStateSetKeys::KEY_STENCIL_MASK,
 					boost::in_place(mask));
+		}
+
+		void
+		viewport(
+				const GLViewport &viewport)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->viewport_state_sets,
+					GLStateSetKeys::KEY_VIEWPORT,
+					boost::in_place(viewport, d_default_viewport));
 		}
 
 		//! Sets the framebuffer object to bind to the active OpenGL context.
@@ -397,99 +418,6 @@ namespace GPlatesOpenGL
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					&GLBindProgramObjectStateSet::d_program_object);
 		}
-
-
-		/**
-		 * Sets all scissor rectangles to the same parameters.
-		 *
-		 * @a default_viewport is the viewport of the window attached to the OpenGL context.
-		 */
-		void
-		set_scissor(
-				const GLViewport &scissor,
-				const GLViewport &default_viewport)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->scissor_state_sets,
-					GLStateSetKeys::KEY_SCISSOR,
-					boost::in_place(boost::cref(d_capabilities), scissor, default_viewport));
-		}
-
-		/**
-		 * Sets all scissor rectangles to the parameters specified in @a all_scissor_rectangles.
-		 *
-		 * @a default_viewport is the viewport of the window attached to the OpenGL context.
-		 */
-		void
-		set_scissor_array(
-				const std::vector<GLViewport> &all_scissor_rectangles,
-				const GLViewport &default_viewport)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->scissor_state_sets,
-					GLStateSetKeys::KEY_SCISSOR,
-					boost::in_place(boost::cref(d_capabilities), all_scissor_rectangles, default_viewport));
-		}
-
-		//! Returns the scissor rectangle for the specified viewport index.
-		boost::optional<const GLViewport &>
-		get_scissor(
-				unsigned int viewport_index) const
-		{
-			const boost::optional<const GLViewport &> scissor =
-					query_state_set<const GLViewport &, GLScissorStateSet>(
-							GLStateSetKeys::KEY_SCISSOR,
-							boost::bind(&GLScissorStateSet::get_scissor,
-									_1, boost::cref(d_capabilities), viewport_index));
-			return scissor;
-		}
-
-		/**
-		 * Sets all viewports to the same parameters.
-		 *
-		 * @a default_viewport is the viewport of the window attached to the OpenGL context.
-		 */
-		void
-		set_viewport(
-				const GLViewport &viewport,
-				const GLViewport &default_viewport)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->viewport_state_sets,
-					GLStateSetKeys::KEY_VIEWPORT,
-					boost::in_place(boost::cref(d_capabilities), viewport, default_viewport));
-		}
-
-		/**
-		 * Sets all viewports to the parameters specified in @a all_viewports.
-		 *
-		 * @a default_viewport is the viewport of the window attached to the OpenGL context.
-		 */
-		void
-		set_viewport_array(
-				const std::vector<GLViewport> &all_viewports,
-				const GLViewport &default_viewport)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->viewport_state_sets,
-					GLStateSetKeys::KEY_VIEWPORT,
-					boost::in_place(boost::cref(d_capabilities), all_viewports, default_viewport));
-		}
-
-		//! Returns the viewport for the specified viewport index.
-		boost::optional<const GLViewport &>
-		get_viewport(
-				unsigned int viewport_index) const
-		{
-			const boost::optional<const GLViewport &> viewport =
-					query_state_set<const GLViewport &, GLViewportStateSet>(
-							GLStateSetKeys::KEY_VIEWPORT,
-							boost::bind(&GLViewportStateSet::get_viewport,
-									_1, boost::cref(d_capabilities), viewport_index));
-			return viewport;
-		}
-
-
 
 		/**
 		 * Sets the stencil function.
@@ -655,6 +583,28 @@ namespace GPlatesOpenGL
 			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
 		}
 
+		//! Returns the current scissor rectangle.
+		const GLViewport &
+		get_scissor() const
+		{
+			const boost::optional<const GLViewport &> scissor =
+					query_state_set<const GLViewport &, GLScissorStateSet>(
+							GLStateSetKeys::KEY_SCISSOR,
+							&GLScissorStateSet::d_scissor_rectangle);
+			return scissor ? scissor.get() : d_default_viewport;
+		}
+
+		//! Returns the current viewport.
+		const GLViewport &
+		get_viewport() const
+		{
+			const boost::optional<const GLViewport &> viewport =
+					query_state_set<const GLViewport &, GLViewportStateSet>(
+							GLStateSetKeys::KEY_VIEWPORT,
+							&GLViewportStateSet::d_viewport);
+			return viewport ? viewport.get() : d_default_viewport;
+		}
+
 	private:
 
 		/**
@@ -774,13 +724,6 @@ namespace GPlatesOpenGL
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
 
 		/**
-		 * Snapshot representing the default OpenGL state.
-		 *
-		 * Note that the default state is represented by null state set for all slots.
-		 */
-		Snapshot::shared_ptr_to_const_type d_default_state;
-
-		/**
 		 * Snapshot representing the current OpenGL state.
 		 */
 		Snapshot::shared_ptr_type d_current_state;
@@ -790,11 +733,24 @@ namespace GPlatesOpenGL
 		 */
 		mutable save_restore_stack_type d_save_restore_state;
 
+		/**
+		 * Snapshot representing the default OpenGL state.
+		 *
+		 * Note that the default state is represented by null state set for all slots.
+		 */
+		Snapshot::shared_ptr_to_const_type d_default_state;
+
+		/**
+		 * The default viewport to use when in the default state.
+		 */
+		GLViewport d_default_viewport;
+
 
 		//! Default constructor.
 		GLState(
 				const GLCapabilities &capabilities,
-				const GLStateStore::non_null_ptr_type &state_store);
+				const GLStateStore::non_null_ptr_type &state_store,
+				const GLViewport &default_viewport);
 
 		/**
 		 * Sets a derived @a GLStateSet type at the specified state set key slot, and applies the state.

@@ -38,13 +38,15 @@
 
 GPlatesOpenGL::GLState::GLState(
 		const GLCapabilities &capabilities,
-		const GLStateStore::non_null_ptr_type &state_store) :
+		const GLStateStore::non_null_ptr_type &state_store,
+		const GLViewport &default_viewport) :
 	d_capabilities(capabilities),
 	d_state_set_store(state_store->get_state_set_store()),
 	d_state_set_keys(state_store->get_state_set_keys()),
+	d_current_state(Snapshot::create(*state_store->get_state_set_keys())),
 	// Note that default state is empty (and remains so)...
 	d_default_state(Snapshot::create(*state_store->get_state_set_keys())),
-	d_current_state(Snapshot::create(*state_store->get_state_set_keys()))
+	d_default_viewport(default_viewport)
 {
 }
 

@@ -955,20 +955,12 @@ namespace GPlatesOpenGL
 	struct GLScissorStateSet :
 			public GLStateSet
 	{
-		//! Typedef for a sequence of scissor rectangles.
-		typedef std::vector<GLViewport> scissor_rectangle_seq_type;
-
-		//! Constructor to set all scissor rectangles to the same parameters.
 		GLScissorStateSet(
-				const GLCapabilities &capabilities,
-				const GLViewport &all_scissor_rectangles,
-				const GLViewport &default_viewport);
-
-		//! Constructor to set scissor rectangles individually.
-		GLScissorStateSet(
-				const GLCapabilities &capabilities,
-				const scissor_rectangle_seq_type &all_scissor_rectangles,
-				const GLViewport &default_viewport);
+				const GLViewport &scissor_rectangle,
+				const GLViewport &default_scissor_rectangle) :
+			d_scissor_rectangle(scissor_rectangle),
+			d_default_scissor_rectangle(default_scissor_rectangle)
+		{  }
 
 		virtual
 		void
@@ -990,32 +982,8 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		/**
-		 * Returns scissor rectangle at index @a viewport_index (default index is zero).
-		 *
-		 * If there's only one scissor rectangle set (see constructor) then all scissor rectangles
-		 * are the same and it doesn't matter which index is chosen.
-		 *
-		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
-		 */
-		const GLViewport &
-		get_scissor(
-				const GLCapabilities &capabilities,
-				unsigned int viewport_index = 0) const;
-
-	private:
-		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' scissor rectangles.
-		scissor_rectangle_seq_type d_scissor_rectangles;
-
-		//! Is true if all scissor rectangles in @a d_scissor_rectangles are the same.
-		bool d_all_scissor_rectangles_are_the_same;
-
-		//! Default viewport of window currently attached to the OpenGL context.
-		GLViewport d_default_viewport;
-
-		void
-		apply_state(
-				const GLCapabilities &capabilities) const;
+		GLViewport d_scissor_rectangle;
+		GLViewport d_default_scissor_rectangle;
 	};
 
 	/**
@@ -1141,20 +1109,12 @@ namespace GPlatesOpenGL
 	struct GLViewportStateSet :
 			public GLStateSet
 	{
-		//! Typedef for a sequence of viewports.
-		typedef std::vector<GLViewport> viewport_seq_type;
-
-		//! Constructor to set all viewport to the same parameters.
 		GLViewportStateSet(
-				const GLCapabilities &capabilities,
-				const GLViewport &all_viewports,
-				const GLViewport &default_viewport);
-
-		//! Constructor to set viewports individually.
-		GLViewportStateSet(
-				const GLCapabilities &capabilities,
-				const viewport_seq_type &all_viewports,
-				const GLViewport &default_viewport);
+				const GLViewport &viewport,
+				const GLViewport &default_viewport) :
+			d_viewport(viewport),
+			d_default_viewport(default_viewport)
+		{  }
 
 		virtual
 		void
@@ -1175,32 +1135,9 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const;
 
-		/**
-		 * Returns viewport at index @a viewport_index (default index is zero).
-		 *
-		 * If there's only one viewport set (see constructor) then all viewports are the same and
-		 * it doesn't matter which index is chosen.
-		 *
-		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
-		 */
-		const GLViewport &
-		get_viewport(
-				const GLCapabilities &capabilities,
-				unsigned int viewport_index = 0) const;
 
-	private:
-		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' viewports.
-		viewport_seq_type d_viewports;
-
-		//! Is true if all viewports in @a viewports are the same.
-		bool d_all_viewports_are_the_same;
-
-		//! Default viewport of window currently attached to the OpenGL context.
+		GLViewport d_viewport;
 		GLViewport d_default_viewport;
-
-		void
-		apply_state(
-				const GLCapabilities &capabilities) const;
 	};
 }
 

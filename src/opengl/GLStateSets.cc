@@ -1357,30 +1357,6 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 }
 
 
-GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
-		const GLCapabilities &capabilities,
-		const GLViewport &all_scissor_rectangles,
-		const GLViewport &default_viewport) :
-	d_scissor_rectangles(1, all_scissor_rectangles), // Just store one viewport (no need to duplicate).
-	d_all_scissor_rectangles_are_the_same(true),
-	d_default_viewport(default_viewport)
-{
-}
-
-GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
-		const GLCapabilities &capabilities,
-		const scissor_rectangle_seq_type &all_scissor_rectangles,
-		const GLViewport &default_viewport) :
-	d_scissor_rectangles(all_scissor_rectangles),
-	d_all_scissor_rectangles_are_the_same(false),
-	d_default_viewport(default_viewport)
-{
-	// The client is required to set all available scissor rectangles.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_scissor_rectangles.size() == capabilities.viewport.gl_max_viewports,
-			GPLATES_ASSERTION_SOURCE);
-}
-
 void
 GPlatesOpenGL::GLScissorStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -1391,16 +1367,14 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 	const GLScissorStateSet &current = dynamic_cast<const GLScissorStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	// Only comparing scissor rectangles if both states have one set of scissor parameters for all rectangles.
-	if (d_all_scissor_rectangles_are_the_same && current.d_all_scissor_rectangles_are_the_same)
+	if (d_scissor_rectangle == current.d_scissor_rectangle)
 	{
-		if (d_scissor_rectangles.front() == current.d_scissor_rectangles.front())
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glScissor(
+			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
+			d_scissor_rectangle.width(), d_scissor_rectangle.height());
 }
 
 void
@@ -1409,16 +1383,14 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing scissor rectangles if there's only one set of scissor parameters for all rectangles.
-	if (d_all_scissor_rectangles_are_the_same)
+	if (d_scissor_rectangle == d_default_scissor_rectangle)
 	{
-		if (d_scissor_rectangles.front() == d_default_viewport)
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glScissor(
+			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
+			d_scissor_rectangle.width(), d_scissor_rectangle.height());
 }
 
 void
@@ -1427,66 +1399,14 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing scissor rectangles if there's only one set of scissor parameters for all rectangles.
-	if (d_all_scissor_rectangles_are_the_same)
+	if (d_scissor_rectangle == d_default_scissor_rectangle)
 	{
-		if (d_scissor_rectangles.front() == d_default_viewport)
-		{
-			return;
-		}
-	}
-
-	// Apply the default viewport to all scissor rectangles - glScissor does this for us.
-	glScissor(d_default_viewport.x(), d_default_viewport.y(), d_default_viewport.width(), d_default_viewport.height());
-}
-
-const GPlatesOpenGL::GLViewport &
-GPlatesOpenGL::GLScissorStateSet::get_scissor(
-		const GLCapabilities &capabilities,
-		unsigned int viewport_index) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			viewport_index < capabilities.viewport.gl_max_viewports,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_scissor_rectangles[viewport_index];
-}
-
-void
-GPlatesOpenGL::GLScissorStateSet::apply_state(
-		const GLCapabilities &capabilities) const
-{
-	if (d_all_scissor_rectangles_are_the_same || (d_scissor_rectangles.size() == 1))
-	{
-		// All scissor rectangles get set with 'glScissor'.
-		// Also works if the GL_ARB_viewport_array extension is not present.
-		const GLViewport &scissor_rectangle = d_scissor_rectangles.front();
-		glScissor(scissor_rectangle.x(), scissor_rectangle.y(), scissor_rectangle.width(), scissor_rectangle.height());
-
 		return;
 	}
 
-#ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (capabilities.viewport.gl_ARB_viewport_array)
-	{
-		// Put the scissor rectangle parameters into one array so can call 'glScissorArrayv' once
-		// rather than call 'glScissorIndexed' multiple times.
-		std::vector<GLint> scissor_rectangles;
-		scissor_rectangles.reserve(4 * d_scissor_rectangles.size());
-
-		BOOST_FOREACH(const GLViewport &scissor_rectangle, d_scissor_rectangles)
-		{
-			scissor_rectangles.push_back(scissor_rectangle.x());
-			scissor_rectangles.push_back(scissor_rectangle.y());
-			scissor_rectangles.push_back(scissor_rectangle.width());
-			scissor_rectangles.push_back(scissor_rectangle.height());
-		}
-
-		glScissorArrayv(0, d_scissor_rectangles.size(), &scissor_rectangles[0]);
-
-		return;
-	}
-#endif
+	glScissor(
+			d_default_scissor_rectangle.x(), d_default_scissor_rectangle.y(),
+			d_default_scissor_rectangle.width(), d_default_scissor_rectangle.height());
 }
 
 
@@ -1643,30 +1563,6 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 }
 
 
-GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
-		const GLCapabilities &capabilities,
-		const GLViewport &all_viewports,
-		const GLViewport &default_viewport) :
-	d_viewports(1, all_viewports), // Just store one viewport (no need to duplicate).
-	d_all_viewports_are_the_same(true),
-	d_default_viewport(default_viewport)
-{
-}
-
-GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
-		const GLCapabilities &capabilities,
-		const viewport_seq_type &all_viewports,
-		const GLViewport &default_viewport) :
-	d_viewports(all_viewports),
-	d_all_viewports_are_the_same(false),
-	d_default_viewport(default_viewport)
-{
-	// The client is required to set all available viewports.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_viewports.size() == capabilities.viewport.gl_max_viewports,
-			GPLATES_ASSERTION_SOURCE);
-}
-
 void
 GPlatesOpenGL::GLViewportStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -1677,16 +1573,14 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 	const GLViewportStateSet &current = dynamic_cast<const GLViewportStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	// Only comparing viewports if both states have one set of viewport parameters for all viewports.
-	if (d_all_viewports_are_the_same && current.d_all_viewports_are_the_same)
+	if (d_viewport == current.d_viewport)
 	{
-		if (d_viewports.front() == current.d_viewports.front())
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glViewport(
+			d_viewport.x(), d_viewport.y(),
+			d_viewport.width(), d_viewport.height());
 }
 
 void
@@ -1695,16 +1589,14 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing viewports if there's only one set of viewport parameters for all rectangles.
-	if (d_all_viewports_are_the_same)
+	if (d_viewport == d_default_viewport)
 	{
-		if (d_viewports.front() == d_default_viewport)
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glViewport(
+			d_viewport.x(), d_viewport.y(),
+			d_viewport.width(), d_viewport.height());
 }
 
 void
@@ -1713,66 +1605,12 @@ GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing viewports if there's only one set of viewport parameters for all rectangles.
-	if (d_all_viewports_are_the_same)
+	if (d_viewport == d_default_viewport)
 	{
-		if (d_viewports.front() == d_default_viewport)
-		{
-			return;
-		}
-	}
-
-	// Apply the default viewport to all viewports - glViewport does this for us.
-	glViewport(d_default_viewport.x(), d_default_viewport.y(), d_default_viewport.width(), d_default_viewport.height());
-}
-
-void
-GPlatesOpenGL::GLViewportStateSet::apply_state(
-		const GLCapabilities &capabilities) const
-{
-	if (d_all_viewports_are_the_same || (d_viewports.size() == 1))
-	{
-		// All viewports get set with 'glViewport'.
-		// Also works if the GL_ARB_viewport_array extension is not present.
-		const GLViewport &viewport = d_viewports.front();
-		glViewport(viewport.x(), viewport.y(), viewport.width(), viewport.height());
-
 		return;
 	}
 
-#ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (capabilities.viewport.gl_ARB_viewport_array)
-	{
-		// Put the viewport parameters into one array so can call 'glViewportArrayv' once
-		// rather than call 'glViewportIndexedf' multiple times.
-		//
-		// NOTE: the GL_ARB_viewport_array extension supports floating-point coordinates (instead of integer).
-		std::vector<GLfloat> viewports;
-		viewports.reserve(4 * d_viewports.size());
-
-		BOOST_FOREACH(const GLViewport &viewport, d_viewports)
-		{
-			viewports.push_back(viewport.x());
-			viewports.push_back(viewport.y());
-			viewports.push_back(viewport.width());
-			viewports.push_back(viewport.height());
-		}
-
-		glViewportArrayv(0, d_viewports.size(), &viewports[0]);
-
-		return;
-	}
-#endif
-}
-
-const GPlatesOpenGL::GLViewport &
-GPlatesOpenGL::GLViewportStateSet::get_viewport(
-		const GLCapabilities &capabilities,
-		unsigned int viewport_index) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			viewport_index < capabilities.viewport.gl_max_viewports,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_viewports[viewport_index];
+	glViewport(
+			d_default_viewport.x(), d_default_viewport.y(),
+			d_default_viewport.width(), d_default_viewport.height());
 }

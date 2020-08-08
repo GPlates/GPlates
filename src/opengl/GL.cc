@@ -39,7 +39,12 @@ GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::non_null_ptr_type &state_store) :
 	d_context(context),
-	d_current_state(GLState::create(context->get_capabilities(), state_store))
+	d_current_state(
+			GLState::create(
+					context->get_capabilities(),
+					state_store,
+					// Default viewport/scissor is the window dimensions returned by context...
+					GLViewport(0, 0, context->get_width(), context->get_height())))
 {
 }
 
@@ -289,6 +294,17 @@ GPlatesOpenGL::GL::PolygonMode(
 
 
 void
+GPlatesOpenGL::GL::Scissor(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height)
+{
+	d_current_state->scissor(GLViewport(x, y, width, height));
+}
+
+
+void
 GPlatesOpenGL::GL::StencilMask(
 		GLuint mask)
 {
@@ -379,6 +395,17 @@ GPlatesOpenGL::GL::VertexAttribPointer(
 			index, size, type, normalized, stride, pointer,
 			// The currently bound array buffer...
 			d_current_state->get_bind_buffer(GL_ARRAY_BUFFER));
+}
+
+
+void
+GPlatesOpenGL::GL::Viewport(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height)
+{
+	d_current_state->viewport(GLViewport(x, y, width, height));
 }
 
 

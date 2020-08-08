@@ -242,6 +242,13 @@ namespace GPlatesOpenGL
 				GLenum mode);
 
 		void
+		Scissor(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
+		void
 		StencilMask(
 				GLuint mask);
 
@@ -266,6 +273,14 @@ namespace GPlatesOpenGL
 				GLboolean normalized,
 				GLsizei stride,
 				const GLvoid *pointer);
+
+		void
+		Viewport(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
 
 	public: // For use by @a GLContext...
 
