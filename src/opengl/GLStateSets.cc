@@ -43,7 +43,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			active_texture >= GL_TEXTURE0 &&
-					active_texture < GL_TEXTURE0 + capabilities.texture.gl_max_texture_image_units,
+				active_texture < GL_TEXTURE0 + capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -157,19 +157,15 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
 	if (d_frame_buffer_object)
 	{
 		// Bind the frame buffer object.
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
+		glBindFramebuffer(GL_FRAMEBUFFER, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
 	}
 	else
 	{
 		// No framebuffer object - back to using the main framebuffer.
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 }
 
@@ -184,12 +180,8 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
 	// Bind the frame buffer object.
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
+	glBindFramebuffer(GL_FRAMEBUFFER, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
 }
 
 void
@@ -203,12 +195,8 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
 	// The default is zero (the main framebuffer).
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -225,10 +213,6 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 	{
 		return;
 	}
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
 
 	if (d_program_object)
 	{
@@ -253,10 +237,6 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 		return;
 	}
 
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
-
 	// Bind the shader program object.
 	glUseProgramObjectARB(d_program_object.get()->get_program_resource_handle());
 }
@@ -271,10 +251,6 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 	{
 		return;
 	}
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (the fixed-function pipeline).
     glUseProgramObjectARB(0);
@@ -292,7 +268,7 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + capabilities.texture.gl_max_texture_image_units,
+					texture_unit < GL_TEXTURE0 + capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -452,10 +428,6 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 	d_mode_A(mode),
 	d_separate_equations(false)
 {
-	//! The GL_EXT_blend_minmax extension exposes 'glBlendEquationEXT()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_blend_minmax,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -467,9 +439,6 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 	d_mode_A(modeAlpha),
 	d_separate_equations(true)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_blend_equation_separate,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -552,9 +521,6 @@ GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
 	d_dst_factor_A(dfactorAlpha),
 	d_separate_factors(true)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.framebuffer.gl_EXT_blend_func_separate,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -982,27 +948,6 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 	glDepthMask(GL_TRUE);
 }
 
-GPlatesOpenGL::GLDepthRange GPlatesOpenGL::GLDepthRangeStateSet::DEFAULT_DEPTH_RANGE;
-
-GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
-		const GLCapabilities &capabilities,
-		const GLDepthRange &all_depth_ranges) :
-	d_depth_ranges(1, all_depth_ranges), // Just store one viewport (no need to duplicate).
-	d_all_depth_ranges_are_the_same(true)
-{
-}
-
-GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
-		const GLCapabilities &capabilities,
-		const depth_range_seq_type &all_depth_ranges) :
-	d_depth_ranges(all_depth_ranges),
-	d_all_depth_ranges_are_the_same(false)
-{
-	// The client is required to set all available depth ranges.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_depth_ranges.size() == capabilities.viewport.gl_max_viewports,
-			GPLATES_ASSERTION_SOURCE);
-}
 
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
@@ -1014,16 +959,12 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 	const GLDepthRangeStateSet &current = dynamic_cast<const GLDepthRangeStateSet &>(current_state_set);
 
 	// Return early if no state change...
-	// Only comparing depth ranges if both states have one set of depth range parameters for all viewports.
-	if (d_all_depth_ranges_are_the_same && current.d_all_depth_ranges_are_the_same)
+	if (d_n == current.d_n && d_f == current.d_f)  // epsilon tests
 	{
-		if (d_depth_ranges.front() == current.d_depth_ranges.front())
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glDepthRange(d_n.dval(), d_f.dval());
 }
 
 void
@@ -1032,16 +973,12 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing depth ranges if have one set of depth range parameters for all viewports.
-	if (d_all_depth_ranges_are_the_same)
+	if (d_n == 0.0 && d_f == 1.0)  // epsilon tests
 	{
-		if (d_depth_ranges.front() == DEFAULT_DEPTH_RANGE)
-		{
-			return;
-		}
+		return;
 	}
 
-	apply_state(capabilities);
+	glDepthRange(d_n.dval(), d_f.dval());
 }
 
 void
@@ -1050,52 +987,12 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	// Only comparing depth ranges if have one set of depth range parameters for all viewports.
-	if (d_all_depth_ranges_are_the_same)
+	if (d_n == 0.0 && d_f == 1.0)  // epsilon tests
 	{
-		if (d_depth_ranges.front() == DEFAULT_DEPTH_RANGE)
-		{
-			return;
-		}
+		return;
 	}
 
-	// Apply the default depth range to all viewports - glDepthRange does this for us.
 	glDepthRange(0.0, 1.0);
-}
-
-void
-GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
-		const GLCapabilities &capabilities) const
-{
-	if (d_all_depth_ranges_are_the_same || (d_depth_ranges.size() == 1))
-	{
-		// All depth_ranges get set with 'glDepthRange'.
-		// Also works if the GL_ARB_viewport_array extension is not present.
-		const GLDepthRange &depth_range = d_depth_ranges.front();
-		glDepthRange(depth_range.get_z_near(), depth_range.get_z_far());
-
-		return;
-	}
-
-#ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (capabilities.viewport.gl_ARB_viewport_array)
-	{
-		// Put the depth range parameters into one array so can call 'glDepthRangeArrayv' once
-		// rather than call 'glDepthRangeIndexed' multiple times.
-		std::vector<GLclampd> depth_ranges;
-		depth_ranges.reserve(2 * d_depth_ranges.size());
-
-		BOOST_FOREACH(const GLDepthRange &depth_range, d_depth_ranges)
-		{
-			depth_ranges.push_back(depth_range.get_z_near());
-			depth_ranges.push_back(depth_range.get_z_far());
-		}
-
-		glDepthRangeArrayv(0, d_depth_ranges.size(), &depth_ranges[0]);
-
-		return;
-	}
-#endif
 }
 
 

@@ -177,6 +177,15 @@ GPlatesOpenGL::GL::DepthMask(
 
 
 void
+GPlatesOpenGL::GL::DepthRange(
+		GLclampd n,
+		GLclampd f)
+{
+	d_current_state->depth_range(n, f);
+}
+
+
+void
 GPlatesOpenGL::GL::Disable(
 		GLenum cap)
 {

@@ -37,7 +37,6 @@
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
-#include "GLDepthRange.h"
 #include "GLFrameBufferObject.h"
 #include "GLMatrix.h"
 #include "GLProgramObject.h"
@@ -659,20 +658,15 @@ namespace GPlatesOpenGL
 	struct GLDepthRangeStateSet :
 			public GLStateSet
 	{
-		//! Typedef for a sequence of depth ranges.
-		typedef std::vector<GLDepthRange> depth_range_seq_type;
-
 		//! Constructor to set all depth ranges to the same parameters.
 		explicit
 		GLDepthRangeStateSet(
 				const GLCapabilities &capabilities,
-				const GLDepthRange &depth_range);
-
-		//! Constructor to set depth ranges individually.
-		explicit
-		GLDepthRangeStateSet(
-				const GLCapabilities &capabilities,
-				const depth_range_seq_type &all_depth_ranges);
+				GLclampd n,
+				GLclampd f) :
+			d_n(n),
+			d_f(f)
+		{  }
 
 		virtual
 		void
@@ -693,19 +687,8 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const;
 
-
-	private:
-		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' depth ranges.
-		depth_range_seq_type d_depth_ranges;
-
-		//! Is true if all depth ranges in @a d_depth_ranges are the same.
-		bool d_all_depth_ranges_are_the_same;
-
-		static GLDepthRange DEFAULT_DEPTH_RANGE;
-
-		void
-		apply_state(
-				const GLCapabilities &capabilities) const;
+		GPlatesMaths::real_t d_n;
+		GPlatesMaths::real_t d_f;
 	};
 
 	/**

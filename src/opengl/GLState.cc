@@ -91,11 +91,11 @@ GPlatesOpenGL::GLState::save() const
 		state_set_slot_flag32_index < num_state_set_slot_flag32s;
 		++state_set_slot_flag32_index)
 	{
-		const state_set_slot_flag32_type state_set_slot_flag32 =
+		const state_set_slot_flag32_type current_state_set_slot_flag32 =
 				current_state_set_slots[state_set_slot_flag32_index];
 
 		// Are any of the current 32 slots non-null?
-		if (state_set_slot_flag32 != 0)
+		if (current_state_set_slot_flag32 != 0)
 		{
 			const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
 
@@ -104,7 +104,7 @@ GPlatesOpenGL::GLState::save() const
 			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
 			{
 				// Are any of the current 8 slots non-null?
-				if ((state_set_slot_flag32 & byte_mask) != 0)
+				if ((current_state_set_slot_flag32 & byte_mask) != 0)
 				{
 					unsigned int bit32 = (i << 3);
 					state_set_slot_flag32_type flag32 = (1 << bit32);
@@ -113,7 +113,7 @@ GPlatesOpenGL::GLState::save() const
 					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
 					{
 						// Is the current slot non-null?
-						if ((state_set_slot_flag32 & flag32) != 0)
+						if ((current_state_set_slot_flag32 & flag32) != 0)
 						{
 							const state_set_key_type state_set_slot = state_set_slot32 + bit32;
 
@@ -239,67 +239,46 @@ GPlatesOpenGL::GLState::apply_state(
 							const state_set_ptr_type &new_state_set = new_state_sets[state_set_slot];
 							state_set_ptr_type &current_state_set = current_state_sets[state_set_slot];
 
-							// Also including a cheap test of pointers since GLState objects can share the
-							// same immutable GLStateSet objects - if they are the same object (or both NULL)
-							// then there can be no difference in state and hence nothing to apply.
-							//
-							// Note that both state set slots should not be null otherwise that would have
-							// been recorded as a change in state.
-							if (new_state_set != current_state_set)
+							if (current_state_set && new_state_set)
 							{
-								if (current_state_set)
-								{
-									if (new_state_set)
-									{
-										// Both state sets exist.
+								// Both state sets exist.
 
-										// This is a transition from an existing state to another (possibly different)
-										// existing state - if the two states compare equal then it's possible for this
-										// to do nothing.
-										new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/);
+								// This is a transition from an existing state to another (possibly different)
+								// existing state - if the two states compare equal then it's possible for this
+								// to do nothing.
+								new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/);
 
-										// Update the current state so subsequent state-sets can see it.
-										current_state_set = new_state_set;
-									}
-									else
-									{
-										// Only the current state set exists - get it to set the default state.
-										// This is a transition from an existing state to the default state.
-										current_state_set->apply_to_default_state(d_capabilities, *this/*current_state*/);
-
-										// Update the current state so subsequent state-sets can see it since
-										// they may wish to query the current state.
-										current_state_set.reset();
-										current_state_set_slot_flag32 &= ~flag32;  // Clear the bit flag.
-									}
-								}
-								else
-								{
-									// Since both state-sets cannot be null then 'new_state_set' must be non-null.
-
-									// Only the new state set exists - get it to apply its internal state.
-									// This is a transition from the default state to a new state.
-									new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/);
-
-									// Update the current state so subsequent state-sets can see it since
-									// they may wish to query the current state.
-									current_state_set = new_state_set;
-									current_state_set_slot_flag32 |= flag32;  // Set the bit flag.
-								}
+								// Update the current state so subsequent state-sets can see it.
+								current_state_set = new_state_set;
 							}
+							else if (current_state_set)
+							{
+								// Only the current state set exists - get it to set the default state.
+								// This is a transition from an existing state to the default state.
+								current_state_set->apply_to_default_state(d_capabilities, *this/*current_state*/);
+
+								// Update the current state so subsequent state-sets can see it since
+								// they may wish to query the current state.
+								current_state_set.reset();
+								current_state_set_slot_flag32 &= ~flag32;  // Clear the bit flag.
+							}
+							else if (new_state_set)
+							{
+								// Only the new state set exists - get it to apply its internal state.
+								// This is a transition from the default state to a new state.
+								new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/);
+
+								// Update the current state so subsequent state-sets can see it since
+								// they may wish to query the current state.
+								current_state_set = new_state_set;
+								current_state_set_slot_flag32 |= flag32;  // Set the bit flag.
+							}
+							// ...note that both state set slots should not be null since
+							// we recorded a state change (between current and new).
 						}
 					}
 				}
 			}
 		}
 	}
-}
-
-
-GPlatesOpenGL::GLState::Snapshot::Snapshot(
-		const GLStateSetKeys &state_set_keys) :
-	state_sets(state_set_keys.get_num_state_set_keys()),
-	state_set_slots(GLState::get_num_state_set_slot_flag32s(state_set_keys)),
-	state_set_slots_changed_since_last_snapshot(GLState::get_num_state_set_slot_flag32s(state_set_keys))
-{
 }

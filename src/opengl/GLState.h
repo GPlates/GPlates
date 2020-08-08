@@ -34,14 +34,11 @@
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
-#include "GLDepthRange.h"
 #include "GLFrameBufferObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
@@ -54,6 +51,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "utils/ObjectPool.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
@@ -70,29 +68,25 @@ namespace GPlatesOpenGL
 	 * have no save/restore ability.
 	 */
 	class GLState :
-			private boost::noncopyable
+			public GPlatesUtils::ReferenceCount<GLState>
 	{
 	public:
 
 		//! A convenience typedef for a shared pointer to a @a GLState.
-		typedef boost::shared_ptr<GLState> shared_ptr_type;
-		typedef boost::shared_ptr<const GLState> shared_ptr_to_const_type;
-
-		//! A convenience typedef for a weak pointer to a @a GLState.
-		typedef boost::weak_ptr<GLState> weak_ptr_type;
-		typedef boost::weak_ptr<const GLState> weak_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLState> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLState> non_null_ptr_to_const_type;
 
 
 		/**
 		 * Creates a @a GLState object.
 		 */
 		static
-		shared_ptr_type
+		non_null_ptr_type
 		create(
 				const GLCapabilities &capabilities,
 				const GLStateStore::non_null_ptr_type &state_store)
 		{
-			return shared_ptr_type(new GLState(capabilities, state_store));
+			return non_null_ptr_type(new GLState(capabilities, state_store));
 		}
 
 
@@ -101,6 +95,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		reset_to_default();
+
 
 		/**
 		 * Saves a snapshot of the current state, so it can be restored later with @a restore.
@@ -238,6 +233,17 @@ namespace GPlatesOpenGL
 					d_state_set_store->depth_mask_state_sets,
 					GLStateSetKeys::KEY_DEPTH_MASK,
 					boost::in_place(flag));
+		}
+
+		void
+		depth_range(
+				GLclampd n,
+				GLclampd f)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->depth_range_state_sets,
+					GLStateSetKeys::KEY_DEPTH_RANGE,
+					boost::in_place(boost::cref(d_capabilities), n, f));
 		}
 
 		void
@@ -484,32 +490,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		/**
-		 * Sets all depth ranges to the same parameters.
-		 */
-		void
-		set_depth_range(
-				const GLDepthRange &depth_range)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->depth_range_state_sets,
-					GLStateSetKeys::KEY_DEPTH_RANGE,
-					boost::in_place(boost::cref(d_capabilities), depth_range));
-		}
-
-		/**
-		 * Sets all depth ranges to the parameters specified in @a all_depth_ranges.
-		 */
-		void
-		set_depth_range_array(
-				const std::vector<GLDepthRange> &all_depth_ranges)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->depth_range_state_sets,
-					GLStateSetKeys::KEY_DEPTH_RANGE,
-					boost::in_place(boost::cref(d_capabilities), all_depth_ranges));
-		}
-
 
 		/**
 		 * Sets the stencil function.
@@ -630,7 +610,7 @@ namespace GPlatesOpenGL
 							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
 							&GLActiveTextureStateSet::d_active_texture);
 			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
-			return active_texture_ ? active_texture_.get() : GLCapabilities::Texture::gl_TEXTURE0;
+			return active_texture_ ? active_texture_.get() : GLCapabilities::gl_TEXTURE0;
 		}
 
 		//! Returns the bound buffer object, or boost::none if no object bound.
@@ -777,7 +757,11 @@ namespace GPlatesOpenGL
 
 			explicit
 			Snapshot(
-					const GLStateSetKeys &state_set_keys);
+					const GLStateSetKeys &state_set_keys) :
+				state_sets(state_set_keys.get_num_state_set_keys()),
+				state_set_slots(GLState::get_num_state_set_slot_flag32s(state_set_keys)),
+				state_set_slots_changed_since_last_snapshot(GLState::get_num_state_set_slot_flag32s(state_set_keys))
+			{  }
 		};
 
 		//! Typedef for a stack of save/restore snapshots.

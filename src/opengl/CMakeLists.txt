@@ -29,7 +29,6 @@ set(srcs
     GLCubeSubdivisionCache.h
     GLDataRasterSource.cc
     GLDataRasterSource.h
-    GLDepthRange.h
     GLFilledPolygonsGlobeView.cc
     GLFilledPolygonsGlobeView.h
     GLFilledPolygonsMapView.cc

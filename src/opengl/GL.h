@@ -199,6 +199,11 @@ namespace GPlatesOpenGL
 				GLboolean flag);
 
 		void
+		DepthRange(
+				GLclampd n,
+				GLclampd f);
+
+		void
 		Disable(
 				GLenum cap);
 
@@ -294,7 +299,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: This must be declared after @a d_state_set_store.
 		 */
-		GLState::shared_ptr_type d_current_state;
+		GLState::non_null_ptr_type d_current_state;
 	};
 }
 
