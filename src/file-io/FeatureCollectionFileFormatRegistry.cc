@@ -211,18 +211,21 @@ namespace GPlatesFileIO
 			{
 				// Get the current default OGR configuration in case file does not have one.
 				boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
-						ogr_file_configuration =
+						default_ogr_file_configuration =
 								FeatureCollectionFileFormat::dynamic_cast_configuration<
 										const FeatureCollectionFileFormat::OGRConfiguration>(
 												file_format_registry.get_default_configuration(file_format));
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						ogr_file_configuration,
+						default_ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
-				OgrReader::read_file(file_ref, ogr_file_configuration.get(), read_errors, contains_unsaved_changes);
+				OgrReader::read_file(file_ref, default_ogr_file_configuration.get(), read_errors, contains_unsaved_changes);
 			}
 
 
+			/**
+			 * Reads a GPlates rotation (".grot") feature collection.
+			 */
 			void
 			gplates_rotation_read_feature_collection(
 					File::Reference &file_ref,
@@ -230,7 +233,8 @@ namespace GPlatesFileIO
 					ReadErrorAccumulation &read_errors,
 					bool &contains_unsaved_changes)
 			{
-				file_ref.set_file_info(file_ref.get_file_info(), file_format_registry.get_default_configuration(GPLATES_ROTATION));
+				// Note that we're not passing in the default configuration because each configuration
+				// is specific to a particular rotation file.
 				RotationFileReader::read_file(file_ref, read_errors, contains_unsaved_changes);
 			}
 
@@ -279,6 +283,7 @@ namespace GPlatesFileIO
 								file_ref.get_feature_collection(),
 								true/*use_gzip*/));
 			}
+
 			/**
 			 * Creates a PLATES4_LINE feature visitor writer.
 			 */
@@ -303,10 +308,10 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Creates a .grot file writer.
+			 * Creates a GPlates rotation (".grot") file writer.
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
-			create_grot_feature_collection_writer(
+			create_gplates_rotation_feature_collection_writer(
 					File::Reference &file_ref)
 			{
 				const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
@@ -344,16 +349,16 @@ namespace GPlatesFileIO
 			{
 				// Get the current default OGR configuration in case file does not have one.
 				boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
-						ogr_file_configuration =
+						default_ogr_file_configuration =
 								FeatureCollectionFileFormat::dynamic_cast_configuration<
 										const FeatureCollectionFileFormat::OGRConfiguration>(
 												file_format_registry.get_default_configuration(file_format));
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						ogr_file_configuration,
+						default_ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new OgrFeatureCollectionWriter(file_ref, ogr_file_configuration.get()));
+						new OgrFeatureCollectionWriter(file_ref, default_ogr_file_configuration.get()));
 			}
 
 			/**
@@ -366,17 +371,17 @@ namespace GPlatesFileIO
 			{
 				// Get the current default GMT configuration in case file does not have one.
 				boost::optional<FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type>
-						gmt_file_configuration =
+						default_gmt_file_configuration =
 								FeatureCollectionFileFormat::dynamic_cast_configuration<
 										const FeatureCollectionFileFormat::GMTConfiguration>(
 												file_format_registry.get_default_configuration(
 														FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT));
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						gmt_file_configuration,
+						default_gmt_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GMTFormatWriter(file_ref, gmt_file_configuration.get()));
+						new GMTFormatWriter(file_ref, default_gmt_file_configuration.get()));
 			}
 		}
 	}
@@ -817,7 +822,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 					boost::bind(&gplates_rotation_read_feature_collection,
 							_1, boost::cref(*this), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_grot_feature_collection_writer, _1)),
+					boost::bind(&create_gplates_rotation_feature_collection_writer, _1)),
 			grot_default_configuration);
 
 	classifications_type plate4_rotation_classification;
