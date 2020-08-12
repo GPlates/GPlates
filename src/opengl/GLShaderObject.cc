@@ -30,8 +30,8 @@
 
 #include "GLShaderObject.h"
 
+#include "GL.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLShaderSource.h"
 #include "OpenGLException.h"
 
@@ -45,93 +45,21 @@
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
-GPlatesOpenGL::GLShaderObject::resource_handle_type
-GPlatesOpenGL::GLShaderObject::Allocator::allocate(
-		const GLCapabilities &capabilities)
-{
-	// We should only get here if the shader objects extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
-
-	const resource_handle_type shader_object = glCreateShaderObjectARB(d_shader_type);
-
-	GPlatesGlobal::Assert<OpenGLException>(
-			shader_object,
-			GPLATES_ASSERTION_SOURCE,
-			"Failed to create shader object.");
-
-	return shader_object;
-}
-
-
-void
-GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
-		resource_handle_type shader_object)
-{
-	glDeleteObjectARB(shader_object);
-}
-
-
-bool
-GPlatesOpenGL::GLShaderObject::is_supported(
-		GLRenderer &renderer,
-		GLenum shader_type)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	if (!capabilities.shader.gl_ARB_shader_objects)
-	{
-		return false;
-	}
-
-	switch (shader_type)
-	{
-	case GL_VERTEX_SHADER_ARB:
-		return capabilities.shader.gl_ARB_vertex_shader;
-
-	case GL_FRAGMENT_SHADER_ARB:
-		return capabilities.shader.gl_ARB_fragment_shader;
-
-#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_EXT:
-		return capabilities.shader.gl_EXT_geometry_shader4;
-#endif
-
-	default:
-		// Unsupported capability.
-		qWarning() << "GLShaderObject: unexpected 'shader_type': " << shader_type;
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
-	}
-
-	// Shouldn't be able to get here.
-	return false;
-}
-
-
 GPlatesOpenGL::GLShaderObject::GLShaderObject(
-		GLRenderer &renderer,
+		GL &gl,
 		GLenum shader_type) :
 	d_resource(
 			resource_type::create(
-					renderer.get_capabilities(),
-					renderer.get_context().get_shared_state()->get_shader_object_resource_manager(
-							renderer,
-							shader_type)))
+					gl.get_capabilities(),
+					gl.get_context().get_shared_state()->get_shader_resource_manager(),
+					shader_type))
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// We should only get here if the shader objects extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.shader.gl_ARB_shader_objects,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
-GPlatesOpenGL::GLShaderObject::gl_shader_source(
-		GLRenderer &renderer,
+GPlatesOpenGL::GLShaderObject::shader_source(
+		GL &gl,
 		const GLShaderSource &shader_source)
 {
 	const std::vector<GLShaderSource::CodeSegment> source_code_segments =
@@ -159,26 +87,26 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), count, strings.get(), NULL);
+	glShaderSource(get_resource_handle(), count, strings.get(), NULL);
 }
 
 
 bool
-GPlatesOpenGL::GLShaderObject::gl_compile_shader(
-		GLRenderer &renderer)
+GPlatesOpenGL::GLShaderObject::compile_shader(
+		GL &gl)
 {
-	// 'gl_shader_source()' should have been called first.
+	// 'shader_source()' should have been called first.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_source_code_segments,
 			GPLATES_ASSERTION_SOURCE);
 
-	const resource_handle_type shader_resource_handle = get_shader_resource_handle();
+	const GLuint shader_resource_handle = get_resource_handle();
 
-	glCompileShaderARB(shader_resource_handle);
+	glCompileShader(shader_resource_handle);
 
 	// Check the status of the compilation.
 	GLint compile_status;
-	glGetObjectParameterivARB(shader_resource_handle, GL_OBJECT_COMPILE_STATUS_ARB, &compile_status);
+	glGetShaderiv(shader_resource_handle, GL_COMPILE_STATUS, &compile_status);
 
 	// If the compilation was unsuccessful then log a compile diagnostic message.
 	if (!compile_status)
@@ -195,7 +123,7 @@ GPlatesOpenGL::GLShaderObject::gl_compile_shader(
 std::vector<GPlatesOpenGL::GLShaderObject::FileCodeSegment>
 GPlatesOpenGL::GLShaderObject::get_file_code_segments() const
 {
-	// 'gl_shader_source()' should have been called first.
+	// 'shader_source()' should have been called first.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_source_code_segments,
 			GPLATES_ASSERTION_SOURCE);
@@ -223,6 +151,13 @@ GPlatesOpenGL::GLShaderObject::get_file_code_segments() const
 	}
 
 	return file_code_segments;
+}
+
+
+GLuint
+GPlatesOpenGL::GLShaderObject::get_resource_handle() const
+{
+	return d_resource->get_resource_handle();
 }
 
 
@@ -259,25 +194,40 @@ GPlatesOpenGL::GLShaderObject::output_info_log()
 		qDebug() << "Unable to compile OpenGL shader source code consisting of string literals: ";
 	}
 
-	const resource_handle_type shader_resource_handle = get_shader_resource_handle();
+	const GLuint shader_resource_handle = get_resource_handle();
 
 	// Determine the length of the info log message.
 	GLint info_log_length;
-	glGetObjectParameterivARB(shader_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
+	glGetShaderiv(shader_resource_handle, GL_INFO_LOG_LENGTH, &info_log_length);
 
 	// Allocate and read the info log message.
-	boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
-	glGetInfoLogARB(shader_resource_handle, info_log_length, NULL, info_log.get());
+	boost::scoped_array<GLchar> info_log(new GLchar[info_log_length]);
+	glGetShaderInfoLog(shader_resource_handle, info_log_length, NULL, info_log.get());
 	// ...the returned string is null-terminated.
 
 	qDebug() << endl << info_log.get() << endl;
 }
 
 
-GPlatesOpenGL::GLShaderObject::SourceCodeSegment::SourceCodeSegment(
-		const GLShaderSource::CodeSegment &source_code_segment) :
-	num_lines(source_code_segment.num_lines),
-	source_file_name(source_code_segment.source_file_name)
+GLuint
+GPlatesOpenGL::GLShaderObject::Allocator::allocate(
+		const GLCapabilities &capabilities,
+		GLenum shader_type)
 {
-	// We avoid copying the source code to save a little memory.
+	const GLuint shader_object = glCreateShader(shader_type);
+
+	GPlatesGlobal::Assert<OpenGLException>(
+			shader_object,
+			GPLATES_ASSERTION_SOURCE,
+			"Failed to create shader object.");
+
+	return shader_object;
+}
+
+
+void
+GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
+		GLuint shader_object)
+{
+	glDeleteShader(shader_object);
 }

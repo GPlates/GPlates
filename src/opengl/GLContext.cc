@@ -32,8 +32,7 @@
 
 #include "GLContext.h"
 
-#include "GLBufferImpl.h"
-#include "GLRenderer.h"
+#include "GL.h"
 #include "GLStateStore.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
@@ -169,10 +168,10 @@ GPlatesOpenGL::GLContext::initialise()
 }
 
 
-GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
-GPlatesOpenGL::GLContext::create_renderer()
+GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
+GPlatesOpenGL::GLContext::create_gl()
 {
-	return GLRenderer::create(
+	return GL::create(
 			get_non_null_pointer(this),
 			get_shared_state()->get_state_store(get_capabilities()));
 }
@@ -209,66 +208,28 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 {
 	get_non_shared_state()->get_frame_buffer_object_resource_manager()->deallocate_queued_resources();
 	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources();
+
 	get_shared_state()->get_texture_object_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_render_buffer_object_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_program_resource_manager()->deallocate_queued_resources();
 }
 
 
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_texture_object_resource_manager(GLTexture::resource_manager_type::create()),
+	d_render_buffer_object_resource_manager(GLRenderBufferObject::resource_manager_type::create()),
 	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
-	d_vertex_shader_object_resource_manager(
-			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_VERTEX_SHADER))),
-	d_geometry_shader_object_resource_manager(
-			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER))),
-	d_fragment_shader_object_resource_manager(
-			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_FRAGMENT_SHADER))),
-	d_program_object_resource_manager(GLProgramObject::resource_manager_type::create())
+	d_shader_resource_manager(GLShaderObject::resource_manager_type::create()),
+	d_program_resource_manager(GLProgramObject::resource_manager_type::create())
 {
-}
-
-
-const boost::shared_ptr<GPlatesOpenGL::GLShaderObject::resource_manager_type> &
-GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
-		GLRenderer &renderer,
-		GLenum shader_type) const
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	switch (shader_type)
-	{
-	case GL_VERTEX_SHADER:
-		return d_vertex_shader_object_resource_manager;
-
-	case GL_GEOMETRY_SHADER:
-		return d_geometry_shader_object_resource_manager;
-
-	case GL_FRAGMENT_SHADER:
-		return d_fragment_shader_object_resource_manager;
-
-	default:
-		break;
-	}
-
-	// Shouldn't get here.
-	throw GPlatesGlobal::PreconditionViolationError(GPLATES_ASSERTION_SOURCE);
-}
-
-
-const boost::shared_ptr<GPlatesOpenGL::GLProgramObject::resource_manager_type> &
-GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager(
-		GLRenderer &renderer) const
-{
-	return d_program_object_resource_manager;
 }
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		GLenum target,
 		GLint internalformat,
 		GLsizei width,
@@ -302,7 +263,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 
 	// Create a new object and add it to the cache.
 	const GLTexture::shared_ptr_type texture_object = texture_cache->allocate_object(
-			GLTexture::create_as_unique_ptr(renderer));
+			GLTexture::create_as_unique_ptr(gl));
 
 	//
 	// Initialise the newly created texture object.
@@ -316,7 +277,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 				GPLATES_ASSERTION_SOURCE);
 
 		GLTextureUtils::initialise_texture_object_3D(
-				renderer, texture_object, target, internalformat, width, height_opt.get(), depth_opt.get(), border, mipmapped);
+				gl, texture_object, target, internalformat, width, height_opt.get(), depth_opt.get(), border, mipmapped);
 
 		return texture_object;
 	}
@@ -325,14 +286,14 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 	{
 		// It's a 2D texture.
 		GLTextureUtils::initialise_texture_object_2D(
-				renderer, texture_object, target, internalformat, width, height_opt.get(), border, mipmapped);
+				gl, texture_object, target, internalformat, width, height_opt.get(), border, mipmapped);
 
 		return texture_object;
 	}
 
 	// It's a 1D texture.
 	GLTextureUtils::initialise_texture_object_1D(
-			renderer, texture_object, target, internalformat, width, border, mipmapped);
+			gl, texture_object, target, internalformat, width, border, mipmapped);
 
 	return texture_object;
 }
@@ -340,7 +301,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 
 GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
-		GLRenderer &renderer,
+		GL &gl,
 		unsigned int size,
 		GLenum usage)
 {
@@ -366,9 +327,9 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 	}
 
 	// Create a new buffer with the specified parameters.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(gl, GLBuffer::BUFFER_TYPE_PIXEL);
 	buffer->gl_buffer_data(
-			renderer,
+			gl,
 			// Could be 'TARGET_PIXEL_UNPACK_BUFFER' or 'TARGET_PIXEL_PACK_BUFFER'.
 			// Doesn't really matter because only used internally as a temporary bind target...
 			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
@@ -378,7 +339,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 
 	// Create a new object and add it to the cache.
 	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
-			GLPixelBuffer::create_as_unique_ptr(renderer, buffer));
+			GLPixelBuffer::create_as_unique_ptr(gl, buffer));
 
 	return pixel_buffer;
 }
@@ -386,7 +347,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 
 GPlatesOpenGL::GLVertexArray::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	// Attempt to acquire a recycled object.
 	boost::optional<GLVertexArray::shared_ptr_type> vertex_array_opt =
@@ -395,12 +356,12 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	{
 		// Create a new vertex array and add it to the cache.
 		vertex_array_opt = d_vertex_array_cache->allocate_object(
-				GLVertexArray::create_unique(renderer));
+				GLVertexArray::create_unique(gl));
 	}
 	const GLVertexArray::shared_ptr_type &vertex_array = vertex_array_opt.get();
 
 	// First clear the vertex array before returning to the client.
-	vertex_array->clear(renderer);
+	vertex_array->clear(gl);
 
 	return vertex_array;
 }
@@ -408,7 +369,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 
 GPlatesOpenGL::GLRenderBufferObject::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
-		GLRenderer &renderer,
+		GL &gl,
 		GLint internalformat,
 		GLsizei width,
 		GLsizei height)
@@ -440,10 +401,10 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
 
 	// Create a new object and add it to the cache.
 	const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_cache->allocate_object(
-			GLRenderBufferObject::create_as_unique_ptr(renderer));
+			GLRenderBufferObject::create_as_unique_ptr(gl));
 
 	// Initialise the newly created render buffer object.
-	render_buffer_object->gl_render_buffer_storage(renderer, internalformat, width, height);
+	render_buffer_object->gl_render_buffer_storage(gl, internalformat, width, height);
 
 	return render_buffer_object;
 }
@@ -451,7 +412,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
 
 boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type>
 GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
-		GLRenderer &renderer,
+		GL &gl,
 		GLint texture_internalformat,
 		bool include_depth_buffer,
 		bool include_stencil_buffer,
@@ -460,7 +421,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 {
 	// Render targets must be supported for the specified texture format.
 	if (!GLRenderTarget::is_supported(
-		renderer,
+		gl,
 		texture_internalformat,
 		include_depth_buffer,
 		include_stencil_buffer,
@@ -493,7 +454,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 	const GLRenderTarget::shared_ptr_type render_target =
 			render_target_cache->allocate_object(
 					GLRenderTarget::create_as_unique_ptr(
-							renderer,
+							gl,
 							texture_internalformat,
 							include_depth_buffer,
 							include_stencil_buffer,
@@ -506,12 +467,12 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 
 GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
 GPlatesOpenGL::GLContext::SharedState::get_full_screen_2D_textured_quad(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	// Create the sole unbound vertex array compile state if it hasn't already been created.
 	if (!d_full_screen_2D_textured_quad)
 	{
-		d_full_screen_2D_textured_quad = GLUtils::create_full_screen_2D_textured_quad(renderer);
+		d_full_screen_2D_textured_quad = GLUtils::create_full_screen_2D_textured_quad(gl);
 	}
 
 	return d_full_screen_2D_textured_quad.get();
@@ -645,7 +606,7 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 
 GPlatesOpenGL::GLFrameBufferObject::shared_ptr_type
 GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLFrameBufferObject::Classification &classification)
 {
 	// Lookup the correct framebuffer object cache (matching the specified classification).
@@ -662,12 +623,12 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 		const GLFrameBufferObject::shared_ptr_type frame_buffer_object = frame_buffer_object_opt.get();
 
 		// First clear the framebuffer attachments before returning to the client.
-		frame_buffer_object->gl_detach_all(renderer);
+		frame_buffer_object->gl_detach_all(gl);
 
 		// Also reset the glDrawBuffer(s)/glReadBuffer state to the default state for
 		// a non-default, application-created framebuffer object.
-		frame_buffer_object->gl_draw_buffers(renderer);
-		frame_buffer_object->gl_read_buffer(renderer);
+		frame_buffer_object->gl_draw_buffers(gl);
+		frame_buffer_object->gl_read_buffer(gl);
 
 		return frame_buffer_object;
 	}
@@ -675,7 +636,7 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 	// Create a new object and add it to the cache.
 	const GLFrameBufferObject::shared_ptr_type frame_buffer_object =
 			frame_buffer_object_cache->allocate_object(
-					GLFrameBufferObject::create_as_unique_ptr(renderer));
+					GLFrameBufferObject::create_as_unique_ptr(gl));
 
 	return frame_buffer_object;
 }
@@ -683,7 +644,7 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 
 bool
 GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
 		const GLFrameBufferObject::Classification &frame_buffer_object_classification) const
 {
@@ -693,7 +654,7 @@ GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
 			d_frame_buffer_state_to_status_map.find(frame_buffer_object_classification.get_tuple());
 	if (framebuffer_status_iter == d_frame_buffer_state_to_status_map.end())
 	{
-		const bool framebuffer_status = frame_buffer_object->gl_check_frame_buffer_status(renderer);
+		const bool framebuffer_status = frame_buffer_object->gl_check_frame_buffer_status(gl);
 
 		d_frame_buffer_state_to_status_map[frame_buffer_object_classification.get_tuple()] = framebuffer_status;
 
@@ -706,14 +667,14 @@ GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
 
 boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
 GPlatesOpenGL::GLContext::NonSharedState::acquire_screen_render_target(
-		GLRenderer &renderer,
+		GL &gl,
 		GLint texture_internalformat,
 		bool include_depth_buffer,
 		bool include_stencil_buffer)
 {
 	// Screen render targets must be supported.
 	if (!GLScreenRenderTarget::is_supported(
-			renderer,
+			gl,
 			texture_internalformat,
 			include_depth_buffer,
 			include_stencil_buffer))
@@ -742,7 +703,7 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_screen_render_target(
 	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
 			screen_render_target_cache->allocate_object(
 					GLScreenRenderTarget::create_as_unique_ptr(
-							renderer,
+							gl,
 							texture_internalformat,
 							include_depth_buffer,
 							include_stencil_buffer));

@@ -61,7 +61,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
@@ -134,6 +134,15 @@ namespace GPlatesOpenGL
 			}
 
 			/**
+			 * Returns the render buffer object resource manager.
+			 */
+			const boost::shared_ptr<GLRenderBufferObject::resource_manager_type> &
+			get_render_buffer_object_resource_manager() const
+			{
+				return d_render_buffer_object_resource_manager;
+			}
+
+			/**
 			 * Returns the buffer resource manager.
 			 *
 			 * The returned resource manager can create an OpenGL buffer object (eg, vertex, pixel).
@@ -145,21 +154,22 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns the shader object resource manager for the specified shader type.
-			 *
-			 * @a shader_type must be GL_VERTEX_SHADER, GL_FRAGMENT_SHADER or GL_GEOMETRY_SHADER.
+			 * Returns the shader resource manager.
 			 */
 			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
-			get_shader_object_resource_manager(
-					GLRenderer &renderer,
-					GLenum shader_type) const;
+			get_shader_resource_manager() const
+			{
+				return d_shader_resource_manager;
+			}
 
 			/**
-			 * Returns the shader program object resource manager.
+			 * Returns the shader program resource manager.
 			 */
 			const boost::shared_ptr<GLProgramObject::resource_manager_type> &
-			get_program_object_resource_manager(
-					GLRenderer &renderer) const;
+			get_program_resource_manager() const
+			{
+				return d_program_resource_manager;
+			}
 
 			/**
 			 * Returns a texture, from an internal cache, that matches the specified parameters.
@@ -189,7 +199,7 @@ namespace GPlatesOpenGL
 			 */
 			GLTexture::shared_ptr_type
 			acquire_texture(
-					GLRenderer &renderer,
+					GL &gl,
 					GLenum target,
 					GLint internalformat,
 					GLsizei width,
@@ -215,7 +225,7 @@ namespace GPlatesOpenGL
 			 */
 			GLPixelBuffer::shared_ptr_type
 			acquire_pixel_buffer(
-					GLRenderer &renderer,
+					GL &gl,
 					unsigned int size,
 					GLenum usage);
 
@@ -237,7 +247,7 @@ namespace GPlatesOpenGL
 			 */
 			GLVertexArray::shared_ptr_type
 			acquire_vertex_array(
-					GLRenderer &renderer);
+					GL &gl);
 
 			/**
 			 * Returns a render buffer, from an internal cache, that matches the specified parameters.
@@ -258,7 +268,7 @@ namespace GPlatesOpenGL
 			 */
 			GLRenderBufferObject::shared_ptr_type
 			acquire_render_buffer_object(
-					GLRenderer &renderer,
+					GL &gl,
 					GLint internalformat,
 					GLsizei width,
 					GLsizei height);
@@ -276,7 +286,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLRenderTarget::shared_ptr_type>
 			acquire_render_target(
-					GLRenderer &renderer,
+					GL &gl,
 					GLint texture_internalformat,
 					bool include_depth_buffer,
 					bool include_stencil_buffer,
@@ -296,7 +306,7 @@ namespace GPlatesOpenGL
 			 */
 			GLCompiledDrawState::non_null_ptr_to_const_type
 			get_full_screen_2D_textured_quad(
-					GLRenderer &renderer);
+					GL &gl);
 
 		private:
 
@@ -343,12 +353,10 @@ namespace GPlatesOpenGL
 
 
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
+			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
-			boost::shared_ptr<GLShaderObject::resource_manager_type> d_vertex_shader_object_resource_manager;
-			boost::shared_ptr<GLShaderObject::resource_manager_type> d_geometry_shader_object_resource_manager;
-			boost::shared_ptr<GLShaderObject::resource_manager_type> d_fragment_shader_object_resource_manager;
-
-			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_object_resource_manager;
+			boost::shared_ptr<GLShaderObject::resource_manager_type> d_shader_resource_manager;
+			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_resource_manager;
 
 			texture_cache_map_type d_texture_cache_map;
 
@@ -365,7 +373,7 @@ namespace GPlatesOpenGL
 			GPlatesUtils::ObjectCache<GLVertexArray>::shared_ptr_type d_vertex_array_cache;
 
 			/**
-			 * Used by the renderer to efficiently allocate @a GLState objects.
+			 * Used by @a GL to efficiently allocate @a GLState objects.
 			 *
 			 * It's optional because we can't create it until we have a valid OpenGL context.
 			 * NOTE: Access using @a get_state_store.
@@ -468,7 +476,7 @@ namespace GPlatesOpenGL
 			 */
 			GLFrameBufferObject::shared_ptr_type
 			acquire_frame_buffer_object(
-					GLRenderer &renderer,
+					GL &gl,
 					const GLFrameBufferObject::Classification &classification = GLFrameBufferObject::Classification());
 
 
@@ -487,7 +495,7 @@ namespace GPlatesOpenGL
 			 */
 			bool
 			check_framebuffer_object_completeness(
-					GLRenderer &renderer,
+					GL &gl,
 					const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
 					const GLFrameBufferObject::Classification &frame_buffer_object_classification) const;
 
@@ -515,20 +523,10 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLScreenRenderTarget::shared_ptr_type>
 			acquire_screen_render_target(
-					GLRenderer &renderer,
+					GL &gl,
 					GLint texture_internalformat,
 					bool include_depth_buffer,
 					bool include_stencil_buffer);
-
-
-			/**
-			 * Returns the render buffer object resource manager.
-			 */
-			const boost::shared_ptr<GLRenderBufferObject::resource_manager_type> &
-			get_render_buffer_object_resource_manager() const
-			{
-				return d_render_buffer_object_resource_manager;
-			}
 
 
 			/**
@@ -581,8 +579,6 @@ namespace GPlatesOpenGL
 			mutable frame_buffer_state_to_status_map_type d_frame_buffer_state_to_status_map;
 
 			screen_render_target_cache_map_type d_screen_render_target_cache_map;
-
-			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 
 			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
 
@@ -689,14 +685,14 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a renderer.
+		 * Creates a @a GL.
 		 *
 		 * This is the interface through which OpenGL is used to draw.
 		 *
-		 * Typically a renderer is created each time a frame needs drawing.
+		 * Typically a @a GL is created each time a frame needs drawing.
 		 */
-		GPlatesGlobal::PointerTraits<GLRenderer>::non_null_ptr_type
-		create_renderer();
+		GPlatesGlobal::PointerTraits<GL>::non_null_ptr_type
+		create_gl();
 
 
 		/**
@@ -759,7 +755,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Call this before rendering a scene.
 		 *
-		 * NOTE: Only @a GLRenderer need call this.
+		 * NOTE: Only @a GL need call this.
 		 */
 		void
 		begin_render();
@@ -768,7 +764,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Call this after rendering a scene.
 		 *
-		 * NOTE: Only @a GLRenderer need call this.
+		 * NOTE: Only @a GL need call this.
 		 */
 		void
 		end_render();
@@ -826,7 +822,7 @@ namespace GPlatesOpenGL
 		{  }
 
 		/**
-		 * Deallocates OpenGL objects that has been released but not yet destroyed/deallocated.
+		 * Deallocates OpenGL objects that have been released but not yet destroyed/deallocated.
 		 *
 		 * They are queued for deallocation so that it can be done at a time when the OpenGL
 		 * context is known to be active and hence OpenGL calls can be made.

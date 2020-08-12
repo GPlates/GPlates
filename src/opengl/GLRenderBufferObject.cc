@@ -64,7 +64,7 @@ GPlatesOpenGL::GLRenderBufferObject::GLRenderBufferObject(
 	d_resource(
 			resource_type::create(
 					renderer.get_capabilities(),
-					renderer.get_context().get_non_shared_state()->get_render_buffer_object_resource_manager()))
+					renderer.get_context().get_shared_state()->get_render_buffer_object_resource_manager()))
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 

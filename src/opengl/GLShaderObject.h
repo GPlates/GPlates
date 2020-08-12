@@ -45,16 +45,10 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
-	 * A shader object.
-	 *
-	 * Note that the 'GL_ARB_shader_objects' extension must be supported and also, for the
-	 * three currently supported shader types, the following extensions must also be supported:
-	 *  - GL_ARB_vertex_shader (for GL_VERTEX_SHADER_ARB)... this is also core in OpenGL 2.0,
-	 *  - GL_ARB_fragment_shader (for GL_FRAGMENT_SHADER_ARB)... this is also core in OpenGL 2.0,
-	 *  - GL_EXT_geometry_shader4 (for GL_GEOMETRY_SHADER_EXT)... this is also core in OpenGL 3.2.
+	 * A shader object (vertex, geometry or fragment).
 	 */
 	class GLShaderObject :
 			public GLObject,
@@ -75,43 +69,6 @@ namespace GPlatesOpenGL
 		typedef boost::weak_ptr<const GLShaderObject> weak_ptr_to_const_type;
 
 
-		//! Typedef for a resource handle.
-		typedef GLuint resource_handle_type;
-
-		/**
-		 * Policy class to allocate and deallocate OpenGL shader objects.
-		 */
-		class Allocator
-		{
-		public:
-			explicit
-			Allocator(
-					GLenum shader_type) :
-				d_shader_type(shader_type)
-			{  }
-
-			resource_handle_type
-			allocate(
-					const GLCapabilities &capabilities);
-
-			void
-			deallocate(
-					resource_handle_type texture);
-
-		private:
-			GLenum d_shader_type;
-		};
-
-		//! Typedef for a resource allocator.
-		typedef Allocator allocator_type;
-
-		//! Typedef for a resource.
-		typedef GLObjectResource<resource_handle_type, Allocator> resource_type;
-
-		//! Typedef for a resource manager.
-		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
-
-
 		/**
 		 * Represents information of one (of potentially many) shader code segments.
 		 *
@@ -121,7 +78,12 @@ namespace GPlatesOpenGL
 		{
 			explicit
 			SourceCodeSegment(
-					const GLShaderSource::CodeSegment &source_code_segment);
+					const GLShaderSource::CodeSegment &source_code_segment) :
+				num_lines(source_code_segment.num_lines),
+				source_file_name(source_code_segment.source_file_name)
+			{
+				// We avoid copying the source code to save a little memory.
+			}
 
 			unsigned int num_lines;
 
@@ -150,31 +112,17 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if @a shader_type is supported on the runtime system.
-		 *
-		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer,
-				GLenum shader_type);
-
-
-		/**
 		 * Creates a shared pointer to a @a GLShaderObject object.
 		 *
-		 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
-		 *
-		 * Note that @a is_supported must returned true for @a shader_type.
+		 * @a shader_type can be GL_VERTEX_SHADER, GL_FRAGMENT_SHADER or GL_GEOMETRY_SHADER.
 		 */
 		static
 		shared_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				GLenum shader_type)
 		{
-			return shared_ptr_type(new GLShaderObject(renderer, shader_type));
+			return shared_ptr_type(new GLShaderObject(gl, shader_type));
 		}
 
 		/**
@@ -184,11 +132,11 @@ namespace GPlatesOpenGL
 		 */
 		static
 		std::unique_ptr<GLShaderObject>
-		create_as_unique_ptr(
-				GLRenderer &renderer,
+		create_unique(
+				GL &gl,
 				GLenum shader_type)
 		{
-			return std::unique_ptr<GLShaderObject>(new GLShaderObject(renderer, shader_type));
+			return std::unique_ptr<GLShaderObject>(new GLShaderObject(gl, shader_type));
 		}
 
 
@@ -198,8 +146,8 @@ namespace GPlatesOpenGL
 		 * Each string, or code segment, in @a shader_source is an (ordered) subsection of the shader source code.
 		 */
 		void
-		gl_shader_source(
-				GLRenderer &renderer,
+		shader_source(
+				GL &gl,
 				const GLShaderSource &shader_source);
 
 
@@ -211,12 +159,12 @@ namespace GPlatesOpenGL
 		 * Note that if successfully compiled then nothing is logged.
 		 */
 		bool
-		gl_compile_shader(
-				GLRenderer &renderer);
+		compile_shader(
+				GL &gl);
 
 
 		/**
-		 * Returns the shader source set with @a gl_shader_source, or boost::none if it hasn't been called.
+		 * Returns the shader source set with @a shader_source, or boost::none if it hasn't been called.
 		 *
 		 * All shader source code segments of the shader source are returned (in compiled order).
 		 */
@@ -238,26 +186,46 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Returns the shader resource handle.
-		 *
-		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
 		 */
-		resource_handle_type
-		get_shader_resource_handle() const
+		GLuint
+		get_resource_handle() const;
+
+
+	public:  // For use by the OpenGL framework...
+
+		/**
+		 * Policy class to allocate and deallocate OpenGL shader objects.
+		 */
+		class Allocator
 		{
-			return d_resource->get_resource_handle();
-		}
+		public:
+			GLuint
+			allocate(
+					const GLCapabilities &capabilities,
+					GLenum shader_type);
+
+			void
+			deallocate(
+					GLuint texture);
+		};
+
+		//! Typedef for a resource.
+		typedef GLObjectResource<GLuint, Allocator> resource_type;
+
+		//! Typedef for a resource manager.
+		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
 	private:
 
 		resource_type::non_null_ptr_to_const_type d_resource;
 
-		//! Source code segments set by @a gl_shader_source.
+		//! Source code segments set by @a shader_source.
 		boost::optional< std::vector<SourceCodeSegment> > d_source_code_segments;
 
 
 		//! Constructor.
 		GLShaderObject(
-				GLRenderer &renderer,
+				GL &gl,
 				GLenum shader_type);
 
 		void
