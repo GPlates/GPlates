@@ -50,7 +50,7 @@ namespace GPlatesOpenGL
 	{
 	public:
 		//! Typedef for this class type.
-		typedef GLObjectResource<ResourceHandleType,ResourceAllocatorType> this_type;
+		typedef GLObjectResource<ResourceHandleType, ResourceAllocatorType> this_type;
 
 		//! A convenience typedef for a shared pointer to a non-const @a GLObjectResource.
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
@@ -74,6 +74,23 @@ namespace GPlatesOpenGL
 			return non_null_ptr_type(
 					new GLObjectResource(
 							resource_manager->allocate_resource(capabilities),
+							resource_manager));
+		}
+
+		/**
+		 * Overload supporting a ResourceAllocatorType::allocate() requiring an extra argument.
+		 */
+		template <typename AllocateArg1>
+		static
+		non_null_ptr_type
+		create(
+				const GLCapabilities &capabilities,
+				const typename resource_manager_type::shared_ptr_type &resource_manager,
+				const AllocateArg1 &allocate_arg1)
+		{
+			return non_null_ptr_type(
+					new GLObjectResource(
+							resource_manager->allocate_resource(capabilities, allocate_arg1),
 							resource_manager));
 		}
 

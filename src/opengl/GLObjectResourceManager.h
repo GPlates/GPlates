@@ -74,6 +74,18 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Overload supporting a ResourceAllocatorType::allocate() requiring an extra argument.
+		 */
+		template <typename AllocateArg1>
+		ResourceHandleType
+		allocate_resource(
+				const GLCapabilities &capabilities,
+				const AllocateArg1 &allocate_arg1)
+		{
+			return d_resource_allocator.allocate(capabilities, allocate_arg1);
+		}
+
+		/**
 		 * Queues a resource for deallocation when @a deallocate_queued_resources is called.
 		 *
 		 * This deferral of deallocation is to ensure that no OpenGL calls (to deallocate)
