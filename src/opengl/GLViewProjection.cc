@@ -28,7 +28,7 @@
 #include <cmath>
 #include <boost/optional.hpp>
 
-#include "GLProjection.h"
+#include "GLViewProjection.h"
 
 #include "GLIntersect.h"
 
@@ -40,19 +40,109 @@
 #include "maths/types.h"
 
 
-GPlatesOpenGL::GLProjection::GLProjection(
+GPlatesOpenGL::GLViewProjection::GLViewProjection(
 		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
+		const GLMatrix &view_transform,
 		const GLMatrix &projection_transform) :
 	d_viewport(viewport),
-	d_model_view_transform(model_view_transform),
+	d_view_transform(view_transform),
 	d_projection_transform(projection_transform)
 {
 }
 
 
+const boost::optional<GPlatesOpenGL::GLMatrix> &
+GPlatesOpenGL::GLViewProjection::get_inverse_view_transform() const
+{
+	if (!d_inverse_view_transform)
+	{
+		//
+		// Converts view space vector 'v' to world space vector 'w':
+		//
+		//   w = inverse(V) * v
+		//
+		GLMatrix inverse_view_transform = get_view_transform();
+		if (inverse_view_transform.glu_inverse())
+		{
+			d_inverse_view_transform = inverse_view_transform;
+		}
+		// else failed to invert so leave 'd_inverse_view_transform' as boost::none.
+	}
+
+	return d_inverse_view_transform;
+}
+
+
+const boost::optional<GPlatesOpenGL::GLMatrix> &
+GPlatesOpenGL::GLViewProjection::get_inverse_projection_transform() const
+{
+	if (!d_inverse_projection_transform)
+	{
+		//
+		// Converts clip space vector 'c' to view space vector 'v':
+		//
+		//   v = inverse(P) * c
+		//
+		GLMatrix inverse_projection_transform = get_projection_transform();
+		if (inverse_projection_transform.glu_inverse())
+		{
+			d_inverse_projection_transform = inverse_projection_transform;
+		}
+		// else failed to invert so leave 'd_inverse_projection_transform' as boost::none.
+	}
+
+	return d_inverse_projection_transform;
+}
+
+
+const GPlatesOpenGL::GLMatrix &
+GPlatesOpenGL::GLViewProjection::get_view_projection_transform() const
+{
+	if (!d_view_projection_transform)
+	{
+		//
+		// Converts world space vector 'w' to clip space vector 'c' using 'P * V':
+		//
+		//   c = P * v
+		//     = P * V * w
+		//
+		d_view_projection_transform = get_projection_transform();
+		d_view_projection_transform->gl_mult_matrix(get_view_transform());
+	}
+
+	return d_view_projection_transform.get();
+}
+
+
+const boost::optional<GPlatesOpenGL::GLMatrix> &
+GPlatesOpenGL::GLViewProjection::get_inverse_view_projection_transform() const
+{
+	if (!d_inverse_view_projection_transform)
+	{
+		//
+		// Converts clip space vector 'c' to world space vector 'w' using 'inverse(V) * inverse(P)':
+		//
+		//   w = inverse(V) * v
+		//     = inverse(V) * inverse(P) * c
+		//
+		const boost::optional<GPlatesOpenGL::GLMatrix> &inverse_view_transform = get_inverse_view_transform();
+		const boost::optional<GPlatesOpenGL::GLMatrix> &inverse_projection_transform = get_inverse_projection_transform();
+		if (inverse_view_transform && inverse_projection_transform)
+		{
+			GLMatrix inverse_view_projection_transform = inverse_view_transform.get();
+			inverse_view_projection_transform.gl_mult_matrix(inverse_projection_transform.get());
+
+			d_inverse_view_projection_transform = inverse_view_projection_transform;
+		}
+		// else failed to invert so leave 'd_inverse_view_projection_transform' as boost::none.
+	}
+
+	return d_inverse_view_projection_transform;
+}
+
+
 int
-GPlatesOpenGL::GLProjection::glu_project(
+GPlatesOpenGL::GLViewProjection::glu_project(
 		double objx,
 		double objy,
 		double objz,
@@ -61,44 +151,43 @@ GPlatesOpenGL::GLProjection::glu_project(
 		GLdouble *winz) const
 {
 	double in_vec[4] = { objx, objy, objz, 1.0 };
-	double tmp_vec[4];
+	double out_vec[4];
 
-	// Transform object-space vector first using model-view matrix then projection matrix.
-	d_model_view_transform.glu_mult_vec(in_vec, tmp_vec);
-	d_projection_transform.glu_mult_vec(tmp_vec, in_vec);
+	// Transform world-space vector to clip-space vector using the view-projection.
+	get_view_projection_transform().glu_mult_vec(in_vec, out_vec);
 
-	if (GPlatesMaths::are_almost_exactly_equal(in_vec[3], 0.0))
+	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
 	{
 		return GL_FALSE;
 	}
 
 	// Divide xyz by w.
-	const double inv_w = 1.0 / in_vec[3];
-	in_vec[0] *= inv_w;
-	in_vec[1] *= inv_w;
-	in_vec[2] *= inv_w;
+	const double inv_w = 1.0 / out_vec[3];
+	out_vec[0] *= inv_w;
+	out_vec[1] *= inv_w;
+	out_vec[2] *= inv_w;
 
 	// Convert range xyz range [-1, 1] to [0, 1].
-	in_vec[0] = 0.5 + 0.5 * in_vec[0];
-	in_vec[1] = 0.5 + 0.5 * in_vec[1];
-	in_vec[2] = 0.5 + 0.5 * in_vec[2];
+	out_vec[0] = 0.5 + 0.5 * out_vec[0];
+	out_vec[1] = 0.5 + 0.5 * out_vec[1];
+	out_vec[2] = 0.5 + 0.5 * out_vec[2];
 
 	// Convert x range [0, 1] to [viewport_x, viewport_x + viewport_width].
 	// Convert y range [0, 1] to [viewport_y, viewport_y + viewport_height].
-	in_vec[0] = d_viewport.x() + in_vec[0] * d_viewport.width();
-	in_vec[1] = d_viewport.y() + in_vec[1] * d_viewport.height();
+	out_vec[0] = d_viewport.x() + out_vec[0] * d_viewport.width();
+	out_vec[1] = d_viewport.y() + out_vec[1] * d_viewport.height();
 
 	// Return window coordinates.
-	*winx = in_vec[0];
-	*winy = in_vec[1];
-	*winz = in_vec[2];
+	*winx = out_vec[0];
+	*winy = out_vec[1];
+	*winz = out_vec[2];
 
 	return GL_TRUE;
 }
 
 
 int
-GPlatesOpenGL::GLProjection::glu_un_project(
+GPlatesOpenGL::GLViewProjection::glu_un_project(
 		double winx,
 		double winy,
 		double winz,
@@ -106,22 +195,11 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 		GLdouble *objy,
 		GLdouble *objz) const
 {
-	// Calculate inverse(projection * model_view) if it hasn't been calculated yet.
-	//
-	// Note: We only need to calculate it once for this class instance (and only when it's first needed).
-	if (!d_inverse_model_view_projection)
+	// Get the inverse view-projection transform.
+	const boost::optional<GLMatrix> &inverse_view_projection = get_inverse_view_projection_transform();
+	if (!inverse_view_projection)
 	{
-		// Combined model-view-projection is P*V*M since transforming a vector is:
-		//   v' = P*V*M*v = P*(V*(M*v))
-		// ...where vector is transformed by M first, then V and finally P.
-		GLMatrix inverse_model_view_projection(d_projection_transform);
-		inverse_model_view_projection.gl_mult_matrix(d_model_view_transform);
-		if (!inverse_model_view_projection.glu_inverse())
-		{
-			return GL_FALSE;
-		}
-
-		d_inverse_model_view_projection = inverse_model_view_projection;
+		return GL_FALSE;
 	}
 
 	double in_vec[4] = { winx, winy, winz, 1.0 };
@@ -136,9 +214,9 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 	in_vec[1] = 2 * in_vec[1] - 1;
 	in_vec[2] = 2 * in_vec[2] - 1;
 
-	// Transform window-space vector using inverse model-view-projection matrix.
+	// Transform window-space vector using inverse view-projection matrix.
 	double out_vec[4];
-	d_inverse_model_view_projection->glu_mult_vec(in_vec, out_vec);
+	inverse_view_projection->glu_mult_vec(in_vec, out_vec);
 
 	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
 	{
@@ -151,7 +229,7 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 	out_vec[1] *= inv_w;
 	out_vec[2] *= inv_w;
 
-	// Return object-space coordinates.
+	// Return world-space coordinates.
 	*objx = out_vec[0];
 	*objy = out_vec[1];
 	*objz = out_vec[2];
@@ -161,7 +239,7 @@ GPlatesOpenGL::GLProjection::glu_un_project(
 
 
 boost::optional<GPlatesOpenGL::GLIntersect::Ray>
-GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
+GPlatesOpenGL::GLViewProjection::project_window_coords_into_ray(
 		const double &window_x,
 		const double &window_y) const
 {
@@ -183,7 +261,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
 		return boost::none;
 	}
 
-	// Near and far point in 3D model space.
+	// Near and far point in 3D world space.
 	const GPlatesMaths::Vector3D near_point(near_objx, near_objy, near_objz);
 	const GPlatesMaths::Vector3D far_point(far_objx, far_objy, far_objz);
 
@@ -193,7 +271,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
 		return boost::none;
 	}
 
-	// Use the near and far 3D model-space points to form a ray with a ray origin
+	// Use the near and far 3D world-space points to form a ray with a ray origin
 	// at the near point and ray direction pointing to the far point.
 	return GLIntersect::Ray(
 			near_point,
@@ -202,7 +280,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_into_ray(
 
 
 boost::optional<GPlatesMaths::UnitVector3D>
-GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
+GPlatesOpenGL::GLViewProjection::project_window_coords_onto_unit_sphere(
 		const double &window_x,
 		const double &window_y) const
 {
@@ -212,7 +290,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 		return boost::none;
 	}
 
-	// Create a unit sphere in model space representing the globe.
+	// Create a unit sphere in world space representing the globe.
 	const GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
 
 	// Intersect the ray with the globe.
@@ -234,7 +312,7 @@ GPlatesOpenGL::GLProjection::project_window_coords_onto_unit_sphere(
 
 
 boost::optional< std::pair<double/*min*/, double/*max*/> >
-GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere(
+GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere(
 		const GPlatesMaths::UnitVector3D &projected_pixel) const
 {
 	// Find the window coordinates of the position on the unit sphere.
@@ -318,14 +396,14 @@ GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere(
 
 
 std::pair<double/*min*/, double/*max*/>
-GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere() const
+GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 {
 	//
 	// Divide the near face of the normalised device coordinates (NDC) box into 9 points and
-	// un-project them from window coordinates (see glViewport()) to model-space (x,y,z) positions.
+	// un-project them from window coordinates (see glViewport()) to world-space (x,y,z) positions.
 	//
 	// The NDC box is the rectangular clip box after the homogenous divide where the
-	// clip coordinates (after the model-view-projection transformation) gets converted
+	// clip coordinates (after the view-projection transformation) gets converted
 	// from (x, y, z, w) to (x/w, y/w, z/w).
 	// The NDC box is (-1 <= x <= 1), (-1 <= y <= 1) and (-1 <= z <= 1).
 	// Since we are using glu_un_project() there's also the viewport transformation which maps
@@ -348,7 +426,7 @@ GPlatesOpenGL::GLProjection::get_min_max_pixel_size_on_unit_sphere() const
 		{double(d_viewport.x() + d_viewport.width()),       double(d_viewport.y() + d_viewport.height())       }
 	};
 
-	// Iterate over all sample points and project onto the unit sphere in model space.
+	// Iterate over all sample points and project onto the unit sphere in world space.
 	// Some might miss the sphere (for example, the corner points of the orthographic
 	// view frustum when fully zoomed out most likely will miss the unit sphere)
 	// but the centre point will always hit (only because the way GPlates currently

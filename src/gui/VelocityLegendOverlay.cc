@@ -36,9 +36,9 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GLMatrix.h"
-#include "opengl/GLProjection.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLViewport.h"
+#include "opengl/GLViewProjection.h"
 #include "opengl/GLText.h"
 #include "opengl/OpenGLException.h"
 
@@ -93,8 +93,8 @@ namespace
 		const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
 		const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
 
-		GLProjection projection(viewport, model_view_transform, projection_transform);
-		return projection.glu_project(
+		GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
+		return view_projection.glu_project(
 					world_x, world_y, world_z,
 					&win_x, &win_y, &win_z);
 	}

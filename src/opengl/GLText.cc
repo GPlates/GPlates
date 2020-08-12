@@ -31,9 +31,9 @@
 
 #include "GLText.h"
 
-#include "GLProjection.h"
 #include "GLRenderer.h"
 #include "GLViewport.h"
+#include "GLViewProjection.h"
 #include "OpenGLException.h"
 
 #include "global/GPlatesAssert.h"
@@ -187,8 +187,8 @@ GPlatesOpenGL::GLText::render_text_3D(
 	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
 
 	GLdouble win_x, win_y, win_z;
-	GLProjection projection(viewport, model_view_transform, projection_transform);
-	projection.glu_project(
+	GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
+	view_projection.glu_project(
 			world_x, world_y, world_z,
 			&win_x, &win_y, &win_z);
 

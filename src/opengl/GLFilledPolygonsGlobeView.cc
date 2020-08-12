@@ -37,12 +37,12 @@
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLProjection.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
+#include "GLViewProjection.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -127,8 +127,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
-	GLProjection projection(viewport, model_view_transform, projection_transform);
-	const double min_pixel_size_on_unit_sphere = projection.get_min_pixel_size_on_unit_sphere();
+	GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
+	const double min_pixel_size_on_unit_sphere = view_projection.get_min_pixel_size_on_unit_sphere();
 
 	//
 	// Calculate the level-of-detail.

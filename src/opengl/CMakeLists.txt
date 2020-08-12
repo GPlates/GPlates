@@ -82,8 +82,6 @@ set(srcs
     GLPixelBufferObject.h
     GLProgramObject.cc
     GLProgramObject.h
-    GLProjection.cc
-    GLProjection.h
     GLRasterCoRegistration.cc
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc
@@ -154,6 +152,8 @@ set(srcs
     GLVertexElementBufferObject.cc
     GLVertexElementBufferObject.h
     GLViewport.h
+    GLViewProjection.cc
+    GLViewProjection.h
     GLVisualLayers.cc
     GLVisualLayers.h
     GLVisualRasterSource.cc

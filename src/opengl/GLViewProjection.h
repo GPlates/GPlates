@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_OPENGL_GLPROJECTION_H
-#define GPLATES_OPENGL_GLPROJECTION_H
+#ifndef GPLATES_OPENGL_GLVIEWPROJECTION_H
+#define GPLATES_OPENGL_GLVIEWPROJECTION_H
 
 #include <utility>
 #include <boost/optional.hpp>
@@ -42,18 +42,108 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Utilities involving projection of 3D geometry to screen-space using OpenGL.
+	 * Transform world space coordinates to window coordinates (and vice versa).
 	 *
-	 * This typically involves the OpenGL model-view and projection transforms and the viewport.
+	 * Also contains utilities for projecting window coordinates onto unit sphere and into world-space rays.
+	 *
+	 * This involves the view and projection transforms, and the viewport.
 	 */
-	class GLProjection
+	class GLViewProjection
 	{
 	public:
 
-		GLProjection(
+		GLViewProjection(
 				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
+				const GLMatrix &view_transform,
 				const GLMatrix &projection_transform);
+
+		/**
+		 * Returns viewport.
+		 *
+		 * Converts clip space to window space.
+		 */
+		const GLViewport &
+		get_viewport() const
+		{
+			return d_viewport;
+		}
+
+
+		/**
+		 * Returns view transform.
+		 *
+		 * Converts world space vector 'w' to view space vector 'v':
+		 *
+		 *   v = V * w
+		 */
+		const GLMatrix &
+		get_view_transform() const
+		{
+			return d_view_transform;
+		}
+
+		/**
+		 * Returns inverse of view transform.
+		 *
+		 * Converts view space vector 'v' to world space vector 'w':
+		 *
+		 *   w = inverse(V) * v
+		 *
+		 * Returns none if failed to invert.
+		 */
+		const boost::optional<GLMatrix> &
+		get_inverse_view_transform() const;
+
+
+		/**
+		 * Returns projection transform.
+		 *
+		 * Converts view space vector 'v' to clip space vector 'c':
+		 *
+		 *   c = P * v
+		 */
+		const GLMatrix &
+		get_projection_transform() const
+		{
+			return d_projection_transform;
+		}
+
+		/**
+		 * Returns inverse of projection transform.
+		 *
+		 * Converts clip space vector 'c' to view space vector 'v':
+		 *
+		 *   v = inverse(P) * c
+		 *
+		 * Returns none if failed to invert.
+		 */
+		const boost::optional<GLMatrix> &
+		get_inverse_projection_transform() const;
+
+
+		/**
+		 * Returns view-projection transform.
+		 *
+		 * Converts world space vector 'w' to clip space vector 'c' using 'P * V':
+		 *
+		 *   c = P * v
+		 *     = P * V * w
+		 */
+		const GLMatrix &
+		get_view_projection_transform() const;
+
+		/**
+		 * Returns inverse of view-projection transform.
+		 *
+		 * Converts clip space vector 'c' to world space vector 'w' using 'inverse(V) * inverse(P)':
+		 *
+		 *   w = inverse(V) * v
+		 *     = inverse(V) * inverse(P) * c
+		 *
+		 * Returns none if failed to invert view or projection.
+		 */
+		const boost::optional<GLMatrix> &
+		get_inverse_view_projection_transform() const;
 
 
 		/**
@@ -87,7 +177,7 @@ namespace GPlatesOpenGL
 		 * the near plane (of the projection transform) and the ray direction is towards the screen
 		 * pixel projected onto the far plane.
 		 *
-		 * Returns none if unable to invert model-view-projection transform.
+		 * Returns none if unable to invert view-projection transform.
 		 */
 		boost::optional<GLIntersect::Ray>
 		project_window_coords_into_ray(
@@ -96,13 +186,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Projects a window coordinate onto the unit sphere in model space using the specified
-		 * model-view and projection transforms and the specified viewport.
+		 * Projects a window coordinate onto the unit sphere in world space using the specified
+		 * view and projection transforms and the specified viewport.
 		 *
 		 * The returned vector is the intersection of the window coordinate (screen pixel)
 		 * projected onto the unit sphere.
 		 *
-		 * Returns false if misses the globe (or if unable to invert model-view-projection transform).
+		 * Returns false if misses the globe (or if unable to invert view-projection transform).
 		 *
 		 * The screen pixel ray is intersected with the unit sphere (centered on global origin).
 		 * The first intersection with sphere is the returned position on sphere.
@@ -136,7 +226,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto the unit sphere.
 		 *
-		 * This assumes the globe is a sphere of radius one centred at the origin in model space.
+		 * This assumes the globe is a sphere of radius one centred at the origin in world space.
 		 *
 		 * Currently this is done by sampling the corners of the view frustum and the middle
 		 * of each of the four sides of the view frustum and the centre.
@@ -178,11 +268,15 @@ namespace GPlatesOpenGL
 
 	private:
 		GLViewport d_viewport;
-		GLMatrix d_model_view_transform;
-		GLMatrix d_projection_transform;
 
-		mutable boost::optional<GLMatrix> d_inverse_model_view_projection;
+		GLMatrix d_view_transform;
+		GLMatrix d_projection_transform;
+		mutable boost::optional<GLMatrix> d_view_projection_transform;
+
+		mutable boost::optional<GLMatrix> d_inverse_view_transform;
+		mutable boost::optional<GLMatrix> d_inverse_projection_transform;
+		mutable boost::optional<GLMatrix> d_inverse_view_projection_transform;
 	};
 }
 
-#endif // GPLATES_OPENGL_GLPROJECTION_H
+#endif // GPLATES_OPENGL_GLVIEWPROJECTION_H

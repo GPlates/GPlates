@@ -70,9 +70,9 @@
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
-#include "opengl/GLProjection.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLTileRender.h"
+#include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
 
@@ -421,7 +421,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	// projected onto the globe (in terms of angular distance on the globe).
 	//
 	// Calculate the maximum distance on the unit-sphere subtended by one viewport pixel projected onto it.
-	GPlatesOpenGL::GLProjection gl_projection(
+	GPlatesOpenGL::GLViewProjection gl_view_projection(
 			// Note: We don't multiply dimensions by device-pixel-ratio since we want our max pixel size to be
 			// in device *independent* coordinates. This way if a user has a high DPI display (like Apple Retina)
 			// the higher pixel resolution does not force them to have more accurate mouse clicks...
@@ -432,7 +432,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 			// device pixels or device *independent* pixels...
 			d_gl_projection_transform);
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
-			gl_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
+			gl_view_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
 	if (!min_max_pixel_size)
 	{
@@ -593,7 +593,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	// We use a QPainter (attached to the canvas) since it is used for (OpenGL) text rendering.
 	QPainter painter(this);
 
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 
 	// Start a begin_render/end_render scope.
 	//
