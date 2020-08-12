@@ -41,45 +41,27 @@ namespace GPlatesOpenGL
 	 * code segments come from a string or a file (useful for logging failed compiles/links).
 	 *
 	 * One or more shader source code segments can be grouped together before they are compiled.
+	 *
+	 * NOTE: The "#version 330" directive (GLSL equivalent of OpenGL 3.3 core profile) is internally
+	 *       specified as an extra shader segment that is internally added as the first code segment.
+	 *       
+	 *       This is because the "#version" directive must come before any non-commented source code
+	 *       (which otherwise would be difficult with multiple source code segments where usually the
+	 *       "#version" directive is placed in the segment defining the 'main()' shader function and
+	 *       this usually is the last segment because it uses other shader segments and hence they
+	 *       must be defined first).
+	 *       
+	 *       So the solution used here is this class will create a "#version" shader segment and add it as
+	 *       the first shader segment which means it should not be defined in any supplied shader segments.
 	 */
 	class GLShaderSource
 	{
 	public:
 
 		/**
-		 * GLSL shader versions.
-		 *
-		 * This is used instead of specifying "#version 120" for example.
-		 * This is because the "#version" directive must come before any non-commented source code.
-		 * But this becomes difficult with multiple source code segments because usually the
-		 * "#version" directive is placed in the segment defining the 'main()' shader function and
-		 * this usually is the last segment (because it uses other shader segments and hence they
-		 * must be defined first).
-		 * So the solution used here is this class will create a "#version" shader segment and add
-		 * it as the first shader segment which means it should not be defined in any supplied
-		 * shader segments.
+		 * The filename of the shader source file (Qt resource) containing shader utilities.
 		 */
-		enum ShaderVersion
-		{
-			GLSL_1_1, // Corresponds to OpenGL version 2.0
-			GLSL_1_2, // Corresponds to OpenGL version 2.1
-			GLSL_1_3, // Corresponds to OpenGL version 3.0
-			GLSL_1_4, // Corresponds to OpenGL version 3.1
-			GLSL_1_5, // Corresponds to OpenGL version 3.2
-			GLSL_3_3, // Corresponds to OpenGL version 3.3
-			GLSL_4_0, // Corresponds to OpenGL version 4.0
-			GLSL_4_1, // Corresponds to OpenGL version 4.1
-			GLSL_4_2,  // Corresponds to OpenGL version 4.2
-
-			NUM_SHADER_VERSIONS // This must be last.
-		};
-
-		/**
-		 * The default shader version to compile.
-		 *
-		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 also supports OpenGL 2.1.
-		 */
-		static const ShaderVersion DEFAULT_SHADER_VERSION = GLSL_1_2;
+		static const QString UTILS_FILE_NAME;
 
 
 		/**
@@ -108,33 +90,37 @@ namespace GPlatesOpenGL
 		static
 		GLShaderSource
 		create_shader_source_from_file(
-				const QString& shader_source_file_name,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
+				const QString& shader_source_file_name);
 
 
 		//! Default constructor contains no shader source.
 		explicit
-		GLShaderSource(
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
+		GLShaderSource();
 
 		/**
 		 * Implicit converting constructor when only a single shader source is required.
 		 *
 		 * Note that the @a shader_source char array is copied internally, so it doesn't have to
 		 * remain in existence after this call.
+		 *
+		 * Note: Do not specify the "#version" directive in the shader source.
 		 */
 		GLShaderSource(
-				const char *shader_source,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
+				const char *shader_source);
 
-		//! Implicit converting constructor when only a single shader source is required.
+		/**
+		 * Implicit converting constructor when only a single shader source is required.
+		 *
+		 * Note: Do not specify the "#version" directive in the shader source.
+		 */
 		GLShaderSource(
-				const QByteArray &shader_source,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
+				const QByteArray &shader_source);
 
 
 		/**
 		 * Adds a shader source code segment.
+		 *
+		 * Note: Do not specify the "#version" directive in the shader source.
 		 */
 		void
 		add_code_segment(
@@ -142,6 +128,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Adds a shader source code segment.
+		 *
+		 * Note: Do not specify the "#version" directive in the shader source.
 		 */
 		void
 		add_code_segment(
@@ -149,6 +137,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Adds a shader source code segment from a file.
+		 *
+		 * Note: Do not specify the "#version" directive in the shader source.
 		 */
 		void
 		add_code_segment_from_file(
@@ -169,19 +159,15 @@ namespace GPlatesOpenGL
 		std::vector<CodeSegment>
 		get_code_segments() const;
 
-		//! Returns the shader version.
-		ShaderVersion
-		get_shader_version() const
-		{
-			return d_shader_version;
-		}
-
 	private:
 
-		//! Shader source version strings.
-		static const char *SHADER_VERSION_STRINGS[NUM_SHADER_VERSIONS];
+		/**
+		 * Shader source version string.
+		 *
+		 * Use OpenGL 3.3 core which in GLSL is "#version 330" without also specifying "compatibility".
+		 */
+		static const char *SHADER_VERSION_STRING;
 
-		ShaderVersion d_shader_version;
 
 		//! Code segment containing #version and any #extension found in code segments added by client.
 		CodeSegment d_initial_code_segment;

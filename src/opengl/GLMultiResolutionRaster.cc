@@ -1472,7 +1472,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		fragment_shader_source.add_code_segment("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
 
 		// Then add the GLSL function to bilinearly interpolate.
-		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);

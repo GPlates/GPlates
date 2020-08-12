@@ -69,12 +69,12 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 {
 	// Vertex shader.
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;
-	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(VERTEX_SHADER);
 
 	// Fragment shader.
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
-	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
 
 	// Vertex-fragment program.

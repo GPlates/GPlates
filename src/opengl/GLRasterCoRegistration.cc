@@ -910,7 +910,7 @@ GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 	vertex_shader_source.add_code_segment(vertex_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
 	vertex_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	// Then add the GLSL 'main()' function.
 	vertex_shader_source.add_code_segment_from_file(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE_FILE_NAME);

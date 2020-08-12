@@ -365,12 +365,12 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 		//
 
 		GLShaderSource iso_surface_fragment_shader_source(SHADER_VERSION);
-		iso_surface_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		iso_surface_fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		iso_surface_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		iso_surface_fragment_shader_source.add_code_segment_from_file(ISO_SURFACE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
 		GLShaderSource iso_surface_vertex_shader_source(SHADER_VERSION);
-		iso_surface_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		iso_surface_vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		iso_surface_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		iso_surface_vertex_shader_source.add_code_segment_from_file(ISO_SURFACE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
@@ -483,17 +483,17 @@ GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
 		//
 
 		GLShaderSource surface_fill_mask_vertex_shader_source(SHADER_VERSION);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		GLShaderSource surface_fill_mask_geometry_shader_source(SHADER_VERSION);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_GEOMETRY_SHADER_SOURCE_FILE_NAME);
 
 		GLShaderSource surface_fill_mask_fragment_shader_source(SHADER_VERSION);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
@@ -2797,7 +2797,7 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 	// Add the '#define' statements first.
 	vertex_shader_source.add_code_segment(shader_defines);
 	// Then add the general utilities.
-	vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	// Then add the scalar field utilities.
 	vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
@@ -2807,7 +2807,7 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 	// Add the '#define' statements first.
 	fragment_shader_source.add_code_segment(shader_defines);
 	// Then add the general utilities.
-	fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	// Then add the scalar field utilities.
 	fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
@@ -2826,7 +2826,7 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 		// Add the '#define' statements first.
 		geometry_shader_source.add_code_segment(shader_defines);
 		// Then add the general utilities.
-		geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		geometry_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		// Then add the scalar field utilities.
 		geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
 		// Then add the GLSL 'main()' function.

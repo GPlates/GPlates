@@ -121,14 +121,14 @@ GPlatesGui::LayerPainter::initialise(
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;
 	vertex_shader_source.add_code_segment(shader_defines);
 	vertex_shader_source.add_code_segment_from_file(
-			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_VERTEX_SHADER);
 
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
 	fragment_shader_source.add_code_segment(shader_defines);
 	fragment_shader_source.add_code_segment_from_file(
-			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_FRAGMENT_SHADER);
 
@@ -157,7 +157,7 @@ GPlatesGui::LayerPainter::initialise(
 	axially_symmetric_mesh_vertex_shader_source.add_code_segment(
 			axially_symmetric_mesh_shader_defines);
 	axially_symmetric_mesh_vertex_shader_source.add_code_segment_from_file(
-			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	axially_symmetric_mesh_vertex_shader_source.add_code_segment_from_file(
 			RENDER_AXIALLY_SYMMETRIC_MESH_VERTEX_SHADER);
 
@@ -165,7 +165,7 @@ GPlatesGui::LayerPainter::initialise(
 	axially_symmetric_mesh_fragment_shader_source.add_code_segment(
 			axially_symmetric_mesh_shader_defines);
 	axially_symmetric_mesh_fragment_shader_source.add_code_segment_from_file(
-			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	axially_symmetric_mesh_fragment_shader_source.add_code_segment_from_file(
 			RENDER_AXIALLY_SYMMETRIC_MESH_FRAGMENT_SHADER);
 

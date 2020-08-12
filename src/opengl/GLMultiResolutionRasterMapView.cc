@@ -728,7 +728,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 
 	// Then add the GLSL function to bilinearly interpolate.
 	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 
 	// Then add the GLSL 'main()' function.
 	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
@@ -771,7 +771,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 
 	// Then add the GLSL function to bilinearly interpolate.
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 
 	// Then add the GLSL 'main()' function.
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(

@@ -210,12 +210,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_m
 			"#define MAP_VIEW\n";
 
 		GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		fragment_shader_source.add_code_segment(shader_defines);
 		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		vertex_shader_source.add_code_segment(shader_defines);
 		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
@@ -280,12 +280,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 			"#define ACTIVE_POLYGONS\n";
 
 		GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		fragment_shader_source.add_code_segment(shader_defines);
 		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
 		GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 		vertex_shader_source.add_code_segment(shader_defines);
 		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
@@ -2939,7 +2939,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	// Add the '#define' statements first.
 	vertex_shader_source.add_code_segment(vertex_and_fragment_shader_defines.c_str());
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	// Then add the GLSL 'main()' function.
 	vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
@@ -2947,7 +2947,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	// Add the '#define' statements first.
 	fragment_shader_source.add_code_segment(vertex_and_fragment_shader_defines.c_str());
 	// Add the bilinear GLSL function for bilinear texture filtering and rotation by quaternion.
-	fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	// Then add the GLSL 'main()' function.
 	fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 

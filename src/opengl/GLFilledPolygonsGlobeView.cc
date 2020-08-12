@@ -1156,13 +1156,13 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 	GLShaderSource render_tile_to_scene_with_clipping_vertex_shader_source;
 	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
 	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 	GLShaderSource render_tile_to_scene_with_clipping_fragment_shader_source;
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	d_render_tile_to_scene_with_clipping_program_object =
@@ -1175,13 +1175,13 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 	GLShaderSource render_tile_to_scene_with_lighting_vertex_shader_source;
 	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment("#define SURFACE_LIGHTING\n");
 	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 	GLShaderSource render_tile_to_scene_with_lighting_fragment_shader_source;
 	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment("#define SURFACE_LIGHTING\n");
 	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	d_render_tile_to_scene_with_lighting_program_object =
@@ -1196,7 +1196,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 			"#define ENABLE_CLIPPING\n"
 			"#define SURFACE_LIGHTING\n");
 	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 	GLShaderSource render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source;
@@ -1204,7 +1204,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 			"#define ENABLE_CLIPPING\n"
 			"#define SURFACE_LIGHTING\n");
 	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment_from_file(
-			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	d_render_tile_to_scene_with_clipping_and_lighting_program_object =

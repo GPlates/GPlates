@@ -33,54 +33,40 @@
 #include "global/GPlatesAssert.h"
 
 
-const char *GPlatesOpenGL::GLShaderSource::SHADER_VERSION_STRINGS[GPlatesOpenGL::GLShaderSource::NUM_SHADER_VERSIONS] =
-{
-	"#version 110\n",
-	"#version 120\n",
-	"#version 130\n",
-	"#version 140\n",
-	"#version 150 compatibility\n",
-	"#version 330 compatibility\n",
-	"#version 400 compatibility\n",
-	"#version 410 compatibility\n",
-	"#version 420 compatibility\n"
-};
+// The filename of the shader source file (Qt resource) containing shader utilities.
+const QString GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME(":/opengl/utils.glsl");
+
+// Use OpenGL 3.3 core which in GLSL is "#version 330" without also specifying "compatibility".
+const char *GPlatesOpenGL::GLShaderSource::SHADER_VERSION_STRING = "#version 330\n";
 
 
 GPlatesOpenGL::GLShaderSource
 GPlatesOpenGL::GLShaderSource::create_shader_source_from_file(
-		const QString& shader_source_file_name,
-		ShaderVersion shader_version)
+		const QString& shader_source_file_name)
 {
-	GLShaderSource shader_source(shader_version);
+	GLShaderSource shader_source;
 	shader_source.add_code_segment_from_file(shader_source_file_name);
 	return shader_source;
 }
 
 
-GPlatesOpenGL::GLShaderSource::GLShaderSource(
-		ShaderVersion shader_version) :
-	d_shader_version(shader_version),
-	d_initial_code_segment(SHADER_VERSION_STRINGS[shader_version])
+GPlatesOpenGL::GLShaderSource::GLShaderSource() :
+	d_initial_code_segment(SHADER_VERSION_STRING)
 {
 }
 
 
 GPlatesOpenGL::GLShaderSource::GLShaderSource(
-		const char *shader_source,
-		ShaderVersion shader_version) :
-	d_shader_version(shader_version),
-	d_initial_code_segment(SHADER_VERSION_STRINGS[shader_version])
+		const char *shader_source) :
+	d_initial_code_segment(SHADER_VERSION_STRING)
 {
 	add_code_segment(shader_source);
 }
 
 
 GPlatesOpenGL::GLShaderSource::GLShaderSource(
-		const QByteArray &shader_source,
-		ShaderVersion shader_version) :
-	d_shader_version(shader_version),
-	d_initial_code_segment(SHADER_VERSION_STRINGS[shader_version])
+		const QByteArray &shader_source) :
+	d_initial_code_segment(SHADER_VERSION_STRING)
 {
 	add_code_segment(shader_source);
 }
