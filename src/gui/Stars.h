@@ -71,7 +71,7 @@ namespace GPlatesGui
 		GPlatesPresentation::ViewState &d_view_state;
 
 		//! Shader program to render stars.
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program_object;
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
 		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;

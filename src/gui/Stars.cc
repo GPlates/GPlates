@@ -189,41 +189,43 @@ namespace
 		// Make sure we leave the OpenGL global state the way it was.
 		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-		// Bind vertex array.
+		// Bind vertex array object.
 		gl.BindVertexArray(vertex_array);
 
-		// Bind vertex element buffer.
+		// Bind vertex element buffer object to currently bound vertex array object.
 		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
-		// Transfer vertex element data to bound vertex element buffer.
+		// Transfer vertex element data to currently bound vertex element buffer object.
 		glBufferData(
 				GL_ELEMENT_ARRAY_BUFFER,
 				vertex_elements.size() * sizeof(vertex_elements[0]),
 				vertex_elements.data(),
 				GL_STATIC_DRAW);
 
-		// Bind vertex buffer.
+		// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
 		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 
-		// Transfer vertex data to bound vertex buffer.
+		// Transfer vertex data to currently bound vertex buffer object.
 		glBufferData(
 				GL_ARRAY_BUFFER,
 				vertices.size() * sizeof(vertices[0]),
 				vertices.data(),
 				GL_STATIC_DRAW);
 
-		// Specify vertex attributes (position and colour) in bound vertex buffer.
+		// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
+		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+		// to currently bound vertex array object.
 		gl.EnableVertexAttribArray(0);
-		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertices[0]), BUFFER_OFFSET(vertex_type, x));
+		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
 		gl.EnableVertexAttribArray(1);
-		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertices[0]), BUFFER_OFFSET(vertex_type, colour));
+		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, colour));
 	}
 
 
 	void
 	render_stars(
 			GPlatesOpenGL::GL &gl,
-			GPlatesOpenGL::GLProgramObject::shared_ptr_type program_object,
+			GPlatesOpenGL::GLProgramObject::shared_ptr_type program,
 			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
 			unsigned int num_small_star_vertices,
 			unsigned int num_small_star_indices,
@@ -249,7 +251,7 @@ namespace
 				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 		// Use the shader program.
-		gl.UseProgram(program_object);
+		gl.UseProgram(program);
 
 		// Bind the vertex array.
 		gl.BindVertexArray(vertex_array);
@@ -297,25 +299,37 @@ GPlatesGui::Stars::Stars(
 {
 	// Vertex shader.
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;
-	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(VERTEX_SHADER);
+	GPlatesOpenGL::GLShaderObject::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShaderObject::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	if (!vertex_shader->compile_shader(gl))
+	{
+		return;
+	}
 
 	// Fragment shader.
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
-	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
+	GPlatesOpenGL::GLShaderObject::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShaderObject::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	if (!fragment_shader->compile_shader(gl))
+	{
+		return;
+	}
 
 	// Vertex-fragment program.
-	d_program_object = GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-			gl,
-			vertex_shader_source,
-			fragment_shader_source);
-	if (!d_program_object)
+	GPlatesOpenGL::GLProgramObject::shared_ptr_type program = GPlatesOpenGL::GLProgramObject::create(gl);
+	program->attach_shader(gl, vertex_shader);
+	program->attach_shader(gl, fragment_shader);
+	if (!program->link_program(gl))
 	{
 		// If shader compilation/linking failed (eg, due to lack of runtime shader support) then
 		// return early. This means no stars will get rendered later.
 		return;
 	}
+	d_program = program;
 
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -349,7 +363,7 @@ GPlatesGui::Stars::paint(
 {
 	if (d_view_state.get_show_stars())
 	{
-		if (d_program_object)
+		if (d_program)
 		{
 			// Either render directly to the framebuffer, or use OpenGL feedback to render to the
 			// QPainter's paint device.
@@ -357,7 +371,7 @@ GPlatesGui::Stars::paint(
 			{
 				render_stars(
 						gl,
-						d_program_object.get(),
+						d_program.get(),
 						d_vertex_array,
 						d_num_small_star_vertices,
 						d_num_small_star_indices,
@@ -374,7 +388,7 @@ GPlatesGui::Stars::paint(
 
 				render_stars(
 						gl,
-						d_program_object.get(),
+						d_program.get(),
 						d_vertex_array,
 						d_num_small_star_vertices,
 						d_num_small_star_indices,

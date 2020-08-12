@@ -107,8 +107,6 @@ set(srcs
     GLScreenRenderTarget.h
     GLShaderObject.cc
     GLShaderObject.h
-    GLShaderProgramUtils.cc
-    GLShaderProgramUtils.h
     GLShaderSource.cc
     GLShaderSource.h
     GLState.cc
