@@ -43,26 +43,29 @@ const GLenum GPlatesOpenGL::GLCapabilities::gl_TEXTURE0 = GL_TEXTURE0;
 
 
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
-	gl_sub_pixel_bits(4/*OpenGL minimum value*/),
+	//
+	// Note: Non-zero values represent the minimum required by OpenGL for all implementations.
+	//
+	gl_sub_pixel_bits(4),
 	gl_max_color_attachments(0),
 	gl_max_renderbuffer_size(0),
-	gl_max_draw_buffers(1),
-	gl_max_vertex_attribs(0),
-	gl_max_combined_texture_image_units(0),
-	gl_max_texture_image_units(0),
-	gl_max_vertex_texture_image_units(0),
-	gl_max_vertex_output_components(0),
-	gl_max_geometry_texture_image_units(0),
+	gl_max_draw_buffers(8),
+	gl_max_vertex_attribs(16),
+	gl_max_combined_texture_image_units(48),
+	gl_max_texture_image_units(16),
+	gl_max_vertex_texture_image_units(16),
+	gl_max_vertex_output_components(64),
+	gl_max_geometry_texture_image_units(16),
 	gl_max_geometry_output_vertices(0),
-	gl_max_geometry_input_components(0),
-	gl_max_geometry_output_components(0),
-	gl_max_geometry_uniform_components(0),
+	gl_max_geometry_input_components(64),
+	gl_max_geometry_output_components(128),
+	gl_max_geometry_uniform_components(1024),
 	gl_max_geometry_total_output_components(0),
-	gl_max_texture_size(64/*OpenGL minimum value*/),
-	gl_max_cube_map_texture_size(16/*OpenGL minimum value*/),
+	gl_max_texture_size(1024),
+	gl_max_cube_map_texture_size(1024),
 	gl_EXT_texture_filter_anisotropic(false),
 	gl_texture_max_anisotropy(1.0f),
-	gl_max_texture_array_layers(1)
+	gl_max_texture_array_layers(256)
 {
 	gl_max_viewport_dims[0] = 0;
 	gl_max_viewport_dims[1] = 0;
