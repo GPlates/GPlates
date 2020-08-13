@@ -53,8 +53,8 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLViewport.h"
+#include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "qt-widgets/SceneView.h"
@@ -71,7 +71,7 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 	class GLTileRender;
 }
 
@@ -578,38 +578,13 @@ namespace GPlatesQtWidgets
 		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
-		/**
-		 * Used to render to an off-screen frame buffer when outside paint event.
-		 *
-		 * It's a boost::optional since we don't create it until @a initializeGL is called.
-		 */
-		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
-
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialisedGL;
 
-		//! The current view transform for regular OpenGL rendering.
-		GPlatesOpenGL::GLMatrix d_gl_view_transform;
-
 		/**
-		 * The current projection transform for OpenGL rendering.
-		 *
-		 * This is used for rendering the globe. It's also currently used for rendering SVG output
-		 * using the OpenGL feedback mechanism which bypasses rasterisation - this means the transformation
-		 * pipeline is required for clipping.
-		 *
-		 * NOTE: We no longer use the frustum far clip plane to separate visible front half of globe
-		 *       from invisible rear half (since combining view tilt and perspective projection makes
-		 *       this not possible). Instead we will use a special clip plane in fragment shaders,
-		 *       but that is rasterisation and so will not affect OpenGL feedback. For now this means
-		 *       SVG will render front and rear halves of the globe (even though rear is not always visible).
+		 * The current view-projection transform and viewport.
 		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform;
-
-		/**
-		 * The current projection transform for the screen text overlay.
-		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_text_overlay;
+		GPlatesOpenGL::GLViewProjection d_view_projection;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
@@ -677,8 +652,10 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type
 		render_scene_tile_into_image(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesOpenGL::GLTileRender &tile_render,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLMatrix &image_view_transform,
+				const GPlatesOpenGL::GLMatrix &image_projection_transform,
+				const GPlatesOpenGL::GLTileRender &image_tile_render,
 				QImage &image);
 
 		/**
@@ -686,10 +663,8 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type
 		render_scene(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesOpenGL::GLMatrix &view_transform,
-				const GPlatesOpenGL::GLMatrix &projection_transform,
-				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const QPaintDevice &paint_device);
 
 		void

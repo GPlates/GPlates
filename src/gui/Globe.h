@@ -51,7 +51,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesPresentation
@@ -93,15 +94,13 @@ namespace GPlatesGui
 		 */
 		void
 		initialiseGL(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *
-		 * The three projection transforms differ only in their far clip plane distance.
-		 * One includes only the front half of the globe, another includes the full globe and
-		 * another is long enough to allow rendering of the stars.
+		 * @param view_projection The current view-projection transform and the viewport.
 		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
@@ -109,7 +108,8 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				float scale);
 
@@ -155,7 +155,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * Calculate tranform to ransform the view according to the current globe orientation.
+		 * Calculate transform to transform the view according to the current globe orientation.
 		 */
 		void
 		get_globe_orientation_transform(
@@ -163,32 +163,32 @@ namespace GPlatesGui
 
 		void
 		set_scene_lighting(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLMatrix &view_orientation);
 
 		void
 		render_stars(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		void
 		render_sphere_background(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		void
 		render_globe_hemisphere_surface(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
 				bool is_front_half_globe);
 
 		void
 		render_front_globe_hemisphere_surface_texture(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLTexture::shared_ptr_to_const_type &front_globe_surface_texture);
 
 		void
 		render_globe_sub_surface(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);

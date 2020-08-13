@@ -39,12 +39,12 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLLight.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLScreenRenderTarget.h"
 #include "opengl/GLViewport.h"
+#include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
 
@@ -78,30 +78,31 @@ GPlatesGui::Globe::Globe(
 
 void
 GPlatesGui::Globe::initialiseGL(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	//
 	// We now have a valid OpenGL context bound so we can initialise members that have OpenGL objects.
 	//
 
 	// Create these objects in place (some as non-copy-constructable).
-	d_stars = boost::in_place(boost::ref(renderer), boost::ref(d_view_state), STARS_COLOUR);
-	d_background_sphere = boost::in_place(boost::ref(renderer), boost::ref(d_view_state));
-	d_grid = boost::in_place(boost::ref(renderer), d_view_state.get_graticule_settings());
+	d_stars = boost::in_place(boost::ref(gl), boost::ref(d_view_state), STARS_COLOUR);
+	d_background_sphere = boost::in_place(boost::ref(gl), boost::ref(d_view_state));
+	d_grid = boost::in_place(boost::ref(gl), d_view_state.get_graticule_settings());
 
 	// Initialise the rendered geometry collection painter.
-	d_rendered_geom_collection_painter.initialise(renderer);
+	d_rendered_geom_collection_painter.initialise(gl);
 }
 
 
 GPlatesGui::Globe::cache_handle_type
 GPlatesGui::Globe::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		float scale)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	// The cached view is a sequence of caches for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<cache_handle_type> > cache_handle(new std::vector<cache_handle_type>());
@@ -109,15 +110,15 @@ GPlatesGui::Globe::paint(
 	// Set up the scene lighting if lighting is supported.
 	GPlatesOpenGL::GLMatrix globe_orientation_transform;
 	get_globe_orientation_transform(globe_orientation_transform);
-	set_scene_lighting(renderer, globe_orientation_transform);
+	set_scene_lighting(gl, globe_orientation_transform);
 
 	// Render stars.
 	// NOTE: We draw the stars first so they don't appear in front of the globe.
-	render_stars(renderer);
+	render_stars(gl);
 
 	// Determine whether the globe is transparent or not. This happens if either:
 	//  1) the background colour is transparent, or
-	//  2) there are sub-surface geometries to renderer.
+	//  2) there are sub-surface geometries to render.
 
 	// Is background colour transparent.
 	const Colour original_background_colour = d_view_state.get_background_colour();
@@ -126,7 +127,7 @@ GPlatesGui::Globe::paint(
 
 	// See if there's any sub-surface geometries (below globe's surface) to render.
 	const bool render_sub_surface_geometries =
-			d_rendered_geom_collection_painter.has_renderable_sub_surface_geometries(renderer);
+			d_rendered_geom_collection_painter.has_renderable_sub_surface_geometries(gl);
 	// When rendering sub-surface geometries the sphere needs to be transparent so that the
 	// rear of the globe is visible (to provide visual clues when rendering sub-surface geometries).
 	if (render_sub_surface_geometries)
@@ -153,14 +154,14 @@ GPlatesGui::Globe::paint(
 	{
 		// The globe is transparent so render the rear half of the globe.
 		render_globe_hemisphere_surface(
-				renderer,
+				gl,
 				*cache_handle,
 				viewport_zoom_factor,
 				false/*is_front_half_globe*/);
 	}
 
 	// Render background sphere - can actually be transparent depending on the alpha value in its colour.
-	render_sphere_background(renderer);
+	render_sphere_background(gl);
 
 	// The rendering of sub-surface geometries and the front surface of the globe are intermingled
 	// because the latter can be used to occlude the former.
@@ -171,8 +172,8 @@ GPlatesGui::Globe::paint(
 		// This reduces the workload of rendering sub-surface data that is occluded by surface data.
 		//
 		boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
-				renderer.get_context().get_non_shared_state()->acquire_screen_render_target(
-						renderer,
+				gl.get_context().get_non_shared_state()->acquire_screen_render_target(
+						gl,
 						GL_RGBA8/*texture_internalformat*/,
 						true/*include_depth_buffer*/,
 						// Enable stencil buffer for filled surface polygons...
@@ -184,40 +185,40 @@ GPlatesGui::Globe::paint(
 			// completely rendered (instead of only rendered where it's not occluded by surface data).
 			// We also want things rendered in correct back-to-front depth order so that they are then
 			// drawn correctly by an external SVG renderer for example (ie, sub-surface then surface)...
-			renderer.rendering_to_context_framebuffer())
+			gl.rendering_to_context_framebuffer())
 		{
 			// Prepare for rendering the front half of the globe into a viewport-size render texture.
 			// This will be used as a surface occlusion texture when rendering the globe sub-surface
 			// in order to early terminate occluded volume-tracing rays for efficient sub-surface rendering.
-			const GPlatesOpenGL::GLViewport screen_viewport = renderer.gl_get_viewport();
+			const GPlatesOpenGL::GLViewport screen_viewport = gl.get_viewport();
 			GPlatesOpenGL::GLScreenRenderTarget::RenderScope screen_render_target_scope(
 					*screen_render_target.get(),
-					renderer,
+					gl,
 					screen_viewport.width(),
 					screen_viewport.height());
 
 			// Save/restore the OpenGL state changed over the scope of the screen render target.
-			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_screen_render_target_scope(renderer);
+			GPlatesOpenGL::GL::StateScope save_restore_screen_render_target_scope(gl);
 
 			// Set the new viewport in case the current viewport has non-zero x and y offsets which
 			// happens when the scene is rendered as overlapping tiles (for rendering very large images).
 			// It's also important that, later when accessing the screen render texture, the NDC
 			// coordinates (-1,-1) and (1,1) map to the corners of the screen render texture.
-			renderer.gl_viewport(0, 0, screen_viewport.width(), screen_viewport.height());
+			gl.Viewport(0, 0, screen_viewport.width(), screen_viewport.height());
 			// Also change the scissor rectangle in case scissoring is enabled.
-			renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
+			gl.Scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
 			// Clear the render target (colour and depth) before rendering the image.
 			// We also clear the stencil buffer in case it is used - also it's usually interleaved
 			// with depth so it's more efficient to clear both depth and stencil.
-			renderer.gl_clear_color(); // Clear to transparent (alpha=0) so regions not rendered are transparent.
-			renderer.gl_clear_depth(); // Clear depth to 1.0
-			renderer.gl_clear_stencil(); // Clear stencil to 0
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			gl.ClearColor(); // Clear to transparent (alpha=0) so regions not rendered are transparent.
+			gl.ClearDepth(); // Clear depth to 1.0
+			gl.ClearStencil(); // Clear stencil to 0
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Render the front half of the globe surface to the viewport-size render texture.
 			render_globe_hemisphere_surface(
-					renderer,
+					gl,
 					*cache_handle,
 					viewport_zoom_factor,
 					true/*is_front_half_globe*/);
@@ -232,7 +233,7 @@ GPlatesGui::Globe::paint(
 			// Render the globe sub-surface (using the surface occlusion texture) to the main framebuffer.
 			// Note that this must use the original viewport.
 			render_globe_sub_surface(
-					renderer,
+					gl,
 					*cache_handle,
 					viewport_zoom_factor,
 					front_globe_surface_texture);
@@ -240,20 +241,20 @@ GPlatesGui::Globe::paint(
 			// Blend the front half of the globe surface (the surface occlusion texture) in the main framebuffer.
 			// Note that this must use the original viewport.
 			render_front_globe_hemisphere_surface_texture(
-					renderer,
+					gl,
 					front_globe_surface_texture);
 		}
 		else // surface occlusion not supported so render sub-surface followed by surface...
 		{
 			// Render the globe sub-surface first.
 			render_globe_sub_surface(
-					renderer,
+					gl,
 					*cache_handle,
 					viewport_zoom_factor);
 
 			// Render the front half of the globe surface next.
 			render_globe_hemisphere_surface(
-					renderer,
+					gl,
 					*cache_handle,
 					viewport_zoom_factor,
 					true/*is_front_half_globe*/);
@@ -263,7 +264,7 @@ GPlatesGui::Globe::paint(
 	{
 		// Render the front half of the globe surface.
 		render_globe_hemisphere_surface(
-				renderer,
+				gl,
 				*cache_handle,
 				viewport_zoom_factor,
 				true/*is_front_half_globe*/);
@@ -297,18 +298,18 @@ GPlatesGui::Globe::get_globe_orientation_transform(
 
 void
 GPlatesGui::Globe::set_scene_lighting(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLMatrix &view_orientation)
 {
 	// Get the OpenGL light if the runtime system supports it.
 	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
-			d_gl_visual_layers->get_light(renderer);
+			d_gl_visual_layers->get_light(gl);
 
 	// Set the scene lighting parameters on the light (includes the current view orientation).
 	if (gl_light)
 	{
 		gl_light.get()->set_scene_lighting(
-				renderer,
+				gl,
 				d_view_state.get_scene_lighting_parameters(),
 				view_orientation);
 	}
@@ -317,57 +318,57 @@ GPlatesGui::Globe::set_scene_lighting(
 
 void
 GPlatesGui::Globe::render_stars(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
 	// Disable depth testing and depth writes.
 	// Stars are rendered in the background and don't really need depth sorting.
-	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
-	renderer.gl_depth_mask(GL_FALSE);
+	gl.Disable(GL_DEPTH_TEST);
+	gl.DepthMask(GL_FALSE);
 
-	d_stars->paint(renderer);
+	d_stars->paint(gl);
 }
 
 
 void
 GPlatesGui::Globe::render_sphere_background(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
 	// Disable depth testing and depth writes.
 	// The background sphere is only used to render the sphere colour (and, for a transparent sphere,
 	// blend the sphere colour with the rendered geometries on the rear of the globe).
-	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
+	gl.Disable(GL_DEPTH_TEST);
 	const bool enable_depth_writes = false;
-	renderer.gl_depth_mask(enable_depth_writes);
+	gl.DepthMask(enable_depth_writes);
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
-	d_background_sphere->paint(renderer, enable_depth_writes);
+	d_background_sphere->paint(gl, enable_depth_writes);
 }
 
 
 void
 GPlatesGui::Globe::render_globe_hemisphere_surface(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
 		bool is_front_half_globe)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
 	// Enable depth testing but disable depth writes (for the grid lines, the globe sets its own state).
-	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
-	renderer.gl_depth_mask(GL_FALSE);
+	gl.Enable(GL_DEPTH_TEST);
+	gl.DepthMask(GL_FALSE);
 
 	if (!is_front_half_globe)
 	{
 		// Render the grid lines on the rear side of the sphere first.
-		d_grid->paint(renderer);
+		d_grid->paint(gl);
 	}
 
 	// Colour vector geometries on the rear of the globe the same colour as background so that
@@ -389,7 +390,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	d_rendered_geom_collection_painter.set_visual_layers_reversed(!is_front_half_globe);
 	const cache_handle_type rendered_geoms_cache_half_globe =
 			d_rendered_geom_collection_painter.paint_surface(
-					renderer,
+					gl,
 					viewport_zoom_factor,
 					vector_geometries_override_colour);
 	cache_handle.push_back(rendered_geoms_cache_half_globe);
@@ -397,26 +398,26 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	if (is_front_half_globe)
 	{
 		// Render the grid lines on the front side of the sphere last.
-		d_grid->paint(renderer);
+		d_grid->paint(gl);
 	}
 }
 
 
 void
 GPlatesGui::Globe::render_front_globe_hemisphere_surface_texture(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLTexture::shared_ptr_to_const_type &front_globe_surface_texture)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
 	// Used to draw a full-screen quad into render texture.
 	const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+			gl.get_context().get_shared_state()->get_full_screen_2D_textured_quad(gl);
 
 	// Full-screen rendering requires no model-view-projection transform.
-	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
-	renderer.gl_load_matrix(GL_PROJECTION, GPlatesOpenGL::GLMatrix::IDENTITY);
+	gl.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	gl.gl_load_matrix(GL_PROJECTION, GPlatesOpenGL::GLMatrix::IDENTITY);
 
 	// Set up alpha blending for pre-multiplied alpha.
 	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
@@ -424,44 +425,45 @@ GPlatesGui::Globe::render_front_globe_hemisphere_surface_texture(
 	// This necessary in order to be able to blend a render texture into the main framebuffer and
 	// have it look the same as if we had blended directly into the main framebuffer in the first place.
 	// However everything rendered into the render target must use pre-multiplied alpha.
-	renderer.gl_enable(GL_BLEND);
-	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	gl.Enable(GL_BLEND);
+	gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Enable alpha testing as an optimisation for culling transparent raster pixels.
-	renderer.gl_enable(GL_ALPHA_TEST);
-	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+	gl.Enable(GL_ALPHA_TEST);
+	gl.gl_alpha_func(GL_GREATER, GLclampf(0));
 
 	// Disable depth testing and depth writes - we're just doing a full-screen copy and blend.
-	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
-	renderer.gl_depth_mask(GL_FALSE);
+	gl.Disable(GL_DEPTH_TEST);
+	gl.DepthMask(GL_FALSE);
 
 	// Bind the texture and enable fixed-function texturing on texture unit 0.
-	const GLenum texture_unit_0 = renderer.get_capabilities().texture.gl_TEXTURE0;
-	renderer.gl_bind_texture(front_globe_surface_texture, texture_unit_0, GL_TEXTURE_2D);
-	renderer.gl_enable_texture(texture_unit_0, GL_TEXTURE_2D);
-	renderer.gl_tex_env(texture_unit_0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	const GLenum texture_unit_0 = gl.get_capabilities().texture.gl_TEXTURE0;
+	gl.ActiveTexture(GL_TEXTURE0);
+	gl.BindTexture(GL_TEXTURE_2D, front_globe_surface_texture);
+	gl.gl_enable_texture(texture_unit_0, GL_TEXTURE_2D);
+	gl.gl_tex_env(texture_unit_0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 	// Render the full-screen quad.
-	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
+	gl.apply_compiled_draw_state(*full_screen_quad_drawable);
 }
 
 
 void
 GPlatesGui::Globe::render_globe_sub_surface(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
 	// Draw the sub-surface geometries.
 	// Draw in normal layer order.
 	d_rendered_geom_collection_painter.set_visual_layers_reversed(false);
 	const cache_handle_type rendered_geoms_cache_sub_surface_globe =
 			d_rendered_geom_collection_painter.paint_sub_surface(
-					renderer,
+					gl,
 					viewport_zoom_factor,
 					surface_occlusion_texture,
 					// Set to true when active globe canvas tool is currently in a
