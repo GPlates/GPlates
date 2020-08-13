@@ -157,6 +157,9 @@ GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 	case GL_STENCIL_TEST:
 		key = KEY_ENABLE_STENCIL_TEST;
 		break;
+	case GL_TEXTURE_CUBE_MAP_SEAMLESS:
+		key = KEY_ENABLE_TEXTURE_CUBE_MAP_SEAMLESS;
+		break;
 	default:
 		// Unsupported capability.
 		qWarning() << "glEnable/glDisable capability not currently supported - should be easy to add though.";

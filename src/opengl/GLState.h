@@ -84,10 +84,9 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLCapabilities &capabilities,
-				const GLStateStore::non_null_ptr_type &state_store,
-				const GLViewport &default_viewport)
+				const GLStateStore::non_null_ptr_type &state_store)
 		{
-			return non_null_ptr_type(new GLState(capabilities, state_store, default_viewport));
+			return non_null_ptr_type(new GLState(capabilities, state_store));
 		}
 
 
@@ -324,13 +323,26 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		polygon_offset(
+				GLfloat factor,
+				GLfloat units)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->polygon_offset_state_sets,
+					GLStateSetKeys::KEY_POLYGON_OFFSET,
+					boost::in_place(factor, units));
+		}
+
+		void
 		scissor(
-				const GLViewport &scissor)
+				const GLViewport &scissor,
+				// The default viewport is passed in since it can change when the window is resized...
+				const GLViewport &default_viewport)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->scissor_state_sets,
 					GLStateSetKeys::KEY_SCISSOR,
-					boost::in_place(scissor, d_default_viewport));
+					boost::in_place(scissor, default_viewport));
 		}
 
 		void
@@ -345,12 +357,14 @@ namespace GPlatesOpenGL
 
 		void
 		viewport(
-				const GLViewport &viewport)
+				const GLViewport &viewport,
+				// The default viewport is passed in since it can change when the window is resized...
+				const GLViewport &default_viewport)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->viewport_state_sets,
 					GLStateSetKeys::KEY_VIEWPORT,
-					boost::in_place(viewport, d_default_viewport));
+					boost::in_place(viewport, default_viewport));
 		}
 
 		//! Sets the framebuffer object to bind to the active OpenGL context.
@@ -448,17 +462,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->stencil_op_state_sets,
 					GLStateSetKeys::KEY_STENCIL_OP,
 					boost::in_place(fail, zfail, zpass));
-		}
-
-		void
-		set_polygon_offset(
-				GLfloat factor,
-				GLfloat units)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->polygon_offset_state_sets,
-					GLStateSetKeys::KEY_POLYGON_OFFSET,
-					boost::in_place(factor, units));
 		}
 
 		//! Sets the alpha-blend equation (glBlendEquation).
@@ -585,24 +588,28 @@ namespace GPlatesOpenGL
 
 		//! Returns the current scissor rectangle.
 		const GLViewport &
-		get_scissor() const
+		get_scissor(
+				// The default viewport is passed in since it can change when the window is resized...
+				const GLViewport &default_viewport) const
 		{
 			const boost::optional<const GLViewport &> scissor =
 					query_state_set<const GLViewport &, GLScissorStateSet>(
 							GLStateSetKeys::KEY_SCISSOR,
 							&GLScissorStateSet::d_scissor_rectangle);
-			return scissor ? scissor.get() : d_default_viewport;
+			return scissor ? scissor.get() : default_viewport;
 		}
 
 		//! Returns the current viewport.
 		const GLViewport &
-		get_viewport() const
+		get_viewport(
+				// The default viewport is passed in since it can change when the window is resized...
+				const GLViewport &default_viewport) const
 		{
 			const boost::optional<const GLViewport &> viewport =
 					query_state_set<const GLViewport &, GLViewportStateSet>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							&GLViewportStateSet::d_viewport);
-			return viewport ? viewport.get() : d_default_viewport;
+			return viewport ? viewport.get() : default_viewport;
 		}
 
 	private:
@@ -740,17 +747,10 @@ namespace GPlatesOpenGL
 		 */
 		Snapshot::shared_ptr_to_const_type d_default_state;
 
-		/**
-		 * The default viewport to use when in the default state.
-		 */
-		GLViewport d_default_viewport;
 
-
-		//! Default constructor.
 		GLState(
 				const GLCapabilities &capabilities,
-				const GLStateStore::non_null_ptr_type &state_store,
-				const GLViewport &default_viewport);
+				const GLStateStore::non_null_ptr_type &state_store);
 
 		/**
 		 * Sets a derived @a GLStateSet type at the specified state set key slot, and applies the state.

@@ -217,12 +217,12 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 	if (d_program_object)
 	{
 		// Bind the shader program object.
-		glUseProgramObjectARB(d_program_object.get()->get_program_resource_handle());
+		glUseProgram(d_program_object.get()->get_resource_handle());
 	}
 	else
 	{
-		// No shader program object - back to using the fixed-function pipeline.
-		glUseProgramObjectARB(0);
+		// No shader program object.
+		glUseProgram(0);
 	}
 }
 
@@ -238,7 +238,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 	}
 
 	// Bind the shader program object.
-	glUseProgramObjectARB(d_program_object.get()->get_program_resource_handle());
+	glUseProgram(d_program_object.get()->get_resource_handle());
 }
 
 void
@@ -252,8 +252,8 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 		return;
 	}
 
-	// The default is zero (the fixed-function pipeline).
-    glUseProgramObjectARB(0);
+	// The default is zero.
+    glUseProgram(0);
 }
 
 

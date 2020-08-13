@@ -39,12 +39,10 @@ GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::non_null_ptr_type &state_store) :
 	d_context(context),
-	d_current_state(
-			GLState::create(
-					context->get_capabilities(),
-					state_store,
-					// Default viewport/scissor is the window dimensions returned by context...
-					GLViewport(0, 0, context->get_width(), context->get_height())))
+	d_current_state(GLState::create(context->get_capabilities(), state_store)),
+	// Default viewport/scissor starts out as the initial window dimensions returned by context.
+	// However it can change when the window (that context is attached to) is resized...
+	d_default_viewport(0, 0, context->get_width(), context->get_height())
 {
 }
 
@@ -294,13 +292,24 @@ GPlatesOpenGL::GL::PolygonMode(
 
 
 void
+GPlatesOpenGL::GL::PolygonOffset(
+		GLfloat factor,
+		GLfloat units)
+{
+	d_current_state->polygon_offset(factor, units);
+}
+
+
+void
 GPlatesOpenGL::GL::Scissor(
 		GLint x,
 		GLint y,
 		GLsizei width,
 		GLsizei height)
 {
-	d_current_state->scissor(GLViewport(x, y, width, height));
+	d_current_state->scissor(
+			GLViewport(x, y, width, height),
+			d_default_viewport);
 }
 
 
@@ -405,7 +414,78 @@ GPlatesOpenGL::GL::Viewport(
 		GLsizei width,
 		GLsizei height)
 {
-	d_current_state->viewport(GLViewport(x, y, width, height));
+	d_current_state->viewport(
+			GLViewport(x, y, width, height),
+			d_default_viewport);
+}
+
+
+GPlatesOpenGL::GL::RenderScope::RenderScope(
+		GL &gl) :
+	d_gl(gl),
+	d_have_ended(false)
+{
+	// On entering this scope set the default viewport/scissor rectangle to the current dimensions
+	// (in device pixels) of the frame buffer currently attached to the OpenGL context.
+	// This is then considered the default viewport for the current rendering scope.
+	// Note that the viewport dimensions can change when the window (attached to context) is resized,
+	// so the default viewport can be different from one render scope to the next.
+	d_gl.d_default_viewport = GLViewport(0, 0, d_gl.d_context->get_width(), d_gl.d_context->get_height());
+
+	// We explicitly set the viewport/scissor OpenGL state here. This is unusual since it's all meant
+	// to be wrapped by GLState and the GLStateSet derivations. We do this because whenever GL::Viewport()
+	// or GL::Scissor() are called, we pass the default viewport to GLState (which shadows the actual OpenGL
+	// state) and hence our default viewport should represent the actual OpenGL state (as seen by OpenGL).
+	glViewport(
+			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
+			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
+	glScissor(
+			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
+			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
+
+	// Begin render scope.
+	d_gl.d_context->begin_render();
+
+	// Save the current OpenGL state (which should be the default OpenGL state).
+	//
+	// This will reset to the current OpenGL state on scope exit, and since that should be the default
+	// OpenGL state we don't need to set the 'reset_to_default_state' option.
+	d_state_scope.reset(new StateScope(gl));
+}
+
+
+GPlatesOpenGL::GL::RenderScope::~RenderScope()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		end();
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GL: exception thrown during render scope: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GL: exception thrown during render scope: Unknown error";
+	}
+}
+
+
+void
+GPlatesOpenGL::GL::RenderScope::end()
+{
+	if (!d_have_ended)
+	{
+		// Restore the default state.
+		d_state_scope->restore();
+
+		// End render scope.
+		d_gl.d_context->end_render();
+
+		d_have_ended = true;
+	}
 }
 
 
@@ -434,11 +514,11 @@ GPlatesOpenGL::GL::StateScope::~StateScope()
 	}
 	catch (std::exception &exc)
 	{
-		qWarning() << "GL: exception thrown during state block scope: " << exc.what();
+		qWarning() << "GL: exception thrown during state scope: " << exc.what();
 	}
 	catch (...)
 	{
-		qWarning() << "GL: exception thrown during state block scope: Unknown error";
+		qWarning() << "GL: exception thrown during state scope: Unknown error";
 	}
 }
 

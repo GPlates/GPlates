@@ -26,6 +26,7 @@
 #ifndef GPLATES_OPENGL_GL_H
 #define GPLATES_OPENGL_GL_H
 
+#include <memory>
 #include <opengl/OpenGL1.h>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -74,6 +75,48 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GL.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GL> non_null_ptr_to_const_type;
+
+
+		class StateScope;
+
+		/**
+		 * RAII class to scope all rendering calls (in this class).
+		 *
+		 * All @a GL calls should be done inside this scope.
+		 *
+		 * NOTE: OpenGL must be in the default state before entering this scope.
+		 *       On exiting this scope the default OpenGL state is restored.
+		 *
+		 * On entering this scope the viewport/scissor rectangle is set to the current dimensions
+		 * (in device pixels) of the frame buffer currently attached to the OpenGL context.
+		 * And this is then considered the default viewport for the current rendering scope.
+		 * Note that the viewport dimensions can change when the window (attached to context) is resized,
+		 * so the default viewport can be different from one render scope to the next.
+		 */
+		class RenderScope :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			RenderScope(
+					GL &gl);
+
+			/**
+			 * Exit the current rendering scope (unless @a end has been called).
+			 */
+			~RenderScope();
+
+			/**
+			 * Opportunity to exit the current scope (before destructor is called).
+			 */
+			void
+			end();
+
+		private:
+			GL &d_gl;
+			std::unique_ptr<StateScope> d_state_scope;
+			bool d_have_ended;
+		};
 
 
 		/**
@@ -170,14 +213,14 @@ namespace GPlatesOpenGL
 
 		void
 		ClearColor(
-				GLclampf red,
-				GLclampf green,
-				GLclampf blue,
-				GLclampf alpha);
+				GLclampf red = GLclampf(0.0),
+				GLclampf green = GLclampf(0.0),
+				GLclampf blue = GLclampf(0.0),
+				GLclampf alpha = GLclampf(0.0));
 
 		void
 		ClearDepth(
-				GLclampd depth);
+				GLclampd depth = GLclampd(1.0));
 
 		void
 		ColorMask(
@@ -188,20 +231,20 @@ namespace GPlatesOpenGL
 
 		void
 		ClearStencil(
-				GLint stencil);
+				GLint stencil = 0);
 
 		void
 		CullFace(
-				GLenum mode);
+				GLenum mode = GL_BACK);
 
 		void
 		DepthMask(
-				GLboolean flag);
+				GLboolean flag = GL_TRUE);
 
 		void
 		DepthRange(
-				GLclampd n,
-				GLclampd f);
+				GLclampd n = 0.0,
+				GLclampd f = 1.0);
 
 		void
 		Disable(
@@ -221,7 +264,7 @@ namespace GPlatesOpenGL
 
 		void
 		FrontFace(
-				GLenum dir);
+				GLenum dir = GL_CCW);
 
 		void
 		Hint(
@@ -230,16 +273,21 @@ namespace GPlatesOpenGL
 
 		void
 		LineWidth(
-				GLfloat width);
+				GLfloat width = GLfloat(1));
 
 		void
 		PointSize(
-				GLfloat size);
+				GLfloat size = GLfloat(1));
 
 		void
 		PolygonMode(
-				GLenum face,
-				GLenum mode);
+				GLenum face = GL_FRONT_AND_BACK,
+				GLenum mode = GL_FILL);
+
+		void
+		PolygonOffset(
+				GLfloat factor = GLfloat(0),
+				GLfloat units = GLfloat(0));
 
 		void
 		Scissor(
@@ -250,7 +298,7 @@ namespace GPlatesOpenGL
 
 		void
 		StencilMask(
-				GLuint mask);
+				GLuint mask = ~0/*all ones*/);
 
 		void
 		VertexAttribDivisor(
@@ -315,6 +363,11 @@ namespace GPlatesOpenGL
 		 * NOTE: This must be declared after @a d_state_set_store.
 		 */
 		GLState::non_null_ptr_type d_current_state;
+
+		/**
+		 * The default viewport can change when the window (that context is attached to) is resized.
+		 */
+		GLViewport d_default_viewport;
 	};
 }
 
