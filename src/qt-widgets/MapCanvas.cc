@@ -49,11 +49,11 @@
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLRenderTarget.h"
 #include "opengl/GLTileRender.h"
 #include "opengl/GLViewport.h"
@@ -171,33 +171,24 @@ GPlatesQtWidgets::MapCanvas::initializeGL(
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
 
-	// Create the off-screen context that's used when rendering OpenGL outside the paint event.
-	d_gl_off_screen_context =
-			GPlatesOpenGL::GLOffScreenContext::create(
-					GPlatesOpenGL::GLOffScreenContext::QGLWidgetContext(gl_widget, d_gl_context));
-
-	// Get a renderer - it'll be used to initialise some OpenGL objects.
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
-	// Start a begin_render/end_render scope.
-	// Pass in the viewport of the window currently attached to the OpenGL context.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-
-	// NOTE: We don't actually 'glClear()' the framebuffer because:
-	//  1) It's not necessary to do this before calling Map::initialiseGL(), and
-	//  2) It appears to generate an OpenGL error when GPlatesOpenGL::GLUtils::assert_no_gl_errors()
-	//     is next called ("invalid framebuffer operation") on a Mac-mini system (all other systems
-	//     seem fine) - it's possibly due to the main framebuffer not set up correctly yet.
+	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
+	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
+	//       set up correctly despite its OpenGL context being the current rendering context.
 
 	// Initialise those parts of map that require a valid OpenGL context to be bound.
-	d_map.initialiseGL(*renderer);
+	d_map.initialiseGL(*gl);
 }
 
 
 GPlatesQtWidgets::MapCanvas::cache_handle_type
 GPlatesQtWidgets::MapCanvas::render_scene(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
 		const QPaintDevice &paint_device,
@@ -206,7 +197,7 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	PROFILE_FUNC();
 
 	// Set the projection matrix for the scene.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_scene);
+	gl.gl_load_matrix(GL_PROJECTION, projection_matrix_scene);
 
 	// Render the map.
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
@@ -221,24 +212,24 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	// Since the view direction usually differs little from one frame to the next there is a lot
 	// of overlap that we want to reuse (and not recalculate).
 	//
-	const cache_handle_type frame_cache_handle = d_map.paint(renderer, viewport_zoom_factor, scale);
+	const cache_handle_type frame_cache_handle = d_map.paint(gl, viewport_zoom_factor, scale);
 
 	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
-	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	gl.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
 	// Set the projection matrix for the text overlay (it's inverted compared to the scene transform).
-	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_text_overlay);
+	gl.gl_load_matrix(GL_PROJECTION, projection_matrix_text_overlay);
 
 	// Draw the optional text overlay.
 	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
 	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
 	d_text_overlay->paint(
-			renderer,
+			gl,
 			d_view_state.get_text_overlay_settings(),
 			paint_device,
 			scale);
 
 	d_velocity_legend_overlay->paint(
-			renderer,
+			gl,
 			d_view_state.get_velocity_legend_overlay_settings(),
 			// These are widget dimensions (not device pixels)...
 			paint_device.width(),
@@ -258,18 +249,11 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	// text rendering (where we set it to the identity transform).
 	const QTransform qpainter_world_transform = painter->worldTransform();
 
-	// Create a render for all our OpenGL rendering work.
-	// Note that nothing will happen until we enter a rendering scope.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
-
-	// Start a begin_render/end_render scope.
-	//
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	//
-	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, *painter);
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Get the model-view matrix from the QPainter's 2D world transform.
 	GPlatesOpenGL::GLMatrix model_view_matrix;
@@ -281,7 +265,7 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 			d_viewport_transform_for_device_pixels);
 
 	// Set the model-view matrix on the renderer.
-	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+	gl->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
 
 	// The QPainter's paint device.
 	const QPaintDevice *qpaint_device = painter->device();
@@ -301,7 +285,7 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
-			*renderer,
+			*gl,
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
 			*qpaint_device,
@@ -333,29 +317,14 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// Set up a QPainter to help us with OpenGL text rendering.
 	QPainter painter(&map_canvas_paint_device);
 
-	// Start a render scope.
+	// Make sure the OpenGL context is currently active.
+	d_gl_context->make_current();
+
+	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	//
-	// Where possible, force drawing to an off-screen render target.
-	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
-	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
-	// main/default framebuffer (which is intimately tied to the windowing system).
-	// Using an off-screen render target appears to avoid this issue.
-	//
-	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
-	// This is because we use QPainter to render text and it sets itself up using the dimensions
-	// of the main framebuffer - if we change the dimensions then the text is rendered incorrectly.
-	//
-	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
-			*d_gl_off_screen_context.get(),
-			// Convert from widget size to device pixels (used by OpenGL)...
-			map_canvas_paint_device.width() * map_canvas_paint_device.devicePixelRatio(),
-			map_canvas_paint_device.height() * map_canvas_paint_device.devicePixelRatio(),
-			painter);
-
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// The image to render the scene into.
 	QImage image(image_size, QImage::Format_ARGB32);
@@ -371,7 +340,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
-			renderer->get_current_frame_buffer_dimensions();
+			gl->get_current_frame_buffer_dimensions();
 
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
@@ -395,7 +364,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			viewport_transform);
 
 	// Set the model-view matrix on the renderer.
-	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+	gl->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
 
 	// Get the projection matrix for the image dimensions.
 	// It'll get adjusted per tile (that the scene is rendered to).
@@ -417,7 +386,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		// Render the scene to the current tile.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type tile_cache_handle = render_scene_tile_into_image(
-				*renderer,
+				*gl,
 				tile_render,
 				image,
 				projection_matrix_scene,
@@ -434,7 +403,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 GPlatesQtWidgets::MapCanvas::cache_handle_type
 GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLTileRender &tile_render,
 		QImage &image,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
@@ -442,7 +411,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 		const QPaintDevice &map_canvas_paint_device)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	GPlatesOpenGL::GLViewport current_tile_render_target_viewport;
 	tile_render.get_tile_render_target_viewport(current_tile_render_target_viewport);
@@ -456,13 +425,13 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
 	//
 	// This includes 'gl_clear()' calls which clear the entire framebuffer.
-	renderer.gl_enable(GL_SCISSOR_TEST);
-	renderer.gl_scissor(
+	gl.Enable(GL_SCISSOR_TEST);
+	gl.Scissor(
 			current_tile_render_target_scissor_rect.x(),
 			current_tile_render_target_scissor_rect.y(),
 			current_tile_render_target_scissor_rect.width(),
 			current_tile_render_target_scissor_rect.height());
-	renderer.gl_viewport(
+	gl.Viewport(
 			current_tile_render_target_viewport.x(),
 			current_tile_render_target_viewport.y(),
 			current_tile_render_target_viewport.width(),
@@ -487,7 +456,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 	// Render the scene.
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
-			renderer,
+			gl,
 			tile_projection_matrix_scene,
 			tile_projection_matrix_text_overlay,
 			image,
@@ -504,7 +473,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 	tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
 
 	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
-			renderer,
+			gl,
 			image,
 			current_tile_source_viewport,
 			current_tile_destination_viewport);
@@ -518,47 +487,24 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 		const QTransform &viewport_transform,
 		QPaintDevice &feedback_paint_device)
 {
-	// Note that the OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
-	// ends up in the feedback paint device.
-	QPainter feedback_painter(&feedback_paint_device);
+	// Make sure the OpenGL context is currently active.
+	d_gl_context->make_current();
 
-	// Start a render scope.
+	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	//
-	// Where possible, force drawing to an off-screen render target.
-	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
-	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
-	// main/default framebuffer (which is intimately tied to the windowing system).
-	// Using an off-screen render target appears to avoid this issue.
-	//
-	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
-	// This is because we use QPainter to render text and it sets itself up using the dimensions
-	// of the main framebuffer - actually that doesn't apply when painting to a device other than
-	// the main framebuffer (in our case the feedback paint device, eg, SVG) - but we'll leave the
-	// restriction in for now.
-	// TODO: change to a larger size render target for more efficient rendering.
-	//
-	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
-			*d_gl_off_screen_context.get(),
-			// Convert from widget size to device pixels (used by OpenGL)...
-			map_canvas_paint_device.width() * map_canvas_paint_device.devicePixelRatio(),
-			map_canvas_paint_device.height() * map_canvas_paint_device.devicePixelRatio(),
-			feedback_painter,
-			false/*paint_device_is_framebuffer*/);
-
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Set the viewport (and scissor rectangle) to the size of the feedback paint device instead
 	// of the map canvas because OpenGL feedback uses the viewport to generate projected vertices.
 	// Also text rendering uses the viewport.
 	// And we want all this to be positioned correctly within the feedback paint device.
-	renderer->gl_viewport(0, 0,
+	gl->Viewport(0, 0,
 			// Convert from widget size to device pixels (used by OpenGL)...
 			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
 			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
-	renderer->gl_scissor(0, 0,
+	gl->Scissor(0, 0,
 			// Convert from widget size to device pixels (used by OpenGL)...
 			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
 			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
@@ -570,7 +516,7 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			viewport_transform);
 
 	// Set the model-view matrix on the renderer.
-	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+	gl->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
 
 	// Get the projection matrix for the feedback paint device.
 	GPlatesOpenGL::GLMatrix projection_matrix_scene;
@@ -586,7 +532,7 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 	// This will use the main framebuffer for intermediate rendering in some cases.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
-			*renderer,
+			*gl,
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
 			feedback_paint_device,

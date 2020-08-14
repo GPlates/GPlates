@@ -72,8 +72,6 @@ set(srcs
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h
-    GLOffScreenContext.cc
-    GLOffScreenContext.h
     GLPixelBuffer.cc
     GLPixelBuffer.h
     GLPixelBufferImpl.cc

@@ -43,7 +43,6 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLVisualLayers.h"
 
 
@@ -56,7 +55,7 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 	class GLTileRender;
 }
 
@@ -199,13 +198,6 @@ namespace GPlatesQtWidgets
 		MakeGLContextCurrent d_make_context_current;
 
 		/**
-		 * Used to render to an off-screen frame buffer when outside paint event.
-		 *
-		 * It's a boost::optional since we don't create it until @a initializeGL is called.
-		 */
-		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
-
-		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
@@ -241,7 +233,7 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type
 		render_scene_tile_into_image(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLTileRender &tile_render,
 				QImage &image,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
@@ -251,7 +243,7 @@ namespace GPlatesQtWidgets
 		//! Render onto the canvas.
 		cache_handle_type
 		render_scene(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
 				const QPaintDevice &paint_device,
