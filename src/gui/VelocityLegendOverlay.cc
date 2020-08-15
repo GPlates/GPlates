@@ -27,6 +27,7 @@
 #include <QFontMetrics>
 #include <QLocale>
 #include <QPainter>
+#include <QPainterPath>
 
 #include "VelocityLegendOverlay.h"
 

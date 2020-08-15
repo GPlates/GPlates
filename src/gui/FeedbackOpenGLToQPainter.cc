@@ -31,6 +31,7 @@
 #include <QDebug>
 #include <QImage>
 #include <QPainter>
+#include <QPainterPath>
 #include <QSize>
 #include <QString>
 
