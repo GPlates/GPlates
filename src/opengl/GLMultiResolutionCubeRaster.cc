@@ -625,13 +625,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		// The world model-view matrix (with world transform multiplied in).
 		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_world_model_view_transform->get_matrix());
 
-		// Clear the frame buffer as appropriate for the source raster type.
+		// Clear the framebuffer as appropriate for the source raster type.
 		//
 		// For example, for a *regional* normal map raster the normals outside the region must be
-		// normal to the globe's surface - so the frame buffer pixels must represent this.
+		// normal to the globe's surface - so the framebuffer pixels must represent this.
 		//
 		// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
-		d_multi_resolution_raster->clear_frame_buffer(renderer);
+		d_multi_resolution_raster->clear_framebuffer(renderer);
 
 		// If the render target is floating-point...
 		if (tile_texture.texture->is_floating_point())
@@ -670,7 +670,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		QImage image(QSize(d_tile_texel_dimension, d_tile_texel_dimension), QImage::Format_ARGB32);
 		image.fill(QColor(0,0,0,0).rgba());
 
-		GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+		GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 				renderer,
 				image,
 				GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),

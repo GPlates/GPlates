@@ -37,7 +37,7 @@
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 #include "GLMatrix.h"
 #include "GLProgramObject.h"
 #include "GLStateSet.h"
@@ -142,18 +142,26 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to bind a framebuffer object.
+	 * Used to bind a framebuffer object to GL_DRAW_FRAMEBUFFER and/or GL_READ_FRAMEBUFFER targets.
 	 */
-	struct GLBindFrameBufferObjectStateSet :
+	struct GLBindFramebufferStateSet :
 			public GLStateSet
 	{
 		/**
-		 * Binds a framebuffer object, or unbinds (if @a frame_buffer_object is boost::none).
+		 * Binds a framebuffer object, or unbinds (if boost::none).
 		 */
 		explicit
-		GLBindFrameBufferObjectStateSet(
-				boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer_object) :
-			d_frame_buffer_object(frame_buffer_object)
+		GLBindFramebufferStateSet(
+				boost::optional<GLFramebuffer::shared_ptr_type> draw_framebuffer,
+				boost::optional<GLFramebuffer::shared_ptr_type> read_framebuffer,
+				// Draw framebuffer resource handle associated with the current OpenGL context...
+				GLuint draw_framebuffer_resource,
+				// Read framebuffer resource handle associated with the current OpenGL context...
+				GLuint read_framebuffer_resource) :
+			d_draw_framebuffer(draw_framebuffer),
+			d_read_framebuffer(read_framebuffer),
+			d_draw_framebuffer_resource(draw_framebuffer_resource),
+			d_read_framebuffer_resource(read_framebuffer_resource)
 		{  }
 
 		virtual
@@ -176,7 +184,11 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> d_frame_buffer_object;
+		boost::optional<GLFramebuffer::shared_ptr_type> d_draw_framebuffer;
+		boost::optional<GLFramebuffer::shared_ptr_type> d_read_framebuffer;
+
+		GLuint d_draw_framebuffer_resource;
+		GLuint d_read_framebuffer_resource;
 	};
 
 	/**

@@ -164,22 +164,22 @@ namespace GPlatesOpenGL
 			// Make sure we leave the OpenGL state the way it was.
 			GLRenderer::StateBlockScope save_restore_state(renderer);
 
-			// Classify our frame buffer object according to texture format/dimensions.
-			GLFrameBufferObject::Classification framebuffer_object_classification;
-			framebuffer_object_classification.set_dimensions(
+			// Classify our framebuffer object according to texture format/dimensions.
+			GLFramebuffer::Classification framebuffer_classification;
+			framebuffer_classification.set_dimensions(
 					renderer,
 					texture->get_width().get(),
 					texture->get_height().get());
-			framebuffer_object_classification.set_attached_texture_array_layer(
+			framebuffer_classification.set_attached_texture_array_layer(
 					renderer,
 					texture->get_internal_format().get());
 
-			// Acquire and bind a frame buffer object.
-			GLFrameBufferObject::shared_ptr_type framebuffer_object =
-					renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+			// Acquire and bind a framebuffer object.
+			GLFramebuffer::shared_ptr_type framebuffer =
+					renderer.get_context().get_non_shared_state()->acquire_framebuffer(
 							renderer,
-							framebuffer_object_classification);
-			renderer.gl_bind_frame_buffer(framebuffer_object);
+							framebuffer_classification);
+			renderer.gl_bind_framebuffer(framebuffer);
 
 			// Buffer size needed for a texture array layer.
 			const unsigned int buffer_size = texture->get_width().get() * texture->get_height().get() * 4;
@@ -198,7 +198,7 @@ namespace GPlatesOpenGL
 
 			for (unsigned int layer = 0; layer < texture->get_depth().get(); ++layer)
 			{
-				framebuffer_object->gl_attach_texture_array_layer(
+				framebuffer->gl_attach_texture_array_layer(
 						renderer,
 						texture,
 						0, // level
@@ -275,7 +275,7 @@ namespace GPlatesOpenGL
 			}
 
 			// Detach from the framebuffer object before we return it to the framebuffer object cache.
-			framebuffer_object->gl_detach_all(renderer);
+			framebuffer->gl_detach_all(renderer);
 		}
 	}
 }
@@ -428,26 +428,26 @@ GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
 		GLTexture::shared_ptr_to_const_type surface_fill_mask_texture =
 				acquire_surface_fill_mask_texture(renderer, surface_fill_mask_resolution);
 
-		// Classify our frame buffer object according to texture format/dimensions.
-		GLFrameBufferObject::Classification framebuffer_object_classification;
-		framebuffer_object_classification.set_dimensions(
+		// Classify our framebuffer object according to texture format/dimensions.
+		GLFramebuffer::Classification framebuffer_classification;
+		framebuffer_classification.set_dimensions(
 				renderer,
 				surface_fill_mask_texture->get_width().get(),
 				surface_fill_mask_texture->get_height().get());
-		framebuffer_object_classification.set_attached_texture_array(
+		framebuffer_classification.set_attached_texture_array(
 				renderer,
 				surface_fill_mask_texture->get_internal_format().get());
 
-		// Acquire and bind a frame buffer object.
-		GLFrameBufferObject::shared_ptr_type framebuffer_object =
-				renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+		// Acquire and bind a framebuffer object.
+		GLFramebuffer::shared_ptr_type framebuffer =
+				renderer.get_context().get_non_shared_state()->acquire_framebuffer(
 						renderer,
-						framebuffer_object_classification);
-		renderer.gl_bind_frame_buffer(framebuffer_object);
+						framebuffer_classification);
+		renderer.gl_bind_framebuffer(framebuffer);
 
 		// Begin rendering to the entire texture array (layered texture rendering).
 		// We will be using a geometry shader to direct each filled primitive to all six layers of the texture array.
-		framebuffer_object->gl_attach_texture_array(
+		framebuffer->gl_attach_texture_array(
 				renderer,
 				surface_fill_mask_texture,
 				0, // level - note that this is mipmap level and not the layer number
@@ -456,15 +456,15 @@ GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
 		// Check for framebuffer completeness (after attaching to texture array).
 		// It seems some hardware fails even though we checked OpenGL capabilities in 'is_supported()'
 		// such as 'gl_EXT_geometry_shader4' and we are using nice power-of-two texture dimensions, etc.
-		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_completeness(
 				renderer,
-				framebuffer_object,
-				framebuffer_object_classification))
+				framebuffer,
+				framebuffer_classification))
 		{
 			qWarning() << "Scalar field surface polygon masking not supported: failed framebuffer completeness check.";
 
 			// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
-			framebuffer_object->gl_detach_all(renderer);
+			framebuffer->gl_detach_all(renderer);
 
 			return false;
 		}
@@ -1284,26 +1284,26 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	// Temporarily acquire a texture array to render the surface fill mask into.
 	surface_fill_mask_texture = acquire_surface_fill_mask_texture(renderer, d_surface_fill_mask_resolution);
 
-	// Classify our frame buffer object according to texture format/dimensions.
-	GLFrameBufferObject::Classification framebuffer_object_classification;
-	framebuffer_object_classification.set_dimensions(
+	// Classify our framebuffer object according to texture format/dimensions.
+	GLFramebuffer::Classification framebuffer_classification;
+	framebuffer_classification.set_dimensions(
 			renderer,
 			surface_fill_mask_texture->get_width().get(),
 			surface_fill_mask_texture->get_height().get());
-	framebuffer_object_classification.set_attached_texture_array(
+	framebuffer_classification.set_attached_texture_array(
 			renderer,
 			surface_fill_mask_texture->get_internal_format().get());
 
-	// Acquire and bind a frame buffer object.
-	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+	// Acquire and bind a framebuffer object.
+	GLFramebuffer::shared_ptr_type framebuffer =
+			renderer.get_context().get_non_shared_state()->acquire_framebuffer(
 					renderer,
-					framebuffer_object_classification);
-	renderer.gl_bind_frame_buffer(framebuffer_object);
+					framebuffer_classification);
+	renderer.gl_bind_framebuffer(framebuffer);
 
 	// Begin rendering to the entire texture array (layered texture rendering).
 	// We will be using a geometry shader to direct each filled primitive to all six layers of the texture array.
-	framebuffer_object->gl_attach_texture_array(
+	framebuffer->gl_attach_texture_array(
 			renderer,
 			surface_fill_mask_texture,
 			0, // level - note that this is mipmap level and not the layer number
@@ -1313,23 +1313,23 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	// It seems some hardware fails even though we checked OpenGL capabilities in 'is_supported()'
 	// such as 'gl_EXT_geometry_shader4' and we are using nice power-of-two texture dimensions, etc.
 	// Note that the expensive completeness check is cached so it shouldn't slow us down.
-	if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+	if (!renderer.get_context().get_non_shared_state()->check_framebuffer_completeness(
 			renderer,
-			framebuffer_object,
-			framebuffer_object_classification))
+			framebuffer,
+			framebuffer_classification))
 	{
 		// Only output warning once for each framebuffer object classification.
-		static std::set<GLFrameBufferObject::Classification::tuple_type> warning_map;
-		if (warning_map.find(framebuffer_object_classification.get_tuple()) == warning_map.end())
+		static std::set<GLFramebuffer::Classification::tuple_type> warning_map;
+		if (warning_map.find(framebuffer_classification.get_tuple()) == warning_map.end())
 		{
 			qWarning() << "Scalar field surface polygons mask failed framebuffer completeness check.";
 
 			// Flag warning has been output.
-			warning_map.insert(framebuffer_object_classification.get_tuple());
+			warning_map.insert(framebuffer_classification.get_tuple());
 		}
 
 		// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
-		framebuffer_object->gl_detach_all(renderer);
+		framebuffer->gl_detach_all(renderer);
 
 		return false;
 	}
@@ -1380,7 +1380,7 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	}
 
 	// Detach from the framebuffer object before we return it to the framebuffer object cache.
-	framebuffer_object->gl_detach_all(renderer);
+	framebuffer->gl_detach_all(renderer);
 
 	return true;
 }
@@ -1698,7 +1698,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 	// We also clear the stencil buffer in case it is used - also it's usually interleaved
 	// with depth so it's more efficient to clear both depth and stencil.
 	//
-	// Note that this clears the depth render buffer attached to the framebuffer object
+	// Note that this clears the depth renderbuffer attached to the framebuffer object
 	// in the GLScreenRenderTarget (not the main framebuffer).
 	// The colour buffer stores normals as (signed) floating-point.
 	// An alpha value of 1.0 signifies (to the isosurface shader) that a wall is not present.

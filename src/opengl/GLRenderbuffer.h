@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,21 +23,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLBUFFER_H
-#define GPLATES_OPENGL_GLBUFFER_H
+#ifndef GPLATES_OPENGL_GLRENDERBUFFEROBJECT_H
+#define GPLATES_OPENGL_GLRENDERBUFFEROBJECT_H
 
 #include <memory> // For std::unique_ptr
+#include <utility>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-
 #include <opengl/OpenGL1.h>
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesOpenGL
@@ -46,10 +48,11 @@ namespace GPlatesOpenGL
 	class GLCapabilities;
 
 	/**
-	 * Wrapper around an OpenGL buffer object.
+	 * A renderbuffer object for use with @a GLFramebuffer.
 	 */
-	class GLBuffer :
-			public boost::enable_shared_from_this<GLBuffer>
+	class GLRenderbuffer :
+			public GLObject,
+			public boost::enable_shared_from_this<GLRenderbuffer>
 	{
 	public:
 		//
@@ -57,42 +60,44 @@ namespace GPlatesOpenGL
 		// is so these objects can be used with GPlatesUtils::ObjectCache.
 		//
 
-		//! A convenience typedef for a shared pointer to a non-const @a GLBuffer.
-		typedef boost::shared_ptr<GLBuffer> shared_ptr_type;
-		typedef boost::shared_ptr<const GLBuffer> shared_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a @a GLRenderbuffer.
+		typedef boost::shared_ptr<GLRenderbuffer> shared_ptr_type;
+		typedef boost::shared_ptr<const GLRenderbuffer> shared_ptr_to_const_type;
 
-		//! A convenience typedef for a weak pointer to a @a GLBuffer.
-		typedef boost::weak_ptr<GLBuffer> weak_ptr_type;
-		typedef boost::weak_ptr<const GLBuffer> weak_ptr_to_const_type;
+		//! A convenience typedef for a weak pointer to a @a GLRenderbuffer.
+		typedef boost::weak_ptr<GLRenderbuffer> weak_ptr_type;
+		typedef boost::weak_ptr<const GLRenderbuffer> weak_ptr_to_const_type;
 
 
 		/**
-		 * Creates a @a GLBuffer object.
+		 * Creates a shared pointer to a @a GLRenderbuffer object.
 		 */
 		static
 		shared_ptr_type
 		create(
 				GL &gl)
 		{
-			return shared_ptr_type(create_unique(gl).release());
+			return shared_ptr_type(new GLRenderbuffer(gl));
 		}
 
 		/**
 		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::unique_ptr<GLBuffer>
+		std::unique_ptr<GLRenderbuffer>
 		create_unique(
 				GL &gl)
 		{
-			return std::unique_ptr<GLBuffer>(new GLBuffer(gl));
+			return std::unique_ptr<GLRenderbuffer>(new GLRenderbuffer(gl));
 		}
 
+
 		/**
-		 * Returns the buffer resource handle.
+		 * Returns the renderbuffer resource handle.
 		 */
 		GLuint
 		get_resource_handle() const;
+
 
 	public:  // For use by the OpenGL framework...
 
@@ -118,14 +123,13 @@ namespace GPlatesOpenGL
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
 	private:
-
 		resource_type::non_null_ptr_to_const_type d_resource;
 
 		//! Constructor.
 		explicit
-		GLBuffer(
+		GLRenderbuffer(
 				GL &gl);
 	};
 }
 
-#endif // GPLATES_OPENGL_GLBUFFER_H
+#endif // GPLATES_OPENGL_GLRENDERBUFFEROBJECT_H

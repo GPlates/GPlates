@@ -130,10 +130,10 @@ namespace GPlatesGui
 		 * to the image, ie, if the main framebuffer is smaller than the image (paint device dimensions).
 		 * The default value of zero can be used if no points or lines are rendered (eg, only rasters).
 		 *
-		 * NOTE: Rendering of tiles is performed using the current frame buffer which is either
-		 * the main frame buffer or the currently bound frame buffer object (if one is bound).
-		 * The contents of the frame buffer will be corrupted by the tile rendering so you should
-		 * save/restore the frame buffer if you need to keep the (colour) frame buffer intact.
+		 * NOTE: Rendering of tiles is performed using the current framebuffer which is either
+		 * the main framebuffer or the currently bound framebuffer object (if one is bound).
+		 * The contents of the framebuffer will be corrupted by the tile rendering so you should
+		 * save/restore the framebuffer if you need to keep the (colour) framebuffer intact.
 		 *
 		 * @throws PreconditionViolationError if @a renderer was not set up with a QPainter.
 		 */

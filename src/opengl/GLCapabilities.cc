@@ -46,10 +46,10 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	//
 	// Note: Non-zero values represent the minimum required by OpenGL for all implementations.
 	//
-	gl_sub_pixel_bits(4),
 	gl_max_color_attachments(0),
 	gl_max_renderbuffer_size(0),
 	gl_max_draw_buffers(8),
+	gl_sub_pixel_bits(4),
 	gl_max_vertex_attribs(16),
 	gl_max_combined_texture_image_units(48),
 	gl_max_texture_image_units(16),
@@ -89,10 +89,10 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	// Framebuffer
 	//
 
-	gl_sub_pixel_bits = query_integer(GL_SUBPIXEL_BITS);
 	gl_max_color_attachments = query_integer(GL_MAX_COLOR_ATTACHMENTS);
 	gl_max_renderbuffer_size = query_integer(GL_MAX_RENDERBUFFER_SIZE);
 	gl_max_draw_buffers = query_integer(GL_MAX_DRAW_BUFFERS);
+	gl_sub_pixel_bits = query_integer(GL_SUBPIXEL_BITS);
 
 
 	//

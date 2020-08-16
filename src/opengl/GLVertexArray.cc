@@ -37,7 +37,7 @@
 
 GPlatesOpenGL::GLVertexArray::GLVertexArray(
 		GL &gl) :
-	d_object_state(gl.get_capabilities().shader.gl_max_vertex_attribs)
+	d_object_state(gl.get_capabilities().gl_max_vertex_attribs)
 {
 }
 
@@ -61,7 +61,7 @@ GPlatesOpenGL::GLVertexArray::clear(
 	gl.BindBuffer(GL_ARRAY_BUFFER, boost::none);
 
 	// Reset the attribute arrays.
-	const unsigned int num_attribute_arrays = gl.get_capabilities().shader.gl_max_vertex_attribs;
+	const unsigned int num_attribute_arrays = gl.get_capabilities().gl_max_vertex_attribs;
 	for (GLuint attribute_index = 0; attribute_index < num_attribute_arrays; ++attribute_index)
 	{
 		gl.DisableVertexAttribArray(attribute_index);
@@ -118,7 +118,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 	//
 	// Synchronise the attribute arrays (parameters + array buffer binding).
 	//
-	const unsigned int num_attribute_arrays = gl.get_capabilities().shader.gl_max_vertex_attribs;
+	const unsigned int num_attribute_arrays = gl.get_capabilities().gl_max_vertex_attribs;
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_object_state.attribute_arrays.size() == num_attribute_arrays &&
 				current_context_object_state.object_state.attribute_arrays.size() == num_attribute_arrays,
@@ -405,6 +405,6 @@ GPlatesOpenGL::GLVertexArray::ContextObjectState::ContextObjectState(
 			resource_type::create(
 					context_.get_capabilities(),
 					context_.get_non_shared_state()->get_vertex_array_resource_manager())),
-	object_state(gl.get_capabilities().shader.gl_max_vertex_attribs)
+	object_state(gl.get_capabilities().gl_max_vertex_attribs)
 {
 }

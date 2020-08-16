@@ -31,7 +31,7 @@
 #include "GLLight.h"
 
 #include "GLContext.h"
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
@@ -99,24 +99,24 @@ GPlatesOpenGL::GLLight::is_supported(
 		GLTexture::shared_ptr_type map_view_light_direction_cube_texture = GLTexture::create(renderer);
 		create_map_view_light_direction_cube_texture(renderer, map_view_light_direction_cube_texture);
 
-		// Acquire a frame buffer object.
-		GLFrameBufferObject::Classification map_view_light_direction_framebuffer_object_classification;
-		map_view_light_direction_framebuffer_object_classification.set_dimensions(
+		// Acquire a framebuffer object.
+		GLFramebuffer::Classification map_view_light_direction_framebuffer_classification;
+		map_view_light_direction_framebuffer_classification.set_dimensions(
 				renderer,
 				MAP_VIEW_LIGHT_DIRECTION_CUBE_TEXTURE_DIMENSION,
 				MAP_VIEW_LIGHT_DIRECTION_CUBE_TEXTURE_DIMENSION);
-		map_view_light_direction_framebuffer_object_classification.set_attached_texture_2D(renderer, GL_RGBA8);
-		GLFrameBufferObject::shared_ptr_type map_view_light_direction_framebuffer_object =
-				renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+		map_view_light_direction_framebuffer_classification.set_attached_texture_2D(renderer, GL_RGBA8);
+		GLFramebuffer::shared_ptr_type map_view_light_direction_framebuffer =
+				renderer.get_context().get_non_shared_state()->acquire_framebuffer(
 						renderer,
-						map_view_light_direction_framebuffer_object_classification);
+						map_view_light_direction_framebuffer_classification);
 
 		// Try attaching each of the six faces of the cube texture to the framebuffer object.
 		for (unsigned int face = 0; face < 6; ++face)
 		{
 			const GLenum face_target = static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face);
 
-			map_view_light_direction_framebuffer_object->gl_attach_texture_2D(
+			map_view_light_direction_framebuffer->gl_attach_texture_2D(
 					renderer,
 					face_target,
 					map_view_light_direction_cube_texture,
@@ -124,19 +124,19 @@ GPlatesOpenGL::GLLight::is_supported(
 					GL_COLOR_ATTACHMENT0_EXT);
 
 			// Test for framebuffer object completeness.
-			map_view_light_direction_framebuffer_object_classification.set_attached_texture_2D(
+			map_view_light_direction_framebuffer_classification.set_attached_texture_2D(
 					renderer, GL_RGBA8, face_target);
-			if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+			if (!renderer.get_context().get_non_shared_state()->check_framebuffer_completeness(
 					renderer,
-					map_view_light_direction_framebuffer_object,
-					map_view_light_direction_framebuffer_object_classification))
+					map_view_light_direction_framebuffer,
+					map_view_light_direction_framebuffer_classification))
 			{
 				return false;
 			}
 		}
 
 		// Detach from the framebuffer object before we return it to the framebuffer object cache.
-		map_view_light_direction_framebuffer_object->gl_detach_all(renderer);
+		map_view_light_direction_framebuffer->gl_detach_all(renderer);
 
 		//
 		// Try to compile our most complex fragment shader program.
@@ -416,22 +416,22 @@ GPlatesOpenGL::GLLight::update_map_view(
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
 			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
 
-	// Classify our frame buffer object according to texture format/dimensions.
-	GLFrameBufferObject::Classification framebuffer_object_classification;
-	framebuffer_object_classification.set_dimensions(
+	// Classify our framebuffer object according to texture format/dimensions.
+	GLFramebuffer::Classification framebuffer_classification;
+	framebuffer_classification.set_dimensions(
 			renderer,
 			d_map_view_light_direction_cube_texture->get_width().get(),
 			d_map_view_light_direction_cube_texture->get_height().get());
-	framebuffer_object_classification.set_attached_texture_2D(
+	framebuffer_classification.set_attached_texture_2D(
 			renderer,
 			d_map_view_light_direction_cube_texture->get_internal_format().get());
 
-	// Acquire and bind a frame buffer object.
-	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+	// Acquire and bind a framebuffer object.
+	GLFramebuffer::shared_ptr_type framebuffer =
+			renderer.get_context().get_non_shared_state()->acquire_framebuffer(
 					renderer,
-					framebuffer_object_classification);
-	renderer.gl_bind_frame_buffer(framebuffer_object);
+					framebuffer_classification);
+	renderer.gl_bind_framebuffer(framebuffer);
 
 	// Bind the shader program for rendering light direction for the 2D map views.
 	renderer.gl_bind_program_object(d_render_map_view_light_direction_program_object.get());
@@ -471,20 +471,20 @@ GPlatesOpenGL::GLLight::update_map_view(
 		const GLenum face_target = static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face);
 
 		// Begin rendering to the 2D texture of the current cube face.
-		framebuffer_object->gl_attach_texture_2D(
+		framebuffer->gl_attach_texture_2D(
 				renderer, face_target, d_map_view_light_direction_cube_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 
 		// Note: We've already tested for framebuffer object completeness in 'is_supported()'
 		// so this is just protection in case that was never called for some reason.
 		// The completeness results are cached so this should not slow things down.
-		framebuffer_object_classification.set_attached_texture_2D(
+		framebuffer_classification.set_attached_texture_2D(
 				renderer,
 				d_map_view_light_direction_cube_texture->get_internal_format().get(),
 				face_target);
-		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_completeness(
 				renderer,
-				framebuffer_object,
-				framebuffer_object_classification))
+				framebuffer,
+				framebuffer_classification))
 		{
 			static bool emitted_warning = false;
 			if (!emitted_warning)
@@ -504,7 +504,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 	}
 
 	// Detach from the framebuffer object before we return it to the framebuffer object cache.
-	framebuffer_object->gl_detach_all(renderer);
+	framebuffer->gl_detach_all(renderer);
 }
 
 

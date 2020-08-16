@@ -43,17 +43,17 @@ namespace GPlatesOpenGL
 	namespace GLImageUtils
 	{
 		/**
-		 * Copies the specified source rectangle of the currently bound frame buffer into
+		 * Copies the specified source rectangle of the currently bound framebuffer into
 		 * the specified destination rectangle of the QImage.
 		 *
-		 * NOTE: The currently bound frame buffer is expected to be fixed-point RGBA8 format.
+		 * NOTE: The currently bound framebuffer is expected to be fixed-point RGBA8 format.
 		 * The image format is expected to be QImage::Format_ARGB32 or QImage::Format_ARGB32_Premultiplied.
 		 *
 		 * Note that OpenGL and Qt y-axes are the reverse of each other and both viewports are
 		 * specified in the OpenGL coordinate frame.
 		 */
 		void
-		copy_rgba8_frame_buffer_into_argb32_qimage(
+		copy_rgba8_framebuffer_into_argb32_qimage(
 				GLRenderer &renderer,
 				QImage &image,
 				const GLViewport &source_viewport,

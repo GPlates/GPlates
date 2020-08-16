@@ -195,7 +195,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 	}
 
 	// We need a stencil buffer so return early if there's not one - well, we actually use stencil
-	// buffer of a frame buffer object (FBO) and not main frame buffer but won't have the former
+	// buffer of a framebuffer object (FBO) and not main framebuffer but won't have the former
 	// if don't have the latter anyway.
 	//
 	// Note that we don't have an 'is_supported()' method that tests for this because pretty much all

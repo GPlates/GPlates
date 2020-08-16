@@ -29,7 +29,7 @@
 #include <boost/foreach.hpp>
 #include <QDebug>
 
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 
 #include "GLContext.h"
 #include "GLRenderer.h"
@@ -97,34 +97,11 @@ namespace GPlatesOpenGL
 }
 
 
-GLint
-GPlatesOpenGL::GLFrameBufferObject::Allocator::allocate(
-		const GLCapabilities &capabilities)
-{
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	GLuint fbo;
-	glGenFramebuffersEXT(1, &fbo);
-	return fbo;
-}
+const GLenum GPlatesOpenGL::GLFramebuffer::DEFAULT_DRAW_READ_BUFFER = GL_COLOR_ATTACHMENT0_EXT;
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Allocator::deallocate(
-		GLuint fbo)
-{
-	glDeleteFramebuffersEXT(1, &fbo);
-}
-
-
-const GLenum GPlatesOpenGL::GLFrameBufferObject::DEFAULT_DRAW_READ_BUFFER = GL_COLOR_ATTACHMENT0_EXT;
-
-
-void
-GPlatesOpenGL::GLFrameBufferObject::gl_generate_mipmap(
+GPlatesOpenGL::GLFramebuffer::gl_generate_mipmap(
 		GLRenderer &renderer,
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture)
@@ -153,12 +130,12 @@ GPlatesOpenGL::GLFrameBufferObject::gl_generate_mipmap(
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
+GPlatesOpenGL::GLFramebuffer::GLFramebuffer(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
 					renderer.get_capabilities(),
-					renderer.get_context().get_non_shared_state()->get_frame_buffer_object_resource_manager()))
+					renderer.get_context().get_non_shared_state()->get_framebuffer_resource_manager()))
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
@@ -173,7 +150,7 @@ GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
+GPlatesOpenGL::GLFramebuffer::gl_attach_texture_1D(
 		GLRenderer &renderer,
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture,
@@ -203,7 +180,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
 			texture_target,
-			texture->get_texture_resource_handle(),
+			texture->get_resource_handle(),
 			level);
 
 	// Keep track of the attachment.
@@ -218,7 +195,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
+GPlatesOpenGL::GLFramebuffer::gl_attach_texture_2D(
 		GLRenderer &renderer,
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture,
@@ -248,7 +225,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
 			texture_target,
-			texture->get_texture_resource_handle(),
+			texture->get_resource_handle(),
 			level);
 
 	// Keep track of the attachment.
@@ -263,7 +240,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
+GPlatesOpenGL::GLFramebuffer::gl_attach_texture_3D(
 		GLRenderer &renderer,
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture,
@@ -294,7 +271,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
 			texture_target,
-			texture->get_texture_resource_handle(),
+			texture->get_resource_handle(),
 			level,
 			zoffset);
 
@@ -311,7 +288,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
+GPlatesOpenGL::GLFramebuffer::gl_attach_texture_array_layer(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		GLint level,
@@ -348,7 +325,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 	glFramebufferTextureLayerEXT(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
-			texture->get_texture_resource_handle(),
+			texture->get_resource_handle(),
 			level,
 			layer);
 
@@ -363,7 +340,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
+GPlatesOpenGL::GLFramebuffer::gl_attach_texture_array(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		GLint level,
@@ -399,7 +376,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 	glFramebufferTextureEXT(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
-			texture->get_texture_resource_handle(),
+			texture->get_resource_handle(),
 			level);
 
 	// Keep track of the attachment.
@@ -412,16 +389,16 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_render_buffer(
+GPlatesOpenGL::GLFramebuffer::gl_attach_renderbuffer(
 		GLRenderer &renderer,
-		const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer,
+		const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer,
 		GLenum attachment)
 {
 	//PROFILE_FUNC();
 
-	// The render buffer must have its storage initialised.
+	// The renderbuffer must have its storage initialised.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			render_buffer->get_dimensions(),
+			renderbuffer->get_dimensions(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
@@ -434,21 +411,21 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_render_buffer(
 			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Attach to the render buffer.
+	// Attach to the renderbuffer.
 	glFramebufferRenderbufferEXT(
 			GL_FRAMEBUFFER_EXT,
 			attachment,
 			GL_RENDERBUFFER_EXT,
-			render_buffer->get_render_buffer_resource_handle());
+			renderbuffer->get_resource_handle());
 
 	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(attachment, render_buffer);
+	const AttachmentPoint attachment_point(attachment, renderbuffer);
 	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
 }
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_detach(
+GPlatesOpenGL::GLFramebuffer::gl_detach(
 		GLRenderer &renderer,
 		GLenum attachment)
 {
@@ -467,11 +444,11 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	const boost::optional<AttachmentPoint> &attachment_point = d_attachment_points[get_attachment_index(attachment)];
 	if (!attachment_point)
 	{
-		qWarning() << "GLFrameBufferObject::gl_detach: Attempted to detach unattached texture or render buffer.";
+		qWarning() << "GLFramebuffer::gl_detach: Attempted to detach unattached texture or renderbuffer.";
 		return;
 	}
 
-	// Detach by binding to texture object zero (or render buffer zero).
+	// Detach by binding to texture object zero (or renderbuffer zero).
 	//
 	// NOTE: I don't think we need to match the function call and parameters when the object
 	// is zero (at least the parameters are supposed to be ignored) but we'll do it anyway.
@@ -564,8 +541,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 		glFramebufferRenderbufferEXT(
 				GL_FRAMEBUFFER_EXT,
 				attachment_point->attachment,
-				GL_RENDERBUFFER_EXT, // value ignored for zero render buffer
-				0/*render buffer*/);
+				GL_RENDERBUFFER_EXT, // value ignored for zero renderbuffer
+				0/*renderbuffer*/);
 #endif
 		break;
 
@@ -577,7 +554,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 				GL_FRAMEBUFFER_EXT,
 				attachment_point->attachment,
 				attachment_point->attachment_target.get(),
-				0/*render buffer*/);
+				0/*renderbuffer*/);
 		break;
 
 	default:
@@ -591,7 +568,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_detach_all(
+GPlatesOpenGL::GLFramebuffer::gl_detach_all(
 		GLRenderer &renderer)
 {
 	// Detach any currently attached attachment points.
@@ -606,7 +583,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach_all(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
+GPlatesOpenGL::GLFramebuffer::gl_draw_buffers(
 		GLRenderer &renderer,
 		const std::vector<GLenum> &bufs)
 {
@@ -637,7 +614,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_read_buffer(
+GPlatesOpenGL::GLFramebuffer::gl_read_buffer(
 		GLRenderer &renderer,
 		GLenum mode)
 {
@@ -650,7 +627,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_read_buffer(
 
 
 bool
-GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
+GPlatesOpenGL::GLFramebuffer::gl_check_framebuffer_status(
 		GLRenderer &renderer) const
 {
 	PROFILE_FUNC();
@@ -689,7 +666,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 
 
 boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
-GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
+GPlatesOpenGL::GLFramebuffer::get_framebuffer_dimensions() const
 {
 	// Iterate over the attachment points until we find one that has something attached.
 	for (unsigned int attachment_index = 0;
@@ -720,12 +697,12 @@ GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
 					texture_height ? texture_height.get() : 1);
 		}
 
-		// Attachment point must either be a texture or a render buffer.
+		// Attachment point must either be a texture or a renderbuffer.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point.render_buffer,
+				attachment_point.renderbuffer,
 				GPLATES_ASSERTION_SOURCE);
 
-		return attachment_point.render_buffer.get()->get_dimensions();
+		return attachment_point.renderbuffer.get()->get_dimensions();
 	}
 
 	// Nothing attached to any attachment points.
@@ -733,7 +710,32 @@ GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::Classification::Classification() :
+GLuint
+GPlatesOpenGL::GLFramebuffer::get_resource_handle() const
+{
+	return d_resource->get_resource_handle();
+}
+
+
+GLuint
+GPlatesOpenGL::GLFramebuffer::Allocator::allocate(
+		const GLCapabilities &capabilities)
+{
+	GLuint fbo;
+	glGenFramebuffers(1, &fbo);
+	return fbo;
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::Allocator::deallocate(
+		GLuint fbo)
+{
+	glDeleteFramebuffers(1, &fbo);
+}
+
+
+GPlatesOpenGL::GLFramebuffer::Classification::Classification() :
 	// Using arbitrary default parameters - default tuple indicates non-specified classification.
 	d_tuple(
 			0, // width
@@ -746,7 +748,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::Classification() :
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_dimensions(
+GPlatesOpenGL::GLFramebuffer::Classification::set_dimensions(
 		GLRenderer &renderer,
 		GLuint width,
 		GLuint height)
@@ -757,7 +759,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_dimensions(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_1D(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_1D(
 		GLRenderer &renderer,
 		GLint texture_internal_format,
 		GLenum texture_target,
@@ -774,7 +776,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_1D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_2D(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_2D(
 		GLRenderer &renderer,
 		GLint texture_internal_format,
 		GLenum texture_target,
@@ -791,7 +793,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_2D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_3D(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_3D(
 		GLRenderer &renderer,
 		GLint texture_internal_format,
 		GLenum texture_target,
@@ -808,7 +810,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_3D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array_layer(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_array_layer(
 		GLRenderer &renderer,
 		GLint texture_internal_format,
 		GLenum attachment)
@@ -824,7 +826,7 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array_l
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_array(
 		GLRenderer &renderer,
 		GLint texture_internal_format,
 		GLenum attachment)
@@ -840,9 +842,9 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_render_buffer(
+GPlatesOpenGL::GLFramebuffer::Classification::set_attached_renderbuffer(
 		GLRenderer &renderer,
-		GLint render_buffer_internal_format,
+		GLint renderbuffer_internal_format,
 		GLenum attachment)
 {
 	assert_valid_attachment(
@@ -851,11 +853,11 @@ GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_render_buffer(
 			GPLATES_ASSERTION_SOURCE);
 
 	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_RENDER_BUFFER, render_buffer_internal_format, boost::none/*texture_target*/);
+			attachment_point_type(ATTACHMENT_RENDER_BUFFER, renderbuffer_internal_format, boost::none/*texture_target*/);
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
+GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
 		AttachmentType attachment_type_,
 		GLenum attachment_target_,
@@ -872,7 +874,7 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
+GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
 		const GLTexture::shared_ptr_to_const_type &texture_,
 		GLint texture_level_,
@@ -886,7 +888,7 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
+GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
 		const GLTexture::shared_ptr_to_const_type &texture_,
 		GLint texture_level_) :
@@ -898,12 +900,12 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
+GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
-		const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer_) :
+		const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer_) :
 	attachment(attachment_),
 	attachment_type(ATTACHMENT_RENDER_BUFFER),
 	attachment_target(GL_RENDERBUFFER_EXT),
-	render_buffer(render_buffer_)
+	renderbuffer(renderbuffer_)
 {
 }

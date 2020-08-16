@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
-#define GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
+#ifndef GPLATES_OPENGL_GLFRAMEBUFFER_H
+#define GPLATES_OPENGL_GLFRAMEBUFFER_H
 
 #include <memory> // For std::unique_ptr
 #include <utility>
@@ -40,13 +40,14 @@
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
-#include "GLRenderBufferObject.h"
+#include "GLRenderbuffer.h"
 #include "GLTexture.h"
 
 
 namespace GPlatesOpenGL
 {
 	class GLRenderer;
+	class GLCapabilities;
 
 	/**
 	 * A wrapper around a framebuffer object.
@@ -59,9 +60,9 @@ namespace GPlatesOpenGL
 	 * NOTE: There's also the more recent "GL_ARB_framebuffer_object" extension however it has extra features
 	 * (or less restrictions) but does not have the wide support that "GL_EXT_framebuffer_object" does.
 	 */
-	class GLFrameBufferObject :
+	class GLFramebuffer :
 			public GLObject,
-			public boost::enable_shared_from_this<GLFrameBufferObject>
+			public boost::enable_shared_from_this<GLFramebuffer>
 	{
 	public:
 		//
@@ -69,38 +70,14 @@ namespace GPlatesOpenGL
 		// is so these objects can be used with GPlatesUtils::ObjectCache.
 		//
 
-		//! A convenience typedef for a shared pointer to a @a GLFrameBufferObject.
-		typedef boost::shared_ptr<GLFrameBufferObject> shared_ptr_type;
-		typedef boost::shared_ptr<const GLFrameBufferObject> shared_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a @a GLFramebuffer.
+		typedef boost::shared_ptr<GLFramebuffer> shared_ptr_type;
+		typedef boost::shared_ptr<const GLFramebuffer> shared_ptr_to_const_type;
 
-		//! A convenience typedef for a weak pointer to a @a GLFrameBufferObject.
-		typedef boost::weak_ptr<GLFrameBufferObject> weak_ptr_type;
-		typedef boost::weak_ptr<const GLFrameBufferObject> weak_ptr_to_const_type;
+		//! A convenience typedef for a weak pointer to a @a GLFramebuffer.
+		typedef boost::weak_ptr<GLFramebuffer> weak_ptr_type;
+		typedef boost::weak_ptr<const GLFramebuffer> weak_ptr_to_const_type;
 
-
-		/**
-		 * Policy class to allocate and deallocate OpenGL framebuffer objects.
-		 */
-		class Allocator
-		{
-		public:
-			GLint
-			allocate(
-					const GLCapabilities &capabilities);
-
-			void
-			deallocate(
-					GLuint);
-		};
-
-		//! Typedef for a resource handle.
-		typedef GLuint resource_handle_type;
-
-		//! Typedef for a resource.
-		typedef GLObjectResource<resource_handle_type, Allocator> resource_type;
-
-		//! Typedef for a resource manager.
-		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
 
 		//! Types of attachments.
 		enum AttachmentType
@@ -115,7 +92,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Classifies a frame buffer object to, for example, assist with frame buffer switching efficiency.
+		 * Classifies a framebuffer to, for example, assist with framebuffer switching efficiency.
 		 *
 		 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
 		 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
@@ -135,7 +112,7 @@ namespace GPlatesOpenGL
 		 *		   use glDrawBuffer() to switch rendering to different color attachments
 		 *
 		 * ...so we can optimize for the second case above having multiple render targets with
-		 * the same texture format and dimensions by sharing a single frame buffer object.
+		 * the same texture format and dimensions by sharing a single framebuffer object.
 		 * These parameters are specified in this class (@a Classification).
 		 *
 		 * Another application of this classification is caching expensive framebuffer completeness checks.
@@ -147,7 +124,7 @@ namespace GPlatesOpenGL
 			//! Implementation detail of each attachment point.
 			typedef boost::tuple<
 					AttachmentType,
-					GLint, // texture or render buffer internal format
+					GLint, // texture or renderbuffer internal format
 					boost::optional<GLenum> > // optional texture target
 							attachment_point_type;
 
@@ -161,7 +138,7 @@ namespace GPlatesOpenGL
 				> tuple_type;
 
 
-			//! Default classification represents empty (un-attached) frame buffer.
+			//! Default classification represents empty (un-attached) framebuffer.
 			Classification();
 
 
@@ -174,7 +151,7 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * Set dimensions of frame buffer attachable textures/render-buffers.
+			 * Set dimensions of framebuffer attachable textures/render-buffers.
 			 *
 			 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
 			 * 2D dimensions of all attachment points must be the same, so this covers all attachments.
@@ -185,7 +162,7 @@ namespace GPlatesOpenGL
 					GLuint width,
 					GLuint height);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
 			set_attached_texture_1D(
 					GLRenderer &renderer,
@@ -193,7 +170,7 @@ namespace GPlatesOpenGL
 					GLenum texture_target = GL_TEXTURE_1D,
 					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
 			set_attached_texture_2D(
 					GLRenderer &renderer,
@@ -201,7 +178,7 @@ namespace GPlatesOpenGL
 					GLenum texture_target = GL_TEXTURE_2D,
 					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
 			set_attached_texture_3D(
 					GLRenderer &renderer,
@@ -209,25 +186,25 @@ namespace GPlatesOpenGL
 					GLenum texture_target,
 					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
 			set_attached_texture_array_layer(
 					GLRenderer &renderer,
 					GLint texture_internal_format,
 					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
 			set_attached_texture_array(
 					GLRenderer &renderer,
 					GLint texture_internal_format,
 					GLenum attachment = GLCapabilities::gl_COLOR_ATTACHMENT0);
 
-			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			//! Equivalent of similarly named method in parent GLFramebuffer class.
 			void
-			set_attached_render_buffer(
+			set_attached_renderbuffer(
 					GLRenderer &renderer,
-					GLint render_buffer_internal_format,
+					GLint renderbuffer_internal_format,
 					GLenum attachment);
 
 		private:
@@ -265,7 +242,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a shared pointer to a @a GLFrameBufferObject object.
+		 * Creates a shared pointer to a @a GLFramebuffer object.
 		 *
 		 * The internal framebuffer resource is allocated by @a framebuffer_resource_manager.
 		 */
@@ -274,18 +251,18 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer)
 		{
-			return shared_ptr_type(new GLFrameBufferObject(renderer));
+			return shared_ptr_type(new GLFramebuffer(renderer));
 		}
 
 		/**
 		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::unique_ptr<GLFrameBufferObject>
+		std::unique_ptr<GLFramebuffer>
 		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::unique_ptr<GLFrameBufferObject>(new GLFrameBufferObject(renderer));
+			return std::unique_ptr<GLFramebuffer>(new GLFramebuffer(renderer));
 		}
 
 
@@ -408,9 +385,9 @@ namespace GPlatesOpenGL
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
-		gl_attach_render_buffer(
+		gl_attach_renderbuffer(
 				GLRenderer &renderer,
-				const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer,
+				const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer,
 				GLenum attachment);
 
 
@@ -508,7 +485,7 @@ namespace GPlatesOpenGL
 		 *  (2) filled polygons (they're actually rendered like a multi-resolution raster).
 		 */
 		bool
-		gl_check_frame_buffer_status(
+		gl_check_framebuffer_status(
 				GLRenderer &renderer) const;
 
 
@@ -525,19 +502,38 @@ namespace GPlatesOpenGL
 		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
-		get_frame_buffer_dimensions() const;
+		get_framebuffer_dimensions() const;
 
 
 		/**
-		 * Returns the framebuffer handle.
-		 *
-		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
+		 * Returns the framebuffer resource handle.
 		 */
-		resource_handle_type
-		get_frame_buffer_resource_handle() const
+		GLuint
+		get_resource_handle() const;
+
+
+	public:  // For use by the OpenGL framework...
+
+		/**
+		 * Policy class to allocate and deallocate OpenGL buffer objects.
+		 */
+		class Allocator
 		{
-			return d_resource->get_resource_handle();
-		}
+		public:
+			GLuint
+			allocate(
+					const GLCapabilities &capabilities);
+
+			void
+			deallocate(
+					GLuint);
+		};
+
+		//! Typedef for a resource.
+		typedef GLObjectResource<GLuint, Allocator> resource_type;
+
+		//! Typedef for a resource manager.
+		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
 	private:
 
@@ -568,10 +564,10 @@ namespace GPlatesOpenGL
 					const GLTexture::shared_ptr_to_const_type &texture_,
 					GLint texture_level_);
 
-			//! Constructor for render buffer attachments.
+			//! Constructor for renderbuffer attachments.
 			AttachmentPoint(
 					GLenum attachment_,
-					const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer_);
+					const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer_);
 
 			GLenum attachment;
 			AttachmentType attachment_type;
@@ -589,7 +585,7 @@ namespace GPlatesOpenGL
 			boost::optional<GLint> texture_zoffset;
 
 			// Only used for ATTACHMENT_RENDER_BUFFER...
-			boost::optional<GLRenderBufferObject::shared_ptr_to_const_type> render_buffer;
+			boost::optional<GLRenderbuffer::shared_ptr_to_const_type> renderbuffer;
 		};
 
 		//! Typedef for a sequence of attachments.
@@ -608,9 +604,9 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		explicit
-		GLFrameBufferObject(
+		GLFramebuffer(
 				GLRenderer &renderer);
 	};
 }
 
-#endif // GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
+#endif // GPLATES_OPENGL_GLFRAMEBUFFER_H

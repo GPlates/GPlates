@@ -138,6 +138,11 @@ namespace GPlatesOpenGL
 		get_bind_buffer_key(
 				GLenum target) const;
 
+		key_type
+		get_bind_texture_key(
+				GLenum texture_target,
+				GLenum texture_unit) const;
+
 		//! For glEnable/glDisable.
 		key_type
 		get_enable_key(
@@ -147,11 +152,6 @@ namespace GPlatesOpenGL
 		key_type
 		get_hint_key(
 				GLenum target) const;
-
-		key_type
-		get_bind_texture_key(
-				GLenum texture_target,
-				GLenum texture_unit) const;
 
 	private:
 

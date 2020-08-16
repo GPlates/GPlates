@@ -35,7 +35,7 @@
 #include <QString>
 
 #include "GLCubeSubdivisionCache.h"
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 #include "GLMultiResolutionRasterInterface.h"
 #include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
@@ -969,7 +969,7 @@ namespace GPlatesOpenGL
 			void
 			queue_reduce_pyramid_output(
 					GLRenderer &renderer,
-					const GLFrameBufferObject::shared_ptr_type &framebuffer_object,
+					const GLFramebuffer::shared_ptr_type &framebuffer,
 					const GLTexture::shared_ptr_to_const_type &results_texture,
 					const ReduceQuadTree::non_null_ptr_to_const_type &reduce_quad_tree,
 					std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results);
@@ -1258,7 +1258,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Used to render to floating-point textures.
 		 */
-		GLFrameBufferObject::shared_ptr_type d_framebuffer_object;
+		GLFramebuffer::shared_ptr_type d_framebuffer;
 
 		/**
 		 * Used to stream indices (vertex elements) such as region-of-interest geometries.

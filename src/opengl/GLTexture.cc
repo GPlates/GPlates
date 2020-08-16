@@ -442,3 +442,27 @@ GPlatesOpenGL::GLTexture::is_format_floating_point(
 #endif
 			;
 }
+
+
+GLuint
+GPlatesOpenGL::GLTexture::get_resource_handle() const
+{
+	return d_resource->get_resource_handle();
+}
+
+
+GPlatesOpenGL::GLTexture::Allocator::allocate(
+		const GLCapabilities &capabilities)
+{
+	GLuint texture;
+	glGenTextures(1, &texture);
+	return texture;
+}
+
+
+void
+GPlatesOpenGL::GLTexture::Allocator::deallocate(
+		GLuint texture)
+{
+	glDeleteTextures(1, &texture);
+}

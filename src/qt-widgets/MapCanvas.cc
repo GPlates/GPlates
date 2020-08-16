@@ -338,18 +338,18 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(0,0,0,0).rgba());
 
-	// Get the frame buffer dimensions (in device pixels).
-	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
-			gl->get_current_frame_buffer_dimensions();
+	// Get the framebuffer dimensions (in device pixels).
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> framebuffer_dimensions =
+			gl->get_current_framebuffer_dimensions();
 
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int tile_border = 10;
 	// Set up for rendering the scene into tiles.
-	// The tile render target dimensions match the frame buffer dimensions.
+	// The tile render target dimensions match the framebuffer dimensions.
 	GPlatesOpenGL::GLTileRender tile_render(
-			frame_buffer_dimensions.first/*tile_render_target_width*/,
-			frame_buffer_dimensions.second/*tile_render_target_height*/,
+			framebuffer_dimensions.first/*tile_render_target_width*/,
+			framebuffer_dimensions.second/*tile_render_target_height*/,
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
@@ -472,7 +472,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 	tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
 
-	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 			gl,
 			image,
 			current_tile_source_viewport,

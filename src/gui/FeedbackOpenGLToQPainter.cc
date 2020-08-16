@@ -594,14 +594,14 @@ GPlatesGui::FeedbackOpenGLToQPainter::begin_render_image(
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(0,0,0,0).rgba());
 
-	// We use the currently bound frame buffer to render tiles into.
-	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
-			renderer.get_current_frame_buffer_dimensions();
+	// We use the currently bound framebuffer to render tiles into.
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> framebuffer_dimensions =
+			renderer.get_current_framebuffer_dimensions();
 
 	// Set up for tiling into the final image.
 	const GPlatesOpenGL::GLTileRender tile_render(
-			frame_buffer_dimensions.first/*render_target_width*/,
-			frame_buffer_dimensions.second/*render_target_height*/,
+			framebuffer_dimensions.first/*render_target_width*/,
+			framebuffer_dimensions.second/*render_target_height*/,
 			GPlatesOpenGL::GLViewport(0, 0, image_size.width(), image_size.height())/*destination_viewport*/,
 			// The border is half the point size or line width, rounded up to nearest pixel.
 			// NOTE: It is important that 'max_point_size_and_line_width = 0' maps to 'border = 0'...
@@ -642,7 +642,7 @@ GPlatesGui::FeedbackOpenGLToQPainter::begin_render_image_tile(
 			current_image_tile_scissor_rect);
 
 	// Mask off rendering outside the current tile region in case the tile is smaller than the
-	// main frame buffer. Note that the tile's viewport is slightly larger than the tile itself
+	// main framebuffer. Note that the tile's viewport is slightly larger than the tile itself
 	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
 	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
 	//
@@ -693,7 +693,7 @@ GPlatesGui::FeedbackOpenGLToQPainter::end_render_image_tile(
 	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 	d_image_render->tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
 
-	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 			renderer,
 			d_image_render->image,
 			current_tile_source_viewport,

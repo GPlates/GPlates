@@ -434,7 +434,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionRaster::clear_frame_buffer(
+GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
 		GLRenderer &renderer)
 {
 	// If not a normal map then just clear the colour buffer.
@@ -692,7 +692,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// This is probably because that input is not a regularly loaded texture (loaded from CPU).
 	// Instead it is a texture that's been rendered to by the GPU (via a render target).
 	// In this case the auto generation of mipmaps is probably a little less clear since it
-	// interacts with other specifications on mipmap rendering such as the frame buffer object
+	// interacts with other specifications on mipmap rendering such as the framebuffer object
 	// extension (used by GPlates where possible for render targets) which has its own
 	// mipmap support.
 	// Best to avoid auto generation of mipmaps - we don't really need it anyway since

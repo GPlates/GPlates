@@ -142,7 +142,7 @@ namespace GPlatesOpenGL
 
 			void
 			deallocate(
-					GLuint vertex_array_object);
+					GLuint);
 		};
 
 		//! Typedef for a resource.

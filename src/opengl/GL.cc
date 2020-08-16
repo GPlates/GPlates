@@ -87,6 +87,34 @@ GPlatesOpenGL::GL::BindBuffer(
 
 
 void
+GPlatesOpenGL::GL::BindFramebuffer(
+		GLenum target,
+		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer)
+{
+	if (framebuffer)
+	{
+		// Bind.
+		d_current_state->bind_framebuffer(
+				target,
+				framebuffer.get(),
+				// Framebuffer resource handle associated with the current OpenGL context...
+				framebuffer.get()->get_resource_handle(*this));
+
+		// Ensure the framebuffer's internal state is reflected in the current context.
+		// Each 'GLFramebuffer' instance has one native framebuffer object per OpenGL context.
+		//
+		// NOTE: This must be done after binding.
+		framebuffer.get()->synchronise_current_context(*this);
+	}
+	else
+	{
+		// Unbind.
+		d_current_state->bind_framebuffer(target, boost::none, 0);
+	}
+}
+
+
+void
 GPlatesOpenGL::GL::BindTexture(
 		GLenum texture_target,
 		boost::optional<GLTexture::shared_ptr_type> texture_object)
@@ -426,7 +454,7 @@ GPlatesOpenGL::GL::RenderScope::RenderScope(
 	d_have_ended(false)
 {
 	// On entering this scope set the default viewport/scissor rectangle to the current dimensions
-	// (in device pixels) of the frame buffer currently attached to the OpenGL context.
+	// (in device pixels) of the framebuffer currently attached to the OpenGL context.
 	// This is then considered the default viewport for the current rendering scope.
 	// Note that the viewport dimensions can change when the window (attached to context) is resized,
 	// so the default viewport can be different from one render scope to the next.

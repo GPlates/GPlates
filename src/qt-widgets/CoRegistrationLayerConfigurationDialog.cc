@@ -403,7 +403,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 
 		const QString message = tr(
 				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics hardware "
-				"(specifically floating-point textures and frame buffer objects).\n\n"
+				"(specifically floating-point textures and framebuffer objects).\n\n"
 				"Please select a non-raster layer instead.");
 		QMessageBox::warning(
 				this,

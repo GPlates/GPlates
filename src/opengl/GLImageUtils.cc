@@ -46,7 +46,7 @@
 
 
 void
-GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 		GLRenderer &renderer,
 		QImage &image,
 		const GLViewport &source_viewport,

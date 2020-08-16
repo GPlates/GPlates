@@ -634,10 +634,10 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int image_tile_border = 10;
 	// Set up for rendering the scene into tiles.
-	// The tile render target dimensions match the frame buffer dimensions.
+	// The tile render target dimensions match the framebuffer dimensions.
 	GPlatesOpenGL::GLTileRender image_tile_render(
-			frame_buffer_dimensions.first/*tile_render_target_width*/,
-			frame_buffer_dimensions.second/*tile_render_target_height*/,
+			framebuffer_dimensions.first/*tile_render_target_width*/,
+			framebuffer_dimensions.second/*tile_render_target_height*/,
 			image_viewport/*destination_viewport*/,
 			image_tile_border);
 
@@ -648,8 +648,7 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// Render the scene tile-by-tile.
 	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
 	{
-		// Render the scene to the feedback paint device.
-		// This will use the main framebuffer for intermediate rendering in some cases.
+		// Render the scene to current image tile.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_into_image(
 				*gl,
@@ -689,7 +688,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
 	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
 	//
-	// This includes 'glClear()' calls which clear the entire framebuffer.
+	// This includes 'glClear()' calls which are bounded by the scissor rectangle.
 	gl.Enable(GL_SCISSOR_TEST);
 	gl.Scissor(
 			image_tile_render_target_scissor_rect.x(),
@@ -732,7 +731,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 	image_tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
 
-	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 			gl,
 			image,
 			current_tile_source_viewport,

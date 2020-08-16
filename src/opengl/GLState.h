@@ -39,7 +39,7 @@
 
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
 #include "GLStateStore.h"
@@ -142,6 +142,17 @@ namespace GPlatesOpenGL
 					d_state_set_keys->get_bind_buffer_key(target),
 					boost::in_place(target, buffer));
 		}
+
+		/**
+		 * Binds the target to the framebuffer object on the active OpenGL context
+		 * (none and 0 mean bind default framebuffer).
+		 */
+		void
+		bind_framebuffer(
+				GLenum target,
+				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
+				// Framebuffer resource handle associated with the current OpenGL context...
+				GLuint framebuffer_resource);
 
 		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
 		void
@@ -367,37 +378,6 @@ namespace GPlatesOpenGL
 					boost::in_place(viewport, default_viewport));
 		}
 
-		//! Sets the framebuffer object to bind to the active OpenGL context.
-		void
-		set_bind_frame_buffer(
-				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->bind_frame_buffer_object_state_sets,
-					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					boost::in_place(frame_buffer_object));
-		}
-
-		//! Unbinds any framebuffer object currently bound.
-		void
-		set_unbind_frame_buffer()
-		{
-			set_and_apply_state_set(
-					d_state_set_store->bind_frame_buffer_object_state_sets,
-					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
-		}
-
-		//! Returns the framebuffer object to bind to the active OpenGL context - boost::none implies default main framebuffer.
-		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>
-		get_bind_frame_buffer() const
-		{
-			return query_state_set<GLFrameBufferObject::shared_ptr_to_const_type>(
-					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					&GLBindFrameBufferObjectStateSet::d_frame_buffer_object);
-		}
-
 		//! Sets the shader program object to bind to the active OpenGL context.
 		void
 		set_bind_program_object(
@@ -554,6 +534,15 @@ namespace GPlatesOpenGL
 					&GLBindBufferStateSet::d_buffer);
 		}
 
+		//! Returns the currently bound framebuffer object - boost::none implies the default framebuffer.
+		/**
+		 * Returns the framebuffer object currently bound to the specified target
+		 * (none and 0 mean bind default framebuffer).
+		 */
+		boost::optional<GLFramebuffer::shared_ptr_type>
+		get_bind_framebuffer(
+				GLenum target) const;
+
 		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
 		boost::optional<GLTexture::shared_ptr_type>
 		get_bind_texture(
@@ -593,7 +582,7 @@ namespace GPlatesOpenGL
 				const GLViewport &default_viewport) const
 		{
 			const boost::optional<const GLViewport &> scissor =
-					query_state_set<const GLViewport &, GLScissorStateSet>(
+					query_state_set<const GLViewport &>(
 							GLStateSetKeys::KEY_SCISSOR,
 							&GLScissorStateSet::d_scissor_rectangle);
 			return scissor ? scissor.get() : default_viewport;
@@ -606,7 +595,7 @@ namespace GPlatesOpenGL
 				const GLViewport &default_viewport) const
 		{
 			const boost::optional<const GLViewport &> viewport =
-					query_state_set<const GLViewport &, GLViewportStateSet>(
+					query_state_set<const GLViewport &>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							&GLViewportStateSet::d_viewport);
 			return viewport ? viewport.get() : default_viewport;
@@ -832,7 +821,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns a derived @a GLStateSet type at the specified state set key slot.
 		 *
-		 * This query method accepts a query function (that in turn accepts a 'GLStateSetType' argument).
+		 * This query method accepts a query function (that in turn accepts a 'const GLStateSetType &' argument).
 		 */
 		template <typename QueryReturnType, class GLStateSetType, class QueryFunctionType>
 		boost::optional<QueryReturnType>
@@ -855,7 +844,7 @@ namespace GPlatesOpenGL
 					state_set,
 					GPLATES_ASSERTION_SOURCE);
 
-			return query_function(state_set);
+			return query_function(*state_set);
 		}
 
 

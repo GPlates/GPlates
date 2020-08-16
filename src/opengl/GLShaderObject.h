@@ -206,7 +206,7 @@ namespace GPlatesOpenGL
 
 			void
 			deallocate(
-					GLuint texture);
+					GLuint);
 		};
 
 		//! Typedef for a resource.

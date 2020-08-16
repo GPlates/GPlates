@@ -146,7 +146,7 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 
 GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 		GLRenderer &renderer) :
-	d_framebuffer_object(renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer)),
+	d_framebuffer(renderer.get_context().get_non_shared_state()->acquire_framebuffer(renderer)),
 	d_streaming_vertex_element_buffer(
 			GLStreamBuffer::create(
 					GLBuffer::create(renderer),
@@ -1333,7 +1333,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 	// Clear the attachments of our acquired framebuffer object so when it's returned it is not
 	// sitting around attached to a texture (normally GLContext only detaches when another
 	// client requests a framebuffer object).
-	d_framebuffer_object->gl_detach_all(renderer);
+	d_framebuffer->gl_detach_all(renderer);
 }
 
 
@@ -2170,7 +2170,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_to_reduce_pyramids
 		// This starts asynchronous read back of the texture to CPU memory via a pixel buffer.
 		co_registration_parameters.d_results_queue.queue_reduce_pyramid_output(
 				renderer,
-				d_framebuffer_object,
+				d_framebuffer,
 				reduce_stage_textures[NUM_REDUCE_STAGES - 1].get(),
 				reduce_quad_tree,
 				co_registration_parameters.seed_feature_partial_results);
@@ -2449,9 +2449,9 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	GLTexture::shared_ptr_type region_of_interest_mask_texture = acquire_rgba_fixed_texture(renderer);
 
 	// Render to the fixed-point region-of-interest mask texture.
-	d_framebuffer_object->gl_attach_texture_2D(
+	d_framebuffer->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, region_of_interest_mask_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-	renderer.gl_bind_frame_buffer(d_framebuffer_object);
+	renderer.gl_bind_framebuffer(d_framebuffer);
 
 	// Render to the entire regions-of-interest texture - same dimensions as reduce stage textures.
 	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
@@ -2570,9 +2570,9 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	//
 
 	// Render to the floating-point reduce stage texture.
-	d_framebuffer_object->gl_attach_texture_2D(
+	d_framebuffer->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-	renderer.gl_bind_frame_buffer(d_framebuffer_object);
+	renderer.gl_bind_framebuffer(d_framebuffer);
 
 	// No need to change the viewport - it's already TEXTURE_DIMENSION x TEXTURE_DIMENSION;
 
@@ -4985,9 +4985,9 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the destination reduce stage texture.
-	d_framebuffer_object->gl_attach_texture_2D(
+	d_framebuffer->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, dst_reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-	renderer.gl_bind_frame_buffer(d_framebuffer_object);
+	renderer.gl_bind_framebuffer(d_framebuffer);
 
 	// Render to the entire reduce stage texture.
 	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
@@ -5173,8 +5173,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the 2D texture.
-	d_framebuffer_object->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-	renderer.gl_bind_frame_buffer(d_framebuffer_object);
+	d_framebuffer->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	renderer.gl_bind_framebuffer(d_framebuffer);
 
 	// Render to the entire texture.
 	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
@@ -5811,7 +5811,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::ResultsQueue(
 void
 GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output(
 		GLRenderer &renderer,
-		const GLFrameBufferObject::shared_ptr_type &framebuffer_object,
+		const GLFramebuffer::shared_ptr_type &framebuffer,
 		const GLTexture::shared_ptr_to_const_type &results_texture,
 		const ReduceQuadTree::non_null_ptr_to_const_type &reduce_quad_tree,
 		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results)
@@ -5839,8 +5839,8 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	//
 	// Note that since we're using 'GL_COLOR_ATTACHMENT0_EXT' we don't need to call 'glReadBuffer'
 	// because 'GL_COLOR_ATTACHMENT0_EXT' is the default GL_READ_BUFFER state for a framebuffer object.
-	framebuffer_object->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-	renderer.gl_bind_frame_buffer(framebuffer_object);
+	framebuffer->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	renderer.gl_bind_framebuffer(framebuffer);
 
 	// Start an asynchronous read back of the results texture to CPU memory (the pixel buffer).
 	// OpenGL won't block until we attempt to read from the pixel buffer (so we delay that as much as possible).

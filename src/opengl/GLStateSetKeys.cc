@@ -111,6 +111,45 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
+		GLenum texture_target,
+		GLenum texture_unit) const
+{
+	switch (texture_target)
+	{
+	case GL_TEXTURE_1D:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D);
+	case GL_TEXTURE_2D:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D);
+	case GL_TEXTURE_3D:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D);
+	case GL_TEXTURE_CUBE_MAP:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP);
+	case GL_TEXTURE_RECTANGLE:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE);
+	case GL_TEXTURE_1D_ARRAY:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY);
+	case GL_TEXTURE_2D_ARRAY:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY);
+	case GL_TEXTURE_2D_MULTISAMPLE:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE);
+	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY);
+	case GL_TEXTURE_BUFFER:
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER);
+
+	default:
+		// Unsupported texture target type.
+		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
+		break;
+	}
+
+	// Shouldn't get there - keep the compiler happy.
+	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 		GLenum cap) const
 {
@@ -201,47 +240,6 @@ GPlatesOpenGL::GLStateSetKeys::get_hint_key(
 	}
 
 	return key;
-}
-
-
-GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
-		GLenum texture_target,
-		GLenum texture_unit) const
-{
-	// Note that other texture targets (like GL_TEXTURE_2D_ARRAY) are not supported by 'glEnable' and
-	// 'glDisable' since they are used by shaders which don't require 'glEnable' and 'glDisable'.
-	switch (texture_target)
-	{
-	case GL_TEXTURE_1D:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D);
-	case GL_TEXTURE_2D:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D);
-	case GL_TEXTURE_3D:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D);
-	case GL_TEXTURE_CUBE_MAP:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP);
-	case GL_TEXTURE_RECTANGLE:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE);
-	case GL_TEXTURE_1D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY);
-	case GL_TEXTURE_2D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY);
-	case GL_TEXTURE_2D_MULTISAMPLE:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE);
-	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	case GL_TEXTURE_BUFFER:
-		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER);
-
-	default:
-		// Unsupported texture target type.
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
-	}
-
-	// Shouldn't get there - keep the compiler happy.
-	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
 }
 
 

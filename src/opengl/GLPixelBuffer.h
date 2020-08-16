@@ -153,7 +153,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: You must have called @a gl_bind_unpack to bind 'this' buffer as an *unpack* target.
 		 *
-		 * NOTE: You should have enough memory in the buffer required by the frame buffer rectangle
+		 * NOTE: You should have enough memory in the buffer required by the framebuffer rectangle
 		 * to be copied (see 'GLBuffer::gl_buffer_data()').
 		 *
 		 * @a offset is a byte offset from the start of 'this' pixel buffer to start copying pixels from.

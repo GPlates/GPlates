@@ -33,8 +33,8 @@ set(srcs
     GLFilledPolygonsGlobeView.h
     GLFilledPolygonsMapView.cc
     GLFilledPolygonsMapView.h
-    GLFrameBufferObject.cc
-    GLFrameBufferObject.h
+    GLFramebuffer.cc
+    GLFramebuffer.h
     GLFrustum.cc
     GLFrustum.h
     GLImageUtils.cc
@@ -84,8 +84,8 @@ set(srcs
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc
     GLReconstructedStaticPolygonMeshes.h
-    GLRenderBufferObject.cc
-    GLRenderBufferObject.h
+    GLRenderbuffer.cc
+    GLRenderbuffer.h
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h

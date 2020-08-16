@@ -177,6 +177,104 @@ GPlatesOpenGL::GLState::restore()
 
 
 void
+GPlatesOpenGL::GLState::bind_framebuffer(
+		GLenum target,
+		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
+		// Framebuffer resource handle associated with the current OpenGL context...
+		GLuint framebuffer_resource)
+{
+	// Default framebuffer (bound to zero).
+	boost::optional<GLFramebuffer::shared_ptr_type> draw_framebuffer;
+	boost::optional<GLFramebuffer::shared_ptr_type> read_framebuffer;
+	GLuint draw_framebuffer_resource = 0;
+	GLuint read_framebuffer_resource = 0;
+
+	if (target == GL_FRAMEBUFFER)
+	{
+		// Framebuffer is used for both draw and read targets.
+		draw_framebuffer = framebuffer;
+		draw_framebuffer_resource = framebuffer_resource;
+		read_framebuffer = framebuffer;
+		read_framebuffer_resource = framebuffer_resource;
+	}
+	else if (target == GL_DRAW_FRAMEBUFFER)
+	{
+		// Framebuffer is used for draw target only.
+		draw_framebuffer = framebuffer;
+		draw_framebuffer_resource = framebuffer_resource;
+
+		// For read target use framebuffer currently bound to it.
+		boost::optional<const GLBindFramebufferStateSet &> bind_framebuffer_state_set =
+				query_state_set<const GLBindFramebufferStateSet &, GLBindFramebufferStateSet>(
+						GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
+						[] (const GLBindFramebufferStateSet &state_set) { return state_set; });
+		if (bind_framebuffer_state_set)
+		{
+			read_framebuffer = bind_framebuffer_state_set->d_read_framebuffer;
+			read_framebuffer_resource = bind_framebuffer_state_set->d_read_framebuffer_resource;
+		}
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				target == GL_READ_FRAMEBUFFER,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Framebuffer is used for read target only.
+		read_framebuffer = framebuffer;
+		read_framebuffer_resource = framebuffer_resource;
+
+		// For draw target use framebuffer currently bound to it.
+		boost::optional<const GLBindFramebufferStateSet &> bind_framebuffer_state_set =
+				query_state_set<const GLBindFramebufferStateSet &>(
+						GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
+						[] (const GLBindFramebufferStateSet &state_set) { return state_set; });
+		if (bind_framebuffer_state_set)
+		{
+			draw_framebuffer = bind_framebuffer_state_set->d_draw_framebuffer;
+			draw_framebuffer_resource = bind_framebuffer_state_set->d_draw_framebuffer_resource;
+		}
+	}
+
+	set_and_apply_state_set(
+			d_state_set_store->bind_framebuffer_state_sets,
+			GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
+			boost::in_place(
+					draw_framebuffer, read_framebuffer,
+					draw_framebuffer_resource, read_framebuffer_resource));
+}
+
+
+boost::optional<GPlatesOpenGL::GLFramebuffer::shared_ptr_type>
+GPlatesOpenGL::GLState::get_bind_framebuffer(
+		GLenum target) const
+{
+	// Select the framebuffer bound to the draw or read target.
+	boost::optional<GLFramebuffer::shared_ptr_type> GLBindFramebufferStateSet::*framebuffer = nullptr;
+
+	if (target == GL_FRAMEBUFFER ||
+		target == GL_DRAW_FRAMEBUFFER)
+	{
+		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
+		framebuffer = &GLBindFramebufferStateSet::d_draw_framebuffer;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				target == GL_READ_FRAMEBUFFER,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
+		framebuffer = &GLBindFramebufferStateSet::d_read_framebuffer;
+	}
+
+	return query_state_set<GLFramebuffer::shared_ptr_type>(
+			GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
+			framebuffer);
+}
+
+
+void
 GPlatesOpenGL::GLState::apply_state(
 		const Snapshot &new_state,
 		const state_set_slot_flags_type &state_set_slots_changed)

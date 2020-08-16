@@ -144,59 +144,90 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 
 
 void
-GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
+GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_frame_buffer_object ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindFrameBufferObjectStateSet &>(current_state_set).d_frame_buffer_object)
-	{
-		return;
-	}
+	// Throws exception if downcast fails...
+	const GLBindFramebufferStateSet &current = dynamic_cast<const GLBindFramebufferStateSet &>(current_state_set);
 
-	if (d_frame_buffer_object)
+	// Bind the framebuffer object (can be zero) to the draw or read target (or both).
+	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
 	{
-		// Bind the frame buffer object.
-		glBindFramebuffer(GL_FRAMEBUFFER, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
+		if (d_draw_framebuffer_resource != current.d_draw_framebuffer_resource ||
+			d_read_framebuffer_resource != current.d_read_framebuffer_resource)
+		{
+			// Both draw/read targets are the same so bind them in one call
+			// (even though it's possible only one of the targets has changed).
+			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+		}
 	}
-	else
+	else // Draw and read targets are bound to different framebuffers...
 	{
-		// No framebuffer object - back to using the main framebuffer.
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if (d_draw_framebuffer_resource != current.d_draw_framebuffer_resource)
+		{
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+		}
+		if (d_read_framebuffer_resource != current.d_read_framebuffer_resource)
+		{
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+		}
 	}
 }
 
 void
-GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
+GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (!d_frame_buffer_object)
+	// Bind the framebuffer object to the draw or read target (or both).
+	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
 	{
-		return;
+		if (d_draw_framebuffer_resource != 0)
+		{
+			// Both draw/read targets are the same (and non-zero) so bind them in one call.
+			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+		}
 	}
-
-	// Bind the frame buffer object.
-	glBindFramebuffer(GL_FRAMEBUFFER, d_frame_buffer_object.get()->get_frame_buffer_resource_handle());
+	else // Draw and read targets are bound to different framebuffers...
+	{
+		if (d_draw_framebuffer_resource != 0)
+		{
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+		}
+		if (d_read_framebuffer_resource != 0)
+		{
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+		}
+	}
 }
 
 void
-GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
+GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (!d_frame_buffer_object)
+	// Bind the framebuffer object to the draw or read target (or both).
+	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
 	{
-		return;
+		if (d_draw_framebuffer_resource != 0)
+		{
+			// Both draw/read targets are the same (and non-zero) so bind them in one call.
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 	}
-
-	// The default is zero (the main framebuffer).
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	else // Draw and read targets are bound to different framebuffers...
+	{
+		if (d_draw_framebuffer_resource != 0)
+		{
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		}
+		if (d_read_framebuffer_resource != 0)
+		{
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+		}
+	}
 }
 
 
@@ -300,7 +331,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 	if (d_texture_object)
 	{
 		// Bind the texture.
-		glBindTexture(d_texture_target, d_texture_object.get()->get_texture_resource_handle());
+		glBindTexture(d_texture_target, d_texture_object.get()->get_resource_handle());
 	}
 	else
 	{
@@ -334,7 +365,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	}
 
 	// Bind the texture.
-	glBindTexture(d_texture_target, d_texture_object.get()->get_texture_resource_handle());
+	glBindTexture(d_texture_target, d_texture_object.get()->get_resource_handle());
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)

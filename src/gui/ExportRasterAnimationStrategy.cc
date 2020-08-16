@@ -59,7 +59,7 @@
 #include "opengl/GLBuffer.h"
 #include "opengl/GLCapabilities.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLFrameBufferObject.h"
+#include "opengl/GLFramebuffer.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionMapCubeMesh.h"

@@ -424,7 +424,7 @@ namespace GPlatesOpenGL
 		 * region must be normal to the globe's surface.
 		 */
 		void
-		clear_frame_buffer(
+		clear_framebuffer(
 				GLRenderer &renderer);
 
 	private:

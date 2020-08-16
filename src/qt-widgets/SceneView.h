@@ -124,7 +124,7 @@ namespace GPlatesQtWidgets
 		 * This method redirects OpenGL rendering to the specified paint device as best as possible
 		 * by using OpenGL feedback to capture OpenGL draw commands and redirect them to the specified
 		 * paint device - but there is loss of quality when doing this since OpenGL feedback bypasses the
-		 * frame buffers (eg, colour/depth buffer) and so those per-pixel compositing effects are lost.
+		 * framebuffers (eg, colour/depth buffer) and so those per-pixel compositing effects are lost.
 		 *
 		 * This is typically used for rendering to an SVG file (QPaintDevice = QSvgGenerator), but could
 		 * conceivably be used for a QPaintDevice other than QSvgGenerator - although probably not

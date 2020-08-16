@@ -56,13 +56,6 @@ namespace GPlatesOpenGL
 		//
 
 		/**
-		 * Number of bits of sub-pixel precision in pixel rasterizer.
-		 *
-		 * OpenGL specifies a minimum of 4 bits, but most consumer hardware these days support 8 bits.
-		 */
-		GLuint gl_sub_pixel_bits; // GL_SUBPIXEL_BITS query result
-
-		/**
 		 * Simply GL_COLOR_ATTACHMENT0.
 		 *
 		 * Note that GL_COLOR_ATTACHMENT0 is not defined in <opengl/OpenGL1.h>, so this definition is here solely
@@ -75,6 +68,13 @@ namespace GPlatesOpenGL
 		GLuint gl_max_renderbuffer_size; // GL_MAX_RENDERBUFFER_SIZE query result
 
 		GLuint gl_max_draw_buffers; // GL_MAX_DRAW_BUFFERS query result
+
+		/**
+		 * Number of bits of sub-pixel precision in pixel rasterizer.
+		 *
+		 * OpenGL specifies a minimum of 4 bits, but most consumer hardware these days support 8 bits.
+		 */
+		GLuint gl_sub_pixel_bits; // GL_SUBPIXEL_BITS query result
 
 
 		//

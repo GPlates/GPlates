@@ -34,6 +34,7 @@
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
 #include "GLContext.h"
+#include "GLFramebuffer.h"
 #include "GLState.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
@@ -88,7 +89,7 @@ namespace GPlatesOpenGL
 		 *       On exiting this scope the default OpenGL state is restored.
 		 *
 		 * On entering this scope the viewport/scissor rectangle is set to the current dimensions
-		 * (in device pixels) of the frame buffer currently attached to the OpenGL context.
+		 * (in device pixels) of the framebuffer currently attached to the OpenGL context.
 		 * And this is then considered the default viewport for the current rendering scope.
 		 * Note that the viewport dimensions can change when the window (attached to context) is resized,
 		 * so the default viewport can be different from one render scope to the next.
@@ -199,6 +200,12 @@ namespace GPlatesOpenGL
 		BindBuffer(
 				GLenum target,
 				boost::optional<GLBuffer::shared_ptr_type> buffer);
+
+		//! Bind framebuffer target to framebuffer object (none means bind to default framebuffer).
+		void
+		BindFramebuffer(
+				GLenum target,
+				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer);
 
 		//! Bind texture target and active texture unit to texture object (none means unbind).
 		void

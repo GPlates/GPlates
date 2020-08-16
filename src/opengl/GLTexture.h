@@ -73,39 +73,6 @@ namespace GPlatesOpenGL
 		typedef boost::weak_ptr<const GLTexture> weak_ptr_to_const_type;
 
 
-		//! Typedef for a resource handle.
-		typedef GLuint resource_handle_type;
-
-		/**
-		 * Policy class to allocate and deallocate OpenGL texture objects.
-		 */
-		class Allocator
-		{
-		public:
-			resource_handle_type
-			allocate(
-					const GLCapabilities &capabilities)
-			{
-				resource_handle_type texture;
-				glGenTextures(1, &texture);
-				return texture;
-			}
-
-			void
-			deallocate(
-					resource_handle_type texture)
-			{
-				glDeleteTextures(1, &texture);
-			}
-		};
-
-		//! Typedef for a resource.
-		typedef GLObjectResource<resource_handle_type, Allocator> resource_type;
-
-		//! Typedef for a resource manager.
-		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
-
-
 		/**
 		 * Creates a shared pointer to a @a GLTexture object.
 		 */
@@ -558,14 +525,33 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Returns the texture resource handle.
-		 *
-		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
 		 */
-		resource_handle_type
-		get_texture_resource_handle() const
+		GLuint
+		get_resource_handle() const;
+
+
+	public:  // For use by the OpenGL framework...
+
+		/**
+		 * Policy class to allocate and deallocate OpenGL shader objects.
+		 */
+		class Allocator
 		{
-			return d_resource->get_resource_handle();
-		}
+		public:
+			GLuint
+			allocate(
+					const GLCapabilities &capabilities);
+
+			void
+			deallocate(
+					GLuint);
+		};
+
+		//! Typedef for a resource.
+		typedef GLObjectResource<GLuint, Allocator> resource_type;
+
+		//! Typedef for a resource manager.
+		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
 	private:
 		resource_type::non_null_ptr_to_const_type d_resource;

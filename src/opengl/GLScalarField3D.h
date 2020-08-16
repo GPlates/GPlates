@@ -35,7 +35,7 @@
 
 #include "GLCompiledDrawState.h"
 #include "GLCubeSubdivision.h"
-#include "GLFrameBufferObject.h"
+#include "GLFramebuffer.h"
 #include "GLLight.h"
 #include "GLProgramObject.h"
 #include "GLScreenRenderTarget.h"
@@ -245,8 +245,8 @@ namespace GPlatesOpenGL
 		 * always output by the fragment shader, during rendering, to the draw buffer at index 1
 		 * (the scalar field colour is output to draw buffer index 0).
 		 * By default this is ignored since default state of glDrawBuffers is NONE for indices >= 1.
-		 * But if you attach a viewport-size floating-point texture to a GLFrameBufferObject,
-		 * and call GLFrameBufferObject::gl_draw_buffers(), then depth will get written to the
+		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer,
+		 * and call GLFramebuffer::gl_draw_buffers(), then depth will get written to the
 		 * texture for those pixels on the rendered iso-surface (or cross-section).
 		 */
 		void
@@ -296,8 +296,8 @@ namespace GPlatesOpenGL
 		 * always output by the fragment shader, during rendering, to the draw buffer at index 1
 		 * (the scalar field colour is output to draw buffer index 0).
 		 * By default this is ignored since default state of glDrawBuffers is NONE for indices >= 1.
-		 * But if you attach a viewport-size floating-point texture to a GLFrameBufferObject,
-		 * and call GLFrameBufferObject::gl_draw_buffers(), then depth will get written to the
+		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer,
+		 * and call GLFramebuffer::gl_draw_buffers(), then depth will get written to the
 		 * texture for those pixels on the rendered iso-surface (or cross-section).
 		 */
 		void
