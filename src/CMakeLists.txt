@@ -163,7 +163,8 @@ find_package(GDAL REQUIRED)
 #
 # First look for the CONFIG package (provided with the installed Proj library, as opposed to CMake itself).
 find_package(PROJ4 CONFIG QUIET)
-# Proj version 4 does not have a CONFIG package (at least not all of them were installed via CMake) but more recent versions should.
+# Proj version 4 does not have a CONFIG package (at least not all platforms were installed as a CMake package)
+# but more recent versions should.
 # Proj 4.9 is still used by Ubuntu Xenial (16.04).
 if (NOT PROJ4_FOUND)
   # There was no CONFIG package so use our own "FindPROJ.cmake" (note that CMake does not provide one).
@@ -197,9 +198,17 @@ include (Utils)
 if (NOT GPLATES_PUBLIC_RELEASE)
 	find_package(Subversion)
 	if (SUBVERSION_FOUND)
-		Subversion_WC_INFO(${GPlates_SOURCE_DIR} GPlates)
+		if (CMAKE_VERSION VERSION_LESS 3.13)
+			Subversion_WC_INFO(${GPlates_SOURCE_DIR} GPlates)
+		else()
+			# CMake 3.13 added the IGNORE_SVN_FAILURE option which is useful to ignore errors due to Subversion not
+			# finding a working copy (eg, the '.svn' directory is missing due to exporting source code).
+			Subversion_WC_INFO(${GPlates_SOURCE_DIR} GPlates IGNORE_SVN_FAILURE)
+		endif()
 		# The branch name is the last part of the part of the working-copy URL.
-		string(REGEX MATCH "[^/]*$" GPlates_WC_BRANCH_NAME ${GPlates_WC_URL})
+		if (GPlates_WC_URL)
+			string(REGEX MATCH "[^/]*$" GPlates_WC_BRANCH_NAME ${GPlates_WC_URL})
+		endif()
 	endif()
 endif()
 
@@ -828,9 +837,14 @@ endif()
 set(GPLATES_MAIN_TARGET gplates)
 
 if (WIN32)
-	# Tell cmake to build the main target with as a GUI application (with a WinMain entry point).
-	# This also tells Qt5::Core to link in its WinMain.
-	set_target_properties(${GPLATES_MAIN_TARGET} PROPERTIES WIN32_EXECUTABLE TRUE)
+	# Don't make GPlates a GUI application (on Windows). This way it retains the extra console window,
+	# otherwise we don't see errors reported by dependency libraries that output to stderr
+	# (the internal log window in GPlates only picks up qDebug(), qWarning(), etc).
+	if (FALSE)
+		# Tell cmake to build the main target with as a GUI application (with a WinMain entry point).
+		# This also tells Qt5::Core to link in its WinMain.
+		set_target_properties(${GPLATES_MAIN_TARGET} PROPERTIES WIN32_EXECUTABLE TRUE)
+	endif()
 endif()
 
 if (APPLE)

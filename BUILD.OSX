@@ -54,7 +54,7 @@ The command
     sudo make install
 
 Will copy the "pygplates.so" library to the default location, "/usr/local".
-The pygplates library will be installed as "/usr/local/lib/pygplates/revision18/pygplates.so".
+The pygplates library will be installed as "/usr/local/lib/pygplates/revision28/pygplates.so".
 Note that 'sudo' is needed since root permissions are required to install software to "/usr/local".
 
 If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
@@ -64,5 +64,5 @@ If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:
     make
     make install
 
-This will install pygplates in your home directory as "~/usr/lib/pygplates/revision18/pygplates.so".
+This will install pygplates in your home directory as "~/usr/lib/pygplates/revision28/pygplates.so".
 
