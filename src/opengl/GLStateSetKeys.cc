@@ -111,6 +111,18 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_bind_renderbuffer_key(
+		GLenum target) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			target == GL_RENDERBUFFER,
+			GPLATES_ASSERTION_SOURCE);
+
+	return KEY_BIND_RENDERBUFFER;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
 		GLenum texture_target,
 		GLenum texture_unit) const

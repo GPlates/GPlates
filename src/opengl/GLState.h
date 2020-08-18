@@ -154,6 +154,18 @@ namespace GPlatesOpenGL
 				// Framebuffer resource handle associated with the current OpenGL context...
 				GLuint framebuffer_resource);
 
+		//! Binds the renderbuffer object (at the specified target, must be GL_RENDERBUFFER) to the active OpenGL context.
+		void
+		bind_renderbuffer(
+				GLenum target,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->bind_renderbuffer_state_sets,
+					d_state_set_keys->get_bind_renderbuffer_key(target),
+					boost::in_place(target, renderbuffer));
+		}
+
 		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
 		void
 		bind_texture(
@@ -785,6 +797,35 @@ namespace GPlatesOpenGL
 			set_state_set_slot_flag(d_current_state->state_set_slots, state_set_key);
 			// Also mark that the state set has changed since the last snapshot.
 			set_state_set_slot_flag(d_current_state->state_set_slots_changed_since_last_snapshot, state_set_key);
+		}
+
+
+		/**
+		 * Returns a derived @a GLStateSet type at the specified state set key slot.
+		 *
+		 * This query method returns a const-reference to the GLStateSetType.
+		 */
+		template <class GLStateSetType>
+		boost::optional<const GLStateSetType &>
+		query_state_set(
+				state_set_key_type state_set_key) const
+		{
+			// If no state set on the key slot then it means that state is the default state.
+			if (!is_state_set_slot_set(d_current_state->state_set_slots, state_set_key))
+			{
+				return boost::none;
+			}
+
+			const GLStateSetType *state_set =
+					dynamic_cast<const GLStateSetType *>(d_current_state->state_sets[state_set_key].get());
+
+			// The state set derived type should match the state set slot.
+			// If not then there's a programming error somewhere.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					state_set,
+					GPLATES_ASSERTION_SOURCE);
+
+			return *state_set;
 		}
 
 

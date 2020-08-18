@@ -288,6 +288,55 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 }
 
 
+void
+GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_renderbuffer_resource ==
+			// Throws exception if downcast fails...
+			dynamic_cast<const GLBindRenderbufferStateSet &>(current_state_set).d_renderbuffer_resource)
+	{
+		return;
+	}
+
+	// Bind the renderbuffer object (can be zero).
+	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+}
+
+void
+GPlatesOpenGL::GLBindRenderbufferStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_renderbuffer_resource == 0)
+	{
+		return;
+	}
+
+	// Bind the renderbuffer object.
+	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+}
+
+void
+GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_renderbuffer_resource == 0)
+	{
+		return;
+	}
+
+	// The default is zero (no renderbuffer object).
+	glBindRenderbuffer(d_target, 0);
+}
+
+
 GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 		const GLCapabilities &capabilities,
 		GLenum texture_target,

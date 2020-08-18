@@ -115,6 +115,15 @@ GPlatesOpenGL::GL::BindFramebuffer(
 
 
 void
+GPlatesOpenGL::GL::BindRenderbuffer(
+		GLenum target,
+		boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)
+{
+	d_current_state->bind_renderbuffer(target, renderbuffer);
+}
+
+
+void
 GPlatesOpenGL::GL::BindTexture(
 		GLenum texture_target,
 		boost::optional<GLTexture::shared_ptr_type> texture_object)

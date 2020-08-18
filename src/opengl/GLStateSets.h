@@ -40,6 +40,7 @@
 #include "GLFramebuffer.h"
 #include "GLMatrix.h"
 #include "GLProgramObject.h"
+#include "GLRenderbuffer.h"
 #include "GLStateSet.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
@@ -189,6 +190,51 @@ namespace GPlatesOpenGL
 
 		GLuint d_draw_framebuffer_resource;
 		GLuint d_read_framebuffer_resource;
+	};
+
+	/**
+	 * Used to bind a renderbuffer object.
+	 */
+	struct GLBindRenderbufferStateSet :
+			public GLStateSet
+	{
+		//! Binds a renderbuffer object.
+		GLBindRenderbufferStateSet(
+				GLenum target,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer) :
+			d_target(target),
+			d_renderbuffer(renderbuffer),
+			d_renderbuffer_resource(0)
+		{
+			if (renderbuffer)
+			{
+				d_renderbuffer_resource = renderbuffer.get()->get_resource_handle();
+			}
+		}
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		GLenum d_target;
+		boost::optional<GLRenderbuffer::shared_ptr_type> d_renderbuffer;
+		GLuint d_renderbuffer_resource;
 	};
 
 	/**

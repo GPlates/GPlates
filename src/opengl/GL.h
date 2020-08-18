@@ -35,6 +35,7 @@
 #include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLFramebuffer.h"
+#include "GLRenderbuffer.h"
 #include "GLState.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
@@ -206,6 +207,12 @@ namespace GPlatesOpenGL
 		BindFramebuffer(
 				GLenum target,
 				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer);
+
+		//! Bind renderbuffer target (must be GL_RENDERBUFFER) to renderbuffer object (none means unbind).
+		void
+		BindRenderbuffer(
+				GLenum target,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
 
 		//! Bind texture target and active texture unit to texture object (none means unbind).
 		void

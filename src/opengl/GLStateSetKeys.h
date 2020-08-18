@@ -82,10 +82,11 @@ namespace GPlatesOpenGL
 			KEY_BIND_COPY_READ_BUFFER,
 			KEY_BIND_COPY_WRITE_BUFFER,
 			KEY_BIND_ELEMENT_ARRAY_BUFFER,
-			KEY_BIND_FRAME_BUFFER,
+			KEY_BIND_FRAMEBUFFER,
 			KEY_BIND_PIXEL_PACK_BUFFER,
 			KEY_BIND_PIXEL_UNPACK_BUFFER,
 			KEY_BIND_PROGRAM_OBJECT,
+			KEY_BIND_RENDERBUFFER,
 			KEY_BIND_TEXTURE_BUFFER,
 			KEY_BIND_TRANSFORM_FEEDBACK_BUFFER,
 			KEY_BIND_UNIFORM_BUFFER,
@@ -136,6 +137,11 @@ namespace GPlatesOpenGL
 		//! For binding buffer objects.
 		key_type
 		get_bind_buffer_key(
+				GLenum target) const;
+
+		//! For binding renderbuffer objects (note: @a target must be GL_RENDERBUFFER).
+		key_type
+		get_bind_renderbuffer_key(
 				GLenum target) const;
 
 		key_type
