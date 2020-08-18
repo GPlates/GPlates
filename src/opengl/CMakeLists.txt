@@ -89,10 +89,6 @@ set(srcs
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h
-    GLRenderTarget.cc
-    GLRenderTarget.h
-    GLRenderTargetImpl.cc
-    GLRenderTargetImpl.h
     GLSaveRestoreFrameBuffer.cc
     GLSaveRestoreFrameBuffer.h
     GLScalarField3D.cc
@@ -101,8 +97,6 @@ set(srcs
     GLScalarField3DGenerator.h
     GLScalarFieldDepthLayersSource.cc
     GLScalarFieldDepthLayersSource.h
-    GLScreenRenderTarget.cc
-    GLScreenRenderTarget.h
     GLShaderObject.cc
     GLShaderObject.h
     GLShaderSource.cc

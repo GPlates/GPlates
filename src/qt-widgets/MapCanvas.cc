@@ -54,7 +54,6 @@
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLRenderTarget.h"
 #include "opengl/GLTileRender.h"
 #include "opengl/GLViewport.h"
 
