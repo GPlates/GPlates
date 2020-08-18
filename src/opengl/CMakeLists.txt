@@ -127,18 +127,6 @@ set(srcs
     GLUtils.h
     GLVertexArray.cc
     GLVertexArray.h
-    GLVertexBuffer.cc
-    GLVertexBuffer.h
-    GLVertexBufferImpl.cc
-    GLVertexBufferImpl.h
-    GLVertexBufferObject.cc
-    GLVertexBufferObject.h
-    GLVertexElementBuffer.cc
-    GLVertexElementBuffer.h
-    GLVertexElementBufferImpl.cc
-    GLVertexElementBufferImpl.h
-    GLVertexElementBufferObject.cc
-    GLVertexElementBufferObject.h
     GLVertexUtils.cc
     GLVertexUtils.h
     GLViewport.h
