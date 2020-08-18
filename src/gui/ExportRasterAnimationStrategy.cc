@@ -64,7 +64,6 @@
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionMapCubeMesh.h"
 #include "opengl/GLMultiResolutionRasterMapView.h"
-#include "opengl/GLPixelBuffer.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLRenderTarget.h"
 #include "opengl/GLTexture.h"

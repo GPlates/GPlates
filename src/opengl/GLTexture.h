@@ -37,7 +37,6 @@
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
-#include "GLPixelBuffer.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"

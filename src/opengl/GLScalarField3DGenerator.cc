@@ -41,7 +41,6 @@
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"
 #include "GLMultiResolutionRaster.h"
-#include "GLPixelBuffer.h"
 #include "GLRenderer.h"
 #include "GLRenderTarget.h"
 #include "GLUtils.h"

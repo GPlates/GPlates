@@ -299,52 +299,6 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 }
 
 
-GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
-GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
-		GL &gl,
-		unsigned int size,
-		GLenum usage)
-{
-	// Lookup the correct pixel buffer cache (matching the specified client parameters).
-	const pixel_buffer_key_type pixel_buffer_key(size, usage);
-
-	const pixel_buffer_cache_type::shared_ptr_type pixel_buffer_cache =
-			get_pixel_buffer_cache(pixel_buffer_key);
-
-	// Attempt to acquire a recycled object.
-	boost::optional<GLPixelBuffer::shared_ptr_type> pixel_buffer_opt = pixel_buffer_cache->allocate_object();
-	if (pixel_buffer_opt)
-	{
-		const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_opt.get();
-
-		// Make sure the previous client did not change the pixel buffer before recycling.
-		GPlatesGlobal::Assert<OpenGLException>(
-				pixel_buffer->get_buffer()->get_buffer_size() == size,
-				GPLATES_ASSERTION_SOURCE,
-				"GLContext::SharedState::acquire_pixel_buffer: Size of recycled pixel buffer was changed.");
-
-		return pixel_buffer;
-	}
-
-	// Create a new buffer with the specified parameters.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(gl, GLBuffer::BUFFER_TYPE_PIXEL);
-	buffer->gl_buffer_data(
-			gl,
-			// Could be 'TARGET_PIXEL_UNPACK_BUFFER' or 'TARGET_PIXEL_PACK_BUFFER'.
-			// Doesn't really matter because only used internally as a temporary bind target...
-			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
-			size,
-			NULL/*Uninitialised memory*/,
-			usage);
-
-	// Create a new object and add it to the cache.
-	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
-			GLPixelBuffer::create_as_unique_ptr(gl, buffer));
-
-	return pixel_buffer;
-}
-
-
 GPlatesOpenGL::GLVertexArray::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 		GL &gl)
@@ -446,31 +400,6 @@ GPlatesOpenGL::GLContext::SharedState::get_texture_cache(
 	}
 
 	return texture_cache_map_iter->second;
-}
-
-
-GPlatesOpenGL::GLContext::SharedState::pixel_buffer_cache_type::shared_ptr_type
-GPlatesOpenGL::GLContext::SharedState::get_pixel_buffer_cache(
-		const pixel_buffer_key_type &pixel_buffer_key)
-{
-	// Attempt to insert the pixel buffer key into the pixel buffer cache map.
-	const std::pair<pixel_buffer_cache_map_type::iterator, bool> insert_result =
-			d_pixel_buffer_cache_map.insert(
-					pixel_buffer_cache_map_type::value_type(
-							pixel_buffer_key,
-							// Dummy (NULL) pixel buffer cache...
-							pixel_buffer_cache_type::shared_ptr_type()));
-
-	pixel_buffer_cache_map_type::iterator pixel_buffer_cache_map_iter = insert_result.first;
-
-	// If the pixel buffer key was inserted into the map then create the corresponding pixel buffer cache.
-	if (insert_result.second)
-	{
-		// Start off with an initial cache size of 1 - it'll grow as needed...
-		pixel_buffer_cache_map_iter->second = pixel_buffer_cache_type::create();
-	}
-
-	return pixel_buffer_cache_map_iter->second;
 }
 
 

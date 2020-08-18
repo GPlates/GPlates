@@ -37,7 +37,6 @@
 #include "GLCubeSubdivisionCache.h"
 #include "GLFramebuffer.h"
 #include "GLMultiResolutionRasterInterface.h"
-#include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
 #include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"

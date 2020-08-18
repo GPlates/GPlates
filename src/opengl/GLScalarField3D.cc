@@ -40,7 +40,6 @@
 #include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
-#include "GLPixelBuffer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"

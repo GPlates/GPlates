@@ -72,12 +72,6 @@ set(srcs
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h
-    GLPixelBuffer.cc
-    GLPixelBuffer.h
-    GLPixelBufferImpl.cc
-    GLPixelBufferImpl.h
-    GLPixelBufferObject.cc
-    GLPixelBufferObject.h
     GLProgramObject.cc
     GLProgramObject.h
     GLRasterCoRegistration.cc

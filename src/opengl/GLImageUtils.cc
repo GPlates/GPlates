@@ -33,7 +33,6 @@
 
 #include "GLBuffer.h"
 #include "GLContext.h"
-#include "GLPixelBuffer.h"
 #include "GLRenderer.h"
 
 #include "global/GPlatesAssert.h"

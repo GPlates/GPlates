@@ -32,7 +32,6 @@
 #include <QRect>
 
 #include "GLMatrix.h"
-#include "GLPixelBuffer.h"
 #include "GLTexture.h"
 
 #include "gui/Colour.h"

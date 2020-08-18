@@ -32,7 +32,6 @@
 #include <QString>
 
 #include "GLMultiResolutionRaster.h"
-#include "GLPixelBuffer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLTexture.h"
 

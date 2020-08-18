@@ -30,7 +30,6 @@
 #include <QImage>
 #include <QString>
 
-#include "GLPixelBuffer.h"
 #include "GLViewport.h"
 
 #include "gui/Colour.h"
