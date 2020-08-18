@@ -44,12 +44,10 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GL.h"
-#include "opengl/GLShaderProgramUtils.h"
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLUtils.h"
-#include "opengl/GLVertex.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/GLVertexUtils.h"
 
 #include "presentation/ViewState.h"
 
@@ -71,7 +69,7 @@ namespace
 	// that, because we use an orthographic projection for the globe...
 	const GLfloat RADIUS = 7.0f;
 
-	typedef GPlatesOpenGL::GLColourVertex vertex_type;
+	typedef GPlatesOpenGL::GLVertexUtils::ColourVertex vertex_type;
 	typedef GLushort vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
@@ -172,7 +170,7 @@ namespace
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+				vertices.size() - 1 <= GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
 				GPLATES_ASSERTION_SOURCE);
 	}
 
@@ -265,7 +263,7 @@ namespace
 				0/*start*/,
 				num_small_star_vertices - 1/*end*/,
 				num_small_star_indices/*count*/,
-				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 				nullptr/*indices_offset*/);
 
 		// Large stars size.
@@ -278,8 +276,8 @@ namespace
 				num_small_star_vertices/*start*/,
 				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
 				num_large_star_indices/*count*/,
-				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
-				GPlatesOpenGL::GLUtils::buffer_offset(num_small_star_indices * sizeof(vertex_element_type))/*indices_offset*/);
+				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
+				GPlatesOpenGL::GLVertexUtils::buffer_offset(num_small_star_indices * sizeof(vertex_element_type))/*indices_offset*/);
 	}
 }
 

@@ -46,8 +46,8 @@
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLRenderer.h"
-#include "opengl/GLVertex.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/GLVertexUtils.h"
 
 #include "presentation/ViewState.h"
 

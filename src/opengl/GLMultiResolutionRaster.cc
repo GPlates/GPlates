@@ -48,7 +48,7 @@
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
-#include "GLVertex.h"
+#include "GLVertexUtils.h"
 #include "GLViewProjection.h"
 
 #include "global/AssertionFailureException.h"
@@ -565,7 +565,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 				0/*start*/,
 				num_vertices - 1/*end*/,
 				num_indices/*count*/,
-				GLVertexElementTraits<vertex_element_type>::type,
+				GLVertexUtils::ElementTraits<vertex_element_type>::type,
 				0 /*indices_offset*/);
 
 		// The caller will cache this tile to keep it from being prematurely recycled by our caches.
@@ -2536,18 +2536,18 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	// The per-pixel cube position (texture coordinate) gets normalised to unit normal in fragment shader.
 	//
 
-	std::vector<GLTexture3DVertex> vertices;
+	std::vector<GLVertexUtils::Texture3DVertex> vertices;
 	std::vector<GLushort> vertex_elements;
 
 	// Add the eight cube corner vertices.
-	vertices.push_back(GLTexture3DVertex(-1,-1,-1, -1,-1,-1)); // 0
-	vertices.push_back(GLTexture3DVertex(+1,-1,-1, +1,-1,-1)); // 1
-	vertices.push_back(GLTexture3DVertex(-1,+1,-1, -1,+1,-1)); // 2
-	vertices.push_back(GLTexture3DVertex(+1,+1,-1, +1,+1,-1)); // 3
-	vertices.push_back(GLTexture3DVertex(-1,-1,+1, -1,-1,+1)); // 4
-	vertices.push_back(GLTexture3DVertex(+1,-1,+1, +1,-1,+1)); // 5
-	vertices.push_back(GLTexture3DVertex(-1,+1,+1, -1,+1,+1)); // 6
-	vertices.push_back(GLTexture3DVertex(+1,+1,+1, +1,+1,+1)); // 7
+	vertices.push_back(GLVertexUtils::Texture3DVertex(-1,-1,-1, -1,-1,-1)); // 0
+	vertices.push_back(GLVertexUtils::Texture3DVertex(+1,-1,-1, +1,-1,-1)); // 1
+	vertices.push_back(GLVertexUtils::Texture3DVertex(-1,+1,-1, -1,+1,-1)); // 2
+	vertices.push_back(GLVertexUtils::Texture3DVertex(+1,+1,-1, +1,+1,-1)); // 3
+	vertices.push_back(GLVertexUtils::Texture3DVertex(-1,-1,+1, -1,-1,+1)); // 4
+	vertices.push_back(GLVertexUtils::Texture3DVertex(+1,-1,+1, +1,-1,+1)); // 5
+	vertices.push_back(GLVertexUtils::Texture3DVertex(-1,+1,+1, -1,+1,+1)); // 6
+	vertices.push_back(GLVertexUtils::Texture3DVertex(+1,+1,+1, +1,+1,+1)); // 7
 
 	// Add the twelve cube faces (two triangles per cube face).
 	vertex_elements.push_back(0); vertex_elements.push_back(1); vertex_elements.push_back(3);

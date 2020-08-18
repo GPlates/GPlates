@@ -44,6 +44,7 @@
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
+#include "GLVertexUtils.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
@@ -1983,7 +1984,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 	//
 
 	// We'll stream vertices/indices into a std::vector.
-	std::vector<GLColourVertex> vertices;
+	std::vector<GLVertexUtils::ColourVertex> vertices;
 	std::vector<GLuint> vertex_elements;
 
 	// Build the mesh vertices/indices.
@@ -3527,8 +3528,8 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::render_st
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
 						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
 				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
-				GLVertexElementTraits<streaming_vertex_element_type>::type,
-				GLUtils::buffer_offset(
+				GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(
 						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
 								sizeof(CrossSectionVertex)/*indices_offset*/));
 	}
@@ -3738,8 +3739,8 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::render_st
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
 						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
 				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
-				GLVertexElementTraits<streaming_vertex_element_type>::type,
-				GLUtils::buffer_offset(
+				GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(
 						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
 								sizeof(CrossSectionVertex)/*indices_offset*/));
 	}
@@ -4101,8 +4102,8 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
 						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
 				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
-				GLVertexElementTraits<streaming_vertex_element_type>::type,
-				GLUtils::buffer_offset(
+				GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(
 						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
 								sizeof(SurfaceFillMaskVertex)/*indices_offset*/));
 	}
@@ -4310,8 +4311,8 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::rende
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
 						d_map_stream_buffer_scope.get_num_streamed_vertices() - 1/*end*/,
 				d_map_stream_buffer_scope.get_num_streamed_vertex_elements()/*count*/,
-				GLVertexElementTraits<streaming_vertex_element_type>::type,
-				GLUtils::buffer_offset(
+				GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(
 						d_map_stream_buffer_scope.get_start_streaming_vertex_element_count() *
 								sizeof(VolumeFillBoundaryVertex)/*indices_offset*/));
 	}
@@ -4319,7 +4320,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::rende
 
 
 GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::SphereMeshBuilder(
-		std::vector<GLColourVertex> &vertices,
+		std::vector<GLVertexUtils::ColourVertex> &vertices,
 		std::vector<GLuint> &vertex_elements,
 		const GPlatesGui::rgba8_t &colour,
 		unsigned int recursion_depth_to_generate_mesh) :
@@ -4341,9 +4342,9 @@ GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::visit(
 	{
 		const unsigned int base_vertex_index = d_vertices.size();
 
-		d_vertices.push_back(GLColourVertex(triangle.vertex0, d_colour));
-		d_vertices.push_back(GLColourVertex(triangle.vertex1, d_colour));
-		d_vertices.push_back(GLColourVertex(triangle.vertex2, d_colour));
+		d_vertices.push_back(GLVertexUtils::ColourVertex(triangle.vertex0, d_colour));
+		d_vertices.push_back(GLVertexUtils::ColourVertex(triangle.vertex1, d_colour));
+		d_vertices.push_back(GLVertexUtils::ColourVertex(triangle.vertex2, d_colour));
 
 		d_vertex_elements.push_back(base_vertex_index);
 		d_vertex_elements.push_back(base_vertex_index + 1);

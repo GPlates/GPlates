@@ -31,6 +31,7 @@
 
 #include "GLContext.h"
 #include "GLRenderer.h"
+#include "GLVertexUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -133,7 +134,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
 				filled_drawable.d_drawable.count,
-				GLVertexElementTraits<drawable_vertex_element_type>::type,
+				GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
 				filled_drawable.d_drawable.indices_offset);
 
 		// Set the stencil function to pass only if the stencil buffer value is non-zero.
@@ -163,7 +164,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
 				filled_drawable.d_drawable.count,
-				GLVertexElementTraits<drawable_vertex_element_type>::type,
+				GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
 				filled_drawable.d_drawable.indices_offset);
 	}
 }

@@ -41,6 +41,7 @@
 
 #include "maths/UnitQuaternion3D.h"
 
+#include "opengl/GLBuffer.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLFilledPolygonsGlobeView.h"
 #include "opengl/GLFilledPolygonsMapView.h"
@@ -48,8 +49,6 @@
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
-#include "opengl/GLVertexBuffer.h"
-#include "opengl/GLVertexElementBuffer.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "view-operations/ScalarField3DRenderParameters.h"
@@ -78,7 +77,7 @@ namespace GPlatesGui
 		typedef std::vector<vertex_element_type> vertex_element_seq_type;
 
 		//! Typedef for a coloured vertex.
-		typedef GPlatesOpenGL::GLColourVertex coloured_vertex_type;
+		typedef GPlatesOpenGL::GLVertexUtils::ColourVertex coloured_vertex_type;
 
 		//! Typedef for a sequence of coloured vertices.
 		typedef std::vector<coloured_vertex_type> coloured_vertex_seq_type;

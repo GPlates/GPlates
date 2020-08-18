@@ -36,7 +36,6 @@
 
 #include "GLContext.h"
 #include "GLRenderer.h"
-#include "GLShaderProgramUtils.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 

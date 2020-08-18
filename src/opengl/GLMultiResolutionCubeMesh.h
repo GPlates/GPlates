@@ -34,8 +34,8 @@
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
+#include "GLVertexUtils.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -334,7 +334,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_cube_face_vertex_and_index_array(
-				std::vector<GLVertex> &mesh_vertices,
+				std::vector<GLVertexUtils::Vertex> &mesh_vertices,
 				std::vector<vertex_element_type> &mesh_indices,
 				const std::vector<GPlatesMaths::UnitVector3D> &unique_cube_face_mesh_vertices,
 				const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location);

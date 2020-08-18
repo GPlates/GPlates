@@ -31,6 +31,7 @@
 #include "GLCubeMeshGenerator.h"
 #include "GLRenderer.h"
 #include "GLUtils.h"
+#include "GLVertexUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -153,7 +154,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 			4 * MESH_MAXIMUM_TILES_PER_CUBE_FACE_SIDE * MESH_MAXIMUM_TILES_PER_CUBE_FACE_SIDE;
 	const unsigned int num_mesh_indices =
 			6 /*two triangles*/ * MESH_MAXIMUM_TILES_PER_CUBE_FACE_SIDE * MESH_MAXIMUM_TILES_PER_CUBE_FACE_SIDE;
-	std::vector<GLVertex> mesh_vertices;
+	std::vector<GLVertexUtils::Vertex> mesh_vertices;
 	mesh_vertices.reserve(num_mesh_vertices);
 	// If we're using 'GLushort' vertex indices which are 16-bit - make sure we don't overflow them.
 	// 16-bit indices are faster than 32-bit for graphics cards (but again probably not much gain).
@@ -183,7 +184,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_array(
-		std::vector<GLVertex> &mesh_vertices,
+		std::vector<GLVertexUtils::Vertex> &mesh_vertices,
 		std::vector<vertex_element_type> &mesh_indices,
 		const std::vector<GPlatesMaths::UnitVector3D> &unique_cube_face_mesh_vertices,
 		const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location)
@@ -206,22 +207,22 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 
 		// Vertex 0...
 		mesh_vertices.push_back(
-				GLVertex(
+				GLVertexUtils::Vertex(
 						unique_cube_face_mesh_vertices[
 								node_y_offset * MESH_MAXIMUM_VERTICES_PER_CUBE_FACE_SIDE + node_x_offset]));
 		// Vertex 1...
 		mesh_vertices.push_back(
-				GLVertex(
+				GLVertexUtils::Vertex(
 						unique_cube_face_mesh_vertices[
 								node_y_offset * MESH_MAXIMUM_VERTICES_PER_CUBE_FACE_SIDE + node_x_offset + 1]));
 		// Vertex 2...
 		mesh_vertices.push_back(
-				GLVertex(
+				GLVertexUtils::Vertex(
 						unique_cube_face_mesh_vertices[
 								(node_y_offset + 1) * MESH_MAXIMUM_VERTICES_PER_CUBE_FACE_SIDE + node_x_offset]));
 		// Vertex 3...
 		mesh_vertices.push_back(
-				GLVertex(
+				GLVertexUtils::Vertex(
 						unique_cube_face_mesh_vertices[
 								(node_y_offset + 1) * MESH_MAXIMUM_VERTICES_PER_CUBE_FACE_SIDE + node_x_offset + 1]));
 
@@ -381,6 +382,6 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::QuadTreeNode::render_mesh_drawable(
 			d_mesh_drawable->start,
 			d_mesh_drawable->end,
 			d_mesh_drawable->count,
-			GLVertexElementTraits<vertex_element_type>::type,
+			GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			d_mesh_drawable->indices_offset);
 }

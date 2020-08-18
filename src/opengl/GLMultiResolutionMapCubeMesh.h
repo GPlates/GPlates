@@ -36,8 +36,8 @@
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
+#include "GLVertexUtils.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -182,7 +182,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Renders the mesh drawable for this quad tree node.
 			 *
-			 * The vertices in the drawable are of type 'GLTexture3DVertex' with the map projection
+			 * The vertices in the drawable are of type 'GLVertexUtils::Texture3DVertex' with the map projection
 			 * in the 'x' and 'y' coordinates and the point-on-sphere position in the 's', 't' and 'r'
 			 * texture coordinates.
 			 */
@@ -455,7 +455,7 @@ namespace GPlatesOpenGL
 
 		mesh_cube_quad_tree_type::node_type::ptr_type
 		create_cube_face_quad_tree_mesh(
-				std::vector<GLTexture3DVertex> &mesh_vertices,
+				std::vector<GLVertexUtils::Texture3DVertex> &mesh_vertices,
 				std::vector<vertex_element_type> &mesh_indices,
 				AABB &parent_node_bounding_box,
 				double &parent_max_quad_size_in_map_projection,
@@ -467,7 +467,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_cube_face_quad_tree_mesh_vertices(
-				std::vector<GLTexture3DVertex> &mesh_vertices,
+				std::vector<GLVertexUtils::Texture3DVertex> &mesh_vertices,
 				std::vector<vertex_element_type> &mesh_indices,
 				AABB &node_bounding_box,
 				double &max_quad_size_in_map_projection,

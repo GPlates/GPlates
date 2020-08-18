@@ -45,8 +45,8 @@
 #include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
+#include "GLVertexUtils.h"
 #include "GLViewport.h"
 
 #include "file-io/ScalarField3DFileFormatReader.h"
@@ -716,7 +716,7 @@ namespace GPlatesOpenGL
 		public:
 			//! Constructor.
 			SphereMeshBuilder(
-					std::vector<GLColourVertex> &vertices,
+					std::vector<GLVertexUtils::ColourVertex> &vertices,
 					std::vector<GLuint> &vertex_elements,
 					const GPlatesGui::rgba8_t &colour,
 					unsigned int recursion_depth_to_generate_mesh);
@@ -728,7 +728,7 @@ namespace GPlatesOpenGL
 
 		private:
 
-			std::vector<GLColourVertex> &d_vertices;
+			std::vector<GLVertexUtils::ColourVertex> &d_vertices;
 			std::vector<GLuint> &d_vertex_elements;
 			GPlatesGui::rgba8_t d_colour;
 			unsigned int d_recursion_depth_to_generate_mesh;

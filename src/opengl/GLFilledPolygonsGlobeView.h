@@ -42,10 +42,8 @@
 #include "GLMultiResolutionCubeMesh.h"
 #include "GLProgramObject.h"
 #include "GLTexture.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "GLVertexBuffer.h"
-#include "GLVertexElementBuffer.h"
+#include "GLVertexUtils.h"
 #include "GLViewport.h"
 
 #include "global/GPlatesAssert.h"
@@ -85,7 +83,7 @@ namespace GPlatesOpenGL
 		typedef GLuint drawable_vertex_element_type;
 
 		//! Typedef for a coloured vertex of a drawable.
-		typedef GLColourVertex drawable_vertex_type;
+		typedef GLVertexUtils::ColourVertex drawable_vertex_type;
 
 		/**
 		 * Contains information to render a filled drawable.

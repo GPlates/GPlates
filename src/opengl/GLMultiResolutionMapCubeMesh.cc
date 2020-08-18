@@ -33,6 +33,7 @@
 #include "GLIntersectPrimitives.h"
 #include "GLRenderer.h"
 #include "GLUtils.h"
+#include "GLVertexUtils.h"
 
 #include "maths/CubeCoordinateFrame.h"
 
@@ -202,7 +203,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	// The odd combination is to avoid overflow compile error if sizeof(vertex_element_type) happens to be 4.
 	BOOST_STATIC_ASSERT((num_mesh_vertices_to_reserve - 1) >> (8/*bits-per-char*/ * sizeof(vertex_element_type) - 1) <= 1);
 
-	std::vector<GLTexture3DVertex> mesh_vertices;
+	std::vector<GLVertexUtils::Texture3DVertex> mesh_vertices;
 	mesh_vertices.reserve(num_mesh_vertices_to_reserve);
 	std::vector<vertex_element_type> mesh_indices;
 	mesh_indices.reserve(num_mesh_indices_to_reserve);
@@ -306,7 +307,7 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::mesh_cube_quad_tree_type::node_type::ptr_type
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
-		std::vector<GLTexture3DVertex> &mesh_vertices,
+		std::vector<GLVertexUtils::Texture3DVertex> &mesh_vertices,
 		std::vector<vertex_element_type> &mesh_indices,
 		AABB &parent_node_bounding_box,
 		double &parent_max_quad_size_in_map_projection,
@@ -429,7 +430,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
 
 void
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_vertices(
-		std::vector<GLTexture3DVertex> &mesh_vertices,
+		std::vector<GLVertexUtils::Texture3DVertex> &mesh_vertices,
 		std::vector<vertex_element_type> &mesh_indices,
 		AABB &node_bounding_box,
 		double &max_quad_size_in_map_projection,
@@ -481,7 +482,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_ver
 					cube_face_quadrant_mesh_vertices[cube_face_quadrant_mesh_vertices_offset];
 
 			mesh_vertices.push_back(
-					GLTexture3DVertex(
+					GLVertexUtils::Texture3DVertex(
 							point.point_2D.x/*x*/,
 							point.point_2D.y/*y*/,
 							0/*z*/,
@@ -704,7 +705,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_ver
 			const unsigned int new_pole_vertex_index = mesh_vertices.size();
 			// Add the new pole vertex.
 			mesh_vertices.push_back(
-					GLTexture3DVertex(
+					GLVertexUtils::Texture3DVertex(
 							new_pole_point.point_2D.x/*x*/,
 							new_pole_point.point_2D.y/*y*/,
 							0/*z*/,
@@ -899,6 +900,6 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::QuadTreeNode::render_mesh_drawable(
 			d_mesh_drawable->start,
 			d_mesh_drawable->end,
 			d_mesh_drawable->count,
-			GLVertexElementTraits<vertex_element_type>::type,
+			GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			d_mesh_drawable->indices_offset);
 }

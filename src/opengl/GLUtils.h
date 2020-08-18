@@ -28,7 +28,6 @@
 #define GPLATES_OPENGL_GLUTILS_H
 
 #include <opengl/OpenGL1.h>
-#include <cstddef>  // offsetof
 #include <boost/optional.hpp>
 
 #include "GLCompiledDrawState.h"
@@ -60,26 +59,6 @@ namespace GPlatesOpenGL
 		void
 		check_gl_errors(
 				const GPlatesUtils::CallStack::Trace &assert_location);
-
-		/**
-		 * Useful when converting a byte offset to a 'void *' pointer (for example, in glDrawElements).
-		 */
-		constexpr
-		GLvoid *
-		buffer_offset(
-				int num_bytes)
-		{
-			return reinterpret_cast<GLubyte *>(0) + num_bytes;
-		}
-
-		/**
-		 * Useful when converting the offset of an attribute (data member) of a vertex class to a 'void *' pointer
-		 * (for example, in glVertexAttribPointer).
-		 *
-		 * Note that @a vertex_class should be a standard-layout class (dictated by the C++11 'offsetof' function macro).
-		 */
-#define BUFFER_OFFSET(vertex_class, vertex_data_member) \
-		GPlatesOpenGL::GLUtils::buffer_offset(offsetof(vertex_class, vertex_data_member))
 
 
 		/**

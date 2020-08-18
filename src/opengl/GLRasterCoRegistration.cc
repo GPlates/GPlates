@@ -45,6 +45,7 @@
 #include "GLShaderSource.h"
 #include "GLStreamPrimitives.h"
 #include "GLUtils.h"
+#include "GLVertexUtils.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
@@ -1035,7 +1036,7 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interest_vertex_array(
 		GLRenderer &renderer)
 {
-	std::vector<GLTextureVertex> vertices;
+	std::vector<GLVertexUtils::TextureVertex> vertices;
 	std::vector<reduction_vertex_element_type> vertex_elements;
 
 	const unsigned int total_number_quads =
@@ -1060,7 +1061,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_vertex_array_in_quad_tree_traversal_order(
-		std::vector<GLTextureVertex> &vertices,
+		std::vector<GLVertexUtils::TextureVertex> &vertices,
 		std::vector<reduction_vertex_element_type> &vertex_elements,
 		unsigned int x_quad_offset,
 		unsigned int y_quad_offset,
@@ -1088,10 +1089,10 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_vertex_array_in_quad
 
 		const unsigned int quad_start_vertex_index = vertices.size();
 
-		vertices.push_back(GLTextureVertex(x0, y0, 0, u0, v0));
-		vertices.push_back(GLTextureVertex(x0, y1, 0, u0, v1));
-		vertices.push_back(GLTextureVertex(x1, y1, 0, u1, v1));
-		vertices.push_back(GLTextureVertex(x1, y0, 0, u1, v0));
+		vertices.push_back(GLVertexUtils::TextureVertex(x0, y0, 0, u0, v0));
+		vertices.push_back(GLVertexUtils::TextureVertex(x0, y1, 0, u0, v1));
+		vertices.push_back(GLVertexUtils::TextureVertex(x1, y1, 0, u1, v1));
+		vertices.push_back(GLVertexUtils::TextureVertex(x1, y0, 0, u1, v0));
 
 		// First quad triangle.
 		vertex_elements.push_back(quad_start_vertex_index);
@@ -2846,8 +2847,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					point_stream_target.get_start_streaming_vertex_count() +
 							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							point_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -2879,8 +2880,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					point_stream_target.get_start_streaming_vertex_count() +
 							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							point_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3175,8 +3176,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					point_stream_target.get_start_streaming_vertex_count() +
 							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							point_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3209,8 +3210,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					point_stream_target.get_start_streaming_vertex_count() +
 							point_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					point_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							point_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(PointRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3474,8 +3475,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 					line_stream_target.get_start_streaming_vertex_count() +
 							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							line_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3505,8 +3506,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 					line_stream_target.get_start_streaming_vertex_count() +
 							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							line_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3789,8 +3790,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 					line_stream_target.get_start_streaming_vertex_count() +
 							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							line_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -3821,8 +3822,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 					line_stream_target.get_start_streaming_vertex_count() +
 							line_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					line_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							line_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(LineRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -4017,8 +4018,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 						fill_stream_target.get_start_streaming_vertex_count() +
 								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-						GLVertexElementTraits<streaming_vertex_element_type>::type,
-						GLUtils::buffer_offset(
+						GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+						GLVertexUtils::buffer_offset(
 								fill_stream_target.get_start_streaming_vertex_element_count() *
 										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 			}
@@ -4065,8 +4066,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4114,8 +4115,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4163,8 +4164,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4201,8 +4202,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 								fill_stream_target.get_start_streaming_vertex_count() +
 										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-								GLVertexElementTraits<streaming_vertex_element_type>::type,
-								GLUtils::buffer_offset(
+								GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+								GLVertexUtils::buffer_offset(
 										fill_stream_target.get_start_streaming_vertex_element_count() *
 												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 					}
@@ -4230,8 +4231,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 					fill_stream_target.get_start_streaming_vertex_count() +
 							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							fill_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -4325,8 +4326,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4380,8 +4381,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4421,8 +4422,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 								fill_stream_target.get_start_streaming_vertex_count() +
 										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-								GLVertexElementTraits<streaming_vertex_element_type>::type,
-								GLUtils::buffer_offset(
+								GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+								GLVertexUtils::buffer_offset(
 										fill_stream_target.get_start_streaming_vertex_element_count() *
 												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 					}
@@ -4450,8 +4451,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 					fill_stream_target.get_start_streaming_vertex_count() +
 							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							fill_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -4539,8 +4540,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 						fill_stream_target.get_start_streaming_vertex_count() +
 								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-						GLVertexElementTraits<streaming_vertex_element_type>::type,
-						GLUtils::buffer_offset(
+						GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+						GLVertexUtils::buffer_offset(
 								fill_stream_target.get_start_streaming_vertex_element_count() *
 										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 			}
@@ -4573,8 +4574,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4599,8 +4600,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 						fill_stream_target.get_start_streaming_vertex_count() +
 								fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 						fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-						GLVertexElementTraits<streaming_vertex_element_type>::type,
-						GLUtils::buffer_offset(
+						GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+						GLVertexUtils::buffer_offset(
 								fill_stream_target.get_start_streaming_vertex_element_count() *
 										sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 			}
@@ -4631,8 +4632,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4665,8 +4666,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 								fill_stream_target.get_start_streaming_vertex_count() +
 										fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 								fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-								GLVertexElementTraits<streaming_vertex_element_type>::type,
-								GLUtils::buffer_offset(
+								GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+								GLVertexUtils::buffer_offset(
 										fill_stream_target.get_start_streaming_vertex_element_count() *
 												sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 					}
@@ -4691,8 +4692,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 							fill_stream_target.get_start_streaming_vertex_count() +
 									fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 							fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-							GLVertexElementTraits<streaming_vertex_element_type>::type,
-							GLUtils::buffer_offset(
+							GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+							GLVertexUtils::buffer_offset(
 									fill_stream_target.get_start_streaming_vertex_element_count() *
 											sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 				}
@@ -4718,8 +4719,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 					fill_stream_target.get_start_streaming_vertex_count() +
 							fill_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					fill_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							fill_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(FillRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -4877,8 +4878,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 					mask_stream_target.get_start_streaming_vertex_count() +
 							mask_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					mask_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							mask_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(MaskRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -4905,8 +4906,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_region_of_interes
 					mask_stream_target.get_start_streaming_vertex_count() +
 							mask_stream_target.get_num_streamed_vertices() - 1/*end*/,
 					mask_stream_target.get_num_streamed_vertex_elements()/*count*/,
-					GLVertexElementTraits<streaming_vertex_element_type>::type,
-					GLUtils::buffer_offset(
+					GLVertexUtils::ElementTraits<streaming_vertex_element_type>::type,
+					GLVertexUtils::buffer_offset(
 							mask_stream_target.get_start_streaming_vertex_element_count() *
 									sizeof(MaskRegionOfInterestVertex)/*indices_offset*/));
 		}
@@ -5071,7 +5072,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			0/*start*/,
 			4 * num_reduce_quads_spanned - 1/*end*/, // Each quad has four vertices.
 			6 * num_reduce_quads_spanned/*count*/,   // Each quad has two triangles of three indices each.
-			GLVertexElementTraits<reduction_vertex_element_type>::type,
+			GLVertexUtils::ElementTraits<reduction_vertex_element_type>::type,
 			0/*indices_offset*/);
 
 	//debug_floating_point_render_target(

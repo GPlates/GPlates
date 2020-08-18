@@ -47,7 +47,7 @@
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
-#include "GLVertex.h"
+#include "GLVertexUtils.h"
 #include "GLViewport.h"
 #include "GLViewProjection.h"
 

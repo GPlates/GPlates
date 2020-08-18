@@ -39,6 +39,7 @@
 #include "opengl/GLShaderProgramUtils.h"
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLText.h"
+#include "opengl/GLVertexUtils.h"
 
 #include "utils/Profile.h"
 
@@ -1342,7 +1343,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw
 			0/*start*/,
 			d_vertices.size() - 1/*end*/,
 			d_vertex_elements.size()/*count*/,
-			GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			0/*indices_offset*/);
 }
 

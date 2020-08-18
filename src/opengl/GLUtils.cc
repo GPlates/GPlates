@@ -33,8 +33,8 @@
 #include "OpenGLException.h"
 #include "GLContext.h"
 #include "GLRenderer.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
+#include "GLVertexUtils.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -128,12 +128,12 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_quad(
 		const GPlatesGui::rgba8_t &colour)
 {
 	// The vertices for the full-screen quad.
-	const GLColourVertex quad_vertices[4] =
+	const GLVertexUtils::ColourVertex quad_vertices[4] =
 	{  //  x,  y, z, colour
-		GLColourVertex(-1, -1, 0, colour),
-		GLColourVertex(1, -1, 0, colour),
-		GLColourVertex(1,  1, 0, colour),
-		GLColourVertex(-1,  1, 0, colour)
+		GLVertexUtils::ColourVertex(-1, -1, 0, colour),
+		GLVertexUtils::ColourVertex(1, -1, 0, colour),
+		GLVertexUtils::ColourVertex(1,  1, 0, colour),
+		GLVertexUtils::ColourVertex(-1,  1, 0, colour)
 	};
 
 	// The indices for the full-screen quad.
@@ -151,7 +151,7 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_quad(
 	return compile_vertex_array_draw_state(
 			renderer,
 			*vertex_array,
-			std::vector<GLColourVertex>(quad_vertices, quad_vertices + 4),
+			std::vector<GLVertexUtils::ColourVertex>(quad_vertices, quad_vertices + 4),
 			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
 			GL_TRIANGLE_STRIP);
 }
@@ -163,12 +163,12 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_textured_quad(
 		const GPlatesGui::rgba8_t &colour)
 {
 	// The vertices for the full-screen quad.
-	const GLColourTextureVertex quad_vertices[4] =
+	const GLVertexUtils::ColourTextureVertex quad_vertices[4] =
 	{  //  x,  y, z, u, v, colour
-		GLColourTextureVertex(-1, -1, 0, 0, 0, colour),
-		GLColourTextureVertex(1, -1, 0, 1, 0, colour),
-		GLColourTextureVertex(1,  1, 0, 1, 1, colour),
-		GLColourTextureVertex(-1,  1, 0, 0, 1, colour)
+		GLVertexUtils::ColourTextureVertex(-1, -1, 0, 0, 0, colour),
+		GLVertexUtils::ColourTextureVertex(1, -1, 0, 1, 0, colour),
+		GLVertexUtils::ColourTextureVertex(1,  1, 0, 1, 1, colour),
+		GLVertexUtils::ColourTextureVertex(-1,  1, 0, 0, 1, colour)
 	};
 
 	// The indices for the full-screen quad.
@@ -186,7 +186,7 @@ GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_textured_quad(
 	return compile_vertex_array_draw_state(
 			renderer,
 			*vertex_array,
-			std::vector<GLColourTextureVertex>(quad_vertices, quad_vertices + 4),
+			std::vector<GLVertexUtils::ColourTextureVertex>(quad_vertices, quad_vertices + 4),
 			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
 			GL_TRIANGLE_STRIP);
 }

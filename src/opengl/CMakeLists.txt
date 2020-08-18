@@ -125,8 +125,6 @@ set(srcs
     GLTransform.h
     GLUtils.cc
     GLUtils.h
-    GLVertex.cc
-    GLVertex.h
     GLVertexArray.cc
     GLVertexArray.h
     GLVertexBuffer.cc
@@ -141,6 +139,8 @@ set(srcs
     GLVertexElementBufferImpl.h
     GLVertexElementBufferObject.cc
     GLVertexElementBufferObject.h
+    GLVertexUtils.cc
+    GLVertexUtils.h
     GLViewport.h
     GLViewProjection.cc
     GLViewProjection.h

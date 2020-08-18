@@ -41,7 +41,7 @@
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
-#include "GLVertex.h"
+#include "GLVertexUtils.h"
 #include "GLViewProjection.h"
 
 #include "global/CompilerWarnings.h"
@@ -943,7 +943,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 					filled_drawable.d_drawable.start,
 					filled_drawable.d_drawable.end,
 					filled_drawable.d_drawable.count,
-					GLVertexElementTraits<drawable_vertex_element_type>::type,
+					GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
 					filled_drawable.d_drawable.indices_offset);
 
 			// Set the stencil function to pass only if the stencil buffer value is non-zero.
@@ -973,7 +973,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 					filled_drawable.d_drawable.start,
 					filled_drawable.d_drawable.end,
 					filled_drawable.d_drawable.count,
-					GLVertexElementTraits<drawable_vertex_element_type>::type,
+					GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
 					filled_drawable.d_drawable.indices_offset);
 		}
 	}

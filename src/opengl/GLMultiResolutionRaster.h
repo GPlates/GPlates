@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "GLBuffer.h"
 #include "GLCompiledDrawState.h"
 #include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
@@ -42,10 +43,8 @@
 #include "GLProgramObject.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
-#include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "GLVertexBuffer.h"
-#include "GLVertexElementBuffer.h"
+#include "GLVertexUtils.h"
 #include "GLViewport.h"
 
 #include "maths/PointOnSphere.h"
@@ -845,13 +844,13 @@ namespace GPlatesOpenGL
 		};
 
 		//! Typedef for vertices.
-		typedef GLTextureVertex vertex_type;
+		typedef GLVertexUtils::TextureVertex vertex_type;
 
 		//! Typedef for normal-map vertices.
-		typedef GLTextureTangentSpaceVertex normal_map_vertex_type;
+		typedef GLVertexUtils::TextureTangentSpaceVertex normal_map_vertex_type;
 
 		//! Typedef for scalar-gradient-map vertices.
-		typedef GLTextureTangentSpaceVertex scalar_field_depth_layer_vertex_type;
+		typedef GLVertexUtils::TextureTangentSpaceVertex scalar_field_depth_layer_vertex_type;
 
 		//! Typedef for vertex indices.
 		typedef GLushort vertex_element_type;

@@ -33,7 +33,7 @@
 
 #include "GLIntersect.h"
 #include "GLRenderer.h"
-#include "GLVertex.h"
+#include "GLVertexUtils.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -444,7 +444,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 	// Set up the vertex buffer - we'll fill it with data later.
 	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	// Attach vertex buffer to the vertex array.
-	bind_vertex_buffer_to_vertex_array<GLVertex>(
+	bind_vertex_buffer_to_vertex_array<GLVertexUtils::Vertex>(
 			renderer,
 			*d_polygon_meshes_vertex_array,
 			GLVertexBuffer::create(renderer, vertex_buffer_data));
@@ -462,7 +462,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 
 	// The OpenGL vertices and vertex elements (indices) of all polygon meshes are
 	// placed in a single vertex array (and vertex element array).
-	std::vector<GLVertex> all_polygon_meshes_vertices;
+	std::vector<GLVertexUtils::Vertex> all_polygon_meshes_vertices;
 	std::vector<GLuint> all_polygon_meshes_indices;
 
 	GLuint polygon_mesh_base_vertex_index = 0;
@@ -501,7 +501,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 				vertices_iter != vertices.end();
 				++vertices_iter)
 			{
-				all_polygon_meshes_vertices.push_back(GLVertex(vertices_iter->get_vertex()));
+				all_polygon_meshes_vertices.push_back(GLVertexUtils::Vertex(vertices_iter->get_vertex()));
 			}
 
 			// Add the indices.
@@ -568,7 +568,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 					vertices_iter != vertices.end();
 					++vertices_iter)
 				{
-					all_polygon_meshes_vertices.push_back(GLVertex(vertices_iter->get_vertex()));
+					all_polygon_meshes_vertices.push_back(GLVertexUtils::Vertex(vertices_iter->get_vertex()));
 				}
 
 				// Add the indices.
