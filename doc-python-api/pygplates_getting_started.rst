@@ -46,12 +46,12 @@ The following sections cover the installation of pyGPlates in the *external* cas
 Installing pyGPlates
 ^^^^^^^^^^^^^^^^^^^^
 
-Each release includes the following files:
+Each release includes files similar to:
 ::
 
   pygplates_rev@PYGPLATES_REVISION@_docs.zip
-  pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip
-  pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip
+  pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64.zip
+  pygplates_rev@PYGPLATES_REVISION@_python38_win64.zip
   pygplates_rev@PYGPLATES_REVISION@_src.zip
 
 .. note:: If this is an internal (non-public) release then the above files come in a single zip file
@@ -63,35 +63,35 @@ Each release includes the following files:
 | If you extract this zip file to your hard drive and then open ``pygplates_rev@PYGPLATES_REVISION@_docs/index.html``
   in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
-The remaining zip files contain a pre-built pyGPlates library for MacOS X and Windows, and source
+The remaining zip files contain a pre-built pyGPlates library for macOS and Windows, and source
 code for Linux (and Ubuntu packages for public pyGPlates releases):
   
-* ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip`` - pyGPlates for MacOS X (compiled for 64-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64.zip`` - pyGPlates for macOS (compiled for 64-bit Python 3.8).
 
-  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64`` containing the
+  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64`` containing the
   ``pygplates.so`` pyGPlates library and its dependency libraries.
   
   .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
-     version 2.7.x and is 64-bit. The operating system can be Snow Leopard or above.
+     version 3.8.x and is 64-bit. The operating system can be Mavericks (10.9) or above.
   
-* ``pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip`` - pyGPlates for Windows (compiled for 32-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python38_win64.zip`` - pyGPlates for Windows (compiled for 64-bit Python 3.8).
 
-  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_win32`` containing the
+  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python38_win64`` containing the
   ``pygplates.pyd`` pyGPlates library and its dependency libraries.
   
   .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
-     version 2.7.x and is 32-bit. It will work on a 32-bit or 64-bit operating system (Windows 7 or above),
-     **but the installed Python must be 32-bit**. A 64-bit Python installation will not work.
+     version 3.8.x and is 64-bit. So it will only work if you are using a 64-bit operating system (Windows 7 or above)
+     **and** the installed Python is **64-bit** (a 32-bit Python installation will not work).
   
 * ``pygplates_rev@PYGPLATES_REVISION@_src.zip`` - pyGPlates source code (typically used to compile pyGPlates on Linux).
 
   Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_src``
   containing the pyGPlates source code.
   
-  Unlike the pre-built pyGPlates libraries for MacOS X and Windows, here we have source code that
+  Unlike the pre-built pyGPlates libraries for macOS and Windows, here we have source code that
   needs to be compiled into a pyGPlates library. This is typically used to compile pyGPlates on
   Linux systems because they have binary package managers that make installing dependency
-  libraries (of pyGPlates and GPlates) a lot easier than with MacOS X and Windows.
+  libraries (of pyGPlates and GPlates) a lot easier than with macOS and Windows.
   
   To compile pyGPlates follow the instructions for building GPlates in the files ``BUILD.Linux`` and
   ``DEPS.Linux`` in the root directory ``pygplates_rev@PYGPLATES_REVISION@_src`` of the source code.
@@ -114,7 +114,7 @@ code for Linux (and Ubuntu packages for public pyGPlates releases):
      that has not yet made its way into the development mainline (hence you won't find it in regular
      GPlates source code releases yet).
   
-* ``pygplates-ubuntu_...`` - pyGPlates Ubuntu ``.deb`` packages (compiled for Python 2.7).
+* ``ubuntu/pygplates-...`` - pyGPlates Ubuntu ``.deb`` packages.
 
   To install pyGPlates on Ubuntu, double-click on the ``.deb`` file appropriate for your system.
   
@@ -153,7 +153,7 @@ to modify all your Python scripts.
 
 Setting the *PYTHONPATH* environment variable:
 
-* *MacOS X*:
+* *macOS*:
 
   Type the following in a *Terminal* window (or you can add it to your shell startup file):
   ::
@@ -161,7 +161,7 @@ Setting the *PYTHONPATH* environment variable:
     export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
 
   ...replacing ``/path/to/pygplates`` with the actual path to your extracted
-  ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64`` directory, for example.
+  ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64`` directory, for example.
 
 * *Linux*:
 
@@ -195,7 +195,7 @@ Setting the *PYTHONPATH* environment variable:
     set path=%path%;"c:\path\to\pygplates"
 
   ...replacing ``c:\path\to\pygplates`` with the actual path to your extracted
-  ``pygplates_rev@PYGPLATES_REVISION@_python27_win32`` directory, for example.
+  ``pygplates_rev@PYGPLATES_REVISION@_python38_win64`` directory, for example.
 
   Or you can change *PYTHONPATH* and *PATH* in the system environment variables:
   
@@ -218,7 +218,7 @@ Installing Python
 ^^^^^^^^^^^^^^^^^
 
 In order to execute Python source code in an :ref:`external <pygplates_introduction_using_pygplates_external>` Python
-interpreter you will need a Python installation. MacOS X typically comes with a Python installation.
+interpreter you will need a Python installation. macOS typically comes with a Python installation.
 However for Windows you will need to install Python.
 
 Python is available as a standalone package by following the download link at `<http://www.python.org>`_.
@@ -234,18 +234,18 @@ correct version of Python if you are using pre-built versions of pyGPlates.
 Using the correct Python version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As noted in :ref:`pygplates_getting_started_installation_external` the pre-built MacOS X and Windows pyGPlates
-libraries have been compiled for a specific version of Python (such as 64-bit Python 2.7.x on MacOS X).
+As noted in :ref:`pygplates_getting_started_installation_external` the pre-built macOS and Windows pyGPlates
+libraries have been compiled for a specific version of Python (such as 64-bit Python 3.8.x on macOS).
 So if you attempt to import pyGPlates into a Python interpreter with a different version then you
 will get an error.
 
 For example, on Windows if you attempt to import a pre-built pyGPlates library compiled for
-32-bit Python **2.7.x** into a 32-bit Python **2.6.x** interpreter then you will get an error similar to:
+64-bit Python **3.7.x** into a 64-bit Python **3.8.x** interpreter then you will get an error similar to:
 ::
 
-  ImportError: Module use of python27.dll conflicts with this version of Python.
+  ImportError: Module use of python37.dll conflicts with this version of Python.
 
-And on MacOS X the error message (in a similar situation) is more cryptic:
+And on macOS the error message (in a similar situation) is more cryptic:
 ::
 
   Fatal Python error: PyThreadState_Get: no current thread
@@ -254,17 +254,15 @@ And on MacOS X the error message (in a similar situation) is more cryptic:
 
 It is also important to use matching architectures (32-bit versus 64-bit).
 
-For example, on Windows if you attempt to import the pre-built pyGPlates library (compiled for
+For example, on Windows if you attempt to import a pre-built pyGPlates library (compiled for
 **32-bit** Python 2.7.x) into a **64-bit** Python 2.7.x interpreter then you will get the following
 error:
 ::
 
   ImportError: DLL load failed: %1 is not a valid Win32 application.
 
-And for MacOS X there are two Python 2.7 installers ("64-bit/32-bit" and "32-bit i386/PPC"),
-so if you attempt to import the pre-built pyGPlates library (compiled for **64-bit** Python 2.7.x)
-into a **32-bit** Python 2.7.x interpreter (eg, installed from "i386/PPC") then you will get the following
-error:
+And for macOS, pyGPlates is currently compiled for 64-bit only. However if you use a **32-bit** Python
+then you will get the following error:
 ::
 
   ... no suitable image found.  Did find: .../pygplates.so: mach-o, but wrong architecture
@@ -489,11 +487,11 @@ Setting up the script
 | Copy those files to the ``pygplates_tutorial`` directory and rename them as ``coastlines.gpmlz`` and ``rotations.rot``.
   Alternatively the filenames (and paths) could be changed in the ``tutorials.py`` script to match the sample data.
 
-Next open up a terminal or command window (on MacOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
+Next open up a terminal or command window (on macOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
 
 | We may need to let Python know where to find pyGPlates by setting an environment variable
   as covered in :ref:`pygplates_getting_started_installation_telling_python_how_to_find_pygplates`.
-| For example on MacOS this can be done by typing:
+| For example on macOS this can be done by typing:
 
 ::
 
@@ -502,7 +500,7 @@ Next open up a terminal or command window (on MacOS and Ubuntu this is a *Termin
 ...where ``/path/to/pygplates`` is replaced with the directory where you extracted pyGPlates.
 
 | Next change the current working directory to the directory containing the ``tutorial.py`` file.
-| For example, on MacOS or Linux:
+| For example, on macOS or Linux:
 
 ::
 
