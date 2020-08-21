@@ -48,7 +48,7 @@ namespace GPlatesOpenGL
 	class GLCapabilities;
 
 	/**
-	 * A renderbuffer object for use with @a GLFramebuffer.
+	 * Wrapper around an OpenGL renderbuffer object.
 	 */
 	class GLRenderbuffer :
 			public GLObject,

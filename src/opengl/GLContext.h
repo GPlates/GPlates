@@ -31,8 +31,6 @@
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL1.h>
 #include <QGLFormat>
 
@@ -43,8 +41,6 @@
 #include "GLProgramObject.h"
 #include "GLRenderbuffer.h"
 #include "GLShaderObject.h"
-#include "GLStateSetKeys.h"
-#include "GLStateSetStore.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
@@ -107,13 +103,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * OpenGL state that can be shared between contexts (such as texture objects, vertex buffer objects, etc).
-		 *
-		 * Note that while native vertex array objects in OpenGL cannot be shared across contexts,
-		 * the @a GLVertexArray wrapper can (because internally it creates a native vertex array object
-		 * for each context that it encounters - that uses it). Although the resource manager for it is
-		 * still in @a NonSharedState in order that each native resource be released back to the context
-		 * it was created in (ie, released when that context is active).
+		 * OpenGL state that can be shared between contexts (such as texture objects, buffer objects, etc).
 		 */
 		class SharedState
 		{
@@ -121,23 +111,6 @@ namespace GPlatesOpenGL
 			//! Constructor.
 			SharedState();
 
-			/**
-			 * Returns the texture resource manager.
-			 */
-			const boost::shared_ptr<GLTexture::resource_manager_type> &
-			get_texture_object_resource_manager() const
-			{
-				return d_texture_object_resource_manager;
-			}
-
-			/**
-			 * Returns the renderbuffer resource manager.
-			 */
-			const boost::shared_ptr<GLRenderbuffer::resource_manager_type> &
-			get_renderbuffer_resource_manager() const
-			{
-				return d_renderbuffer_resource_manager;
-			}
 
 			/**
 			 * Returns the buffer resource manager.
@@ -151,15 +124,6 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns the shader resource manager.
-			 */
-			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
-			get_shader_resource_manager() const
-			{
-				return d_shader_resource_manager;
-			}
-
-			/**
 			 * Returns the shader program resource manager.
 			 */
 			const boost::shared_ptr<GLProgramObject::resource_manager_type> &
@@ -169,85 +133,32 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns a texture, from an internal cache, that matches the specified parameters.
-			 *
-			 * NOTE: Other texture parameters (such as filtering, etc) are not specified here so
-			 * you will probably want to explicitly set all that state in the texture object.
-			 * WARNING: The default value for GL_TEXTURE_MIN_FILTER is GL_NEAREST_MIPMAP_LINEAR which
-			 * accesses mipmaps (and you may not have specified mipmaps because you didn't want them).
-			 *
-			 * Use this when you need a texture object temporarily and want to promote
-			 * resource sharing by returning it for others to use.
-			 *
-			 * @a height and @a depth are not used for 1D textures (and @a depth not used for 2D textures).
-			 *
-			 * NOTE: The returned texture will have its level zero initialised (memory allocated for image)
-			 * but the image data will be unspecified if it's the first time the texture object is returned.
-			 * If @a mipmapped is true then all mipmap levels will also be initialised.
-			 *
-			 * Note that, since the returned texture is non-const, it's possible to change its
-			 * dimensions, but don't do this as it will cause problems when the texture is recycled
-			 * and used by another client (in fact an exception is thrown when the next client
-			 * recycles the texture).
-			 *
-			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
-			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
-			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 * Returns the renderbuffer resource manager.
 			 */
-			GLTexture::shared_ptr_type
-			acquire_texture(
-					GL &gl,
-					GLenum target,
-					GLint internalformat,
-					GLsizei width,
-					boost::optional<GLsizei> height = boost::none, // Only used for 2D/3D textures.
-					boost::optional<GLsizei> depth = boost::none,  // Only used for 3D textures.
-					GLint border = 0,
-					bool mipmapped = false);
+			const boost::shared_ptr<GLRenderbuffer::resource_manager_type> &
+			get_renderbuffer_resource_manager() const
+			{
+				return d_renderbuffer_resource_manager;
+			}
 
 			/**
-			 * Returns a vertex array from an internal cache.
-			 *
-			 * NOTE: Even though vertex arrays cannot be shared across OpenGL contexts, the
-			 * @a GLVertexArray wrapper can be shared.
-			 *
-			 * Use this when you need a vertex array temporarily and want to promote
-			 * resource sharing by returning it for others to use.
-			 *
-			 * NOTE: 'clear()' is called on the returned vertex array (just before returning)
-			 * since the vertex attribute arrays enabled by other clients are unknown.
-			 *
-			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
-			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
-			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 * Returns the shader resource manager.
 			 */
-			GLVertexArray::shared_ptr_type
-			acquire_vertex_array(
-					GL &gl);
+			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
+			get_shader_resource_manager() const
+			{
+				return d_shader_resource_manager;
+			}
 
 			/**
-			 * Returns a renderbuffer, from an internal cache, that matches the specified parameters.
-			 *
-			 * Use this when you need a renderbuffer temporarily and want to promote
-			 * resource sharing by returning it for others to use.
-			 *
-			 * NOTE: The returned renderbuffer will have its storage allocated.
-			 *
-			 * Note that, since the returned renderbuffer is non-const, it's possible to change its
-			 * dimensions, but don't do this as it will cause problems when the renderbuffer is
-			 * recycled and used by another client (in fact an exception is thrown when the next
-			 * client recycles the renderbuffer).
-			 *
-			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
-			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
-			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 * Returns the texture resource manager.
 			 */
-			GLRenderbuffer::shared_ptr_type
-			acquire_renderbuffer(
-					GL &gl,
-					GLint internalformat,
-					GLsizei width,
-					GLsizei height);
+			const boost::shared_ptr<GLTexture::resource_manager_type> &
+			get_texture_object_resource_manager() const
+			{
+				return d_texture_object_resource_manager;
+			}
+
 
 			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
@@ -266,42 +177,11 @@ namespace GPlatesOpenGL
 
 		private:
 
-			//! Typedef for a key made up of the parameters of @a acquire_texture.
-			typedef boost::tuple<GLenum, GLint, GLsizei, boost::optional<GLsizei>, boost::optional<GLsizei>, GLint, bool> texture_key_type;
-
-			//! Typedef for a texture cache.
-			typedef GPlatesUtils::ObjectCache<GLTexture> texture_cache_type;
-
-			//! Typedef for a mapping of texture parameters (key) to texture caches.
-			typedef std::map<texture_key_type, texture_cache_type::shared_ptr_type> texture_cache_map_type;
-
-
-			//! Typedef for a key made up of the parameters of @a acquire_renderbuffer.
-			typedef boost::tuple<GLint, GLsizei, GLsizei> renderbuffer_key_type;
-
-			//! Typedef for a renderbuffer cache.
-			typedef GPlatesUtils::ObjectCache<GLRenderbuffer> renderbuffer_cache_type;
-
-			//! Typedef for a mapping of renderbuffer parameters (key) to renderbuffer caches.
-			typedef std::map<renderbuffer_key_type, renderbuffer_cache_type::shared_ptr_type>
-					renderbuffer_cache_map_type;
-
-
-			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
-			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
-			boost::shared_ptr<GLShaderObject::resource_manager_type> d_shader_resource_manager;
 			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_resource_manager;
-
-			texture_cache_map_type d_texture_cache_map;
-
-			renderbuffer_cache_map_type d_renderbuffer_cache_map;
-
-			/**
-			 * Even though vertex arrays cannot be shared across OpenGL contexts, the @a GLVertexArray
-			 * wrapper can be shared.
-			 */
-			GPlatesUtils::ObjectCache<GLVertexArray>::shared_ptr_type d_vertex_array_cache;
+			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
+			boost::shared_ptr<GLShaderObject::resource_manager_type> d_shader_resource_manager;
+			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
 
 			/**
 			 * Used by @a GL to efficiently allocate @a GLState objects.
@@ -320,14 +200,6 @@ namespace GPlatesOpenGL
 			friend class GLContext;
 
 
-			texture_cache_type::shared_ptr_type
-			get_texture_cache(
-					const texture_key_type &texture_key);
-
-			renderbuffer_cache_type::shared_ptr_type
-			get_renderbuffer_cache(
-					const renderbuffer_key_type &renderbuffer_key);
-
 			//! Create state store if not yet done - an OpenGL context must be valid.
 			GLStateStore::non_null_ptr_type
 			get_state_store(
@@ -336,10 +208,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * OpenGL state that *cannot* be shared between contexts (such as vertex array objects, framebuffer objects).
+		 * OpenGL state that *cannot* be shared between contexts.
 		 *
-		 * Note that while framebuffer objects cannot be shared across contexts their targets
+		 * This is typically *container* objects such as vertex array objects and framebuffer objects.
+		 *
+		 * Note that while framebuffer objects cannot be shared across contexts their contained objects
 		 * (textures and renderbuffers) can be shared across contexts.
+		 * Similarly for vertex array objects (with contained buffer objects).
 		 */
 		class NonSharedState
 		{
@@ -349,9 +224,16 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * Returns the framebuffer object resource manager.
+			 * Returns the framebuffer resource manager.
 			 *
-			 * Use this if you need to create your own framebuffer objects.
+			 * This is used by @a GLFramebuffer to allocate a native vertex array object per OpenGL context.
+			 *
+			 * Note that even though @a GLFramebuffer objects are implemented such that they can be used
+			 * freely across different OpenGL contexts, the native OpenGL framebuffer objects (resources)
+			 * contained within them can only be used in the context they were created in.
+			 * Hence they are allocated here (in @a NonSharedState, rather than @a SharedState).
+			 * This ensures the native resources are deallocated in the context they were allocated in
+			 * (ie, deallocated when the correct context is active).
 			 */
 			const boost::shared_ptr<GLFramebuffer::resource_manager_type> &
 			get_framebuffer_resource_manager() const
@@ -360,78 +242,16 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns a framebuffer object from an internal cache.
-			 *
-			 * Use this when you need a framebuffer object temporarily and want to promote
-			 * resource sharing by returning it for others to use.
-			 *
-			 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
-			 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
-			 * ...
-			 *
-			 *   In order of increasing performance:
-			 *
-			 *	   Multiple FBOs
-			 *		   create a separate FBO for each texture you want to render to
-			 *		   switch using BindFramebuffer()
-			 *		   can be 2x faster than wglMakeCurrent() in beta NVIDIA drivers
-			 *	   Single FBO, multiple texture attachments
-			 *		   textures should have same format and dimensions
-			 *		   use FramebufferTexture() to switch between textures
-			 *	   Single FBO, multiple texture attachments
-			 *		   attach textures to different color attachments
-			 *		   use glDrawBuffer() to switch rendering to different color attachments
-			 *
-			 * ...so we optimize for the second case above by requesting the texture internal format
-			 * and dimensions. This enables the same framebuffer to be shared by
-			 * render targets with the same texture format and dimensions. This request is provided
-			 * by the @a classification parameter. If the default is provided then render targets with
-			 * different texture formats and dimensions could end up sharing the same framebuffer
-			 * object which is less efficient.
-			 *
-			 * NOTE: 'gl_detach_all()' is called on the returned framebuffer object (just before returning)
-			 * since the attachments made by other clients are unknown.
-			 * The default read/draw buffers are also set on the returned framebuffer object.
-			 *
-			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
-			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
-			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
-			 */
-			GLFramebuffer::shared_ptr_type
-			acquire_framebuffer(
-					GL &gl,
-					const GLFramebuffer::Classification &classification = GLFramebuffer::Classification());
-
-
-			/**
-			 * Checks the specified framebuffer for completeness (using 'glCheckFramebufferStatus').
-			 *
-			 * Checking the framebuffer status can sometimes be expensive even if called once per frame.
-			 * One profile measured 142msec for a single check - not sure if that was due to the check
-			 * or somehow the driver needed to wait for some reason and happened at that call.
-			 *
-			 * In any case we cache the results to ensure the same check is not repeated more than
-			 * once for this context and for a particular framebuffer classification.
-			 *
-			 * NOTE: You need to actually setup the framebuffer (set attachments, etc) before
-			 * checking for completeness.
-			 */
-			bool
-			check_framebuffer_completeness(
-					GL &gl,
-					const GLFramebuffer::shared_ptr_to_const_type &framebuffer,
-					const GLFramebuffer::Classification &framebuffer_classification) const;
-
-
-			/**
 			 * Returns the vertex array resource manager.
 			 *
-			 * Use this if you need to create your own vertex array objects.
+			 * This is used by @a GLVertexArray to allocate a native vertex array object per OpenGL context.
 			 *
-			 * Note that even though @a GLVertexArray objects are cached in @a SharedState the allocator
-			 * for native vertex array objects (resources) is here (in @a NonSharedState).
+			 * Note that even though @a GLVertexArray objects are implemented such that they can be used
+			 * freely across different OpenGL contexts, the native OpenGL vertex array objects (resources)
+			 * contained within them can only be used in the context they were created in.
+			 * Hence they are allocated here (in @a NonSharedState, rather than @a SharedState).
 			 * This ensures the native resources are deallocated in the context they were allocated in
-			 (ie, deallocated when the correct context is active).
+			 * (ie, deallocated when the correct context is active).
 			 */
 			const boost::shared_ptr<GLVertexArray::resource_manager_type> &
 			get_vertex_array_resource_manager() const
@@ -441,40 +261,8 @@ namespace GPlatesOpenGL
 
 		private:
 
-			//! Typedef for a key made up of the parameters of @a acquire_framebuffer.
-			typedef GLFramebuffer::Classification::tuple_type framebuffer_key_type;
-
-			//! Typedef for a framebuffer cache.
-			typedef GPlatesUtils::ObjectCache<GLFramebuffer> framebuffer_cache_type;
-
-			//! Typedef for a mapping of framebuffer parameters (key) to framebuffer caches.
-			typedef std::map<framebuffer_key_type, framebuffer_cache_type::shared_ptr_type>
-					framebuffer_cache_map_type;
-
-			//! Typedef for a mapping of framebuffer classfication to 'glCheckFramebufferStatus' result.
-			typedef std::map<GLFramebuffer::Classification::tuple_type, bool> framebuffer_state_to_status_map_type;
-
-
-			//! Typedef for a key made up of the parameters of @a acquire_render_target.
-			typedef boost::tuple<GLint, bool, bool, unsigned int, unsigned int> render_target_key_type;
-
-
-			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
-			typedef boost::tuple<GLint, bool, bool> screen_render_target_key_type;
-
-
 			boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
-			framebuffer_cache_map_type d_framebuffer_cache_map;
-
-			//! Cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
-			mutable framebuffer_state_to_status_map_type d_framebuffer_state_to_status_map;
-
 			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
-
-
-			framebuffer_cache_type::shared_ptr_type
-			get_framebuffer_cache(
-					const framebuffer_key_type &framebuffer_key);
 		};
 
 

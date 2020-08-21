@@ -34,8 +34,8 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Base class for any OpenGL object such as texture object, texture buffer object,
-	 * vertex buffer object, pixel buffer object, framebuffer object, etc.
+	 * Base class for any OpenGL object such as texture object, buffer object, vertex array object,
+	 * shader object, program object, framebuffer object.
 	 */
 	class GLObject :
 			private boost::noncopyable

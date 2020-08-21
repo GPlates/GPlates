@@ -36,7 +36,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 // Set the GL_COLOR_ATTACHMENT0 constant.
-const GLenum GPlatesOpenGL::GLCapabilities::gl_COLOR_ATTACHMENT0 = GL_COLOR_ATTACHMENT0_EXT;
+const GLenum GPlatesOpenGL::GLCapabilities::gl_COLOR_ATTACHMENT0 = GL_COLOR_ATTACHMENT0;
 
 // Set the GL_TEXTURE0 constant.
 const GLenum GPlatesOpenGL::GLCapabilities::gl_TEXTURE0 = GL_TEXTURE0;
@@ -46,8 +46,8 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	//
 	// Note: Non-zero values represent the minimum required by OpenGL for all implementations.
 	//
-	gl_max_color_attachments(0),
-	gl_max_renderbuffer_size(0),
+	gl_max_color_attachments(8),
+	gl_max_renderbuffer_size(1024),
 	gl_max_draw_buffers(8),
 	gl_sub_pixel_bits(4),
 	gl_max_vertex_attribs(16),
@@ -56,11 +56,11 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_vertex_texture_image_units(16),
 	gl_max_vertex_output_components(64),
 	gl_max_geometry_texture_image_units(16),
-	gl_max_geometry_output_vertices(0),
+	gl_max_geometry_output_vertices(256),
 	gl_max_geometry_input_components(64),
 	gl_max_geometry_output_components(128),
 	gl_max_geometry_uniform_components(1024),
-	gl_max_geometry_total_output_components(0),
+	gl_max_geometry_total_output_components(1024),
 	gl_max_texture_size(1024),
 	gl_max_cube_map_texture_size(1024),
 	gl_EXT_texture_filter_anisotropic(false),
