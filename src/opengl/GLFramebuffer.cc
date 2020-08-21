@@ -25,695 +25,560 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
-#include <boost/cast.hpp>
-#include <boost/foreach.hpp>
-#include <QDebug>
-
 #include "GLFramebuffer.h"
 
+#include "GL.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
+#include "OpenGLException.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
-
-#include "utils/Profile.h"
-
-namespace GPlatesOpenGL
-{
-	namespace
-	{
-		/**
-		 * The maximum number of attachments (supported by GL_EXT_framebuffer_object).
-		 *
-		 * This is 16 colour attachments, a depth attachment and a stencil attachment.
-		 * NOTE: This is more than the runtime system may support depending on GL_MAX_COLOR_ATTACHMENTS_EXT.
-		 */
-		const unsigned int MAX_NUM_ATTACHMENTS = 16 + 2;
-
-
-		//! Converts attachment GLenum into an index starting at GL_COLOR_ATTACHMENT0_EXT.
-		unsigned int
-		get_attachment_index(
-				GLenum attachment)
-		{
-			// There are 16 colour attachments (supported by GL_EXT_framebuffer_object),
-			// a depth attachment and a stencil attachment.
-
-			if (attachment == GL_DEPTH_ATTACHMENT_EXT)
-			{
-				return 16;
-			}
-			else if (attachment == GL_STENCIL_ATTACHMENT_EXT)
-			{
-				return 17;
-			}
-
-			// All colour attachment enums are >= GL_COLOR_ATTACHMENT0_EXT and packed together.
-			// Note that if the GL_MAX_COLOR_ATTACHMENTS_EXT query is less than GL_COLOR_ATTACHMENT15_EXT
-			// then there will be unused slots in 'd_attachment_points'.
-			return attachment - GL_COLOR_ATTACHMENT0_EXT;
-		}
-
-
-		void
-		assert_valid_attachment(
-				GLRenderer &renderer,
-				GLenum attachment,
-				const GPlatesUtils::CallStack::Trace &assert_location)
-		{
-			// Attachment must be a valid value.
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-						attachment < GL_COLOR_ATTACHMENT0_EXT +
-								renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-						(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-						(attachment == GL_STENCIL_ATTACHMENT_EXT),
-					assert_location);
-		}
-	}
-}
-
-
-const GLenum GPlatesOpenGL::GLFramebuffer::DEFAULT_DRAW_READ_BUFFER = GL_COLOR_ATTACHMENT0_EXT;
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_generate_mipmap(
-		GLRenderer &renderer,
-		GLenum texture_target,
-		const GLTexture::shared_ptr_to_const_type &texture)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	//
-	// Unbind any currently bound framebuffer object and bind the texture to generate mipmaps for.
-	//
-
-	// Revert our framebuffer unbinding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the unbind to OpenGL before we call OpenGL directly.
-	GLRenderer::UnbindFrameBufferAndApply save_restore_unbind(renderer);
-
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind(renderer, texture, GL_TEXTURE0, texture_target);
-
-	glGenerateMipmapEXT(texture_target);
-}
 
 
 GPlatesOpenGL::GLFramebuffer::GLFramebuffer(
-		GLRenderer &renderer) :
-	d_resource(
-			resource_type::create(
-					renderer.get_capabilities(),
-					renderer.get_context().get_non_shared_state()->get_framebuffer_resource_manager()))
+		GL &gl) :
+	d_object_state(
+			gl.get_capabilities().gl_max_color_attachments,
+			gl.get_capabilities().gl_max_draw_buffers)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.framebuffer.gl_EXT_framebuffer_object,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Resize to the maximum number of colour attachments supported by GL_EXT_framebuffer_object.
-	d_attachment_points.resize(MAX_NUM_ATTACHMENTS);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_texture_1D(
-		GLRenderer &renderer,
-		GLenum texture_target,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		GLint level,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	// The texture must be initialised with a width and no height and no depth.
-	// If not then its either a 2D/3D texture or it has not been initialised with GLTexture::gl_tex_image_1D.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && !texture->get_height() && !texture->get_depth(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the texture.
-	glFramebufferTexture1DEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			texture_target,
-			texture->get_resource_handle(),
-			level);
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(
-			attachment,
-			ATTACHMENT_TEXTURE_1D,
-			texture_target,
-			texture,
-			level);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_texture_2D(
-		GLRenderer &renderer,
-		GLenum texture_target,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		GLint level,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	// The texture must be initialised with a width and a height and no depth.
-	// If not then its either a 1D/3D texture or it has not been initialised with GLTexture::gl_tex_image_2D.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && texture->get_height() && !texture->get_depth(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the texture.
-	glFramebufferTexture2DEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			texture_target,
-			texture->get_resource_handle(),
-			level);
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(
-			attachment,
-			ATTACHMENT_TEXTURE_2D,
-			texture_target,
-			texture,
-			level);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_texture_3D(
-		GLRenderer &renderer,
-		GLenum texture_target,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		GLint level,
-		GLint zoffset,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	// The texture must be initialised with a width and a height and a depth.
-	// If not then its either a 1D/2D texture or it has not been initialised with GLTexture::gl_tex_image_3D.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && texture->get_height() && texture->get_depth(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the texture.
-	glFramebufferTexture3DEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			texture_target,
-			texture->get_resource_handle(),
-			level,
-			zoffset);
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(
-			attachment,
-			ATTACHMENT_TEXTURE_3D,
-			texture_target,
-			texture,
-			level,
-			zoffset);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_texture_array_layer(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		GLint level,
-		GLint layer,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// The texture must be initialised with a width and a height minimum.
-	// This is for 1D array textures. 2D array textures also require depth but we don't check
-	// because we don't know the texture target (not needed for glFramebufferTextureLayerEXT).
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && texture->get_height(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The GL_EXT_texture_array extension is required for this call.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.texture.gl_EXT_texture_array,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the texture.
-	glFramebufferTextureLayerEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			texture->get_resource_handle(),
-			level,
-			layer);
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(
-			attachment,
-			texture,
-			level,
-			layer);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_texture_array(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		GLint level,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// The texture must be initialised with a width and a height minimum.
-	// This is for 1D array textures. 2D array textures also require depth but we don't check
-	// because we don't know the texture target (not needed for glFramebufferTextureEXT).
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && texture->get_height(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The GL_EXT_geometry_shader4 extension is required for this call.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.shader.gl_EXT_geometry_shader4,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the texture.
-	glFramebufferTextureEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			texture->get_resource_handle(),
-			level);
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(
-			attachment,
-			texture,
-			level);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_attach_renderbuffer(
-		GLRenderer &renderer,
-		const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	// The renderbuffer must have its storage initialised.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderbuffer->get_dimensions(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Attach to the renderbuffer.
-	glFramebufferRenderbufferEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment,
-			GL_RENDERBUFFER_EXT,
-			renderbuffer->get_resource_handle());
-
-	// Keep track of the attachment.
-	const AttachmentPoint attachment_point(attachment, renderbuffer);
-	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_detach(
-		GLRenderer &renderer,
-		GLenum attachment)
-{
-	//PROFILE_FUNC();
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// Attachment must be a valid value.
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	const boost::optional<AttachmentPoint> &attachment_point = d_attachment_points[get_attachment_index(attachment)];
-	if (!attachment_point)
-	{
-		qWarning() << "GLFramebuffer::gl_detach: Attempted to detach unattached texture or renderbuffer.";
-		return;
-	}
-
-	// Detach by binding to texture object zero (or renderbuffer zero).
-	//
-	// NOTE: I don't think we need to match the function call and parameters when the object
-	// is zero (at least the parameters are supposed to be ignored) but we'll do it anyway.
-	switch (attachment_point->attachment_type)
-	{
-	case ATTACHMENT_TEXTURE_1D:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->attachment_target &&
-					attachment_point->texture &&
-					attachment_point->texture_level,
-				GPLATES_ASSERTION_SOURCE);
-		glFramebufferTexture1DEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				attachment_point->attachment_target.get(),
-				0/*texture*/,
-				attachment_point->texture_level.get());
-		break;
-
-	case ATTACHMENT_TEXTURE_2D:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->attachment_target &&
-					attachment_point->texture &&
-					attachment_point->texture_level,
-				GPLATES_ASSERTION_SOURCE);
-		glFramebufferTexture2DEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				attachment_point->attachment_target.get(),
-				0/*texture*/,
-				attachment_point->texture_level.get());
-		break;
-
-	case ATTACHMENT_TEXTURE_3D:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->attachment_target &&
-					attachment_point->texture &&
-					attachment_point->texture_level &&
-					attachment_point->texture_zoffset,
-				GPLATES_ASSERTION_SOURCE);
-		glFramebufferTexture3DEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				attachment_point->attachment_target.get(),
-				0/*texture*/,
-				attachment_point->texture_level.get(),
-				attachment_point->texture_zoffset.get());
-		break;
-
-	case ATTACHMENT_TEXTURE_ARRAY_LAYER:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->texture &&
-					attachment_point->texture_level &&
-					attachment_point->texture_zoffset,
-				GPLATES_ASSERTION_SOURCE);
-		glFramebufferTextureLayerEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				0/*texture*/,
-				attachment_point->texture_level.get(),
-				attachment_point->texture_zoffset.get());
-		break;
-
-	case ATTACHMENT_TEXTURE_ARRAY:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->texture && attachment_point->texture_level,
-				GPLATES_ASSERTION_SOURCE);
-		//
-		// Some graphics systems generate an 'invalid value' error here
-		// (eg, nVidia driver 275.33 on 460SE hardware).
-		// So we'll use glFramebufferRenderbufferEXT instead of glFramebufferTextureEXT
-		// to detach the attachment point.
-		//
-		// According to the '' spec...
-		//
-		// "If the user calls either FramebufferTexture with a zero
-        // texture name, or FramebufferRenderbuffer with a zero
-		// renderbuffer name, then the it as if nothing is attached to
-        // the specified attachment point."
-		//
-		// ...so we should be able to use either to 'detach' an attachment point.
-		//
-#if 0
-		glFramebufferTextureEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				0/*texture*/,
-				attachment_point->texture_level.get());
-#else
-		glFramebufferRenderbufferEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				GL_RENDERBUFFER_EXT, // value ignored for zero renderbuffer
-				0/*renderbuffer*/);
-#endif
-		break;
-
-	case ATTACHMENT_RENDER_BUFFER:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point->attachment_target,
-				GPLATES_ASSERTION_SOURCE);
-		glFramebufferRenderbufferEXT(
-				GL_FRAMEBUFFER_EXT,
-				attachment_point->attachment,
-				attachment_point->attachment_target.get(),
-				0/*renderbuffer*/);
-		break;
-
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
-	}
-
-	// No longer tracking the attachment point.
-	d_attachment_points[get_attachment_index(attachment)] = boost::none;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_detach_all(
-		GLRenderer &renderer)
-{
-	// Detach any currently attached attachment points.
-	BOOST_FOREACH(const boost::optional<AttachmentPoint> &attachment_point, d_attachment_points)
-	{
-		if (attachment_point)
-		{
-			gl_detach(renderer, attachment_point->attachment);
-		}
-	}
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_draw_buffers(
-		GLRenderer &renderer,
-		const std::vector<GLenum> &bufs)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!bufs.empty() &&
-				bufs.size() <= renderer.get_capabilities().framebuffer.gl_max_draw_buffers,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	// If just one buffer then use the OpenGL 1.1 function.
-	if (bufs.size() == 1)
-	{
-		glDrawBuffer(bufs[0]);
-		return;
-	}
-	// Otherwise use the GL_ARB_draw_buffers extension for multiple buffers.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.framebuffer.gl_ARB_draw_buffers,
-			GPLATES_ASSERTION_SOURCE);
-
-	glDrawBuffersARB(bufs.size(), &bufs[0]);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::gl_read_buffer(
-		GLRenderer &renderer,
-		GLenum mode)
-{
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	glReadBuffer(mode);
-}
-
-
-bool
-GPlatesOpenGL::GLFramebuffer::gl_check_framebuffer_status(
-		GLRenderer &renderer) const
-{
-	PROFILE_FUNC();
-
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
-	const GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	switch(status)
-	{
-	case GL_FRAMEBUFFER_COMPLETE_EXT:
-		return true;
-
-	case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-		return false;
-
-	default:
-		// If the status is neither 'GL_FRAMEBUFFER_COMPLETE_EXT' nor 'GL_FRAMEBUFFER_UNSUPPORTED_EXT'
-		// then an assertion/exception is triggered as this represents a programming error.
-		//
-		// UPDATE: This virtually never happens but it did on one user's system described as:
-		//
-		//   - Windows server 2016 Datacenter virtual machine.
-		//   - 2 gb GPU with 1.0.6.1371 OpenGL Library and 1.0.0.69 OpenGL Redirector.
-		//
-		// ...although they did have a screenshot of a loaded scalar field so must have at least OpenGL 3.
-		//
-		// In order to avoid aborting GPlates we'll log the framebuffer status and return false.
-		qWarning() << "glCheckFramebufferStatusEXT returned status other than "
-				"'GL_FRAMEBUFFER_COMPLETE_EXT' or 'GL_FRAMEBUFFER_UNSUPPORTED_EXT': "
-				<< status;
-		return false;
-	}
-}
-
-
-boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
-GPlatesOpenGL::GLFramebuffer::get_framebuffer_dimensions() const
-{
-	// Iterate over the attachment points until we find one that has something attached.
-	for (unsigned int attachment_index = 0;
-		attachment_index < d_attachment_points.size();
-		++attachment_index)
-	{
-		const boost::optional<AttachmentPoint> &attachment_point_opt = d_attachment_points[attachment_index];
-		if (!attachment_point_opt)
-		{
-			// Look at the next attachment point.
-			continue;
-		}
-		const AttachmentPoint &attachment_point = attachment_point_opt.get();
-
-		if (attachment_point.texture)
-		{
-			const boost::optional<GLuint> texture_width = attachment_point.texture.get()->get_width();
-			if (!texture_width)
-			{
-				// The attached texture has not allocated storage yet.
-				return boost::none;
-			}
-
-			const boost::optional<GLuint> texture_height = attachment_point.texture.get()->get_height();
-			return std::make_pair(
-					texture_width.get(),
-					// If no height specified then texture is 1D...
-					texture_height ? texture_height.get() : 1);
-		}
-
-		// Attachment point must either be a texture or a renderbuffer.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				attachment_point.renderbuffer,
-				GPLATES_ASSERTION_SOURCE);
-
-		return attachment_point.renderbuffer.get()->get_dimensions();
-	}
-
-	// Nothing attached to any attachment points.
-	return boost::none;
 }
 
 
 GLuint
-GPlatesOpenGL::GLFramebuffer::get_resource_handle() const
+GPlatesOpenGL::GLFramebuffer::get_resource_handle(
+		GL &gl) const
 {
-	return d_resource->get_resource_handle();
+	return get_object_state_for_current_context(gl).resource->get_resource_handle();
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::synchronise_current_context(
+		GL &gl,
+		GLenum target)
+{
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+
+	// Return early if the current context state is already up-to-date.
+	// This is an optimisation (it's not strictly necessary).
+	if (d_object_state_subject.is_observer_up_to_date(current_context_object_state.object_state_observer))
+	{
+		return;
+	}
+
+	//
+	// Synchronise the attachments.
+	//
+
+	const unsigned int num_color_attachments = gl.get_capabilities().gl_max_color_attachments;
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_object_state.color_attachments.size() == num_color_attachments &&
+				current_context_object_state.object_state.color_attachments.size() == num_color_attachments,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Synchronise colour attachments.
+	for (GLuint color_attachment_index = 0; color_attachment_index < num_color_attachments; ++color_attachment_index)
+	{
+		const GLenum color_attachment = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + color_attachment_index);
+
+		const ObjectState::Attachment &color_attachment_state =
+				d_object_state.color_attachments[color_attachment_index];
+		ObjectState::Attachment &context_color_attachment_state =
+				current_context_object_state.object_state.color_attachments[color_attachment_index];
+
+		synchronise_current_context_attachment(
+				gl, target, color_attachment, color_attachment_state, context_color_attachment_state);
+	}
+
+	// Synchronise depth attachment.
+	synchronise_current_context_attachment(
+			gl, target, GL_DEPTH_ATTACHMENT,
+			d_object_state.depth_attachment,
+			current_context_object_state.object_state.depth_attachment);
+
+	// Synchronise stencil attachment.
+	synchronise_current_context_attachment(
+			gl, target, GL_STENCIL_ATTACHMENT,
+			d_object_state.stencil_attachment,
+			current_context_object_state.object_state.stencil_attachment);
+
+	// The current context state is now up-to-date.
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		const ObjectState::Attachment &attachment_state,
+		ObjectState::Attachment &context_attachment_state)
+{
+	// Return early if the state does not differ.
+	if (context_attachment_state == attachment_state)
+	{
+		return;
+	}
+
+	if (attachment_state.type)
+	{
+		//
+		// Attach in context.
+		//
+		// Currently context is either detached, or attached but with a different attachment state.
+		//
+		switch (attachment_state.type.get())
+		{
+		case ObjectState::Attachment::FRAMEBUFFER_RENDERBUFFER:
+			// Attach the renderbuffer.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.renderbuffer,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferRenderbuffer(
+					target,
+					attachment,
+					attachment_state.renderbuffertarget,
+					attachment_state.renderbuffer.get()->get_resource_handle());
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE:
+			// Attach the texture.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.texture,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferTexture(
+					target,
+					attachment,
+					attachment_state.texture.get()->get_resource_handle(),
+					attachment_state.level);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_1D:
+			// Attach the texture.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.texture,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferTexture1D(
+					target,
+					attachment,
+					attachment_state.textarget,
+					attachment_state.texture.get()->get_resource_handle(),
+					attachment_state.level);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_2D:
+			// Attach the texture.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.texture,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferTexture2D(
+					target,
+					attachment,
+					attachment_state.textarget,
+					attachment_state.texture.get()->get_resource_handle(),
+					attachment_state.level);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_3D:
+			// Attach the texture.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.texture,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferTexture3D(
+					target,
+					attachment,
+					attachment_state.textarget,
+					attachment_state.texture.get()->get_resource_handle(),
+					attachment_state.level,
+					attachment_state.layer);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_LAYER:
+			// Attach the texture.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					attachment_state.texture,
+					GPLATES_ASSERTION_SOURCE);
+			glFramebufferTextureLayer(
+					target,
+					attachment,
+					attachment_state.texture.get()->get_resource_handle(),
+					attachment_state.level,
+					attachment_state.layer);
+			break;
+
+		default:
+			// Shouldn't be able to get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
+	}
+	else  // attachment is in detached state ...
+	{
+		// Both states are different so they cannot both be in the detached state ('type' is none).
+		// Therefore the context attachment must be in an attached state.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				context_attachment_state.type,
+				GPLATES_ASSERTION_SOURCE);
+
+		//
+		// Detach in context.
+		//
+		// Currently context is attached.
+		//
+		// Note: We could probably use a single function (like 'glFramebufferRenderbuffer')
+		//       to detach in all cases (especially since the extra parameters like
+		//       renderbuffer/texture target, texture level, texture layer are ignored when detaching).
+		//       However to be safest (in case the OpenGL driver causes problems) we'll detach in the
+		//       same way the renderbuffer/texture object was attached.
+		//
+		switch (context_attachment_state.type.get())
+		{
+		case ObjectState::Attachment::FRAMEBUFFER_RENDERBUFFER:
+			// Detach the currently attached renderbuffer.
+			glFramebufferRenderbuffer(
+					target,
+					attachment,
+					context_attachment_state.renderbuffertarget,
+					0/*renderbuffer*/);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE:
+			// Detach the currently attached texture.
+			glFramebufferTexture(
+					target,
+					attachment,
+					0/*texture*/,
+					context_attachment_state.level/*ignored*/);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_1D:
+			// Detach the currently attached texture.
+			glFramebufferTexture1D(
+					target,
+					attachment,
+					context_attachment_state.textarget/*ignored*/,
+					0/*texture*/,
+					context_attachment_state.level/*ignored*/);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_2D:
+			// Detach the currently attached texture.
+			glFramebufferTexture2D(
+					target,
+					attachment,
+					context_attachment_state.textarget/*ignored*/,
+					0/*texture*/,
+					context_attachment_state.level/*ignored*/);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_3D:
+			// Detach the currently attached texture.
+			glFramebufferTexture3D(
+					target,
+					attachment,
+					context_attachment_state.textarget/*ignored*/,
+					0/*texture*/,
+					context_attachment_state.level/*ignored*/,
+					context_attachment_state.layer/*ignored*/);
+			break;
+
+		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_LAYER:
+			// Detach the currently attached texture.
+			glFramebufferTextureLayer(
+					target,
+					attachment,
+					0/*texture*/,
+					context_attachment_state.level/*ignored*/,
+					context_attachment_state.layer/*ignored*/);
+			break;
+
+		default:
+			// Shouldn't be able to get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
+	}
+
+	// Record updated context state.
+	context_attachment_state = attachment_state;
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_renderbuffer(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum renderbuffertarget,
+		boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)
+{
+	// Either attach the specified renderbuffer or detach.
+	GLuint renderbuffer_resource = 0;
+	if (renderbuffer)
+	{
+		renderbuffer_resource = renderbuffer.get()->get_resource_handle();
+	}
+
+	glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer_resource);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (renderbuffer)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_RENDERBUFFER;
+		attachment_state.renderbuffertarget = renderbuffertarget;
+		attachment_state.renderbuffer = renderbuffer;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_texture(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
+
+	glFramebufferTexture(target, attachment, texture_resource, level);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (texture)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_TEXTURE;
+		attachment_state.texture = texture;
+		attachment_state.level = level;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_texture_1D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
+
+	glFramebufferTexture1D(target, attachment, textarget, texture_resource, level);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (texture)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_TEXTURE_1D;
+		attachment_state.textarget = textarget;
+		attachment_state.texture = texture;
+		attachment_state.level = level;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_texture_2D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
+
+	glFramebufferTexture2D(target, attachment, textarget, texture_resource, level);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (texture)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_TEXTURE_2D;
+		attachment_state.textarget = textarget;
+		attachment_state.texture = texture;
+		attachment_state.level = level;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_texture_3D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLint layer)
+{
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
+
+	glFramebufferTexture3D(target, attachment, textarget, texture_resource, level, layer);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (texture)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_TEXTURE_3D;
+		attachment_state.textarget = textarget;
+		attachment_state.texture = texture;
+		attachment_state.level = level;
+		attachment_state.layer = layer;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::framebuffer_texture_layer(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLint layer)
+{
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
+
+	glFramebufferTextureLayer(target, attachment, texture_resource, level, layer);
+
+	// Record the new framebuffer internal state, and the state associated with the current context.
+	ObjectState::Attachment attachment_state; // Detached state.
+	if (texture)
+	{
+		// Attached state.
+		attachment_state.type = ObjectState::Attachment::FRAMEBUFFER_TEXTURE_LAYER;
+		attachment_state.texture = texture;
+		attachment_state.level = level;
+		attachment_state.layer = layer;
+	}
+
+	set_attachment(gl, attachment, attachment_state);
+}
+
+
+GPlatesOpenGL::GLFramebuffer::ContextObjectState &
+GPlatesOpenGL::GLFramebuffer::get_object_state_for_current_context(
+		GL &gl) const
+{
+	const GLContext &current_context = gl.get_context();
+
+	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
+	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
+	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
+	{
+		if (context_object_state_iter->context == &current_context)
+		{
+			return *context_object_state_iter;
+		}
+	}
+
+	// Context not yet encountered so create a new context object state.
+	d_context_object_states.push_back(ContextObjectState(current_context, gl));
+
+	return d_context_object_states.back();
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::set_attachment(
+		GL &gl,
+		GLenum attachment,
+		const ObjectState::Attachment &attachment_state)
+{
+	// Record the framebuffer internal state.
+	//
+	// Note that the framebuffer object in current context has been updated,
+	// so we'll need to update our record of its state also.
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+
+	if (attachment == GL_DEPTH_ATTACHMENT)
+	{
+		// Set depth as attached, and leave stencil as is.
+		d_object_state.depth_attachment = attachment_state;
+		current_context_object_state.object_state.depth_attachment = attachment_state;
+	}
+	else if (attachment == GL_STENCIL_ATTACHMENT)
+	{
+		// Set stencil as attached, and leave depth as is.
+		d_object_state.stencil_attachment = attachment_state;
+		current_context_object_state.object_state.stencil_attachment = attachment_state;
+	}
+	else if (attachment == GL_DEPTH_STENCIL_ATTACHMENT)
+	{
+		// Set both depth and stencil as attached.
+		d_object_state.depth_attachment = attachment_state;
+		d_object_state.stencil_attachment = attachment_state;
+		current_context_object_state.object_state.depth_attachment = attachment_state;
+		current_context_object_state.object_state.stencil_attachment = attachment_state;
+	}
+	else // GL_COLOR_ATTACHMENTi ...
+	{
+		GPlatesGlobal::Assert<OpenGLException>(
+				attachment >= GL_COLOR_ATTACHMENT0 &&
+					attachment < GL_COLOR_ATTACHMENT0 + gl.get_capabilities().gl_max_color_attachments,
+				GPLATES_ASSERTION_SOURCE,
+				"Framebuffer color attachment exceeds GL_MAX_COLOR_ATTACHMENTS.");
+
+		const GLuint color_attachment_index = attachment - GL_COLOR_ATTACHMENT0;
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				color_attachment_index < d_object_state.color_attachments.size() && 
+					color_attachment_index < current_context_object_state.object_state.color_attachments.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		d_object_state.color_attachments[color_attachment_index] = attachment_state;
+		current_context_object_state.object_state.color_attachments[color_attachment_index] = attachment_state;
+	}
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
 }
 
 
@@ -735,177 +600,17 @@ GPlatesOpenGL::GLFramebuffer::Allocator::deallocate(
 }
 
 
-GPlatesOpenGL::GLFramebuffer::Classification::Classification() :
-	// Using arbitrary default parameters - default tuple indicates non-specified classification.
-	d_tuple(
-			0, // width
-			0, // height
-			std::vector<attachment_point_type>(
-					MAX_NUM_ATTACHMENTS,
-					attachment_point_type(ATTACHMENT_TEXTURE_1D, -1, boost::none)))
-{
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_dimensions(
-		GLRenderer &renderer,
-		GLuint width,
-		GLuint height)
-{
-	boost::tuples::get<0>(d_tuple) = width;
-	boost::tuples::get<1>(d_tuple) = height;
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_1D(
-		GLRenderer &renderer,
-		GLint texture_internal_format,
-		GLenum texture_target,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_TEXTURE_1D, texture_internal_format, texture_target);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_2D(
-		GLRenderer &renderer,
-		GLint texture_internal_format,
-		GLenum texture_target,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_TEXTURE_2D, texture_internal_format, texture_target);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_3D(
-		GLRenderer &renderer,
-		GLint texture_internal_format,
-		GLenum texture_target,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_TEXTURE_3D, texture_internal_format, texture_target);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_array_layer(
-		GLRenderer &renderer,
-		GLint texture_internal_format,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_TEXTURE_ARRAY_LAYER, texture_internal_format, boost::none/*texture_target*/);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_texture_array(
-		GLRenderer &renderer,
-		GLint texture_internal_format,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_TEXTURE_ARRAY, texture_internal_format, boost::none/*texture_target*/);
-}
-
-
-void
-GPlatesOpenGL::GLFramebuffer::Classification::set_attached_renderbuffer(
-		GLRenderer &renderer,
-		GLint renderbuffer_internal_format,
-		GLenum attachment)
-{
-	assert_valid_attachment(
-			renderer,
-			attachment,
-			GPLATES_ASSERTION_SOURCE);
-
-	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
-			attachment_point_type(ATTACHMENT_RENDER_BUFFER, renderbuffer_internal_format, boost::none/*texture_target*/);
-}
-
-
-GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
-		GLenum attachment_,
-		AttachmentType attachment_type_,
-		GLenum attachment_target_,
-		const GLTexture::shared_ptr_to_const_type &texture_,
-		GLint texture_level_,
-		boost::optional<GLint> texture_zoffset_) :
-	attachment(attachment_),
-	attachment_type(attachment_type_),
-	attachment_target(attachment_target_),
-	texture(texture_),
-	texture_level(texture_level_),
-	texture_zoffset(texture_zoffset_)
-{
-}
-
-
-GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
-		GLenum attachment_,
-		const GLTexture::shared_ptr_to_const_type &texture_,
-		GLint texture_level_,
-		GLint texture_layer_) :
-	attachment(attachment_),
-	attachment_type(ATTACHMENT_TEXTURE_ARRAY_LAYER),
-	texture(texture_),
-	texture_level(texture_level_),
-	texture_zoffset(texture_layer_)
-{
-}
-
-
-GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
-		GLenum attachment_,
-		const GLTexture::shared_ptr_to_const_type &texture_,
-		GLint texture_level_) :
-	attachment(attachment_),
-	attachment_type(ATTACHMENT_TEXTURE_ARRAY),
-	texture(texture_),
-	texture_level(texture_level_)
-{
-}
-
-
-GPlatesOpenGL::GLFramebuffer::AttachmentPoint::AttachmentPoint(
-		GLenum attachment_,
-		const GLRenderbuffer::shared_ptr_to_const_type &renderbuffer_) :
-	attachment(attachment_),
-	attachment_type(ATTACHMENT_RENDER_BUFFER),
-	attachment_target(GL_RENDERBUFFER_EXT),
-	renderbuffer(renderbuffer_)
+GPlatesOpenGL::GLFramebuffer::ContextObjectState::ContextObjectState(
+		const GLContext &context_,
+		GL &gl) :
+	context(&context_),
+	// Create a framebuffer object resource using the resource manager associated with the context...
+	resource(
+			resource_type::create(
+					context_.get_capabilities(),
+					context_.get_non_shared_state()->get_framebuffer_resource_manager())),
+	object_state(
+			gl.get_capabilities().gl_max_color_attachments,
+			gl.get_capabilities().gl_max_draw_buffers)
 {
 }

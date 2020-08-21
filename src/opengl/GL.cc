@@ -39,6 +39,7 @@ GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::non_null_ptr_type &state_store) :
 	d_context(context),
+	d_capabilities(context->get_capabilities()),
 	d_current_state(GLState::create(context->get_capabilities(), state_store)),
 	// Default viewport/scissor starts out as the initial window dimensions returned by context.
 	// However it can change when the window (that context is attached to) is resized...
@@ -103,8 +104,8 @@ GPlatesOpenGL::GL::BindFramebuffer(
 		// Ensure the framebuffer's internal state is reflected in the current context.
 		// Each 'GLFramebuffer' instance has one native framebuffer object per OpenGL context.
 		//
-		// NOTE: This must be done after binding.
-		framebuffer.get()->synchronise_current_context(*this);
+		// NOTE: This must be done after binding to the framebuffer 'target'.
+		framebuffer.get()->synchronise_current_context(*this, target);
 	}
 	else
 	{
@@ -278,6 +279,154 @@ GPlatesOpenGL::GL::EnableVertexAttribArray(
 			"Cannot enable vertex attribute array because a vertex array object is not currently bound.");
 
 	vertex_array.get()->enable_vertex_attrib_array(*this, index);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferRenderbuffer(
+		GLenum target,
+		GLenum attachment,
+		GLenum renderbuffertarget,
+		boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_renderbuffer(*this, target, attachment, renderbuffertarget, renderbuffer);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferTexture(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_texture(*this, target, attachment, texture, level);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferTexture1D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_texture_1D(*this, target, attachment, textarget, texture, level);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferTexture2D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_texture_2D(*this, target, attachment, textarget, texture, level);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferTexture3D(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		GLenum textarget,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLint layer)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_texture_3D(*this, target, attachment, textarget, texture, level, layer);
+}
+
+
+void
+GPlatesOpenGL::GL::FramebufferTextureLayer(
+		GL &gl,
+		GLenum target,
+		GLenum attachment,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLint layer)
+{
+	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
+	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+
+	// Get the framebuffer object currently bound to 'target'.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
+
+	// Can only attach to framebuffer when a framebuffer object is currently bound.
+	GPlatesGlobal::Assert<OpenGLException>(
+			framebuffer,
+			GPLATES_ASSERTION_SOURCE,
+			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
+
+	framebuffer.get()->framebuffer_texture_layer(*this, target, attachment, texture, level, layer);
 }
 
 

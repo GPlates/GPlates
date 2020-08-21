@@ -67,6 +67,7 @@ namespace GPlatesOpenGL
 	 * Note that the default attribute state set by glVertexAttrib* (such as glVertexAttrib4f) are
 	 * actually global context state (they're not part of vertex array object state). Despite this they
 	 * are an example of context state not catered for in this class (so will need direct calls to OpenGL).
+	 * Another example, similar to @a GLVertexArray, is @a GLFramebuffer.
 	 */
 	class GL :
 			public GPlatesUtils::ReferenceCount<GL>
@@ -178,7 +179,7 @@ namespace GPlatesOpenGL
 		const GLCapabilities &
 		get_capabilities() const
 		{
-			return d_context->get_capabilities();
+			return d_capabilities;
 		}
 
 
@@ -277,6 +278,58 @@ namespace GPlatesOpenGL
 				GLuint index);
 
 		void
+		FramebufferRenderbuffer(
+				GLenum target,
+				GLenum attachment,
+				GLenum renderbuffertarget,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
+
+		void
+		FramebufferTexture(
+				GL &gl,
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture1D(
+				GL &gl,
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture2D(
+				GL &gl,
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture3D(
+				GL &gl,
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLint layer);
+
+		void
+		FramebufferTextureLayer(
+				GL &gl,
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLint layer);
+
+		void
 		FrontFace(
 				GLenum dir = GL_CCW);
 
@@ -370,6 +423,11 @@ namespace GPlatesOpenGL
 		 * Manages objects associated with the current OpenGL context.
 		 */
 		GLContext::non_null_ptr_type d_context;
+
+		/**
+		 * Context capabilities.
+		 */
+		const GLCapabilities &d_capabilities;
 		
 		/**
 		 * Tracks the current OpenGL global state.
