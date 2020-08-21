@@ -37,9 +37,7 @@
 
 GPlatesOpenGL::GLFramebuffer::GLFramebuffer(
 		GL &gl) :
-	d_object_state(
-			gl.get_capabilities().gl_max_color_attachments,
-			gl.get_capabilities().gl_max_draw_buffers)
+	d_object_state(gl.get_capabilities().gl_max_color_attachments)
 {
 }
 
@@ -64,6 +62,28 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context(
 	if (d_object_state_subject.is_observer_up_to_date(current_context_object_state.object_state_observer))
 	{
 		return;
+	}
+
+	//
+	// Synchronise draw/read buffers.
+	//
+
+	// Draw buffers.
+	if (current_context_object_state.object_state.draw_buffers_ != d_object_state.draw_buffers_)
+	{
+		glDrawBuffers(d_object_state.draw_buffers_.size(), d_object_state.draw_buffers_.data());
+
+		// Record updated context state.
+		current_context_object_state.object_state.draw_buffers_ = d_object_state.draw_buffers_;
+	}
+
+	// Read buffer.
+	if (current_context_object_state.object_state.read_buffer_ != d_object_state.read_buffer_)
+	{
+		glReadBuffer(d_object_state.read_buffer_);
+
+		// Record updated context state.
+		current_context_object_state.object_state.read_buffer_ = d_object_state.read_buffer_;
 	}
 
 	//
@@ -302,6 +322,77 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 
 	// Record updated context state.
 	context_attachment_state = attachment_state;
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::draw_buffer(
+		GL &gl,
+		GLenum buf)
+{
+	glDrawBuffer(buf);
+
+	// Record the new framebuffer internal state.
+	d_object_state.draw_buffers_.resize(1, buf);
+
+	// Note that the framebuffer object in current context has been updated,
+	// so we'll need to update our record of its state also.
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+	current_context_object_state.object_state.draw_buffers_ = d_object_state.draw_buffers_;
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::draw_buffers(
+		GL &gl,
+		const std::vector<GLenum> &bufs)
+{
+	GPlatesGlobal::Assert<OpenGLException>(
+			bufs.size() < gl.get_capabilities().gl_max_draw_buffers,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer draw buffers exceed GL_MAX_DRAW_BUFFERS.");
+
+	glDrawBuffers(bufs.size(), bufs.data());
+
+	// Record the new framebuffer internal state.
+	d_object_state.draw_buffers_ = bufs;
+
+	// Note that the framebuffer object in current context has been updated,
+	// so we'll need to update our record of its state also.
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+	current_context_object_state.object_state.draw_buffers_ = d_object_state.draw_buffers_;
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
+}
+
+
+void
+GPlatesOpenGL::GLFramebuffer::read_buffer(
+		GL &gl,
+		GLenum src)
+{
+	glReadBuffer(src);
+
+	// Record the new framebuffer internal state.
+	d_object_state.read_buffer_ = src;
+
+	// Note that the framebuffer object in current context has been updated,
+	// so we'll need to update our record of its state also.
+	ContextObjectState &current_context_object_state = get_object_state_for_current_context(gl);
+	current_context_object_state.object_state.read_buffer_ = d_object_state.read_buffer_;
+
+	// Invalidate all contexts except the current one.
+	// When we switch to the next context it will be out-of-date and require synchronisation.
+	d_object_state_subject.invalidate();
+	d_object_state_subject.update_observer(current_context_object_state.object_state_observer);
 }
 
 
@@ -609,8 +700,6 @@ GPlatesOpenGL::GLFramebuffer::ContextObjectState::ContextObjectState(
 			resource_type::create(
 					context_.get_capabilities(),
 					context_.get_non_shared_state()->get_framebuffer_resource_manager())),
-	object_state(
-			gl.get_capabilities().gl_max_color_attachments,
-			gl.get_capabilities().gl_max_draw_buffers)
+	object_state(gl.get_capabilities().gl_max_color_attachments)
 {
 }

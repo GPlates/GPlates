@@ -750,6 +750,51 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to set the draw buffers in default framebuffer.
+	 */
+	struct GLDrawBuffersStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLDrawBuffersStateSet(
+				const std::vector<GLenum> &draw_buffers,
+				GLenum default_draw_buffer) :
+			d_draw_buffers(draw_buffers),
+			d_default_draw_buffer(default_draw_buffer)
+		{  }
+
+		explicit
+		GLDrawBuffersStateSet(
+				GLenum draw_buffer,
+				GLenum default_draw_buffer) :
+			d_draw_buffers(1, draw_buffer),
+			d_default_draw_buffer(default_draw_buffer)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		std::vector<GLenum> d_draw_buffers;
+		GLenum d_default_draw_buffer;
+	};
+
+	/**
 	 * Used to enable/disable capabilities.
 	 */
 	struct GLEnableStateSet :
@@ -1005,6 +1050,43 @@ namespace GPlatesOpenGL
 
 		GPlatesMaths::real_t d_factor;
 		GPlatesMaths::real_t d_units;
+	};
+
+	/**
+	 * Used to set the read buffer in default framebuffer.
+	 */
+	struct GLReadBufferStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLReadBufferStateSet(
+				GLenum read_buffer,
+				GLenum default_read_buffer) :
+			d_read_buffer(read_buffer),
+			d_default_read_buffer(default_read_buffer)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		GLenum d_read_buffer;
+		GLenum d_default_read_buffer;
 	};
 
 	/**

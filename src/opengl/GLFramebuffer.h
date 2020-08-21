@@ -170,6 +170,21 @@ namespace GPlatesOpenGL
 				GL &gl,
 				GLenum target);
 
+		void
+		draw_buffer(
+				GL &gl,
+				GLenum buf);
+
+		void
+		draw_buffers(
+				GL &gl,
+				const std::vector<GLenum> &bufs);
+
+		void
+		read_buffer(
+				GL &gl,
+				GLenum src);
+
 		//! Equivalent to glFramebufferRenderbuffer.
 		void
 		framebuffer_renderbuffer(
@@ -238,7 +253,7 @@ namespace GPlatesOpenGL
 		{
 			struct Attachment
 			{
-				//! Identify the OpenGL call used to attach.
+				//! Identify the OpenGL call that was used to attach.
 				enum Type
 				{
 					FRAMEBUFFER_RENDERBUFFER,
@@ -294,16 +309,14 @@ namespace GPlatesOpenGL
 
 			explicit
 			ObjectState(
-					GLuint max_color_attachments,
-					GLuint max_draw_buffers) :
-				// Default read buffer state is GL_COLOR_ATTACHMENT0 ...
-				read_buffer(GLCapabilities::gl_COLOR_ATTACHMENT0)
+					GLuint max_color_attachments) :
+				// Default draw buffers state is GL_NONE for all buffers except first (which is GL_COLOR_ATTACHMENT0).
+				// We only record the number of buffers specified in 'glDrawBuffers' (which is one for 'glDrawBuffer')...
+				draw_buffers_(1, GLCapabilities::gl_COLOR_ATTACHMENT0),
+				// Default read buffer state is GL_COLOR_ATTACHMENT0...
+				read_buffer_(GLCapabilities::gl_COLOR_ATTACHMENT0)
 			{
 				color_attachments.resize(max_color_attachments);
-
-				// Default draw buffers state is GL_NONE for all buffers except first (which is GL_COLOR_ATTACHMENT0).
-				draw_buffers.resize(max_draw_buffers, GL_NONE);
-				draw_buffers[0] = GLCapabilities::gl_COLOR_ATTACHMENT0;
 			}
 
 			//  Colour/depth/stencil attachments.
@@ -312,8 +325,8 @@ namespace GPlatesOpenGL
 			Attachment stencil_attachment;
 
 			// Draw/read buffers.
-			std::vector<GLenum> draw_buffers;
-			GLenum read_buffer;
+			std::vector<GLenum> draw_buffers_;
+			GLenum read_buffer_;
 		};
 
 		/**

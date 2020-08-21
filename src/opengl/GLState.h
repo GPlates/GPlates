@@ -280,6 +280,28 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		draw_buffer(
+				GLenum buf,
+				GLenum default_draw_buffer)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->draw_buffers_state_sets,
+					GLStateSetKeys::KEY_DRAW_BUFFERS,
+					boost::in_place(buf, default_draw_buffer));
+		}
+
+		void
+		draw_buffers(
+				const std::vector<GLenum> &bufs,
+				GLenum default_draw_buffer)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->draw_buffers_state_sets,
+					GLStateSetKeys::KEY_DRAW_BUFFERS,
+					boost::in_place(bufs, default_draw_buffer));
+		}
+
+		void
 		enable(
 				GLenum cap)
 		{
@@ -354,6 +376,17 @@ namespace GPlatesOpenGL
 					d_state_set_store->polygon_offset_state_sets,
 					GLStateSetKeys::KEY_POLYGON_OFFSET,
 					boost::in_place(factor, units));
+		}
+
+		void
+		read_buffer(
+				GLenum src,
+				GLenum default_draw_buffer)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->read_buffer_state_sets,
+					GLStateSetKeys::KEY_READ_BUFFER,
+					boost::in_place(src, default_draw_buffer));
 		}
 
 		void

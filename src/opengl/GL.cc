@@ -43,7 +43,9 @@ GPlatesOpenGL::GL::GL(
 	d_current_state(GLState::create(context->get_capabilities(), state_store)),
 	// Default viewport/scissor starts out as the initial window dimensions returned by context.
 	// However it can change when the window (that context is attached to) is resized...
-	d_default_viewport(0, 0, context->get_width(), context->get_height())
+	d_default_viewport(0, 0, context->get_width(), context->get_height()),
+	// Default draw/read buffer is GL_FRONT if there is no back buffer, otherwise GL_BACK...
+	d_default_draw_read_buffer(context->get_qgl_format().doubleBuffer() ? GL_BACK : GL_FRONT)
 {
 }
 
@@ -251,6 +253,50 @@ GPlatesOpenGL::GL::DisableVertexAttribArray(
 			"Cannot disable vertex attribute array because a vertex array object is not currently bound.");
 
 	vertex_array.get()->disable_vertex_attrib_array(*this, index);
+}
+
+
+void
+GPlatesOpenGL::GL::DrawBuffer(
+		GLenum buf)
+{
+	// Get the framebuffer object currently bound to 'GL_DRAW_FRAMEBUFFER', if any.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
+			d_current_state->get_bind_framebuffer(GL_DRAW_FRAMEBUFFER);
+
+	if (framebuffer)
+	{
+		// Re-route to the framebuffer object (which needs to track its internal state across contexts
+		// since cannot be shared across contexts).
+		framebuffer.get()->draw_buffer(*this, buf);
+	}
+	else
+	{
+		// Drawing to default framebuffer, which is global context state (not framebuffer object state).
+		d_current_state->draw_buffer(buf, d_default_draw_read_buffer);
+	}
+}
+
+
+void
+GPlatesOpenGL::GL::DrawBuffers(
+		const std::vector<GLenum> &bufs)
+{
+	// Get the framebuffer object currently bound to 'GL_DRAW_FRAMEBUFFER', if any.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
+			d_current_state->get_bind_framebuffer(GL_DRAW_FRAMEBUFFER);
+
+	if (framebuffer)
+	{
+		// Re-route to the framebuffer object (which needs to track its internal state across contexts
+		// since cannot be shared across contexts).
+		framebuffer.get()->draw_buffers(*this, bufs);
+	}
+	else
+	{
+		// Drawing to default framebuffer, which is global context state (not framebuffer object state).
+		d_current_state->draw_buffers(bufs, d_default_draw_read_buffer);
+	}
 }
 
 
@@ -483,6 +529,28 @@ GPlatesOpenGL::GL::PolygonOffset(
 		GLfloat units)
 {
 	d_current_state->polygon_offset(factor, units);
+}
+
+
+void
+GPlatesOpenGL::GL::ReadBuffer(
+		GLenum src)
+{
+	// Get the framebuffer object currently bound to 'GL_READ_FRAMEBUFFER', if any.
+	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
+			d_current_state->get_bind_framebuffer(GL_READ_FRAMEBUFFER);
+
+	if (framebuffer)
+	{
+		// Re-route to the framebuffer object (which needs to track its internal state across contexts
+		// since cannot be shared across contexts).
+		framebuffer.get()->read_buffer(*this, src);
+	}
+	else
+	{
+		// Reading from the default framebuffer, which is global context state (not framebuffer object state).
+		d_current_state->read_buffer(src, d_default_draw_read_buffer);
+	}
 }
 
 

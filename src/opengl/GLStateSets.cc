@@ -1077,6 +1077,55 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 
 
 void
+GPlatesOpenGL::GLDrawBuffersStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLDrawBuffersStateSet &current = dynamic_cast<const GLDrawBuffersStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	if (d_draw_buffers == current.d_draw_buffers)
+	{
+		return;
+	}
+
+	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+}
+
+void
+GPlatesOpenGL::GLDrawBuffersStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_draw_buffers.size() == 1 &&
+		d_draw_buffers[0] == d_default_draw_buffer)
+	{
+		return;
+	}
+
+	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+}
+
+void
+GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_draw_buffers.size() == 1 &&
+		d_draw_buffers[0] == d_default_draw_buffer)
+	{
+		return;
+	}
+
+	glDrawBuffer(d_default_draw_buffer);
+}
+
+
+void
 GPlatesOpenGL::GLEnableStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1434,6 +1483,53 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 	}
 
 	glPolygonMode(GLfloat(0), GLfloat(0));
+}
+
+
+void
+GPlatesOpenGL::GLReadBufferStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLReadBufferStateSet &current = dynamic_cast<const GLReadBufferStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	if (d_read_buffer == current.d_read_buffer)
+	{
+		return;
+	}
+
+	glReadBuffer(d_read_buffer);
+}
+
+void
+GPlatesOpenGL::GLReadBufferStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_read_buffer == d_default_read_buffer)
+	{
+		return;
+	}
+
+	glReadBuffer(d_read_buffer);
+}
+
+void
+GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_read_buffer == d_default_read_buffer)
+	{
+		return;
+	}
+
+	glReadBuffer(d_default_read_buffer);
 }
 
 

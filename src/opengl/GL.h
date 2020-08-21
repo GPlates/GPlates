@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GL_H
 
 #include <memory>
+#include <vector>
 #include <opengl/OpenGL1.h>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -270,6 +271,14 @@ namespace GPlatesOpenGL
 				GLuint index);
 
 		void
+		DrawBuffer(
+				GLenum buf);
+
+		void
+		DrawBuffers(
+				const std::vector<GLenum> &bufs);
+
+		void
 		Enable(
 				GLenum cap);
 
@@ -357,6 +366,10 @@ namespace GPlatesOpenGL
 				GLfloat units = GLfloat(0));
 
 		void
+		ReadBuffer(
+				GLenum src);
+
+		void
 		Scissor(
 				GLint x,
 				GLint y,
@@ -440,6 +453,12 @@ namespace GPlatesOpenGL
 		 * The default viewport can change when the window (that context is attached to) is resized.
 		 */
 		GLViewport d_default_viewport;
+
+		/**
+		 * The default read and draw buffer in default framebuffer
+		 * (GL_FRONT if there is no back buffer, otherwise GL_BACK).
+		 */
+		GLenum d_default_draw_read_buffer;
 	};
 }
 
