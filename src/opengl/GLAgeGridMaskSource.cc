@@ -423,7 +423,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 		if (!high_byte_age_texture)
 		{
 			high_byte_age_texture = high_byte_age_volatile_texture->set_cached_object(
-					GLTexture::create_as_unique_ptr(renderer));
+					GLTexture::create_unique(renderer));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_tile_texture(renderer, high_byte_age_texture);
@@ -441,7 +441,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 		if (!low_byte_age_texture)
 		{
 			low_byte_age_texture = low_byte_age_volatile_texture->set_cached_object(
-					GLTexture::create_as_unique_ptr(renderer));
+					GLTexture::create_unique(renderer));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_tile_texture(renderer, low_byte_age_texture);
@@ -615,7 +615,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 	{
 		// No unused texture so create a new one...
 		intermediate_texture = d_intermediate_render_texture_cache->allocate_object(
-				GLTexture::create_as_unique_ptr(renderer));
+				GLTexture::create_unique(renderer));
 
 		// The texture was just allocated so we need to create it in OpenGL.
 		create_tile_texture(renderer, intermediate_texture.get());

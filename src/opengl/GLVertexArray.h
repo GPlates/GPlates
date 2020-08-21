@@ -37,6 +37,7 @@
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
+#include "GLCapabilities.h"
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
@@ -47,7 +48,6 @@
 namespace GPlatesOpenGL
 {
 	class GL;
-	class GLCapabilities;
 	class GLContext;
 
 	/**
@@ -60,6 +60,7 @@ namespace GPlatesOpenGL
 	 * new native vertex array object (for each context encountered).
 	 */
 	class GLVertexArray :
+			public GLObject,
 			public boost::enable_shared_from_this<GLVertexArray>
 	{
 	public:

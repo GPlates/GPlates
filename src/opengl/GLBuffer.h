@@ -49,6 +49,7 @@ namespace GPlatesOpenGL
 	 * Wrapper around an OpenGL buffer object.
 	 */
 	class GLBuffer :
+			public GLObject,
 			public boost::enable_shared_from_this<GLBuffer>
 	{
 	public:

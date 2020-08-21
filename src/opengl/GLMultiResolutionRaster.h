@@ -465,7 +465,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer_,
 					const GLMultiResolutionRasterSource::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionRasterSource::cache_handle_type()) :
-				texture(GLTexture::create_as_unique_ptr(renderer_)),
+				texture(GLTexture::create_unique(renderer_)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 
