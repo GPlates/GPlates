@@ -678,6 +678,53 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 
 
 void
+GPlatesOpenGL::GLClampColorStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLClampColorStateSet &current = dynamic_cast<const GLClampColorStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	if (d_clamp == current.d_clamp)
+	{
+		return;
+	}
+
+	glClampColor(d_target, d_clamp);
+}
+
+void
+GPlatesOpenGL::GLClampColorStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_clamp == GL_FIXED_ONLY)
+	{
+		return;
+	}
+
+	glClampColor(d_target, d_clamp);
+}
+
+void
+GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_clamp == GL_FIXED_ONLY)
+	{
+		return;
+	}
+
+	glClampColor(d_target, GL_FIXED_ONLY);
+}
+
+
+void
 GPlatesOpenGL::GLClearColorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,

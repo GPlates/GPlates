@@ -129,7 +129,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 		const ObjectState::AttributeArray &attribute_array = d_object_state.attribute_arrays[attribute_index];
 		ObjectState::AttributeArray &context_attribute_array = current_context_object_state.object_state.attribute_arrays[attribute_index];
 
-		bool updated = false;
+		bool updated_attribute_array = false;
 
 		if (context_attribute_array.enabled != attribute_array.enabled)
 		{
@@ -142,14 +142,14 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 				glDisableVertexAttribArray(attribute_index);
 			}
 
-			updated = true;
+			updated_attribute_array = true;
 		}
 
 		if (context_attribute_array.divisor != attribute_array.divisor)
 		{
 			glVertexAttribDivisor(attribute_index, attribute_array.divisor);
 
-			updated = true;
+			updated_attribute_array = true;
 		}
 
 		if (context_attribute_array.size != attribute_array.size ||
@@ -189,10 +189,10 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 						attribute_array.pointer);
 			}
 
-			updated = true;
+			updated_attribute_array = true;
 		}
 
-		if (updated)
+		if (updated_attribute_array)
 		{
 			// Record updated context state.
 			context_attribute_array = attribute_array;

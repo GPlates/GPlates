@@ -321,8 +321,7 @@ namespace GPlatesQtWidgets
 		 * resizeGL(), and then once whenever the widget has been assigned a new
 		 * QGLContext.  Reimplement it in a subclass.
 		 *
-		 * This function should set up any required OpenGL context rendering flags,
-		 * defining display lists, etc.
+		 * This function should set up any required OpenGL context state.
 		 *
 		 * There is no need to call makeCurrent() because this has already been done when
 		 * this function is called.

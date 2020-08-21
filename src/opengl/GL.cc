@@ -166,6 +166,15 @@ GPlatesOpenGL::GL::BindVertexArray(
 
 
 void
+GPlatesOpenGL::GL::ClampColor(
+		GLenum target,
+		GLenum clamp)
+{
+	d_current_state->clamp_color(target, clamp);
+}
+
+
+void
 GPlatesOpenGL::GL::ClearColor(
 		GLclampf red,
 		GLclampf green,

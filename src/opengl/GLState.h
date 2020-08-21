@@ -193,6 +193,17 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		clamp_color(
+				GLenum target,
+				GLenum clamp)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->clamp_color_state_sets,
+					d_state_set_keys->get_clamp_color_key(target),
+					boost::in_place(target, clamp));
+		}
+
+		void
 		clear_color(
 				GLclampf red,
 				GLclampf green,

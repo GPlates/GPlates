@@ -72,6 +72,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLBindVertexArrayStateSet> bind_vertex_array_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendEquationStateSet> blend_equation_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendFuncStateSet> blend_func_state_sets;
+		GPlatesUtils::ObjectPool<GLClampColorStateSet> clamp_color_state_sets;
 		GPlatesUtils::ObjectPool<GLClearColorStateSet> clear_color_state_sets;
 		GPlatesUtils::ObjectPool<GLClearDepthStateSet> clear_depth_state_sets;
 		GPlatesUtils::ObjectPool<GLClearStencilStateSet> clear_stencil_state_sets;

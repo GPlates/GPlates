@@ -228,6 +228,11 @@ namespace GPlatesOpenGL
 				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
 		void
+		ClampColor(
+				GLenum target,
+				GLenum clamp);
+
+		void
 		ClearColor(
 				GLclampf red = GLclampf(0.0),
 				GLclampf green = GLclampf(0.0),

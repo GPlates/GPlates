@@ -450,6 +450,43 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to set the clamp color (used by 'glReadPixels').
+	 */
+	struct GLClampColorStateSet :
+			public GLStateSet
+	{
+		GLClampColorStateSet(
+				GLenum target,
+				GLenum clamp) :
+			d_target(target),
+			d_clamp(clamp)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		GLenum d_target;
+		GLenum d_clamp;
+	};
+
+	/**
 	 * Used to set the clear color.
 	 */
 	struct GLClearColorStateSet :

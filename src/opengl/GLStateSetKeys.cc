@@ -162,6 +162,20 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_clamp_color_key(
+		GLenum target) const
+{
+	// OpenGL 3.3 core supports only the GL_CLAMP_READ_COLOR target.
+	// GL_CLAMP_VERTEX_COLOR and GL_CLAMP_FRAGMENT_COLOR have been deprecated (removed in core).
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			target == GL_CLAMP_READ_COLOR,
+			GPLATES_ASSERTION_SOURCE);
+
+	return KEY_CLAMP_READ_COLOR;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 		GLenum cap) const
 {

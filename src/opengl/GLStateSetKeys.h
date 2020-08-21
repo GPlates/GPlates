@@ -93,6 +93,7 @@ namespace GPlatesOpenGL
 			KEY_BIND_VERTEX_ARRAY,
 			KEY_BLEND_EQUATION,
 			KEY_BLEND_FUNC,
+			KEY_CLAMP_READ_COLOR,
 			KEY_CLEAR_COLOR,
 			KEY_CLEAR_DEPTH,
 			KEY_CLEAR_STENCIL,
@@ -150,6 +151,10 @@ namespace GPlatesOpenGL
 		get_bind_texture_key(
 				GLenum texture_target,
 				GLenum texture_unit) const;
+
+		key_type
+		get_clamp_color_key(
+				GLenum target) const;
 
 		//! For glEnable/glDisable.
 		key_type
