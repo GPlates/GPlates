@@ -99,6 +99,7 @@ FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
   /opt/local/include/PROJ
   /opt/local/lib/proj49/include
   /opt/local/lib/PROJ49/include
+  /opt/local/lib/proj6/include
   /opt/local/include # DarwinPorts
   /opt/csw/include/proj
   /opt/csw/include/PROJ
@@ -166,6 +167,7 @@ FIND_LIBRARY(PROJ_LIBRARY
     /opt/local
     /opt/local/lib/proj49/lib
     /opt/local/lib/PROJ49/lib
+    /opt/local/lib/proj6/lib
     /opt/csw
     /opt
     /usr/freeware
