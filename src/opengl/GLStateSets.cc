@@ -885,6 +885,9 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 }
 
 
+const GPlatesOpenGL::GLColorMaskStateSet::Mask
+GPlatesOpenGL::GLColorMaskStateSet::DEFAULT_MASK{ GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
+
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -894,16 +897,26 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLColorMaskStateSet &current = dynamic_cast<const GLColorMaskStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_red == current.d_red &&
-		d_green == current.d_green &&
-		d_blue == current.d_blue &&
-		d_alpha == current.d_alpha)
+	if (d_all_masks_equal && current.d_all_masks_equal)
 	{
-		return;
+		// If state changed...
+		if (d_masks[0] != current.d_masks[0])
+		{
+			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+		}
 	}
-
-	glColorMask(d_red, d_green, d_blue, d_alpha);
+	else
+	{
+		const GLuint num_masks = capabilities.gl_max_draw_buffers;
+		for (GLuint i = 0; i < num_masks; ++i)
+		{
+			// If state changed...
+			if (d_masks[i] != current.d_masks[i])
+			{
+				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+			}
+		}
+	}
 }
 
 void
@@ -911,13 +924,26 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_red && d_green && d_blue && d_alpha)
+	if (d_all_masks_equal)
 	{
-		return;
+		// If state changed...
+		if (d_masks[0] != DEFAULT_MASK)
+		{
+			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+		}
 	}
-
-	glColorMask(d_red, d_green, d_blue, d_alpha);
+	else
+	{
+		const GLuint num_masks = capabilities.gl_max_draw_buffers;
+		for (GLuint i = 0; i < num_masks; ++i)
+		{
+			// If state changed...
+			if (d_masks[i] != DEFAULT_MASK)
+			{
+				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+			}
+		}
+	}
 }
 
 void
@@ -925,13 +951,26 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_red && d_green && d_blue && d_alpha)
+	if (d_all_masks_equal)
 	{
-		return;
+		// If state changed...
+		if (d_masks[0] != DEFAULT_MASK)
+		{
+			glColorMask(DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+		}
 	}
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	else
+	{
+		const GLuint num_masks = capabilities.gl_max_draw_buffers;
+		for (GLuint i = 0; i < num_masks; ++i)
+		{
+			// If state changed...
+			if (d_masks[i] != DEFAULT_MASK)
+			{
+				glColorMaski(i, DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+			}
+		}
+	}
 }
 
 

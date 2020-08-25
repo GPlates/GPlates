@@ -34,7 +34,6 @@
 
 #include "GL.h"
 #include "GLStateStore.h"
-#include "GLTextureUtils.h"
 #include "GLUtils.h"
 #include "OpenGLException.h"
 

@@ -605,15 +605,43 @@ namespace GPlatesOpenGL
 	struct GLColorMaskStateSet :
 			public GLStateSet
 	{
+		struct Mask
+		{
+			bool operator==(
+					const Mask &rhs) const
+			{
+				return red == rhs.red && green == rhs.green && blue == rhs.blue && alpha == rhs.alpha;
+			}
+
+			bool operator!=(
+					const Mask &rhs) const
+			{
+				return !(*this == rhs);
+			}
+
+			GLboolean red;
+			GLboolean green;
+			GLboolean blue;
+			GLboolean alpha;
+		};
+
+		static const Mask DEFAULT_MASK;
+
+
+		// glColorMask
 		GLColorMaskStateSet(
-				GLboolean red,
-				GLboolean green,
-				GLboolean blue,
-				GLboolean alpha) :
-			d_red(red),
-			d_green(green),
-			d_blue(blue),
-			d_alpha(alpha)
+				const GLCapabilities &capabilities,
+				const Mask &mask) :
+			d_masks(capabilities.gl_max_draw_buffers, mask),
+			d_all_masks_equal(true)
+		{  }
+
+		// glColorMaski
+		GLColorMaskStateSet(
+				const GLCapabilities &capabilities,
+				const std::vector<Mask> &masks) :
+			d_masks(masks),
+			d_all_masks_equal(false)
 		{  }
 
 		virtual
@@ -635,11 +663,8 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const;
 
-
-		GLboolean d_red;
-		GLboolean d_green;
-		GLboolean d_blue;
-		GLboolean d_alpha;
+		std::vector<Mask> d_masks;
+		bool d_all_masks_equal;
 	};
 
 	/**

@@ -251,6 +251,14 @@ namespace GPlatesOpenGL
 				GLboolean alpha);
 
 		void
+		ColorMaski(
+				GLuint buf,
+				GLboolean red,
+				GLboolean green,
+				GLboolean blue,
+				GLboolean alpha);
+
+		void
 		ClearStencil(
 				GLint stencil = 0);
 

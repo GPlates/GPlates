@@ -246,8 +246,18 @@ namespace GPlatesOpenGL
 			set_and_apply_state_set(
 					d_state_set_store->color_mask_state_sets,
 					GLStateSetKeys::KEY_COLOR_MASK,
-					boost::in_place(red, green, blue, alpha));
+					boost::in_place(
+							d_capabilities,
+							GLColorMaskStateSet::Mask{red, green, blue, alpha}));
 		}
+
+		void
+		color_maski(
+				GLuint buf,
+				GLboolean red,
+				GLboolean green,
+				GLboolean blue,
+				GLboolean alpha);
 
 		void
 		cull_face(

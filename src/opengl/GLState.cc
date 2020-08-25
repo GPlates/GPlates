@@ -147,6 +147,36 @@ GPlatesOpenGL::GLState::save() const
 
 
 void
+GPlatesOpenGL::GLState::restore()
+{
+	// There should be at least one saved snapshot one the stack.
+	// If not then save/restore has been used incorrectly by the caller.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_save_restore_state.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the most recently saved snapshot (and pop it off the stack).
+	Snapshot::shared_ptr_type saved_snapshot = d_save_restore_state.top();
+	d_save_restore_state.pop();
+
+	// Apply the state of the saved snapshot so that it becomes the current state.
+	apply_state(
+			*saved_snapshot,
+			// Only those state slots that changed (between saving the snapshot and now) need to be applied...
+			d_current_state->state_set_slots_changed_since_last_snapshot);
+
+	// We also need to restore the flags identifying which state set slots have been changed
+	// between the most recent save (that we just restored) and the save before that
+	// (if there wasn't a save before that then it means the change since the default startup state).
+	//
+	// Use a swap to copy from saved snapshot to current snapshot.
+	// The swap copies current to saved as well (but we're about to discard 'saved_snapshot' anyway).
+	d_current_state->state_set_slots_changed_since_last_snapshot.swap(
+			saved_snapshot->state_set_slots_changed_since_last_snapshot);
+}
+
+
+void
 GPlatesOpenGL::GLState::apply_state(
 		const Snapshot &new_state,
 		const state_set_slot_flags_type &state_set_slots_changed)
@@ -255,36 +285,6 @@ GPlatesOpenGL::GLState::apply_state(
 
 
 void
-GPlatesOpenGL::GLState::restore()
-{
-	// There should be at least one saved snapshot one the stack.
-	// If not then save/restore has been used incorrectly by the caller.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_save_restore_state.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the most recently saved snapshot (and pop it off the stack).
-	Snapshot::shared_ptr_type saved_snapshot = d_save_restore_state.top();
-	d_save_restore_state.pop();
-
-	// Apply the state of the saved snapshot so that it becomes the current state.
-	apply_state(
-			*saved_snapshot,
-			// Only those state slots that changed (between saving the snapshot and now) need to be applied...
-			d_current_state->state_set_slots_changed_since_last_snapshot);
-
-	// We also need to restore the flags identifying which state set slots have been changed
-	// between the most recent save (that we just restored) and the save before that
-	// (if there wasn't a save before that then it means the change since the default startup state).
-	//
-	// Use a swap to copy from saved snapshot to current snapshot.
-	// The swap copies current to saved as well (but we're about to discard 'saved_snapshot' anyway).
-	d_current_state->state_set_slots_changed_since_last_snapshot.swap(
-			saved_snapshot->state_set_slots_changed_since_last_snapshot);
-}
-
-
-void
 GPlatesOpenGL::GLState::bind_framebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
@@ -346,6 +346,39 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 			boost::in_place(
 					draw_framebuffer, read_framebuffer,
 					draw_framebuffer_resource, read_framebuffer_resource));
+}
+
+
+void
+GPlatesOpenGL::GLState::color_maski(
+		GLuint buf,
+		GLboolean red,
+		GLboolean green,
+		GLboolean blue,
+		GLboolean alpha)
+{
+	// Get the current state.
+	boost::optional<const GLColorMaskStateSet &> color_mask_state_set =
+			query_state_set<GLColorMaskStateSet>(GLStateSetKeys::KEY_COLOR_MASK);
+
+	// Copy of current state.
+	std::vector<GLColorMaskStateSet::Mask> masks = color_mask_state_set
+			? color_mask_state_set->d_masks
+			// Default state...
+			: std::vector<GLColorMaskStateSet::Mask>(d_capabilities.gl_max_draw_buffers, GLColorMaskStateSet::DEFAULT_MASK);
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			buf < d_capabilities.gl_max_draw_buffers,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Set the requested state (in copy of current state).
+	masks[buf] = {red, green, blue, alpha};
+
+	// Apply modified copy of current state.
+	set_and_apply_state_set(
+			d_state_set_store->color_mask_state_sets,
+			GLStateSetKeys::KEY_COLOR_MASK,
+			boost::in_place(d_capabilities, masks));
 }
 
 

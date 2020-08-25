@@ -205,6 +205,18 @@ GPlatesOpenGL::GL::ColorMask(
 
 
 void
+GPlatesOpenGL::GL::ColorMaski(
+		GLuint buf,
+		GLboolean red,
+		GLboolean green,
+		GLboolean blue,
+		GLboolean alpha)
+{
+	d_current_state->color_maski(buf, red, green, blue, alpha);
+}
+
+
+void
 GPlatesOpenGL::GL::ClearStencil(
 		GLint stencil)
 {
