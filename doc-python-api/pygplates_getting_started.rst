@@ -72,7 +72,7 @@ code for Linux (and Ubuntu packages for public pyGPlates releases):
   ``pygplates.so`` pyGPlates library and its dependency libraries.
   
   .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
-     version 3.8.x and is 64-bit. The operating system can be Mavericks (10.9) or above.
+     version 3.8.x and is 64-bit. The operating system can be High Sierra (10.13) or above.
   
 * ``pygplates_rev@PYGPLATES_REVISION@_python38_win64.zip`` - pyGPlates for Windows (compiled for 64-bit Python 3.8).
 
