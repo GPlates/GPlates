@@ -382,6 +382,51 @@ GPlatesOpenGL::GLState::color_maski(
 }
 
 
+void
+GPlatesOpenGL::GLState::stencil_mask_separate(
+		GLenum face,
+		GLuint mask)
+{
+	// Get the current state.
+	boost::optional<const GLStencilMaskStateSet &> stencil_mask_state_set =
+			query_state_set<GLStencilMaskStateSet>(GLStateSetKeys::KEY_STENCIL_MASK);
+
+	// Copy of current state.
+	GLuint front_mask = GLStencilMaskStateSet::DEFAULT_MASK;
+	GLuint back_mask = GLStencilMaskStateSet::DEFAULT_MASK;
+	if (stencil_mask_state_set)
+	{
+		front_mask = stencil_mask_state_set->d_front_mask;
+		back_mask = stencil_mask_state_set->d_back_mask;
+	}
+
+	// Set the requested state (in copy of current state).
+	if (face == GL_FRONT)
+	{
+		front_mask = mask;
+	}
+	else if (face == GL_BACK)
+	{
+		back_mask = mask;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				face == GL_FRONT_AND_BACK,
+				GPLATES_ASSERTION_SOURCE);
+
+		front_mask = mask;
+		back_mask = mask;
+	}
+
+	// Apply modified copy of current state.
+	set_and_apply_state_set(
+			d_state_set_store->stencil_mask_state_sets,
+			GLStateSetKeys::KEY_STENCIL_MASK,
+			boost::in_place(front_mask, back_mask));
+}
+
+
 boost::optional<GPlatesOpenGL::GLFramebuffer::shared_ptr_type>
 GPlatesOpenGL::GLState::get_bind_framebuffer(
 		GLenum target) const

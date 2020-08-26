@@ -245,18 +245,18 @@ namespace GPlatesOpenGL
 
 		void
 		ColorMask(
-				GLboolean red,
-				GLboolean green,
-				GLboolean blue,
-				GLboolean alpha);
+				GLboolean red = GL_TRUE,
+				GLboolean green = GL_TRUE,
+				GLboolean blue = GL_TRUE,
+				GLboolean alpha = GL_TRUE);
 
 		void
 		ColorMaski(
 				GLuint buf,
-				GLboolean red,
-				GLboolean green,
-				GLboolean blue,
-				GLboolean alpha);
+				GLboolean red = GL_TRUE,
+				GLboolean green = GL_TRUE,
+				GLboolean blue = GL_TRUE,
+				GLboolean alpha = GL_TRUE);
 
 		void
 		ClearStencil(
@@ -391,6 +391,11 @@ namespace GPlatesOpenGL
 
 		void
 		StencilMask(
+				GLuint mask = ~0/*all ones*/);
+
+		void
+		StencilMaskSeparate(
+				GLenum face,
 				GLuint mask = ~0/*all ones*/);
 
 		void

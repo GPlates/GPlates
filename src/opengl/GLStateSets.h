@@ -1235,10 +1235,13 @@ namespace GPlatesOpenGL
 	struct GLStencilMaskStateSet :
 			public GLStateSet
 	{
-		explicit
+		static const GLuint DEFAULT_MASK;
+
 		GLStencilMaskStateSet(
-				GLuint stencil) :
-			d_stencil(stencil)
+				GLuint front_stencil,
+				GLuint back_stencil) :
+			d_front_mask(front_stencil),
+			d_back_mask(back_stencil)
 		{  }
 
 		virtual
@@ -1261,7 +1264,8 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		GLuint d_stencil;
+		GLuint d_front_mask;
+		GLuint d_back_mask;
 	};
 
 	/**

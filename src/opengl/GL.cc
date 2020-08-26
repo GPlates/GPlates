@@ -597,6 +597,15 @@ GPlatesOpenGL::GL::StencilMask(
 
 
 void
+GPlatesOpenGL::GL::StencilMaskSeparate(
+		GLenum face,
+		GLuint mask)
+{
+	d_current_state->stencil_mask_separate(face, mask);
+}
+
+
+void
 GPlatesOpenGL::GL::VertexAttribDivisor(
 		GLuint index,
 		GLuint divisor)

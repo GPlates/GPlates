@@ -429,8 +429,13 @@ namespace GPlatesOpenGL
 			set_and_apply_state_set(
 					d_state_set_store->stencil_mask_state_sets,
 					GLStateSetKeys::KEY_STENCIL_MASK,
-					boost::in_place(mask));
+					boost::in_place(mask/*front*/, mask/*back*/));
 		}
+
+		void
+		stencil_mask_separate(
+				GLenum face,
+				GLuint mask);
 
 		void
 		viewport(

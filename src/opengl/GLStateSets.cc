@@ -1725,6 +1725,8 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 }
 
 
+const GLuint GPlatesOpenGL::GLStencilMaskStateSet::DEFAULT_MASK = ~GLuint(0)/*all ones*/;
+
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -1734,13 +1736,28 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLStencilMaskStateSet &current = dynamic_cast<const GLStencilMaskStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_stencil == current.d_stencil)
+	if (d_front_mask == d_back_mask)
 	{
-		return;
+		// If either front or back mask changed...
+		if (d_front_mask != current.d_front_mask ||
+			d_back_mask != current.d_back_mask)
+		{
+			// Both front/back masks are the same so set them in one call
+			// (even though it's possible only one of the faces has changed).
+			glStencilMask(d_front_mask);
+		}
 	}
-
-	glStencilMask(d_stencil);
+	else // Front and back stencil masks are different...
+	{
+		if (d_front_mask != current.d_front_mask)
+		{
+			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+		}
+		if (d_back_mask != current.d_back_mask)
+		{
+			glStencilMaskSeparate(GL_BACK, d_back_mask);
+		}
+	}
 }
 
 void
@@ -1748,13 +1765,25 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_stencil == ~GLuint(0)/*all ones*/)
+	if (d_front_mask == d_back_mask)
 	{
-		return;
+		if (d_front_mask != DEFAULT_MASK)
+		{
+			// Both front/back masks are the same so set them in one call.
+			glStencilMask(d_front_mask);
+		}
 	}
-
-	glStencilMask(d_stencil);
+	else // Front and back stencil masks are different...
+	{
+		if (d_front_mask != DEFAULT_MASK)
+		{
+			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+		}
+		if (d_back_mask != DEFAULT_MASK)
+		{
+			glStencilMaskSeparate(GL_BACK, d_back_mask);
+		}
+	}
 }
 
 void
@@ -1762,13 +1791,25 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_stencil == ~GLuint(0)/*all ones*/)
+	if (d_front_mask == d_back_mask)
 	{
-		return;
+		if (d_front_mask != DEFAULT_MASK)
+		{
+			// Both front/back masks are the same so set them in one call.
+			glStencilMask(DEFAULT_MASK);
+		}
 	}
-
-	glStencilMask(~GLuint(0)/*all ones*/);
+	else // Front and back stencil masks are different...
+	{
+		if (d_front_mask != DEFAULT_MASK)
+		{
+			glStencilMaskSeparate(GL_FRONT, DEFAULT_MASK);
+		}
+		if (d_back_mask != DEFAULT_MASK)
+		{
+			glStencilMaskSeparate(GL_BACK, DEFAULT_MASK);
+		}
+	}
 }
 
 
