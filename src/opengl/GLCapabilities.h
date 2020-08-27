@@ -83,6 +83,8 @@ namespace GPlatesOpenGL
 
 		GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS query result
 
+		GLuint gl_max_clip_distances; // GL_MAX_CLIP_DISTANCES query result
+
 		//! Maximum number of texture image units available to vertex/geometry/fragment shaders combined.
 		GLuint gl_max_combined_texture_image_units; // GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS query result
 

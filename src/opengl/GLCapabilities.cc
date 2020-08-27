@@ -51,6 +51,7 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_draw_buffers(8),
 	gl_sub_pixel_bits(4),
 	gl_max_vertex_attribs(16),
+	gl_max_clip_distances(8),
 	gl_max_combined_texture_image_units(48),
 	gl_max_texture_image_units(16),
 	gl_max_vertex_texture_image_units(16),
@@ -100,6 +101,8 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	//
 
 	gl_max_vertex_attribs = query_integer(GL_MAX_VERTEX_ATTRIBS);
+
+	gl_max_clip_distances = query_integer(GL_MAX_CLIP_DISTANCES);
 
 	gl_max_combined_texture_image_units = query_integer(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
 

@@ -44,12 +44,16 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
 {
 	// Start assigning keys after all the hardwired (enum) keys.
 	//
-	// All keys that don't depend on availability of extensions or that don't depend on capabilities
-	// (such as supported number of textures) get hardwired (enum) keys.
+	// All keys that don't depend on capabilities (such as supported number of textures) get hardwired (enum) keys.
 	//
 	// All the remaining keys must be allocated at runtime (here).
 	key_type current_key = NUM_ENUM_KEYS;
 
+	// Enable clip distances.
+	d_enable_clip_distance_zero_base_key = current_key;
+	current_key += d_capabilities.gl_max_clip_distances;
+
+	// Texture units.
 	d_texture_image_unit_zero_base_key = current_key;
 	current_key +=
 			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
@@ -101,7 +105,7 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 
 	default:
 		// Unsupported capability.
-		qWarning() << "binding of specified buffer object target not currently supported - should be easy to add though.";
+		qWarning() << "binding of specified buffer object target not currently supported.";
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}
@@ -179,60 +183,60 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 		GLenum cap) const
 {
-	key_type key = 0;
-
 	// We're currently only accepting a subset of all capabilities.
 	// Add more as needed.
 	switch (cap)
 	{
-		break;
 	case GL_BLEND:
-		key = KEY_ENABLE_BLEND;
-		break;
+		return KEY_ENABLE_BLEND;
 	case GL_CULL_FACE:
-		key = KEY_ENABLE_CULL_FACE;
-		break;
+		return KEY_ENABLE_CULL_FACE;
+	case GL_DEPTH_CLAMP:
+		return KEY_ENABLE_DEPTH_CLAMP;
 	case GL_DEPTH_TEST:
-		key = KEY_ENABLE_DEPTH_TEST;
-		break;
+		return KEY_ENABLE_DEPTH_TEST;
+	case GL_FRAMEBUFFER_SRGB:
+		return KEY_ENABLE_FRAMEBUFFER_SRGB;
 	case GL_LINE_SMOOTH:
-		key = KEY_ENABLE_LINE_SMOOTH;
-		break;
+		return KEY_ENABLE_LINE_SMOOTH;
+	case GL_MULTISAMPLE:
+		return KEY_ENABLE_MULTISAMPLE;
 	case GL_POLYGON_OFFSET_FILL:
-		key = KEY_ENABLE_POLYGON_OFFSET_FILL;
-		break;
+		return KEY_ENABLE_POLYGON_OFFSET_FILL;
 	case GL_POLYGON_OFFSET_LINE:
-		key = KEY_ENABLE_POLYGON_OFFSET_LINE;
-		break;
+		return KEY_ENABLE_POLYGON_OFFSET_LINE;
 	case GL_POLYGON_OFFSET_POINT:
-		key = KEY_ENABLE_POLYGON_OFFSET_POINT;
-		break;
+		return KEY_ENABLE_POLYGON_OFFSET_POINT;
 	case GL_POLYGON_SMOOTH:
-		key = KEY_ENABLE_POLYGON_SMOOTH;
-		break;
+		return KEY_ENABLE_POLYGON_SMOOTH;
 	case GL_PRIMITIVE_RESTART:
-		key = KEY_ENABLE_PRIMITIVE_RESTART;
-		break;
+		return KEY_ENABLE_PRIMITIVE_RESTART;
+	case GL_PROGRAM_POINT_SIZE:
+		return KEY_ENABLE_PROGRAM_POINT_SIZE;
 	case GL_RASTERIZER_DISCARD:
-		key = KEY_ENABLE_RASTERIZER_DISCARD;
-		break;
+		return KEY_ENABLE_RASTERIZER_DISCARD;
 	case GL_SCISSOR_TEST:
-		key = KEY_ENABLE_SCISSOR_TEST;
-		break;
+		return KEY_ENABLE_SCISSOR_TEST;
 	case GL_STENCIL_TEST:
-		key = KEY_ENABLE_STENCIL_TEST;
-		break;
+		return KEY_ENABLE_STENCIL_TEST;
 	case GL_TEXTURE_CUBE_MAP_SEAMLESS:
-		key = KEY_ENABLE_TEXTURE_CUBE_MAP_SEAMLESS;
-		break;
+		return KEY_ENABLE_TEXTURE_CUBE_MAP_SEAMLESS;
 	default:
-		// Unsupported capability.
-		qWarning() << "glEnable/glDisable capability not currently supported - should be easy to add though.";
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}
 
-	return key;
+	// GL_CLIP_DISTANCEi.
+	if (cap >= GL_CLIP_DISTANCE0 &&
+		cap < GL_CLIP_DISTANCE0 + d_capabilities.gl_max_clip_distances)
+	{
+		return d_enable_clip_distance_zero_base_key + (cap - GL_CLIP_DISTANCE0);
+	}
+
+	// Unsupported capability.
+	qWarning() << "glEnable/glDisable capability not currently supported.";
+	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
+
+	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
 }
 
 
@@ -260,7 +264,7 @@ GPlatesOpenGL::GLStateSetKeys::get_hint_key(
 		break;
 	default:
 		// Unsupported capability.
-		qWarning() << "glHint capability not currently supported - should be easy to add though.";
+		qWarning() << "glHint capability not currently supported.";
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}
@@ -280,6 +284,6 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_texture_image_unit_zero_base_key +
-		(texture_unit - GLCapabilities::gl_TEXTURE0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
+		(texture_unit - GL_TEXTURE0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
 		key_offset;
 }

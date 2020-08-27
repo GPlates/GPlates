@@ -104,14 +104,18 @@ namespace GPlatesOpenGL
 			KEY_DEPTH_RANGE,
 			KEY_DRAW_BUFFERS,
 			KEY_ENABLE_BLEND,
-			KEY_ENABLE_DEPTH_TEST,
 			KEY_ENABLE_CULL_FACE,
+			KEY_ENABLE_DEPTH_CLAMP,
+			KEY_ENABLE_DEPTH_TEST,
+			KEY_ENABLE_FRAMEBUFFER_SRGB,
 			KEY_ENABLE_LINE_SMOOTH,
+			KEY_ENABLE_MULTISAMPLE,
 			KEY_ENABLE_POLYGON_OFFSET_FILL,
 			KEY_ENABLE_POLYGON_OFFSET_LINE,
 			KEY_ENABLE_POLYGON_OFFSET_POINT,
 			KEY_ENABLE_POLYGON_SMOOTH,
 			KEY_ENABLE_PRIMITIVE_RESTART,
+			KEY_ENABLE_PROGRAM_POINT_SIZE,
 			KEY_ENABLE_RASTERIZER_DISCARD,
 			KEY_ENABLE_SCISSOR_TEST,
 			KEY_ENABLE_STENCIL_TEST,
@@ -157,7 +161,11 @@ namespace GPlatesOpenGL
 		get_clamp_color_key(
 				GLenum target) const;
 
-		//! For glEnable/glDisable.
+		/**
+		 * For glEnable/glDisable.
+		 *
+		 * Includes GL_CLIP_DISTANCEi.
+		 */
 		key_type
 		get_enable_key(
 				GLenum cap) const;
@@ -188,6 +196,7 @@ namespace GPlatesOpenGL
 
 		const GLCapabilities &d_capabilities;
 
+		key_type d_enable_clip_distance_zero_base_key;
 		key_type d_texture_image_unit_zero_base_key;
 
 		unsigned int d_num_state_set_keys;
