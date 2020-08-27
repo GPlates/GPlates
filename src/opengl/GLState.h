@@ -193,6 +193,53 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		blend_equation(
+				GLenum mode)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->blend_equation_state_sets,
+					GLStateSetKeys::KEY_BLEND_EQUATION,
+					boost::in_place(mode));
+		}
+
+		void
+		blend_equation_separate(
+				GLenum mode_RGB,
+				GLenum mode_alpha)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->blend_equation_state_sets,
+					GLStateSetKeys::KEY_BLEND_EQUATION,
+					boost::in_place(mode_RGB, mode_alpha));
+		}
+
+		void
+		blend_func(
+				GLenum src,
+				GLenum dst)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->blend_func_state_sets,
+					GLStateSetKeys::KEY_BLEND_FUNC,
+					boost::in_place(GLBlendFuncStateSet::Func{src, dst}));
+		}
+
+		void
+		blend_func_separate(
+				GLenum src_RGB,
+				GLenum dst_RGB,
+				GLenum src_alpha,
+				GLenum dst_alpha)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->blend_func_state_sets,
+					GLStateSetKeys::KEY_BLEND_FUNC,
+					boost::in_place(
+							GLBlendFuncStateSet::Func{src_RGB, dst_RGB},
+							GLBlendFuncStateSet::Func{src_alpha, dst_alpha}));
+		}
+
+		void
 		clamp_color(
 				GLenum target,
 				GLenum clamp)
@@ -247,7 +294,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->color_mask_state_sets,
 					GLStateSetKeys::KEY_COLOR_MASK,
 					boost::in_place(
-							d_capabilities,
+							boost::cref(d_capabilities),
 							GLColorMaskStateSet::Mask{red, green, blue, alpha}));
 		}
 
@@ -556,55 +603,6 @@ namespace GPlatesOpenGL
 			return query_state_set<GLProgramObject::shared_ptr_to_const_type>(
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					&GLBindProgramObjectStateSet::d_program_object);
-		}
-
-		//! Sets the alpha-blend equation (glBlendEquation).
-		void
-		set_blend_equation(
-				GLenum mode)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->blend_equation_state_sets,
-					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(boost::cref(d_capabilities), mode));
-		}
-
-		//! Sets the alpha-blend equation (glBlendEquationSeparate).
-		void
-		set_blend_equation_separate(
-				GLenum modeRGB,
-				GLenum modeAlpha)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->blend_equation_state_sets,
-					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(boost::cref(d_capabilities), modeRGB, modeAlpha));
-		}
-
-		//! Sets the alpha-blend function (glBlendFunc).
-		void
-		set_blend_func(
-				GLenum sfactor,
-				GLenum dfactor)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->blend_func_state_sets,
-					GLStateSetKeys::KEY_BLEND_FUNC,
-					boost::in_place(sfactor, dfactor));
-		}
-
-		//! Sets the alpha-blend function (glBlendFuncSeparate).
-		void
-		set_blend_func_separate(
-				GLenum sfactorRGB,
-				GLenum dfactorRGB,
-				GLenum sfactorAlpha,
-				GLenum dfactorAlpha)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->blend_func_state_sets,
-					GLStateSetKeys::KEY_BLEND_FUNC,
-					boost::in_place(boost::cref(d_capabilities), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
 		}
 
 

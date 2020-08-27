@@ -166,6 +166,43 @@ GPlatesOpenGL::GL::BindVertexArray(
 
 
 void
+GPlatesOpenGL::GL::BlendEquation(
+		GLenum mode)
+{
+	d_current_state->blend_equation(mode);
+}
+
+
+void
+GPlatesOpenGL::GL::BlendEquationSeparate(
+		GLenum mode_RGB,
+		GLenum mode_alpha)
+{
+	d_current_state->blend_equation_separate(mode_RGB, mode_alpha);
+}
+
+
+void
+GPlatesOpenGL::GL::BlendFunc(
+		GLenum src,
+		GLenum dst)
+{
+	d_current_state->blend_func(src, dst);
+}
+
+
+void
+GPlatesOpenGL::GL::BlendFuncSeparate(
+		GLenum src_RGB,
+		GLenum dst_RGB,
+		GLenum src_alpha,
+		GLenum dst_alpha)
+{
+	d_current_state->blend_func_separate(src_RGB, dst_RGB, src_alpha, dst_alpha);
+}
+
+
+void
 GPlatesOpenGL::GL::ClampColor(
 		GLenum target,
 		GLenum clamp)

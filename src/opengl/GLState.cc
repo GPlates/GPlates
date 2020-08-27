@@ -378,7 +378,7 @@ GPlatesOpenGL::GLState::color_maski(
 	set_and_apply_state_set(
 			d_state_set_store->color_mask_state_sets,
 			GLStateSetKeys::KEY_COLOR_MASK,
-			boost::in_place(d_capabilities, masks));
+			boost::in_place(boost::cref(d_capabilities), masks));
 }
 
 

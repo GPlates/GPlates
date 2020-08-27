@@ -68,6 +68,7 @@ namespace GPlatesOpenGL
 		GLuint gl_max_renderbuffer_size; // GL_MAX_RENDERBUFFER_SIZE query result
 
 		GLuint gl_max_draw_buffers; // GL_MAX_DRAW_BUFFERS query result
+		GLuint gl_max_dual_source_draw_buffers; // GL_MAX_DUAL_SOURCE_DRAW_BUFFERS query result
 
 		/**
 		 * Number of bits of sub-pixel precision in pixel rasterizer.

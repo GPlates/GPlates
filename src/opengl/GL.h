@@ -228,6 +228,27 @@ namespace GPlatesOpenGL
 				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
 		void
+		BlendEquation(
+				GLenum mode);
+
+		void
+		BlendEquationSeparate(
+				GLenum mode_RGB,
+				GLenum mode_alpha);
+
+		void
+		BlendFunc(
+				GLenum src,
+				GLenum dst);
+
+		void
+		BlendFuncSeparate(
+				GLenum src_RGB,
+				GLenum dst_RGB,
+				GLenum src_alpha,
+				GLenum dst_alpha);
+
+		void
 		ClampColor(
 				GLenum target,
 				GLenum clamp);

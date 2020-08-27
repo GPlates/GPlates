@@ -501,26 +501,7 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 }
 
 
-GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
-		const GLCapabilities &capabilities,
-		GLenum mode) :
-	d_mode_RGB(mode),
-	d_mode_A(mode),
-	d_separate_equations(false)
-{
-}
-
-
-GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
-		const GLCapabilities &capabilities,
-		GLenum modeRGB,
-		GLenum modeAlpha) :
-	d_mode_RGB(modeRGB),
-	d_mode_A(modeAlpha),
-	d_separate_equations(true)
-{
-}
-
+const GLenum GPlatesOpenGL::GLBlendEquationStateSet::DEFAULT_MODE = GL_FUNC_ADD;
 
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
@@ -531,21 +512,24 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLBlendEquationStateSet &current = dynamic_cast<const GLBlendEquationStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_mode_RGB == current.d_mode_RGB &&
-		d_mode_A == current.d_mode_A)
+	if (d_mode_RGB == d_mode_alpha)
 	{
-		return;
+		// If either RGB or alpha mode changed...
+		if (d_mode_RGB != current.d_mode_RGB ||
+			d_mode_alpha != current.d_mode_alpha)
+		{
+			// Both RGB/alpha modes are the same so set them in one call
+			// (even though it's possible only one of the modes has changed).
+			glBlendEquation(d_mode_RGB);
+		}
 	}
-
-	if (d_separate_equations)
+	else // RGB and alpha modes are different...
 	{
-		glBlendEquationSeparateEXT(d_mode_RGB, d_mode_A);
-	}
-	else
-	{
-		// The RGB and A equations are the same so can use either to specify for RGBA.
-		glBlendEquationEXT(d_mode_RGB);
+		if (d_mode_RGB != current.d_mode_RGB ||
+			d_mode_alpha != current.d_mode_alpha)
+		{
+			glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
+		}
 	}
 }
 
@@ -554,21 +538,18 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
-		d_mode_A == GL_FUNC_ADD_EXT)
+	if (d_mode_RGB == d_mode_alpha)
 	{
-		return;
+		if (d_mode_RGB != DEFAULT_MODE)
+		{
+			// Both RGB/alpha modes are the same so set them in one call.
+			glBlendEquation(d_mode_RGB);
+		}
 	}
-
-	if (d_separate_equations)
+	else // RGB and alpha modes are different...
 	{
-		glBlendEquationSeparateEXT(d_mode_RGB, d_mode_A);
-	}
-	else
-	{
-		// The RGB and A equations are the same so can use either to specify for RGBA.
-		glBlendEquationEXT(d_mode_RGB);
+		// Both RGB and alpha modes are different, so they both cannot be the default state.
+		glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
 	}
 }
 
@@ -577,32 +558,24 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
-		d_mode_A == GL_FUNC_ADD_EXT)
+	if (d_mode_RGB == d_mode_alpha)
 	{
-		return;
+		if (d_mode_RGB != DEFAULT_MODE)
+		{
+			// Both RGB/alpha modes are the same so set them in one call.
+			glBlendEquation(DEFAULT_MODE);
+		}
 	}
-
-	// Applies to both RGB and A.
-	glBlendEquationEXT(GL_FUNC_ADD_EXT);
+	else // RGB and alpha modes are different...
+	{
+		// Both RGB and alpha modes are different, so they both cannot be the default state.
+		glBlendEquationSeparate(DEFAULT_MODE, DEFAULT_MODE);
+	}
 }
 
 
-GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
-		const GLCapabilities &capabilities,
-		GLenum sfactorRGB,
-		GLenum dfactorRGB,
-		GLenum sfactorAlpha,
-		GLenum dfactorAlpha) :
-	d_src_factor_RGB(sfactorRGB),
-	d_dst_factor_RGB(dfactorRGB),
-	d_src_factor_A(sfactorAlpha),
-	d_dst_factor_A(dfactorAlpha),
-	d_separate_factors(true)
-{
-}
-
+const GPlatesOpenGL::GLBlendFuncStateSet::Func
+GPlatesOpenGL::GLBlendFuncStateSet::DEFAULT_FUNC{ GL_ONE, GL_ZERO };
 
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
@@ -613,23 +586,24 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLBlendFuncStateSet &current = dynamic_cast<const GLBlendFuncStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_src_factor_RGB == current.d_src_factor_RGB &&
-		d_dst_factor_RGB == current.d_dst_factor_RGB &&
-		d_src_factor_A == current.d_src_factor_A &&
-		d_dst_factor_A == current.d_dst_factor_A)
+	if (d_RGB_func == d_alpha_func)
 	{
-		return;
+		// If either RGB or alpha func changed...
+		if (d_RGB_func != current.d_RGB_func ||
+			d_alpha_func != current.d_alpha_func)
+		{
+			// Both RGB/alpha funcs are the same so set them in one call
+			// (even though it's possible only one of the funcs has changed).
+			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+		}
 	}
-
-	if (d_separate_factors)
+	else // RGB and alpha blend funcs are different...
 	{
-		glBlendFuncSeparateEXT(d_src_factor_RGB, d_dst_factor_RGB, d_src_factor_A, d_dst_factor_A);
-	}
-	else
-	{
-		// The RGB and A factors are the same so can use either to specify for RGBA.
-		glBlendFunc(d_src_factor_RGB, d_dst_factor_RGB);
+		if (d_RGB_func != current.d_RGB_func ||
+			d_alpha_func != current.d_alpha_func)
+		{
+			glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
+		}
 	}
 }
 
@@ -638,23 +612,18 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_src_factor_RGB == GL_ONE &&
-		d_dst_factor_RGB == GL_ZERO &&
-		d_src_factor_A == GL_ONE &&
-		d_dst_factor_A == GL_ZERO)
+	if (d_RGB_func == d_alpha_func)
 	{
-		return;
+		if (d_RGB_func != DEFAULT_FUNC)
+		{
+			// Both RGB/alpha funcs are the same so set them in one call.
+			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+		}
 	}
-
-	if (d_separate_factors)
+	else // RGB and alpha blend funcs are different...
 	{
-		glBlendFuncSeparateEXT(d_src_factor_RGB, d_dst_factor_RGB, d_src_factor_A, d_dst_factor_A);
-	}
-	else
-	{
-		// The RGB and A factors are the same so can use either to specify for RGBA.
-		glBlendFunc(d_src_factor_RGB, d_dst_factor_RGB);
+		// Both RGB and alpha funcs are different, so they both cannot be the default state.
+		glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
 	}
 }
 
@@ -663,17 +632,19 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_src_factor_RGB == GL_ONE &&
-		d_dst_factor_RGB == GL_ZERO &&
-		d_src_factor_A == GL_ONE &&
-		d_dst_factor_A == GL_ZERO)
+	if (d_RGB_func == d_alpha_func)
 	{
-		return;
+		if (d_RGB_func != DEFAULT_FUNC)
+		{
+			// Both RGB/alpha funcs are the same so set them in one call.
+			glBlendFunc(DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+		}
 	}
-
-	// Applies to both RGB and A.
-	glBlendFunc(GL_ONE, GL_ZERO);
+	else // RGB and alpha blend funcs are different...
+	{
+		// Both RGB and alpha funcs are different, so they both cannot be the default state.
+		glBlendFuncSeparate(DEFAULT_FUNC.src, DEFAULT_FUNC.dst, DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+	}
 }
 
 

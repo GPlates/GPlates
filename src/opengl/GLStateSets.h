@@ -359,15 +359,23 @@ namespace GPlatesOpenGL
 	struct GLBlendEquationStateSet :
 			public GLStateSet
 	{
+		static const GLenum DEFAULT_MODE;
+
+		// Same RGB and alpha modes.
 		explicit
 		GLBlendEquationStateSet(
-				const GLCapabilities &capabilities,
-				GLenum mode);
+				GLenum mode) :
+			d_mode_RGB(mode),
+			d_mode_alpha(mode)
+		{  }
 
+		// Different RGB and alpha modes.
 		GLBlendEquationStateSet(
-				const GLCapabilities &capabilities,
-				GLenum modeRGB,
-				GLenum modeAlpha);
+				GLenum mode_RGB,
+				GLenum mode_alpha) :
+			d_mode_RGB(mode_RGB),
+			d_mode_alpha(mode_alpha)
+		{  }
 
 		virtual
 		void
@@ -390,10 +398,7 @@ namespace GPlatesOpenGL
 
 
 		GLenum d_mode_RGB;
-		GLenum d_mode_A;
-
-		//! If the RGB and A components have separate equations.
-		bool d_separate_equations;
+		GLenum d_mode_alpha;
 	};
 
 	/**
@@ -402,22 +407,42 @@ namespace GPlatesOpenGL
 	struct GLBlendFuncStateSet :
 			public GLStateSet
 	{
+		struct Func
+		{
+			GLenum src;
+			GLenum dst;
+
+			bool
+			operator==(
+					const Func &rhs) const
+			{
+				return src == rhs.src && dst == rhs.dst;
+			}
+
+			bool
+			operator!=(
+					const Func &rhs) const
+			{
+				return !(*this == rhs);
+			}
+		};
+
+		static const Func DEFAULT_FUNC;
+
+		// Same RGB and alpha modes.
 		GLBlendFuncStateSet(
-				GLenum sfactor,
-				GLenum dfactor) :
-			d_src_factor_RGB(sfactor),
-			d_dst_factor_RGB(dfactor),
-			d_src_factor_A(sfactor),
-			d_dst_factor_A(dfactor),
-			d_separate_factors(false)
+				const Func &func) :
+			d_RGB_func(func),
+			d_alpha_func(func)
 		{  }
 
+		// Different RGB and alpha modes.
 		GLBlendFuncStateSet(
-				const GLCapabilities &capabilities,
-				GLenum sfactorRGB,
-				GLenum dfactorRGB,
-				GLenum sfactorAlpha,
-				GLenum dfactorAlpha);
+				const Func &RGB_func,
+				const Func &alpha_func) :
+			d_RGB_func(RGB_func),
+			d_alpha_func(alpha_func)
+		{  }
 
 		virtual
 		void
@@ -439,14 +464,8 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		GLenum d_src_factor_RGB;
-		GLenum d_dst_factor_RGB;
-
-		GLenum d_src_factor_A;
-		GLenum d_dst_factor_A;
-
-		//! If the RGB and A components have separate factors.
-		bool d_separate_factors;
+		Func d_RGB_func;
+		Func d_alpha_func;
 	};
 
 	/**
