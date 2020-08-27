@@ -383,6 +383,37 @@ GPlatesOpenGL::GLState::color_maski(
 
 
 void
+GPlatesOpenGL::GLState::sample_maski(
+		GLuint mask_number,
+		GLbitfield mask)
+{
+	// Get the current state.
+	boost::optional<const GLSampleMaskStateSet &> sample_mask_state_set =
+			query_state_set<GLSampleMaskStateSet>(GLStateSetKeys::KEY_SAMPLE_MASK);
+
+	// Copy of current state.
+	std::vector<GLbitfield> masks = sample_mask_state_set
+			? sample_mask_state_set->d_masks
+			// Default state...
+			: std::vector<GLbitfield>(d_capabilities.gl_max_sample_mask_words, GLSampleMaskStateSet::DEFAULT_MASK);
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			mask_number < d_capabilities.gl_max_sample_mask_words,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Set the requested state (in copy of current state).
+	masks[mask_number] = mask;
+
+	// Apply modified copy of current state.
+	set_and_apply_state_set(
+			d_state_set_store->sample_mask_state_sets,
+			GLStateSetKeys::KEY_SAMPLE_MASK,
+			boost::in_place(masks));
+}
+
+
+
+void
 GPlatesOpenGL::GLState::stencil_mask_separate(
 		GLenum face,
 		GLuint mask)

@@ -50,6 +50,7 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_renderbuffer_size(1024),
 	gl_max_draw_buffers(8),
 	gl_sub_pixel_bits(4),
+	gl_max_sample_mask_words(1),
 	gl_max_vertex_attribs(16),
 	gl_max_clip_distances(8),
 	gl_max_combined_texture_image_units(48),
@@ -94,6 +95,7 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	gl_max_renderbuffer_size = query_integer(GL_MAX_RENDERBUFFER_SIZE);
 	gl_max_draw_buffers = query_integer(GL_MAX_DRAW_BUFFERS);
 	gl_sub_pixel_bits = query_integer(GL_SUBPIXEL_BITS);
+	gl_max_sample_mask_words = query_integer(GL_MAX_SAMPLE_MASK_WORDS);
 
 
 	//
@@ -101,7 +103,6 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	//
 
 	gl_max_vertex_attribs = query_integer(GL_MAX_VERTEX_ATTRIBS);
-
 	gl_max_clip_distances = query_integer(GL_MAX_CLIP_DISTANCES);
 
 	gl_max_combined_texture_image_units = query_integer(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);

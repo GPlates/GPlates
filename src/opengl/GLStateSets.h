@@ -1187,6 +1187,79 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used for glSampleCoverage.
+	 */
+	struct GLSampleCoverageStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLSampleCoverageStateSet(
+				GLclampf value,
+				GLboolean invert) :
+			d_value(value),
+			d_invert(invert)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		GPlatesMaths::real_t d_value;
+		GLboolean d_invert;
+	};
+
+	/**
+	 * Used for glSampleMaski.
+	 */
+	struct GLSampleMaskStateSet :
+			public GLStateSet
+	{
+		static const GLbitfield DEFAULT_MASK;
+
+		explicit
+		GLSampleMaskStateSet(
+				const std::vector<GLbitfield> &masks) :
+			d_masks(masks)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		std::vector<GLbitfield> d_masks;
+	};
+
+	/**
 	 * Used to set the scissor rectangle(s).
 	 */
 	struct GLScissorStateSet :

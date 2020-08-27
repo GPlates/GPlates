@@ -76,6 +76,8 @@ namespace GPlatesOpenGL
 		 */
 		GLuint gl_sub_pixel_bits; // GL_SUBPIXEL_BITS query result
 
+		GLuint gl_max_sample_mask_words; // GL_MAX_SAMPLE_MASK_WORDS query result
+
 
 		//
 		// Shader

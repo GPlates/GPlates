@@ -1666,6 +1666,115 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
 
 
 void
+GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLSampleCoverageStateSet &current = dynamic_cast<const GLSampleCoverageStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	if (d_value == current.d_value /*epsilon test*/ &&
+		d_invert == current.d_invert)
+	{
+		return;
+	}
+
+	glSampleCoverage(
+			static_cast<GLclampf>(d_value.dval()),
+			d_invert);
+}
+
+void
+GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_value == 1 /*epsilon test*/ &&
+		d_invert == GL_FALSE)
+	{
+		return;
+	}
+
+	glSampleCoverage(
+			static_cast<GLclampf>(d_value.dval()),
+			d_invert);
+}
+
+void
+GPlatesOpenGL::GLSampleCoverageStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_value == 1 /*epsilon test*/ &&
+		d_invert == GL_FALSE)
+	{
+		return;
+	}
+
+	glSampleCoverage(1, GL_FALSE);
+}
+
+
+const GLbitfield GPlatesOpenGL::GLSampleMaskStateSet::DEFAULT_MASK = ~GLbitfield(0)/*all ones*/;
+
+void
+GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLSampleMaskStateSet &current = dynamic_cast<const GLSampleMaskStateSet &>(current_state_set);
+
+	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
+	for (GLuint i = 0; i < num_masks; ++i)
+	{
+		// If state changed...
+		if (d_masks[i] != current.d_masks[i])
+		{
+			glSampleMaski(i, d_masks[i]);
+		}
+	}
+}
+
+void
+GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
+	for (GLuint i = 0; i < num_masks; ++i)
+	{
+		// If state changed...
+		if (d_masks[i] != DEFAULT_MASK)
+		{
+			glSampleMaski(i, d_masks[i]);
+		}
+	}
+}
+
+void
+GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
+	for (GLuint i = 0; i < num_masks; ++i)
+	{
+		// If state changed...
+		if (d_masks[i] != DEFAULT_MASK)
+		{
+			glSampleMaski(i, DEFAULT_MASK);
+		}
+	}
+}
+
+
+void
 GPlatesOpenGL::GLScissorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,

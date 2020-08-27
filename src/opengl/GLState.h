@@ -421,6 +421,22 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		sample_coverage(
+				GLclampf value,
+				GLboolean invert)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->sample_coverage_state_sets,
+					GLStateSetKeys::KEY_SAMPLE_COVERAGE,
+					boost::in_place(value, invert));
+		}
+
+		void
+		sample_maski(
+				GLuint mask_number,
+				GLbitfield mask);
+
+		void
 		scissor(
 				const GLViewport &scissor,
 				// The default viewport is passed in since it can change when the window is resized...

@@ -72,7 +72,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * These keys can be used directly.
+		 * These keys can be used directly (though some are used via @a get_enable_key for example).
 		 */
 		enum
 		{
@@ -117,6 +117,10 @@ namespace GPlatesOpenGL
 			KEY_ENABLE_PRIMITIVE_RESTART,
 			KEY_ENABLE_PROGRAM_POINT_SIZE,
 			KEY_ENABLE_RASTERIZER_DISCARD,
+			KEY_ENABLE_SAMPLE_ALPHA_TO_COVERAGE,
+			KEY_ENABLE_SAMPLE_ALPHA_TO_ONE,
+			KEY_ENABLE_SAMPLE_COVERAGE,
+			KEY_ENABLE_SAMPLE_MASK,
 			KEY_ENABLE_SCISSOR_TEST,
 			KEY_ENABLE_STENCIL_TEST,
 			KEY_ENABLE_TEXTURE_CUBE_MAP_SEAMLESS,
@@ -132,6 +136,8 @@ namespace GPlatesOpenGL
 			KEY_POLYGON_OFFSET,
 			KEY_PRIMITIVE_RESTART_INDEX,
 			KEY_READ_BUFFER,
+			KEY_SAMPLE_COVERAGE,
+			KEY_SAMPLE_MASK,
 			KEY_SCISSOR,
 			KEY_STENCIL_FUNC,
 			KEY_STENCIL_MASK,

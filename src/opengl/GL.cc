@@ -584,6 +584,24 @@ GPlatesOpenGL::GL::ReadBuffer(
 
 
 void
+GPlatesOpenGL::GL::SampleCoverage(
+		GLclampf value,
+		GLboolean invert)
+{
+	d_current_state->sample_coverage(value, invert);
+}
+
+
+void
+GPlatesOpenGL::GL::SampleMaski(
+		GLuint mask_number,
+		GLbitfield mask)
+{
+	d_current_state->sample_maski(mask_number, mask);
+}
+
+
+void
 GPlatesOpenGL::GL::Scissor(
 		GLint x,
 		GLint y,

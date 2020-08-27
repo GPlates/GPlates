@@ -387,6 +387,16 @@ namespace GPlatesOpenGL
 				GLenum src);
 
 		void
+		SampleCoverage(
+				GLclampf value,
+				GLboolean invert);
+
+		void
+		SampleMaski(
+				GLuint mask_number,
+				GLbitfield mask);
+
+		void
 		Scissor(
 				GLint x,
 				GLint y,
