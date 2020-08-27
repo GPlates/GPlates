@@ -89,6 +89,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLPointSizeStateSet> point_size_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonModeStateSet> polygon_mode_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
+		GPlatesUtils::ObjectPool<GLPrimitiveRestartIndexStateSet> primitive_restart_index_state_sets;
 		GPlatesUtils::ObjectPool<GLReadBufferStateSet> read_buffer_state_sets;
 		GPlatesUtils::ObjectPool<GLScissorStateSet> scissor_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;

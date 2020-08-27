@@ -400,6 +400,16 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		primitive_restart_index(
+				GLuint index)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->primitive_restart_index_state_sets,
+					GLStateSetKeys::KEY_PRIMITIVE_RESTART_INDEX,
+					boost::in_place(index));
+		}
+
+		void
 		read_buffer(
 				GLenum src,
 				GLenum default_draw_buffer)

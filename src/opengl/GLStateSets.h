@@ -1115,6 +1115,41 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used for glPrimitiveRestartIndex.
+	 */
+	struct GLPrimitiveRestartIndexStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLPrimitiveRestartIndexStateSet(
+				GLuint index) :
+			d_index(index)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		GLuint d_index;
+	};
+
+	/**
 	 * Used to set the read buffer in default framebuffer.
 	 */
 	struct GLReadBufferStateSet :

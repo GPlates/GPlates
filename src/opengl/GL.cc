@@ -554,6 +554,14 @@ GPlatesOpenGL::GL::PolygonOffset(
 
 
 void
+GPlatesOpenGL::GL::PrimitiveRestartIndex(
+		GLuint index)
+{
+	d_current_state->primitive_restart_index(index);
+}
+
+
+void
 GPlatesOpenGL::GL::ReadBuffer(
 		GLenum src)
 {

@@ -126,6 +126,7 @@ namespace GPlatesOpenGL
 			// OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'...
 			KEY_POLYGON_MODE_FRONT_AND_BACK,
 			KEY_POLYGON_OFFSET,
+			KEY_PRIMITIVE_RESTART_INDEX,
 			KEY_READ_BUFFER,
 			KEY_SCISSOR,
 			KEY_STENCIL_FUNC,

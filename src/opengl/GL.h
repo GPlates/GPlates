@@ -379,6 +379,10 @@ namespace GPlatesOpenGL
 				GLfloat units = GLfloat(0));
 
 		void
+		PrimitiveRestartIndex(
+				GLuint index);
+
+		void
 		ReadBuffer(
 				GLenum src);
 

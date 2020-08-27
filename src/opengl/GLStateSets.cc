@@ -1573,6 +1573,52 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 
 
 void
+GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLPrimitiveRestartIndexStateSet &current = dynamic_cast<const GLPrimitiveRestartIndexStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	if (d_index == current.d_index)
+	{
+		return;
+	}
+
+	glPrimitiveRestartIndex(d_index);
+}
+
+void
+GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_index == 0)
+	{
+		return;
+	}
+
+	glPrimitiveRestartIndex(d_index);
+}
+
+void
+GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no 0.d_index)
+	{
+		return;
+	}
+
+	glPrimitiveRestartIndex(0);
+}
+
+
+void
 GPlatesOpenGL::GLReadBufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
