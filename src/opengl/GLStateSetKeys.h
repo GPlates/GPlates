@@ -72,7 +72,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * These keys can be used directly (though some are used via @a get_enable_key for example).
+		 * These keys can be used directly (though some are used via @a get_capability_key for example).
 		 */
 		enum
 		{
@@ -91,6 +91,7 @@ namespace GPlatesOpenGL
 			KEY_BIND_TRANSFORM_FEEDBACK_BUFFER,
 			KEY_BIND_UNIFORM_BUFFER,
 			KEY_BIND_VERTEX_ARRAY,
+			KEY_BLEND_COLOR,
 			KEY_BLEND_EQUATION,
 			KEY_BLEND_FUNC,
 			KEY_CLAMP_READ_COLOR,
@@ -169,11 +170,23 @@ namespace GPlatesOpenGL
 
 		/**
 		 * For glEnable/glDisable.
-		 *
-		 * Includes GL_CLIP_DISTANCEi.
 		 */
 		key_type
-		get_enable_key(
+		get_capability_key(
+				GLenum cap) const;
+
+		/**
+		 * Returns true if a capability (associated with @a get_capability_key) is indexed (glEnablei/glDisablei).
+		 */
+		bool
+		is_capability_indexed(
+				GLenum cap) const;
+
+		/**
+		 * Returns the number of capability indices supported by glEnablei/glDisablei for the specified @a cap.
+		 */
+		GLuint
+		get_num_capability_indices(
 				GLenum cap) const;
 
 		//! For glHint.

@@ -70,6 +70,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLBindRenderbufferStateSet> bind_renderbuffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindTextureStateSet> bind_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLBindVertexArrayStateSet> bind_vertex_array_state_sets;
+		GPlatesUtils::ObjectPool<GLBlendColorStateSet> blend_color_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendEquationStateSet> blend_equation_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendFuncStateSet> blend_func_state_sets;
 		GPlatesUtils::ObjectPool<GLClampColorStateSet> clamp_color_state_sets;
@@ -83,6 +84,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLDepthRangeStateSet> depth_range_state_sets;
 		GPlatesUtils::ObjectPool<GLDrawBuffersStateSet> draw_buffers_state_sets;
 		GPlatesUtils::ObjectPool<GLEnableStateSet> enable_state_sets;
+		GPlatesUtils::ObjectPool<GLEnableIndexedStateSet> enable_indexed_state_sets;
 		GPlatesUtils::ObjectPool<GLFrontFaceStateSet> front_face_state_sets;
 		GPlatesUtils::ObjectPool<GLHintStateSet> hint_state_sets;
 		GPlatesUtils::ObjectPool<GLLineWidthStateSet> line_width_state_sets;

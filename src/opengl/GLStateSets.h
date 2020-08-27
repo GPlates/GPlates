@@ -37,6 +37,7 @@
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
+#include "GLCapabilities.h"
 #include "GLFramebuffer.h"
 #include "GLMatrix.h"
 #include "GLProgramObject.h"
@@ -56,8 +57,6 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 namespace GPlatesOpenGL
 {
-	class GLCapabilities;
-
 	//
 	// NOTE: These classes are ordered alphabetically.
 	//
@@ -351,6 +350,49 @@ namespace GPlatesOpenGL
 		boost::optional<GLVertexArray::shared_ptr_type> d_array;
 		//! Array resource handle associated with the current OpenGL context.
 		GLuint d_array_resource;
+	};
+
+	/**
+	 * Used for glBlendColor.
+	 */
+	struct GLBlendColorStateSet :
+			public GLStateSet
+	{
+		GLBlendColorStateSet(
+				GLclampf red,
+				GLclampf green,
+				GLclampf blue,
+				GLclampf alpha) :
+			d_red(red),
+			d_green(green),
+			d_blue(blue),
+			d_alpha(alpha)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		GPlatesMaths::real_t d_red;
+		GPlatesMaths::real_t d_green;
+		GPlatesMaths::real_t d_blue;
+		GPlatesMaths::real_t d_alpha;
 	};
 
 	/**
@@ -915,6 +957,55 @@ namespace GPlatesOpenGL
 
 		GLenum d_cap;
 		bool d_enable;
+	};
+
+	/**
+	 * Used to enable/disable indexed capabilities.
+	 */
+	struct GLEnableIndexedStateSet :
+			public GLStateSet
+	{
+		// Enable all indices (or disable all indices) in the specified capability.
+		GLEnableIndexedStateSet(
+				GLenum cap,
+				bool enable,
+				GLuint num_capability_indices) :
+			d_cap(cap),
+			d_indices(num_capability_indices, enable),
+			d_all_indices_equal(true)
+		{  }
+
+		// Enable/disable each index individually in the specified capability.
+		GLEnableIndexedStateSet(
+				GLenum cap,
+				const std::vector<bool> &enable_indices) :
+			d_cap(cap),
+			d_indices(enable_indices),
+			d_all_indices_equal(false)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		GLenum d_cap;
+		std::vector<bool> d_indices;
+		bool d_all_indices_equal;
 	};
 
 	/**

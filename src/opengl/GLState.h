@@ -193,6 +193,19 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		blend_color(
+				GLclampf red,
+				GLclampf green,
+				GLclampf blue,
+				GLclampf alpha)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->blend_color_state_sets,
+					GLStateSetKeys::KEY_BLEND_COLOR,
+					boost::in_place(red, green, blue, alpha));
+		}
+
+		void
 		blend_equation(
 				GLenum mode)
 		{
@@ -348,16 +361,6 @@ namespace GPlatesOpenGL
 		}
 
 		void
-		disable(
-				GLenum cap)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->enable_state_sets,
-					d_state_set_keys->get_enable_key(cap),
-					boost::in_place(cap, false/*enable*/));
-		}
-
-		void
 		draw_buffer(
 				GLenum buf,
 				GLenum default_draw_buffer)
@@ -379,15 +382,18 @@ namespace GPlatesOpenGL
 					boost::in_place(bufs, default_draw_buffer));
 		}
 
+		//! Handles both glEnable and glDisable with @a enable_ parameter.
 		void
 		enable(
-				GLenum cap)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->enable_state_sets,
-					d_state_set_keys->get_enable_key(cap),
-					boost::in_place(cap, true/*enable*/));
-		}
+				GLenum cap,
+				bool enable_);
+
+		//! Handles both glEnablei and glDisablei with @a enable_ parameter.
+		void
+		enablei(
+				GLenum cap,
+				GLuint index,
+				bool enable_);
 
 		void
 		front_face(
@@ -613,6 +619,16 @@ namespace GPlatesOpenGL
 		//
 
 
+		/**
+		 * Returns true if the specified capability is currently enabled.
+		 *
+		 * If the capability is indexed (eg, GL_BLEND) then @a index can be non-zero.
+		 */
+		bool
+		is_capability_enabled(
+				GLenum cap,
+				GLuint index = 0) const;
+
 		//! Returns the active texture unit.
 		GLenum
 		get_active_texture() const
@@ -662,18 +678,6 @@ namespace GPlatesOpenGL
 			return query_state_set<GLVertexArray::shared_ptr_type>(
 					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
 					&GLBindVertexArrayStateSet::d_array);
-		}
-
-		//! Returns true if the specified capability is currently enabled.
-		bool
-		get_enable(
-				GLenum cap) const
-		{
-			const boost::optional<bool> enabled =
-					query_state_set<bool>(
-							d_state_set_keys->get_enable_key(cap),
-							&GLEnableStateSet::d_enable);
-			return enabled ? enabled.get() : GLEnableStateSet::get_default(cap);
 		}
 
 		//! Returns the current scissor rectangle.

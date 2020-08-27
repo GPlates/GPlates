@@ -27,7 +27,6 @@
 
 #include "GLStateSets.h"
 
-#include "GLCapabilities.h"
 #include "GLState.h"
 #include "OpenGLException.h"
 
@@ -498,6 +497,67 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 
 	// The default is zero (no vertex array object).
     glBindVertexArray(0);
+}
+
+
+void
+GPlatesOpenGL::GLBlendColorStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLBlendColorStateSet &current = dynamic_cast<const GLBlendColorStateSet &>(current_state_set);
+
+	// Return early if no state change...
+	// Note that these are epsilon comparisons.
+	if (d_red == current.d_red &&
+		d_green == current.d_green &&
+		d_blue == current.d_blue &&
+		d_alpha == current.d_alpha)
+	{
+		return;
+	}
+
+	glBlendColor(
+			static_cast<GLclampf>(d_red.dval()),
+			static_cast<GLclampf>(d_green.dval()),
+			static_cast<GLclampf>(d_blue.dval()),
+			static_cast<GLclampf>(d_alpha.dval()));
+}
+
+void
+GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	// Note that these are epsilon comparisons.
+	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
+	{
+		return;
+	}
+
+	glBlendColor(
+			static_cast<GLclampf>(d_red.dval()),
+			static_cast<GLclampf>(d_green.dval()),
+			static_cast<GLclampf>(d_blue.dval()),
+			static_cast<GLclampf>(d_alpha.dval()));
+}
+
+void
+GPlatesOpenGL::GLBlendColorStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	// Note that these are epsilon comparisons.
+	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
+	{
+		return;
+	}
+
+	glBlendColor(0, 0, 0, 0);
 }
 
 
@@ -1252,13 +1312,147 @@ GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 	}
 }
 
-
 bool
 GPlatesOpenGL::GLEnableStateSet::get_default(
 		GLenum cap)
 {
 	// All capabilities default to GL_FALSE except two.
 	return cap == GL_DITHER || cap == GL_MULTISAMPLE;
+}
+
+
+void
+GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLEnableIndexedStateSet &current = dynamic_cast<const GLEnableIndexedStateSet &>(current_state_set);
+
+	if (d_all_indices_equal && current.d_all_indices_equal)
+	{
+		// If state changed...
+		if (d_indices[0] != current.d_indices[0])
+		{
+			// Enable/disable all indices with a single call.
+			if (d_indices[0])
+			{
+				glEnable(d_cap);
+			}
+			else
+			{
+				glDisable(d_cap);
+			}
+		}
+	}
+	else
+	{
+		const GLuint num_indices = d_indices.size();
+		for (GLuint i = 0; i < num_indices; ++i)
+		{
+			// If state changed...
+			if (d_indices[i] != current.d_indices[i])
+			{
+				if (d_indices[i])
+				{
+					glEnablei(d_cap, i);
+				}
+				else
+				{
+					glDisablei(d_cap, i);
+				}
+			}
+		}
+	}
+}
+
+void
+GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const bool default_ = GLEnableStateSet::get_default(d_cap);
+
+	if (d_all_indices_equal)
+	{
+		// If state changed...
+		if (d_indices[0] != default_)
+		{
+			// Enable/disable all indices with a single call.
+			if (d_indices[0])
+			{
+				glEnable(d_cap);
+			}
+			else
+			{
+				glDisable(d_cap);
+			}
+		}
+	}
+	else
+	{
+		const GLuint num_indices = d_indices.size();
+		for (GLuint i = 0; i < num_indices; ++i)
+		{
+			// If state changed...
+			if (d_indices[i] != default_)
+			{
+				if (d_indices[i])
+				{
+					glEnablei(d_cap, i);
+				}
+				else
+				{
+					glDisablei(d_cap, i);
+				}
+			}
+		}
+	}
+}
+
+void
+GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const bool default_ = GLEnableStateSet::get_default(d_cap);
+
+	if (d_all_indices_equal)
+	{
+		// If state changed...
+		if (d_indices[0] != default_)
+		{
+			// Enable/disable all indices with a single call.
+			if (default_)
+			{
+				glEnable(d_cap);
+			}
+			else
+			{
+				glDisable(d_cap);
+			}
+		}
+	}
+	else
+	{
+		const GLuint num_indices = d_indices.size();
+		for (GLuint i = 0; i < num_indices; ++i)
+		{
+			// If state changed...
+			if (d_indices[i] != default_)
+			{
+				if (default_)
+				{
+					glEnablei(d_cap, i);
+				}
+				else
+				{
+					glDisablei(d_cap, i);
+				}
+			}
+		}
+	}
 }
 
 

@@ -166,6 +166,17 @@ GPlatesOpenGL::GL::BindVertexArray(
 
 
 void
+GPlatesOpenGL::GL::BlendColor(
+		GLclampf red,
+		GLclampf green,
+		GLclampf blue,
+		GLclampf alpha)
+{
+	d_current_state->blend_color(red, green, blue, alpha);
+}
+
+
+void
 GPlatesOpenGL::GL::BlendEquation(
 		GLenum mode)
 {
@@ -298,7 +309,16 @@ void
 GPlatesOpenGL::GL::Disable(
 		GLenum cap)
 {
-	d_current_state->disable(cap);
+	d_current_state->enable(cap, false);
+}
+
+
+void
+GPlatesOpenGL::GL::Disablei(
+		GLenum cap,
+		GLuint index)
+{
+	d_current_state->enablei(cap, index, false);
 }
 
 
@@ -370,7 +390,16 @@ void
 GPlatesOpenGL::GL::Enable(
 		GLenum cap)
 {
-	d_current_state->enable(cap);
+	d_current_state->enable(cap, true);
+}
+
+
+void
+GPlatesOpenGL::GL::Enablei(
+		GLenum cap,
+		GLuint index)
+{
+	d_current_state->enablei(cap, index, true);
 }
 
 

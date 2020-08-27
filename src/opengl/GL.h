@@ -228,6 +228,13 @@ namespace GPlatesOpenGL
 				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
 
 		void
+		BlendColor(
+				GLclampf red = GLclampf(0.0),
+				GLclampf green = GLclampf(0.0),
+				GLclampf blue = GLclampf(0.0),
+				GLclampf alpha = GLclampf(0.0));
+
+		void
 		BlendEquation(
 				GLenum mode);
 
@@ -305,6 +312,11 @@ namespace GPlatesOpenGL
 				GLenum cap);
 
 		void
+		Disablei(
+				GLenum cap,
+				GLuint index);
+
+		void
 		DisableVertexAttribArray(
 				GLuint index);
 
@@ -319,6 +331,11 @@ namespace GPlatesOpenGL
 		void
 		Enable(
 				GLenum cap);
+
+		void
+		Enablei(
+				GLenum cap,
+				GLuint index);
 
 		void
 		EnableVertexAttribArray(

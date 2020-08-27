@@ -180,7 +180,7 @@ GPlatesOpenGL::GLStateSetKeys::get_clamp_color_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_enable_key(
+GPlatesOpenGL::GLStateSetKeys::get_capability_key(
 		GLenum cap) const
 {
 	// We're currently only accepting a subset of all capabilities.
@@ -242,6 +242,33 @@ GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 
 	// Unsupported capability.
 	qWarning() << "glEnable/glDisable capability not currently supported.";
+	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
+
+	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
+}
+
+
+bool
+GPlatesOpenGL::GLStateSetKeys::is_capability_indexed(
+		GLenum cap) const
+{
+	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
+	return cap == GL_BLEND;
+}
+
+
+GLuint
+GPlatesOpenGL::GLStateSetKeys::get_num_capability_indices(
+		GLenum cap) const
+{
+	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
+	if (cap == GL_BLEND)
+	{
+		return d_capabilities.gl_max_draw_buffers;
+	}
+
+	// Indexing not supported for specified capability.
+	qWarning() << "Indexing (glEnablei/glDisablei) not supported for capability.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 
 	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).

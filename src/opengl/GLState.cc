@@ -383,6 +383,93 @@ GPlatesOpenGL::GLState::color_maski(
 
 
 void
+GPlatesOpenGL::GLState::enable(
+		GLenum cap,
+		bool enable_)
+{
+	const state_set_key_type state_set_key = d_state_set_keys->get_capability_key(cap);
+
+	if (d_state_set_keys->is_capability_indexed(cap))
+	{
+		// According to the 3.3 core spec:
+		//
+		//   In general, passing an indexed capability to glEnable or glDisable will enable or disable
+		//   that capability for all indices, respectively.
+
+		// Apply to indexed state.
+		set_and_apply_state_set(
+				d_state_set_store->enable_indexed_state_sets,
+				state_set_key,
+				boost::in_place(cap, enable_, d_state_set_keys->get_num_capability_indices(cap)));
+	}
+	else // not an indexed capability ...
+	{
+		// Apply to non-indexed state.
+		set_and_apply_state_set(
+				d_state_set_store->enable_state_sets,
+				state_set_key,
+				boost::in_place(cap, enable_));
+	}
+}
+
+
+void
+GPlatesOpenGL::GLState::enablei(
+		GLenum cap,
+		GLuint index,
+		bool enable_)
+{
+	const state_set_key_type state_set_key = d_state_set_keys->get_capability_key(cap);
+
+	if (d_state_set_keys->is_capability_indexed(cap))
+	{
+		const GLuint num_capability_indices = d_state_set_keys->get_num_capability_indices(cap);
+
+		// Get the current state.
+		boost::optional<const GLEnableIndexedStateSet &> enable_indexed_state_set =
+				query_state_set<GLEnableIndexedStateSet>(state_set_key);
+
+		// Copy of current state.
+		std::vector<bool> enable_indices = enable_indexed_state_set
+				? enable_indexed_state_set->d_indices
+				// Default state...
+				: std::vector<bool>(num_capability_indices, GLEnableStateSet::get_default(cap));
+
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				index < num_capability_indices,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Set the requested state (in copy of current state).
+		enable_indices[index] = enable_;
+
+		// Apply modified copy of current state.
+		// Apply to indexed state.
+		set_and_apply_state_set(
+				d_state_set_store->enable_indexed_state_sets,
+				state_set_key,
+				boost::in_place(cap, enable_indices));
+	}
+	else // not an indexed capability ...
+	{
+		// According to the 3.3 core spec:
+		//
+		//   Any token accepted by glEnable or glDisable is also accepted by glEnablei and glDisablei,
+		//   but if the capability is not indexed, the maximum value that index may take is zero.
+
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				index == 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Apply to non-indexed state.
+		set_and_apply_state_set(
+				d_state_set_store->enable_state_sets,
+				state_set_key,
+				boost::in_place(cap, enable_));
+	}
+}
+
+
+void
 GPlatesOpenGL::GLState::sample_maski(
 		GLuint mask_number,
 		GLbitfield mask)
@@ -552,6 +639,52 @@ GPlatesOpenGL::GLState::stencil_op_separate(
 			d_state_set_store->stencil_op_state_sets,
 			GLStateSetKeys::KEY_STENCIL_OP,
 			boost::in_place(front_stencil_op, back_stencil_op));
+}
+
+
+bool
+GPlatesOpenGL::GLState::is_capability_enabled(
+		GLenum cap,
+		GLuint index) const
+{
+	const state_set_key_type state_set_key = d_state_set_keys->get_capability_key(cap);
+
+	if (d_state_set_keys->is_capability_indexed(cap))
+	{
+		boost::optional<const GLEnableIndexedStateSet &> enable_indexed_state_set =
+				query_state_set<GLEnableIndexedStateSet>(state_set_key);
+		if (enable_indexed_state_set)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					index < d_state_set_keys->get_num_capability_indices(cap),
+					GPLATES_ASSERTION_SOURCE);
+
+			return enable_indexed_state_set->d_indices[index];
+		}
+		else
+		{
+			// Return default.
+			return GLEnableStateSet::get_default(cap);
+		}
+	}
+	else // not an indexed capability ...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				index == 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		boost::optional<const GLEnableStateSet &> enable_state_set =
+				query_state_set<GLEnableStateSet>(state_set_key);
+		if (enable_state_set)
+		{
+			return enable_state_set->d_enable;
+		}
+		else
+		{
+			// Return default.
+			return GLEnableStateSet::get_default(cap);
+		}
+	}
 }
 
 
