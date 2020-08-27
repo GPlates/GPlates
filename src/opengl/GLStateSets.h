@@ -1302,14 +1302,42 @@ namespace GPlatesOpenGL
 	struct GLStencilFuncStateSet :
 			public GLStateSet
 	{
-		explicit
+		struct Func
+		{
+			GLenum func;
+			GLint ref;
+			GLuint mask;
+
+			bool
+			operator==(
+					const Func &rhs) const
+			{
+				return func == rhs.func && ref == rhs.ref && mask == rhs.mask;
+			}
+
+			bool
+			operator!=(
+					const Func &rhs) const
+			{
+				return !(*this == rhs);
+			}
+		};
+
+		static const Func DEFAULT_FUNC;
+
+		// Same front and back.
 		GLStencilFuncStateSet(
-				GLenum func,
-				GLint ref,
-				GLuint mask) :
-			d_func(func),
-			d_ref(ref),
-			d_mask(mask)
+				const Func &func) :
+			d_front_func(func),
+			d_back_func(func)
+		{  }
+
+		// Different front and back.
+		GLStencilFuncStateSet(
+				const Func &front_func,
+				const Func &back_func) :
+			d_front_func(front_func),
+			d_back_func(back_func)
 		{  }
 
 		virtual
@@ -1332,9 +1360,8 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		GLenum d_func;
-		GLint d_ref;
-		GLuint d_mask;
+		Func d_front_func;
+		Func d_back_func;
 	};
 
 	/**
@@ -1345,11 +1372,20 @@ namespace GPlatesOpenGL
 	{
 		static const GLuint DEFAULT_MASK;
 
+		// Same front and back.
+		explicit
 		GLStencilMaskStateSet(
-				GLuint front_stencil,
-				GLuint back_stencil) :
-			d_front_mask(front_stencil),
-			d_back_mask(back_stencil)
+				GLuint mask) :
+			d_front_mask(mask),
+			d_back_mask(mask)
+		{  }
+
+		// Different front and back.
+		GLStencilMaskStateSet(
+				GLuint front_mask,
+				GLuint back_mask) :
+			d_front_mask(front_mask),
+			d_back_mask(back_mask)
 		{  }
 
 		virtual
@@ -1382,14 +1418,42 @@ namespace GPlatesOpenGL
 	struct GLStencilOpStateSet :
 			public GLStateSet
 	{
-		explicit
+		struct Op
+		{
+			GLenum sfail;
+			GLenum dpfail;
+			GLenum dppass;
+
+			bool
+			operator==(
+					const Op &rhs) const
+			{
+				return sfail == rhs.sfail && dpfail == rhs.dpfail && dppass == rhs.dppass;
+			}
+
+			bool
+			operator!=(
+					const Op &rhs) const
+			{
+				return !(*this == rhs);
+			}
+		};
+
+		static const Op DEFAULT_OP;
+
+		// Same front and back.
 		GLStencilOpStateSet(
-				GLenum fail,
-				GLenum zfail,
-				GLenum zpass) :
-			d_fail(fail),
-			d_zfail(zfail),
-			d_zpass(zpass)
+				const Op &op) :
+			d_front_op(op),
+			d_back_op(op)
+		{  }
+
+		// Different front and back.
+		GLStencilOpStateSet(
+				const Op &front_op,
+				const Op &back_op) :
+			d_front_op(front_op),
+			d_back_op(back_op)
 		{  }
 
 		virtual
@@ -1411,10 +1475,8 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const;
 
-
-		GLenum d_fail;
-		GLenum d_zfail;
-		GLenum d_zpass;
+		Op d_front_op;
+		Op d_back_op;
 	};
 
 	/**

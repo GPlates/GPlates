@@ -233,6 +233,14 @@ GPlatesOpenGL::GL::CullFace(
 
 
 void
+GPlatesOpenGL::GL::DepthFunc(
+		GLenum func)
+{
+	d_current_state->depth_func(func);
+}
+
+
+void
 GPlatesOpenGL::GL::DepthMask(
 		GLboolean flag)
 {
@@ -615,6 +623,27 @@ GPlatesOpenGL::GL::Scissor(
 
 
 void
+GPlatesOpenGL::GL::StencilFunc(
+		GLenum func,
+		GLint ref,
+		GLuint mask)
+{
+	d_current_state->stencil_func(func, ref, mask);
+}
+
+
+void
+GPlatesOpenGL::GL::StencilFuncSeparate(
+		GLenum face,
+		GLenum func,
+		GLint ref,
+		GLuint mask)
+{
+	d_current_state->stencil_func_separate(face, func, ref, mask);
+}
+
+
+void
 GPlatesOpenGL::GL::StencilMask(
 		GLuint mask)
 {
@@ -628,6 +657,27 @@ GPlatesOpenGL::GL::StencilMaskSeparate(
 		GLuint mask)
 {
 	d_current_state->stencil_mask_separate(face, mask);
+}
+
+
+void
+GPlatesOpenGL::GL::StencilOp(
+		GLenum sfail,
+		GLenum dpfail,
+		GLenum dppass)
+{
+	d_current_state->stencil_op(sfail, dpfail, dppass);
+}
+
+
+void
+GPlatesOpenGL::GL::StencilOpSeparate(
+		GLenum face,
+		GLenum sfail,
+		GLenum dpfail,
+		GLenum dppass)
+{
+	d_current_state->stencil_op_separate(face, sfail, dpfail, dppass);
 }
 
 

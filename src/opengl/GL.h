@@ -267,6 +267,10 @@ namespace GPlatesOpenGL
 				GLenum mode = GL_BACK);
 
 		void
+		DepthFunc(
+				GLenum func);
+
+		void
 		DepthMask(
 				GLboolean flag = GL_TRUE);
 
@@ -404,6 +408,19 @@ namespace GPlatesOpenGL
 				GLsizei height);
 
 		void
+		StencilFunc(
+				GLenum func,
+				GLint ref,
+				GLuint mask);
+
+		void
+		StencilFuncSeparate(
+				GLenum face,
+				GLenum func,
+				GLint ref,
+				GLuint mask);
+
+		void
 		StencilMask(
 				GLuint mask = ~0/*all ones*/);
 
@@ -411,6 +428,19 @@ namespace GPlatesOpenGL
 		StencilMaskSeparate(
 				GLenum face,
 				GLuint mask = ~0/*all ones*/);
+
+		void
+		StencilOp(
+				GLenum sfail,
+				GLenum dpfail,
+				GLenum dppass);
+
+		void
+		StencilOpSeparate(
+				GLenum face,
+				GLenum sfail,
+				GLenum dpfail,
+				GLenum dppass);
 
 		void
 		VertexAttribDivisor(

@@ -1827,6 +1827,9 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 }
 
 
+const GPlatesOpenGL::GLStencilFuncStateSet::Func
+GPlatesOpenGL::GLStencilFuncStateSet::DEFAULT_FUNC{ GL_ALWAYS, 0, ~GLuint(0) };
+
 void
 GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -1836,15 +1839,28 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLStencilFuncStateSet &current = dynamic_cast<const GLStencilFuncStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_func == current.d_func &&
-		d_ref == current.d_ref &&
-		d_mask == current.d_mask)
+	if (d_front_func == d_back_func)
 	{
-		return;
+		// If either front or back func changed...
+		if (d_front_func != current.d_front_func ||
+			d_back_func != current.d_back_func)
+		{
+			// Both front/back funcs are the same so set them in one call
+			// (even though it's possible only one of the faces has changed).
+			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+		}
 	}
-
-	glStencilFunc(d_func, d_ref, d_mask);
+	else // Front and back stencil funcs are different...
+	{
+		if (d_front_func != current.d_front_func)
+		{
+			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+		}
+		if (d_back_func != current.d_back_func)
+		{
+			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+		}
+	}
 }
 
 void
@@ -1852,15 +1868,25 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_func == GL_ALWAYS &&
-		d_ref == 0 &&
-		d_mask == ~GLuint(0))
+	if (d_front_func == d_back_func)
 	{
-		return;
+		if (d_front_func != DEFAULT_FUNC)
+		{
+			// Both front/back funcs are the same so set them in one call.
+			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+		}
 	}
-
-	glStencilFunc(d_func, d_ref, d_mask);
+	else // Front and back stencil funcs are different...
+	{
+		if (d_front_func != DEFAULT_FUNC)
+		{
+			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+		}
+		if (d_back_func != DEFAULT_FUNC)
+		{
+			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+		}
+	}
 }
 
 void
@@ -1868,15 +1894,25 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_func == GL_ALWAYS &&
-		d_ref == 0 &&
-		d_mask == ~GLuint(0))
+	if (d_front_func == d_back_func)
 	{
-		return;
+		if (d_front_func != DEFAULT_FUNC)
+		{
+			// Both front/back funcs are the same so set them in one call.
+			glStencilFunc(DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+		}
 	}
-
-	glStencilFunc(GL_ALWAYS, 0, ~GLuint(0));
+	else // Front and back stencil funcs are different...
+	{
+		if (d_front_func != DEFAULT_FUNC)
+		{
+			glStencilFuncSeparate(GL_FRONT, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+		}
+		if (d_back_func != DEFAULT_FUNC)
+		{
+			glStencilFuncSeparate(GL_BACK, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+		}
+	}
 }
 
 
@@ -1968,6 +2004,9 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 }
 
 
+const GPlatesOpenGL::GLStencilOpStateSet::Op
+GPlatesOpenGL::GLStencilOpStateSet::DEFAULT_OP{ GL_KEEP, GL_KEEP, GL_KEEP };
+
 void
 GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 		const GLCapabilities &capabilities,
@@ -1977,15 +2016,28 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLStencilOpStateSet &current = dynamic_cast<const GLStencilOpStateSet &>(current_state_set);
 
-	// Return early if no state change...
-	if (d_fail == current.d_fail &&
-		d_zfail == current.d_zfail &&
-		d_zpass == current.d_zpass)
+	if (d_front_op == d_back_op)
 	{
-		return;
+		// If either front or back op changed...
+		if (d_front_op != current.d_front_op ||
+			d_back_op != current.d_back_op)
+		{
+			// Both front/back ops are the same so set them in one call
+			// (even though it's possible only one of the faces has changed).
+			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+		}
 	}
-
-	glStencilOp(d_fail, d_zfail, d_zpass);
+	else // Front and back stencil ops are different...
+	{
+		if (d_front_op != current.d_front_op)
+		{
+			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+		}
+		if (d_back_op != current.d_back_op)
+		{
+			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+		}
+	}
 }
 
 void
@@ -1993,15 +2045,25 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_fail == GL_KEEP &&
-		d_zfail == GL_KEEP &&
-		d_zpass == GL_KEEP)
+	if (d_front_op == d_back_op)
 	{
-		return;
+		if (d_front_op != DEFAULT_OP)
+		{
+			// Both front/back ops are the same so set them in one call.
+			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+		}
 	}
-
-	glStencilOp(d_fail, d_zfail, d_zpass);
+	else // Front and back stencil ops are different...
+	{
+		if (d_front_op != DEFAULT_OP)
+		{
+			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+		}
+		if (d_back_op != DEFAULT_OP)
+		{
+			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+		}
+	}
 }
 
 void
@@ -2009,15 +2071,25 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
-	// Return early if no state change...
-	if (d_fail == GL_KEEP &&
-		d_zfail == GL_KEEP &&
-		d_zpass == GL_KEEP)
+	if (d_front_op == d_back_op)
 	{
-		return;
+		if (d_front_op != DEFAULT_OP)
+		{
+			// Both front/back ops are the same so set them in one call.
+			glStencilOp(DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+		}
 	}
-
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	else // Front and back stencil ops are different...
+	{
+		if (d_front_op != DEFAULT_OP)
+		{
+			glStencilOpSeparate(GL_FRONT, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+		}
+		if (d_back_op != DEFAULT_OP)
+		{
+			glStencilOpSeparate(GL_BACK, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+		}
+	}
 }
 
 

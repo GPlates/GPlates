@@ -260,6 +260,16 @@ namespace GPlatesOpenGL
 				GLboolean alpha);
 
 		void
+		depth_func(
+				GLenum func)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->depth_func_state_sets,
+					GLStateSetKeys::KEY_DEPTH_FUNC,
+					boost::in_place(func));
+		}
+
+		void
 		cull_face(
 				GLenum mode)
 		{
@@ -449,19 +459,57 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		stencil_func(
+				GLenum func,
+				GLint ref,
+				GLuint mask)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->stencil_func_state_sets,
+					GLStateSetKeys::KEY_STENCIL_FUNC,
+					boost::in_place(GLStencilFuncStateSet::Func{func, ref, mask}));
+		}
+
+		void
+		stencil_func_separate(
+				GLenum face,
+				GLenum func,
+				GLint ref,
+				GLuint mask);
+
+		void
 		stencil_mask(
 				GLuint mask)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->stencil_mask_state_sets,
 					GLStateSetKeys::KEY_STENCIL_MASK,
-					boost::in_place(mask/*front*/, mask/*back*/));
+					boost::in_place(mask/*front and back*/));
 		}
 
 		void
 		stencil_mask_separate(
 				GLenum face,
 				GLuint mask);
+
+		void
+		stencil_op(
+				GLenum sfail,
+				GLenum dpfail,
+				GLenum dppass)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->stencil_op_state_sets,
+					GLStateSetKeys::KEY_STENCIL_OP,
+					boost::in_place(GLStencilOpStateSet::Op{sfail, dpfail, dppass}));
+		}
+
+		void
+		stencil_op_separate(
+				GLenum face,
+				GLenum sfail,
+				GLenum dpfail,
+				GLenum dppass);
 
 		void
 		viewport(
@@ -508,37 +556,6 @@ namespace GPlatesOpenGL
 			return query_state_set<GLProgramObject::shared_ptr_to_const_type>(
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
 					&GLBindProgramObjectStateSet::d_program_object);
-		}
-
-		/**
-		 * Sets the stencil function.
-		 */
-		void
-		set_stencil_func(
-				GLenum func,
-				GLint ref,
-				GLuint mask)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->stencil_func_state_sets,
-					GLStateSetKeys::KEY_STENCIL_FUNC,
-					boost::in_place(func, ref, mask));
-		}
-
-
-		/**
-		 * Sets the stencil operation.
-		 */
-		void
-		set_stencil_op(
-				GLenum fail,
-				GLenum zfail,
-				GLenum zpass)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->stencil_op_state_sets,
-					GLStateSetKeys::KEY_STENCIL_OP,
-					boost::in_place(fail, zfail, zpass));
 		}
 
 		//! Sets the alpha-blend equation (glBlendEquation).
@@ -588,17 +605,6 @@ namespace GPlatesOpenGL
 					d_state_set_store->blend_func_state_sets,
 					GLStateSetKeys::KEY_BLEND_FUNC,
 					boost::in_place(boost::cref(d_capabilities), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
-		}
-
-		//! Set the depth function.
-		void
-		set_depth_func(
-				GLenum func)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->depth_func_state_sets,
-					GLStateSetKeys::KEY_DEPTH_FUNC,
-					boost::in_place(func));
 		}
 
 

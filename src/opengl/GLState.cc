@@ -412,6 +412,54 @@ GPlatesOpenGL::GLState::sample_maski(
 }
 
 
+void
+GPlatesOpenGL::GLState::stencil_func_separate(
+		GLenum face,
+		GLenum func,
+		GLint ref,
+		GLuint mask)
+{
+	const GLStencilFuncStateSet::Func stencil_func{ func, ref, mask };
+
+	// Get the current state.
+	boost::optional<const GLStencilFuncStateSet &> stencil_func_state_set =
+			query_state_set<GLStencilFuncStateSet>(GLStateSetKeys::KEY_STENCIL_FUNC);
+
+	// Copy of current state.
+	GLStencilFuncStateSet::Func front_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
+	GLStencilFuncStateSet::Func back_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
+	if (stencil_func_state_set)
+	{
+		front_stencil_func = stencil_func_state_set->d_front_func;
+		back_stencil_func = stencil_func_state_set->d_back_func;
+	}
+
+	// Set the requested state (in copy of current state).
+	if (face == GL_FRONT)
+	{
+		front_stencil_func = stencil_func;
+	}
+	else if (face == GL_BACK)
+	{
+		back_stencil_func = stencil_func;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				face == GL_FRONT_AND_BACK,
+				GPLATES_ASSERTION_SOURCE);
+
+		front_stencil_func = stencil_func;
+		back_stencil_func = stencil_func;
+	}
+
+	// Apply modified copy of current state.
+	set_and_apply_state_set(
+			d_state_set_store->stencil_func_state_sets,
+			GLStateSetKeys::KEY_STENCIL_FUNC,
+			boost::in_place(front_stencil_func, back_stencil_func));
+}
+
 
 void
 GPlatesOpenGL::GLState::stencil_mask_separate(
@@ -455,6 +503,55 @@ GPlatesOpenGL::GLState::stencil_mask_separate(
 			d_state_set_store->stencil_mask_state_sets,
 			GLStateSetKeys::KEY_STENCIL_MASK,
 			boost::in_place(front_mask, back_mask));
+}
+
+
+void
+GPlatesOpenGL::GLState::stencil_op_separate(
+		GLenum face,
+		GLenum sfail,
+		GLenum dpfail,
+		GLenum dppass)
+{
+	const GLStencilOpStateSet::Op stencil_op{ sfail, dpfail, dppass };
+
+	// Get the current state.
+	boost::optional<const GLStencilOpStateSet &> stencil_op_state_set =
+			query_state_set<GLStencilOpStateSet>(GLStateSetKeys::KEY_STENCIL_OP);
+
+	// Copy of current state.
+	GLStencilOpStateSet::Op front_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
+	GLStencilOpStateSet::Op back_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
+	if (stencil_op_state_set)
+	{
+		front_stencil_op = stencil_op_state_set->d_front_op;
+		back_stencil_op = stencil_op_state_set->d_back_op;
+	}
+
+	// Set the requested state (in copy of current state).
+	if (face == GL_FRONT)
+	{
+		front_stencil_op = stencil_op;
+	}
+	else if (face == GL_BACK)
+	{
+		back_stencil_op = stencil_op;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				face == GL_FRONT_AND_BACK,
+				GPLATES_ASSERTION_SOURCE);
+
+		front_stencil_op = stencil_op;
+		back_stencil_op = stencil_op;
+	}
+
+	// Apply modified copy of current state.
+	set_and_apply_state_set(
+			d_state_set_store->stencil_op_state_sets,
+			GLStateSetKeys::KEY_STENCIL_OP,
+			boost::in_place(front_stencil_op, back_stencil_op));
 }
 
 
