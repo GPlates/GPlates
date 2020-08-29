@@ -872,11 +872,7 @@ GPlatesOpenGL::GL::RenderScope::RenderScope(
 	// Begin render scope.
 	d_gl.d_context->begin_render();
 
-	// Save the current OpenGL state (which should be the default OpenGL state).
-	//
-	// This will reset to the current OpenGL state on scope exit, and since that should be the default
-	// OpenGL state we don't need to set the 'reset_to_default_state' option.
-	d_state_scope.reset(new StateScope(gl));
+	// Note that we're expecting the current OpenGL state to be the *default* OpenGL state.
 }
 
 
@@ -905,7 +901,7 @@ GPlatesOpenGL::GL::RenderScope::end()
 	if (!d_have_ended)
 	{
 		// Restore the default state.
-		d_state_scope->restore();
+		d_gl.d_current_state->reset_to_default();
 
 		// End render scope.
 		d_gl.d_context->end_render();

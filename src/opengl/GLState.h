@@ -57,7 +57,7 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Shadows the current global state of an OpenGL context.
+	 * Shadows the current global state of an OpenGL 3.3 (core profile) context.
 	 *
 	 * A container of @a GLStateSet objects each representing a different part of the global state.
 	 *

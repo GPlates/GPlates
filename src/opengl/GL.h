@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GL_H
 #define GPLATES_OPENGL_GL_H
 
-#include <memory>
 #include <vector>
 #include <opengl/OpenGL1.h>
 #include <boost/noncopyable.hpp>
@@ -49,7 +48,7 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Tracks common OpenGL global context state so it can be automatically restored.
+	 * Tracks common OpenGL 3.3 (core profile) global context state so it can be automatically restored.
 	 *
 	 * Only those OpenGL calls that change the global context state are routed through this class.
 	 * All remaining OpenGL calls should be made directly to OpenGL, including calls that change the
@@ -65,9 +64,6 @@ namespace GPlatesOpenGL
 	 * native vertex array object per OpenGL context. By tracking the state we can create a new
 	 * native object when switching to another context and set its state to match. This is needed
 	 * because vertex array objects (unlike buffer objects) cannot be shared across contexts.
-	 * Note that the default attribute state set by glVertexAttrib* (such as glVertexAttrib4f) are
-	 * actually global context state (they're not part of vertex array object state). Despite this they
-	 * are an example of context state not catered for in this class (so will need direct calls to OpenGL).
 	 * Another example, similar to @a GLVertexArray, is @a GLFramebuffer.
 	 */
 	class GL :
@@ -118,7 +114,6 @@ namespace GPlatesOpenGL
 
 		private:
 			GL &d_gl;
-			std::unique_ptr<StateScope> d_state_scope;
 			bool d_have_ended;
 		};
 
@@ -188,10 +183,16 @@ namespace GPlatesOpenGL
 		// The following methods are equivalent to the OpenGL functions with the same function name
 		// (with a 'gl' prefix) and mostly the same function parameters.
 		//
-		// These methods are not documented.
-		// To understand their usage please refer to the OpenGL 3.3 core profile specification.
+		// These methods are not documented, to understand their usage please refer
+		// to the OpenGL 3.3 core profile specification.
 		//
-		// Any calls not provided below can be called with direct native OpenGL calls (with 'gl' prefix).
+		// Any calls not provided below can instead be called with direct native OpenGL calls (with 'gl' prefix).
+		//
+		// As mentioned above, some extra OpenGL calls (beyond tracking global context state) are also
+		// routed through this class. For example, calls that set the state *inside* a vertex array object
+		// (or a framebuffer object) are object state (not global state) but are nevertheless routed through
+		// this class so that a single @a GLVertexArray instance (or a @GLFramebuffer instance) can have
+		// one native vertex array object (or framebuffer object) per OpenGL context.
 		//
 
 		void
@@ -479,6 +480,22 @@ namespace GPlatesOpenGL
 				GLenum sfail,
 				GLenum dpfail,
 				GLenum dppass);
+
+		/**
+		 * Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.
+		 *
+		 * This is generic vertex attribute state that only gets used if a vertex array is *not* enabled for
+		 * a generic attribute required by the vertex shader. However, according to the 3.3 core profile spec:
+		 *
+		 *   If an array corresponding to a generic attribute required by a vertex shader is enabled, the
+		 *   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
+		 *
+		 * ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
+		 * is undefined after the draw call (apparently this was rectified in OpenGL 4.2) so we cannot track it.
+		 *
+		 * You can either call glVertexAttrib4f, glVertexAttribI4i, etc natively, or perhaps even better
+		 * set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
+		 */
 
 		void
 		VertexAttribDivisor(
