@@ -237,44 +237,6 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to bind a shader program object.
-	 */
-	struct GLBindProgramObjectStateSet :
-			public GLStateSet
-	{
-		/**
-		 * Binds a shader program object, or unbinds (if @a program_object is boost::none).
-		 */
-		explicit
-		GLBindProgramObjectStateSet(
-				boost::optional<GLProgramObject::shared_ptr_to_const_type> program_object) :
-			d_program_object(program_object)
-		{  }
-
-		virtual
-		void
-		apply_state(
-				const GLCapabilities &capabilities,
-				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
-
-		virtual
-		void
-		apply_from_default_state(
-				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
-
-		virtual
-		void
-		apply_to_default_state(
-				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
-
-
-		boost::optional<GLProgramObject::shared_ptr_to_const_type> d_program_object;
-	};
-
-	/**
 	 * Used to bind a texture to a texture unit.
 	 */
 	struct GLBindTextureStateSet :
@@ -1587,6 +1549,51 @@ namespace GPlatesOpenGL
 
 		Op d_front_op;
 		Op d_back_op;
+	};
+
+	/**
+	 * Used to bind/use a program object.
+	 */
+	struct GLUseProgramStateSet :
+			public GLStateSet
+	{
+		/**
+		 * Binds a shader program object, or unbinds (if @a program_object is boost::none).
+		 */
+		explicit
+		GLUseProgramStateSet(
+				boost::optional<GLProgramObject::shared_ptr_type> program) :
+			d_program(program),
+			d_program_resource(0)
+		{
+			if (program)
+			{
+				d_program_resource = program.get()->get_resource_handle();
+			}
+		}
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		boost::optional<GLProgramObject::shared_ptr_type> d_program;
+		GLuint d_program_resource;
 	};
 
 	/**

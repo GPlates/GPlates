@@ -66,7 +66,6 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLActiveTextureStateSet> active_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLBindBufferStateSet> bind_buffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindFramebufferStateSet> bind_framebuffer_state_sets;
-		GPlatesUtils::ObjectPool<GLBindProgramObjectStateSet> bind_program_object_state_sets;
 		GPlatesUtils::ObjectPool<GLBindRenderbufferStateSet> bind_renderbuffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindTextureStateSet> bind_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLBindVertexArrayStateSet> bind_vertex_array_state_sets;
@@ -99,6 +98,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilMaskStateSet> stencil_mask_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilOpStateSet> stencil_op_state_sets;
+		GPlatesUtils::ObjectPool<GLUseProgramStateSet> use_program_state_sets;
 		GPlatesUtils::ObjectPool<GLViewportStateSet> viewport_state_sets;
 
 	private:

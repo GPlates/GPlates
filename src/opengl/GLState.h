@@ -565,6 +565,16 @@ namespace GPlatesOpenGL
 				GLenum dppass);
 
 		void
+		use_program(
+				boost::optional<GLProgramObject::shared_ptr_type> program)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->use_program_state_sets,
+					GLStateSetKeys::KEY_USE_PROGRAM,
+					boost::in_place(program));
+		}
+
+		void
 		viewport(
 				const GLViewport &viewport,
 				// The default viewport is passed in since it can change when the window is resized...
@@ -576,41 +586,6 @@ namespace GPlatesOpenGL
 					boost::in_place(viewport, default_viewport));
 		}
 
-		//! Sets the shader program object to bind to the active OpenGL context.
-		void
-		set_bind_program_object(
-				const GLProgramObject::shared_ptr_to_const_type &program_object)
-		{
-			set_and_apply_state_set(
-					d_state_set_store->bind_program_object_state_sets,
-					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					boost::in_place(program_object));
-		}
-
-		//! Unbinds any shader program object currently bound.
-		void
-		set_unbind_program_object()
-		{
-			set_and_apply_state_set(
-					d_state_set_store->bind_program_object_state_sets,
-					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
-		}
-
-		/**
-		 * Returns the shader program object bound (or to bind if not yet applied) to the active OpenGL context.
-		 *
-		 * boost::none implies fixed-function pipeline.
-		 */
-		boost::optional<GLProgramObject::shared_ptr_to_const_type>
-		get_bind_program_object() const
-		{
-			return query_state_set<GLProgramObject::shared_ptr_to_const_type>(
-					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					&GLBindProgramObjectStateSet::d_program_object);
-		}
-
 
 		//
 		// Get state methods (queries individual @a GLStateSet objects).
@@ -618,16 +593,6 @@ namespace GPlatesOpenGL
 		// Note: Unlike the set state methods, these are only provided where needed by the OpenGL framework.
 		//
 
-
-		/**
-		 * Returns true if the specified capability is currently enabled.
-		 *
-		 * If the capability is indexed (eg, GL_BLEND) then @a index can be non-zero.
-		 */
-		bool
-		is_capability_enabled(
-				GLenum cap,
-				GLuint index = 0) const;
 
 		//! Returns the active texture unit.
 		GLenum
@@ -652,10 +617,6 @@ namespace GPlatesOpenGL
 		}
 
 		//! Returns the currently bound framebuffer object - boost::none implies the default framebuffer.
-		/**
-		 * Returns the framebuffer object currently bound to the specified target
-		 * (none and 0 mean bind default framebuffer).
-		 */
 		boost::optional<GLFramebuffer::shared_ptr_type>
 		get_bind_framebuffer(
 				GLenum target) const;
@@ -693,6 +654,15 @@ namespace GPlatesOpenGL
 			return scissor ? scissor.get() : default_viewport;
 		}
 
+		//! Returns the program object currently in use - boost::none implies no program in use.
+		boost::optional<GLProgramObject::shared_ptr_type>
+		get_use_program() const
+		{
+			return query_state_set<GLProgramObject::shared_ptr_type>(
+					GLStateSetKeys::KEY_USE_PROGRAM,
+					&GLUseProgramStateSet::d_program);
+		}
+
 		//! Returns the current viewport.
 		const GLViewport &
 		get_viewport(
@@ -705,6 +675,17 @@ namespace GPlatesOpenGL
 							&GLViewportStateSet::d_viewport);
 			return viewport ? viewport.get() : default_viewport;
 		}
+
+		/**
+		 * Returns true if the specified capability is currently enabled
+		 * (ie, state associated with glEnable/glDisable and glEnablei/glDisablei).
+		 *
+		 * If the capability is indexed (eg, GL_BLEND) then @a index can be non-zero.
+		 */
+		bool
+		is_capability_enabled(
+				GLenum cap,
+				GLuint index = 0) const;
 
 	private:
 

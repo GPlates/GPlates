@@ -748,6 +748,14 @@ GPlatesOpenGL::GL::StencilOpSeparate(
 
 
 void
+GPlatesOpenGL::GL::UseProgram(
+		boost::optional<GLProgramObject::shared_ptr_type> program)
+{
+	d_current_state->use_program(program);
+}
+
+
+void
 GPlatesOpenGL::GL::VertexAttribDivisor(
 		GLuint index,
 		GLuint divisor)

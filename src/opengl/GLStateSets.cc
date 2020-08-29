@@ -231,63 +231,6 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 
 
 void
-GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
-		const GLCapabilities &capabilities,
-		const GLStateSet &current_state_set,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (d_program_object ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindProgramObjectStateSet &>(current_state_set).d_program_object)
-	{
-		return;
-	}
-
-	if (d_program_object)
-	{
-		// Bind the shader program object.
-		glUseProgram(d_program_object.get()->get_resource_handle());
-	}
-	else
-	{
-		// No shader program object.
-		glUseProgram(0);
-	}
-}
-
-void
-GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
-		const GLCapabilities &capabilities,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (!d_program_object)
-	{
-		return;
-	}
-
-	// Bind the shader program object.
-	glUseProgram(d_program_object.get()->get_resource_handle());
-}
-
-void
-GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
-		const GLCapabilities &capabilities,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (!d_program_object)
-	{
-		return;
-	}
-
-	// The default is zero.
-    glUseProgram(0);
-}
-
-
-void
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2255,6 +2198,55 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 			glStencilOpSeparate(GL_BACK, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
 		}
 	}
+}
+
+
+void
+GPlatesOpenGL::GLUseProgramStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_program_resource ==
+			// Throws exception if downcast fails...
+			dynamic_cast<const GLUseProgramStateSet &>(current_state_set).d_program_resource)
+	{
+		return;
+	}
+
+	// Use the program.
+	glUseProgram(d_program_resource);
+}
+
+void
+GPlatesOpenGL::GLUseProgramStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_program_resource == 0)
+	{
+		return;
+	}
+
+	// Use the program.
+	glUseProgram(d_program_resource);
+}
+
+void
+GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_program_resource == 0)
+	{
+		return;
+	}
+
+	// The default is zero (no program in use).
+    glUseProgram(0);
 }
 
 

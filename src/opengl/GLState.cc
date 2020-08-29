@@ -663,6 +663,35 @@ GPlatesOpenGL::GLState::stencil_op_separate(
 }
 
 
+boost::optional<GPlatesOpenGL::GLFramebuffer::shared_ptr_type>
+GPlatesOpenGL::GLState::get_bind_framebuffer(
+		GLenum target) const
+{
+	// Select the framebuffer bound to the draw or read target.
+	boost::optional<GLFramebuffer::shared_ptr_type> GLBindFramebufferStateSet::*framebuffer = nullptr;
+
+	if (target == GL_FRAMEBUFFER ||
+		target == GL_DRAW_FRAMEBUFFER)
+	{
+		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
+		framebuffer = &GLBindFramebufferStateSet::d_draw_framebuffer;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				target == GL_READ_FRAMEBUFFER,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
+		framebuffer = &GLBindFramebufferStateSet::d_read_framebuffer;
+	}
+
+	return query_state_set<GLFramebuffer::shared_ptr_type>(
+			GLStateSetKeys::KEY_BIND_FRAMEBUFFER,
+			framebuffer);
+}
+
+
 bool
 GPlatesOpenGL::GLState::is_capability_enabled(
 		GLenum cap,
@@ -706,33 +735,4 @@ GPlatesOpenGL::GLState::is_capability_enabled(
 			return GLEnableStateSet::get_default(cap);
 		}
 	}
-}
-
-
-boost::optional<GPlatesOpenGL::GLFramebuffer::shared_ptr_type>
-GPlatesOpenGL::GLState::get_bind_framebuffer(
-		GLenum target) const
-{
-	// Select the framebuffer bound to the draw or read target.
-	boost::optional<GLFramebuffer::shared_ptr_type> GLBindFramebufferStateSet::*framebuffer = nullptr;
-
-	if (target == GL_FRAMEBUFFER ||
-		target == GL_DRAW_FRAMEBUFFER)
-	{
-		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
-		framebuffer = &GLBindFramebufferStateSet::d_draw_framebuffer;
-	}
-	else
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				target == GL_READ_FRAMEBUFFER,
-				GPLATES_ASSERTION_SOURCE);
-
-		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
-		framebuffer = &GLBindFramebufferStateSet::d_read_framebuffer;
-	}
-
-	return query_state_set<GLFramebuffer::shared_ptr_type>(
-			GLStateSetKeys::KEY_BIND_FRAMEBUFFER,
-			framebuffer);
 }
