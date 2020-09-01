@@ -664,12 +664,12 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 	}
 
 	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (d_render_tile_to_scene_program_object &&
-		d_render_tile_to_scene_with_clipping_program_object &&
-		d_render_tile_to_scene_with_lighting_program_object &&
-		d_render_tile_to_scene_with_clipping_and_lighting_program_object)
+	if (d_render_tile_to_scene_program &&
+		d_render_tile_to_scene_with_clipping_program &&
+		d_render_tile_to_scene_with_lighting_program &&
+		d_render_tile_to_scene_with_clipping_and_lighting_program)
 	{
-		boost::optional<GLProgramObject::shared_ptr_type> program_object;
+		boost::optional<GLProgram::shared_ptr_type> program;
 
 		const bool lighting_enabled = d_light &&
 				d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
@@ -678,39 +678,39 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 		// Determine which shader program to use.
 		if (clip_to_tile_frustum)
 		{
-			program_object = lighting_enabled
-					? d_render_tile_to_scene_with_clipping_and_lighting_program_object
-					: d_render_tile_to_scene_with_clipping_program_object;
+			program = lighting_enabled
+					? d_render_tile_to_scene_with_clipping_and_lighting_program
+					: d_render_tile_to_scene_with_clipping_program;
 		}
 		else
 		{
-			program_object = lighting_enabled
-					? d_render_tile_to_scene_with_lighting_program_object
-					: d_render_tile_to_scene_program_object;
+			program = lighting_enabled
+					? d_render_tile_to_scene_with_lighting_program
+					: d_render_tile_to_scene_program;
 		}
 
 		// Bind the shader program.
-		renderer.gl_bind_program_object(program_object.get());
+		renderer.gl_bind_program_object(program.get());
 
 		// Set the tile texture sampler to texture unit 0.
-		program_object.get()->gl_uniform1i(renderer, "tile_texture_sampler", 0/*texture unit*/);
+		program.get()->gl_uniform1i(renderer, "tile_texture_sampler", 0/*texture unit*/);
 
 		if (clip_to_tile_frustum)
 		{
 			// Set the clip texture sampler to texture unit 1.
-			program_object.get()->gl_uniform1i(renderer, "clip_texture_sampler", 1/*texture unit*/);
+			program.get()->gl_uniform1i(renderer, "clip_texture_sampler", 1/*texture unit*/);
 		}
 
 		if (lighting_enabled)
 		{
 			// Set the world-space light direction.
-			program_object.get()->gl_uniform3f(
+			program.get()->gl_uniform3f(
 					renderer,
 					"world_space_light_direction",
 					d_light.get()->get_globe_view_light_direction(renderer));
 
 			// Set the light ambient contribution.
-			program_object.get()->gl_uniform1f(
+			program.get()->gl_uniform1f(
 					renderer,
 					"light_ambient_contribution",
 					d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
@@ -1144,7 +1144,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 	//
 
 	// A version without clipping or lighting.
-	d_render_tile_to_scene_program_object =
+	d_render_tile_to_scene_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
@@ -1165,7 +1165,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_clipping_program_object =
+	d_render_tile_to_scene_with_clipping_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					render_tile_to_scene_with_clipping_vertex_shader_source,
@@ -1184,7 +1184,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_lighting_program_object =
+	d_render_tile_to_scene_with_lighting_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					render_tile_to_scene_with_lighting_vertex_shader_source,
@@ -1207,7 +1207,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 			GLShaderSource::UTILS_FILE_NAME);
 	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_clipping_and_lighting_program_object =
+	d_render_tile_to_scene_with_clipping_and_lighting_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source,

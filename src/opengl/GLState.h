@@ -566,7 +566,7 @@ namespace GPlatesOpenGL
 
 		void
 		use_program(
-				boost::optional<GLProgramObject::shared_ptr_type> program)
+				boost::optional<GLProgram::shared_ptr_type> program)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->use_program_state_sets,
@@ -655,10 +655,10 @@ namespace GPlatesOpenGL
 		}
 
 		//! Returns the program object currently in use - boost::none implies no program in use.
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<GLProgram::shared_ptr_type>
 		get_use_program() const
 		{
-			return query_state_set<GLProgramObject::shared_ptr_type>(
+			return query_state_set<GLProgram::shared_ptr_type>(
 					GLStateSetKeys::KEY_USE_PROGRAM,
 					&GLUseProgramStateSet::d_program);
 		}

@@ -60,9 +60,9 @@ namespace GPlatesOpenGL
 	/**
 	* Wrapper around an OpenGL program object.
 	 */
-	class GLProgramObject :
+	class GLProgram :
 			public GLObject,
-			public boost::enable_shared_from_this<GLProgramObject>
+			public boost::enable_shared_from_this<GLProgram>
 	{
 	public:
 		//
@@ -70,24 +70,24 @@ namespace GPlatesOpenGL
 		// is so these objects can be used with GPlatesUtils::ObjectCache.
 		//
 
-		//! A convenience typedef for a shared pointer to a @a GLProgramObject.
-		typedef boost::shared_ptr<GLProgramObject> shared_ptr_type;
-		typedef boost::shared_ptr<const GLProgramObject> shared_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a @a GLProgram.
+		typedef boost::shared_ptr<GLProgram> shared_ptr_type;
+		typedef boost::shared_ptr<const GLProgram> shared_ptr_to_const_type;
 
-		//! A convenience typedef for a weak pointer to a @a GLProgramObject.
-		typedef boost::weak_ptr<GLProgramObject> weak_ptr_type;
-		typedef boost::weak_ptr<const GLProgramObject> weak_ptr_to_const_type;
+		//! A convenience typedef for a weak pointer to a @a GLProgram.
+		typedef boost::weak_ptr<GLProgram> weak_ptr_type;
+		typedef boost::weak_ptr<const GLProgram> weak_ptr_to_const_type;
 
 
 		/**
-		 * Creates a shared pointer to a @a GLProgramObject object.
+		 * Creates a shared pointer to a @a GLProgram object.
 		 */
 		static
 		shared_ptr_type
 		create(
 				GL &gl)
 		{
-			return shared_ptr_type(new GLProgramObject(gl));
+			return shared_ptr_type(new GLProgram(gl));
 		}
 
 		/**
@@ -96,11 +96,11 @@ namespace GPlatesOpenGL
 		 * See comment in @a create for details on @a shader_type.
 		 */
 		static
-		std::unique_ptr<GLProgramObject>
+		std::unique_ptr<GLProgram>
 		create_as_unique_ptr(
 				GL &gl)
 		{
-			return std::unique_ptr<GLProgramObject>(new GLProgramObject(gl));
+			return std::unique_ptr<GLProgram>(new GLProgram(gl));
 		}
 
 
@@ -295,7 +295,7 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
-		GLProgramObject(
+		GLProgram(
 				GL &gl);
 
 		void

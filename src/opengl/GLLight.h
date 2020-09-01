@@ -29,7 +29,7 @@
 #include <boost/optional.hpp>
 
 #include "GLMatrix.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLUtils.h"
 
@@ -266,7 +266,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Shader program to render light direction into cube texture for 2D map views.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_map_view_light_direction_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_map_view_light_direction_program;
 
 
 		static

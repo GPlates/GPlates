@@ -765,35 +765,35 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// We should always have a valid shader program but test just in case.
-	if (!d_render_iso_surface_program_object)
+	if (!d_render_iso_surface_program)
 	{
 		return;
 	}
 
 	// Bind the shader program for rendering iso-surface.
-	renderer.gl_bind_program_object(d_render_iso_surface_program_object.get());
+	renderer.gl_bind_program_object(d_render_iso_surface_program.get());
 
 	unsigned int current_texture_unit = 0;
 
 	// Set shader variables common to all shaders (currently iso-surface and cross-sections).
 	set_iso_surface_and_cross_sections_shader_common_variables(
 			renderer,
-			d_render_iso_surface_program_object.get(),
+			d_render_iso_surface_program.get(),
 			current_texture_unit,
 			depth_restriction,
 			test_variables,
 			surface_occlusion_texture);
 
 	// Specify the colour mode.
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"colour_mode_depth",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_DEPTH);
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"colour_mode_isovalue",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_SCALAR);
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"colour_mode_gradient",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_GRADIENT);
@@ -820,7 +820,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
 	}
-	d_render_iso_surface_program_object.get()->gl_uniform2f(
+	d_render_iso_surface_program.get()->gl_uniform2f(
 			renderer,
 			"min_max_colour_mapping_range",
 			min_colour_mapping_range,
@@ -834,7 +834,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	{
 		// Set depth texture sampler to current texture unit.
 		renderer.gl_bind_texture(depth_read_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"depth_texture_sampler",
 				current_texture_unit);
@@ -842,7 +842,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		++current_texture_unit;
 
 		// Enable reads from depth texture.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"read_from_depth_texture",
 				true);
@@ -855,7 +855,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"depth_texture_sampler",
 				current_texture_unit);
@@ -863,7 +863,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		++current_texture_unit;
 
 		// Disable reads from depth texture.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"read_from_depth_texture",
 				false);
@@ -918,7 +918,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 					volume_fill_wall_depth_range_screen_render_target.get()->get_texture(),
 					GL_TEXTURE0 + current_texture_unit,
 					GL_TEXTURE_2D);
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"volume_fill_wall_depth_range_sampler",
 					current_texture_unit);
@@ -926,7 +926,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			++current_texture_unit;
 
 			// Enable rendering using the volume fill wall depth range.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"using_volume_fill_wall_depth_range",
 					true);
@@ -939,7 +939,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			// like unit 0. This avoids shader program validation failure when active shader samplers of
 			// different types reference the same texture unit. Currently happens on MacOS - probably
 			// because shader compiler does not detect that the sampler is not used and keeps it active.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"volume_fill_wall_depth_range_sampler",
 					current_texture_unit);
@@ -947,7 +947,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			++current_texture_unit;
 
 			// Disable rendering using the volume fill wall depth range.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"using_volume_fill_wall_depth_range",
 					false);
@@ -974,7 +974,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 					volume_fill_wall_surface_normal_and_depth_screen_render_target.get()->get_texture(),
 					GL_TEXTURE0 + current_texture_unit,
 					GL_TEXTURE_2D);
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"volume_fill_wall_surface_normal_and_depth_sampler",
 					current_texture_unit);
@@ -982,7 +982,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			++current_texture_unit;
 
 			// Enable rendering of the volume fill walls.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"show_volume_fill_walls",
 					true);
@@ -995,7 +995,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			// like unit 0. This avoids shader program validation failure when active shader samplers of
 			// different types reference the same texture unit. Currently happens on MacOS - probably
 			// because shader compiler does not detect that the sampler is not used and keeps it active.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"volume_fill_wall_surface_normal_and_depth_sampler",
 					current_texture_unit);
@@ -1003,7 +1003,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			++current_texture_unit;
 
 			// Disable rendering of the volume fill walls.
-			d_render_iso_surface_program_object.get()->gl_uniform1i(
+			d_render_iso_surface_program.get()->gl_uniform1i(
 					renderer,
 					"show_volume_fill_walls",
 					false);
@@ -1011,7 +1011,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 
 		// Set surface fill mask sampler to current texture unit.
 		renderer.gl_bind_texture(surface_fill_mask_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D_ARRAY_EXT);
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_sampler",
 				current_texture_unit);
@@ -1020,13 +1020,13 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 
 		// Set the surface fill mask (square) texture resolution.
 		// This is a texture array containing square textures (width == height).
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_resolution",
 				surface_fill_mask_texture->get_width().get());
 
 		// Enable reads from surface fill mask.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"using_surface_fill_mask",
 				true);
@@ -1039,7 +1039,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_sampler",
 				current_texture_unit);
@@ -1047,7 +1047,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		++current_texture_unit;
 
 		// Disable reads from surface fill mask.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"using_surface_fill_mask",
 				false);
@@ -1058,7 +1058,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"volume_fill_wall_depth_range_sampler",
 				current_texture_unit);
@@ -1066,7 +1066,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		++current_texture_unit;
 
 		// Disable rendering using the volume fill wall depth range.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"using_volume_fill_wall_depth_range",
 				false);
@@ -1077,7 +1077,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"volume_fill_wall_surface_normal_and_depth_sampler",
 				current_texture_unit);
@@ -1085,7 +1085,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		++current_texture_unit;
 
 		// Disable rendering of the volume fill walls.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		d_render_iso_surface_program.get()->gl_uniform1i(
 				renderer,
 				"show_volume_fill_walls",
 				false);
@@ -1149,7 +1149,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	}
 
 	// Set the parameters associated with isovalue 1.
-	d_render_iso_surface_program_object.get()->gl_uniform3f(
+	d_render_iso_surface_program.get()->gl_uniform3f(
 			renderer,
 			"isovalue1",
 			emulated_isovalue_parameters.isovalue1,
@@ -1161,7 +1161,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 // 		<< emulated_isovalue_parameters.upper_deviation1;
 
 	// Set the parameters associated with isovalue 2.
-	d_render_iso_surface_program_object.get()->gl_uniform3f(
+	d_render_iso_surface_program.get()->gl_uniform3f(
 			renderer,
 			"isovalue2",
 			emulated_isovalue_parameters.isovalue2,
@@ -1198,27 +1198,27 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	}
 	// ...else single or double deviation window.
 
-	d_render_iso_surface_program_object.get()->gl_uniform1f(
+	d_render_iso_surface_program.get()->gl_uniform1f(
 			renderer,
 			"opacity_deviation_surfaces",
 			emulated_deviation_window_render_options.opacity_deviation_surfaces);
 // 	qDebug() << "opacity_deviation_surfaces: " << emulated_deviation_window_render_options.opacity_deviation_surfaces;
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"deviation_window_volume_rendering",
 			emulated_deviation_window_render_options.deviation_window_volume_rendering);
 // 	qDebug() << "deviation_window_volume_rendering: " << emulated_deviation_window_render_options.deviation_window_volume_rendering;
-	d_render_iso_surface_program_object.get()->gl_uniform1f(
+	d_render_iso_surface_program.get()->gl_uniform1f(
 			renderer,
 			"opacity_deviation_window_volume_rendering",
 			emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering);
 // 	qDebug() << "opacity_deviation_window_volume_rendering: " << emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering;
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"surface_deviation_window",
 			emulated_deviation_window_render_options.surface_deviation_window);
 // 	qDebug() << "surface_deviation_window: " << emulated_deviation_window_render_options.surface_deviation_window;
-	d_render_iso_surface_program_object.get()->gl_uniform1f(
+	d_render_iso_surface_program.get()->gl_uniform1f(
 			renderer,
 			"surface_deviation_isoline_frequency",
 			emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency);
@@ -1231,7 +1231,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	// Set the quality/performance options.
 	//
 
-	d_render_iso_surface_program_object.get()->gl_uniform2f(
+	d_render_iso_surface_program.get()->gl_uniform2f(
 			renderer,
 			"sampling_rate",
 			// Distance between samples - and 2.0 is diameter of the globe...
@@ -1240,7 +1240,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 // 	qDebug() << "sampling_rate: "
 // 		<< 2.0f / quality_performance.sampling_rate << ", "
 // 		<< quality_performance.sampling_rate / 2.0f;
-	d_render_iso_surface_program_object.get()->gl_uniform1i(
+	d_render_iso_surface_program.get()->gl_uniform1i(
 			renderer,
 			"bisection_iterations",
 			quality_performance.bisection_iterations);
@@ -1273,13 +1273,13 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
 	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
 	// (which changed to 'texture()').
-	if (!d_render_surface_fill_mask_program_object)
+	if (!d_render_surface_fill_mask_program)
 	{
 		return false;
 	}
 
 	// Bind the shader program for rendering the surface fill mask.
-	renderer.gl_bind_program_object(d_render_surface_fill_mask_program_object.get());
+	renderer.gl_bind_program_object(d_render_surface_fill_mask_program.get());
 
 	// Temporarily acquire a texture array to render the surface fill mask into.
 	surface_fill_mask_texture = acquire_surface_fill_mask_texture(renderer, d_surface_fill_mask_resolution);
@@ -1402,13 +1402,13 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 
 #if 0 // Not currently used...
 	// We should always have valid shader programs but test just in case.
-	if (!d_render_volume_fill_spherical_cap_depth_range_program_object)
+	if (!d_render_volume_fill_spherical_cap_depth_range_program)
 	{
 		return false;
 	}
 
 	// Set the depth restricted minimum and maximum depth radius of the scalar field.
-	d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_uniform2f(
+	d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_uniform2f(
 			renderer,
 			"render_min_max_depth_radius_restriction",
 			depth_restriction.min_depth_radius_restriction,
@@ -1416,7 +1416,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 
 	// Set the tessellate parameters to ensure the polygon fan triangles of the spherical cap
 	// roughly follow the curved spherical surface rather than cut into it too much.
-	d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_uniform2f(
+	d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_uniform2f(
 			renderer,
 			"tessellate_params",
 			COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD,
@@ -1425,7 +1425,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// Set surface fill mask sampler to texture unit 0.
 	// Note: This is only needed when rendering spherical caps.
 	renderer.gl_bind_texture(surface_fill_mask_texture, GL_TEXTURE0, GL_TEXTURE_2D_ARRAY_EXT);
-	d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_uniform1i(
+	d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_uniform1i(
 			renderer,
 			"surface_fill_mask_sampler",
 			0);
@@ -1433,7 +1433,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// Set the surface fill mask (square) texture resolution.
 	// This is a texture array containing square textures (width == height).
 	// Note: This is only needed when rendering spherical caps.
-	d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_uniform1i(
+	d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_uniform1i(
 			renderer,
 			"surface_fill_mask_resolution",
 			surface_fill_mask_texture->get_width().get());
@@ -1444,7 +1444,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
 	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
 	// (which changed to 'texture()').
-	if (!d_render_volume_fill_wall_depth_range_program_object)
+	if (!d_render_volume_fill_wall_depth_range_program)
 	{
 		return false;
 	}
@@ -1456,7 +1456,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// inner sphere leaves thin cracks of pixels adjacent to the wall where no depth range is
 	// recorded - and at these pixels the ray's min and max depth can become equal.
 	// By setting reducing the min depth we extrude the wall further in order to cover these cracks.
-	d_render_volume_fill_wall_depth_range_program_object.get()->gl_uniform2f(
+	d_render_volume_fill_wall_depth_range_program.get()->gl_uniform2f(
 			renderer,
 			"render_min_max_depth_radius_restriction",
 			0.9f * depth_restriction.min_depth_radius_restriction,
@@ -1543,7 +1543,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// Render the wall depth ranges.
 	//
 
-	renderer.gl_bind_program_object(d_render_volume_fill_wall_depth_range_program_object.get());
+	renderer.gl_bind_program_object(d_render_volume_fill_wall_depth_range_program.get());
 
 	// Start rendering *wall* geometries.
 	volume_fill_boundary_visitor.begin_rendering();
@@ -1566,7 +1566,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 	// Second, render the *spherical cap* depth ranges.
 	//
 
-	renderer.gl_bind_program_object(d_render_volume_fill_spherical_cap_depth_range_program_object.get());
+	renderer.gl_bind_program_object(d_render_volume_fill_spherical_cap_depth_range_program.get());
 
 	// Start rendering *spherical cap* geometries.
 	volume_fill_boundary_visitor.begin_rendering();
@@ -1612,13 +1612,13 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
 	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
 	// (which changed to 'texture()').
-	if (!d_render_volume_fill_wall_surface_normals_program_object)
+	if (!d_render_volume_fill_wall_surface_normals_program)
 	{
 		return false;
 	}
 
 	// Set the depth restricted minimum and maximum depth radius of the scalar field.
-	d_render_volume_fill_wall_surface_normals_program_object.get()->gl_uniform2f(
+	d_render_volume_fill_wall_surface_normals_program.get()->gl_uniform2f(
 			renderer,
 			"render_min_max_depth_radius_restriction",
 			depth_restriction.min_depth_radius_restriction,
@@ -1626,20 +1626,20 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 
 	// Set surface fill mask sampler to texture unit 0.
 	renderer.gl_bind_texture(surface_fill_mask_texture, GL_TEXTURE0, GL_TEXTURE_2D_ARRAY_EXT);
-	d_render_volume_fill_wall_surface_normals_program_object.get()->gl_uniform1i(
+	d_render_volume_fill_wall_surface_normals_program.get()->gl_uniform1i(
 			renderer,
 			"surface_fill_mask_sampler",
 			0);
 
 	// Set the surface fill mask (square) texture resolution.
 	// This is a texture array containing square textures (width == height).
-	d_render_volume_fill_wall_surface_normals_program_object.get()->gl_uniform1i(
+	d_render_volume_fill_wall_surface_normals_program.get()->gl_uniform1i(
 			renderer,
 			"surface_fill_mask_resolution",
 			surface_fill_mask_texture->get_width().get());
 
 	// Set flag to show only boundary walls.
-	d_render_volume_fill_wall_surface_normals_program_object.get()->gl_uniform1i(
+	d_render_volume_fill_wall_surface_normals_program.get()->gl_uniform1i(
 			renderer,
 			"only_show_boundary_walls",
 			only_show_boundary_walls);
@@ -1732,7 +1732,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 	// Render the walls.
 	//
 
-	renderer.gl_bind_program_object(d_render_volume_fill_wall_surface_normals_program_object.get());
+	renderer.gl_bind_program_object(d_render_volume_fill_wall_surface_normals_program.get());
 
 	// Start rendering *wall* geometries.
 	volume_fill_walls_visitor.begin_rendering();
@@ -1776,31 +1776,31 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 	render_white_inner_sphere(renderer, depth_restriction);
 
 	// We should always have a valid shader program but test just in case.
-	if (!d_render_cross_section_program_object)
+	if (!d_render_cross_section_program)
 	{
 		return;
 	}
 
 	// Bind the shader program for rendering cross-sections.
-	renderer.gl_bind_program_object(d_render_cross_section_program_object.get());
+	renderer.gl_bind_program_object(d_render_cross_section_program.get());
 
 	unsigned int current_texture_unit = 0;
 
 	// Set shader variables common to all shaders (currently iso-surface and cross-sections).
 	set_iso_surface_and_cross_sections_shader_common_variables(
 			renderer,
-			d_render_cross_section_program_object.get(),
+			d_render_cross_section_program.get(),
 			current_texture_unit,
 			depth_restriction,
 			test_variables,
 			surface_occlusion_texture);
 
 	// Specify the colour mode.
-	d_render_cross_section_program_object.get()->gl_uniform1i(
+	d_render_cross_section_program.get()->gl_uniform1i(
 			renderer,
 			"colour_mode_scalar",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR);
-	d_render_cross_section_program_object.get()->gl_uniform1i(
+	d_render_cross_section_program.get()->gl_uniform1i(
 			renderer,
 			"colour_mode_gradient",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT);
@@ -1825,7 +1825,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
 	}
-	d_render_cross_section_program_object.get()->gl_uniform2f(
+	d_render_cross_section_program.get()->gl_uniform2f(
 			renderer,
 			"min_max_colour_mapping_range",
 			min_colour_mapping_range,
@@ -1846,7 +1846,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 	{
 		// Set surface fill mask sampler to current texture unit.
 		renderer.gl_bind_texture(surface_fill_mask_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D_ARRAY_EXT);
-		d_render_cross_section_program_object.get()->gl_uniform1i(
+		d_render_cross_section_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_sampler",
 				current_texture_unit);
@@ -1855,13 +1855,13 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 
 		// Set the surface fill mask (square) texture resolution.
 		// This is a texture array containing square textures (width == height).
-		d_render_cross_section_program_object.get()->gl_uniform1i(
+		d_render_cross_section_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_resolution",
 				surface_fill_mask_texture->get_width().get());
 
 		// Enable reads from surface fill mask.
-		d_render_cross_section_program_object.get()->gl_uniform1i(
+		d_render_cross_section_program.get()->gl_uniform1i(
 				renderer,
 				"using_surface_fill_mask",
 				true);
@@ -1874,7 +1874,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_cross_section_program_object.get()->gl_uniform1i(
+		d_render_cross_section_program.get()->gl_uniform1i(
 				renderer,
 				"surface_fill_mask_sampler",
 				current_texture_unit);
@@ -1882,7 +1882,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 		++current_texture_unit;
 
 		// Disable reads from surface fill mask.
-		d_render_cross_section_program_object.get()->gl_uniform1i(
+		d_render_cross_section_program.get()->gl_uniform1i(
 				renderer,
 				"using_surface_fill_mask",
 				false);
@@ -2006,7 +2006,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 					vertex_elements,
 					GL_TRIANGLES);
 
-	d_render_white_inner_sphere_program_object =
+	d_render_white_inner_sphere_program =
 			create_shader_program(
 					renderer,
 					SPHERE_VERTEX_SHADER,
@@ -2016,7 +2016,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 
 	// Note: If failed to create shader program then we just won't render the white inner sphere.
 
-	d_render_depth_range_inner_sphere_program_object =
+	d_render_depth_range_inner_sphere_program =
 			create_shader_program(
 					renderer,
 					SPHERE_VERTEX_SHADER,
@@ -2037,35 +2037,35 @@ GPlatesOpenGL::GLScalarField3D::render_white_inner_sphere(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// We should always have a valid shader program and compiled draw state, but test just in case.
-	if (!d_render_white_inner_sphere_program_object ||
+	if (!d_render_white_inner_sphere_program ||
 		!d_white_inner_sphere_compiled_draw_state)
 	{
 		return;
 	}
 
-	renderer.gl_bind_program_object(d_render_white_inner_sphere_program_object.get());
+	renderer.gl_bind_program_object(d_render_white_inner_sphere_program.get());
 
 	// Set depth radius of sphere to the minimum depth restricted radius.
-	d_render_white_inner_sphere_program_object.get()->gl_uniform1f(
+	d_render_white_inner_sphere_program.get()->gl_uniform1f(
 			renderer,
 			"depth_radius",
 			depth_restriction.min_depth_radius_restriction);
 
 	// Set boolean flag if lighting is enabled.
-	d_render_white_inner_sphere_program_object.get()->gl_uniform1i(
+	d_render_white_inner_sphere_program.get()->gl_uniform1i(
 			renderer,
 			"lighting_enabled",
 			d_light->get_scene_lighting_parameters().is_lighting_enabled(
 					GPlatesGui::SceneLightingParameters::LIGHTING_SCALAR_FIELD));
 
 	// Set the world-space light direction.
-	d_render_white_inner_sphere_program_object.get()->gl_uniform3f(
+	d_render_white_inner_sphere_program.get()->gl_uniform3f(
 			renderer,
 			"world_space_light_direction",
 			d_light->get_globe_view_light_direction(renderer));
 
 	// Set the light ambient contribution.
-	d_render_white_inner_sphere_program_object.get()->gl_uniform1f(
+	d_render_white_inner_sphere_program.get()->gl_uniform1f(
 			renderer,
 			"light_ambient_contribution",
 			d_light->get_scene_lighting_parameters().get_ambient_light_contribution());
@@ -2084,16 +2084,16 @@ GPlatesOpenGL::GLScalarField3D::render_inner_sphere_depth_range(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// We should always have a valid shader program and compiled draw state, but test just in case.
-	if (!d_render_depth_range_inner_sphere_program_object ||
+	if (!d_render_depth_range_inner_sphere_program ||
 		!d_white_inner_sphere_compiled_draw_state)
 	{
 		return;
 	}
 
-	renderer.gl_bind_program_object(d_render_depth_range_inner_sphere_program_object.get());
+	renderer.gl_bind_program_object(d_render_depth_range_inner_sphere_program.get());
 
 	// Set depth radius of sphere to the minimum depth restricted radius.
-	d_render_depth_range_inner_sphere_program_object.get()->gl_uniform1f(
+	d_render_depth_range_inner_sphere_program.get()->gl_uniform1f(
 			renderer,
 			"depth_radius",
 			depth_restriction.min_depth_radius_restriction);
@@ -2106,18 +2106,18 @@ GPlatesOpenGL::GLScalarField3D::render_inner_sphere_depth_range(
 void
 GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common_variables(
 		GLRenderer &renderer,
-		const GLProgramObject::shared_ptr_type &program_object,
+		const GLProgram::shared_ptr_type &program,
 		unsigned int &current_texture_unit,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 		const std::vector<float> &test_variables,
 		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
 	// Set the test variables.
-	set_shader_test_variables(renderer, program_object, test_variables);
+	set_shader_test_variables(renderer, program, test_variables);
 
 	// Set tile metadata texture sampler to current texture unit.
 	renderer.gl_bind_texture(d_tile_meta_data_texture_array, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D_ARRAY_EXT);
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"tile_meta_data_sampler",
 			current_texture_unit);
@@ -2126,7 +2126,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 
 	// Set field data texture sampler to current texture unit.
 	renderer.gl_bind_texture(d_field_data_texture_array, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D_ARRAY_EXT);
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"field_data_sampler",
 			current_texture_unit);
@@ -2135,7 +2135,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 
 	// Set mask data texture sampler to current texture unit.
 	renderer.gl_bind_texture(d_mask_data_texture_array, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D_ARRAY_EXT);
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"mask_data_sampler",
 			current_texture_unit);
@@ -2144,7 +2144,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 
 	// Set 1D depth radius to layer texture sampler to current texture unit.
 	renderer.gl_bind_texture(d_depth_radius_to_layer_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_1D);
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"depth_radius_to_layer_sampler",
 			current_texture_unit);
@@ -2153,7 +2153,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 
 	// Set 1D depth radius to layer texture sampler to current texture unit.
 	renderer.gl_bind_texture(d_colour_palette_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_1D);
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"colour_palette_sampler",
 			current_texture_unit);
@@ -2164,7 +2164,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 	{
 		// Set surface occlusion texture sampler to current texture unit.
 		renderer.gl_bind_texture(surface_occlusion_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		program_object->gl_uniform1i(
+		program->gl_uniform1i(
 				renderer,
 				"surface_occlusion_texture_sampler",
 				current_texture_unit);
@@ -2172,7 +2172,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		++current_texture_unit;
 
 		// Enable reads from surface occlusion texture.
-		program_object->gl_uniform1i(
+		program->gl_uniform1i(
 				renderer,
 				"read_from_surface_occlusion_texture",
 				true);
@@ -2185,7 +2185,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		program_object->gl_uniform1i(
+		program->gl_uniform1i(
 				renderer,
 				"surface_occlusion_texture_sampler",
 				current_texture_unit);
@@ -2193,45 +2193,45 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		++current_texture_unit;
 
 		// Disable reads from surface occlusion texture.
-		program_object->gl_uniform1i(
+		program->gl_uniform1i(
 				renderer,
 				"read_from_surface_occlusion_texture",
 				false);
 	}
 
 	// Set the tile metadata resolution.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"tile_meta_data_resolution",
 			d_tile_meta_data_resolution);
 
 	// Set the tile resolution.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"tile_resolution",
 			d_tile_resolution);
 
 	// Set the 1D texture depth-radius-to-layer resolution.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"depth_radius_to_layer_resolution",
 			d_depth_radius_to_layer_texture->get_width().get());
 
 	// Set the 1D texture colour palette resolution.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"colour_palette_resolution",
 			d_colour_palette_texture->get_width().get());
 
 	// Set the scalar field min/max depth radius.
-	program_object->gl_uniform2f(
+	program->gl_uniform2f(
 			renderer,
 			"min_max_depth_radius",
 			d_min_depth_layer_radius,
 			d_max_depth_layer_radius);
 
 	// Set the depth restricted min/max depth radius.
-	program_object->gl_uniform2f(
+	program->gl_uniform2f(
 			renderer,
 			"render_min_max_depth_radius_restriction",
 			depth_restriction.min_depth_radius_restriction,
@@ -2241,16 +2241,16 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 // 		<< depth_restriction.max_depth_radius_restriction;
 
 	// Set the number of depth layers.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"num_depth_layers",
 			d_num_depth_layers);
 
 	// Set the min/max scalar value.
 	// Note: It might not currently be used so only set if active in program object to avoid warning.
-	if (program_object->is_active_uniform("min_max_scalar_value"))
+	if (program->is_active_uniform("min_max_scalar_value"))
 	{
-		program_object->gl_uniform2f(
+		program->gl_uniform2f(
 				renderer,
 				"min_max_scalar_value",
 				d_scalar_min,
@@ -2259,9 +2259,9 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 
 	// Set the min/max gradient magnitude.
 	// Note: It might not currently be used so only set if active in program object to avoid warning.
-	if (program_object->is_active_uniform("min_max_gradient_magnitude"))
+	if (program->is_active_uniform("min_max_gradient_magnitude"))
 	{
-		program_object->gl_uniform2f(
+		program->gl_uniform2f(
 				renderer,
 				"min_max_gradient_magnitude",
 				d_gradient_magnitude_min,
@@ -2269,20 +2269,20 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 	}
 
 	// Set boolean flag if lighting is enabled.
-	program_object->gl_uniform1i(
+	program->gl_uniform1i(
 			renderer,
 			"lighting_enabled",
 			d_light->get_scene_lighting_parameters().is_lighting_enabled(
 					GPlatesGui::SceneLightingParameters::LIGHTING_SCALAR_FIELD));
 
 	// Set the world-space light direction.
-	program_object->gl_uniform3f(
+	program->gl_uniform3f(
 			renderer,
 			"world_space_light_direction",
 			d_light->get_globe_view_light_direction(renderer));
 
 	// Set the light ambient contribution.
-	program_object->gl_uniform1f(
+	program->gl_uniform1f(
 			renderer,
 			"light_ambient_contribution",
 			d_light->get_scene_lighting_parameters().get_ambient_light_contribution());
@@ -2292,7 +2292,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 void
 GPlatesOpenGL::GLScalarField3D::set_shader_test_variables(
 		GLRenderer &renderer,
-		const GLProgramObject::shared_ptr_type &program_object,
+		const GLProgram::shared_ptr_type &program,
 		const std::vector<float> &test_variables)
 {
 	for (unsigned int variable_index = 0; variable_index < test_variables.size(); ++variable_index)
@@ -2304,9 +2304,9 @@ GPlatesOpenGL::GLScalarField3D::set_shader_test_variables(
 		// a warning is emitted (but can be ignored).
 		//
 		// Not all test variables are necessarily used by the shader program.
-		if (program_object->is_active_uniform(variable_name.toLatin1().constData()))
+		if (program->is_active_uniform(variable_name.toLatin1().constData()))
 		{
-			program_object->gl_uniform1f(
+			program->gl_uniform1f(
 					renderer,
 					variable_name.toLatin1().constData(),
 					test_variables[variable_index]);
@@ -2319,7 +2319,7 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 		GLRenderer &renderer)
 {
-	d_render_cross_section_program_object =
+	d_render_cross_section_program =
 			create_shader_program(
 					renderer,
 					CROSS_SECTION_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2331,7 +2331,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 	// WARNING - For these vertex bindings to take effect the shader program must be re-linked *afterwards*.
 	//
 
-	if (d_render_cross_section_program_object)
+	if (d_render_cross_section_program)
 	{
 		// Attach vertex element buffer to the vertex array.
 		d_cross_section_vertex_array->set_vertex_element_buffer(
@@ -2340,7 +2340,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 
 		// The "surface_point_xyz_depth_weight_w" attribute data is the surface point
 		// packed in (x,y,z) and the depth weight into 'w' of a 'vec4' vertex attribute.
-		d_render_cross_section_program_object.get()->gl_bind_attrib_location(
+		d_render_cross_section_program.get()->gl_bind_attrib_location(
 				"surface_point_xyz_depth_weight_w", 0/*attribute_index*/);
 		d_cross_section_vertex_array->set_enable_vertex_attrib_array(
 				renderer, 0/*attribute_index*/, true/*enable*/);
@@ -2356,7 +2356,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 
 		// The "neighbour_surface_point_xyz_normal_weight_w" attribute data is the neighbour surface point
 		// packed in (x,y,z) and the normal weight into 'w' of a 'vec4' vertex attribute.
-		d_render_cross_section_program_object.get()->gl_bind_attrib_location(
+		d_render_cross_section_program.get()->gl_bind_attrib_location(
 				"neighbour_surface_point_xyz_normal_weight_w", 1/*attribute_index*/);
 		d_cross_section_vertex_array->set_enable_vertex_attrib_array(
 				renderer, 1/*attribute_index*/, true/*enable*/);
@@ -2378,13 +2378,13 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 	// program uniform variables should be set *after*.
 	//
 
-	if (d_render_cross_section_program_object)
+	if (d_render_cross_section_program)
 	{
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		if (!d_render_cross_section_program_object.get()->gl_link_program(renderer))
+		if (!d_render_cross_section_program.get()->gl_link_program(renderer))
 		{
-			d_render_cross_section_program_object = boost::none;
+			d_render_cross_section_program = boost::none;
 		}
 	}
 
@@ -2394,9 +2394,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 	// WARNING - If the shader program is subsequently re-linked then the uniform variables will need updating.
 	//
 
-	if (d_render_cross_section_program_object)
+	if (d_render_cross_section_program)
 	{
-		initialise_shader_utils(renderer, d_render_cross_section_program_object.get());
+		initialise_shader_utils(renderer, d_render_cross_section_program.get());
 	}
 }
 
@@ -2409,7 +2409,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_iso_surface_rendering(
 	// Create the shader programs.
 	//
 
-	d_render_iso_surface_program_object =
+	d_render_iso_surface_program =
 			create_shader_program(
 					renderer,
 					ISO_SURFACE_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2421,9 +2421,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_iso_surface_rendering(
 	// WARNING - If the shader program is subsequently re-linked then the uniform variables will need updating.
 	//
 
-	if (d_render_iso_surface_program_object)
+	if (d_render_iso_surface_program)
 	{
-		initialise_shader_utils(renderer, d_render_iso_surface_program_object.get());
+		initialise_shader_utils(renderer, d_render_iso_surface_program.get());
 	}
 }
 
@@ -2450,7 +2450,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	// Create the shader programs.
 	//
 
-	d_render_surface_fill_mask_program_object =
+	d_render_surface_fill_mask_program =
 			create_shader_program(
 					renderer,
 					SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2468,7 +2468,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	// WARNING - For these vertex bindings to take effect the shader program must be re-linked *afterwards*.
 	//
 
-	if (d_render_surface_fill_mask_program_object)
+	if (d_render_surface_fill_mask_program)
 	{
 		// Attach vertex element buffer to the vertex array.
 		d_surface_fill_mask_vertex_array->set_vertex_element_buffer(
@@ -2476,7 +2476,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 				d_streaming_vertex_element_buffer);
 
 		// The "surface_point" attribute data is the surface point packed in (x,y,z) components of 'vec4' vertex attribute.
-		d_render_surface_fill_mask_program_object.get()->gl_bind_attrib_location(
+		d_render_surface_fill_mask_program.get()->gl_bind_attrib_location(
 				"surface_point", 0/*attribute_index*/);
 		d_surface_fill_mask_vertex_array->set_enable_vertex_attrib_array(
 				renderer, 0/*attribute_index*/, true/*enable*/);
@@ -2498,13 +2498,13 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	// program uniform variables should be set *after*.
 	//
 
-	if (d_render_surface_fill_mask_program_object)
+	if (d_render_surface_fill_mask_program)
 	{
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		if (!d_render_surface_fill_mask_program_object.get()->gl_link_program(renderer))
+		if (!d_render_surface_fill_mask_program.get()->gl_link_program(renderer))
 		{
-			d_render_surface_fill_mask_program_object = boost::none;
+			d_render_surface_fill_mask_program = boost::none;
 		}
 	}
 
@@ -2514,7 +2514,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	// WARNING - If the shader program is subsequently re-linked then the uniform variables will need updating.
 	//
 
-	if (d_render_surface_fill_mask_program_object)
+	if (d_render_surface_fill_mask_program)
 	{
 		std::vector<GLMatrix> cube_face_view_projection_matrices;
 
@@ -2562,7 +2562,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 		//
 		// WARNING - If the shader program is subsequently re-linked then the uniform variables will
 		// need updating.
-		d_render_surface_fill_mask_program_object.get()->gl_uniform_matrix4x4f(
+		d_render_surface_fill_mask_program.get()->gl_uniform_matrix4x4f(
 				renderer,
 				"cube_face_view_projection_matrices",
 				cube_face_view_projection_matrices);
@@ -2579,7 +2579,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 	//
 
 #if 0 // Not currently used...
-	d_render_volume_fill_spherical_cap_depth_range_program_object =
+	d_render_volume_fill_spherical_cap_depth_range_program =
 			create_shader_program(
 					renderer,
 					VOLUME_FILL_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2593,7 +2593,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 					"#define DEPTH_RANGE\n");
 #endif
 
-	d_render_volume_fill_wall_depth_range_program_object =
+	d_render_volume_fill_wall_depth_range_program =
 			create_shader_program(
 					renderer,
 					VOLUME_FILL_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2606,7 +2606,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 									GL_TRIANGLE_STRIP)),
 					"#define DEPTH_RANGE\n");
 
-	d_render_volume_fill_wall_surface_normals_program_object =
+	d_render_volume_fill_wall_surface_normals_program =
 			create_shader_program(
 					renderer,
 					VOLUME_FILL_VERTEX_SHADER_SOURCE_FILE_NAME,
@@ -2657,26 +2657,26 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 			3 * sizeof(GLfloat)/*offset*/);
 
 #if 0 // Not currently used...
-	if (d_render_volume_fill_spherical_cap_depth_range_program_object)
+	if (d_render_volume_fill_spherical_cap_depth_range_program)
 	{
-		d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_bind_attrib_location(
 				"surface_point", 0/*attribute_index*/);
-		d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_bind_attrib_location(
 				"centroid_point", 1/*attribute_index*/);
 	}
 #endif
-	if (d_render_volume_fill_wall_depth_range_program_object)
+	if (d_render_volume_fill_wall_depth_range_program)
 	{
-		d_render_volume_fill_wall_depth_range_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_wall_depth_range_program.get()->gl_bind_attrib_location(
 				"surface_point", 0/*attribute_index*/);
-		d_render_volume_fill_wall_depth_range_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_wall_depth_range_program.get()->gl_bind_attrib_location(
 				"centroid_point", 1/*attribute_index*/);
 	}
-	if (d_render_volume_fill_wall_surface_normals_program_object)
+	if (d_render_volume_fill_wall_surface_normals_program)
 	{
-		d_render_volume_fill_wall_surface_normals_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_wall_surface_normals_program.get()->gl_bind_attrib_location(
 				"surface_point", 0/*attribute_index*/);
-		d_render_volume_fill_wall_surface_normals_program_object.get()->gl_bind_attrib_location(
+		d_render_volume_fill_wall_surface_normals_program.get()->gl_bind_attrib_location(
 				"centroid_point", 1/*attribute_index*/);
 	}
 
@@ -2688,32 +2688,32 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 	//
 
 #if 0 // Not currently used...
-	if (d_render_volume_fill_spherical_cap_depth_range_program_object)
+	if (d_render_volume_fill_spherical_cap_depth_range_program)
 	{
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		if (!d_render_volume_fill_spherical_cap_depth_range_program_object.get()->gl_link_program(renderer))
+		if (!d_render_volume_fill_spherical_cap_depth_range_program.get()->gl_link_program(renderer))
 		{
-			d_render_volume_fill_spherical_cap_depth_range_program_object = boost::none;
+			d_render_volume_fill_spherical_cap_depth_range_program = boost::none;
 		}
 	}
 #endif
-	if (d_render_volume_fill_wall_depth_range_program_object)
+	if (d_render_volume_fill_wall_depth_range_program)
 	{
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		if (!d_render_volume_fill_wall_depth_range_program_object.get()->gl_link_program(renderer))
+		if (!d_render_volume_fill_wall_depth_range_program.get()->gl_link_program(renderer))
 		{
-			d_render_volume_fill_wall_depth_range_program_object = boost::none;
+			d_render_volume_fill_wall_depth_range_program = boost::none;
 		}
 	}
-	if (d_render_volume_fill_wall_surface_normals_program_object)
+	if (d_render_volume_fill_wall_surface_normals_program)
 	{
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		if (!d_render_volume_fill_wall_surface_normals_program_object.get()->gl_link_program(renderer))
+		if (!d_render_volume_fill_wall_surface_normals_program.get()->gl_link_program(renderer))
 		{
-			d_render_volume_fill_wall_surface_normals_program_object = boost::none;
+			d_render_volume_fill_wall_surface_normals_program = boost::none;
 		}
 	}
 
@@ -2724,18 +2724,18 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 	//
 
 #if 0 // Not currently used...
-	if (d_render_volume_fill_spherical_cap_depth_range_program_object)
+	if (d_render_volume_fill_spherical_cap_depth_range_program)
 	{
-		initialise_shader_utils(renderer, d_render_volume_fill_spherical_cap_depth_range_program_object.get());
+		initialise_shader_utils(renderer, d_render_volume_fill_spherical_cap_depth_range_program.get());
 	}
 #endif
-	if (d_render_volume_fill_wall_depth_range_program_object)
+	if (d_render_volume_fill_wall_depth_range_program)
 	{
-		initialise_shader_utils(renderer, d_render_volume_fill_wall_depth_range_program_object.get());
+		initialise_shader_utils(renderer, d_render_volume_fill_wall_depth_range_program.get());
 	}
-	if (d_render_volume_fill_wall_surface_normals_program_object)
+	if (d_render_volume_fill_wall_surface_normals_program)
 	{
-		initialise_shader_utils(renderer, d_render_volume_fill_wall_surface_normals_program_object.get());
+		initialise_shader_utils(renderer, d_render_volume_fill_wall_surface_normals_program.get());
 	}
 }
 
@@ -2743,7 +2743,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 void
 GPlatesOpenGL::GLScalarField3D::initialise_shader_utils(
 		GLRenderer &renderer,
-		const GLProgramObject::shared_ptr_type &program_object)
+		const GLProgram::shared_ptr_type &program)
 {
 	// Set the local coordinate frames of each cube face.
 	// The order of faces is the same as the GPlatesMaths::CubeCoordinateFrame::CubeFaceType enumeration.
@@ -2772,9 +2772,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_shader_utils(
 					.arg(axis == 0 ? 'x' : (axis == 1 ? 'y' : 'z'));
 
 			// Not all shader programs use the cube coordinate frames.
-			if (program_object->is_active_uniform(uniform_name.toLatin1().constData()))
+			if (program->is_active_uniform(uniform_name.toLatin1().constData()))
 			{
-				program_object->gl_uniform3f(
+				program->gl_uniform3f(
 						renderer,
 						uniform_name.toLatin1().constData(),
 						cube_face_axis);
@@ -2784,7 +2784,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_shader_utils(
 }
 
 
-boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type>
 GPlatesOpenGL::GLScalarField3D::create_shader_program(
 		GLRenderer &renderer,
 		const QString &vertex_shader_source_file_name,
@@ -2813,7 +2813,7 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 	// Then add the GLSL 'main()' function.
 	fragment_shader_source.add_code_segment_from_file(fragment_shader_source_file_name);
 
-	boost::optional<GLProgramObject::shared_ptr_type> program_object;
+	boost::optional<GLProgram::shared_ptr_type> program;
 
 	if (geometry_shader)
 	{
@@ -2833,7 +2833,7 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 		geometry_shader_source.add_code_segment_from_file(geometry_shader_source_file_name);
 
 		// Compile and link the vertex/geometry/fragment shader program.
-		program_object = GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
+		program = GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
 				renderer,
 				vertex_shader_source,
 				geometry_shader_source,
@@ -2843,13 +2843,13 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 	else
 	{
 		// Compile and link the vertex/fragment shader program.
-		program_object = GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+		program = GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 				renderer,
 				vertex_shader_source,
 				fragment_shader_source);
 	}
 
-	return program_object;
+	return program;
 }
 
 

@@ -34,7 +34,7 @@
 #include "GLMultiResolutionRasterSource.h"
 
 #include "GLCompiledDrawState.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 
 #include "gui/Colour.h"
 
@@ -263,7 +263,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Is boost::none if generating normals on the CPU.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_generate_normals_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_generate_normals_program;
 
 		// Used to draw a textured full-screen quad into render texture.
 		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;

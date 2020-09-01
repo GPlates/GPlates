@@ -37,7 +37,7 @@
 #include "GLCubeSubdivision.h"
 #include "GLFramebuffer.h"
 #include "GLLight.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLScreenRenderTarget.h"
 #include "GLShader.h"
 #include "GLShaderProgramUtils.h"
@@ -826,34 +826,34 @@ namespace GPlatesOpenGL
 		/**
 		 * Shader program for rendering an iso-surface.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_iso_surface_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_iso_surface_program;
 
 		/**
 		 * Shader program for rendering a cross-section of an iso-surface.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_cross_section_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_cross_section_program;
 
 		/**
 		 * Shader program for rendering surface fill mask as optional preliminary step to rendering isosurface.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_surface_fill_mask_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_surface_fill_mask_program;
 
 #if 0 // Not currently used...
 		/**
 		 * Shader program for rendering volume fill spherical cap (depth range).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_volume_fill_spherical_cap_depth_range_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_spherical_cap_depth_range_program;
 #endif
 
 		/**
 		 * Shader program for rendering volume fill walls (depth range).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_volume_fill_wall_depth_range_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_wall_depth_range_program;
 
 		/**
 		 * Shader program for rendering volume fill wall surface normals.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_volume_fill_wall_surface_normals_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_wall_surface_normals_program;
 
 		/**
 		 * The (square) texture dimension of the textures in the surface fill mask texture array.
@@ -898,12 +898,12 @@ namespace GPlatesOpenGL
 		/**
 		 * Shader program for rendering white inner sphere (with lighting).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_white_inner_sphere_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_white_inner_sphere_program;
 
 		/**
 		 * Shader program for rendering inner sphere as screen-space depth.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_depth_range_inner_sphere_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_depth_range_inner_sphere_program;
 
 
 		static
@@ -942,9 +942,9 @@ namespace GPlatesOpenGL
 		void
 		initialise_shader_utils(
 				GLRenderer &renderer,
-				const GLProgramObject::shared_ptr_type &program_object);
+				const GLProgram::shared_ptr_type &program);
 
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<GLProgram::shared_ptr_type>
 		create_shader_program(
 				GLRenderer &renderer,
 				const QString &vertex_shader_source_file_name,
@@ -990,7 +990,7 @@ namespace GPlatesOpenGL
 		void
 		set_iso_surface_and_cross_sections_shader_common_variables(
 				GLRenderer &renderer,
-				const GLProgramObject::shared_ptr_type &program_object,
+				const GLProgram::shared_ptr_type &program,
 				unsigned int &current_texture_unit,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 				const std::vector<float> &test_variables,
@@ -999,7 +999,7 @@ namespace GPlatesOpenGL
 		void
 		set_shader_test_variables(
 				GLRenderer &renderer,
-				const GLProgramObject::shared_ptr_type &program_object,
+				const GLProgram::shared_ptr_type &program,
 				const std::vector<float> &test_variables);
 
 		//! Returns true if rendered successfully - should always return true but just in case.

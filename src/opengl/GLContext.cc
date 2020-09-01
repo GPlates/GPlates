@@ -218,7 +218,7 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
-	d_program_resource_manager(GLProgramObject::resource_manager_type::create()),
+	d_program_resource_manager(GLProgram::resource_manager_type::create()),
 	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
 	d_shader_resource_manager(GLShader::resource_manager_type::create()),
 	d_texture_object_resource_manager(GLTexture::resource_manager_type::create())

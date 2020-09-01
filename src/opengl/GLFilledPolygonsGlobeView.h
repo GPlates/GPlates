@@ -40,7 +40,7 @@
 #include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
@@ -521,28 +521,28 @@ namespace GPlatesOpenGL
 		 *
 		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_program;
 
 		/**
 		 * Shader program to render tiles to the scene (the final stage) with clipping.
 		 *
 		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_clipping_program;
 
 		/**
 		 * Shader program to render tiles to the scene (the final stage) with lighting.
 		 *
 		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_lighting_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_lighting_program;
 
 		/**
 		 * Shader program to render tiles to the scene (the final stage) with clipping and lighting.
 		 *
 		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_and_lighting_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_clipping_and_lighting_program;
 
 
 		//! Constructor.

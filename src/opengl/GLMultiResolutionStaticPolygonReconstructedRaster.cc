@@ -1507,7 +1507,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 
 			// Determine which shader program to use (if any are supported) based on the configuration
 			// of the current tile and lighting.
-			boost::optional<ProgramObject> active_polygons_program_object =
+			boost::optional<Program> active_polygons_program =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
 							static_cast<bool>(age_grid_mask_quad_tree_node),
@@ -1517,7 +1517,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			const RenderQuadTreeNode::TileDrawState active_polygons_draw_state =
 					create_scene_tile_draw_state(
 							renderer,
-							active_polygons_program_object,
+							active_polygons_program,
 							source_raster_texture.get(),
 							source_raster_uv_transform,
 							age_grid_mask_texture,
@@ -1542,7 +1542,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 
 			// Determine which shader program to use (if any are supported) based on the configuration
 			// of the current tile and lighting.
-			boost::optional<ProgramObject> inactive_polygons_program_object =
+			boost::optional<Program> inactive_polygons_program =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
 							static_cast<bool>(age_grid_mask_quad_tree_node),
@@ -1552,7 +1552,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			const RenderQuadTreeNode::TileDrawState inactive_polygons_draw_state =
 					create_scene_tile_draw_state(
 							renderer,
-							inactive_polygons_program_object,
+							inactive_polygons_program,
 							source_raster_texture.get(),
 							source_raster_uv_transform,
 							age_grid_mask_texture,
@@ -1576,7 +1576,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 		{
 			// Determine which shader program to use (if any are supported) based on the configuration
 			// of the current tile and lighting.
-			boost::optional<ProgramObject> program_object =
+			boost::optional<Program> program =
 					get_shader_program_for_tile(
 							is_floating_point_source_raster,
 							static_cast<bool>(age_grid_mask_quad_tree_node),
@@ -1586,7 +1586,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			const RenderQuadTreeNode::TileDrawState draw_state =
 					create_scene_tile_draw_state(
 							renderer,
-							program_object,
+							program,
 							source_raster_texture.get(),
 							source_raster_uv_transform,
 							age_grid_mask_texture,
@@ -1738,7 +1738,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textu
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::ProgramObject>
+boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program>
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_program_for_tile(
 		bool source_raster_is_floating_point,
 		bool using_age_grid_tile,
@@ -1756,12 +1756,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 		if (using_age_grid_tile)
 		{
 			return active_polygons
-					? d_render_floating_point_with_age_grid_with_active_polygons_program_object
-					: d_render_floating_point_with_age_grid_with_inactive_polygons_program_object;
+					? d_render_floating_point_with_age_grid_with_active_polygons_program
+					: d_render_floating_point_with_age_grid_with_inactive_polygons_program;
 		}
 
 		// No age grid on current tile...
-		return d_render_floating_point_program_object;
+		return d_render_floating_point_program;
 	}
 
 	// Source raster is fixed-point ...
@@ -1781,11 +1781,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 				if (using_age_grid_tile)
 				{
 					return active_polygons
-							? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[view]
-							: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[view];
+							? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[view]
+							: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[view];
 				}
 
-				return d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[view];
+				return d_render_fixed_point_with_normal_map_with_surface_lighting_program[view];
 			}
 
 			// No surface relief *directional* lighting...
@@ -1793,11 +1793,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 			if (using_age_grid_tile)
 			{
 				return active_polygons
-						? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[view]
-						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[view];
+						? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[view]
+						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[view];
 			}
 
-			return d_render_fixed_point_with_normal_map_program_object[view];
+			return d_render_fixed_point_with_normal_map_program[view];
 		}
 
 		// No normal map...
@@ -1808,11 +1808,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 			if (using_age_grid_tile)
 			{
 				return active_polygons
-						? d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[view]
-						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[view];
+						? d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[view]
+						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[view];
 			}
 
-			return d_render_fixed_point_with_surface_lighting_program_object[view];
+			return d_render_fixed_point_with_surface_lighting_program[view];
 		}
 	}
 
@@ -1821,19 +1821,19 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 	if (using_age_grid_tile)
 	{
 		return active_polygons
-				? d_render_fixed_point_with_age_grid_with_active_polygons_program_object
-				: d_render_fixed_point_with_age_grid_with_inactive_polygons_program_object;
+				? d_render_fixed_point_with_age_grid_with_active_polygons_program
+				: d_render_fixed_point_with_age_grid_with_inactive_polygons_program;
 	}
 
 	// Neither age grid nor surface lighting applied to the current tile ...
-	return d_render_fixed_point_program_object;
+	return d_render_fixed_point_program;
 }
 
 
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::RenderQuadTreeNode::TileDrawState
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_tile_draw_state(
 		GLRenderer &renderer,
-		boost::optional<ProgramObject> render_tile_to_scene_program_object,
+		boost::optional<Program> render_tile_to_scene_program,
 		const GLTexture::shared_ptr_to_const_type &source_raster_tile_texture,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
 		boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_tile_texture,
@@ -1863,7 +1863,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	}
 
 	// The tile draw state includes the compiled state (calls to GLRenderer) and the shader program state.
-	RenderQuadTreeNode::TileDrawState tile_draw_state(compiled_draw_state, render_tile_to_scene_program_object);
+	RenderQuadTreeNode::TileDrawState tile_draw_state(compiled_draw_state, render_tile_to_scene_program);
 
 	// Start compiling the scene tile state.
 	// Compiled state is any call to GLRenderer.
@@ -1948,10 +1948,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	clip_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
 
 	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (render_tile_to_scene_program_object)
+	if (render_tile_to_scene_program)
 	{
 		// Bind the shader program.
-		renderer.gl_bind_program_object(render_tile_to_scene_program_object->shader_program_object);
+		renderer.gl_bind_program_object(render_tile_to_scene_program->shader_program);
 	}
 
 	unsigned int current_texture_unit = 0;
@@ -1965,15 +1965,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	{
 		// Only need one texture unit for shader programs to access age mask and coverage together.
 		// Fixed function pipeline requires two units though.
-		if (render_tile_to_scene_program_object)
+		if (render_tile_to_scene_program)
 		{
-			if (render_tile_to_scene_program_object->uniforms.uses_age_grid_texture_transform)
+			if (render_tile_to_scene_program->uniforms.uses_age_grid_texture_transform)
 			{
 				// Load the age grid texture transform.
 				tile_draw_state.age_grid_texture_transform = age_grid_tile_texture_matrix;
 			}
 
-			if (render_tile_to_scene_program_object->uniforms.uses_age_grid_texture_sampler)
+			if (render_tile_to_scene_program->uniforms.uses_age_grid_texture_sampler)
 			{
 				// Bind the age grid texture to the current texture unit.
 				renderer.gl_bind_texture(age_grid_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -1985,7 +1985,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 				++current_texture_unit;
 			}
 
-			if (render_tile_to_scene_program_object->uniforms.uses_reconstruction_time)
+			if (render_tile_to_scene_program->uniforms.uses_reconstruction_time)
 			{
 				// If we're generating the age mask in the shader program then it needs to know the reconstruction time.
 				tile_draw_state.reconstruction_time = d_reconstruction_time;
@@ -2069,15 +2069,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	// There's no fixed-function pipeline fallback for surface lighting.
 	// If the shader program is not available on runtime system then fixed-function pipeline
 	// will be used *without* surface lighting.
-	if (render_tile_to_scene_program_object)
+	if (render_tile_to_scene_program)
 	{
-		if (render_tile_to_scene_program_object->uniforms.uses_normal_map_texture_transform)
+		if (render_tile_to_scene_program->uniforms.uses_normal_map_texture_transform)
 		{
 			// Load the normal map texture transform.
 			tile_draw_state.normal_map_texture_transform = normal_map_tile_texture_matrix;
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_normal_map_texture_sampler)
+		if (render_tile_to_scene_program->uniforms.uses_normal_map_texture_sampler)
 		{
 			// Bind the normal map texture to the current texture unit.
 			renderer.gl_bind_texture(normal_map_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -2089,14 +2089,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 			++current_texture_unit;
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_world_space_light_direction)
+		if (render_tile_to_scene_program->uniforms.uses_world_space_light_direction)
 		{
 			// Set the world space light direction.
 			tile_draw_state.world_space_light_direction =
 					d_light.get()->get_globe_view_light_direction(renderer);
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_light_direction_cube_texture_sampler)
+		if (render_tile_to_scene_program->uniforms.uses_light_direction_cube_texture_sampler)
 		{
 			// Bind the light direction cube texture to the current texture unit.
 			renderer.gl_bind_texture(
@@ -2111,13 +2111,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 			++current_texture_unit;
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_ambient_and_diffuse_lighting)
+		if (render_tile_to_scene_program->uniforms.uses_ambient_and_diffuse_lighting)
 		{
 			tile_draw_state.ambient_and_diffuse_lighting =
 					d_light.get()->get_map_view_constant_lighting(renderer);
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_light_ambient_contribution)
+		if (render_tile_to_scene_program->uniforms.uses_light_ambient_contribution)
 		{
 			// Set the ambient light contribution.
 			tile_draw_state.light_ambient_contribution =
@@ -2129,15 +2129,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	// Source raster texture
 	//
 
-	if (render_tile_to_scene_program_object)
+	if (render_tile_to_scene_program)
 	{
-		if (render_tile_to_scene_program_object->uniforms.uses_source_raster_texture_transform)
+		if (render_tile_to_scene_program->uniforms.uses_source_raster_texture_transform)
 		{
 			// Load the source raster texture transform.
 			tile_draw_state.source_raster_texture_transform = source_raster_tile_texture_matrix;
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_source_texture_sampler)
+		if (render_tile_to_scene_program->uniforms.uses_source_texture_sampler)
 		{
 			// Bind the source raster tile texture to the current texture unit.
 			renderer.gl_bind_texture(source_raster_tile_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -2198,15 +2198,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	// However, in order to keep things simple (in this code and in the shader programs) we will
 	// leave clipping on always.
 
-	if (render_tile_to_scene_program_object)
+	if (render_tile_to_scene_program)
 	{
-		if (render_tile_to_scene_program_object->uniforms.uses_clip_texture_transform)
+		if (render_tile_to_scene_program->uniforms.uses_clip_texture_transform)
 		{
 			// Load the clip texture transform.
 			tile_draw_state.clip_texture_transform = clip_texture_matrix;
 		}
 
-		if (render_tile_to_scene_program_object->uniforms.uses_clip_texture_sampler)
+		if (render_tile_to_scene_program->uniforms.uses_clip_texture_sampler)
 		{
 			// Bind the clip texture to the current texture unit.
 			renderer.gl_bind_texture(d_xy_clip_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -2234,7 +2234,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 		++current_texture_unit;
 	}
 
-	if (render_tile_to_scene_program_object)
+	if (render_tile_to_scene_program)
 	{
 		// We don't need to enable alpha-testing because the fragment shader uses 'discard' instead.
 	}
@@ -2322,11 +2322,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sta
 	// If scene lighting is enabled then we need to apply some non-cached draw state.
 	// This state was not cached with the tile because it varies with rotation group and hence
 	// changes as each rotation group visits the same tile.
-	if (tile_draw_state.program_object &&
-		tile_draw_state.program_object->uniforms.uses_plate_rotation_quaternion)
+	if (tile_draw_state.program &&
+		tile_draw_state.program->uniforms.uses_plate_rotation_quaternion)
 	{
 		// Set the plate rotation of the current rotation group.
-		tile_draw_state.program_object->shader_program_object->gl_uniform4f(
+		tile_draw_state.program->shader_program->gl_uniform4f(
 				renderer,
 				"plate_rotation_quaternion",
 				plate_rotation);
@@ -2340,13 +2340,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 		const RenderQuadTreeNode::TileDrawState &tile_draw_state)
 {
 	// Return early if no shader program to apply state to.
-	if (!tile_draw_state.program_object)
+	if (!tile_draw_state.program)
 	{
 		return;
 	}
 
-	const GLProgramObject::shared_ptr_type tile_program_object =
-			tile_draw_state.program_object->shader_program_object;
+	const GLProgram::shared_ptr_type tile_program =
+			tile_draw_state.program->shader_program;
 
 	// Note: We only set the tile state here.
 	// Any state that varies with the rotation group is not cached in the tile and is handled
@@ -2355,7 +2355,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Load the source raster texture transform (if specified).
 	if (tile_draw_state.source_raster_texture_transform)
 	{
-		tile_program_object->gl_uniform_matrix4x4f(
+		tile_program->gl_uniform_matrix4x4f(
 				renderer,
 				"source_raster_texture_transform",
 				tile_draw_state.source_raster_texture_transform.get());
@@ -2363,7 +2363,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the source raster texture sampler.
 	if (tile_draw_state.source_texture_sampler)
 	{
-		tile_program_object->gl_uniform1i(
+		tile_program->gl_uniform1i(
 				renderer,
 				"source_texture_sampler",
 				tile_draw_state.source_texture_sampler.get());
@@ -2372,7 +2372,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Load the clip texture transform (if specified).
 	if (tile_draw_state.clip_texture_transform)
 	{
-		tile_program_object->gl_uniform_matrix4x4f(
+		tile_program->gl_uniform_matrix4x4f(
 				renderer,
 				"clip_texture_transform",
 				tile_draw_state.clip_texture_transform.get());
@@ -2380,7 +2380,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the clip texture sampler.
 	if (tile_draw_state.clip_texture_sampler)
 	{
-		tile_program_object->gl_uniform1i(
+		tile_program->gl_uniform1i(
 				renderer,
 				"clip_texture_sampler",
 				tile_draw_state.clip_texture_sampler.get());
@@ -2389,7 +2389,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Load the age grid texture transform (if specified).
 	if (tile_draw_state.age_grid_texture_transform)
 	{
-		tile_program_object->gl_uniform_matrix4x4f(
+		tile_program->gl_uniform_matrix4x4f(
 				renderer,
 				"age_grid_texture_transform",
 				tile_draw_state.age_grid_texture_transform.get());
@@ -2397,7 +2397,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the age grid texture sampler.
 	if (tile_draw_state.age_grid_texture_sampler)
 	{
-		tile_program_object->gl_uniform1i(
+		tile_program->gl_uniform1i(
 				renderer,
 				"age_grid_texture_sampler",
 				tile_draw_state.age_grid_texture_sampler.get());
@@ -2405,7 +2405,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the reconstruction time for the age mask generation.
 	if (tile_draw_state.reconstruction_time)
 	{
-		tile_program_object->gl_uniform1f(
+		tile_program->gl_uniform1f(
 				renderer,
 				"reconstruction_time",
 				tile_draw_state.reconstruction_time.get());
@@ -2414,7 +2414,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Load the normal map texture transform (if specified).
 	if (tile_draw_state.normal_map_texture_transform)
 	{
-		tile_program_object->gl_uniform_matrix4x4f(
+		tile_program->gl_uniform_matrix4x4f(
 				renderer,
 				"normal_map_texture_transform",
 				tile_draw_state.normal_map_texture_transform.get());
@@ -2422,7 +2422,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the normal map texture sampler.
 	if (tile_draw_state.normal_map_texture_sampler)
 	{
-		tile_program_object->gl_uniform1i(
+		tile_program->gl_uniform1i(
 				renderer,
 				"normal_map_texture_sampler",
 				tile_draw_state.normal_map_texture_sampler.get());
@@ -2431,7 +2431,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the (ambient+diffuse) lighting.
 	if (tile_draw_state.ambient_and_diffuse_lighting)
 	{
-		tile_program_object->gl_uniform1f(
+		tile_program->gl_uniform1f(
 				renderer,
 				"ambient_and_diffuse_lighting",
 				tile_draw_state.ambient_and_diffuse_lighting.get());
@@ -2440,7 +2440,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the ambient light contribution.
 	if (tile_draw_state.light_ambient_contribution)
 	{
-		tile_program_object->gl_uniform1f(
+		tile_program->gl_uniform1f(
 				renderer,
 				"light_ambient_contribution",
 				tile_draw_state.light_ambient_contribution.get());
@@ -2448,7 +2448,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the world space light direction.
 	if (tile_draw_state.world_space_light_direction)
 	{
-		tile_program_object->gl_uniform3f(
+		tile_program->gl_uniform3f(
 				renderer,
 				"world_space_light_direction",
 				tile_draw_state.world_space_light_direction.get());
@@ -2456,7 +2456,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_sha
 	// Set the light direction cube texture sampler.
 	if (tile_draw_state.light_direction_cube_texture_sampler)
 	{
-		tile_program_object->gl_uniform1i(
+		tile_program->gl_uniform1i(
 				renderer,
 				"light_direction_cube_texture_sampler",
 				tile_draw_state.light_direction_cube_texture_sampler.get());
@@ -2496,7 +2496,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
 		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
 
-		d_render_floating_point_program_object =
+		d_render_floating_point_program =
 				create_shader_program(
 						renderer,
 						true/*define_source_raster_is_floating_point*/,
@@ -2508,7 +2508,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 						false/*define_no_directional_light_for_normal_maps*/,
 						false/*define_map_view*/);
 		// If cannot compile program object then will resort to fixed-function pipeline.
-		if (!d_render_floating_point_program_object)
+		if (!d_render_floating_point_program)
 		{
 			qDebug() << "Unable to compile shader program to reconstruct floating-point raster.\n"
 				"  Clamping of values to [0,1] range may result.";
@@ -2517,7 +2517,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 		// If using an age grid...
 		if (d_age_grid_cube_raster)
 		{
-			d_render_floating_point_with_age_grid_with_active_polygons_program_object =
+			d_render_floating_point_with_age_grid_with_active_polygons_program =
 					create_shader_program(
 							renderer,
 							true/*define_source_raster_is_floating_point*/,
@@ -2528,7 +2528,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_floating_point_with_age_grid_with_inactive_polygons_program_object =
+			d_render_floating_point_with_age_grid_with_inactive_polygons_program =
 					create_shader_program(
 							renderer,
 							true/*define_source_raster_is_floating_point*/,
@@ -2540,8 +2540,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
 			// If cannot compile program object then will resort to fixed-function pipeline.
-			if (!d_render_floating_point_with_age_grid_with_active_polygons_program_object ||
-				!d_render_floating_point_with_age_grid_with_inactive_polygons_program_object)
+			if (!d_render_floating_point_with_age_grid_with_active_polygons_program ||
+				!d_render_floating_point_with_age_grid_with_inactive_polygons_program)
 			{
 				qDebug() << "Unable to compile shader program to reconstruct floating-point raster with age grid.\n"
 					"  Clamping of values to [0,1] range may result.";
@@ -2554,7 +2554,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	else // a fixed-point source raster ...
 	{
 		// If cannot compile then will resort to fixed-function pipeline without any loss.
-		d_render_fixed_point_program_object = create_shader_program(
+		d_render_fixed_point_program = create_shader_program(
 				renderer,
 				false/*define_source_raster_is_floating_point*/,
 				false/*define_using_age_grid*/,
@@ -2566,7 +2566,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 				false/*define_map_view*/);
 
 		// For rendering with surface lighting (but without a normal map).
-		d_render_fixed_point_with_surface_lighting_program_object[GLOBE_VIEW] =
+		d_render_fixed_point_with_surface_lighting_program[GLOBE_VIEW] =
 				create_shader_program(
 						renderer,
 						false/*define_source_raster_is_floating_point*/,
@@ -2577,7 +2577,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 						false/*define_using_normal_map*/,
 						false/*define_no_directional_light_for_normal_maps*/,
 						false/*define_map_view*/);
-		d_render_fixed_point_with_surface_lighting_program_object[MAP_VIEW] =
+		d_render_fixed_point_with_surface_lighting_program[MAP_VIEW] =
 				create_shader_program(
 						renderer,
 						false/*define_source_raster_is_floating_point*/,
@@ -2589,8 +2589,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 						false/*define_no_directional_light_for_normal_maps*/,
 						true/*define_map_view*/);
 		// If cannot compile program object then will resort to fixed-function pipeline.
-		if (!d_render_fixed_point_with_surface_lighting_program_object[GLOBE_VIEW] ||
-			!d_render_fixed_point_with_surface_lighting_program_object[MAP_VIEW])
+		if (!d_render_fixed_point_with_surface_lighting_program[GLOBE_VIEW] ||
+			!d_render_fixed_point_with_surface_lighting_program[MAP_VIEW])
 		{
 			qDebug() << "Unable to compile shader program to reconstruct raster with surface lighting.\n"
 				"  Raster will lack surface lighting.";
@@ -2602,7 +2602,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 			// If 'supports_age_mask_generation()' is true then this will not fail to compile.
 			// If 'supports_age_mask_generation()' is false then this can fail to compile in which
 			// case we'll resort to fixed-function pipeline without any loss (using GLAgeGridMaskSource).
-			d_render_fixed_point_with_age_grid_with_active_polygons_program_object =
+			d_render_fixed_point_with_age_grid_with_active_polygons_program =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2613,7 +2613,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_program_object =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_program =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2630,7 +2630,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 			// If 'supports_age_mask_generation()' is true then this will not fail to compile.
 			// If 'supports_age_mask_generation()' is false then this can fail to compile in which
 			// case we'll resort to fixed-function pipeline but will lose surface lighting.
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2641,7 +2641,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2652,7 +2652,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2663,7 +2663,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2675,10 +2675,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_no_directional_light_for_normal_maps*/,
 							true/*define_map_view*/);
 			// If cannot compile program object then will resort to fixed-function pipeline.
-			if (!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[GLOBE_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[MAP_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[GLOBE_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[MAP_VIEW])
+			if (!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[GLOBE_VIEW] ||
+				!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[MAP_VIEW] ||
+				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[GLOBE_VIEW] ||
+				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[MAP_VIEW])
 			{
 				qDebug() << "Unable to compile shader program to reconstruct raster with age grid and surface lighting.\n"
 					"  Raster will lack surface lighting.";
@@ -2694,7 +2694,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 					GPLATES_ASSERTION_SOURCE);
 
 			// For rendering with a normal map.
-			d_render_fixed_point_with_normal_map_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_normal_map_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2705,7 +2705,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							true/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_normal_map_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_normal_map_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2718,12 +2718,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_map_view*/);
 			// Since 'supports_normal_map()' is true then should not fail to compile.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_normal_map_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_normal_map_program_object[MAP_VIEW],
+					d_render_fixed_point_with_normal_map_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_normal_map_program[MAP_VIEW],
 					GPLATES_ASSERTION_SOURCE);
 
 			// For rendering surface lighting with a normal map.
-			d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2734,7 +2734,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2747,8 +2747,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_map_view*/);
 			// Since 'supports_normal_map()' is true then should not fail to compile.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[MAP_VIEW],
+					d_render_fixed_point_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_normal_map_with_surface_lighting_program[MAP_VIEW],
 					GPLATES_ASSERTION_SOURCE);
 		}
 
@@ -2761,7 +2761,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 					GPLATES_ASSERTION_SOURCE);
 
 			// For rendering with age grid and with normal map.
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2772,7 +2772,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							true/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2783,7 +2783,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							true/*define_no_directional_light_for_normal_maps*/,
 							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2794,7 +2794,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							true/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2807,7 +2807,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_map_view*/);
 
 			// For rendering with age grid and surface lighting with a normal map.
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2818,7 +2818,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2829,7 +2829,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2840,7 +2840,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_using_normal_map*/,
 							false/*define_no_directional_light_for_normal_maps*/,
 							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[MAP_VIEW] =
+			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
 					create_shader_program(
 							renderer,
 							false/*define_source_raster_is_floating_point*/,
@@ -2857,21 +2857,21 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 			// 'supports_age_mask_generation()' returns true, otherwise age masking is still
 			// used but it's just not as fast and not as good quality.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[MAP_VIEW],
+					d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[MAP_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[MAP_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
+						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW],
 					GPLATES_ASSERTION_SOURCE);
 		}
 	}
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::ProgramObject>
+boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program>
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_program(
 		GLRenderer &renderer,
 		bool define_source_raster_is_floating_point,
@@ -2952,17 +2952,17 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
-	boost::optional<GLProgramObject::shared_ptr_type> shader_program_object =
+	boost::optional<GLProgram::shared_ptr_type> shader_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					vertex_shader_source,
 					fragment_shader_source);
-	if (!shader_program_object)
+	if (!shader_program)
 	{
 		return boost::none;
 	}
 
-	ProgramObject::Uniforms uniforms;
+	Program::Uniforms uniforms;
 
 	//
 	// Add the uniforms used by the current shader program.
@@ -3056,40 +3056,40 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	}
 
 
-	const ProgramObject program_object(shader_program_object.get(), uniforms);
+	const Program program(shader_program.get(), uniforms);
 
 	//
 	// Set some shader program constants that don't change.
 	//
 
-	if (program_object.uniforms.uses_source_texture_dimensions)
+	if (program.uniforms.uses_source_texture_dimensions)
 	{
 		// Set the source tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		program_object.shader_program_object->gl_uniform4f(
+		program.shader_program->gl_uniform4f(
 				renderer,
 				"source_texture_dimensions",
 				d_source_raster_tile_texel_dimension, d_source_raster_tile_texel_dimension,
 				d_source_raster_inverse_tile_texel_dimension, d_source_raster_inverse_tile_texel_dimension);
 	}
 
-	if (program_object.uniforms.uses_age_grid_texture_dimensions &&
+	if (program.uniforms.uses_age_grid_texture_dimensions &&
 		d_age_grid_cube_raster)
 	{
 		// Set the age grid tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		program_object.shader_program_object->gl_uniform4f(
+		program.shader_program->gl_uniform4f(
 				renderer,
 				"age_grid_texture_dimensions",
 				d_age_grid_cube_raster->tile_texel_dimension, d_age_grid_cube_raster->tile_texel_dimension,
 				d_age_grid_cube_raster->inverse_tile_texel_dimension, d_age_grid_cube_raster->inverse_tile_texel_dimension);
 	}
 
-	return program_object;
+	return program;
 }
 
 
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::ProgramObject::Uniforms::Uniforms()
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program::Uniforms::Uniforms()
 {
 	// Default to false - each shader program must set to true if it uses the uniform variable.
 	uses_source_raster_texture_transform = false;

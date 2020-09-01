@@ -72,8 +72,8 @@ set(srcs
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h
-    GLProgramObject.cc
-    GLProgramObject.h
+    GLProgram.cc
+    GLProgram.h
     GLRasterCoRegistration.cc
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc

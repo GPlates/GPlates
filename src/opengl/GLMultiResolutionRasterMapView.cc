@@ -565,7 +565,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
 	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (d_render_tile_to_scene_program_object && d_render_tile_to_scene_with_clipping_program_object)
+	if (d_render_tile_to_scene_program && d_render_tile_to_scene_with_clipping_program)
 	{
 		// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 		// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
@@ -589,23 +589,23 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 
 
 			// Bind the shader program with clipping.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program_object.get());
+			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program.get());
 
 			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+			d_render_tile_to_scene_with_clipping_program.get()->gl_uniform1i(
 					renderer, "tile_texture_sampler", 0/*texture unit*/);
 
 			// Set the clip texture sampler to texture unit 1.
-			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+			d_render_tile_to_scene_with_clipping_program.get()->gl_uniform1i(
 					renderer, "clip_texture_sampler", 1/*texture unit*/);
 		}
 		else
 		{
 			// Bind the shader program.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_program_object.get());
+			renderer.gl_bind_program_object(d_render_tile_to_scene_program.get());
 
 			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_program_object.get()->gl_uniform1i(
+			d_render_tile_to_scene_program.get()->gl_uniform1i(
 					renderer, "tile_texture_sampler", 0/*texture unit*/);
 		}
 	}
@@ -734,20 +734,20 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-	d_render_tile_to_scene_program_object =
+	d_render_tile_to_scene_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
 					render_tile_to_scene_without_clipping_fragment_shader_source);
 
-	if (d_render_tile_to_scene_program_object &&
+	if (d_render_tile_to_scene_program &&
 		is_floating_point_source_raster)
 	{
 		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
 		// Set the source tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		d_render_tile_to_scene_program_object.get()->gl_uniform4f(
+		d_render_tile_to_scene_program.get()->gl_uniform4f(
 				renderer,
 				"source_texture_dimensions",
 				d_tile_texel_dimension, d_tile_texel_dimension,
@@ -778,20 +778,20 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Create the program object.
-	d_render_tile_to_scene_with_clipping_program_object =
+	d_render_tile_to_scene_with_clipping_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
 					render_tile_to_scene_with_clipping_fragment_shader_source);
 
-	if (d_render_tile_to_scene_with_clipping_program_object &&
+	if (d_render_tile_to_scene_with_clipping_program &&
 		is_floating_point_source_raster)
 	{
 		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
 		// Set the source tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform4f(
+		d_render_tile_to_scene_with_clipping_program.get()->gl_uniform4f(
 				renderer,
 				"source_texture_dimensions",
 				d_tile_texel_dimension, d_tile_texel_dimension,

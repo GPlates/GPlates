@@ -45,7 +45,7 @@
 #include "opengl/GLLight.h"
 #include "opengl/GLFilledPolygonsGlobeView.h"
 #include "opengl/GLFilledPolygonsMapView.h"
-#include "opengl/GLProgramObject.h"
+#include "opengl/GLProgram.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
@@ -169,8 +169,8 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLVertexArray &axially_symmetric_mesh_vertex_array,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object);
+					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program,
+					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -356,7 +356,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLRenderer &renderer,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object);
+					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program);
 
 			/**
 			 * Sets state in shader program for axially symmetric meshes.
@@ -367,7 +367,7 @@ namespace GPlatesGui
 			set_axially_symmetric_mesh_program_state(
 					GPlatesOpenGL::GLRenderer &renderer,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object);
+					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program);
 		};
 
 
@@ -600,14 +600,14 @@ namespace GPlatesGui
 		 *
 		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_render_point_line_polygon_program_object;
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_render_point_line_polygon_program;
 
 		/**
 		 * Shader program for rendering axially symmetric meshes.
 		 *
 		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_render_axially_symmetric_mesh_program_object;
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_render_axially_symmetric_mesh_program;
 	};
 }
 

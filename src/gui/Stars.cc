@@ -223,7 +223,7 @@ namespace
 	void
 	render_stars(
 			GPlatesOpenGL::GL &gl,
-			GPlatesOpenGL::GLProgramObject::shared_ptr_type program,
+			GPlatesOpenGL::GLProgram::shared_ptr_type program,
 			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
 			unsigned int num_small_star_vertices,
 			unsigned int num_small_star_indices,
@@ -318,7 +318,7 @@ GPlatesGui::Stars::Stars(
 	}
 
 	// Vertex-fragment program.
-	GPlatesOpenGL::GLProgramObject::shared_ptr_type program = GPlatesOpenGL::GLProgramObject::create(gl);
+	GPlatesOpenGL::GLProgram::shared_ptr_type program = GPlatesOpenGL::GLProgram::create(gl);
 	program->attach_shader(gl, vertex_shader);
 	program->attach_shader(gl, fragment_shader);
 	if (!program->link_program(gl))

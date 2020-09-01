@@ -35,7 +35,7 @@
 #include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLFramebuffer.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLRenderbuffer.h"
 #include "GLState.h"
 #include "GLStateStore.h"
@@ -485,7 +485,7 @@ namespace GPlatesOpenGL
 		//! Use the program object (none means don't use any program).
 		void
 		UseProgram(
-				boost::optional<GLProgramObject::shared_ptr_type> program);
+				boost::optional<GLProgram::shared_ptr_type> program);
 
 		/**
 		 * Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.

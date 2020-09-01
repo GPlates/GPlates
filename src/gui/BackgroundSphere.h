@@ -36,7 +36,7 @@
 #include "maths/UnitVector3D.h"
 
 #include "opengl/GLCompiledDrawState.h"
-#include "opengl/GLProgramObject.h"
+#include "opengl/GLProgram.h"
 
 
 namespace GPlatesOpenGL
@@ -88,7 +88,7 @@ namespace GPlatesGui
 		Colour d_background_colour;
 
 		//! Shader program to render sphere.
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> d_program_object;
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_program;
 
 		//! Used to draw a full-screen quad.
 		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad;

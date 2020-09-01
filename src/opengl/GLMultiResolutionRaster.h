@@ -40,7 +40,7 @@
 #include "GLMatrix.h"
 #include "GLMultiResolutionRasterInterface.h"
 #include "GLMultiResolutionRasterSource.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLVertexArray.h"
@@ -884,7 +884,7 @@ namespace GPlatesOpenGL
 
 		private:
 			GLVertexArray::shared_ptr_type d_vertex_array;
-			boost::optional<GLProgramObject::shared_ptr_type> d_program_object;
+			boost::optional<GLProgram::shared_ptr_type> d_program;
 			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_draw_vertex_array;
 		};
 
@@ -989,7 +989,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Otherwise is boost::none (only the fixed-function pipeline is needed).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_raster_program_object;
+		boost::optional<GLProgram::shared_ptr_type> d_render_raster_program;
 
 		/**
 		 * Used to render sphere normals.

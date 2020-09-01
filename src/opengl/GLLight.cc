@@ -434,7 +434,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 	renderer.gl_bind_framebuffer(framebuffer);
 
 	// Bind the shader program for rendering light direction for the 2D map views.
-	renderer.gl_bind_program_object(d_render_map_view_light_direction_program_object.get());
+	renderer.gl_bind_program_object(d_render_map_view_light_direction_program.get());
 
 		// FIXME: The map view orientation (3x3 subpart of matrix) contains (x,y) scaling factors
 		// and hence is not purely an orthogonal rotation like we need.
@@ -457,7 +457,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 
 	// Set the view-space light direction (which is world-space if light not attached to view-space).
 	// The shader program will transform it to world-space.
-	d_render_map_view_light_direction_program_object.get()->gl_uniform3f(
+	d_render_map_view_light_direction_program.get()->gl_uniform3f(
 			renderer,
 			"view_space_light_direction",
 			d_scene_lighting_params.get_map_view_light_direction());
@@ -536,7 +536,7 @@ void
 GPlatesOpenGL::GLLight::create_shader_programs(
 		GLRenderer &renderer)
 {
-	d_render_map_view_light_direction_program_object =
+	d_render_map_view_light_direction_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
@@ -547,6 +547,6 @@ GPlatesOpenGL::GLLight::create_shader_programs(
 	// The client should have called 'is_supported()' which verifies vertex/fragment shader support
 	// and that the most complex shader compiles - so that should not be the reason for failure.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_render_map_view_light_direction_program_object,
+			d_render_map_view_light_direction_program,
 			GPLATES_ASSERTION_SOURCE);
 }

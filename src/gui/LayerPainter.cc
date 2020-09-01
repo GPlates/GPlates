@@ -133,7 +133,7 @@ GPlatesGui::LayerPainter::initialise(
 	fragment_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_FRAGMENT_SHADER);
 
-	d_render_point_line_polygon_program_object =
+	d_render_point_line_polygon_program =
 			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					vertex_shader_source,
@@ -170,7 +170,7 @@ GPlatesGui::LayerPainter::initialise(
 	axially_symmetric_mesh_fragment_shader_source.add_code_segment_from_file(
 			RENDER_AXIALLY_SYMMETRIC_MESH_FRAGMENT_SHADER);
 
-	d_render_axially_symmetric_mesh_program_object =
+	d_render_axially_symmetric_mesh_program =
 			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					axially_symmetric_mesh_vertex_shader_source,
@@ -183,7 +183,7 @@ GPlatesGui::LayerPainter::initialise(
 
 	// If shader program was unsuccessfully compiled/linked then the axially symmetric vertex array
 	// will never get used anyway - so doesn't matter if not attached to vertex buffer.
-	if (d_render_axially_symmetric_mesh_program_object)
+	if (d_render_axially_symmetric_mesh_program)
 	{
 		//
 		// The following reflects the structure of 'struct AxiallySymmetricMeshVertex'.
@@ -201,7 +201,7 @@ GPlatesGui::LayerPainter::initialise(
 		GLuint attribute_index = 0;
 
 		// The "world_space_position" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"world_space_position_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -219,7 +219,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.world_space_position);
 
 		// The "colour" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"colour_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -237,7 +237,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.colour);
 
 		// The "world_space_x_axis" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"world_space_x_axis_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -255,7 +255,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.world_space_x_axis);
 
 		// The "world_space_y_axis" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"world_space_y_axis_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -273,7 +273,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.world_space_y_axis);
 
 		// The "world_space_x_axis" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"world_space_z_axis_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -291,7 +291,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.world_space_z_axis);
 
 		// The "model_space_radial_position" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"model_space_radial_position_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -309,7 +309,7 @@ GPlatesGui::LayerPainter::initialise(
 		offset += sizeof(vertex_for_sizeof.model_space_radial_position);
 
 		// The "radial_and_axial_normal_weights" attribute data...
-		d_render_axially_symmetric_mesh_program_object.get()->gl_bind_attrib_location(
+		d_render_axially_symmetric_mesh_program.get()->gl_bind_attrib_location(
 				"radial_and_axial_normal_weights_attribute", attribute_index);
 		d_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
 				renderer, attribute_index, true/*enable*/);
@@ -325,7 +325,7 @@ GPlatesGui::LayerPainter::initialise(
 
 		// Now that we've changed the attribute bindings in the program object we need to
 		// re-link it in order for them to take effect.
-		bool link_status = d_render_axially_symmetric_mesh_program_object.get()->gl_link_program(renderer);
+		bool link_status = d_render_axially_symmetric_mesh_program.get()->gl_link_program(renderer);
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				link_status,
 				GPLATES_ASSERTION_SOURCE);
@@ -475,8 +475,8 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_axially_symmetric_mesh_vertex_array,
 			*d_gl_visual_layers,
 			d_map_projection,
-			d_render_point_line_polygon_program_object,
-			d_render_axially_symmetric_mesh_program_object);
+			d_render_point_line_polygon_program,
+			d_render_axially_symmetric_mesh_program);
 
 
 	// We rendered off-the-sphere drawables after on-the-sphere drawables because, for the 2D map views,
@@ -511,8 +511,8 @@ GPlatesGui::LayerPainter::end_painting(
 				*d_axially_symmetric_mesh_vertex_array,
 				*d_gl_visual_layers,
 				d_map_projection,
-				d_render_point_line_polygon_program_object,
-				d_render_axially_symmetric_mesh_program_object);
+				d_render_point_line_polygon_program,
+				d_render_axially_symmetric_mesh_program);
 	}
 
 	// Render any 2D text last (text specified at 2D viewport positions).
@@ -832,8 +832,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLVertexArray &axially_symmetric_mesh_vertex_array,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object,
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object)
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program,
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -861,7 +861,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 			renderer,
 			gl_visual_layers,
 			map_projection,
-			render_point_line_polygon_program_object);
+			render_point_line_polygon_program);
 
 	//
 	// Paint the point, line and polygon drawables with the appropriate state
@@ -948,7 +948,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		set_axially_symmetric_mesh_program_state(
 				renderer,
 				gl_visual_layers,
-				render_axially_symmetric_mesh_program_object);
+				render_axially_symmetric_mesh_program);
 
 		axially_symmetric_mesh_vertex_array.gl_bind(renderer);
 
@@ -1124,9 +1124,9 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_point_line_polygon_program_object)
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program)
 {
-	if (!render_point_line_polygon_program_object)
+	if (!render_point_line_polygon_program)
 	{
 		// Runtime system does not support our shader.
 		// TODO: Remove this once we use Qt5 OpenGL functions (which provides guarantee of functionality).
@@ -1134,10 +1134,10 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 	}
 
 	// Bind the shader program.
-	renderer.gl_bind_program_object(render_point_line_polygon_program_object.get());
+	renderer.gl_bind_program_object(render_point_line_polygon_program.get());
 
 	// Enable map or globe view.
-	render_point_line_polygon_program_object.get()->gl_uniform1i(
+	render_point_line_polygon_program.get()->gl_uniform1i(
 			renderer,
 			"map_view_enabled",
 			static_cast<bool>(map_projection));
@@ -1150,14 +1150,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 		gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
 				GPlatesGui::SceneLightingParameters::LIGHTING_GEOMETRY_ON_SPHERE))
 	{
-		render_point_line_polygon_program_object.get()->gl_uniform1i(renderer, "lighting_enabled", true);
+		render_point_line_polygon_program.get()->gl_uniform1i(renderer, "lighting_enabled", true);
 
 		if (map_projection)
 		{
 			// Set the (ambient+diffuse) lighting.
 			// For the 2D map views this is constant across the map since the surface normal is
 			// constant (it's a flat surface unlike the globe).
-			render_point_line_polygon_program_object.get()->gl_uniform1f(
+			render_point_line_polygon_program.get()->gl_uniform1f(
 					renderer,
 					"map_view_ambient_and_diffuse_lighting",
 					gl_light.get()->get_map_view_constant_lighting(renderer));
@@ -1165,13 +1165,13 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 		else // globe view ...
 		{
 			// Set the world-space light direction.
-			render_point_line_polygon_program_object.get()->gl_uniform3f(
+			render_point_line_polygon_program.get()->gl_uniform3f(
 					renderer,
 					"globe_view_world_space_light_direction",
 					gl_light.get()->get_globe_view_light_direction(renderer));
 
 			// Set the light ambient contribution.
-			render_point_line_polygon_program_object.get()->gl_uniform1f(
+			render_point_line_polygon_program.get()->gl_uniform1f(
 					renderer,
 					"globe_view_light_ambient_contribution",
 					gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
@@ -1179,7 +1179,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 	}
 	else // light disabled ...
 	{
-		render_point_line_polygon_program_object.get()->gl_uniform1i(renderer, "lighting_enabled", false);
+		render_point_line_polygon_program.get()->gl_uniform1i(renderer, "lighting_enabled", false);
 	}
 
 	return true;
@@ -1190,15 +1190,15 @@ bool
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_program_state(
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type> render_axially_symmetric_mesh_program_object)
+		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program)
 {
-	if (!render_axially_symmetric_mesh_program_object)
+	if (!render_axially_symmetric_mesh_program)
 	{
 		return false;
 	}
 
 	// Bind the shader program.
-	renderer.gl_bind_program_object(render_axially_symmetric_mesh_program_object.get());
+	renderer.gl_bind_program_object(render_axially_symmetric_mesh_program.get());
 
 	// Get the OpenGL light if the runtime system supports it.
 	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light = gl_visual_layers.get_light(renderer);
@@ -1208,23 +1208,23 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 		gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
 				GPlatesGui::SceneLightingParameters::LIGHTING_DIRECTION_ARROW))
 	{
-		render_axially_symmetric_mesh_program_object.get()->gl_uniform1i(renderer, "lighting_enabled", true);
+		render_axially_symmetric_mesh_program.get()->gl_uniform1i(renderer, "lighting_enabled", true);
 
 		// Set the world-space light direction.
-		render_axially_symmetric_mesh_program_object.get()->gl_uniform3f(
+		render_axially_symmetric_mesh_program.get()->gl_uniform3f(
 				renderer,
 				"world_space_light_direction",
 				gl_light.get()->get_globe_view_light_direction(renderer));
 
 		// Set the light ambient contribution.
-		render_axially_symmetric_mesh_program_object.get()->gl_uniform1f(
+		render_axially_symmetric_mesh_program.get()->gl_uniform1f(
 				renderer,
 				"light_ambient_contribution",
 				gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 	}
 	else // light disabled ...
 	{
-		render_axially_symmetric_mesh_program_object.get()->gl_uniform1i(renderer, "lighting_enabled", false);
+		render_axially_symmetric_mesh_program.get()->gl_uniform1i(renderer, "lighting_enabled", false);
 	}
 
 	return true;

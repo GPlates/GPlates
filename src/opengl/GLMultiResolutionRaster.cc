@@ -506,12 +506,12 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	// A valid shader program means we have either a floating-point source raster or
 	// a normal-map source raster (both of which require a shader program to render).
 	unsigned int vertex_size = sizeof(vertex_type);
-	if (d_render_raster_program_object)
+	if (d_render_raster_program)
 	{
 		// Bind the shader program.
-		renderer.gl_bind_program_object(d_render_raster_program_object.get());
+		renderer.gl_bind_program_object(d_render_raster_program.get());
 		// Set the raster texture sampler to texture unit 0.
-		d_render_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
+		d_render_raster_program.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
 
 		// When rendering a normal map the vertex size is larger due to the per-vertex tangent-space frame.
 		if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
@@ -1414,7 +1414,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-		d_render_raster_program_object =
+		d_render_raster_program =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
 						renderer,
 						fragment_shader_source);
@@ -1422,7 +1422,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// We should be able to compile/link the shader program since the client should have
 		// called 'supports_normal_map_source()' which does a test compile/link.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				d_render_raster_program_object,
+				d_render_raster_program,
 				GPLATES_ASSERTION_SOURCE);
 	}
 	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
@@ -1435,7 +1435,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-		d_render_raster_program_object =
+		d_render_raster_program =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
 						renderer,
 						fragment_shader_source);
@@ -1443,7 +1443,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// We should be able to compile/link the shader program since the client should have
 		// called 'supports_normal_map_source()' which does a test compile/link.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				d_render_raster_program_object,
+				d_render_raster_program,
 				GPLATES_ASSERTION_SOURCE);
 	}
 	// Else if the source raster is floating-point (ie, not coloured as fixed-point for visual display)
@@ -1477,7 +1477,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-		d_render_raster_program_object =
+		d_render_raster_program =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
 						renderer,
 						fragment_shader_source);
@@ -1486,13 +1486,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// Also the client will have called 'GLDataRasterSource::is_supported()' which verifies
 		// vertex/fragment shader support - so that should not be the reason for failure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_render_raster_program_object,
+				d_render_raster_program,
 				GPLATES_ASSERTION_SOURCE);
 
 		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
 		// Set the source tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		d_render_raster_program_object.get()->gl_uniform4f(
+		d_render_raster_program.get()->gl_uniform4f(
 				renderer,
 				"source_texture_dimensions",
 				d_tile_texel_dimension, d_tile_texel_dimension,
@@ -2519,7 +2519,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	GLShaderSource fragment_shader_source;
 	fragment_shader_source.add_code_segment_from_file(RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-	d_program_object =
+	d_program =
 			GLShaderProgramUtils::compile_and_link_fragment_program(
 					renderer,
 					fragment_shader_source);
@@ -2528,7 +2528,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	// have a normal map source and the client should have called 'supports_normal_map_source()'
 	// which does a test compile/link.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_program_object,
+			d_program,
 			GPLATES_ASSERTION_SOURCE);
 
 	//
@@ -2576,7 +2576,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Bind the shader program.
-	renderer.gl_bind_program_object(d_program_object.get());
+	renderer.gl_bind_program_object(d_program.get());
 
 	// Render the cube.
 	renderer.apply_compiled_draw_state(*d_draw_vertex_array.get());

@@ -40,7 +40,7 @@
 #include "GLCapabilities.h"
 #include "GLFramebuffer.h"
 #include "GLMatrix.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLRenderbuffer.h"
 #include "GLStateSet.h"
 #include "GLTexture.h"
@@ -1558,11 +1558,11 @@ namespace GPlatesOpenGL
 			public GLStateSet
 	{
 		/**
-		 * Binds a shader program object, or unbinds (if @a program_object is boost::none).
+		 * Binds a shader program object, or unbinds (if @a program is boost::none).
 		 */
 		explicit
 		GLUseProgramStateSet(
-				boost::optional<GLProgramObject::shared_ptr_type> program) :
+				boost::optional<GLProgram::shared_ptr_type> program) :
 			d_program(program),
 			d_program_resource(0)
 		{
@@ -1592,7 +1592,7 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const;
 
 
-		boost::optional<GLProgramObject::shared_ptr_type> d_program;
+		boost::optional<GLProgram::shared_ptr_type> d_program;
 		GLuint d_program_resource;
 	};
 

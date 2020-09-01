@@ -78,11 +78,11 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 	fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
 
 	// Vertex-fragment program.
-	d_program_object = GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+	d_program = GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 			renderer,
 			vertex_shader_source,
 			fragment_shader_source);
-	if (!d_program_object)
+	if (!d_program)
 	{
 		// If shader compilation/linking failed (eg, due to lack of runtime shader support) then
 		// return early. This means no background sphere will get rendered later.
@@ -90,7 +90,7 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 	}
 
 	// Set the background colour in the program object.
-	d_program_object.get()->gl_uniform4f(renderer, "background_color", d_background_colour);
+	d_program.get()->gl_uniform4f(renderer, "background_color", d_background_colour);
 }
 
 
@@ -103,10 +103,10 @@ GPlatesGui::BackgroundSphere::paint(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Bind the shader program.
-	renderer.gl_bind_program_object(d_program_object.get());
+	renderer.gl_bind_program_object(d_program.get());
 
 	// If depth writes have been enabled then the shader program needs to output z-buffer depth.
-	d_program_object.get()->gl_uniform1i(renderer, "write_depth", depth_writes_enabled);
+	d_program.get()->gl_uniform1i(renderer, "write_depth", depth_writes_enabled);
 
 	// Check whether the view state's background colour has changed.
 	if (d_view_state.get_background_colour() != d_background_colour)
@@ -114,7 +114,7 @@ GPlatesGui::BackgroundSphere::paint(
 		d_background_colour = d_view_state.get_background_colour();
 
 		// Change the background colour in the program object.
-		d_program_object.get()->gl_uniform4f(renderer, "background_color", d_background_colour);
+		d_program.get()->gl_uniform4f(renderer, "background_color", d_background_colour);
 	}
 
 	// If the background colour is transparent then set up alpha blending.

@@ -37,7 +37,7 @@
 #include "GLCubeSubdivisionCache.h"
 #include "GLFramebuffer.h"
 #include "GLMultiResolutionRasterInterface.h"
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 #include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
@@ -1297,60 +1297,60 @@ namespace GPlatesOpenGL
 		/**
 		 * Shader program to render point regions-of-interest for seed geometries with small region-of-interest angles.
 		 */
-		GLProgramObject::shared_ptr_type d_render_points_of_seed_geometries_with_small_roi_angle_program_object;
+		GLProgram::shared_ptr_type d_render_points_of_seed_geometries_with_small_roi_angle_program;
 
 		/**
 		 * Shader program to render point regions-of-interest for seed geometries with large region-of-interest angles.
 		 */
-		GLProgramObject::shared_ptr_type d_render_points_of_seed_geometries_with_large_roi_angle_program_object;
+		GLProgram::shared_ptr_type d_render_points_of_seed_geometries_with_large_roi_angle_program;
 
 		/**
 		 * Shader program to render line (great circle arc) regions-of-interest for seed geometries
 		 * with small region-of-interest angles.
 		 */
-		GLProgramObject::shared_ptr_type d_render_lines_of_seed_geometries_with_small_roi_angle_program_object;
+		GLProgram::shared_ptr_type d_render_lines_of_seed_geometries_with_small_roi_angle_program;
 
 		/**
 		 * Shader program to render line (great circle arc) regions-of-interest for seed geometries
 		 * with large region-of-interest angles.
 		 */
-		GLProgramObject::shared_ptr_type d_render_lines_of_seed_geometries_with_large_roi_angle_program_object;
+		GLProgram::shared_ptr_type d_render_lines_of_seed_geometries_with_large_roi_angle_program;
 
 		/**
 		 * Shader program to render fill (polygon-interior) regions-of-interest.
 		 */
-		GLProgramObject::shared_ptr_type d_render_fill_of_seed_geometries_program_object;
+		GLProgram::shared_ptr_type d_render_fill_of_seed_geometries_program;
 
 		/**
 		 * Shader program to copy target raster into seed sub-viewport with region-of-interest masking.
 		 *
 		 * This versions sets up for reduction of moments (mean or standard deviation).
 		 */
-		GLProgramObject::shared_ptr_type d_mask_region_of_interest_moments_program_object;
+		GLProgram::shared_ptr_type d_mask_region_of_interest_moments_program;
 
 		/**
 		 * Shader program to copy target raster into seed sub-viewport with region-of-interest masking.
 		 *
 		 * This versions sets up for reduction of min/max.
 		 */
-		GLProgramObject::shared_ptr_type d_mask_region_of_interest_minmax_program_object;
+		GLProgram::shared_ptr_type d_mask_region_of_interest_minmax_program;
 
 		/**
 		 * Shader program to reduce by calculating *sum* of regions-of-interest filter results.
 		 *
 		 * This is used by the mean and standard deviation operations.
 		 */
-		GLProgramObject::shared_ptr_type d_reduction_sum_program_object;
+		GLProgram::shared_ptr_type d_reduction_sum_program;
 
 		/**
 		 * Shader program to reduce by calculating *minimum* of regions-of-interest filter results.
 		 */
-		GLProgramObject::shared_ptr_type d_reduction_min_program_object;
+		GLProgram::shared_ptr_type d_reduction_min_program;
 
 		/**
 		 * Shader program to reduce by calculating *maximum* of regions-of-interest filter results.
 		 */
-		GLProgramObject::shared_ptr_type d_reduction_max_program_object;
+		GLProgram::shared_ptr_type d_reduction_max_program;
 
 		/**
 		 * Simplifies some code since seed geometry can reference identity quaternion if has no finite rotation.
@@ -1389,7 +1389,7 @@ namespace GPlatesOpenGL
 		initialise_mask_region_of_interest_shader_program(
 				GLRenderer &renderer);
 
-		GLProgramObject::shared_ptr_type
+		GLProgram::shared_ptr_type
 		create_region_of_interest_shader_program(
 				GLRenderer &renderer,
 				const char *vertex_shader_defines,

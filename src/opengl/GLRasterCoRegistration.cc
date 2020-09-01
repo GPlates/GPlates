@@ -228,7 +228,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	// of an adjacent seed geometry thus polluting its results).
 
 	// For small region-of-interest angles (retains accuracy for very small angles).
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object =
+	d_render_points_of_seed_geometries_with_small_roi_angle_program =
 			create_region_of_interest_shader_program(
 					renderer,
 					"#define POINT_REGION_OF_INTEREST\n"
@@ -239,7 +239,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 					"#define ENABLE_SEED_FRUSTUM_CLIPPING\n");
 
 	// For larger region-of-interest angles (retains accuracy for angles very near 90 degrees).
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object =
+	d_render_points_of_seed_geometries_with_large_roi_angle_program =
 			create_region_of_interest_shader_program(
 					renderer,
 					"#define POINT_REGION_OF_INTEREST\n"
@@ -268,7 +268,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	GLint offset = 0;
 
 	// NOTE: We don't need to worry about attribute aliasing (see comment in
-	// 'GLProgramObject::gl_bind_attrib_location') because we are not using any of the built-in
+	// 'GLProgram::gl_bind_attrib_location') because we are not using any of the built-in
 	// attributes (like 'gl_Vertex').
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
@@ -278,9 +278,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	GLuint attribute_index = 0;
 
 	// The "point_centre" attribute data...
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"point_centre", attribute_index);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"point_centre", attribute_index);
 	d_point_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -298,9 +298,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	offset += sizeof(vertex_for_sizeof.point_centre);
 
 	// The "tangent_frame_weights" attribute data...
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"tangent_frame_weights", attribute_index);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"tangent_frame_weights", attribute_index);
 	d_point_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -318,9 +318,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	offset += sizeof(vertex_for_sizeof.tangent_frame_weights);
 
 	// The "world_space_quaternion" attribute data...
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"world_space_quaternion", attribute_index);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"world_space_quaternion", attribute_index);
 	d_point_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -338,9 +338,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	offset += sizeof(vertex_for_sizeof.world_space_quaternion);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
 	d_point_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -359,9 +359,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	offset += sizeof(vertex_for_sizeof.raster_frustum_to_seed_frustum_clip_space_transform);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
 	d_point_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -380,11 +380,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
 	bool link_status;
-	link_status = d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_link_program(renderer);
+	link_status = d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
-	link_status = d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_link_program(renderer);
+	link_status = d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
@@ -402,7 +402,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	// of an adjacent seed geometry thus polluting its results).
 
 	// For small region-of-interest angles (retains accuracy for very small angles).
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object =
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program =
 			create_region_of_interest_shader_program(
 					renderer,
 					"#define LINE_REGION_OF_INTEREST\n"
@@ -413,7 +413,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 					"#define ENABLE_SEED_FRUSTUM_CLIPPING\n");
 
 	// For larger region-of-interest angles (retains accuracy for angles very near 90 degrees).
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object =
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program =
 			create_region_of_interest_shader_program(
 					renderer,
 					"#define LINE_REGION_OF_INTEREST\n"
@@ -442,7 +442,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	GLint offset = 0;
 
 	// NOTE: We don't need to worry about attribute aliasing (see comment in
-	// 'GLProgramObject::gl_bind_attrib_location') because we are not using any of the built-in
+	// 'GLProgram::gl_bind_attrib_location') because we are not using any of the built-in
 	// attributes (like 'gl_Vertex').
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
@@ -452,9 +452,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	GLuint attribute_index = 0;
 
 	// The "line_arc_start_point" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"line_arc_start_point", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"line_arc_start_point", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -472,9 +472,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.line_arc_start_point);
 
 	// The "line_arc_normal" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"line_arc_normal", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"line_arc_normal", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -492,9 +492,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.line_arc_normal);
 
 	// The "tangent_frame_weights" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"tangent_frame_weights", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"tangent_frame_weights", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -512,9 +512,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.tangent_frame_weights);
 
 	// The "world_space_quaternion" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"world_space_quaternion", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"world_space_quaternion", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -532,9 +532,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.world_space_quaternion);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -553,9 +553,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.raster_frustum_to_seed_frustum_clip_space_transform);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_bind_attrib_location(
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
 	d_line_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -574,11 +574,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
 	bool link_status;
-	link_status = d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_link_program(renderer);
+	link_status = d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
-	link_status = d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_link_program(renderer);
+	link_status = d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
@@ -591,7 +591,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 {
 	// Shader program to render interior of seed polygons bounded by a loose target raster tile.
 	// Also used when rasterizing point and line primitive (ie, GL_POINTS and GL_LINES, not GL_TRIANGLES).
-	d_render_fill_of_seed_geometries_program_object =
+	d_render_fill_of_seed_geometries_program =
 			create_region_of_interest_shader_program(
 					renderer,
 					"#define FILL_REGION_OF_INTEREST\n"
@@ -618,7 +618,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	GLint offset = 0;
 
 	// NOTE: We don't need to worry about attribute aliasing (see comment in
-	// 'GLProgramObject::gl_bind_attrib_location') because we are not using any of the built-in
+	// 'GLProgram::gl_bind_attrib_location') because we are not using any of the built-in
 	// attributes (like 'gl_Vertex').
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
@@ -628,7 +628,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	GLuint attribute_index = 0;
 
 	// The "fill_position" attribute data...
-	d_render_fill_of_seed_geometries_program_object->gl_bind_attrib_location(
+	d_render_fill_of_seed_geometries_program->gl_bind_attrib_location(
 			"fill_position", attribute_index);
 	d_fill_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -646,7 +646,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.fill_position);
 
 	// The "world_space_quaternion" attribute data...
-	d_render_fill_of_seed_geometries_program_object->gl_bind_attrib_location(
+	d_render_fill_of_seed_geometries_program->gl_bind_attrib_location(
 			"world_space_quaternion", attribute_index);
 	d_fill_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -664,7 +664,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.world_space_quaternion);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_fill_of_seed_geometries_program_object->gl_bind_attrib_location(
+	d_render_fill_of_seed_geometries_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
 	d_fill_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -683,7 +683,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.raster_frustum_to_seed_frustum_clip_space_transform);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_render_fill_of_seed_geometries_program_object->gl_bind_attrib_location(
+	d_render_fill_of_seed_geometries_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
 	d_fill_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -701,7 +701,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
-	const bool link_status = d_render_fill_of_seed_geometries_program_object->gl_link_program(renderer);
+	const bool link_status = d_render_fill_of_seed_geometries_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
@@ -744,15 +744,15 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			mask_region_of_interest_moments_fragment_shader ,
 			GPLATES_ASSERTION_SOURCE);
 	// Link the shader program.
-	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_moments_program_object =
+	boost::optional<GLProgram::shared_ptr_type> mask_region_of_interest_moments_program =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
 					mask_region_of_interest_moments_vertex_shader.get(),
 					mask_region_of_interest_moments_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			mask_region_of_interest_moments_program_object,
+			mask_region_of_interest_moments_program,
 			GPLATES_ASSERTION_SOURCE);
-	d_mask_region_of_interest_moments_program_object = mask_region_of_interest_moments_program_object.get();
+	d_mask_region_of_interest_moments_program = mask_region_of_interest_moments_program.get();
 
 	// Vertex shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
 	GLShaderSource mask_region_of_interest_minmax_vertex_shader_source;
@@ -786,15 +786,15 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			mask_region_of_interest_minmax_fragment_shader ,
 			GPLATES_ASSERTION_SOURCE);
 	// Link the shader program.
-	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_minmax_program_object =
+	boost::optional<GLProgram::shared_ptr_type> mask_region_of_interest_minmax_program =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
 					mask_region_of_interest_minmax_vertex_shader.get(),
 					mask_region_of_interest_minmax_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			mask_region_of_interest_minmax_program_object,
+			mask_region_of_interest_minmax_program,
 			GPLATES_ASSERTION_SOURCE);
-	d_mask_region_of_interest_minmax_program_object = mask_region_of_interest_minmax_program_object.get();
+	d_mask_region_of_interest_minmax_program = mask_region_of_interest_minmax_program.get();
 
 
 	// Attach vertex element buffer to the vertex array.
@@ -817,7 +817,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	GLint offset = 0;
 
 	// NOTE: We don't need to worry about attribute aliasing (see comment in
-	// 'GLProgramObject::gl_bind_attrib_location') because we are not using any of the built-in
+	// 'GLProgram::gl_bind_attrib_location') because we are not using any of the built-in
 	// attributes (like 'gl_Vertex').
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
@@ -827,9 +827,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	GLuint attribute_index = 0;
 
 	// The "screen_space_position" attribute data...
-	d_mask_region_of_interest_moments_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_moments_program->gl_bind_attrib_location(
 			"screen_space_position", attribute_index);
-	d_mask_region_of_interest_minmax_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_minmax_program->gl_bind_attrib_location(
 			"screen_space_position", attribute_index);
 	d_mask_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -847,9 +847,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.screen_space_position);
 
 	// The "raster_frustum_to_seed_frustum_clip_space_transform" attribute data...
-	d_mask_region_of_interest_moments_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_moments_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
-	d_mask_region_of_interest_minmax_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_minmax_program->gl_bind_attrib_location(
 			"raster_frustum_to_seed_frustum_clip_space_transform", attribute_index);
 	d_mask_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -868,9 +868,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	offset += sizeof(vertex_for_sizeof.raster_frustum_to_seed_frustum_clip_space_transform);
 
 	// The "seed_frustum_to_render_target_clip_space_transform" attribute data...
-	d_mask_region_of_interest_moments_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_moments_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
-	d_mask_region_of_interest_minmax_program_object->gl_bind_attrib_location(
+	d_mask_region_of_interest_minmax_program->gl_bind_attrib_location(
 			"seed_frustum_to_render_target_clip_space_transform", attribute_index);
 	d_mask_region_of_interest_vertex_array->set_enable_vertex_attrib_array(
 			renderer, attribute_index, true/*enable*/);
@@ -888,18 +888,18 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
 	bool link_status;
-	link_status = d_mask_region_of_interest_moments_program_object->gl_link_program(renderer);
+	link_status = d_mask_region_of_interest_moments_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
-	link_status = d_mask_region_of_interest_minmax_program_object->gl_link_program(renderer);
+	link_status = d_mask_region_of_interest_minmax_program->gl_link_program(renderer);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			link_status,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
-GPlatesOpenGL::GLProgramObject::shared_ptr_type
+GPlatesOpenGL::GLProgram::shared_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 		GLRenderer &renderer,
 		const char *vertex_shader_defines,
@@ -924,17 +924,17 @@ GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
-	boost::optional<GLProgramObject::shared_ptr_type> program_object =
+	boost::optional<GLProgram::shared_ptr_type> program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					vertex_shader_source,
 					fragment_shader_source);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			program_object,
+			program,
 			GPLATES_ASSERTION_SOURCE);
 
-	return program_object.get();
+	return program.get();
 }
 
 
@@ -968,15 +968,15 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 			reduction_sum_fragment_shader ,
 			GPLATES_ASSERTION_SOURCE);
 	// Link the shader program to calculate the sum of region-of-interest filter results.
-	boost::optional<GLProgramObject::shared_ptr_type> reduction_sum_program_object =
+	boost::optional<GLProgram::shared_ptr_type> reduction_sum_program =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
 					reduction_vertex_shader.get(),
 					reduction_sum_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			reduction_sum_program_object,
+			reduction_sum_program,
 			GPLATES_ASSERTION_SOURCE);
-	d_reduction_sum_program_object = reduction_sum_program_object.get();
+	d_reduction_sum_program = reduction_sum_program.get();
 
 	// Fragment shader to calculate the minimum of region-of-interest filter results.
 	GLShaderSource reduction_min_fragment_shader_source;
@@ -994,15 +994,15 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 			reduction_min_fragment_shader ,
 			GPLATES_ASSERTION_SOURCE);
 	// Link the shader program to calculate the minimum of region-of-interest filter results.
-	boost::optional<GLProgramObject::shared_ptr_type> reduction_min_program_object =
+	boost::optional<GLProgram::shared_ptr_type> reduction_min_program =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
 					reduction_vertex_shader.get(),
 					reduction_min_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			reduction_min_program_object,
+			reduction_min_program,
 			GPLATES_ASSERTION_SOURCE);
-	d_reduction_min_program_object = reduction_min_program_object.get();
+	d_reduction_min_program = reduction_min_program.get();
 
 	// Fragment shader to calculate the maximum of region-of-interest filter results.
 	GLShaderSource reduction_max_fragment_shader_source;
@@ -1020,15 +1020,15 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 			reduction_max_fragment_shader ,
 			GPLATES_ASSERTION_SOURCE);
 	// Link the shader program to calculate the maximum of region-of-interest filter results.
-	boost::optional<GLProgramObject::shared_ptr_type> reduction_max_program_object =
+	boost::optional<GLProgram::shared_ptr_type> reduction_max_program =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
 					reduction_vertex_shader.get(),
 					reduction_max_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			reduction_max_program_object,
+			reduction_max_program,
 			GPLATES_ASSERTION_SOURCE);
-	d_reduction_max_program_object = reduction_max_program_object.get();
+	d_reduction_max_program = reduction_max_program.get();
 }
 
 
@@ -2654,13 +2654,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the shader program for rendering point regions-of-interest with smaller region-of-interest angles.
-	renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_small_roi_angle_program_object);
+	renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_small_roi_angle_program);
 
 	const double tan_region_of_interest_angle = std::tan(region_of_interest_radius);
 	const double tan_squared_region_of_interest_angle = tan_region_of_interest_angle * tan_region_of_interest_angle;
 
 	// Set the region-of-interest radius.
-	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_uniform1f(
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_uniform1f(
 			renderer, "tan_squared_region_of_interest_angle", tan_squared_region_of_interest_angle);
 
 	// Bind the point region-of-interest vertex array.
@@ -2951,23 +2951,23 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 	if (region_of_interest_radius < GPlatesMaths::PI / 4)
 	{
 		// Bind the shader program for rendering point regions-of-interest.
-		renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_small_roi_angle_program_object);
+		renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_small_roi_angle_program);
 
 		// Note that 'tan' is undefined at 90 degrees but we're safe since we're restricted to 45 degrees or less.
 		const double tan_region_of_interest_angle = std::tan(region_of_interest_radius);
 		const double tan_squared_region_of_interest_angle = tan_region_of_interest_angle * tan_region_of_interest_angle;
 
 		// Set the region-of-interest radius.
-		d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_uniform1f(
+		d_render_points_of_seed_geometries_with_small_roi_angle_program->gl_uniform1f(
 				renderer, "tan_squared_region_of_interest_angle", tan_squared_region_of_interest_angle);
 	}
 	else // Use a shader program that's accurate for angles very near 90 degrees...
 	{
 		// Bind the shader program for rendering point regions-of-interest.
-		renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_large_roi_angle_program_object);
+		renderer.gl_bind_program_object(d_render_points_of_seed_geometries_with_large_roi_angle_program);
 
 		// Set the region-of-interest radius.
-		d_render_points_of_seed_geometries_with_large_roi_angle_program_object->gl_uniform1f(
+		d_render_points_of_seed_geometries_with_large_roi_angle_program->gl_uniform1f(
 				renderer, "cos_region_of_interest_angle", cos_region_of_interest_angle);
 	}
 
@@ -3320,10 +3320,10 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	const double tan_region_of_interest_angle = std::tan(region_of_interest_radius);
 
 	// Bind the shader program for rendering line regions-of-interest with smaller region-of-interest angles.
-	renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_small_roi_angle_program_object);
+	renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_small_roi_angle_program);
 
 	// Set the region-of-interest radius.
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_uniform1f(
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_uniform1f(
 			renderer, "sin_region_of_interest_angle", sin_region_of_interest_angle);
 
 	// Bind the line region-of-interest vertex array.
@@ -3602,16 +3602,16 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	if (region_of_interest_radius < GPlatesMaths::PI / 4)
 	{
 		// Bind the shader program for rendering point regions-of-interest.
-		renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_small_roi_angle_program_object);
+		renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_small_roi_angle_program);
 
 		// Set the region-of-interest radius.
-		d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_uniform1f(
+		d_render_lines_of_seed_geometries_with_small_roi_angle_program->gl_uniform1f(
 				renderer, "sin_region_of_interest_angle", sin_region_of_interest_angle);
 	}
 	else // Use a shader program that's accurate for angles very near 90 degrees...
 	{
 		// Bind the shader program for rendering point regions-of-interest.
-		renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_large_roi_angle_program_object);
+		renderer.gl_bind_program_object(d_render_lines_of_seed_geometries_with_large_roi_angle_program);
 
 		// Set the region-of-interest radius.
 		// Note that 'tan' is undefined at 90 degrees but we're safe since we're restricted to 45 degrees or more
@@ -3627,7 +3627,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 				(region_of_interest_radius < GPlatesMaths::HALF_PI)
 				? std::tan(GPlatesMaths::HALF_PI - region_of_interest_radius)
 				: std::tan(GPlatesMaths::HALF_PI);
-		d_render_lines_of_seed_geometries_with_large_roi_angle_program_object->gl_uniform1f(
+		d_render_lines_of_seed_geometries_with_large_roi_angle_program->gl_uniform1f(
 				renderer,
 				"tan_squared_region_of_interest_complementary_angle",
 				tan_region_of_interest_complementary_angle * tan_region_of_interest_complementary_angle);
@@ -3960,7 +3960,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 	//
 
 	// Bind the shader program for rendering fill regions-of-interest.
-	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
+	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program);
 
 	// Bind the fill region-of-interest vertex array.
 	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
@@ -4262,7 +4262,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 	//
 
 	// Bind the shader program for rendering fill regions-of-interest.
-	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
+	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program);
 
 	// Bind the fill region-of-interest vertex array.
 	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
@@ -4481,7 +4481,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 	renderer.gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
 
 	// Bind the shader program for rendering fill regions-of-interest.
-	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program_object);
+	renderer.gl_bind_program_object(d_render_fill_of_seed_geometries_program);
 
 	// Bind the fill region-of-interest vertex array.
 	renderer.BindVertexArray(d_fill_region_of_interest_vertex_array);
@@ -4744,21 +4744,21 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	//PROFILE_FUNC();
 
 	// Determine which filter operation to use.
-	GLProgramObject::shared_ptr_type mask_region_of_interest_program_object;
+	GLProgram::shared_ptr_type mask_region_of_interest_program;
 	switch (operation.d_operation)
 	{
 		// Both mean and standard deviation are filtered using moments.
 	case OPERATION_MEAN:
 	case OPERATION_STANDARD_DEVIATION:
-		mask_region_of_interest_program_object = d_mask_region_of_interest_moments_program_object;
+		mask_region_of_interest_program = d_mask_region_of_interest_moments_program;
 		// Set the cube face centre - needed to adjust for cube map area-weighting distortion.
-		mask_region_of_interest_program_object->gl_uniform3f(renderer, "cube_face_centre", cube_face_centre);
+		mask_region_of_interest_program->gl_uniform3f(renderer, "cube_face_centre", cube_face_centre);
 		break;
 
 		// Both min and max are filtered using minmax.
 	case OPERATION_MINIMUM:
 	case OPERATION_MAXIMUM:
-		mask_region_of_interest_program_object = d_mask_region_of_interest_minmax_program_object;
+		mask_region_of_interest_program = d_mask_region_of_interest_minmax_program;
 		break;
 
 	default:
@@ -4768,16 +4768,16 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	}
 
 	// Bind the shader program for masking target raster with regions-of-interest.
-	renderer.gl_bind_program_object(mask_region_of_interest_program_object);
+	renderer.gl_bind_program_object(mask_region_of_interest_program);
 
 	// Set the target raster texture sampler to texture unit 0.
-	mask_region_of_interest_program_object->gl_uniform1i(
+	mask_region_of_interest_program->gl_uniform1i(
 			renderer, "target_raster_texture_sampler", 0/*texture unit*/);
 	// Bind the target raster texture to texture unit 0.
 	renderer.gl_bind_texture(target_raster_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
 	// Set the region-of-interest mask texture sampler to texture unit 1.
-	mask_region_of_interest_program_object->gl_uniform1i(
+	mask_region_of_interest_program->gl_uniform1i(
 			renderer, "region_of_interest_mask_texture_sampler", 1/*texture unit*/);
 	// Bind the region-of-interest mask texture to texture unit 1.
 	renderer.gl_bind_texture(region_of_interest_mask_texture, GL_TEXTURE1, GL_TEXTURE_2D);
@@ -5004,21 +5004,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	}
 
 	// Determine which reduction operation to use.
-	GLProgramObject::shared_ptr_type reduction_program_object;
+	GLProgram::shared_ptr_type reduction_program;
 	switch (operation.d_operation)
 	{
 		// Both mean and standard deviation can be reduced using summation.
 	case OPERATION_MEAN:
 	case OPERATION_STANDARD_DEVIATION:
-		reduction_program_object = d_reduction_sum_program_object;
+		reduction_program = d_reduction_sum_program;
 		break;
 
 	case OPERATION_MINIMUM:
-		reduction_program_object = d_reduction_min_program_object;
+		reduction_program = d_reduction_min_program;
 		break;
 
 	case OPERATION_MAXIMUM:
-		reduction_program_object = d_reduction_max_program_object;
+		reduction_program = d_reduction_max_program;
 		break;
 
 	default:
@@ -5028,21 +5028,21 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	}
 
 	// Bind the shader program for reducing the regions-of-interest filter results.
-	renderer.gl_bind_program_object(reduction_program_object);
+	renderer.gl_bind_program_object(reduction_program);
 
 	// Set the reduce source texture sampler to texture unit 0.
-	reduction_program_object->gl_uniform1i(
+	reduction_program->gl_uniform1i(
 			renderer, "reduce_source_texture_sampler", 0/*texture unit*/);
 	// Bind the source reduce stage texture to texture unit 0.
 	renderer.gl_bind_texture(src_reduce_stage_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
 	// Set the half-texel offset of the reduce source texture (all reduce textures have same dimension).
 	const double half_texel_offset = 0.5 / TEXTURE_DIMENSION;
-	reduction_program_object->gl_uniform2f(
+	reduction_program->gl_uniform2f(
 			renderer, "reduce_source_texture_half_texel_offset", half_texel_offset, -half_texel_offset);
 	// Determine which quadrant of the destination reduce texture to render to.
 	// Map the range [-1,1] to one of [-1,0] or [0,1] for both x and y directions.
-	reduction_program_object->gl_uniform3f(
+	reduction_program->gl_uniform3f(
 			renderer,
 			"target_quadrant_translate_scale",
 			0.5 * (src_child_x_offset ? 1 : -1), // translate_x

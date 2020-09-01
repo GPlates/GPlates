@@ -33,7 +33,7 @@
 #include <QDebug>
 #include <QString>
 
-#include "GLProgramObject.h"
+#include "GLProgram.h"
 
 #include "GL.h"
 #include "GLContext.h"
@@ -50,7 +50,7 @@
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
-GPlatesOpenGL::GLProgramObject::GLProgramObject(
+GPlatesOpenGL::GLProgram::GLProgram(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
@@ -61,7 +61,7 @@ GPlatesOpenGL::GLProgramObject::GLProgramObject(
 
 
 void
-GPlatesOpenGL::GLProgramObject::attach_shader(
+GPlatesOpenGL::GLProgram::attach_shader(
 		const GLShader::shared_ptr_to_const_type &shader)
 {
 	d_shaders.insert(shader);
@@ -71,7 +71,7 @@ GPlatesOpenGL::GLProgramObject::attach_shader(
 
 
 void
-GPlatesOpenGL::GLProgramObject::detach_shader(
+GPlatesOpenGL::GLProgram::detach_shader(
 		const GLShader::shared_ptr_to_const_type &shader)
 {
 	glDetachShader(get_resource_handle(), shader->get_resource_handle());
@@ -81,7 +81,7 @@ GPlatesOpenGL::GLProgramObject::detach_shader(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::link_program()
+GPlatesOpenGL::GLProgram::link_program()
 {
 	// First clear our mapping of uniform names to uniform indices (locations).
 	// Linking (or re-linking) can change the indices.
@@ -112,7 +112,7 @@ GPlatesOpenGL::GLProgramObject::link_program()
 
 
 bool
-GPlatesOpenGL::GLProgramObject::validate_program()
+GPlatesOpenGL::GLProgram::validate_program()
 {
 	const GLuint program_resource_handle = get_resource_handle();
 
@@ -136,7 +136,7 @@ GPlatesOpenGL::GLProgramObject::validate_program()
 
 
 bool
-GPlatesOpenGL::GLProgramObject::is_active_uniform(
+GPlatesOpenGL::GLProgram::is_active_uniform(
 		const char *uniform_name) const
 {
 	return glGetUniformLocation(get_resource_handle(), uniform_name) >= 0;
@@ -144,7 +144,7 @@ GPlatesOpenGL::GLProgramObject::is_active_uniform(
 
 
 GLint
-GPlatesOpenGL::GLProgramObject::get_uniform_location(
+GPlatesOpenGL::GLProgram::get_uniform_location(
 		const char *uniform_name) const
 {
 	std::pair<uniform_location_map_type::iterator, bool> uniform_insert_result =
@@ -166,7 +166,7 @@ GPlatesOpenGL::GLProgramObject::get_uniform_location(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::uniform(
+GPlatesOpenGL::GLProgram::uniform(
 		const char *name,
 		const GPlatesMaths::UnitVector3D &value,
 		boost::optional<GLfloat> w)
@@ -191,7 +191,7 @@ GPlatesOpenGL::GLProgramObject::uniform(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::uniform(
+GPlatesOpenGL::GLProgram::uniform(
 		const char *name,
 		const GPlatesMaths::Vector3D &value,
 		boost::optional<GLfloat> w)
@@ -216,7 +216,7 @@ GPlatesOpenGL::GLProgramObject::uniform(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::uniform(
+GPlatesOpenGL::GLProgram::uniform(
 		const char *name,
 		const GPlatesMaths::UnitQuaternion3D &unit_quat)
 {
@@ -233,7 +233,7 @@ GPlatesOpenGL::GLProgramObject::uniform(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::uniform(
+GPlatesOpenGL::GLProgram::uniform(
 		const char *name,
 		const GPlatesGui::Colour &colour)
 {
@@ -250,7 +250,7 @@ GPlatesOpenGL::GLProgramObject::uniform(
 
 
 bool
-GPlatesOpenGL::GLProgramObject::uniform(
+GPlatesOpenGL::GLProgram::uniform(
 		const char *name,
 		const GLMatrix &matrix)
 {
@@ -277,14 +277,14 @@ GPlatesOpenGL::GLProgramObject::uniform(
 
 
 GLuint
-GPlatesOpenGL::GLProgramObject::get_resource_handle() const
+GPlatesOpenGL::GLProgram::get_resource_handle() const
 {
 	return d_resource->get_resource_handle();
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::output_info_log()
+GPlatesOpenGL::GLProgram::output_info_log()
 {
 	std::set<QString> shader_filenames;
 
@@ -343,23 +343,23 @@ GPlatesOpenGL::GLProgramObject::output_info_log()
 
 
 GLuint
-GPlatesOpenGL::GLProgramObject::Allocator::allocate(
+GPlatesOpenGL::GLProgram::Allocator::allocate(
 	const GLCapabilities &capabilities)
 {
-	const GLuint program_object = glCreateProgram();
+	const GLuint program = glCreateProgram();
 
 	GPlatesGlobal::Assert<OpenGLException>(
-		program_object,
+		program,
 		GPLATES_ASSERTION_SOURCE,
 		"Failed to create shader program object.");
 
-	return program_object;
+	return program;
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::Allocator::deallocate(
-	GLuint program_object)
+GPlatesOpenGL::GLProgram::Allocator::deallocate(
+	GLuint program)
 {
-	glDeleteProgram(program_object);
+	glDeleteProgram(program);
 }

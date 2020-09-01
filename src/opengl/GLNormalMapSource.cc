@@ -629,15 +629,15 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 
 		// Bind the shader program.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_generate_normals_program_object,
+				d_generate_normals_program,
 				GPLATES_ASSERTION_SOURCE);
-		renderer.gl_bind_program_object(d_generate_normals_program_object.get());
+		renderer.gl_bind_program_object(d_generate_normals_program.get());
 
 		// Bind the height field texture to texture unit 0.
 		renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
 
 		// Set the height field texture sampler to texture unit 0.
-		d_generate_normals_program_object.get()->gl_uniform1i(
+		d_generate_normals_program.get()->gl_uniform1i(
 				renderer, "height_field_texture_sampler", 0);
 
 		// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
@@ -646,7 +646,7 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 		const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
 		const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
 		const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
-		d_generate_normals_program_object.get()->gl_uniform4f(
+		d_generate_normals_program.get()->gl_uniform4f(
 				renderer,
 				"height_field_parameters",
 				u_scale, // scale u
@@ -1235,14 +1235,14 @@ GPlatesOpenGL::GLNormalMapSource::create_normal_map_generation_shader_program(
 			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Create the shader program for *inactive* polygons.
-	d_generate_normals_program_object =
+	d_generate_normals_program =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					generate_normal_map_vertex_shader_source,
 					generate_normal_map_fragment_shader_source);
 
 	// Return false if unable to create a shader program.
-	if (!d_generate_normals_program_object)
+	if (!d_generate_normals_program)
 	{
 		return false;
 	}
