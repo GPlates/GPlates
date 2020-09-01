@@ -93,16 +93,18 @@ namespace GPlatesOpenGL
 
 		//! Maximum number of texture image units available to fragment shader.
 		GLuint gl_max_texture_image_units; // GL_MAX_TEXTURE_IMAGE_UNITS query result
+		GLuint gl_max_fragment_uniform_components; // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS query result
 
 		GLuint gl_max_vertex_texture_image_units; // GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS query result
 		GLuint gl_max_vertex_output_components; // GL_MAX_VERTEX_OUTPUT_COMPONENTS query result
+		GLuint gl_max_vertex_uniform_components; // GL_MAX_VERTEX_UNIFORM_COMPONENTS query result
 
 		GLuint gl_max_geometry_texture_image_units; // GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS query result
 		GLuint gl_max_geometry_output_vertices; // GL_MAX_GEOMETRY_OUTPUT_VERTICES query result
 		GLuint gl_max_geometry_input_components; // GL_MAX_GEOMETRY_INPUT_COMPONENTS query result
 		GLuint gl_max_geometry_output_components; // GL_MAX_GEOMETRY_OUTPUT_COMPONENTS query result
-		GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS query result
 		GLuint gl_max_geometry_total_output_components; // GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS query result
+		GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS query result
 
 		
 		//

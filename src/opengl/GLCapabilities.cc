@@ -56,14 +56,16 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_clip_distances(8),
 	gl_max_combined_texture_image_units(48),
 	gl_max_texture_image_units(16),
+	gl_max_fragment_uniform_components(1024),
 	gl_max_vertex_texture_image_units(16),
 	gl_max_vertex_output_components(64),
+	gl_max_vertex_uniform_components(1024),
 	gl_max_geometry_texture_image_units(16),
 	gl_max_geometry_output_vertices(256),
 	gl_max_geometry_input_components(64),
 	gl_max_geometry_output_components(128),
-	gl_max_geometry_uniform_components(1024),
 	gl_max_geometry_total_output_components(1024),
+	gl_max_geometry_uniform_components(1024),
 	gl_max_texture_size(1024),
 	gl_max_cube_map_texture_size(1024),
 	gl_EXT_texture_filter_anisotropic(false),
@@ -110,16 +112,18 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	gl_max_combined_texture_image_units = query_integer(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
 
 	gl_max_texture_image_units = query_integer(GL_MAX_TEXTURE_IMAGE_UNITS);
+	gl_max_fragment_uniform_components = query_integer(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS);
 
 	gl_max_vertex_texture_image_units = query_integer(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS);
 	gl_max_vertex_output_components = query_integer(GL_MAX_VERTEX_OUTPUT_COMPONENTS);
+	gl_max_vertex_uniform_components = query_integer(GL_MAX_VERTEX_UNIFORM_COMPONENTS);
 
 	gl_max_geometry_texture_image_units = query_integer(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS);
 	gl_max_geometry_output_vertices = query_integer(GL_MAX_GEOMETRY_OUTPUT_VERTICES);
 	gl_max_geometry_input_components = query_integer(GL_MAX_GEOMETRY_INPUT_COMPONENTS);
 	gl_max_geometry_output_components = query_integer(GL_MAX_GEOMETRY_OUTPUT_COMPONENTS);
-	gl_max_geometry_uniform_components = query_integer(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS);
 	gl_max_geometry_total_output_components = query_integer(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS);
+	gl_max_geometry_uniform_components = query_integer(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS);
 
 
 	//
