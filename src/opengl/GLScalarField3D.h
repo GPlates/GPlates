@@ -39,7 +39,7 @@
 #include "GLLight.h"
 #include "GLProgramObject.h"
 #include "GLScreenRenderTarget.h"
-#include "GLShaderObject.h"
+#include "GLShader.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
 #include "GLStreamBuffer.h"

@@ -28,7 +28,7 @@
 #include <boost/scoped_array.hpp>
 #include <QDebug>
 
-#include "GLShaderObject.h"
+#include "GLShader.h"
 
 #include "GL.h"
 #include "GLContext.h"
@@ -45,7 +45,7 @@
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
-GPlatesOpenGL::GLShaderObject::GLShaderObject(
+GPlatesOpenGL::GLShader::GLShader(
 		GL &gl,
 		GLenum shader_type) :
 	d_resource(
@@ -58,7 +58,7 @@ GPlatesOpenGL::GLShaderObject::GLShaderObject(
 
 
 void
-GPlatesOpenGL::GLShaderObject::shader_source(
+GPlatesOpenGL::GLShader::shader_source(
 		GL &gl,
 		const GLShaderSource &shader_source)
 {
@@ -92,7 +92,7 @@ GPlatesOpenGL::GLShaderObject::shader_source(
 
 
 bool
-GPlatesOpenGL::GLShaderObject::compile_shader(
+GPlatesOpenGL::GLShader::compile_shader(
 		GL &gl)
 {
 	// 'shader_source()' should have been called first.
@@ -120,8 +120,8 @@ GPlatesOpenGL::GLShaderObject::compile_shader(
 }
 
 
-std::vector<GPlatesOpenGL::GLShaderObject::FileCodeSegment>
-GPlatesOpenGL::GLShaderObject::get_file_code_segments() const
+std::vector<GPlatesOpenGL::GLShader::FileCodeSegment>
+GPlatesOpenGL::GLShader::get_file_code_segments() const
 {
 	// 'shader_source()' should have been called first.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -155,14 +155,14 @@ GPlatesOpenGL::GLShaderObject::get_file_code_segments() const
 
 
 GLuint
-GPlatesOpenGL::GLShaderObject::get_resource_handle() const
+GPlatesOpenGL::GLShader::get_resource_handle() const
 {
 	return d_resource->get_resource_handle();
 }
 
 
 void
-GPlatesOpenGL::GLShaderObject::output_info_log()
+GPlatesOpenGL::GLShader::output_info_log()
 {
 	// Iterate over the source code segments that were compiled together (in order) and find
 	// any code segments that were loaded from a file.
@@ -210,24 +210,24 @@ GPlatesOpenGL::GLShaderObject::output_info_log()
 
 
 GLuint
-GPlatesOpenGL::GLShaderObject::Allocator::allocate(
+GPlatesOpenGL::GLShader::Allocator::allocate(
 		const GLCapabilities &capabilities,
 		GLenum shader_type)
 {
-	const GLuint shader_object = glCreateShader(shader_type);
+	const GLuint shader = glCreateShader(shader_type);
 
 	GPlatesGlobal::Assert<OpenGLException>(
-			shader_object,
+			shader,
 			GPLATES_ASSERTION_SOURCE,
 			"Failed to create shader object.");
 
-	return shader_object;
+	return shader;
 }
 
 
 void
-GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
-		GLuint shader_object)
+GPlatesOpenGL::GLShader::Allocator::deallocate(
+		GLuint shader)
 {
-	glDeleteShader(shader_object);
+	glDeleteShader(shader);
 }

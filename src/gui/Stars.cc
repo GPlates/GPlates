@@ -299,7 +299,7 @@ GPlatesGui::Stars::Stars(
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;
 	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(VERTEX_SHADER);
-	GPlatesOpenGL::GLShaderObject::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShaderObject::create(gl, GL_VERTEX_SHADER);
+	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
 	vertex_shader->shader_source(gl, vertex_shader_source);
 	if (!vertex_shader->compile_shader(gl))
 	{
@@ -310,7 +310,7 @@ GPlatesGui::Stars::Stars(
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
 	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
-	GPlatesOpenGL::GLShaderObject::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShaderObject::create(gl, GL_FRAGMENT_SHADER);
+	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
 	fragment_shader->shader_source(gl, fragment_shader_source);
 	if (!fragment_shader->compile_shader(gl))
 	{

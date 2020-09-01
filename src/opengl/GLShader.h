@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLSHADEROBJECT_H
-#define GPLATES_OPENGL_GLSHADEROBJECT_H
+#ifndef GPLATES_OPENGL_GLSHADER_H
+#define GPLATES_OPENGL_GLSHADER_H
 
 #include <memory> // For std::unique_ptr
 #include <vector>
@@ -48,11 +48,11 @@ namespace GPlatesOpenGL
 	class GL;
 
 	/**
-	 * A shader object (vertex, geometry or fragment).
+	 * Wrapper around an OpenGL shader object (vertex, geometry or fragment).
 	 */
-	class GLShaderObject :
+	class GLShader :
 			public GLObject,
-			public boost::enable_shared_from_this<GLShaderObject>
+			public boost::enable_shared_from_this<GLShader>
 	{
 	public:
 		//
@@ -60,13 +60,13 @@ namespace GPlatesOpenGL
 		// is so these objects can be used with GPlatesUtils::ObjectCache.
 		//
 
-		//! A convenience typedef for a shared pointer to a @a GLShaderObject.
-		typedef boost::shared_ptr<GLShaderObject> shared_ptr_type;
-		typedef boost::shared_ptr<const GLShaderObject> shared_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a @a GLShader.
+		typedef boost::shared_ptr<GLShader> shared_ptr_type;
+		typedef boost::shared_ptr<const GLShader> shared_ptr_to_const_type;
 
-		//! A convenience typedef for a weak pointer to a @a GLShaderObject.
-		typedef boost::weak_ptr<GLShaderObject> weak_ptr_type;
-		typedef boost::weak_ptr<const GLShaderObject> weak_ptr_to_const_type;
+		//! A convenience typedef for a weak pointer to a @a GLShader.
+		typedef boost::weak_ptr<GLShader> weak_ptr_type;
+		typedef boost::weak_ptr<const GLShader> weak_ptr_to_const_type;
 
 
 		/**
@@ -112,7 +112,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a shared pointer to a @a GLShaderObject object.
+		 * Creates a shared pointer to a @a GLShader object.
 		 *
 		 * @a shader_type can be GL_VERTEX_SHADER, GL_FRAGMENT_SHADER or GL_GEOMETRY_SHADER.
 		 */
@@ -122,7 +122,7 @@ namespace GPlatesOpenGL
 				GL &gl,
 				GLenum shader_type)
 		{
-			return shared_ptr_type(new GLShaderObject(gl, shader_type));
+			return shared_ptr_type(new GLShader(gl, shader_type));
 		}
 
 		/**
@@ -131,12 +131,12 @@ namespace GPlatesOpenGL
 		 * See comment in @a create for details on @a shader_type.
 		 */
 		static
-		std::unique_ptr<GLShaderObject>
+		std::unique_ptr<GLShader>
 		create_unique(
 				GL &gl,
 				GLenum shader_type)
 		{
-			return std::unique_ptr<GLShaderObject>(new GLShaderObject(gl, shader_type));
+			return std::unique_ptr<GLShader>(new GLShader(gl, shader_type));
 		}
 
 
@@ -224,7 +224,7 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
-		GLShaderObject(
+		GLShader(
 				GL &gl,
 				GLenum shader_type);
 
@@ -233,4 +233,4 @@ namespace GPlatesOpenGL
 	};
 }
 
-#endif // GPLATES_OPENGL_GLSHADEROBJECT_H
+#endif // GPLATES_OPENGL_GLSHADER_H

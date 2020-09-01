@@ -40,7 +40,7 @@
 #include "GLFramebuffer.h"
 #include "GLProgramObject.h"
 #include "GLRenderbuffer.h"
-#include "GLShaderObject.h"
+#include "GLShader.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
@@ -144,7 +144,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the shader resource manager.
 			 */
-			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
+			const boost::shared_ptr<GLShader::resource_manager_type> &
 			get_shader_resource_manager() const
 			{
 				return d_shader_resource_manager;
@@ -180,7 +180,7 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
 			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_resource_manager;
 			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
-			boost::shared_ptr<GLShaderObject::resource_manager_type> d_shader_resource_manager;
+			boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
 
 			/**

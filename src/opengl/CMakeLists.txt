@@ -91,8 +91,8 @@ set(srcs
     GLScalarField3DGenerator.h
     GLScalarFieldDepthLayersSource.cc
     GLScalarFieldDepthLayersSource.h
-    GLShaderObject.cc
-    GLShaderObject.h
+    GLShader.cc
+    GLShader.h
     GLShaderSource.cc
     GLShaderSource.h
     GLState.cc

@@ -720,7 +720,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	mask_region_of_interest_moments_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
-	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
+	boost::optional<GLShader::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
 					mask_region_of_interest_moments_vertex_shader_source);
@@ -736,7 +736,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	mask_region_of_interest_moments_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
-	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_fragment_shader =
+	boost::optional<GLShader::shared_ptr_type> mask_region_of_interest_moments_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
 					renderer,
 					mask_region_of_interest_moments_fragment_shader_source);
@@ -762,7 +762,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	mask_region_of_interest_minmax_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
-	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
+	boost::optional<GLShader::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
 					mask_region_of_interest_minmax_vertex_shader_source);
@@ -778,7 +778,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	mask_region_of_interest_minmax_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
-	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_fragment_shader =
+	boost::optional<GLShader::shared_ptr_type> mask_region_of_interest_minmax_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
 					renderer,
 					mask_region_of_interest_minmax_fragment_shader_source);
@@ -943,7 +943,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 		GLRenderer &renderer)
 {
 	// Compile the common vertex shader used by all reduction operation shader programs.
-	boost::optional<GLShaderObject::shared_ptr_type> reduction_vertex_shader =
+	boost::optional<GLShader::shared_ptr_type> reduction_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
@@ -960,7 +960,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	reduction_sum_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the sum of region-of-interest filter results.
-	boost::optional<GLShaderObject::shared_ptr_type> reduction_sum_fragment_shader =
+	boost::optional<GLShader::shared_ptr_type> reduction_sum_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
 					renderer,
 					reduction_sum_fragment_shader_source);
@@ -986,7 +986,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	reduction_min_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the minimum of region-of-interest filter results.
-	boost::optional<GLShaderObject::shared_ptr_type> reduction_min_fragment_shader =
+	boost::optional<GLShader::shared_ptr_type> reduction_min_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
 					renderer,
 					reduction_min_fragment_shader_source);
@@ -1012,7 +1012,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	reduction_max_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the maximum of region-of-interest filter results.
-	boost::optional<GLShaderObject::shared_ptr_type> reduction_max_fragment_shader =
+	boost::optional<GLShader::shared_ptr_type> reduction_max_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
 					renderer,
 					reduction_max_fragment_shader_source);
