@@ -31,37 +31,14 @@
 #include "GLUtils.h"
 
 #include "OpenGLException.h"
+#include "GL.h"
+#include "GLBuffer.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
 
 #include "global/GPlatesAssert.h"
 
-
-namespace GPlatesOpenGL
-{
-	namespace
-	{
-		//! Converts an array of 4 numbers representing a tex gen plane into a std::vector.
-		std::vector<GLdouble>
-		create_object_plane(
-				const GLdouble &x,
-				const GLdouble &y,
-				const GLdouble &z,
-				const GLdouble &w)
-		{
-			std::vector<GLdouble> plane(4);
-
-			plane[0] = x;
-			plane[1] = y;
-			plane[2] = z;
-			plane[3] = w;
-
-			return plane;
-		}
-	}
-}
 
 void
 GPlatesOpenGL::GLUtils::check_gl_errors(
@@ -112,83 +89,44 @@ GPlatesOpenGL::GLUtils::check_gl_errors(
 }
 
 
-GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_type
-GPlatesOpenGL::GLUtils::create_full_screen_2D_textured_quad(
-		GLRenderer &renderer)
+GPlatesOpenGL::GLVertexArray::shared_ptr_type
+GPlatesOpenGL::GLUtils::create_full_screen_quad(
+		GL &gl)
 {
-	return create_full_screen_2D_coloured_textured_quad(
-			renderer,
-			GPlatesGui::rgba8_t(255, 255, 255, 255/*white*/));
-}
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
+	// Bind vertex array object.
+	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(gl);
+	gl.BindVertexArray(vertex_array);
 
-GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_type
-GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_quad(
-		GLRenderer &renderer,
-		const GPlatesGui::rgba8_t &colour)
-{
-	// The vertices for the full-screen quad.
-	const GLVertexUtils::ColourVertex quad_vertices[4] =
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	GLBuffer::shared_ptr_type vertex_buffer = GLBuffer::create(gl);
+	gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+
+	// The vertices for the full-screen quad (as a tri-strip).
+	const GLVertexUtils::Vertex quad_vertices[4] =
 	{  //  x,  y, z, colour
-		GLVertexUtils::ColourVertex(-1, -1, 0, colour),
-		GLVertexUtils::ColourVertex(1, -1, 0, colour),
-		GLVertexUtils::ColourVertex(1,  1, 0, colour),
-		GLVertexUtils::ColourVertex(-1,  1, 0, colour)
+		GLVertexUtils::Vertex(-1, -1, 0),
+		GLVertexUtils::Vertex(1, -1, 0),
+		GLVertexUtils::Vertex(-1,  1, 0),
+		GLVertexUtils::Vertex(1,  1, 0)
 	};
 
-	// The indices for the full-screen quad.
-	// Rendered as two triangles (in a triangle strip).
-	const GLushort tri_strip_indices[4] = { 0, 1, 3, 2 };
+	// Transfer vertex data to currently bound vertex buffer object.
+	glBufferData(
+			GL_ARRAY_BUFFER,
+			4 * sizeof(GLVertexUtils::Vertex),
+			quad_vertices,
+			GL_STATIC_DRAW);
 
-	// Create the vertex array.
-	const GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
+	// Specify vertex attributes (position) in currently bound vertex buffer object.
+	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+	// to currently bound vertex array object.
+	gl.EnableVertexAttribArray(0);
+	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
 
-	// Store the vertices/indices in the vertex array and compile into a draw call.
-	//
-	// NOTE: Even though we don't return 'vertex_array' the compiled draw state maintains
-	// shared references to the internal vertex buffer, etc - enough to be able to draw the
-	// full-screen quad even though 'vertex_array' will no longer exist.
-	return compile_vertex_array_draw_state(
-			renderer,
-			*vertex_array,
-			std::vector<GLVertexUtils::ColourVertex>(quad_vertices, quad_vertices + 4),
-			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
-			GL_TRIANGLE_STRIP);
-}
-
-
-GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_type
-GPlatesOpenGL::GLUtils::create_full_screen_2D_coloured_textured_quad(
-		GLRenderer &renderer,
-		const GPlatesGui::rgba8_t &colour)
-{
-	// The vertices for the full-screen quad.
-	const GLVertexUtils::ColourTextureVertex quad_vertices[4] =
-	{  //  x,  y, z, u, v, colour
-		GLVertexUtils::ColourTextureVertex(-1, -1, 0, 0, 0, colour),
-		GLVertexUtils::ColourTextureVertex(1, -1, 0, 1, 0, colour),
-		GLVertexUtils::ColourTextureVertex(1,  1, 0, 1, 1, colour),
-		GLVertexUtils::ColourTextureVertex(-1,  1, 0, 0, 1, colour)
-	};
-
-	// The indices for the full-screen quad.
-	// Rendered as two triangles (in a triangle strip).
-	const GLushort tri_strip_indices[4] = { 0, 1, 3, 2 };
-
-	// Create the vertex array.
-	const GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
-
-	// Store the vertices/indices in the vertex array and compile into a draw call.
-	//
-	// NOTE: Even though we don't return 'vertex_array' the compiled draw state maintains
-	// shared references to the internal vertex buffer, etc - enough to be able to draw the
-	// full-screen quad even though 'vertex_array' will no longer exist.
-	return compile_vertex_array_draw_state(
-			renderer,
-			*vertex_array,
-			std::vector<GLVertexUtils::ColourTextureVertex>(quad_vertices, quad_vertices + 4),
-			std::vector<GLushort>(tri_strip_indices, tri_strip_indices + 4),
-			GL_TRIANGLE_STRIP);
+	return vertex_array;
 }
 
 
@@ -198,89 +136,6 @@ GPlatesOpenGL::GLUtils::get_clip_space_to_texture_space_transform()
 	static GLMatrix matrix = GLMatrix().gl_translate(0.5, 0.5, 0.0).gl_scale(0.5, 0.5, 1.0);
 
 	return matrix;
-}
-
-
-void
-GPlatesOpenGL::GLUtils::set_full_screen_quad_texture_state(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		const unsigned int texture_unit,
-		const GLint tex_env_mode,
-		const boost::optional<const GLMatrix &> &texture_transform_matrix,
-		const GLenum texture_target)
-{
-	renderer.gl_bind_texture(texture, GL_TEXTURE0 + texture_unit, texture_target);
-
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, texture_target);
-	renderer.gl_tex_env(GL_TEXTURE0 + texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, tex_env_mode);
-
-	if (texture_transform_matrix)
-	{
-		renderer.gl_load_texture_matrix(GL_TEXTURE0 + texture_unit, texture_transform_matrix.get());
-	}
-}
-
-
-void
-GPlatesOpenGL::GLUtils::set_frustum_texture_state(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &texture,
-		const GLMatrix &projection_transform,
-		const GLMatrix &view_transform,
-		const unsigned int texture_unit,
-		const GLint tex_env_mode,
-		const boost::optional<const GLMatrix &> &texture_transform_matrix,
-		const GLenum texture_target)
-{
-	renderer.gl_bind_texture(texture, GL_TEXTURE0 + texture_unit, texture_target);
-
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, texture_target);
-	renderer.gl_tex_env(GL_TEXTURE0 + texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, tex_env_mode);
-
-	// Set up texture coordinate generation from the vertices (x,y,z) and
-	// set up a texture matrix to perform the model-view and projection transforms of the frustum.
-	// Set it on same texture unit, ie texture unit 'texture_unit'.
-	set_object_linear_tex_gen_state(renderer, texture_unit);
-
-	GLMatrix texture_matrix =
-			texture_transform_matrix
-			? texture_transform_matrix.get()
-			: GLMatrix();
-	texture_matrix.gl_mult_matrix(projection_transform);
-	texture_matrix.gl_mult_matrix(view_transform);
-
-	renderer.gl_load_texture_matrix(GL_TEXTURE0 + texture_unit, texture_matrix);
-}
-
-
-void
-GPlatesOpenGL::GLUtils::set_object_linear_tex_gen_state(
-		GLRenderer &renderer,
-		const unsigned int texture_unit)
-{
-	// Enable tex gen.
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, GL_TEXTURE_GEN_S);
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, GL_TEXTURE_GEN_T);
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, GL_TEXTURE_GEN_R);
-	renderer.gl_enable_texture(GL_TEXTURE0 + texture_unit, GL_TEXTURE_GEN_Q);
-
-	// Set tex gen mode to object linear.
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-
-	static const std::vector<GLdouble> OBJECT_PLANE_S = create_object_plane(1, 0, 0, 0);
-	static const std::vector<GLdouble> OBJECT_PLANE_T = create_object_plane(0, 1, 0, 0);
-	static const std::vector<GLdouble> OBJECT_PLANE_R = create_object_plane(0, 0, 1, 0);
-	static const std::vector<GLdouble> OBJECT_PLANE_Q = create_object_plane(0, 0, 0, 1);
-
-	// Set the object planes.
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_S, GL_OBJECT_PLANE, OBJECT_PLANE_S);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_T, GL_OBJECT_PLANE, OBJECT_PLANE_T);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_R, GL_OBJECT_PLANE, OBJECT_PLANE_R);
-	renderer.gl_tex_gen(GL_TEXTURE0 + texture_unit, GL_Q, GL_OBJECT_PLANE, OBJECT_PLANE_Q);
 }
 
 

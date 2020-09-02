@@ -327,7 +327,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(renderer)),
 	d_z_clip_texture(GLTextureUtils::create_z_clip_texture_2D(renderer)),
 	d_xy_clip_texture_transform(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform()),
-	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer)),
+	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer)),
 	d_light(light)
 #if 0	// Not needed anymore but keeping in case needed in the future...
 	d_cube_quad_tree(cube_quad_tree_type::create())

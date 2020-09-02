@@ -65,7 +65,7 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 		const GPlatesPresentation::ViewState &view_state) :
 	d_view_state(view_state),
 	d_background_colour(d_view_state.get_background_colour()),
-	d_full_screen_quad(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer))
+	d_full_screen_quad(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer))
 {
 	// Vertex shader.
 	GPlatesOpenGL::GLShaderSource vertex_shader_source;

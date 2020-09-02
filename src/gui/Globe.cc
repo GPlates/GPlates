@@ -413,7 +413,7 @@ GPlatesGui::Globe::render_front_globe_hemisphere_surface_texture(
 
 	// Used to draw a full-screen quad into render texture.
 	const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			gl.get_context().get_shared_state()->get_full_screen_2D_textured_quad(gl);
+			gl.get_context().get_shared_state()->get_full_screen_quad(gl);
 
 	// Full-screen rendering requires no model-view-projection transform.
 	gl.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);

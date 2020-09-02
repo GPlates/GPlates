@@ -824,7 +824,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
 	// We don't actual use the texture coordinates though.
 	// The vertex colours have RGBA channels set to 1.0.
 	GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+			renderer.get_context().get_shared_state()->get_full_screen_quad(renderer);
 
 	// Set the stencil function to pass if reference value (zero) is not equal to the stencil buffer value.
 	renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);

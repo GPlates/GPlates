@@ -200,7 +200,7 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	// These textures get reused even inside a single rendering frame so we just need a small number
 	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
 	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
-	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer)),
+	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer)),
 	d_logged_tile_load_failure_warning(false)
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();

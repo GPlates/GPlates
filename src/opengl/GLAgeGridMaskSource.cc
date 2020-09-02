@@ -168,7 +168,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	// These textures get reused even inside a single rendering frame so we just need a small number
 	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
 	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
-	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer)),
+	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer)),
 	d_first_render_pass_state(renderer.create_empty_compiled_draw_state()),
 	d_second_render_pass_state(renderer.create_empty_compiled_draw_state()),
 	d_third_render_pass_state(renderer.create_empty_compiled_draw_state()),

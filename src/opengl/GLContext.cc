@@ -227,17 +227,17 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 }
 
 
-GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
-GPlatesOpenGL::GLContext::SharedState::get_full_screen_2D_textured_quad(
+GPlatesOpenGL::GLVertexArray::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_full_screen_quad(
 		GL &gl)
 {
-	// Create the sole unbound vertex array compile state if it hasn't already been created.
-	if (!d_full_screen_2D_textured_quad)
+	// Create the sole vertex array if it hasn't already been created.
+	if (!d_full_screen_quad)
 	{
-		d_full_screen_2D_textured_quad = GLUtils::create_full_screen_2D_textured_quad(gl);
+		d_full_screen_quad = GLUtils::create_full_screen_quad(gl);
 	}
 
-	return d_full_screen_2D_textured_quad.get();
+	return d_full_screen_quad.get();
 }
 
 

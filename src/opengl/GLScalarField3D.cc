@@ -1248,7 +1248,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 
 	// Used to draw a full-screen quad.
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+			renderer.get_context().get_shared_state()->get_full_screen_quad(renderer);
 
 	// Render the full-screen quad.
 	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);

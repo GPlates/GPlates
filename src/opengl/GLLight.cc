@@ -414,7 +414,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 
 	// Used to draw a full-screen quad into render texture.
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+			renderer.get_context().get_shared_state()->get_full_screen_quad(renderer);
 
 	// Classify our framebuffer object according to texture format/dimensions.
 	GLFramebuffer::Classification framebuffer_classification;

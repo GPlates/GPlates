@@ -36,7 +36,6 @@
 
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
-#include "GLCompiledDrawState.h"
 #include "GLFramebuffer.h"
 #include "GLProgram.h"
 #include "GLRenderbuffer.h"
@@ -171,18 +170,23 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * Creates a compiled draw state that can render a full-screen textured quad.
+			 * Returns a vertex array for rendering a full-screen quad.
 			 *
-			 * The vertex colours are white - RGBA(1.0, 1.0, 1.0, 1.0).
+			 * The returned vertex array can be used to draw a full-screen quad in order to apply
+			 * a texture to the screen-space of a render target (eg, using GLSL built-in 'gl_FragCoord').
 			 *
-			 * The returned compiled draw state can be used to draw a full-screen quad in order apply a
-			 * texture to the screen-space of a render target.
+			 * It can be rendered as:
+			 *
+			 *   gl.BindVertexArray(vertex_array);
+			 *   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			 *
+			 * Note: This also creates a new vertex buffer and vertex element buffer (that are kept alive
+			 *       by the returned vertex array).
 			 *
 			 * NOTE: This method maintains a single instance of a full-screen quad that clients can use.
-			 * Which is why it is returned as a shared pointer to 'const'.
 			 */
-			GLCompiledDrawState::non_null_ptr_to_const_type
-			get_full_screen_2D_textured_quad(
+			GLVertexArray::shared_ptr_type
+			get_full_screen_quad(
 					GL &gl);
 
 		private:
@@ -203,9 +207,9 @@ namespace GPlatesOpenGL
 			boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
 
 			/**
-			 * The compiled draw state representing a full screen textured quad.
+			 * The vertex array representing a full screen quad.
 			 */
-			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_full_screen_2D_textured_quad;
+			boost::optional<GLVertexArray::shared_ptr_type> d_full_screen_quad;
 
 			// To access @a d_state_set_store and @a d_state_set_keys without exposing to clients.
 			friend class GLContext;

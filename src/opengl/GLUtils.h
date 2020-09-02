@@ -30,9 +30,9 @@
 #include <opengl/OpenGL1.h>
 #include <boost/optional.hpp>
 
-#include "GLCompiledDrawState.h"
 #include "GLMatrix.h"
 #include "GLTexture.h"
+#include "GLVertexArray.h"
 
 #include "gui/Colour.h"
 
@@ -41,9 +41,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLMatrix;
-	class GLRenderer;
-	class GLVertexArray;
+	class GL;
 
 	namespace GLUtils
 	{
@@ -62,55 +60,24 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a full-screen quad vertex array with 2D texture coordinates (in [0,1] range) and
-		 * with all vertices containing the colour white - RGBA(1.0, 1.0, 1.0, 1.0).
+		 * Creates a full-screen quad vertex array.
 		 *
 		 * The full-screen quad's vertices are stored in an internally created vertex array.
 		 *
-		 * The returned compiled draw state can be used to draw a full-screen quad in order to apply
-		 * a texture to the screen-space of a render target.
+		 * The returned vertex array can be used to draw a full-screen quad in order to apply
+		 * a texture to the screen-space of a render target (eg, using GLSL built-in 'gl_FragCoord').
 		 *
-		 * NOTE: This creates a new vertex buffer, vertex element buffer and vertex array so ideally
-		 * you should reuse the returned compiled draw state rather than recreating it where possible.
+		 * It can be rendered as:
+		 *
+		 *   gl.BindVertexArray(vertex_array);
+		 *   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		 *
+		 * Note: This also creates a new vertex buffer and vertex element buffer (that are kept alive
+		 *       by the returned vertex array).
 		 */
-		GLCompiledDrawState::non_null_ptr_type
-		create_full_screen_2D_textured_quad(
-				GLRenderer &renderer);
-
-
-		/**
-		 * Creates a full-screen quad vertex array of the specified vertex colour.
-		 *
-		 * The full-screen quad's vertices are stored in an internally created vertex array.
-		 *
-		 * The returned compiled draw state can be used to draw a full-screen quad in order to
-		 * render a filled colour quad to the screen-space of a render target.
-		 *
-		 * NOTE: This creates a new vertex buffer, vertex element buffer and vertex array so ideally
-		 * you should reuse the returned compiled draw state rather than recreating it where possible.
-		 */
-		GLCompiledDrawState::non_null_ptr_type
-		create_full_screen_2D_coloured_quad(
-				GLRenderer &renderer,
-				const GPlatesGui::rgba8_t &colour);
-
-
-		/**
-		 * Creates a full-screen quad vertex array with 2D texture coordinates (in [0,1] range) and
-		 * with all vertices containing the specified vertex colour.
-		 *
-		 * The full-screen quad's vertices are stored in an internally created vertex array.
-		 *
-		 * The returned compiled draw state can be used to draw a full-screen quad in order to apply
-		 * a texture to the screen-space of a render target.
-		 *
-		 * NOTE: This creates a new vertex buffer, vertex element buffer and vertex array so ideally
-		 * you should reuse the returned compiled draw state rather than recreating it where possible.
-		 */
-		GLCompiledDrawState::non_null_ptr_type
-		create_full_screen_2D_coloured_textured_quad(
-				GLRenderer &renderer,
-				const GPlatesGui::rgba8_t &colour);
+		GLVertexArray::shared_ptr_type
+		create_full_screen_quad(
+				GL &gl);
 
 
 		/**
@@ -119,67 +86,6 @@ namespace GPlatesOpenGL
 		 */
 		const GLMatrix &
 		get_clip_space_to_texture_space_transform();
-
-
-		/**
-		 * Sets renderer state to translate/scale texture coordinates and then look up a texture.
-		 *
-		 * Does the following:
-		 * (1) binds @a texture to texture unit @a texture_unit,
-		 * (2) sets the texture environment mode (gl_tex_env) to @a tex_env_mode on texture unit @a texture_unit,
-		 * (3) optionally sets the texture matrix to translate/scale texture coordinates.
-		 *
-		 * The translate/scales parameters are used to adjust texture coordinates.
-		 * Note that the scale is multiplied in first followed by the translate.
-		 * The default is no translate/scale.
-		 */
-		void
-		set_full_screen_quad_texture_state(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &texture,
-				const unsigned int texture_unit = 0,
-				const GLint tex_env_mode = GL_REPLACE,
-				const boost::optional<const GLMatrix &> &texture_transform_matrix = boost::none,
-				const GLenum texture_target = GL_TEXTURE_2D);
-
-
-		/**
-		 * Sets renderer state to map (x,y,z) positions into texture coordinates
-		 * using the specified frustum and then look up a texture.
-		 *
-		 * Does the following:
-		 * (1) binds @a texture to texture unit @a texture_unit,
-		 * (2) sets the texture environment mode (gl_tex_env) to @a tex_env_mode on texture unit @a texture_unit,
-		 * (3) enables, and sets up, object linear texture coordinate generation using @a set_object_linear_tex_gen_state,
-		 * (4) optionally sets the texture matrix to map object positions to texture coordinates in the
-		 *     range [0,1] according to the frustum defined by @a projection_transform and @a view_transform.
-		 *
-		 * The translate/scales parameters are used to adjust the post-transform texture coordinates.
-		 * Note that the scale is multiplied in first followed by the translate.
-		 * The default values convert the clip-space range (-1,1) to texture coord range (0,1)
-		 * in order to map to entire texture.
-		 */
-		void
-		set_frustum_texture_state(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &texture,
-				const GLMatrix &projection_transform,
-				const GLMatrix &view_transform,
-				const unsigned int texture_unit = 0,
-				const GLint tex_env_mode = GL_REPLACE,
-				const boost::optional<const GLMatrix &> &texture_transform_matrix =
-						get_clip_space_to_texture_space_transform(),
-				const GLenum texture_target = GL_TEXTURE_2D);
-
-
-		/**
-		 * Enables texture coordinate generation and sets the texture transform state on @a renderer to
-		 * generate 4D texture coordinates (s,t,r,q) directly (object linear) from vertex (x,y,z) positions.
-		 */
-		void
-		set_object_linear_tex_gen_state(
-				GLRenderer &renderer,
-				const unsigned int texture_unit = 0);
 
 
 		/**
