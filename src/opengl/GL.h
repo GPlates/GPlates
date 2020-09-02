@@ -37,6 +37,7 @@
 #include "GLFramebuffer.h"
 #include "GLProgram.h"
 #include "GLRenderbuffer.h"
+#include "GLSampler.h"
 #include "GLState.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
@@ -218,11 +219,17 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
 
+		//! Bind texture unit to sampler object (none means unbind).
+		void
+		BindSampler(
+				GLuint unit,
+				boost::optional<GLSampler::shared_ptr_type> sampler);
+
 		//! Bind texture target and active texture unit to texture object (none means unbind).
 		void
 		BindTexture(
 				GLenum texture_target,
-				boost::optional<GLTexture::shared_ptr_type> texture_object);
+				boost::optional<GLTexture::shared_ptr_type> texture);
 
 		//! Bind vertex array object (none means unbind).
 		void

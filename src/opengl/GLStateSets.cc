@@ -279,19 +279,95 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
 }
 
 
+GPlatesOpenGL::GLBindSamplerStateSet::GLBindSamplerStateSet(
+		const GLCapabilities &capabilities,
+		GLuint unit,
+		boost::optional<GLSampler::shared_ptr_type> sampler) :
+	d_unit(unit),
+	d_sampler(sampler),
+	d_sampler_resource(0)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			unit < capabilities.gl_max_combined_texture_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	if (sampler)
+	{
+		d_sampler_resource = sampler.get()->get_resource_handle();
+	}
+}
+
+void
+GPlatesOpenGL::GLBindSamplerStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Note the only state we're comparing is the sampler object (resource handle).
+	// The texture unit should be the same for 'this' and 'current_state_set'.
+	//
+	// Return early if no state change...
+	if (d_sampler_resource ==
+			// Throws exception if downcast fails...
+			dynamic_cast<const GLBindSamplerStateSet &>(current_state_set).d_sampler_resource)
+	{
+		return;
+	}
+
+	// Bind the sampler object (can be zero).
+	glBindSampler(d_unit, d_sampler_resource);
+}
+
+void
+GPlatesOpenGL::GLBindSamplerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_sampler_resource == 0)
+	{
+		return;
+	}
+
+	// Bind the sampler object.
+	glBindSampler(d_unit, d_sampler_resource);
+}
+
+void
+GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_sampler_resource == 0)
+	{
+		return;
+	}
+
+	// The default is zero (no sampler object).
+	glBindSampler(d_unit, 0);
+}
+
+
 GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 		const GLCapabilities &capabilities,
 		GLenum texture_target,
 		GLenum texture_unit,
-		boost::optional<GLTexture::shared_ptr_type> texture_object) :
+		boost::optional<GLTexture::shared_ptr_type> texture) :
 	d_texture_target(texture_target),
 	d_texture_unit(texture_unit),
-	d_texture_object(texture_object)
+	d_texture(texture),
+	d_texture_resource(0)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
 					texture_unit < GL_TEXTURE0 + capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
+
+	if (texture)
+	{
+		d_texture_resource = texture.get()->get_resource_handle();
+	}
 }
 
 void
@@ -300,14 +376,13 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
 {
-	// Note that we're only comparing the current state (which is the texture object).
-	// It's the texture object we're interested in binding - the other parameters are expected
-	// to be the same across 'this' and 'current_state_set'.
+	// Note the only state we're comparing is the texture object (resource handle).
+	// The texture target or texture unit should be the same for 'this' and 'current_state_set'.
 	//
 	// Return early if no state change...
-	if (d_texture_object ==
+	if (d_texture_resource ==
 			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindTextureStateSet &>(current_state_set).d_texture_object)
+			dynamic_cast<const GLBindTextureStateSet &>(current_state_set).d_texture_resource)
 	{
 		return;
 	}
@@ -319,16 +394,8 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 		glActiveTexture(d_texture_unit);
 	}
 
-	if (d_texture_object)
-	{
-		// Bind the texture.
-		glBindTexture(d_texture_target, d_texture_object.get()->get_resource_handle());
-	}
-	else
-	{
-		// Bind the unnamed texture 0.
-		glBindTexture(d_texture_target, 0);
-	}
+	// Bind the texture object (can be zero).
+	glBindTexture(d_texture_target, d_texture_resource);
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)
@@ -343,7 +410,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_texture_object)
+	if (d_texture_resource == 0)
 	{
 		return;
 	}
@@ -356,7 +423,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	}
 
 	// Bind the texture.
-	glBindTexture(d_texture_target, d_texture_object.get()->get_resource_handle());
+	glBindTexture(d_texture_target, d_texture_resource);
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)
@@ -371,7 +438,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (!d_texture_object)
+	if (d_texture_resource == 0)
 	{
 		return;
 	}

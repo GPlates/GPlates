@@ -40,6 +40,7 @@
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
 #include "GLFramebuffer.h"
+#include "GLSampler.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
 #include "GLStateStore.h"
@@ -166,17 +167,29 @@ namespace GPlatesOpenGL
 					boost::in_place(target, renderbuffer));
 		}
 
+		//! Binds the sampler object (at the specified texture unit) to the active OpenGL context.
+		void
+		bind_sampler(
+				GLuint unit,
+				boost::optional<GLSampler::shared_ptr_type> sampler)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->bind_sampler_state_sets,
+					d_state_set_keys->get_bind_sampler_key(unit),
+					boost::in_place(boost::cref(d_capabilities), unit, sampler));
+		}
+
 		//! Binds the texture object (at the specified target and texture unit) to the active OpenGL context.
 		void
 		bind_texture(
 				GLenum texture_target,
 				GLenum texture_unit,
-				boost::optional<GLTexture::shared_ptr_type> texture_object)
+				boost::optional<GLTexture::shared_ptr_type> texture)
 		{
 			set_and_apply_state_set(
 					d_state_set_store->bind_texture_state_sets,
 					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
-					boost::in_place(boost::cref(d_capabilities), texture_target, texture_unit, texture_object));
+					boost::in_place(boost::cref(d_capabilities), texture_target, texture_unit, texture));
 		}
 
 		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
@@ -621,7 +634,17 @@ namespace GPlatesOpenGL
 		get_bind_framebuffer(
 				GLenum target) const;
 
-		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
+		//! Returns the sampler object bound on the specified texture unit - boost::none implies the default no binding.
+		boost::optional<GLSampler::shared_ptr_type>
+		get_bind_sampler(
+				GLuint unit) const
+		{
+			return query_state_set<GLSampler::shared_ptr_type>(
+					d_state_set_keys->get_bind_sampler_key(unit),
+					&GLBindSamplerStateSet::d_sampler);
+		}
+
+		//! Returns the texture object bound on the specified target and texture unit - boost::none implies the default no binding.
 		boost::optional<GLTexture::shared_ptr_type>
 		get_bind_texture(
 				GLenum texture_target,
@@ -629,7 +652,7 @@ namespace GPlatesOpenGL
 		{
 			return query_state_set<GLTexture::shared_ptr_type>(
 					d_state_set_keys->get_bind_texture_key(texture_target, texture_unit),
-					&GLBindTextureStateSet::d_texture_object);
+					&GLBindTextureStateSet::d_texture);
 		}
 
 		//! Returns the currently bound vertex array object - boost::none implies the default no binding.

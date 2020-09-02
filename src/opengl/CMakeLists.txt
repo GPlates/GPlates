@@ -83,6 +83,8 @@ set(srcs
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h
+    GLSampler.cc
+    GLSampler.h
     GLSaveRestoreFrameBuffer.cc
     GLSaveRestoreFrameBuffer.h
     GLScalarField3D.cc

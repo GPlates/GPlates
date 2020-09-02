@@ -1,11 +1,11 @@
 /* $Id$ */
- 
+
 /**
  * \file 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2020 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,42 +25,42 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
-#include "GLTexture.h"
+#include "GLSampler.h"
 
 #include "GLContext.h"
 #include "GL.h"
 
 
-GPlatesOpenGL::GLTexture::GLTexture(
+GPlatesOpenGL::GLSampler::GLSampler(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_texture_resource_manager()))
+					gl.get_context().get_shared_state()->get_sampler_resource_manager()))
 {
 }
 
 
 GLuint
-GPlatesOpenGL::GLTexture::get_resource_handle() const
+GPlatesOpenGL::GLSampler::get_resource_handle() const
 {
 	return d_resource->get_resource_handle();
 }
 
 
 GLuint
-GPlatesOpenGL::GLTexture::Allocator::allocate(
+GPlatesOpenGL::GLSampler::Allocator::allocate(
 		const GLCapabilities &capabilities)
 {
-	GLuint texture;
-	glGenTextures(1, &texture);
-	return texture;
+	GLuint sampler;
+	glGenSamplers(1, &sampler);
+	return sampler;
 }
 
 
 void
-GPlatesOpenGL::GLTexture::Allocator::deallocate(
-		GLuint texture)
+GPlatesOpenGL::GLSampler::Allocator::deallocate(
+		GLuint sampler)
 {
-	glDeleteTextures(1, &texture);
+	glDeleteSamplers(1, &sampler);
 }

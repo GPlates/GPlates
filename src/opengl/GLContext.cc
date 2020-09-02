@@ -208,7 +208,7 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 	get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources();
 	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources();
 
-	get_shared_state()->get_texture_object_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources();
 	get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources();
@@ -220,8 +220,9 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
 	d_program_resource_manager(GLProgram::resource_manager_type::create()),
 	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
+	d_sampler_resource_manager(GLSampler::resource_manager_type::create()),
 	d_shader_resource_manager(GLShader::resource_manager_type::create()),
-	d_texture_object_resource_manager(GLTexture::resource_manager_type::create())
+	d_texture_resource_manager(GLTexture::resource_manager_type::create())
 {
 }
 

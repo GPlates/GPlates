@@ -42,6 +42,7 @@
 #include "GLMatrix.h"
 #include "GLProgram.h"
 #include "GLRenderbuffer.h"
+#include "GLSampler.h"
 #include "GLStateSet.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
@@ -237,6 +238,43 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to bind a sampler to a texture unit.
+	 */
+	struct GLBindSamplerStateSet :
+			public GLStateSet
+	{
+		//! Binds a sampler object.
+		GLBindSamplerStateSet(
+				const GLCapabilities &capabilities,
+				GLuint unit,
+				boost::optional<GLSampler::shared_ptr_type> sampler);
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+
+		GLuint d_unit;
+		boost::optional<GLSampler::shared_ptr_type> d_sampler;
+		GLuint d_sampler_resource;
+	};
+
+	/**
 	 * Used to bind a texture to a texture unit.
 	 */
 	struct GLBindTextureStateSet :
@@ -247,7 +285,7 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				GLenum texture_target,
 				GLenum texture_unit,
-				boost::optional<GLTexture::shared_ptr_type> texture_object);
+				boost::optional<GLTexture::shared_ptr_type> texture);
 
 		virtual
 		void
@@ -271,7 +309,8 @@ namespace GPlatesOpenGL
 
 		GLenum d_texture_target;
 		GLenum d_texture_unit;
-		boost::optional<GLTexture::shared_ptr_type> d_texture_object;
+		boost::optional<GLTexture::shared_ptr_type> d_texture;
+		GLuint d_texture_resource;
 	};
 
 	/**

@@ -160,6 +160,10 @@ namespace GPlatesOpenGL
 				GLenum target) const;
 
 		key_type
+		get_bind_sampler_key(
+				GLuint unit) const;
+
+		key_type
 		get_bind_texture_key(
 				GLenum texture_target,
 				GLenum texture_unit) const;
@@ -199,6 +203,7 @@ namespace GPlatesOpenGL
 		//! Key offsets within a particular texture *image* unit - offsets repeat for each subsequent texture unit.
 		enum TextureImageUnitKeyOffsetType
 		{
+			TEXTURE_IMAGE_UNIT_KEY_BIND_SAMPLER,
 			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D,
 			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY,
 			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D,
@@ -228,7 +233,7 @@ namespace GPlatesOpenGL
 		//! Calculate a key for a texture parameter in the specified texture *image* unit.
 		key_type
 		get_texture_image_unit_key_from_key_offset(
-				GLenum texture_unit,
+				GLuint unit,
 				TextureImageUnitKeyOffsetType key_offset) const;
 	};
 }

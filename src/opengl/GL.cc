@@ -127,15 +127,24 @@ GPlatesOpenGL::GL::BindRenderbuffer(
 
 
 void
+GPlatesOpenGL::GL::BindSampler(
+		GLuint unit,
+		boost::optional<GLSampler::shared_ptr_type> sampler)
+{
+	d_current_state->bind_sampler(unit, sampler);
+}
+
+
+void
 GPlatesOpenGL::GL::BindTexture(
 		GLenum texture_target,
-		boost::optional<GLTexture::shared_ptr_type> texture_object)
+		boost::optional<GLTexture::shared_ptr_type> texture)
 {
 	d_current_state->bind_texture(
 			texture_target,
 			// Bind to the currently active texture unit (glActiveTexture)...
 			d_current_state->get_active_texture()/*texture_unit*/,
-			texture_object);
+			texture);
 }
 
 

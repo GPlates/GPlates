@@ -40,6 +40,7 @@
 #include "GLFramebuffer.h"
 #include "GLProgram.h"
 #include "GLRenderbuffer.h"
+#include "GLSampler.h"
 #include "GLShader.h"
 #include "GLStateStore.h"
 #include "GLTexture.h"
@@ -142,6 +143,15 @@ namespace GPlatesOpenGL
 			}
 
 			/**
+			 * Returns the sampler resource manager.
+			 */
+			const boost::shared_ptr<GLSampler::resource_manager_type> &
+			get_sampler_resource_manager() const
+			{
+				return d_sampler_resource_manager;
+			}
+
+			/**
 			 * Returns the shader resource manager.
 			 */
 			const boost::shared_ptr<GLShader::resource_manager_type> &
@@ -154,9 +164,9 @@ namespace GPlatesOpenGL
 			 * Returns the texture resource manager.
 			 */
 			const boost::shared_ptr<GLTexture::resource_manager_type> &
-			get_texture_object_resource_manager() const
+			get_texture_resource_manager() const
 			{
-				return d_texture_object_resource_manager;
+				return d_texture_resource_manager;
 			}
 
 
@@ -180,8 +190,9 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
 			boost::shared_ptr<GLProgram::resource_manager_type> d_program_resource_manager;
 			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
+			boost::shared_ptr<GLSampler::resource_manager_type> d_sampler_resource_manager;
 			boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
-			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
+			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
 
 			/**
 			 * Used by @a GL to efficiently allocate @a GLState objects.
