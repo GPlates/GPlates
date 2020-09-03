@@ -39,8 +39,6 @@
     <file>opengl/scalar_field_3d/volume_fill_vertex_shader.glsl</file>
     <file>opengl/scalar_field_3d/volume_fill_wall_fragment_shader.glsl</file>
     <file>opengl/scalar_field_3d/volume_fill_wall_geometry_shader.glsl</file>
-    <file>opengl/stars/render_stars_fragment_shader.glsl</file>
-    <file>opengl/stars/render_stars_vertex_shader.glsl</file>
     <file>opengl/utils.glsl</file>
   </qresource>
 </RCC>

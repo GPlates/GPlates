@@ -44,6 +44,8 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GL.h"
+#include "opengl/GLMatrix.h"
+#include "opengl/GLShader.h"
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"
@@ -55,8 +57,43 @@
 namespace
 {
 	// Vertex and fragment shader source code to render render stars (points) in the 3D globe views (perspective and orthographic).
-	const QString VERTEX_SHADER = ":/opengl/stars/render_stars_vertex_shader.glsl";
-	const QString FRAGMENT_SHADER = ":/opengl/stars/render_stars_fragment_shader.glsl";
+	const char *VERTEX_SHADER_SOURCE =
+		R"(
+			uniform mat4 view_projection;
+			
+			layout(location = 0) in vec4 position;
+			layout(location = 1) in vec4 colour;
+
+			out vec4 star_colour;
+			
+			void main (void)
+			{
+				gl_Position = view_projection * position;
+				
+				star_colour = colour;
+				
+				# We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
+				# near plane (which we still want), so we'll handle that ourself.
+				#
+				# Inside near clip plane means:
+				#
+				#   -gl_Position.w <= gl_Position.z
+				#   gl_Position.z + gl_Position.w >= 0
+				#
+				gl_ClipDistance[0] = gl_Position.z + gl_Position.w;
+			}
+		)";
+	const char *FRAGMENT_SHADER_SOURCE =
+		R"(
+			in vec4 star_colour;
+			
+			layout(location = 0) out vec4 colour;
+
+			void main (void)
+			{
+				colour = star_colour;
+			}
+		)";
 
 	const GLfloat SMALL_STARS_SIZE = 1.4f;
 	const GLfloat LARGE_STARS_SIZE = 2.1f;
@@ -221,10 +258,43 @@ namespace
 
 
 	void
+	compile_link_program(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLProgram::shared_ptr_type program)
+	{
+		// Vertex shader source.
+		GPlatesOpenGL::GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
+
+		// Vertex shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+		vertex_shader->shader_source(vertex_shader_source);
+		vertex_shader->compile_shader();
+
+		// Fragment shader source.
+		GPlatesOpenGL::GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+		fragment_shader_source.add_code_segment(FRAGMENT_SHADER_SOURCE);
+
+		// Fragment shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+		fragment_shader->shader_source(fragment_shader_source);
+		fragment_shader->compile_shader();
+
+		// Vertex-fragment program.
+		program->attach_shader(vertex_shader);
+		program->attach_shader(fragment_shader);
+		program->link_program();
+	}
+
+
+	void
 	render_stars(
 			GPlatesOpenGL::GL &gl,
 			GPlatesOpenGL::GLProgram::shared_ptr_type program,
 			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+			const GPlatesOpenGL::GLMatrix &view_projection_matrix,
 			unsigned int num_small_star_vertices,
 			unsigned int num_small_star_indices,
 			unsigned int num_large_star_vertices,
@@ -232,6 +302,15 @@ namespace
 	{
 		// Make sure we leave the OpenGL global state the way it was.
 		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+		// Enabling depth clamping disables the near and far clip planes (and clamps depth values outside).
+		// This means the stars (which are beyond the far clip plane) get rendered (with the far depth 1.0).
+		// However it means (for orthographic projection) that stars behind the viewer also get rendered.
+		// Note that this doesn't happen for perspective projection since the 4 side planes form a pyramid
+		// with apex at the view/camera position (and these 4 planes remove anything behind the viewer).
+		// To get around this we clip to the near plane ourselves (using gl_ClipDistance in the shader).
+		gl.Enable(GL_DEPTH_CLAMP);
+		gl.Enable(GL_CLIP_DISTANCE0);
 
 		// Set the alpha-blend state.
 		// Set up alpha blending for pre-multiplied alpha.
@@ -250,6 +329,9 @@ namespace
 
 		// Use the shader program.
 		gl.UseProgram(program);
+
+		// Set view projection matrix in the currently bound program.
+		program->uniform("view_projection", view_projection_matrix);
 
 		// Bind the vertex array.
 		gl.BindVertexArray(vertex_array);
@@ -287,6 +369,7 @@ GPlatesGui::Stars::Stars(
 		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
 	d_view_state(view_state),
+	d_program(GPlatesOpenGL::GLProgram::create(gl)),
 	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
 	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
 	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
@@ -295,39 +378,7 @@ GPlatesGui::Stars::Stars(
 	d_num_large_star_vertices(0),
 	d_num_large_star_indices(0)
 {
-	// Vertex shader.
-	GPlatesOpenGL::GLShaderSource vertex_shader_source;
-	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
-	vertex_shader_source.add_code_segment_from_file(VERTEX_SHADER);
-	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(gl, vertex_shader_source);
-	if (!vertex_shader->compile_shader(gl))
-	{
-		return;
-	}
-
-	// Fragment shader.
-	GPlatesOpenGL::GLShaderSource fragment_shader_source;
-	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
-	fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
-	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(gl, fragment_shader_source);
-	if (!fragment_shader->compile_shader(gl))
-	{
-		return;
-	}
-
-	// Vertex-fragment program.
-	GPlatesOpenGL::GLProgram::shared_ptr_type program = GPlatesOpenGL::GLProgram::create(gl);
-	program->attach_shader(gl, vertex_shader);
-	program->attach_shader(gl, fragment_shader);
-	if (!program->link_program(gl))
-	{
-		// If shader compilation/linking failed (eg, due to lack of runtime shader support) then
-		// return early. This means no stars will get rendered later.
-		return;
-	}
-	d_program = program;
+	compile_link_program(gl, d_program);
 
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -361,38 +412,49 @@ GPlatesGui::Stars::paint(
 {
 	if (d_view_state.get_show_stars())
 	{
-		if (d_program)
+		// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
+#if 1
+		render_stars(
+				gl,
+				d_program,
+				d_vertex_array,
+				// TODO: Pass in actual view projection matrix...
+				GPlatesOpenGL::GLMatrix::IDENTITY/*view_projection_matrix*/,
+				d_num_small_star_vertices,
+				d_num_small_star_indices,
+				d_num_large_star_vertices,
+				d_num_large_star_indices);
+#else
+		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+		// QPainter's paint device.
+		if (gl.rendering_to_context_framebuffer())
 		{
-			// Either render directly to the framebuffer, or use OpenGL feedback to render to the
-			// QPainter's paint device.
-			if (gl.rendering_to_context_framebuffer())
-			{
-				render_stars(
-						gl,
-						d_program.get(),
-						d_vertex_array,
-						d_num_small_star_vertices,
-						d_num_small_star_indices,
-						d_num_large_star_vertices,
-						d_num_large_star_indices)
-			}
-			else
-			{
-				// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-				// We are rendering to the QPainter attached to GLRenderer.
-				FeedbackOpenGLToQPainter feedback_opengl;
-				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-						feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
-
-				render_stars(
-						gl,
-						d_program.get(),
-						d_vertex_array,
-						d_num_small_star_vertices,
-						d_num_small_star_indices,
-						d_num_large_star_vertices,
-						d_num_large_star_indices)
-			}
+			render_stars(
+					gl,
+					d_program,
+					d_vertex_array,
+					d_num_small_star_vertices,
+					d_num_small_star_indices,
+					d_num_large_star_vertices,
+					d_num_large_star_indices);
 		}
+		else
+		{
+			// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+			// We are rendering to the QPainter attached to GLRenderer.
+			FeedbackOpenGLToQPainter feedback_opengl;
+			FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+					feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
+
+			render_stars(
+					gl,
+					d_program,
+					d_vertex_array,
+					d_num_small_star_vertices,
+					d_num_small_star_indices,
+					d_num_large_star_vertices,
+					d_num_large_star_indices);
+		}
+#endif
 	}
 }
