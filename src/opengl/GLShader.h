@@ -141,26 +141,23 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Performs same function as the glShaderSource OpenGL function.
+		 * Performs same function as glShaderSource.
 		 *
 		 * Each string, or code segment, in @a shader_source is an (ordered) subsection of the shader source code.
 		 */
 		void
 		shader_source(
-				GL &gl,
 				const GLShaderSource &shader_source);
 
 
 		/**
-		 * Performs same function as the glCompileShader OpenGL function (and also retrieves
-		 * the GL_COMPILE_STATUS result).
+		 * Performs same function as glCompileShader (and also retrieves GL_COMPILE_STATUS result).
 		 *
-		 * Returns false if the compilation was unsuccessful and logs the compile diagnostic message as a warning.
+		 * @throws OpenGLException if the compilation was unsuccessful and logs the compile diagnostic message.
 		 * Note that if successfully compiled then nothing is logged.
 		 */
-		bool
-		compile_shader(
-				GL &gl);
+		void
+		compile_shader();
 
 
 		/**

@@ -127,7 +127,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as glLinkProgram (and also retrieves the GL_LINK_STATUS result).
 		 *
-		 * Returns false if the link was unsuccessful and logs the link diagnostic message as a warning.
+		 * @throws OpenGLException if the link was unsuccessful and logs the link diagnostic message.
 		 * Note that if successfully linked then nothing is logged.
 		 *
 		 * Note that, as dictated by OpenGL, if you re-link a program object you will have to
@@ -137,18 +137,19 @@ namespace GPlatesOpenGL
 		 *       internal mapping of uniform names to uniform locations (used by @a get_uniform_location and @a uniform).
 		 *       If you do use glLinkProgram directly then do not use @a get_uniform_location or @a uniform.
 		 */
-		bool
+		void
 		link_program();
 
 
 		/**
 		 * Performs same function as glValidateProgram (and also retrieves the GL_VALIDATE_STATUS result).
 		 *
-		 * Returns success or failure for validation and logs the validate diagnostic message as a debug message.
+		 * @throws OpenGLException if validation was unsuccessful and logs the validate diagnostic message.
+		 * Note that if successfully validated then nothing is logged.
 		 *
 		 * NOTE: This method is meant for use during development only.
 		 */
-		bool
+		void
 		validate_program();
 
 

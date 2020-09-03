@@ -28,6 +28,8 @@
 #ifndef _GPLATES_OPENGL_OPENGLEXCEPTION_H_
 #define _GPLATES_OPENGL_OPENGLEXCEPTION_H_
 
+#include <string>
+
 #include "global/GPlatesException.h"
 
 
@@ -36,26 +38,29 @@ namespace GPlatesOpenGL
 	/**
 	 * A general openGL-error exception.
 	 */
-	class OpenGLException
-		: public GPlatesGlobal::Exception
+	class OpenGLException :
+			public GPlatesGlobal::Exception
 	{
 		public:
+
 			/**
-			 * @param msg is a description of the conditions
-			 * in which the problem occurs.
+			 * @param msg is a description of the conditions in which the problem occurs.
 			 */
 			OpenGLException(
 					const GPlatesUtils::CallStack::Trace &exception_source,
-					const char *msg) :
+					const std::string &msg) :
 				GPlatesGlobal::Exception(exception_source),
-				_msg(msg)
+				d_msg(msg)
 			{  }
 
-			~OpenGLException() throw() { }
-		protected:
-			virtual const char *
-			exception_name() const {
+			~OpenGLException() throw()
+			{ }
 
+		protected:
+
+			virtual const char *
+			exception_name() const
+			{
 				return "OpenGLException";
 			}
 
@@ -64,11 +69,11 @@ namespace GPlatesOpenGL
 			write_message(
 					std::ostream &os) const
 			{
-				write_string_message(os, _msg);
+				write_string_message(os, d_msg);
 			}
 
 		private:
-			std::string _msg;
+			std::string d_msg;
 	};
 }
 

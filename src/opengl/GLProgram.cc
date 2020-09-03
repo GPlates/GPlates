@@ -80,7 +80,7 @@ GPlatesOpenGL::GLProgram::detach_shader(
 }
 
 
-bool
+void
 GPlatesOpenGL::GLProgram::link_program()
 {
 	// First clear our mapping of uniform names to uniform indices (locations).
@@ -100,18 +100,19 @@ GPlatesOpenGL::GLProgram::link_program()
 	// Log a link diagnostic message if compilation was unsuccessful.
 	if (!link_status)
 	{
-		// Log the program info log.
 		qDebug() << "Unable to link OpenGL program: ";
+
+		// Log the program info log.
 		output_info_log();
 
-		return false;
+		throw OpenGLException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to link OpenGL program. See log file for details.");
 	}
-
-	return true;
 }
 
 
-bool
+void
 GPlatesOpenGL::GLProgram::validate_program()
 {
 	const GLuint program_resource_handle = get_resource_handle();
@@ -122,16 +123,18 @@ GPlatesOpenGL::GLProgram::validate_program()
 	GLint validate_status;
 	glGetProgramiv(program_resource_handle, GL_VALIDATE_STATUS, &validate_status);
 
-	// Log the validate diagnostic message.
-	// We do this on success *or* failure since this method is really meant for use during development.
-	qDebug() <<
-			(validate_status
-					? "Validation of OpenGL program succeeded: "
-					: "Validation of OpenGL program failed: ");
-	// Log the program info log.
-	output_info_log();
+	if (!validate_status)
+	{
+		// Log the validate diagnostic message.
+		qDebug() << "Validation of OpenGL program failed: ";
 
-	return validate_status;
+		// Log the program info log.
+		output_info_log();
+
+		throw OpenGLException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to validate OpenGL program. See log file for details.");
+	}
 }
 
 
@@ -322,7 +325,7 @@ GPlatesOpenGL::GLProgram::output_info_log()
 	// it's useful to help locate which compiled shader files were linked.
 	if (!shader_filenames.empty())
 	{
-		qDebug() << " The following compiled OpenGL file shader source code segments were linked: ";
+		qDebug() << " Some (or all) source segments came from files: ";
 
 		std::set<QString>::const_iterator shader_filenames_iter = shader_filenames.begin();
 		std::set<QString>::const_iterator shader_filenames_end = shader_filenames.end();
@@ -335,7 +338,7 @@ GPlatesOpenGL::GLProgram::output_info_log()
 	}
 	else
 	{
-		qDebug() << " (all compiled OpenGL shader source code consisted of string literals)";
+		qDebug() << " (all source segments consisted of string literals)";
 	}
 
 	qDebug() << endl << info_log.get() << endl;

@@ -59,7 +59,6 @@ GPlatesOpenGL::GLShader::GLShader(
 
 void
 GPlatesOpenGL::GLShader::shader_source(
-		GL &gl,
 		const GLShaderSource &shader_source)
 {
 	const std::vector<GLShaderSource::CodeSegment> source_code_segments =
@@ -91,9 +90,8 @@ GPlatesOpenGL::GLShader::shader_source(
 }
 
 
-bool
-GPlatesOpenGL::GLShader::compile_shader(
-		GL &gl)
+void
+GPlatesOpenGL::GLShader::compile_shader()
 {
 	// 'shader_source()' should have been called first.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -111,12 +109,15 @@ GPlatesOpenGL::GLShader::compile_shader(
 	// If the compilation was unsuccessful then log a compile diagnostic message.
 	if (!compile_status)
 	{
+		qDebug() << "Unable to compile OpenGL shader source code: ";
+
+		// Log the shader info log.
 		output_info_log();
 
-		return false;
+		throw OpenGLException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to compile OpenGL shader source code. See log file for details.");
 	}
-
-	return true;
 }
 
 
@@ -174,7 +175,7 @@ GPlatesOpenGL::GLShader::output_info_log()
 	// help locate the line number in GLSL error message.
 	if (!file_code_segments.empty())
 	{
-		qDebug() << "Unable to compile OpenGL shader source code consisting of the following file code segments: ";
+		qDebug() << " Some (or all) source segments came from files: ";
 
 		const unsigned int num_file_code_segments = file_code_segments.size();
 		for (unsigned int file_code_segment_index = 0;
@@ -191,7 +192,7 @@ GPlatesOpenGL::GLShader::output_info_log()
 	}
 	else
 	{
-		qDebug() << "Unable to compile OpenGL shader source code consisting of string literals: ";
+		qDebug() << " (all source segments consisted of string literals)";
 	}
 
 	const GLuint shader_resource_handle = get_resource_handle();
