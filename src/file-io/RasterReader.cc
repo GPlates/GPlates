@@ -50,9 +50,6 @@
 
 #include "global/GPlatesAssert.h"
 
-#include "opengl/OpenGLBadAllocException.h"
-#include "opengl/OpenGLException.h"
-
 #include "property-values/ProxiedRasterResolver.h"
 
 #include "utils/OverloadResolution.h"
