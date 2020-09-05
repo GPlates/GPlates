@@ -114,7 +114,7 @@ GPlatesGui::Globe::paint(
 
 	// Render stars.
 	// NOTE: We draw the stars first so they don't appear in front of the globe.
-	render_stars(gl);
+	render_stars(gl, view_projection);
 
 	// Determine whether the globe is transparent or not. This happens if either:
 	//  1) the background colour is transparent, or
@@ -161,7 +161,7 @@ GPlatesGui::Globe::paint(
 	}
 
 	// Render background sphere - can actually be transparent depending on the alpha value in its colour.
-	render_sphere_background(gl);
+	render_sphere_background(gl, view_projection);
 
 	// The rendering of sub-surface geometries and the front surface of the globe are intermingled
 	// because the latter can be used to occlude the former.
@@ -318,7 +318,8 @@ GPlatesGui::Globe::set_scene_lighting(
 
 void
 GPlatesGui::Globe::render_stars(
-		GPlatesOpenGL::GL &gl)
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
@@ -328,13 +329,14 @@ GPlatesGui::Globe::render_stars(
 	gl.Disable(GL_DEPTH_TEST);
 	gl.DepthMask(GL_FALSE);
 
-	d_stars->paint(gl);
+	d_stars->paint(gl, view_projection);
 }
 
 
 void
 GPlatesGui::Globe::render_sphere_background(
-		GPlatesOpenGL::GL &gl)
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
 	GPlatesOpenGL::GL::StateScope save_restore_state_scope(gl);
 
@@ -347,7 +349,7 @@ GPlatesGui::Globe::render_sphere_background(
 
 	// Note that if the sphere is transparent it will cause objects rendered to the rear half
 	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
-	d_background_sphere->paint(gl, enable_depth_writes);
+	d_background_sphere->paint(gl, view_projection, enable_depth_writes);
 }
 
 

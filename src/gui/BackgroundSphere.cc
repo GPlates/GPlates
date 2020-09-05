@@ -48,6 +48,7 @@
 #include "opengl/GLShader.h"
 #include "opengl/GLShaderSource.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
 
@@ -102,14 +103,21 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 {
 	compile_link_program(gl, d_program);
 
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
 	// Set the background colour in the program object.
-	d_program->uniform("background_color", d_background_colour);
+	gl.UseProgram(d_program);
+	glUniform4f(
+			d_program->get_uniform_location("background_color"),
+			d_background_colour.red(), d_background_colour.green(), d_background_colour.blue(), d_background_colour.alpha());
 }
 
 
 void
 GPlatesGui::BackgroundSphere::paint(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		bool depth_writes_enabled)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -118,13 +126,33 @@ GPlatesGui::BackgroundSphere::paint(
 	// Bind the shader program.
 	gl.UseProgram(d_program);
 
+	// Set view projection matrices in the currently bound program.
+	GLfloat view_projection_float_matrix[16];
+	GLfloat view_inverse_float_matrix[16];
+	GLfloat projection_inverse_float_matrix[16];
+	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+	view_projection.get_inverse_view_transform().get_float_matrix(view_inverse_float_matrix);
+	view_projection.get_inverse_projection_transform().get_float_matrix(projection_inverse_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_inverse"),
+			1, GL_FALSE/*transpose*/, view_inverse_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("projection_inverse"),
+			1, GL_FALSE/*transpose*/, projection_inverse_float_matrix);
+
 	// Set the viewport (so shader can convert 'gl_FragCoord' to normalised device coordinates (NDC).
 	const GPlatesOpenGL::GLViewport &viewport = gl.get_viewport();
-	glUniform4f(d_program->get_uniform_location("viewport"),
+	glUniform4f(
+			d_program->get_uniform_location("viewport"),
 			viewport.x(), viewport.y(), viewport.width(), viewport.height());
 
 	// If depth writes have been enabled then the shader program needs to output z-buffer depth.
-	glUniform1i(d_program->get_uniform_location("write_depth"), depth_writes_enabled);
+	glUniform1i(
+			d_program->get_uniform_location("write_depth"),
+			depth_writes_enabled);
 
 	// Check whether the view state's background colour has changed.
 	if (d_view_state.get_background_colour() != d_background_colour)
@@ -132,7 +160,9 @@ GPlatesGui::BackgroundSphere::paint(
 		d_background_colour = d_view_state.get_background_colour();
 
 		// Change the background colour in the program object.
-		d_program->uniform("background_color", d_background_colour);
+		glUniform4f(
+				d_program->get_uniform_location("background_color"),
+				d_background_colour.red(), d_background_colour.green(), d_background_colour.blue(), d_background_colour.alpha());
 	}
 
 	// If the background colour is transparent then set up alpha blending.

@@ -168,11 +168,13 @@ namespace GPlatesGui
 
 		void
 		render_stars(
-				GPlatesOpenGL::GL &gl);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 		void
 		render_sphere_background(
-				GPlatesOpenGL::GL &gl);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 		void
 		render_globe_hemisphere_surface(

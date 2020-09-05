@@ -50,6 +50,7 @@
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexUtils.h"
+#include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
 
@@ -292,9 +293,9 @@ namespace
 	void
 	render_stars(
 			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLViewProjection &view_projection,
 			GPlatesOpenGL::GLProgram::shared_ptr_type program,
 			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
-			const GPlatesOpenGL::GLMatrix &view_projection_matrix,
 			unsigned int num_small_star_vertices,
 			unsigned int num_small_star_indices,
 			unsigned int num_large_star_vertices,
@@ -331,7 +332,11 @@ namespace
 		gl.UseProgram(program);
 
 		// Set view projection matrix in the currently bound program.
-		program->uniform("view_projection", view_projection_matrix);
+		GLfloat view_projection_float_matrix[16];
+		view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+		glUniformMatrix4fv(
+				program->get_uniform_location("view_projection"),
+				1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 		// Bind the vertex array.
 		gl.BindVertexArray(vertex_array);
@@ -408,7 +413,8 @@ GPlatesGui::Stars::Stars(
 
 void
 GPlatesGui::Stars::paint(
-		GPlatesOpenGL::GL &gl)
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
 	if (d_view_state.get_show_stars())
 	{
@@ -416,10 +422,9 @@ GPlatesGui::Stars::paint(
 #if 1
 		render_stars(
 				gl,
+				view_projection,
 				d_program,
 				d_vertex_array,
-				// TODO: Pass in actual view projection matrix...
-				GPlatesOpenGL::GLMatrix::IDENTITY/*view_projection_matrix*/,
 				d_num_small_star_vertices,
 				d_num_small_star_indices,
 				d_num_large_star_vertices,

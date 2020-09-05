@@ -42,6 +42,7 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesPresentation
@@ -79,6 +80,7 @@ namespace GPlatesGui
 		void
 		paint(
 				GPlatesOpenGL::GL  &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				bool depth_writes_enabled = false);
 
 	private:
