@@ -172,6 +172,9 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns a vertex array for rendering a full-screen quad.
 			 *
+			 * The full-screen quad contains positions only (at vertex attribute index 0) covering
+			 * range [-1,1] for x and y (and where z = 0).
+			 *
 			 * The returned vertex array can be used to draw a full-screen quad in order to apply
 			 * a texture to the screen-space of a render target (eg, using GLSL built-in 'gl_FragCoord').
 			 *

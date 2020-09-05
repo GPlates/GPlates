@@ -863,6 +863,29 @@ GPlatesOpenGL::GL::Viewport(
 }
 
 
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GL::get_scissor() const
+{
+	return d_current_state->get_scissor(d_default_viewport);
+}
+
+
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GL::get_viewport() const
+{
+	return d_current_state->get_viewport(d_default_viewport);
+}
+
+
+bool
+GPlatesOpenGL::GL::is_capability_enabled(
+		GLenum cap,
+		GLuint index) const
+{
+	return d_current_state->is_capability_enabled(cap, index);
+}
+
+
 GPlatesOpenGL::GL::RenderScope::RenderScope(
 		GL &gl) :
 	d_gl(gl),

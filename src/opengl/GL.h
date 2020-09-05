@@ -42,6 +42,7 @@
 #include "GLStateStore.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
+#include "GLViewport.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -447,6 +448,10 @@ namespace GPlatesOpenGL
 				GLuint mask_number,
 				GLbitfield mask);
 
+		/**
+		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the
+		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 */
 		void
 		Scissor(
 				GLint x,
@@ -532,6 +537,10 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				const GLvoid *pointer);
 
+		/**
+		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the
+		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 */
 		void
 		Viewport(
 				GLint x,
@@ -539,6 +548,46 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height);
 
+
+		//
+		// Get state methods.
+		//
+		// Note: Unlike the 'set' methods, only a handful of 'get' methods are typically needed.
+		//       Applications usually set OpenGL state (rather than get it) since retrieving state
+		//       is typically much slower (requiring a round-trip to the driver/GPU).
+		//       However we've shadowed/cached some global state so it's convenient to be able to
+		//       query some of that.
+		//
+
+
+		/**
+		 * Returns the current scissor rectangle.
+		 *
+		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the
+		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 */
+		const GLViewport &
+		get_scissor() const;
+
+		/**
+		 * Returns the current viewport rectangle.
+		 *
+		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the
+		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 */
+		const GLViewport &
+		get_viewport() const;
+
+		/**
+		 * Returns true if the specified capability is currently enabled
+		 * (via @a Enable/Disable or @a Enablei/Disablei).
+		 *
+		 * If the capability is indexed (eg, GL_BLEND) then @a index can be non-zero.
+		 */
+		bool
+		is_capability_enabled(
+				GLenum cap,
+				GLuint index = 0) const;
 
 	public: // For use by @a GLContext...
 

@@ -106,7 +106,7 @@ GPlatesOpenGL::GLUtils::create_full_screen_quad(
 
 	// The vertices for the full-screen quad (as a tri-strip).
 	const GLVertexUtils::Vertex quad_vertices[4] =
-	{  //  x,  y, z, colour
+	{  //  x,  y, z
 		GLVertexUtils::Vertex(-1, -1, 0),
 		GLVertexUtils::Vertex(1, -1, 0),
 		GLVertexUtils::Vertex(-1,  1, 0),
