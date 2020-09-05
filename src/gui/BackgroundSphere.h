@@ -35,13 +35,13 @@
 
 #include "maths/UnitVector3D.h"
 
-#include "opengl/GLCompiledDrawState.h"
 #include "opengl/GLProgram.h"
+#include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesPresentation
@@ -57,12 +57,11 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Used to render a sphere with the background colour of @a view_state,
-		 * as it changes from time to time.
+		 * Used to render a sphere with the background colour of @a view_state, as it changes from time to time.
 		 */
 		explicit
 		BackgroundSphere(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesPresentation::ViewState &view_state);
 
 		/**
@@ -75,12 +74,12 @@ namespace GPlatesGui
 		 * If @a depth_writes_enabled is true then sphere fragment shader outputs z-buffer depth.
 		 * The geometry is a full-screen quad (which does not output the depth of sphere), so it must
 		 * be calculated in the fragment shader if it's needed.
-		 * This is only needed if depth writes are currently enabled.
+		 * This should only be set to true if depth writes are currently enabled.
 		 */
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
-				bool depth_writes_enabled = true);
+				GPlatesOpenGL::GL  &gl,
+				bool depth_writes_enabled = false);
 
 	private:
 		const GPlatesPresentation::ViewState &d_view_state;
@@ -88,10 +87,10 @@ namespace GPlatesGui
 		Colour d_background_colour;
 
 		//! Shader program to render sphere.
-		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_program;
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;
 
 		//! Used to draw a full-screen quad.
-		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad;
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_full_screen_quad;
 	};
 }
 

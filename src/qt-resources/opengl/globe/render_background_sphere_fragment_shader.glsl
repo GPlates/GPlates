@@ -40,22 +40,29 @@
 // of shell material the view ray (for the current pixel/fragment) travels through.
 //
 
+uniform mat4 view_projection;
+uniform mat4 view_inverse;
+uniform mat4 projection_inverse;
+
+uniform vec4 viewport;
+
 uniform vec4 background_color;
 
 // Should we write to the depth buffer?
 uniform bool write_depth;
 
-// Screen-space coordinates are post-projection coordinates in the range [-1,1].
-varying vec2 screen_coord;
-
+layout(location = 0) out vec4 color;
 
 void main (void)
 {
+	// Get the current xy screen coordinate (in NDC space [-1,1]).
+	vec2 screen_coord = window_to_NDC_xy(gl_FragCoord.xy, viewport);
+
 	//
 	// Initialize ray associated with the current fragment.
 	//
 	// Create the ray starting on the near plane and moving towards the far plane.
-	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse);
+	Ray ray = get_ray(screen_coord, view_inverse, projection_inverse);
 
 	// Intersect the ray with the globe (unit-radius sphere).
 	Sphere globe = Sphere(1.0);
@@ -84,17 +91,19 @@ void main (void)
 		// Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
 		// depth will get written (if depth writes enabled) using the fixed-function depth which is that
 		// of our full-screen quad (not the actual sphere).
-		vec4 screen_space_front_globe_position = gl_ModelViewProjectionMatrix * vec4(front_globe_position, 1.0);
-		float screen_space_front_globe_depth = screen_space_front_globe_position.z / screen_space_front_globe_position.w;
-		// Convert normalised device coordinates (screen-space) to window coordinates which, for depth, is [-1,1] -> [0,1].
-		// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-		gl_FragDepth = 0.5 * screen_space_front_globe_depth + 0.5;
+		vec4 screen_space_front_globe_position = view_projection * vec4(front_globe_position, 1.0);
+		float z_ndc = screen_space_front_globe_position.z / screen_space_front_globe_position.w;
+		// Convert normalised device coordinates (z_ndc) to window coordinates (z_w) which, for depth, is:
+		//   [-1,1] -> [n,f]
+		// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
+		//   z_w = z_ndc * (f-n)/2 + (n+f)/2
+		gl_FragDepth = (gl_DepthRange.diff * z_ndc + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	}
 
 	// If the globe is opaque then just set the fragment colour and return.
 	if (background_color.a == 1.0)
 	{
-		gl_FragColor = background_color;
+		color = background_color;
 
 		return;
 	}
@@ -130,5 +139,5 @@ void main (void)
 	float alpha = 1.0 - pow(1.0 - background_color.a, ray_shell_thickness / (2 * shell_thickness));
 	
 	// Replace background alpha with newly calculated value.
-	gl_FragColor = vec4(background_color.rgb, alpha);
+	color = vec4(background_color.rgb, alpha);
 }

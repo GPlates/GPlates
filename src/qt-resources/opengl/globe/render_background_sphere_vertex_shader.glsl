@@ -29,12 +29,9 @@
 // The geometry is a full-screen quad.
 //
 
-// Screen-space coordinates are post-projection coordinates in the range [-1,1].
-varying vec2 screen_coord;
+layout (location = 0) in vec4 position;
 
 void main()
 {
-	gl_Position = gl_Vertex;
-
-	screen_coord = gl_Vertex.xy;
+	gl_Position = position;
 }

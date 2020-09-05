@@ -431,6 +431,18 @@ contains(
   return distSq <= sphere.radius * sphere.radius;
 }
 
+// Convert window-space xy coordinates (eg, gl_FragCoord.xy) to NDC space (range [-1,1]).
+//
+// 'viewport.xy' should contain viewport x and y.
+// 'viewport.zw' should contain viewport width and height.
+vec2
+window_to_NDC_xy(
+		const vec2 window_coord,
+		const vec4 viewport)
+{
+	return 2.0 * (window_coord - viewport.xy) / viewport.zw - 1.0;
+}
+
 // Convert screen NDC coordinates (in range [-1, 1]) to position in view space.
 //
 // This gives the same result as 'screen_to_view()' but uses the projection matrix (not its *inverse*).
