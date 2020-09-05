@@ -138,14 +138,6 @@ GPlatesOpenGL::GLProgram::validate_program()
 }
 
 
-bool
-GPlatesOpenGL::GLProgram::is_active_uniform(
-		const char *uniform_name) const
-{
-	return glGetUniformLocation(get_resource_handle(), uniform_name) >= 0;
-}
-
-
 GLint
 GPlatesOpenGL::GLProgram::get_uniform_location(
 		const char *uniform_name) const
@@ -165,117 +157,6 @@ GPlatesOpenGL::GLProgram::get_uniform_location(
 	}
 
 	return uniform_insert_result.first->second;
-}
-
-
-bool
-GPlatesOpenGL::GLProgram::uniform(
-		const char *name,
-		const GPlatesMaths::UnitVector3D &value,
-		boost::optional<GLfloat> w)
-{
-	const GLint uniform_location = get_uniform_location(name);
-	if (uniform_location < 0)
-	{
-		return false;
-	}
-
-	if (w)
-	{
-		glUniform4f(uniform_location, value.x().dval(), value.y().dval(), value.z().dval(), w.get());
-	}
-	else
-	{
-		glUniform3f(uniform_location, value.x().dval(), value.y().dval(), value.z().dval());
-	}
-
-	return true;
-}
-
-
-bool
-GPlatesOpenGL::GLProgram::uniform(
-		const char *name,
-		const GPlatesMaths::Vector3D &value,
-		boost::optional<GLfloat> w)
-{
-	const GLint uniform_location = get_uniform_location(name);
-	if (uniform_location < 0)
-	{
-		return false;
-	}
-
-	if (w)
-	{
-		glUniform4f(uniform_location, value.x().dval(), value.y().dval(), value.z().dval(), w.get());
-	}
-	else
-	{
-		glUniform3f(uniform_location, value.x().dval(), value.y().dval(), value.z().dval());
-	}
-
-	return true;
-}
-
-
-bool
-GPlatesOpenGL::GLProgram::uniform(
-		const char *name,
-		const GPlatesMaths::UnitQuaternion3D &unit_quat)
-{
-	const GLint uniform_location = get_uniform_location(name);
-	if (uniform_location < 0)
-	{
-		return false;
-	}
-
-	glUniform4f(uniform_location, unit_quat.x().dval(), unit_quat.y().dval(), unit_quat.z().dval(), unit_quat.w().dval());
-
-	return true;
-}
-
-
-bool
-GPlatesOpenGL::GLProgram::uniform(
-		const char *name,
-		const GPlatesGui::Colour &colour)
-{
-	const GLint uniform_location = get_uniform_location(name);
-	if (uniform_location < 0)
-	{
-		return false;
-	}
-
-	glUniform4fv(uniform_location, 1/*count*/, static_cast<const GLfloat *>(colour));
-
-	return true;
-}
-
-
-bool
-GPlatesOpenGL::GLProgram::uniform(
-		const char *name,
-		const GLMatrix &matrix)
-{
-	const GLdouble *const double_matrix = matrix.get_matrix();
-
-	// Copy the matrix GLdouble elements into GLfloat elements.
-	GLfloat float_matrix[16];
-	for (int n = 0; n < 16; ++n)
-	{
-		float_matrix[n] = double_matrix[n];
-	}
-
-	const GLint uniform_location = get_uniform_location(name);
-	if (uniform_location < 0)
-	{
-		return false;
-	}
-
-	// Note that the matrix is in column-major format.
-	glUniformMatrix4fv(uniform_location, 1, GL_FALSE/*transpose*/, float_matrix);
-
-	return true;
 }
 
 

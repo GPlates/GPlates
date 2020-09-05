@@ -569,3 +569,17 @@ GPlatesOpenGL::GLMatrix::glu_mult_vec(
 				matrix[3][i] * in_vec[3];
 	}
 }
+
+
+void
+GPlatesOpenGL::GLMatrix::get_float_matrix(
+		GLfloat float_matrix[16]) const
+{
+	const GLdouble *const double_matrix = get_matrix();
+
+	// Copy the matrix GLdouble elements into GLfloat elements.
+	for (int n = 0; n < 16; ++n)
+	{
+		float_matrix[n] = double_matrix[n];
+	}
+}

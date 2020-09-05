@@ -249,9 +249,6 @@ namespace GPlatesOpenGL
 				double(&out_vec)[4]) const;
 
 
-		////////////////////////////
-		// Used by implementation //
-		////////////////////////////
 
 		//! Returns internal matrix in OpenGL column-major format.
 		const GLdouble *
@@ -278,6 +275,15 @@ namespace GPlatesOpenGL
 			// 'row' and 'column' are in reversed order since matrix is stored as column-major.
 			return d_matrix[column][row];
 		}
+
+		/**
+		 * Copies internal matrix in OpenGL column-major format into @a float_matrix.
+		 *
+		 * This is essentially a GLdouble to GLfloat conversion.
+		 */
+		void
+		get_float_matrix(
+				GLfloat float_matrix[16]) const;
 
 	private:
 		//! Typedef for a contiguous array of 16 doubles (in 4x4 format).

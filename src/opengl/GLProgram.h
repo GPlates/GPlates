@@ -37,7 +37,6 @@
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL1.h>
 
-#include "GLMatrix.h"
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
@@ -45,12 +44,6 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
-#include "gui/Colour.h"
-
-#include "maths/UnitQuaternion3D.h"
-#include "maths/UnitVector3D.h"
-#include "maths/Vector3D.h"
 
 
 namespace GPlatesOpenGL
@@ -133,9 +126,9 @@ namespace GPlatesOpenGL
 		 * Note that, as dictated by OpenGL, if you re-link a program object you will have to
 		 * load the uniform variables again (because the link initialises them to zero).
 		 *
-		 * NOTE: Use this method instead of calling glLinkProgram directly since this method will also clear the
-		 *       internal mapping of uniform names to uniform locations (used by @a get_uniform_location and @a uniform).
-		 *       If you do use glLinkProgram directly then do not use @a get_uniform_location or @a uniform.
+		 * NOTE: Use this method instead of calling glLinkProgram directly since this method will also clear
+		 *       the internal mapping of uniform names to uniform locations (used by @a get_uniform_location).
+		 *       If you use glLinkProgram directly then do not use @a get_uniform_location or @a is_active_uniform.
 		 */
 		void
 		link_program();
@@ -166,87 +159,40 @@ namespace GPlatesOpenGL
 		 *  (1) variable does not exist,
 		 *  (2) variable is not actively used in the linked program or
 		 *  (3) variable is a reserved name.
+		 *
+		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		bool
 		is_active_uniform(
-				const char *uniform_name) const;
+				const char *uniform_name) const
+		{
+			return get_uniform_location(uniform_name) >= 0;
+		}
 
 		/**
 		 * Get the uniform location index (in default uniform block) of the specified uniform variable name.
 		 *
 		 * Returns -1 if @a uniform_name is not an active uniform.
-		 * Note: Calling glUniform* with a location of -1 is not an error according to OpenGL 3.3 core specification
+		 * Note: Calling glUniform* with a location of -1 is *not* an error according to OpenGL 3.3 core specification
 		 *       (instead the glUniform* call is silently ignored).
 		 *
 		 * You can use the returned location with a native glUniform* call. Such as:
 		 *
+		 *   gl.UseProgram(program);
 		 *   glUniform4f(program->get_uniform_location('colour'), red, green, blue, alpha);
 		 *
-		 * Internally this calls glGetUniformLocation and caches its results (until/if re-linked with another call to @a link_program).
+		 * Internally this calls glGetUniformLocation and caches its results. If this program is
+		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
 		 * Caching is the only difference compared to using glGetUniformLocation directly as in:
 		 *
+		 *   gl.UseProgram(program);
 		 *   glUniform4f(glGetUniformLocation(program->get_resource_handle(), 'colour'), red, green, blue, alpha);
+		 *
+		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		GLint
 		get_uniform_location(
 				const char *uniform_name) const;
-
-
-		//
-		// Convenience wrappers around glUniform* for some common types (like GLMatrix, UnitVector3D, Colour, etc).
-		//
-
-		/**
-		 * Writes @a UnitVector3D as a vec3 (or a vec4 with specified @a w) to uniform in default block.
-		 *
-		 * Returns false if @a name is not an active uniform (and hence silently not written).
-		 */
-		bool
-		uniform(
-				const char *name,
-				const GPlatesMaths::UnitVector3D &value,
-				boost::optional<GLfloat> w = boost::none);
-
-		/**
-		 * Writes @a Vector3D as a vec3 (or a vec4 with specified @a w) uniform in default block.
-		 *
-		 * Returns false if @a name is not an active uniform (and hence silently not written).
-		 */
-		bool
-		uniform(
-				const char *name,
-				const GPlatesMaths::Vector3D &value,
-				boost::optional<GLfloat> w = boost::none);
-
-		/**
-		 * Writes @a UnitQuaternion as a vec4 uniform in default block.
-		 *
-		 * Returns false if @a name is not an active uniform (and hence silently not written).
-		 */
-		bool
-		uniform(
-				const char *name,
-				const GPlatesMaths::UnitQuaternion3D &unit_quat);
-
-		/**
-		 * Writes @a Colour as a vec4 uniform in default block.
-		 *
-		 * Returns false if @a name is not an active uniform (and hence silently not written).
-		 */
-		bool
-		uniform(
-				const char *name,
-				const GPlatesGui::Colour &colour);
-
-		/**
-		 * Writes a single @a GLMatrix as a mat4 uniform in default block.
-		 *
-		 * Returns false if @a name is not an active uniform (and hence silently not written).
-		 */
-		bool
-		uniform(
-				const char *name,
-				const GLMatrix &matrix);
 
 
 		/**
