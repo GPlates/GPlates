@@ -32,6 +32,7 @@
 #include <utility>
 #include <boost/utility/in_place_factory.hpp>
 #include <QString>
+#include <QtGlobal>
 
 #include "BackgroundSphere.h"
 
@@ -101,10 +102,10 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 	d_program(GPlatesOpenGL::GLProgram::create(gl)),
 	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl))
 {
-	compile_link_program(gl, d_program);
-
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	compile_link_program(gl, d_program);
 
 	// Set the background colour in the program object.
 	gl.UseProgram(d_program);
@@ -131,8 +132,22 @@ GPlatesGui::BackgroundSphere::paint(
 	GLfloat view_inverse_float_matrix[16];
 	GLfloat projection_inverse_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	view_projection.get_inverse_view_transform().get_float_matrix(view_inverse_float_matrix);
-	view_projection.get_inverse_projection_transform().get_float_matrix(projection_inverse_float_matrix);
+	if (!view_projection.get_inverse_view_transform() ||
+		!view_projection.get_inverse_projection_transform())
+	{
+		// Failed to invert view or projection transform.
+		// So log warning (only once) and don't render background sphere.
+		// This shouldn't happen with typical view/projection matrices though.
+		static bool warned = false;
+		if (!warned)
+		{
+			qWarning() << "View or projection transform not invertible. So not rendering background sphere.";
+			warned = true;
+		}
+		return;
+	}
+	view_projection.get_inverse_view_transform()->get_float_matrix(view_inverse_float_matrix);
+	view_projection.get_inverse_projection_transform()->get_float_matrix(projection_inverse_float_matrix);
 	glUniformMatrix4fv(
 			d_program->get_uniform_location("view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);

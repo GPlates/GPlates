@@ -155,6 +155,7 @@ GPlatesGui::Globe::paint(
 		// The globe is transparent so render the rear half of the globe.
 		render_globe_hemisphere_surface(
 				gl,
+				view_projection,
 				*cache_handle,
 				viewport_zoom_factor,
 				false/*is_front_half_globe*/);
@@ -219,6 +220,7 @@ GPlatesGui::Globe::paint(
 			// Render the front half of the globe surface to the viewport-size render texture.
 			render_globe_hemisphere_surface(
 					gl,
+					view_projection,
 					*cache_handle,
 					viewport_zoom_factor,
 					true/*is_front_half_globe*/);
@@ -255,6 +257,7 @@ GPlatesGui::Globe::paint(
 			// Render the front half of the globe surface next.
 			render_globe_hemisphere_surface(
 					gl,
+					view_projection,
 					*cache_handle,
 					viewport_zoom_factor,
 					true/*is_front_half_globe*/);
@@ -265,6 +268,7 @@ GPlatesGui::Globe::paint(
 		// Render the front half of the globe surface.
 		render_globe_hemisphere_surface(
 				gl,
+				view_projection,
 				*cache_handle,
 				viewport_zoom_factor,
 				true/*is_front_half_globe*/);
@@ -356,6 +360,7 @@ GPlatesGui::Globe::render_sphere_background(
 void
 GPlatesGui::Globe::render_globe_hemisphere_surface(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
 		bool is_front_half_globe)
@@ -370,7 +375,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	if (!is_front_half_globe)
 	{
 		// Render the grid lines on the rear side of the sphere first.
-		d_grid->paint(gl);
+		d_grid->paint(gl, view_projection);
 	}
 
 	// Colour vector geometries on the rear of the globe the same colour as background so that
@@ -400,7 +405,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	if (is_front_half_globe)
 	{
 		// Render the grid lines on the front side of the sphere last.
-		d_grid->paint(gl);
+		d_grid->paint(gl, view_projection);
 	}
 }
 

@@ -80,9 +80,9 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
 
 		unsigned int d_num_small_star_vertices;
-		unsigned int d_num_small_star_indices;
+		unsigned int d_num_small_star_vertex_indices;
 		unsigned int d_num_large_star_vertices;
-		unsigned int d_num_large_star_indices;
+		unsigned int d_num_large_star_vertex_indices;
 	};
 }
 

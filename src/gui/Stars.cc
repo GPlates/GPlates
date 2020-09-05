@@ -169,9 +169,9 @@ namespace
 			std::vector<vertex_type> &vertices,
 			std::vector<vertex_element_type> &vertex_elements,
 			unsigned int &num_small_star_vertices,
-			unsigned int &num_small_star_indices,
+			unsigned int &num_small_star_vertex_indices,
 			unsigned int &num_large_star_vertices,
-			unsigned int &num_large_star_indices,
+			unsigned int &num_large_star_vertex_indices,
 			boost::function< double () > &rand,
 			const GPlatesGui::rgba8_t &colour)
 	{
@@ -187,7 +187,7 @@ namespace
 		stream_stars(stream, rand, NUM_SMALL_STARS, colour);
 
 		num_small_star_vertices = stream_target.get_num_streamed_vertices();
-		num_small_star_indices = stream_target.get_num_streamed_vertex_elements();
+		num_small_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
 
 		stream_target.stop_streaming();
 
@@ -201,7 +201,7 @@ namespace
 		stream_stars(stream, rand, NUM_LARGE_STARS, colour);
 
 		num_large_star_vertices = stream_target.get_num_streamed_vertices();
-		num_large_star_indices = stream_target.get_num_streamed_vertex_elements();
+		num_large_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
 
 		stream_target.stop_streaming();
 
@@ -222,9 +222,6 @@ namespace
 			const std::vector<vertex_type> &vertices,
 			const std::vector<vertex_element_type> &vertex_elements)
 	{
-		// Make sure we leave the OpenGL global state the way it was.
-		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
 		// Bind vertex array object.
 		gl.BindVertexArray(vertex_array);
 
@@ -265,7 +262,6 @@ namespace
 	{
 		// Vertex shader source.
 		GPlatesOpenGL::GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
 
 		// Vertex shader.
@@ -275,7 +271,6 @@ namespace
 
 		// Fragment shader source.
 		GPlatesOpenGL::GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 		fragment_shader_source.add_code_segment(FRAGMENT_SHADER_SOURCE);
 
 		// Fragment shader.
@@ -291,56 +286,13 @@ namespace
 
 
 	void
-	render_stars(
+	draw_stars(
 			GPlatesOpenGL::GL &gl,
-			const GPlatesOpenGL::GLViewProjection &view_projection,
-			GPlatesOpenGL::GLProgram::shared_ptr_type program,
-			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
 			unsigned int num_small_star_vertices,
-			unsigned int num_small_star_indices,
+			unsigned int num_small_star_vertex_indices,
 			unsigned int num_large_star_vertices,
-			unsigned int num_large_star_indices)
+			unsigned int num_large_star_vertex_indices)
 	{
-		// Make sure we leave the OpenGL global state the way it was.
-		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-		// Enabling depth clamping disables the near and far clip planes (and clamps depth values outside).
-		// This means the stars (which are beyond the far clip plane) get rendered (with the far depth 1.0).
-		// However it means (for orthographic projection) that stars behind the viewer also get rendered.
-		// Note that this doesn't happen for perspective projection since the 4 side planes form a pyramid
-		// with apex at the view/camera position (and these 4 planes remove anything behind the viewer).
-		// To get around this we clip to the near plane ourselves (using gl_ClipDistance in the shader).
-		gl.Enable(GL_DEPTH_CLAMP);
-		gl.Enable(GL_CLIP_DISTANCE0);
-
-		// Set the alpha-blend state.
-		// Set up alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		// See class GLVisualRasterSource for why this is done.
-		//
-		// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
-		//
-		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
-		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
-		gl.Enable(GL_BLEND);
-		gl.BlendFuncSeparate(
-				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-		// Use the shader program.
-		gl.UseProgram(program);
-
-		// Set view projection matrix in the currently bound program.
-		GLfloat view_projection_float_matrix[16];
-		view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-		glUniformMatrix4fv(
-				program->get_uniform_location("view_projection"),
-				1, GL_FALSE/*transpose*/, view_projection_float_matrix);
-
-		// Bind the vertex array.
-		gl.BindVertexArray(vertex_array);
-
 		// Small stars size.
 		gl.PointSize(SMALL_STARS_SIZE);
 
@@ -349,7 +301,7 @@ namespace
 				GL_POINTS,
 				0/*start*/,
 				num_small_star_vertices - 1/*end*/,
-				num_small_star_indices/*count*/,
+				num_small_star_vertex_indices/*count*/,
 				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 				nullptr/*indices_offset*/);
 
@@ -362,9 +314,9 @@ namespace
 				GL_POINTS,
 				num_small_star_vertices/*start*/,
 				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
-				num_large_star_indices/*count*/,
+				num_large_star_vertex_indices/*count*/,
 				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
-				GPlatesOpenGL::GLVertexUtils::buffer_offset(num_small_star_indices * sizeof(vertex_element_type))/*indices_offset*/);
+				GPlatesOpenGL::GLVertexUtils::buffer_offset(num_small_star_vertex_indices * sizeof(vertex_element_type))/*indices_offset*/);
 	}
 }
 
@@ -379,10 +331,13 @@ GPlatesGui::Stars::Stars(
 	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
 	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
 	d_num_small_star_vertices(0),
-	d_num_small_star_indices(0),
+	d_num_small_star_vertex_indices(0),
 	d_num_large_star_vertices(0),
-	d_num_large_star_indices(0)
+	d_num_large_star_vertex_indices(0)
 {
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
 	compile_link_program(gl, d_program);
 
 	// Set up the random number generator.
@@ -402,8 +357,8 @@ GPlatesGui::Stars::Stars(
 	create_stars(
 			vertices,
 			vertex_elements,
-			d_num_small_star_vertices, d_num_small_star_indices,
-			d_num_large_star_vertices, d_num_large_star_indices,
+			d_num_small_star_vertices, d_num_small_star_vertex_indices,
+			d_num_large_star_vertices, d_num_large_star_vertex_indices,
 			rand,
 			rgba8_colour);
 
@@ -416,50 +371,89 @@ GPlatesGui::Stars::paint(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
-	if (d_view_state.get_show_stars())
+	if (!d_view_state.get_show_stars())
 	{
-		// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
+		return;
+	}
+
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	// Enabling depth clamping disables the near and far clip planes (and clamps depth values outside).
+	// This means the stars (which are beyond the far clip plane) get rendered (with the far depth 1.0).
+	// However it means (for orthographic projection) that stars behind the viewer also get rendered.
+	// Note that this doesn't happen for perspective projection since the 4 side planes form a pyramid
+	// with apex at the view/camera position (and these 4 planes remove anything behind the viewer).
+	// To get around this we clip to the near plane ourselves (using gl_ClipDistance in the shader).
+	gl.Enable(GL_DEPTH_CLAMP);
+	gl.Enable(GL_CLIP_DISTANCE0);
+
+	// Set the alpha-blend state.
+	// Set up alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// See class GLVisualRasterSource for why this is done.
+	//
+	// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+	//
+	//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+	//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+	gl.Enable(GL_BLEND);
+	gl.BlendFuncSeparate(
+			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Use the shader program.
+	gl.UseProgram(d_program);
+
+	// Set view projection matrix in the currently bound program.
+	GLfloat view_projection_float_matrix[16];
+	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Bind the vertex array.
+	gl.BindVertexArray(d_vertex_array);
+
+	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
 #if 1
-		render_stars(
+	draw_stars(
+			gl,
+			d_num_small_star_vertices,
+			d_num_small_star_vertex_indices,
+			d_num_large_star_vertices,
+			d_num_large_star_vertex_indices);
+#else
+	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+	// QPainter's paint device.
+	if (gl.rendering_to_context_framebuffer())
+	{
+		draw_stars(
 				gl,
-				view_projection,
 				d_program,
 				d_vertex_array,
 				d_num_small_star_vertices,
-				d_num_small_star_indices,
+				d_num_small_star_vertex_indices,
 				d_num_large_star_vertices,
-				d_num_large_star_indices);
-#else
-		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
-		// QPainter's paint device.
-		if (gl.rendering_to_context_framebuffer())
-		{
-			render_stars(
-					gl,
-					d_program,
-					d_vertex_array,
-					d_num_small_star_vertices,
-					d_num_small_star_indices,
-					d_num_large_star_vertices,
-					d_num_large_star_indices);
-		}
-		else
-		{
-			// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-			// We are rendering to the QPainter attached to GLRenderer.
-			FeedbackOpenGLToQPainter feedback_opengl;
-			FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-					feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
-
-			render_stars(
-					gl,
-					d_program,
-					d_vertex_array,
-					d_num_small_star_vertices,
-					d_num_small_star_indices,
-					d_num_large_star_vertices,
-					d_num_large_star_indices);
-		}
-#endif
+				d_num_large_star_vertex_indices);
 	}
+	else
+	{
+		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+		// We are rendering to the QPainter attached to GLRenderer.
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+				feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
+
+		draw_stars(
+				gl,
+				d_program,
+				d_vertex_array,
+				d_num_small_star_vertices,
+				d_num_small_star_vertex_indices,
+				d_num_large_star_vertices,
+				d_num_large_star_vertex_indices);
+	}
+#endif
 }

@@ -179,6 +179,7 @@ namespace GPlatesGui
 		void
 		render_globe_hemisphere_surface(
 				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
 				bool is_front_half_globe);

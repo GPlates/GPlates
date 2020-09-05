@@ -33,13 +33,15 @@
 
 #include "GraticuleSettings.h"
 
-#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLBuffer.h"
+#include "opengl/GLProgram.h"
 #include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesMaths
@@ -58,7 +60,7 @@ namespace GPlatesGui
 	public:
 
 		SphericalGrid(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GraticuleSettings &graticule_settings);
 
 		/**
@@ -66,29 +68,21 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer);
-
-		/**
-		 * Paints the circumference.
-		 */
-		void
-		paint_circumference(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesMaths::UnitVector3D &axis,
-				double angle_in_deg);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 	private:
 		const GraticuleSettings &d_graticule_settings;
-
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
 
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;
-		unsigned int d_grid_num_line_segments;
-		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_grid_compiled_draw_state;
+		//! Shader program to render grid lines.
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;
 
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_circumference_vertex_array;
-		unsigned int d_circumference_num_line_segments;
-		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_circumference_compiled_draw_state;
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
+
+		unsigned int d_num_vertex_indices;
 	};
 }
 
