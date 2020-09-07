@@ -17,8 +17,6 @@ set(srcs
     GLBuffer.h
     GLCapabilities.cc
     GLCapabilities.h
-    GLCompiledDrawState.cc
-    GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
     GLContextImpl.h
@@ -80,13 +78,8 @@ set(srcs
     GLReconstructedStaticPolygonMeshes.h
     GLRenderbuffer.cc
     GLRenderbuffer.h
-    GLRenderer.cc
-    GLRenderer.h
-    GLRendererImpl.h
     GLSampler.cc
     GLSampler.h
-    GLSaveRestoreFrameBuffer.cc
-    GLSaveRestoreFrameBuffer.h
     GLScalarField3D.cc
     GLScalarField3D.h
     GLScalarField3DGenerator.cc
