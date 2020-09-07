@@ -360,7 +360,6 @@ namespace GPlatesOpenGL
 
 		void
 		FramebufferTexture(
-				GL &gl,
 				GLenum target,
 				GLenum attachment,
 				boost::optional<GLTexture::shared_ptr_type> texture,
@@ -368,7 +367,6 @@ namespace GPlatesOpenGL
 
 		void
 		FramebufferTexture1D(
-				GL &gl,
 				GLenum target,
 				GLenum attachment,
 				GLenum textarget,
@@ -377,7 +375,6 @@ namespace GPlatesOpenGL
 
 		void
 		FramebufferTexture2D(
-				GL &gl,
 				GLenum target,
 				GLenum attachment,
 				GLenum textarget,
@@ -386,7 +383,6 @@ namespace GPlatesOpenGL
 
 		void
 		FramebufferTexture3D(
-				GL &gl,
 				GLenum target,
 				GLenum attachment,
 				GLenum textarget,
@@ -396,7 +392,6 @@ namespace GPlatesOpenGL
 
 		void
 		FramebufferTextureLayer(
-				GL &gl,
 				GLenum target,
 				GLenum attachment,
 				boost::optional<GLTexture::shared_ptr_type> texture,

@@ -28,10 +28,12 @@
 
 #include <boost/optional.hpp>
 
+#include "GLFramebuffer.h"
 #include "GLMatrix.h"
 #include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLUtils.h"
+#include "GLVertexArray.h"
 
 #include "gui/MapProjection.h"
 #include "gui/SceneLightingParameters.h"
@@ -44,7 +46,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A directional light that encodes light direction for both the 3D globe view and the 2D map views.
@@ -68,20 +70,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if lighting is supported on the runtime system.
-		 *
-		 * This requires vertex/fragment shader programs.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLLight object.
 		 *
-		 * If @a map_projection is specified then the raster is rendered using the specified
+		 * If @a map_projection is specified then lighting is rendered using the specified
 		 * 2D map projection, otherwise it's rendered to the 3D globe.
 		 *
 		 * @param scene_lighting_params are the initial parameters for lighting.
@@ -94,7 +85,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params = GPlatesGui::SceneLightingParameters(),
 				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
@@ -121,7 +112,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_scene_lighting(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
@@ -170,8 +161,7 @@ namespace GPlatesOpenGL
 		 * is attached to the view.
 		 */
 		const GPlatesMaths::UnitVector3D &
-		get_globe_view_light_direction(
-				GLRenderer &renderer) const
+		get_globe_view_light_direction() const
 		{
 			return d_globe_view_light_direction;
 		}
@@ -186,8 +176,7 @@ namespace GPlatesOpenGL
 		 * in spherical globe space (the light.
 		 */
 		float
-		get_map_view_constant_lighting(
-				GLRenderer &renderer) const
+		get_map_view_constant_lighting() const
 		{
 			return d_map_view_constant_lighting;
 		}
@@ -200,19 +189,16 @@ namespace GPlatesOpenGL
 		 * The returned texture format is 8-bit RGBA with RGB containing the light direction(s)
 		 * with components in the range [0,1] - which clients need to convert to [-1,1] before use.
 		 *
-		 * @a renderer is used if the cube map needs to be updated such as an updated light direction.
-		 *
 		 * NOTE: This is only really needed when surface normal maps are used because the surface
 		 * normal (in the map view) is then no longer constant across the map.
 		 * When it is constant across the map (ie, surface normal is perpendicular to the map) the
 		 * lighting is constant across the map and can be calculated using @a get_map_view_constant_lighting.
 		 *
-		 * NOTE: You should use GL_TEXTURE_CUBE_MAP_ARB instead of GL_TEXTURE_2D when binding the
+		 * NOTE: You should use GL_TEXTURE_CUBE_MAP instead of GL_TEXTURE_2D when binding the
 		 * returned texture for read access.
 		 */
 		GLTexture::shared_ptr_to_const_type
-		get_map_view_light_direction_cube_map_texture(
-				GLRenderer &renderer)
+		get_map_view_light_direction_cube_map_texture()
 		{
 			return d_map_view_light_direction_cube_texture;
 		}
@@ -264,35 +250,45 @@ namespace GPlatesOpenGL
 		GLTexture::shared_ptr_type d_map_view_light_direction_cube_texture;
 
 		/**
+		 * Framebuffer object used to render into cube map encoding the light direction(s) for a 2D map view.
+		 */
+		GLFramebuffer::shared_ptr_type d_map_view_light_direction_cube_framebuffer;
+
+		/**
 		 * Shader program to render light direction into cube texture for 2D map views.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_map_view_light_direction_program;
+		GLProgram::shared_ptr_type d_render_map_view_light_direction_program;
 
-
-		static
-		void
-		create_map_view_light_direction_cube_texture(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &map_view_light_direction_cube_texture);
+		//! Used to draw a full-screen quad.
+		GLVertexArray::shared_ptr_type d_full_screen_quad;
 
 
 		GLLight(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 				const GLMatrix &view_orientation,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection);
 
 		void
-		create_shader_programs(
-				GLRenderer &renderer);
+		compile_link_programs(
+				GL &gl);
+
+
+		void
+		create_map_view_light_direction_cube_texture(
+				GL &gl);
+
+		void
+		check_framebuffer_completeness_map_view_light_direction_cube_texture(
+				GL &gl);
 
 		void
 		update_map_view(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		update_globe_view(
-				GLRenderer &renderer);
+				GL &gl);
 	};
 }
 

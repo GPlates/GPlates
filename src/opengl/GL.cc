@@ -457,7 +457,6 @@ GPlatesOpenGL::GL::FramebufferRenderbuffer(
 
 void
 GPlatesOpenGL::GL::FramebufferTexture(
-		GL &gl,
 		GLenum target,
 		GLenum attachment,
 		boost::optional<GLTexture::shared_ptr_type> texture,
@@ -481,7 +480,6 @@ GPlatesOpenGL::GL::FramebufferTexture(
 
 void
 GPlatesOpenGL::GL::FramebufferTexture1D(
-		GL &gl,
 		GLenum target,
 		GLenum attachment,
 		GLenum textarget,
@@ -506,7 +504,6 @@ GPlatesOpenGL::GL::FramebufferTexture1D(
 
 void
 GPlatesOpenGL::GL::FramebufferTexture2D(
-		GL &gl,
 		GLenum target,
 		GLenum attachment,
 		GLenum textarget,
@@ -531,7 +528,6 @@ GPlatesOpenGL::GL::FramebufferTexture2D(
 
 void
 GPlatesOpenGL::GL::FramebufferTexture3D(
-		GL &gl,
 		GLenum target,
 		GLenum attachment,
 		GLenum textarget,
@@ -557,7 +553,6 @@ GPlatesOpenGL::GL::FramebufferTexture3D(
 
 void
 GPlatesOpenGL::GL::FramebufferTextureLayer(
-		GL &gl,
 		GLenum target,
 		GLenum attachment,
 		boost::optional<GLTexture::shared_ptr_type> texture,
