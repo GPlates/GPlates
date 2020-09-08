@@ -34,8 +34,7 @@
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 
-#include "opengl/GLScalarField3D.h"
-#include "opengl/GLRenderer.h"
+#include "opengl/GL.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -47,25 +46,24 @@ namespace GPlatesGui
 	namespace
 	{
 		/**
-		 * Visits a @a RenderedGeometryCollection and determines if any of its rendered layers contain
-		 * sub-surface geometries that can be rendered.
+		 * Visits a @a RenderedGeometryCollection to determine if rendered layers contain sub-surface geometries.
 		 */
-		class HasRenderableSubSurfaceLayers :
+		class HasSubSurfaceLayers :
 				public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>
 		{
 		public:
 
 			explicit
-			HasRenderableSubSurfaceLayers(
-					GPlatesOpenGL::GLRenderer &renderer) :
-				d_renderer(renderer),
-				d_has_renderable_sub_surface_layers(false)
+			HasSubSurfaceLayers(
+					GPlatesOpenGL::GL &gl) :
+				d_gl(gl),
+				d_has_sub_surface_layers(false)
 			{  }
 
 			bool
-			has_renderable_sub_surface_layers() const
+			has_sub_surface_layers() const
 			{
-				return d_has_renderable_sub_surface_layers;
+				return d_has_sub_surface_layers;
 			}
 
 			virtual
@@ -74,7 +72,7 @@ namespace GPlatesGui
 					const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 			{
 				// Only visit if layer is active and we haven't found a sub-surface geometry yet.
-				return rendered_geometry_layer.is_active() && !d_has_renderable_sub_surface_layers;
+				return rendered_geometry_layer.is_active() && !d_has_sub_surface_layers;
 			}
 
 			virtual
@@ -82,17 +80,13 @@ namespace GPlatesGui
 			visit_rendered_resolved_scalar_field_3d(
 					const GPlatesViewOperations::RenderedResolvedScalarField3D &rrsf)
 			{
-				// See if we can render a 3D scalar field.
-				if (GPlatesOpenGL::GLScalarField3D::is_supported(d_renderer))
-				{
-					d_has_renderable_sub_surface_layers = true;
-				}
+				d_has_sub_surface_layers = true;
 			}
 
 		private:
 
-			GPlatesOpenGL::GLRenderer &d_renderer;
-			bool d_has_renderable_sub_surface_layers;
+			GPlatesOpenGL::GL &d_gl;
+			bool d_has_sub_surface_layers;
 		};
 	}
 }
@@ -115,35 +109,35 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 
 void
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::initialise(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
-	d_layer_painter.initialise(renderer);
+	d_layer_painter.initialise(gl);
 }
 
 
 bool
-GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_renderable_sub_surface_geometries(
-		GPlatesOpenGL::GLRenderer &renderer) const
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_sub_surface_geometries(
+		GPlatesOpenGL::GL &gl) const
 {
-	HasRenderableSubSurfaceLayers visitor(renderer);
+	HasSubSurfaceLayers visitor(gl);
 	d_rendered_geometry_collection.accept_visitor(visitor);
 
-	return visitor.has_renderable_sub_surface_layers();
+	return visitor.has_sub_surface_layers();
 }
 
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const double &viewport_zoom_factor,
 		boost::optional<Colour> vector_geometries_override_colour)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_globe_state_scope(gl);
 
 	// Initialise our paint parameters so our visit methods can access them.
 	d_paint_params = PaintParams(
-			renderer,
+			gl,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SURFACE,
 			vector_geometries_override_colour);
@@ -163,21 +157,19 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const double &viewport_zoom_factor,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 		bool improve_performance_reduce_quality_hint)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
+	GPlatesOpenGL::GL::StateScope save_restore_globe_state_scope(gl);
 
 	// Initialise our paint parameters so our visit methods can access them.
 	d_paint_params = PaintParams(
-			renderer,
+			gl,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SUB_SURFACE,
 			boost::none/*vector_geometries_override_colour*/,
-			surface_occlusion_texture,
 			improve_performance_reduce_quality_hint);
 
 	// Draw the layers.
@@ -215,13 +207,12 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_visibility_tester,
 			d_paint_params->d_paint_region,
 			d_paint_params->d_vector_geometries_override_colour,
-			d_paint_params->d_surface_occlusion_texture,
 			d_paint_params->d_improve_performance_reduce_quality_hint);
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.
 	const cache_handle_type layer_cache =
-			rendered_geom_layer_painter.paint(*d_paint_params->d_renderer, d_layer_painter);
+			rendered_geom_layer_painter.paint(*d_paint_params->d_gl, d_layer_painter);
 
 	// Cache the layer's painting.
 	d_paint_params->d_cache_handle->push_back(layer_cache);
@@ -285,17 +276,15 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_visual_layers_reversed(
 
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const double &viewport_zoom_factor,
 		GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 		boost::optional<Colour> vector_geometries_override_colour,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 		bool improve_performance_reduce_quality_hint) :
-	d_renderer(&renderer),
+	d_gl(&gl),
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
 	d_vector_geometries_override_colour(vector_geometries_override_colour),
-	d_surface_occlusion_texture(surface_occlusion_texture),
 	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint),
 	d_cache_handle(new std::vector<cache_handle_type>()),
 	// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...

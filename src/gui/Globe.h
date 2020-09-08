@@ -43,7 +43,6 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLTexture.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
@@ -185,16 +184,10 @@ namespace GPlatesGui
 				bool is_front_half_globe);
 
 		void
-		render_front_globe_hemisphere_surface_texture(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLTexture::shared_ptr_to_const_type &front_globe_surface_texture);
-
-		void
 		render_globe_sub_surface(
 				GPlatesOpenGL::GL &gl,
 				std::vector<cache_handle_type> &cache_handle,
-				const double &viewport_zoom_factor,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
+				const double &viewport_zoom_factor);
 	};
 }
 

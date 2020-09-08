@@ -353,8 +353,7 @@ GPlatesGui::LayerPainter::begin_painting(
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::end_painting(
 		GPlatesOpenGL::GLRenderer &renderer,
-		float scale,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		float scale)
 {
 	PROFILE_FUNC();
 
@@ -413,8 +412,7 @@ GPlatesGui::LayerPainter::end_painting(
 	renderer.gl_depth_mask(GL_FALSE);
 
 	// Paint a scalar field if there is one (note there should only be one scalar field per visual layer).
-	const cache_handle_type scalar_fields_cache_handle =
-			paint_scalar_fields(renderer, surface_occlusion_texture);
+	const cache_handle_type scalar_fields_cache_handle = paint_scalar_fields(renderer);
 	cache_handle->push_back(scalar_fields_cache_handle);
 
 	// Paint rasters if there are any (note there should only be one raster per visual layer).
@@ -542,8 +540,7 @@ GPlatesGui::LayerPainter::end_painting(
 
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::paint_scalar_fields(
-		GPlatesOpenGL::GLRenderer &renderer,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
 	// Rendering 3D scalar fields not supported in 2D map views.
 	if (d_map_projection)
@@ -587,8 +584,7 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 			scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
 					renderer,
 					scalar_field_drawable.source_resolved_scalar_field,
-					scalar_field_drawable.render_parameters,
-					surface_occlusion_texture);
+					scalar_field_drawable.render_parameters);
 			cache_handle->push_back(scalar_field_cache_handle);
 		}
 		else
@@ -618,8 +614,7 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 				scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
 						renderer,
 						scalar_field_drawable.source_resolved_scalar_field,
-						scalar_field_drawable.render_parameters,
-						surface_occlusion_texture);
+						scalar_field_drawable.render_parameters);
 				cache_handle->push_back(scalar_field_cache_handle);
 			}
 			while (image_scope.end_render_tile());

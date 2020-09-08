@@ -105,12 +105,6 @@ uniform float light_ambient_contribution;
 // Depth occlusion options.
 //
 
-// If using the surface occlusion texture for early ray termination.
-uniform bool read_from_surface_occlusion_texture;
-// The surface occlusion texture used for early ray termination.
-// This contains the RGBA contents of rendering the front surface of the globe.
-uniform sampler2D surface_occlusion_texture_sampler;
-
 // If using the depth texture for early ray termination.
 uniform bool read_from_depth_texture;
 // The depth texture used for early ray termination.
@@ -1426,22 +1420,6 @@ raycasting(
 		cube_face_matrix_edge[i][1] = cube_vertices[int(cube_face_indices[i].y)] - cube_face_matrix_edge[i][0];
 		// y direction vector of face
 		cube_face_matrix_edge[i][2] = cube_vertices[int(cube_face_indices[i].z)] - cube_face_matrix_edge[i][0];
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Reject ray if it's occluded by surface geometries.
-
-	if (read_from_surface_occlusion_texture)
-	{
-		// If a surface object on the front of the globe has an alpha value of 1.0 (and hence occludes
-		// the current ray) then discard the current pixel.
-		// Convert [-1,1] range to [0,1] for texture coordinates.
-		float surface_occlusion = texture2D(surface_occlusion_texture_sampler, 0.5 * screen_coord + 0.5).a;
-		
-		if (surface_occlusion == 1.0)
-		{
-			return false;
-		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////

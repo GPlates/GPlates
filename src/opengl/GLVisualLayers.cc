@@ -277,8 +277,7 @@ GPlatesOpenGL::GLVisualLayers::cache_handle_type
 GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		GLRenderer &renderer,
 		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
-		const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters,
-		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters)
 {
 	PROFILE_FUNC();
 
@@ -403,8 +402,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 				render_parameters.get_depth_restriction(),
 				render_parameters.get_quality_performance(),
 				render_parameters.get_shader_test_variables(),
-				surface_fill_mask,
-				surface_occlusion_texture);
+				surface_fill_mask);
 		break;
 
 	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_CROSS_SECTIONS:
@@ -422,8 +420,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 						render_parameters.get_cross_section_colour_mode(),
 						render_parameters.get_depth_restriction(),
 						render_parameters.get_shader_test_variables(),
-						surface_fill_mask,
-						surface_occlusion_texture);
+						surface_fill_mask);
 			}
 		}
 		break;

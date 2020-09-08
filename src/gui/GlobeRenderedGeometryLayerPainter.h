@@ -95,9 +95,6 @@ namespace GPlatesGui
 		 *
 		 * @a vector_geometries_override_colour is used to optionally override the colour of vector geometries
 		 *    on the surface (this is useful when rendering geometries gray on rear of globe).
-		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 *    of the surface geometries/rasters on the *front* of the globe.
-		 *    It is only used when rendering sub-surface geometries.
 		 * @a improve_performance_reduce_quality_hint a hint to improve performance by presumably
 		 *    reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
@@ -107,8 +104,6 @@ namespace GPlatesGui
 				const GlobeVisibilityTester &visibility_tester,
 				PaintRegionType paint_region,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-						surface_occlusion_texture = boost::none,
 				bool improve_performance_reduce_quality_hint = false);
 
 
@@ -356,13 +351,6 @@ namespace GPlatesGui
 		 * Optional override colour of vector geometries (useful when rendering geometries gray on rear of globe).
 		 */
 		boost::optional<Colour> d_vector_geometries_override_colour;
-
-		/**
-		 * A viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * It is only used when rendering sub-surface geometries.
-		 */
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 
 		/**
 		 * A hint to improve performance presumably at the cost of quality.

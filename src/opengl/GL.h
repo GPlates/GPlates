@@ -196,6 +196,7 @@ namespace GPlatesOpenGL
 		// (or a framebuffer object) are object state (not global state) but are nevertheless routed through
 		// this class so that a single @a GLVertexArray instance (or a @GLFramebuffer instance) can have
 		// one native vertex array object (or framebuffer object) per OpenGL context.
+		// NOTE: The state of these objects is *not* saved/restored by @a StateScope (since it is not *global* state).
 		//
 
 		void

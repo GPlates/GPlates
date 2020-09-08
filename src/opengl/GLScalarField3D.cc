@@ -758,7 +758,6 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
 		const std::vector<float> &test_variables,
 		boost::optional<SurfaceFillMask> surface_fill_mask,
-		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 		boost::optional<GLTexture::shared_ptr_to_const_type> depth_read_texture)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -781,8 +780,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			d_render_iso_surface_program.get(),
 			current_texture_unit,
 			depth_restriction,
-			test_variables,
-			surface_occlusion_texture);
+			test_variables);
 
 	// Specify the colour mode.
 	d_render_iso_surface_program.get()->gl_uniform1i(
@@ -1765,8 +1763,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 		GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode colour_mode,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 		const std::vector<float> &test_variables,
-		boost::optional<SurfaceFillMask> surface_fill_mask,
-		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		boost::optional<SurfaceFillMask> surface_fill_mask)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -1792,8 +1789,7 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 			d_render_cross_section_program.get(),
 			current_texture_unit,
 			depth_restriction,
-			test_variables,
-			surface_occlusion_texture);
+			test_variables);
 
 	// Specify the colour mode.
 	d_render_cross_section_program.get()->gl_uniform1i(
@@ -2109,8 +2105,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		const GLProgram::shared_ptr_type &program,
 		unsigned int &current_texture_unit,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
-		const std::vector<float> &test_variables,
-		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		const std::vector<float> &test_variables)
 {
 	// Set the test variables.
 	set_shader_test_variables(renderer, program, test_variables);
@@ -2159,45 +2154,6 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 			current_texture_unit);
 	// Move to the next texture unit.
 	++current_texture_unit;
-
-	if (surface_occlusion_texture)
-	{
-		// Set surface occlusion texture sampler to current texture unit.
-		renderer.gl_bind_texture(surface_occlusion_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		program->gl_uniform1i(
-				renderer,
-				"surface_occlusion_texture_sampler",
-				current_texture_unit);
-		// Move to the next texture unit.
-		++current_texture_unit;
-
-		// Enable reads from surface occlusion texture.
-		program->gl_uniform1i(
-				renderer,
-				"read_from_surface_occlusion_texture",
-				true);
-	}
-	else
-	{
-		// Unbind the surface occlusion texture sampler from current texture unit.
-		renderer.gl_unbind_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		// NOTE: Set the shader sampler to the current texture unit instead of a used texture unit
-		// like unit 0. This avoids shader program validation failure when active shader samplers of
-		// different types reference the same texture unit. Currently happens on MacOS - probably
-		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		program->gl_uniform1i(
-				renderer,
-				"surface_occlusion_texture_sampler",
-				current_texture_unit);
-		// Move to the next texture unit.
-		++current_texture_unit;
-
-		// Disable reads from surface occlusion texture.
-		program->gl_uniform1i(
-				renderer,
-				"read_from_surface_occlusion_texture",
-				false);
-	}
 
 	// Set the tile metadata resolution.
 	program->gl_uniform1i(

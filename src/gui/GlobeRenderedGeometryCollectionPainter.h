@@ -46,7 +46,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesViewOperations
@@ -58,8 +58,8 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	/**
-	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
-	 * 3D orthographic view of the globe using OpenGL.
+	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a 3D orthographic
+	 * (or 3D perspective) view of the globe using OpenGL.
 	 */
 	class GlobeRenderedGeometryCollectionPainter :
 			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
@@ -80,23 +80,20 @@ namespace GPlatesGui
 				const GlobeVisibilityTester &visibility_tester);
 
 		/**
-		 * Initialise objects requiring @a GLRenderer.
+		 * Initialise objects requiring @a GL.
 		 */
 		void
 		initialise(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		/**
-		 * Returns true if any rendered layer has sub-surface geometries that can be rendered.
-		 *
-		 * It's possible that a sub-surface geometry cannot be rendered, for example, if
-		 * the runtime system does not support OpenGL 3 (for 3D scalar fields).
+		 * Returns true if any rendered layer has sub-surface geometries.
 		 *
 		 * These are painted using @a paint_sub_surface.
 		 */
 		bool
-		has_renderable_sub_surface_geometries(
-				GPlatesOpenGL::GLRenderer &renderer) const;
+		has_sub_surface_geometries(
+				GPlatesOpenGL::GL &gl) const;
 
 		/**
 		 * Draw the rendered geometries on the surface of the globe.
@@ -109,7 +106,7 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		paint_surface(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &viewport_zoom_factor,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none);
 
@@ -119,16 +116,13 @@ namespace GPlatesGui
 		 * Currently this is 3D scalar fields.
 		 *
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
-		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
 		 * @param improve_performance_reduce_quality_hint a hint to improve performance by presumably
 		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		cache_handle_type
 		paint_sub_surface(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &viewport_zoom_factor,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 				bool improve_performance_reduce_quality_hint = false);
 
 		void
@@ -169,17 +163,15 @@ namespace GPlatesGui
 		struct PaintParams
 		{
 			PaintParams(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GL &gl,
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					// Used for PAINT_SURFACE...
 					boost::optional<Colour> vector_geometries_override_colour = boost::none,
 					// Used for PAINT_SUB_SURFACE...
-					boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-							surface_occlusion_texture = boost::none,
 					bool improve_performance_reduce_quality_hint = false);
 
-			GPlatesOpenGL::GLRenderer *d_renderer;
+			GPlatesOpenGL::GL *d_gl;
 			double d_inverse_viewport_zoom_factor;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 
@@ -187,7 +179,6 @@ namespace GPlatesGui
 			boost::optional<Colour> d_vector_geometries_override_colour;
 
 			// Used for PAINT_SUB_SURFACE...
-			boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 			bool d_improve_performance_reduce_quality_hint;
 
 			// Cache of rendered geometry layers.

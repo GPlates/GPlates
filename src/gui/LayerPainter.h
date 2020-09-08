@@ -513,16 +513,11 @@ namespace GPlatesGui
 
 		/**
 		 * Renders any streamed or queued primitives.
-		 *
-		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * It is only used when rendering sub-surface geometries.
 		 */
 		cache_handle_type
 		end_painting(
 				GPlatesOpenGL::GLRenderer &renderer,
-				float scale,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
+				float scale);
 
 		/**
 		 * Returns the render.
@@ -548,8 +543,7 @@ namespace GPlatesGui
 
 		cache_handle_type
 		paint_scalar_fields(
-				GPlatesOpenGL::GLRenderer &renderer,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		cache_handle_type
 		paint_rasters(

@@ -85,12 +85,6 @@ uniform bool lighting_enabled;
 uniform bool colour_mode_scalar;
 uniform bool colour_mode_gradient;
 
-// If using the surface occlusion texture.
-uniform bool read_from_surface_occlusion_texture;
-// The surface occlusion texture.
-// This contains the RGBA contents of rendering the front surface of the globe.
-uniform sampler2D surface_occlusion_texture_sampler;
-
 // If using a surface mask to limit regions in which cross sections are rendered.
 // (e.g. Africa, see Static Polygons connected with Scalar Field).
 uniform bool using_surface_fill_mask;
@@ -108,21 +102,6 @@ varying vec2 front_and_back_face_lighting;
 
 void main()
 {
-	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
-	if (read_from_surface_occlusion_texture)
-	{
-		// If a surface object on the front of the globe has an alpha value of 1.0 (and hence occludes
-		// the current ray) then discard the current pixel.
-		// Convert [-1,1] range to [0,1] for texture coordinates.
-		//
-		// TODO: This test might not improve efficiency - and so needs profiling to see if worth it.
-		float surface_occlusion = texture2D(surface_occlusion_texture_sampler, 0.5 * screen_coord + 0.5).a;
-		if (surface_occlusion == 1.0)
-		{
-			discard;
-		}
-	}
-
 	// Sample the field at the current world position in the cross-section.
 	// Discard if the field at the current world position contains no valid data.
 	int cube_face_index;

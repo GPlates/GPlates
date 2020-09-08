@@ -196,10 +196,6 @@ namespace GPlatesOpenGL
 		 *
 		 * @a render_parameters determines how to render the scalar field.
 		 *
-		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * It is used to early-cull rays into the scalar field.
-		 *
 		 * The scalar field is rendered with lighting (if supported and currently enabled) using @a get_light
 		 * (and it's current lighting parameters).
 		 */
@@ -207,8 +203,7 @@ namespace GPlatesOpenGL
 		render_scalar_field_3d(
 				GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &source_resolved_scalar_field,
-				const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters,
-				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+				const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters);
 
 
 		/**

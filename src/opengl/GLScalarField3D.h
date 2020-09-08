@@ -227,11 +227,6 @@ namespace GPlatesOpenGL
 		 * where N is on the order of ten. Extra variables, that don't exist in the shader, will emit
 		 * a warning (but that can be ignored during testing).
 		 *
-		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * If specified it will be used to early terminate ray-tracing for those pixels that are
-		 * occluded by surface geometries/rasters (that have alpha of 1.0).
-		 *
 		 * @a depth_read_texture is a viewport-size 2D texture containing the screen-space depth
 		 * (in range [-1,1] as opposed to window coordinate range [0,1]) of sub-surface structures
 		 * already rendered.
@@ -261,7 +256,6 @@ namespace GPlatesOpenGL
 				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
 				const std::vector<float> &test_variables,
 				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none,
-				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none,
 				boost::optional<GLTexture::shared_ptr_to_const_type> depth_read_texture = boost::none);
 
 
@@ -287,11 +281,6 @@ namespace GPlatesOpenGL
 		 * where N is on the order of ten. Extra variables, that don't exist in the shader, will emit
 		 * a warning (but that can be ignored during testing).
 		 *
-		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
-		 * of the surface geometries/rasters on the *front* of the globe.
-		 * If specified it will be used to cull those pixels that are occluded by surface
-		 * geometries/rasters (that have alpha of 1.0) - potentially improving rendering efficiency.
-		 *
 		 * The screen-space depth (in range [-1,1] as opposed to window coordinate range [0,1]) is
 		 * always output by the fragment shader, during rendering, to the draw buffer at index 1
 		 * (the scalar field colour is output to draw buffer index 0).
@@ -308,8 +297,7 @@ namespace GPlatesOpenGL
 				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode colour_mode,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 				const std::vector<float> &test_variables,
-				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none,
-				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
+				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none);
 
 	private:
 
@@ -368,11 +356,10 @@ namespace GPlatesOpenGL
 		 *  3) sampler2DArray mask_data_sampler;
 		 *  4) sampler1D depth_radius_to_layer_sampler;
 		 *  5) sampler1D colour_palette_sampler;
-		 *  6) sampler2D surface_occlusion_texture_sampler;
-		 *  7) sampler2D depth_texture_sampler;
-		 *  8) sampler2DArray surface_fill_mask_sampler;
-		 *  9) sampler2D volume_fill_depth_range_sampler;
-		 * 10) sampler2D volume_fill_walls_sampler;
+		 *  6) sampler2D depth_texture_sampler;
+		 *  7) sampler2DArray surface_fill_mask_sampler;
+		 *  8) sampler2D volume_fill_depth_range_sampler;
+		 *  9) sampler2D volume_fill_walls_sampler;
 		 */
 		static const unsigned int MAX_TEXTURE_IMAGE_UNITS_USED = 10;
 
@@ -993,8 +980,7 @@ namespace GPlatesOpenGL
 				const GLProgram::shared_ptr_type &program,
 				unsigned int &current_texture_unit,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
-				const std::vector<float> &test_variables,
-				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+				const std::vector<float> &test_variables);
 
 		void
 		set_shader_test_variables(
