@@ -601,6 +601,23 @@ GPlatesOpenGL::GL::LineWidth(
 
 
 void
+GPlatesOpenGL::GL::PixelStoref(
+		GLenum pname,
+		GLfloat param)
+{
+	d_current_state->pixel_storei(pname, param);
+}
+
+void
+GPlatesOpenGL::GL::PixelStorei(
+		GLenum pname,
+		GLint param)
+{
+	d_current_state->pixel_storef(pname, param);
+}
+
+
+void
 GPlatesOpenGL::GL::PointSize(
 		GLfloat size)
 {

@@ -440,6 +440,28 @@ namespace GPlatesOpenGL
 		}
 
 		void
+		pixel_storef(
+				GLenum pname,
+				GLfloat param)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->pixel_store_state_sets,
+					d_state_set_keys->get_pixel_store_key(pname),
+					boost::in_place(pname, param));
+		}
+
+		void
+		pixel_storei(
+				GLenum pname,
+				GLint param)
+		{
+			set_and_apply_state_set(
+					d_state_set_store->pixel_store_state_sets,
+					d_state_set_keys->get_pixel_store_key(pname),
+					boost::in_place(pname, param));
+		}
+
+		void
 		point_size(
 				GLfloat size)
 		{

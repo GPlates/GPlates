@@ -413,6 +413,16 @@ namespace GPlatesOpenGL
 				GLfloat width = GLfloat(1));
 
 		void
+		PixelStoref(
+				GLenum pname,
+				GLfloat param);
+
+		void
+		PixelStorei(
+				GLenum pname,
+				GLint param);
+
+		void
 		PointSize(
 				GLfloat size = GLfloat(1));
 

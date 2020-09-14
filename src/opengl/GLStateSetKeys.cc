@@ -105,7 +105,7 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 
 	default:
 		// Unsupported capability.
-		qWarning() << "binding of specified buffer object target not currently supported.";
+		qWarning() << "binding of specified buffer object target not supported.";
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}
@@ -199,8 +199,6 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_capability_key(
 		GLenum cap) const
 {
-	// We're currently only accepting a subset of all capabilities.
-	// Add more as needed.
 	switch (cap)
 	{
 	case GL_BLEND:
@@ -257,7 +255,7 @@ GPlatesOpenGL::GLStateSetKeys::get_capability_key(
 	}
 
 	// Unsupported capability.
-	qWarning() << "glEnable/glDisable capability not currently supported.";
+	qWarning() << "glEnable/glDisable capability not supported.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 
 	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
@@ -297,8 +295,6 @@ GPlatesOpenGL::GLStateSetKeys::get_hint_key(
 {
 	key_type key = 0;
 
-	// We're currently only accepting a subset of all hints.
-	// Add more as needed.
 	switch (target)
 	{
 	case GL_LINE_SMOOTH_HINT:
@@ -315,7 +311,76 @@ GPlatesOpenGL::GLStateSetKeys::get_hint_key(
 		break;
 	default:
 		// Unsupported capability.
-		qWarning() << "glHint capability not currently supported.";
+		qWarning() << "glHint target not supported.";
+		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
+		break;
+	}
+
+	return key;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_pixel_store_key(
+		GLenum pname) const
+{
+	key_type key = 0;
+
+	switch (pname)
+	{
+	case GL_PACK_SWAP_BYTES:
+		key = KEY_PIXEL_STORE_PACK_SWAP_BYTES;
+		break;
+	case GL_PACK_LSB_FIRST:
+		key = KEY_PIXEL_STORE_PACK_LSB_FIRST;
+		break;
+	case GL_PACK_ROW_LENGTH:
+		key = KEY_PIXEL_STORE_PACK_ROW_LENGTH;
+		break;
+	case GL_PACK_SKIP_ROWS:
+		key = KEY_PIXEL_STORE_PACK_SKIP_ROWS;
+		break;
+	case GL_PACK_SKIP_PIXELS:
+		key = KEY_PIXEL_STORE_PACK_SKIP_PIXELS;
+		break;
+	case GL_PACK_ALIGNMENT:
+		key = KEY_PIXEL_STORE_PACK_ALIGNMENT;
+		break;
+	case GL_PACK_IMAGE_HEIGHT:
+		key = KEY_PIXEL_STORE_PACK_IMAGE_HEIGHT;
+		break;
+	case GL_PACK_SKIP_IMAGES:
+		key = KEY_PIXEL_STORE_PACK_SKIP_IMAGES;
+		break;
+
+	case GL_UNPACK_SWAP_BYTES:
+		key = KEY_PIXEL_STORE_UNPACK_SWAP_BYTES;
+		break;
+	case GL_UNPACK_LSB_FIRST:
+		key = KEY_PIXEL_STORE_UNPACK_LSB_FIRST;
+		break;
+	case GL_UNPACK_ROW_LENGTH:
+		key = KEY_PIXEL_STORE_UNPACK_ROW_LENGTH;
+		break;
+	case GL_UNPACK_SKIP_ROWS:
+		key = KEY_PIXEL_STORE_UNPACK_SKIP_ROWS;
+		break;
+	case GL_UNPACK_SKIP_PIXELS:
+		key = KEY_PIXEL_STORE_UNPACK_SKIP_PIXELS;
+		break;
+	case GL_UNPACK_ALIGNMENT:
+		key = KEY_PIXEL_STORE_UNPACK_ALIGNMENT;
+		break;
+	case GL_UNPACK_IMAGE_HEIGHT:
+		key = KEY_PIXEL_STORE_UNPACK_IMAGE_HEIGHT;
+		break;
+	case GL_UNPACK_SKIP_IMAGES:
+		key = KEY_PIXEL_STORE_UNPACK_SKIP_IMAGES;
+		break;
+
+	default:
+		// Unsupported capability.
+		qWarning() << "glPixelStoref/glPixelStorei parameter name not supported.";
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}

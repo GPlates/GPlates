@@ -33,7 +33,6 @@
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/variant.hpp>
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
@@ -1114,6 +1113,60 @@ namespace GPlatesOpenGL
 
 
 		GPlatesMaths::real_t d_width;
+	};
+
+	/**
+	 * Used for glPixelStoref/glPixelStorei.
+	 */
+	struct GLPixelStoreStateSet :
+			public GLStateSet
+	{
+		/**
+		 * Specify *float* parameter value.
+		 *
+		 * Note: We map GLfloat to a GLint since there are actually no parameters of type GLfloat.
+		 *       They're all boolean or integer.
+		 */
+		GLPixelStoreStateSet(
+				GLenum pname,
+				GLfloat param);
+
+		/**
+		 * Specify *integer* parameter value.
+		 */
+		GLPixelStoreStateSet(
+				GLenum pname,
+				GLint param) :
+			d_pname(pname),
+			d_param(param)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const;
+
+		static
+		GLint
+		get_default(
+				GLenum pname);
+
+		GLenum d_pname;
+		GLint d_param;
 	};
 
 	/**

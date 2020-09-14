@@ -25,6 +25,8 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
+#include <cmath>  // std::round
+
 #include "GLStateSets.h"
 
 #include "GLState.h"
@@ -1601,6 +1603,135 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 	}
 
 	glLineWidth(GLfloat(1));
+}
+
+
+GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
+		GLenum pname,
+		GLfloat param) :
+	d_pname(pname)
+{
+	// It's a GLfloat parameter but we'll map it to a GLint since there are actually no
+	// parameters of type GLfloat.
+
+	// If pname is a boolean type...
+	if (pname == GL_PACK_SWAP_BYTES ||
+		pname == GL_UNPACK_SWAP_BYTES ||
+		pname == GL_PACK_LSB_FIRST ||
+		pname == GL_UNPACK_LSB_FIRST)
+	{
+		// OpenGL 3.3 spec says zero maps to false and non-zero to true, which if specified
+		// using an integer (ie, glPixelStorei instead of glPixelStoref) then false is 0 and true
+		// can be any non-zero integer (we choose 1).
+		d_param = (param != 0) ? 1 : 0;
+	}
+	else // all remaining pnames have type integer (in OpenGL 3.3)...
+	{
+		// OpenGL 3.3 spec says param is rounded to the nearest integer.
+		d_param = static_cast<GLint>(std::round(param));
+	}
+}
+
+
+void
+GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Note the only state we're comparing is the parameter value.
+	// The parameter name should be the same for 'this' and 'current_state_set'.
+	//
+	// Return early if no state change...
+	if (d_param ==
+			// Throws exception if downcast fails...
+			dynamic_cast<const GLPixelStoreStateSet &>(current_state_set).d_param)
+	{
+		return;
+	}
+
+	// We're not using glPixelStoref (since all parameter types are boolean or integer).
+	glPixelStorei(d_pname, d_param);
+}
+
+void
+GPlatesOpenGL::GLPixelStoreStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const GLint param_default = get_default(d_pname);
+
+	// Return early if no state change...
+	if (d_param == param_default)
+	{
+		return;
+	}
+
+	// We're not using glPixelStoref (since all parameter types are boolean or integer).
+	glPixelStorei(d_pname, d_param);
+}
+
+void
+GPlatesOpenGL::GLPixelStoreStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	const GLint param_default = get_default(d_pname);
+
+	// Return early if no state change...
+	if (d_param == param_default)
+	{
+		return;
+	}
+
+	// We're not using glPixelStoref (since all parameter types are boolean or integer).
+	glPixelStorei(d_pname, param_default);
+}
+
+GLint
+GPlatesOpenGL::GLPixelStoreStateSet::get_default(
+		GLenum pname)
+{
+	switch (pname)
+	{
+	case GL_PACK_SWAP_BYTES:
+		return 0;  // GLint equivalent of false
+	case GL_PACK_LSB_FIRST:
+		return 0;  // GLint equivalent of false
+	case GL_PACK_ROW_LENGTH:
+		return 0;
+	case GL_PACK_SKIP_ROWS:
+		return 0;
+	case GL_PACK_SKIP_PIXELS:
+		return 0;
+	case GL_PACK_ALIGNMENT:
+		return 4;
+	case GL_PACK_IMAGE_HEIGHT:
+		return 0;
+	case GL_PACK_SKIP_IMAGES:
+		return 0;
+
+	case GL_UNPACK_SWAP_BYTES:
+		return 0;  // GLint equivalent of false
+	case GL_UNPACK_LSB_FIRST:
+		return 0;  // GLint equivalent of false
+	case GL_UNPACK_ROW_LENGTH:
+		return 0;
+	case GL_UNPACK_SKIP_ROWS:
+		return 0;
+	case GL_UNPACK_SKIP_PIXELS:
+		return 0;
+	case GL_UNPACK_ALIGNMENT:
+		return 4;
+	case GL_UNPACK_IMAGE_HEIGHT:
+		return 0;
+	case GL_UNPACK_SKIP_IMAGES:
+		return 0;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		return 0;  // Shouldn't get here, but keep compiler happy.
+	}
 }
 
 

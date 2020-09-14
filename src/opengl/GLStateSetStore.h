@@ -88,6 +88,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLFrontFaceStateSet> front_face_state_sets;
 		GPlatesUtils::ObjectPool<GLHintStateSet> hint_state_sets;
 		GPlatesUtils::ObjectPool<GLLineWidthStateSet> line_width_state_sets;
+		GPlatesUtils::ObjectPool<GLPixelStoreStateSet> pixel_store_state_sets;
 		GPlatesUtils::ObjectPool<GLPointSizeStateSet> point_size_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonModeStateSet> polygon_mode_state_sets;
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
