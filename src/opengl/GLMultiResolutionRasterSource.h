@@ -30,7 +30,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GLTexture.h"
-#include "GLTextureUtils.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -39,7 +38,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Interface for an arbitrary dimension source of raster data that's used as input
@@ -99,7 +98,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The requests to @a load_tile *must* have texel offsets that are integer
 		 * multiples of this tile dimension. This enables derived classes to
-		 * use textures of the tile dimension and satify load requests using these textures.
+		 * use textures of the tile dimension and satisfy load requests using these textures.
 		 *
 		 * NOTE: Since textures can be used for tiles the tile dimension should be a power-of-two.
 		 */
@@ -149,15 +148,11 @@ namespace GPlatesOpenGL
 		 * Returns the texture internal format for the target textures passed to @a load_tile
 		 * (to store a tile's texture data).
 		 *
-		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
-		 *
 		 * Class @a GLMultiResolutionRaster (the client of this interface) uses this texture format
 		 * for rendering to a render-target (after loading data into it with @a load_tile).
 		 *
 		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
 		 * Currently 'nearest' fits best with the georeferencing information of rasters.
-		 * And also earlier hardware, that supports floating-point textures, does not implement
-		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
 		 */
 		virtual
 		GLint
@@ -167,9 +162,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Loads raster data into @a target_texture using the specified tile offsets and level.
 		 *
-		 * The caller must ensure that @a target_texture has been created in OpenGL -
-		 * in other words, not only allocated by also created using gl_tex_image_2D
-		 * (you can pass NULL to gl_tex_image_2D to create without loading image data).
+		 * The caller must ensure that @a target_texture has had its image allocated in OpenGL
+		 * (eg, using glTexImage2D with a NULL data pointer).
 		 *
 		 * @a renderer is provided in case the data needs to be rendered into the texture.
 		 *
@@ -219,7 +213,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer) = 0;
+				GL &gl) = 0;
 
 	protected:
 		GLMultiResolutionRasterSource()
@@ -227,8 +221,7 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Used by derived classes to signal that the entire source data has changed -
-		 * such as a new raster or a new colour scheme or a change in reconstruction time
-		 * resulting in new age grid mask data.
+		 * such as a new raster or a new colour scheme.
 		 */
 		void
 		invalidate()

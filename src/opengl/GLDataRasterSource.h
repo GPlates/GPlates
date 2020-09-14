@@ -44,7 +44,7 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * An arbitrary dimension source of floating-point data made accessible by a proxied raster.
@@ -56,15 +56,9 @@ namespace GPlatesOpenGL
 	 * with @a GLVisualRasterSource but in that case a colour palette is applied to convert each pixel
 	 * from a floating-point value to an RGBA8 fixed-point colour. This class does not do that.
 	 *
-	 * The texture format of the data is 32-bit floating-point with the red channel containing the
-	 * raster data value and the green channel containing the raster coverage value (the value that
+	 * The texture format of the data is 32-bit floating-point (GL_RG32F) with the red channel containing
+	 * the raster data value and the green channel containing the raster coverage value (the value that
 	 * specifies, at each pixel, how much of that pixel is not the sentinel value in the source raster).
-	 *
-	 * NOTE: The 'GL_ARB_texture_float' extension is required in which case the texture format is 'GL_RGBA32F_ARB'
-	 * (note that RGB could have been used but hardware typically still takes up four channels anyway).
-	 * However if the 'GL_ARB_texture_rg' extension is also supported then the 'GL_RG32F' texture
-	 * format is used instead to reduce memory usage (by a half).
-	 * In either case the red and green channels are used and any extra channels are ignored.
 	 */
 	class GLDataRasterSource :
 			public GLMultiResolutionRasterSource
@@ -75,17 +69,6 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLDataRasterSource.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLDataRasterSource> non_null_ptr_to_const_type;
-
-
-		/**
-		 * Returns true if @a GLDataRasterSource is supported on the runtime system.
-		 *
-		 * The runtime system requires the OpenGL extension 'GL_ARB_texture_float'.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
 
 
 		/**
@@ -105,7 +88,7 @@ namespace GPlatesOpenGL
 		static
 		boost::optional<non_null_ptr_type>
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
 
@@ -124,7 +107,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		change_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster);
 
 
@@ -166,7 +149,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 	private:
 		/**
@@ -209,7 +192,7 @@ namespace GPlatesOpenGL
 
 
 		GLDataRasterSource(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 						proxy_raster_resolver,
 				unsigned int raster_width,
@@ -228,7 +211,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 
 		/**
@@ -242,7 +225,7 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type &raster_coverage,
 				unsigned int texel_width,
 				unsigned int texel_height,
-				GLRenderer &renderer);
+				GL &gl);
 
 
 		/**
@@ -255,7 +238,7 @@ namespace GPlatesOpenGL
 				const float *const coverage_data,
 				unsigned int texel_width,
 				unsigned int texel_height,
-				GLRenderer &renderer);
+				GL &gl);
 	};
 }
 
