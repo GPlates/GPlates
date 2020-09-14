@@ -28,6 +28,7 @@
 #define GPLATES_OPENGL_GLINTERSECTPRIMITIVES_H
 
 #include <boost/optional.hpp>
+#include <opengl/OpenGL1.h>
 
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
@@ -221,6 +222,24 @@ namespace GPlatesOpenGL
 				return get_inv_magnitude_normal().dval() * d_signed_distance_to_origin_unnormalised.dval();
 			}
 
+			/**
+			 * Return the same plane but with half spaces reversed
+			 * (ie, positive half space becomes negative half space, and negative becomes positive).
+			 */
+			Plane
+			get_reversed_half_space() const
+			{
+				// Negate normal and signed distance. But normal magnitude is not negated (it's a magnitude).
+				return Plane(-d_normal, -d_signed_distance_to_origin_unnormalised, d_inv_magnitude_normal);
+			}
+
+			/**
+			 * Returns the plane coefficients a, b, c, d as an array of GLfloat.
+			 */
+			void
+			get_float_plane(
+					GLfloat float_plane[4]) const;
+
 		private:
 
 			GPlatesMaths::Vector3D d_normal;
@@ -242,6 +261,15 @@ namespace GPlatesOpenGL
 			 */
 			mutable boost::optional<GPlatesMaths::real_t> d_inv_magnitude_normal;
 
+
+			Plane(
+					const GPlatesMaths::Vector3D &normal,
+					const GPlatesMaths::real_t &signed_distance_to_origin_unnormalised,
+					boost::optional<GPlatesMaths::real_t> inv_magnitude_normal) :
+				d_normal(normal),
+				d_signed_distance_to_origin_unnormalised(signed_distance_to_origin_unnormalised),
+				d_inv_magnitude_normal(inv_magnitude_normal)
+			{  }
 
 			/**
 			 * Returns the inverse of the normal's magnitude (calculates if first time called).

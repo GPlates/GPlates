@@ -460,6 +460,23 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
 				const GPlatesOpenGL::GLIntersect::Sphere &sphere) const;
 
+		/**
+		 * Returns the plane that separates the visible front half of globe from invisible rear half.
+		 *
+		 * Note that the plane normal defines the positive half space as the *front* of the globe
+		 * (ie, the plane normal points toward the viewer).
+		 *
+		 * For orthographic viewing (where all camera rays are parallel, the plane simply divides
+		 * the globe into two equal sized halves. And the plane normal is the opposite of view direction.
+		 *
+		 * For perspective viewing, the closer the camera eye is to the globe the more the plane moves
+		 * toward the camera eye (since the visible front part of globe becomes smaller relative to the
+		 * rear of the globe). The plane normal is the direction from globe centre to camera eye (ie, it is
+		 * only aligned with the view direction when there is no camera tilt, when camera looks at globe centre).
+		 */
+		GPlatesOpenGL::GLIntersect::Plane
+		get_front_globe_horizon_plane() const;
+
 	Q_SIGNALS:
 	
 		/**

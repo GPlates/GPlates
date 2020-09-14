@@ -838,7 +838,12 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	// Since the view direction usually differs little from one frame to the next there is a lot
 	// of overlap that we want to reuse (and not recalculate).
 	//
-	const cache_handle_type frame_cache_handle = d_globe.paint(gl, view_projection, viewport_zoom_factor, scale);
+	const cache_handle_type frame_cache_handle = d_globe.paint(
+			gl,
+			view_projection,
+			d_globe_camera.get_front_globe_horizon_plane(),
+			viewport_zoom_factor,
+			scale);
 
 	// Paint the text overlay.
 	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device

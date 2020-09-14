@@ -52,6 +52,11 @@ namespace GPlatesOpenGL
 {
 	class GL;
 	class GLViewProjection;
+
+	class GLIntersect
+	{
+		class Plane;
+	};
 }
 
 namespace GPlatesPresentation
@@ -101,6 +106,9 @@ namespace GPlatesGui
 		 *
 		 * @param view_projection The current view-projection transform and the viewport.
 		 *
+		 * @param front_globe_horizon_plane Plane that separates visible front half of globe from rear
+		 *        (from the camera's point of view). Front of globe is in positive half space of plane.
+		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
@@ -109,6 +117,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
+				const GPlatesOpenGL::GLIntersect::Plane &front_globe_horizon_plane,
 				const double &viewport_zoom_factor,
 				float scale);
 
@@ -179,6 +188,7 @@ namespace GPlatesGui
 		render_globe_hemisphere_surface(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
+				const GPlatesOpenGL::GLIntersect::Plane &globe_horizon_plane,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
 				bool is_front_half_globe);

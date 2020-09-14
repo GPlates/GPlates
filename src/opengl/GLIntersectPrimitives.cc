@@ -95,6 +95,18 @@ GPlatesOpenGL::GLIntersect::Plane::classify_point(
 }
 
 
+void
+GPlatesOpenGL::GLIntersect::Plane::get_float_plane(
+		GLfloat float_plane[4]) const
+{
+	float_plane[0] = d_normal.x().dval();
+	float_plane[1] = d_normal.y().dval();
+	float_plane[2] = d_normal.z().dval();
+
+	float_plane[3] = d_signed_distance_to_origin_unnormalised.dval();
+}
+
+
 GPlatesOpenGL::GLIntersect::Ray::Ray(
 		const GPlatesMaths::Vector3D &ray_origin,
 		const GPlatesMaths::UnitVector3D &ray_direction) :

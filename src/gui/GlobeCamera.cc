@@ -775,10 +775,12 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 		//
 		// First we find the normal to the plane that contains our current ray and the sphere centre.
 		// The plane intersects the sphere surface to form a circle. We find the point on this circle
-		// that is perpendicular to the eye location (both with respect to sphere centre). We then find
-		// the angle between this point and the sphere centre (at the eye location). We then rotate
-		// this point by the angle around the sphere centre (along the plane). The rotated point is
-		// the horizon point where the horizon ray touches the sphere surface tangentially.
+		// such that its vector relative to sphere centre is perpendicular to the eye location
+		// (also as a vector relative to sphere centre). We then find the angle between this point
+		// and the sphere centre (relative to the eye location). It turns out that this angle is also
+		// the angle between this point and the horizon point (relative to sphere centre). So we then
+		// rotate this point by that angle around the sphere centre (along the plane). The rotated
+		// point is the horizon point where the horizon ray touches the sphere surface tangentially.
 
 		// Note that normalisation should never fail here since the current ray is not pointing
 		// at the sphere centre because, as a precondition, we already know it missed the sphere.
@@ -808,6 +810,71 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 				sphere.get_radius() * horizon_direction;
 
 		return horizon_point;
+	}
+}
+
+
+GPlatesOpenGL::GLIntersect::Plane
+GPlatesGui::GlobeCamera::get_front_globe_horizon_plane() const
+{
+	if (get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+	{
+		// For orthographic viewing all camera rays are parallel and hence all are perpendicular
+		// to the horizon (visible circumference around sphere). This means the visible circumference
+		// is a great circle (not a small circle as with perspective projections), which means the
+		// horizon plane passes through the globe centre. The plane simply divides the globe into
+		// two equal sized halves.
+		return GPlatesOpenGL::GLIntersect::Plane(
+				-get_view_direction(), /*plane normal*/  // Front of globe is in positive half space.
+				GPlatesMaths::Vector3D()/*globe origin*/);
+	}
+	else // perspective...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				GPLATES_ASSERTION_SOURCE);
+
+		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
+		const GPlatesMaths::Real distance_between_camera_eye_and_globe_centre = camera_eye.magnitude();
+
+		// The camera eye location is not expected to be inside the globe.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				distance_between_camera_eye_and_globe_centre >= 1,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Horizon plane normal points in direction from globe centre to camera eye.
+		// This defines the positive half space as the front of the globe (the visible part).
+		const GPlatesMaths::UnitVector3D horizon_plane_normal = camera_eye.get_normalisation();
+
+		// The distance from the plane to the globe centre (along plane normal) turns out to be
+		// inversely proportional to the distance from camera eye to globe centre, as follows:
+		//
+		// A horizon point (on globe) subtends an angle (at camera eye) from globe centre defined by:
+		//
+		//   sin(angle) = 1 / E
+		//
+		// ...where E is distance from camera eye to globe centre. And distance from globe centre to
+		// horizon point is:
+		//
+		//   D = sqrt(E^2 - 1)
+		//
+		// Now distance from camera eye to horizon plane is:
+		//
+		//   D * cos(angle) = sqrt(E^2 - 1) * sqrt(1 - (1/E)^2)   # since cos^2(angle) + sin^2(angle) = 1
+		//                  = sqrt(E^2 - 1) * (1/E) * sqrt(E^2 - 1)
+		//                  = (E^2 - 1) * (1/E)
+		//                  = E - (1/E)
+		//
+		// Hence the distance from globe centre to horizon plane is:
+		//
+		//   E - (E - (1/E)) = 1/E
+		//
+		// Note that since "E >= 1" therefore "1/E <= 1" and so horizon plane will intersect (unit radius) globe.
+		//
+		const GPlatesMaths::Vector3D point_on_horizon_plane = GPlatesMaths::Vector3D()/*globe centre*/ +
+				(1 / distance_between_camera_eye_and_globe_centre) * horizon_plane_normal;
+
+		return GPlatesOpenGL::GLIntersect::Plane(horizon_plane_normal, point_on_horizon_plane);
 	}
 }
 
