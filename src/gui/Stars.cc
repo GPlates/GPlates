@@ -73,14 +73,14 @@ namespace
 				
 				star_colour = colour;
 				
-				# We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
-				# near plane (which we still want), so we'll handle that ourself.
-				#
-				# Inside near clip plane means:
-				#
-				#   -gl_Position.w <= gl_Position.z
-				#   gl_Position.z + gl_Position.w >= 0
-				#
+				// We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
+				// near plane (which we still want), so we'll handle that ourself.
+				//
+				// Inside near clip plane means:
+				//
+				//   -gl_Position.w <= gl_Position.z
+				//   gl_Position.z + gl_Position.w >= 0
+				//
 				gl_ClipDistance[0] = gl_Position.z + gl_Position.w;
 			}
 		)";

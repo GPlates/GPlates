@@ -42,6 +42,11 @@ namespace GPlatesOpenGL
 {
 	class GL;
 	class GLViewProjection;
+
+	namespace GLIntersect
+	{
+		class Plane;
+	}
 }
 
 namespace GPlatesMaths
@@ -65,11 +70,16 @@ namespace GPlatesGui
 
 		/**
 		 * Paints lines of latitude and longitude on the surface of the sphere.
+		 *
+		 * @param globe_horizon_plane Plane that separates visible front half of globe from rear
+		 *        (from the camera's point of view). This plane determines whether front or rear
+		 *        of globe is rendered. Only the part of globe in positive half space is rendered.
 		 */
 		void
 		paint(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection);
+				const GPlatesOpenGL::GLViewProjection &view_projection,
+				const GPlatesOpenGL::GLIntersect::Plane &globe_horizon_plane);
 
 	private:
 		const GraticuleSettings &d_graticule_settings;

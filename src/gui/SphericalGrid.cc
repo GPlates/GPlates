@@ -60,6 +60,9 @@ namespace
 		R"(
 			uniform mat4 view_projection;
 			
+			// Only draw front or rear of visible globe using a clip plane (in world space).
+			uniform vec4 globe_horizon_plane;
+			
 			layout(location = 0) in vec4 position;
 			layout(location = 1) in vec4 colour;
 
@@ -70,6 +73,9 @@ namespace
 				gl_Position = view_projection * position;
 				
 				line_colour = colour;
+				
+				// Only draw front or rear of visible globe using a clip plane (in world space).
+				gl_ClipDistance[0] = dot(position, globe_horizon_plane);
 			}
 		)";
 	const char *FRAGMENT_SHADER_SOURCE =
@@ -337,7 +343,8 @@ GPlatesGui::SphericalGrid::SphericalGrid(
 void
 GPlatesGui::SphericalGrid::paint(
 		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection)
+		const GPlatesOpenGL::GLViewProjection &view_projection,
+		const GPlatesOpenGL::GLIntersect::Plane &globe_horizon_plane)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
@@ -396,6 +403,19 @@ GPlatesGui::SphericalGrid::paint(
 	glUniformMatrix4fv(
 			d_program->get_uniform_location("view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Only draw front or rear of visible globe using a clip plane (in world space).
+	//
+	// This ensures the correct draw order of geometries on the surface of the globe since depth writes
+	// are turned off. For example, if the globe is semi-transparent (due to a visible 3D scalar field)
+	// then the rear of globe is rendered in a first pass, followed by the scalar field inside the globe
+	// in a second pass and finally the front of the globe in a third pass.
+	gl.Enable(GL_CLIP_DISTANCE0);
+	GLfloat globe_horizon_float_plane[4];
+	globe_horizon_plane.get_float_plane(globe_horizon_float_plane);
+	glUniform4fv(
+			d_program->get_uniform_location("globe_horizon_plane"),
+			1, globe_horizon_float_plane);
 
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
