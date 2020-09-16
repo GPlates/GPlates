@@ -25,19 +25,22 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
+#include <algorithm>  // std::fill_n
 #include <cmath>
 #include <boost/cast.hpp>
+#include <boost/scoped_array.hpp>
 #include <QDebug>
 
 #include "GLNormalMapSource.h"
 
+#include "GL.h"
 #include "GLCapabilities.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
-#include "GLShaderProgramUtils.h"
+#include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
+#include "OpenGLException.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -70,52 +73,13 @@ namespace GPlatesOpenGL
 }
 
 
-bool
-GPlatesOpenGL::GLNormalMapSource::is_supported(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		// Floating-point textures and non-power-of-two textures are used if available but not required.
-		// However vertex/fragment shader programs are required.
-		// Actually they're not required in this class since we can generate normals on the CPU
-		// but they are required when normals are used for lighting elsewhere.
-		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
-			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
-		{
-			qWarning() <<
-					"Normal map raster lighting NOT supported by this graphics hardware.\n"
-					"  Requires vertex/fragment shader programs.";
-
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
-}
-
-
 boost::optional<GPlatesOpenGL::GLNormalMapSource::non_null_ptr_type>
 GPlatesOpenGL::GLNormalMapSource::create(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_field_raster,
 		unsigned int tile_texel_dimension,
 		float height_field_scale_factor)
 {
-	if (!is_supported(renderer))
-	{
-		return boost::none;
-	}
-
 	// The raster type is expected to contain numerical (height) data, not colour RGBA data.
 	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*height_field_raster))
 	{
@@ -143,9 +107,9 @@ GPlatesOpenGL::GLNormalMapSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > gl.get_capabilities().gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = gl.get_capabilities().gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -162,7 +126,7 @@ GPlatesOpenGL::GLNormalMapSource::create(
 	}
 
 	return non_null_ptr_type(new GLNormalMapSource(
-			renderer,
+			gl,
 			proxy_resolver_opt.get(),
 			raster_width,
 			raster_height,
@@ -173,7 +137,7 @@ GPlatesOpenGL::GLNormalMapSource::create(
 
 
 GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 				proxy_raster_resolver,
 		unsigned int raster_width,
@@ -191,64 +155,36 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	d_raster_statistics_height_field_scale_factor(1), // Default scale
 	d_raster_resolution_height_field_scale_factor(1), // Default scale
 	d_client_height_field_scale_factor(height_field_scale_factor),
-	// Generating normals on GPU requires uploading height field as a floating-point texture with
-	// non-power-of-two dimension (tile_texel_dimension + 2) x (tile_texel_dimension + 2) ...
-	d_generate_normal_map_on_gpu(
-			renderer.get_capabilities().texture.gl_ARB_texture_float &&
-			renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two &&
-			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object/*needed when rendering to floating-point targets*/),
 	// These textures get reused even inside a single rendering frame so we just need a small number
 	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
 	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
-	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer)),
+	d_generate_normals_program(GLProgram::create(gl)),
+	d_generate_normals_framebuffer(GLFramebuffer::create(gl)),
+	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
+	d_have_checked_framebuffer_completeness_normal_map_generation(false),
 	d_logged_tile_load_failure_warning(false)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	const GLCapabilities &capabilities = gl.get_capabilities();
 
 	initialise_level_of_detail_dimensions();
 
 	// Adjust the height field scale factor that's based on the raster statistics.
 	initialise_raster_statistics_height_field_scale_factor(raster_statistics);
 
-	if (d_generate_normal_map_on_gpu)
-	{
-		// Create the shader program that generates normals from a height field.
-		if (!create_normal_map_generation_shader_program(renderer))
-		{
-			// Failed to create a shader program so resort to generating normals on the CPU.
-			d_generate_normal_map_on_gpu = false;
-		}
-	}
+	// Create the shader program that generates normals from a height field.
+	compile_link_normal_map_generation_shader_program(gl);
 
-	// Allocate working data for the height data (and normal data for CPU generated normals).
+	// Allocate working data for the height data.
 	const unsigned int height_map_texel_dimension = tile_texel_dimension + 2/*border pixels*/;
-	if (d_generate_normal_map_on_gpu)
-	{
-		// If we generate normals on the GPU then the tile height working data will be used to
-		// upload to a height map texture...
-		const unsigned int num_floats_per_texel = capabilities.texture.gl_ARB_texture_rg ? 2/*RG*/ : 4/*RGBA*/;
-		d_tile_height_data_working_space.reset(
-				new float[num_floats_per_texel * height_map_texel_dimension * height_map_texel_dimension]);
-		// Zero the memory.
-		for (unsigned int n = 0; n < num_floats_per_texel * height_map_texel_dimension * height_map_texel_dimension; ++n)
-		{
-			d_tile_height_data_working_space.get()[n] = 0.0f;
-		}
-	}
-	else // will be generating normals on the CPU...
-	{
-		d_tile_height_data_working_space.reset(
-				new float[2 * height_map_texel_dimension * height_map_texel_dimension]);
-		// Zero the memory.
-		for (unsigned int n = 0; n < 2 * height_map_texel_dimension * height_map_texel_dimension; ++n)
-		{
-			d_tile_height_data_working_space.get()[n] = 0.0f;
-		}
-
-		// The normal data working space will be used to upload to a normal map texture...
-		d_tile_normal_data_working_space.reset(
-				new GPlatesGui::rgba8_t[tile_texel_dimension * tile_texel_dimension]);
-	}
+	// The tile height working data will be used to upload to a height map texture...
+	const unsigned int num_floats_per_texel = 2/*RG format*/;
+	d_tile_height_data_working_space.reset(
+			new float[num_floats_per_texel * height_map_texel_dimension * height_map_texel_dimension]);
+	// Zero the memory.
+	std::fill_n(
+			d_tile_height_data_working_space.get(),
+			num_floats_per_texel * height_map_texel_dimension * height_map_texel_dimension,
+			0.0f);
 }
 
 
@@ -336,7 +272,7 @@ GPlatesOpenGL::GLNormalMapSource::set_max_highest_resolution_texel_size_on_unit_
 
 bool
 GPlatesOpenGL::GLNormalMapSource::change_raster(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_height_raster,
 		float height_field_scale_factor)
 {
@@ -401,7 +337,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GL &gl)
 {
 	PROFILE_FUNC();
 
@@ -472,6 +408,9 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 					src_height_map_texel_height);
 	PROFILE_END(profile_proxy_raster_coverage);
 
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
 	// If there was an error accessing raster data or coverage then use default values for the normal map.
 	if (!raster_region_opt || !raster_coverage_opt)
 	{
@@ -482,7 +421,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 				normal_map_texel_width,
 				normal_map_texel_height,
 				target_texture,
-				renderer);
+				gl);
 
 		// Nothing needs caching.
 		return cache_handle_type();
@@ -498,8 +437,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 			src_height_map_texel_width,
 			src_height_map_texel_height,
 			dst_height_map_texel_width,
-			dst_height_map_texel_height,
-			renderer))
+			dst_height_map_texel_height))
 	{
 		load_default_normal_map(
 				level,
@@ -508,7 +446,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 				normal_map_texel_width,
 				normal_map_texel_height,
 				target_texture,
-				renderer);
+				gl);
 
 		// Nothing needs caching.
 		return cache_handle_type();
@@ -522,27 +460,15 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 	// of two pixels covered by each.
 	const float lod_height_scale = (1.0f / 6) * get_height_field_scale() / (1 << level);
 
-	// If we can offload the normal map generation to the GPU then do so.
+	// Offload the normal map generation to the GPU.
 	// This really requires floating-point textures to get sufficient precision for the height field values.
 	// Fixed-point 8-bit RGB textures are fine for the generated surface normals though.
-	if (d_generate_normal_map_on_gpu)
-	{
-		gpu_convert_height_field_to_normal_map(
-				renderer,
-				target_texture,
-				lod_height_scale,
-				normal_map_texel_width,
-				normal_map_texel_height);
-	}
-	else
-	{
-		cpu_convert_height_field_to_normal_map(
-				renderer,
-				target_texture,
-				lod_height_scale,
-				normal_map_texel_width,
-				normal_map_texel_height);
-	}
+	convert_height_field_to_normal_map(
+			gl,
+			target_texture,
+			lod_height_scale,
+			normal_map_texel_width,
+			normal_map_texel_height);
 
 	// Nothing needs caching.
 	return cache_handle_type();
@@ -550,16 +476,14 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 
 
 void
-GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
-		GLRenderer &renderer,
+GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
+		GL &gl,
 		const GLTexture::shared_ptr_type &target_texture,
 		float lod_height_scale,
 		unsigned int normal_map_texel_width,
 		unsigned int normal_map_texel_height)
 {
 	PROFILE_FUNC();
-
-	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Simply allocate a new texture from the texture cache and fill it with height data.
 	// Get an unused tile texture from the cache if there is one.
@@ -569,337 +493,109 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 	{
 		// No unused texture so create a new one...
 		height_field_texture = d_height_field_texture_cache->allocate_object(
-				GLTexture::create_unique(renderer));
+				GLTexture::create_unique(gl));
 
 		// The texture was just allocated so we need to create it in OpenGL.
-		create_height_tile_texture(renderer, height_field_texture.get());
+		create_height_tile_texture(gl, height_field_texture.get());
 	}
 
 	// The height map is a non-power-of-two texture (the normal map is power-of-two).
 	const unsigned int height_map_texel_width = normal_map_texel_width + 2;
 	const unsigned int height_map_texel_height = normal_map_texel_height + 2;
 
-	// Load the height data into the floating-point texture.
-	GLTextureUtils::load_image_into_texture_2D(
-			renderer,
-			height_field_texture.get(),
-			d_tile_height_data_working_space.get(),
-			(capabilities.texture.gl_ARB_texture_rg ? GL_RG : GL_RGBA),
-			GL_FLOAT,
-			height_map_texel_width,
-			height_map_texel_height);
+	// Bind height texture before uploading to it.
+	gl.BindTexture(GL_TEXTURE_2D, height_field_texture.get());
 
-	// Begin rendering to the 2D render target normal map texture.
-	//
+	// Our client memory image buffers are byte aligned.
+	// Not really needed since default alignment is 4 (which is alignment of GL_FLOAT anyway).
+	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// Load the height data into the floating-point texture.
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+		0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
+		GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
+
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
+
+	// Bind our framebuffer object for generating normals.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_generate_normals_framebuffer);
+
+	// Begin rendering to the 2D target texture (containing normals).
+	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target_texture, 0/*level*/);
+
+	// Check our framebuffer object for completeness (now that normal texture is attached to it).
+	// We only need to do this once because, while the normal map tile texture changes, the
+	// framebuffer configuration does not (ie, same texture internal format, dimensions, etc).
+	if (!d_have_checked_framebuffer_completeness_normal_map_generation)
+	{
+		// Throw OpenGLException if not complete.
+		// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
+		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GPlatesGlobal::Assert<OpenGLException>(
+				completeness == GL_FRAMEBUFFER_COMPLETE,
+				GPLATES_ASSERTION_SOURCE,
+				"Framebuffer not complete for rendering normals into normal map.");
+
+		d_have_checked_framebuffer_completeness_normal_map_generation = true;
+	}
+
 	// Specify a viewport that matches the possibly partial tile dimensions and *not* necessarily always
 	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
-	GLRenderer::RenderTarget2DScope render_target_scope(
-			renderer,
-			target_texture,
-			GLViewport(0, 0, normal_map_texel_width, normal_map_texel_height));
-
-	// The render target tiling loop...
-	do
-	{
-		// Begin the current render target tile - this also sets the viewport.
-		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
-
-		// Set up the projection transform adjustment for the current render target tile.
-		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
-
-		// The default normal is normal to the surface with (x,y,z) of (0,0,1).
-		// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
-		// This is because our normal map texture is unsigned 8-bit RGB.
-		// It'll get converted back to the signed range when lighting is applied in a shader program.
-		//
-		// The default normal is useful because if the region does not occupy the entire tile then it
-		// means we've reached the right or bottom edge of the raster and it's possible that our generated
-		// normal map could be sampled outside its valid region due to the fact that it's partially filled
-		// and contains undefined values outside the region.
-		// In this case the default normal will be sampled to give the same lighting results as
-		// non-normal-mapped regions of the globe.
-		// This also enables us to use discard in the shader program when the coverage is zero in order
-		// to use the default normal.
-		// NOTE: The clear is not limited to the viewport region (specified above) which is important
-		// for the above reason.
-		renderer.gl_clear_color(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
-
-		// Clear only the colour buffer.
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
-
-		// Bind the shader program.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_generate_normals_program,
-				GPLATES_ASSERTION_SOURCE);
-		renderer.gl_bind_program_object(d_generate_normals_program.get());
-
-		// Bind the height field texture to texture unit 0.
-		renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
-
-		// Set the height field texture sampler to texture unit 0.
-		d_generate_normals_program.get()->gl_uniform1i(
-				renderer, "height_field_texture_sampler", 0);
-
-		// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
-		// tile region in the viewport to the full-size square height field tile of dimension
-		//    (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
-		const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
-		const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
-		const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
-		d_generate_normals_program.get()->gl_uniform4f(
-				renderer,
-				"height_field_parameters",
-				u_scale, // scale u
-				v_scale, // scale v
-				inverse_full_height_map_tile, // translate u and v
-				lod_height_scale);
-
-		// Draw a full-screen quad.
-		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
-	}
-	while (render_target_scope.end_tile());
-}
-
-
-void
-GPlatesOpenGL::GLNormalMapSource::cpu_convert_height_field_to_normal_map(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &target_texture,
-		float lod_height_scale,
-		unsigned int normal_map_texel_width,
-		unsigned int normal_map_texel_height)
-{
-	PROFILE_FUNC();
-
-	float *const height_data_working_space = d_tile_height_data_working_space.get();
-	const unsigned int height_map_texel_width = normal_map_texel_width + 2;
-
-	// Each height data texel is a height value followed by a coverage value.
-	const unsigned int num_floats_per_height_texel = 2;
-
-	GPlatesGui::rgba8_t *const normal_data_working_space = d_tile_normal_data_working_space.get();
+	gl.Viewport(0, 0, normal_map_texel_width, normal_map_texel_height);
 
 	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
-	// We also need to convert the x and y components from the range [-1,1] to [0,255] and
-	// the z component from the range [0,1] to [0,255].
-	const GPlatesGui::rgba8_t default_normal(128, 128, 255, 255);
+	// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
+	// This is because our normal map texture is unsigned 8-bit RGB.
+	// It'll get converted back to the signed range when lighting is applied in a shader program.
+	//
+	// The default normal is useful because if the region does not occupy the entire tile then it
+	// means we've reached the right or bottom edge of the raster and it's possible that our generated
+	// normal map could be sampled outside its valid region due to the fact that it's partially filled
+	// and contains undefined values outside the region.
+	// In this case the default normal will be sampled to give the same lighting results as
+	// non-normal-mapped regions of the globe.
+	// This also enables us to use discard in the shader program when the coverage is zero in order
+	// to use the default normal.
+	// NOTE: The clear is not limited to the viewport region specified above (since we've not
+	//       enabled scissor testing) which is important for the above reason.
+	gl.ClearColor(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
 
-	// Generate the normals.
-	for (unsigned int y = 0; y < normal_map_texel_height; ++y)
-	{
-		float *height_data_row_working_space = height_data_working_space +
-				num_floats_per_height_texel * ((y + 1) * height_map_texel_width + 1);
+	// Clear only the colour buffer.
+	glClear(GL_COLOR_BUFFER_BIT);
 
-		unsigned int normal_map_texel_offset = y * normal_map_texel_width;
+	// Bind the shader program for rendering light direction for the 2D map views.
+	gl.UseProgram(d_generate_normals_program);
 
-		for (unsigned int x = 0;
-			x < normal_map_texel_width;
-			++x, ++normal_map_texel_offset, height_data_row_working_space += num_floats_per_height_texel)
-		{
-			// Pixels with zero coverage won't have their height data accessed so there's no
-			// need to zero them out (eg, if they are Nan).
+	// Bind the height field texture to texture unit 0.
+	gl.ActiveTexture(GL_TEXTURE0);
+	gl.BindTexture(GL_TEXTURE_2D, height_field_texture.get());
+	// Set the height field texture sampler to texture unit 0.
+	glUniform1i(
+			d_generate_normals_program->get_uniform_location("height_field_texture_sampler"),
+			0);
 
-			// The centre texel of the 3x3 height texels used to generate the normal for
-			// the current normal texel.
-			const float *const height_texel11 = height_data_row_working_space;
-			const float coverage = height_texel11[1]; // Index 1 is coverage
-			if (GPlatesMaths::are_almost_exactly_equal(coverage, 0))
-			{
-				normal_data_working_space[normal_map_texel_offset] = default_normal;
-				continue;
-			}
+	// The texture coordinates scale/translate the full-screen quad [0,1] (which maps to the
+	// possibly partial tile region in the viewport) to the full-size square height field tile of
+	// dimension (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
+	const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
+	const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
+	const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
+	glUniform4f(
+			d_generate_normals_program->get_uniform_location("height_field_parameters"),
+			u_scale, // scale u
+			v_scale, // scale v
+			inverse_full_height_map_tile, // translate u and v
+			lod_height_scale);
 
-			// All texels in 3x3 height map pixels (except centre pixel).
-			const float *const height_texel00 = height_texel11 -
-					(height_map_texel_width + 1) * num_floats_per_height_texel;
-			const float *const height_texel10 = height_texel11 -
-					(height_map_texel_width + 0) * num_floats_per_height_texel;
-			const float *const height_texel20 = height_texel11 -
-					(height_map_texel_width - 1) * num_floats_per_height_texel;
-			const float *const height_texel01 = height_texel11 -
-					1 * num_floats_per_height_texel;
-			const float *const height_texel21 = height_texel11 +
-					1 * num_floats_per_height_texel;
-			const float *const height_texel02 = height_texel11 +
-					(height_map_texel_width - 1) * num_floats_per_height_texel;
-			const float *const height_texel12 = height_texel11 +
-					(height_map_texel_width + 0) * num_floats_per_height_texel;
-			const float *const height_texel22 = height_texel11 +
-					(height_map_texel_width + 1) * num_floats_per_height_texel;
+	// Bind the full screen quad.
+	gl.BindVertexArray(d_full_screen_quad);
 
-			// Index 1 into texel is coverage.
-			const bool have_coverage00 = !GPlatesMaths::are_almost_exactly_equal(height_texel00[1], 0);
-			const bool have_coverage10 = !GPlatesMaths::are_almost_exactly_equal(height_texel10[1], 0);
-			const bool have_coverage20 = !GPlatesMaths::are_almost_exactly_equal(height_texel20[1], 0);
-			const bool have_coverage01 = !GPlatesMaths::are_almost_exactly_equal(height_texel01[1], 0);
-			const bool have_coverage21 = !GPlatesMaths::are_almost_exactly_equal(height_texel21[1], 0);
-			const bool have_coverage02 = !GPlatesMaths::are_almost_exactly_equal(height_texel02[1], 0);
-			const bool have_coverage12 = !GPlatesMaths::are_almost_exactly_equal(height_texel12[1], 0);
-			const bool have_coverage22 = !GPlatesMaths::are_almost_exactly_equal(height_texel22[1], 0);
-
-			// Index 0 into texel is height.
-
-			float du = 0;
-			if (have_coverage00 && have_coverage20)
-			{
-				du += height_texel20[0] - height_texel00[0];
-			}
-			if (have_coverage01 && have_coverage21)
-			{
-				du += height_texel21[0] - height_texel01[0];
-			}
-			if (have_coverage02 && have_coverage22)
-			{
-				du += height_texel22[0] - height_texel02[0];
-			}
-
-			float dv = 0;
-			if (have_coverage00 && have_coverage02)
-			{
-				dv += height_texel02[0] - height_texel00[0];
-			}
-			if (have_coverage10 && have_coverage12)
-			{
-				dv += height_texel12[0] - height_texel10[0];
-			}
-			if (have_coverage20 && have_coverage22)
-			{
-				dv += height_texel22[0] - height_texel20[0];
-			}
-
-			du *= lod_height_scale;
-			dv *= lod_height_scale;
-
-			const float inv_mag = 1.0f / std::sqrt(1 + du * du + dv * dv);
-			const float normal_x = -du * inv_mag;
-			const float normal_y = -dv * inv_mag;
-			const float normal_z = inv_mag;
-
-			// Store the normal as fixed-point unsigned 8-bit RGB.
-			normal_data_working_space[normal_map_texel_offset] =
-					GPlatesGui::rgba8_t(
-							// Convert x and y components from range [-1,1] to [0,255]...
-							static_cast<int>((1.0f + normal_x) * 127.5f),
-							static_cast<int>((1.0f + normal_y) * 127.5f),
-							// Leave z component as is since it's always positive...
-							static_cast<int>(normal_z * 255.0f),
-							255);
-		}
-	}
-
-	// Load the generated normals into the RGBA texture.
-	GLTextureUtils::load_image_into_texture_2D(
-			renderer,
-			target_texture,
-			d_tile_normal_data_working_space.get(),
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			normal_map_texel_width,
-			normal_map_texel_height);
-
-	// If the region does not occupy the entire tile then it means we've reached the right edge
-	// of the raster - we set the last column of texels to the default normal to ensure
-	// reasonable values if it happens to get sampled due to numerical precision.
-	// Normally, for a full tile, the OpenGL clamp-to-edge filter will ensure the texture border colour
-	// is not used - however for partially filled textures we need to specify adjacent texels to
-	// achieve the same effect otherwise numerical precision in the graphics hardware and
-	// nearest neighbour filtering could sample a garbage texel.
-	if (normal_map_texel_width < d_tile_texel_dimension ||
-		normal_map_texel_height < d_tile_texel_dimension)
-	{
-		unsigned int fill_size = 1;
-
-		// Fixed-point textures can use anisotropic filtering that can have a filter width
-		// greater than one (even for nearest neighbour filtering). And so we need to extend
-		// the fill region according to the maximum anisotropy.
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-		if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
-		{
-			fill_size = static_cast<unsigned int>(
-					// The '1 - 1e-4' rounds up to the next integer...
-					capabilities.texture.gl_texture_max_anisotropy + 1 - 1e-4);
-		}
-
-		// Fill an extra 'fill_size' columns.
-		unsigned int padded_normal_map_texel_width = normal_map_texel_width + fill_size;
-		if (padded_normal_map_texel_width > d_tile_texel_dimension)
-		{
-			padded_normal_map_texel_width = d_tile_texel_dimension;
-		}
-
-		// See if we've reached the right edge of raster (and the raster width is not an
-		// integer multiple of the tile texel dimension).
-		if (normal_map_texel_width < padded_normal_map_texel_width)
-		{
-			GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
-			for (unsigned int y = 0; y < normal_map_texel_height; ++y)
-			{
-				*working_space++ = default_normal;
-			}
-
-			for (unsigned int texel_u_offset = normal_map_texel_width;
-				texel_u_offset < padded_normal_map_texel_width;
-				++texel_u_offset)
-			{
-				// Load the one-texel wide column of default normal data into column 'texel_u_offset'.
-				GLTextureUtils::load_image_into_texture_2D(
-						renderer,
-						target_texture,
-						d_tile_normal_data_working_space.get(),
-						GL_RGBA,
-						GL_UNSIGNED_BYTE,
-						1/*image_width*/,
-						normal_map_texel_height/*image_height*/,
-						texel_u_offset);
-			}
-		}
-
-		// Fill an extra 'fill_size' rows.
-		unsigned int padded_normal_map_texel_height = normal_map_texel_height + fill_size;
-		if (padded_normal_map_texel_height > d_tile_texel_dimension)
-		{
-			padded_normal_map_texel_height = d_tile_texel_dimension;
-		}
-
-		// See if we've reached the bottom edge of raster (and the raster height is not an
-		// integer multiple of the tile texel dimension).
-		if (normal_map_texel_height < padded_normal_map_texel_height)
-		{
-			GPlatesGui::rgba8_t *working_space = d_tile_normal_data_working_space.get();
-			unsigned int x = 0;
-			for ( ; x < normal_map_texel_width; ++x)
-			{
-				*working_space++ = default_normal;
-			}
-			// Also fill the empty texels where:
-			//
-			//   normal_map_texel_width  <= x < padded_normal_map_texel_width
-			//   normal_map_texel_height <= y < padded_normal_map_texel_height
-			//
-			// ...this will ultimately fill that entire region.
-			for ( ; x < padded_normal_map_texel_width; ++x)
-			{
-				*working_space++ = default_normal;
-			}
-
-			for (unsigned int texel_v_offset = normal_map_texel_height;
-				texel_v_offset < padded_normal_map_texel_height;
-				++texel_v_offset)
-			{
-				// Load the one-texel wide row of default normal data into row 'texel_v_offset'.
-				GLTextureUtils::load_image_into_texture_2D(
-						renderer,
-						target_texture,
-						d_tile_normal_data_working_space.get(),
-						GL_RGBA,
-						GL_UNSIGNED_BYTE,
-						padded_normal_map_texel_width/*image_width*/,
-						1/*image_height*/,
-						0/*texel_u_offset*/,
-						texel_v_offset);
-			}
-		}
-	}
+	// Draw the full screen quad.
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 
@@ -911,7 +607,7 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GL &gl)
 {
 	if (!d_logged_tile_load_failure_warning)
 	{
@@ -927,6 +623,12 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 		d_logged_tile_load_failure_warning = true;
 	}
 
+	// Bind target texture before uploading to it.
+	gl.BindTexture(GL_TEXTURE_2D, target_texture);
+
+	// Our client memory image buffers are byte aligned.
+	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
 	// We also need to convert the x and y components from the range [-1,1] to [0,255] and
 	// the z component from the range [0,1] to [0,255].
@@ -934,8 +636,13 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 	// This produces the default lighting in the absence of a height field.
 	const GPlatesGui::rgba8_t default_normal(128, 128, 255, 255);
 
-	GLTextureUtils::load_colour_into_rgba8_texture_2D(
-			renderer, target_texture, default_normal, texel_width, texel_height);
+	// Load default normal into target texture.
+	boost::scoped_array<GPlatesGui::rgba8_t> default_normal_image_data(
+			new GPlatesGui::rgba8_t[texel_width * texel_height]);
+	std::fill_n(default_normal_image_data.get(), texel_width * texel_height, default_normal);
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
+			GL_RGBA, GL_UNSIGNED_BYTE, default_normal_image_data.get());
 }
 
 
@@ -949,19 +656,11 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		unsigned int src_texel_width,
 		unsigned int src_texel_height,
 		unsigned int dst_texel_width,
-		unsigned int dst_texel_height,
-		GLRenderer &renderer)
+		unsigned int dst_texel_height)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
 	float *const dst_working_space = d_tile_height_data_working_space.get();
 
-	const unsigned int num_floats_per_texel =
-			// Generating normals on GPU using RGBA format for height data...
-			(d_generate_normal_map_on_gpu && !capabilities.texture.gl_ARB_texture_rg)
-			? 4
-			// Generating normals on CPU, or generating on GPU using RG format for height data...
-			: 2;
+	const unsigned int num_floats_per_texel = 2/*RG format*/;
 
 	// Copy the source height field into the destination height field.
 	// They are the same except the source may be missing boundary height samples.
@@ -981,7 +680,6 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 
 			dst_row_working_space[0] = static_cast<GLfloat>(src_region_data[src_texel_offset]);
 			dst_row_working_space[1] = src_coverage_data[src_texel_offset];
-			// There might be entries at index 2 and 3 for RGBA but we leave them as zero.
 
 			dst_row_working_space += num_floats_per_texel;
 		}
@@ -996,7 +694,6 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		{
 			dst_row_working_space[0] = 0; // height
 			dst_row_working_space[1] = 0; // coverage
-			// There might be entries at index 2 and 3 for RGBA but we leave them as zero.
 
 			dst_row_working_space += num_floats_per_texel;
 		}
@@ -1012,7 +709,6 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		{
 			dst_row_working_space[0] = 0; // height
 			dst_row_working_space[1] = 0; // coverage
-			// There might be entries at index 2 and 3 for RGBA but we leave them as zero.
 
 			dst_row_working_space += num_floats_per_texel;
 		}
@@ -1027,7 +723,6 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		{
 			dst_col_working_space[0] = 0; // height
 			dst_col_working_space[1] = 0; // coverage
-			// There might be entries at index 2 and 3 for RGBA but we leave them as zero.
 
 			dst_col_working_space += num_floats_per_texel * dst_texel_width;
 		}
@@ -1043,7 +738,6 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		{
 			dst_col_working_space[0] = 0; // height
 			dst_col_working_space[1] = 0; // coverage
-			// There might be entries at index 2 and 3 for RGBA but we leave them as zero.
 
 			dst_col_working_space += num_floats_per_texel * dst_texel_width;
 		}
@@ -1060,8 +754,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		unsigned int src_texel_width,
 		unsigned int src_texel_height,
 		unsigned int dst_texel_width,
-		unsigned int dst_texel_height,
-		GLRenderer &renderer)
+		unsigned int dst_texel_height)
 {
 	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_region_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
@@ -1076,8 +769,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1095,8 +787,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1114,8 +805,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1133,8 +823,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1152,8 +841,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1171,8 +859,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1190,8 +877,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1209,8 +895,7 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height,
-				renderer);
+				dst_texel_height);
 
 		return true;
 	}
@@ -1219,82 +904,65 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 }
 
 
-bool
-GPlatesOpenGL::GLNormalMapSource::create_normal_map_generation_shader_program(
-		GLRenderer &renderer)
+void
+GPlatesOpenGL::GLNormalMapSource::compile_link_normal_map_generation_shader_program(
+		GL &gl)
 {
-	GLShaderSource generate_normal_map_vertex_shader_source;
-	GLShaderSource generate_normal_map_fragment_shader_source;
+	// Vertex shader source.
+	GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME);
 
-	// Finally add the GLSL 'main()' function.
-	generate_normal_map_vertex_shader_source.add_code_segment_from_file(
-			GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME);
+	// Vertex shader.
+	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(vertex_shader_source);
+	vertex_shader->compile_shader();
 
-	// Finally add the GLSL 'main()' function.
-	generate_normal_map_fragment_shader_source.add_code_segment_from_file(
-			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+	// Fragment shader source.
+	GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-	// Create the shader program for *inactive* polygons.
-	d_generate_normals_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					generate_normal_map_vertex_shader_source,
-					generate_normal_map_fragment_shader_source);
+	// Fragment shader.
+	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(fragment_shader_source);
+	fragment_shader->compile_shader();
 
-	// Return false if unable to create a shader program.
-	if (!d_generate_normals_program)
-	{
-		return false;
-	}
-
-	return true;
+	// Vertex-fragment program.
+	d_generate_normals_program->attach_shader(vertex_shader);
+	d_generate_normals_program->attach_shader(fragment_shader);
+	d_generate_normals_program->link_program();
 }
 
 
 void
 GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLTexture::shared_ptr_type &texture) const
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	gl.BindTexture(GL_TEXTURE_2D, texture);
 
 	// It's a floating-point texture so use nearest neighbour filtering and no anisotropic.
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	// We use RG format where possible since it saves memory.
-	// NOTE: Otherwise we use RGBA (instead of RGB) because hardware typically uses
-	// four channels for RGB formats anyway and uploading to the hardware should be faster
-	// since driver doesn't need to be involved (consuming CPU cycles to convert RGB to RGBA).
-	const GLint internalformat = capabilities.texture.gl_ARB_texture_rg ? GL_RG32F : GL_RGBA32F_ARB;
+	// We use RG format (instead of RGBA) since it saves memory.
+	const GLint internalformat = GL_RG32F;
 
-	// The height map is a non-power-of-two texture (the normal map is the power-of-two tile dimension).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.texture.gl_ARB_texture_non_power_of_two,
-			GPLATES_ASSERTION_SOURCE);
 	const unsigned int height_map_texel_dimension = d_tile_texel_dimension + 2;
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
 	// we just use GL_RGBA (and GL_FLOAT).
-	texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, internalformat,
+	glTexImage2D(GL_TEXTURE_2D, 0, internalformat,
 			height_map_texel_dimension, height_map_texel_dimension,
-			0, GL_RGBA, GL_FLOAT, NULL);
+			0, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);

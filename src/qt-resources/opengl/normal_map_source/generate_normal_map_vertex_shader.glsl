@@ -30,14 +30,17 @@
 // (x,y,z.w) is (texture u scale, texture v scale, texture translate, height field scale).
 uniform vec4 height_field_parameters;
 
+layout (location = 0) in vec4 position;
+
+out vec2 height_map_tex_coord;
+
 void main (void)
 {
-	// Scale and translate the texture coordinates from normal map to height map
-	// which has extra texels around the border. This also takes into account partial
-	// normal map tiles (such as near bottom or right edges of source raster).
-	gl_TexCoord[0].x = dot(height_field_parameters.xz, gl_MultiTexCoord0.xw);
-	gl_TexCoord[0].y = dot(height_field_parameters.yz, gl_MultiTexCoord0.yw);
-	gl_TexCoord[0].zw = gl_MultiTexCoord0.zw;
+	// Scale and translate the full-screen quad viewport (NDC [-1,1] position converted to [0,1])
+	// from normal map to height map which has extra texels around the border. This also takes into
+	// account partial normal map tiles (such as near bottom or right edges of source raster).
+	vec2 viewport_tex_coord = 2.0 * position.xy - 1.0;
+	height_map_tex_coord = height_field_parameters.xy * viewport_tex_coord + height_field_parameters.zz;
 
-	gl_Position = gl_Vertex;
+	gl_Position = position;
 }

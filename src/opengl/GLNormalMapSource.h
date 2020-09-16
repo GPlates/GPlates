@@ -33,8 +33,9 @@
 	
 #include "GLMultiResolutionRasterSource.h"
 
-#include "GLCompiledDrawState.h"
+#include "GLFramebuffer.h"
 #include "GLProgram.h"
+#include "GLVertexArray.h"
 
 #include "gui/Colour.h"
 
@@ -53,7 +54,7 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A raster source that converts a floating-point raster into a tangent-space normal map for surface lighting.
@@ -78,18 +79,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if @a GLNormalMapSource is supported on the runtime system.
-		 *
-		 * The runtime system requires vertex/fragment shader programs
-		 * (GL_ARB_vertex_shader and GL_ARB_fragment_shader).
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLNormalMapSource object.
 		 *
 		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
@@ -102,14 +91,13 @@ namespace GPlatesOpenGL
 		 * scale based on the raster statistics (among other things).
 		 *
 		 * Returns false if @a raster is not a proxy raster or if it's uninitialised or if it doesn't
-		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels) or
-		 * if @a is_supported returns false.
+		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels).
 		 * NOTE: The raster is expected to be floating-point (or integer), otherwise boost::none is returned.
 		 */
 		static
 		boost::optional<non_null_ptr_type>
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_field_raster,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
 				float height_field_scale_factor = 1);
@@ -132,7 +120,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		change_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_raster,
 				float height_field_scale_factor = 1);
 
@@ -179,7 +167,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 
 		/**
@@ -194,8 +182,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The proxied raster resolver to get floating-point (or integer) data (and coverage) from the raster.
 		 */
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type
-				d_proxied_raster_resolver;
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type d_proxied_raster_resolver;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
@@ -230,11 +217,6 @@ namespace GPlatesOpenGL
 		float d_client_height_field_scale_factor;
 
 		/**
-		 * If true then normals are generated on the GPU instead of CPU.
-		 */
-		bool d_generate_normal_map_on_gpu;
-
-		/**
 		 * The dimensions of the different levels of detail.
 		 */
 		std::vector< std::pair<unsigned int, unsigned int> > d_level_of_detail_dimensions;
@@ -245,28 +227,29 @@ namespace GPlatesOpenGL
 		boost::scoped_array<float> d_tile_height_data_working_space;
 
 		/**
-		 * Used as temporary space for normal map data.
-		 *
-		 * NOTE: This is only used if normal maps are generated on the CPU (instead of GPU).
-		 */
-		boost::scoped_array<GPlatesGui::rgba8_t> d_tile_normal_data_working_space;
-
-		/**
-		 * Used to allocate temporary height field textures when generating normals on the GPU.
-		 *
-		 * NOTE: This is not used when generating normals on the CPU.
+		 * Used to allocate temporary height field textures when generating normals.
 		 */
 		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_height_field_texture_cache;
 
 		/**
-		 * Shader program to generate normals on the GPU.
-		 *
-		 * Is boost::none if generating normals on the CPU.
+		 * Shader program to generate normals.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_generate_normals_program;
+		GLProgram::shared_ptr_type d_generate_normals_program;
 
-		// Used to draw a textured full-screen quad into render texture.
-		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
+		/**
+		 * Framebuffer object to render to normal texture.
+		 */
+		GLFramebuffer::shared_ptr_type d_generate_normals_framebuffer;
+
+		/**
+		 * Full-screen quad to render to normal texture using height texture.
+		 */
+		GLVertexArray::shared_ptr_type d_full_screen_quad;
+
+		/**
+		 * Check framebuffer completeness the first time we render to a normal texture.
+		 */
+		bool d_have_checked_framebuffer_completeness_normal_map_generation;
 
 		/**
 		 * We log a load-tile-failure warning message only once for each data raster source.
@@ -275,9 +258,8 @@ namespace GPlatesOpenGL
 
 
 		GLNormalMapSource(
-				GLRenderer &renderer,
-				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
-						proxy_raster_resolver,
+				GL &gl,
+				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &proxy_raster_resolver,
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int tile_texel_dimension,
@@ -304,17 +286,8 @@ namespace GPlatesOpenGL
 
 
 		void
-		gpu_convert_height_field_to_normal_map(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &target_texture,
-				float lod_height_scale,
-				unsigned int normal_map_texel_width,
-				unsigned int normal_map_texel_height);
-
-
-		void
-		cpu_convert_height_field_to_normal_map(
-				GLRenderer &renderer,
+		convert_height_field_to_normal_map(
+				GL &gl,
 				const GLTexture::shared_ptr_type &target_texture,
 				float lod_height_scale,
 				unsigned int normal_map_texel_width,
@@ -332,7 +305,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 
 		/**
@@ -349,8 +322,7 @@ namespace GPlatesOpenGL
 				unsigned int src_texel_width,
 				unsigned int src_texel_height,
 				unsigned int dst_texel_width,
-				unsigned int dst_texel_height,
-				GLRenderer &renderer);
+				unsigned int dst_texel_height);
 
 
 		/**
@@ -366,18 +338,17 @@ namespace GPlatesOpenGL
 				unsigned int src_texel_width,
 				unsigned int src_texel_height,
 				unsigned int dst_texel_width,
-				unsigned int dst_texel_height,
-				GLRenderer &renderer);
+				unsigned int dst_texel_height);
 
 
-		bool
-		create_normal_map_generation_shader_program(
-				GLRenderer &renderer);
+		void
+		compile_link_normal_map_generation_shader_program(
+				GL &gl);
 
 
 		void
 		create_height_tile_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLTexture::shared_ptr_type &texture) const;
 	};
 }
