@@ -11,8 +11,6 @@
 set(srcs
     GL.cc
     GL.h
-    GLAgeGridMaskSource.cc
-    GLAgeGridMaskSource.h
     GLBuffer.cc
     GLBuffer.h
     GLCapabilities.cc

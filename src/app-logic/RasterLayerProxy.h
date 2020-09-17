@@ -41,7 +41,6 @@
 
 #include "model/FeatureHandle.h"
 
-#include "opengl/GLAgeGridMaskSource.h"
 #include "opengl/GLDataRasterSource.h"
 #include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
@@ -368,59 +367,25 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the multi-resolution age grid mask cube raster for the current
-		 * reconstruction time and current raster band.
+		 * Returns the multi-resolution age grid mask cube raster for the current raster band.
 		 *
 		 * This is used to assist with reconstruction of a data raster in another layer.
 		 *
-		 * NOTE: If 'GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_mask_generation()'
-		 * is true then a floating-point raster containing actual age values is returned
-		 * (see GLDataRasterSource), otherwise a fixed-point raster containing pre-generated age masks,
-		 * the results of age comparisons against a specific reconstruction time
-		 * (see GLAgeGridMaskSource), is returned.
+		 * This is a floating-point raster containing actual age values (see GLDataRasterSource).
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer)
 		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, d_current_reconstruction_time, d_current_raster_band_name);
+			return get_multi_resolution_age_grid_mask(renderer, d_current_raster_band_name);
 		}
 
 		/**
-		 * Returns the multi-resolution age grid mask cube raster for the current
-		 * reconstruction time and specified raster band.
+		 * Returns the multi-resolution age grid mask cube raster for the specified raster band.
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesPropertyValues::TextContent &raster_band_name)
-		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, d_current_reconstruction_time, raster_band_name);
-		}
-
-		/**
-		 * Returns the multi-resolution age grid mask cube raster for the specified
-		 * reconstruction time and current raster band.
-		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-		get_multi_resolution_age_grid_mask(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const double &reconstruction_time)
-		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, reconstruction_time, d_current_raster_band_name);
-		}
-
-		/**
-		 * Returns the multi-resolution age grid mask cube raster for the specified
-		 * reconstruction time and specified raster band.
-		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-		get_multi_resolution_age_grid_mask(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const double &reconstruction_time,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 
@@ -689,7 +654,6 @@ namespace GPlatesAppLogic
 				cached_age_grid_mask_source = boost::none;
 				cached_age_grid_mask_raster = boost::none;
 				cached_age_grid_mask_cube_raster = boost::none;
-				cached_age_grid_reconstruction_time = boost::none;
 			}
 
 			/**
@@ -706,26 +670,6 @@ namespace GPlatesAppLogic
 			 * Cached OpenGL multi-resolution age grid mask cube raster (for the currently cached proxied raster).
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_age_grid_mask_cube_raster;
-
-			/**
-			 * The reconstruction time of the cached age grid.
-			 */
-			boost::optional<GPlatesMaths::real_t> cached_age_grid_reconstruction_time;
-
-			/**
-			 * If returns true then use a floating-point raster containing actual age values instead
-			 * of a fixed-point raster containing age masks (results of age comparisons against
-			 * a specific reconstruction time).
-			 */
-			bool
-			use_age_grid_data_source(
-					GPlatesOpenGL::GLRenderer &renderer) const;
-
-		private:
-			/**
-			 * If true then use a GLDataRasterSource for age grid (instead of GLAgeGridMaskSource).
-			 */
-			mutable boost::optional<bool> d_use_age_grid_data_source;
 		};
 
 

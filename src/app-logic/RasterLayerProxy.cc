@@ -259,7 +259,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 						d_current_georeferencing.get(),
 						d_current_coordinate_transformation,
 						d_cached_multi_resolution_data_raster.cached_data_raster_source.get(),
-						GPlatesOpenGL::GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+						GPlatesOpenGL::GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER,
 						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
 
 		d_cached_multi_resolution_data_raster.cached_data_raster = multi_resolution_raster;
@@ -284,7 +284,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	if (d_current_age_grid_raster_layer_proxy)
 	{
 		age_grid_mask_cube_raster = d_current_age_grid_raster_layer_proxy.get_input_layer_proxy()
-				->get_multi_resolution_age_grid_mask(renderer, reconstruction_time);
+				->get_multi_resolution_age_grid_mask(renderer);
 
 		if (!age_grid_mask_cube_raster)
 		{
@@ -469,7 +469,6 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_cube_raster(
 boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const double &reconstruction_time,
 		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
 	if (!d_current_georeferencing)
@@ -501,31 +500,15 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 	{
 		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster = boost::none;
 
-		// Use a GLDataRasterSource if requested, otherwise a GLAgeGridMaskSource.
-		if (d_cached_multi_resolution_age_grid_raster.use_age_grid_data_source(renderer))
+		// Use a GLDataRasterSource.
+		//
+		//qDebug() << "RasterLayerProxy: Rebuilding age grid GLDataRasterSource.";
+		boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type> source =
+				GPlatesOpenGL::GLDataRasterSource::create(renderer, proxied_raster.get());
+		if (source)
 		{
-			//qDebug() << "RasterLayerProxy: Rebuilding age grid GLDataRasterSource.";
-			boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type> source =
-					GPlatesOpenGL::GLDataRasterSource::create(renderer, proxied_raster.get());
-			if (source)
-			{
-				d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source =
-						GPlatesOpenGL::GLMultiResolutionRasterSource::non_null_ptr_type(source.get());
-			}
-		}
-		else // use a GLAgeGridMaskSource...
-		{
-			//qDebug() << "RasterLayerProxy: Rebuilding GLAgeGridMaskSource.";
-			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> source =
-					GPlatesOpenGL::GLAgeGridMaskSource::create(
-							renderer,
-							reconstruction_time,
-							proxied_raster.get());
-			if (source)
-			{
-				d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source =
-						GPlatesOpenGL::GLMultiResolutionRasterSource::non_null_ptr_type(source.get());
-			}
+			d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source =
+					GPlatesOpenGL::GLMultiResolutionRasterSource::non_null_ptr_type(source.get());
 		}
 
 		if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source)
@@ -534,21 +517,6 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 			qWarning() << "RasterLayerProxy::get_multi_resolution_age_grid_mask: "
 					"Failed to create age grid mask source.";
 			return boost::none;
-		}
-	}
-
-	// Update the age grid mask if the reconstruction time has changed.
-	if (d_cached_multi_resolution_age_grid_raster.cached_age_grid_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		d_cached_multi_resolution_age_grid_raster.cached_age_grid_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-
-		// This only needs to be done for GLAgeGridMaskSource (not GLDataRasterSource).
-		if (!d_cached_multi_resolution_age_grid_raster.use_age_grid_data_source(renderer))
-		{
-			// Update the reconstruction time for the age grid mask.
-			GPlatesUtils::dynamic_pointer_cast<GPlatesOpenGL::GLAgeGridMaskSource>(
-					d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get())
-							->update_reconstruction_time(reconstruction_time);
 		}
 	}
 
@@ -574,10 +542,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 						d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get(),
 						// Avoids blending seams due to anisotropic filtering which gives age grid
 						// coverage alpha values that are not either 0.0 or 1.0...
-						GPlatesOpenGL::GLMultiResolutionRaster::FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC,
-						// Our source GLAgeGridMaskSource has caching that insulates us from the file
-						// system but it doesn't cache the entire level-of-detail pyramid so we
-						// rely on the multi-resolution age grid mask for that...
+						GPlatesOpenGL::GLMultiResolutionRaster::TEXTURE_FILTER_NO_ANISOTROPIC,
 						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
 
 		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster = age_grid_mask_raster;
@@ -906,19 +871,4 @@ GPlatesAppLogic::RasterLayerProxy::resolve_raster_feature(
 	d_cached_resolved_raster_feature_properties.cached_proxied_rasters = visitor.get_proxied_rasters();
 
 	return true;
-}
-
-
-bool
-GPlatesAppLogic::RasterLayerProxy::MultiResolutionAgeGridRaster::use_age_grid_data_source(
-		GPlatesOpenGL::GLRenderer &renderer) const
-{
-	// Find out which age grid source type to use if we haven't already.
-	if (!d_use_age_grid_data_source)
-	{
-		d_use_age_grid_data_source =
-				GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_mask_generation(renderer);
-	}
-
-	return d_use_age_grid_data_source.get();
 }

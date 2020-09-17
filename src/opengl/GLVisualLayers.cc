@@ -736,7 +736,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 						d_raster_layer_proxy->get_georeferencing().get(),
 						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_visual_raster_source.get(),
-						GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+						GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER,
 						// Use non-default here - our source GLVisualRasterSource has caching that
 						// insulates us from the file system so we don't really need any caching in
 						// GLMultiResolutionRaster and can save a lot of texture memory usage as a result...
@@ -821,12 +821,9 @@ GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::AgeGridLayerUsage(
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::get_multi_resolution_age_grid_mask(
-		GLRenderer &renderer,
-		const double &reconstruction_time)
+		GLRenderer &renderer)
 {
-	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask(
-			renderer,
-			reconstruction_time);
+	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask(renderer);
 }
 
 
@@ -1223,10 +1220,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 	if (d_age_grid_layer_usage)
 	{
 		// Get the age grid mask.
-		age_grid_mask_cube_raster =
-				d_age_grid_layer_usage.get()->get_multi_resolution_age_grid_mask(
-						renderer,
-						reconstruction_time);
+		age_grid_mask_cube_raster = d_age_grid_layer_usage.get()->get_multi_resolution_age_grid_mask(renderer);
 
 		if (!age_grid_mask_cube_raster)
 		{

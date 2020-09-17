@@ -108,23 +108,6 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer);
 
 		/**
-		 * Returns true if age masks can be generated on the runtime system.
-		 *
-		 * This means a floating-point raster containing actual age values can be passed into
-		 * @a create (if using age grids) instead of a fixed-point raster containing pre-generated
-		 * age masks (results of age comparisons against a specific reconstruction time).
-		 *
-		 * The age comparisons are then done by a shader program using the current reconstruction time.
-		 *
-		 * NOTE: Age masking can still be used if this function returns false - it's just not as
-		 * fast and not as good quality.
-		 */
-		static
-		bool
-		supports_age_mask_generation(
-				GLRenderer &renderer);
-
-		/**
 		 * Returns true if a normal map can be used on the runtime system to accentuate surface lighting.
 		 *
 		 * NOTE: Internally this also calls 'GLMultiResolutionRaster::supports_normal_map_source()'.
@@ -142,15 +125,9 @@ namespace GPlatesOpenGL
 		 * If @a source_raster is floating-point (which means this reconstructed raster will also be
 		 * floating-point) then @a supports_floating_point_source_raster *must* return true.
 		 *
-		 * NOTE: The following applies when using an age grid (ie, a non-null @a age_grid_raster)...
-		 * If @a supports_age_mask_generation returns true then @a age_grid_raster *must*
-		 * be sourced from a @a GLDataRasterSource (containing actual age values), otherwise it *must*
-		 * be sourced from a @a GLAgeGridMaskSource (containing results of age comparisons against
-		 * a specific reconstruction time.
-		 *
 		 * @param source_raster the raster to be reconstructed.
 		 * @param reconstructed_static_polygon_meshes the reconstructed present day polygon meshes.
-		 * @param age_grid_raster is the optional age grid raster.
+		 * @param age_grid_raster is the optional age grid raster (must be of type @a GLDataRasterSource).
 		 * @param normal_map_raster is the optional normal map raster (used during surface lighting).
 		 * @param light is the light direction used for surface lighting.
 		 *

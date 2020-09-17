@@ -159,82 +159,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_float
 
 
 bool
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_mask_generation(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// Need floating-point textures to support age grid in GLDataRasterSource format and
-		// GLMultiResolutionCubeRaster (attached to the age-grid GLDataRasterSource) must
-		// support rendering to floating-point targets.
-		// Also need vertex/fragment shader support.
-		if (!GLDataRasterSource::is_supported(renderer) ||
-			!GLMultiResolutionCubeRaster::supports_floating_point_source_raster(renderer) ||
-			!capabilities.shader.gl_ARB_vertex_shader ||
-			!capabilities.shader.gl_ARB_fragment_shader)
-		{
-			return false;
-		}
-
-		//
-		// Try to compile our most complex fragment shader program with surface lighting and
-		// with normal maps - because it would be nice to have everything including normal maps.
-		// If we can't have age mask generation with normal maps then there's the slower alternative
-		// of pre-generated age masks with normal maps (see 'supports_normal_map()') which is
-		// visually better than age mask generation with no normal maps.
-		//
-		// If this fails then it could be exceeding some resource limit on the runtime system
-		// such as number of shader instructions allowed.
-		//
-
-		// Not configuring shader for floating-point source raster since lighting does not apply to it.
-		const char *shader_defines =
-			// Configure shader for using an age grid.
-			"#define USING_AGE_GRID\n"
-			// Configure shader for generating age grid mask.
-			"#define GENERATE_AGE_MASK\n"
-			// Configure shader for active polygons as that increases complexity.
-			"#define ACTIVE_POLYGONS\n"
-			// Configure shader for using normal maps as that increases complexity.
-			"#define USING_NORMAL_MAP\n"
-			// Configure shader for using map view surface lighting as that increases complexity.
-			"#define SURFACE_LIGHTING\n"
-			"#define MAP_VIEW\n";
-
-		GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-		fragment_shader_source.add_code_segment(shader_defines);
-		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-
-		GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-		vertex_shader_source.add_code_segment(shader_defines);
-		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
-
-		// Attempt to create the test shader program.
-		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-				renderer, vertex_shader_source, fragment_shader_source))
-		{
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
-}
-
-
-bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_normal_map(
 		GLRenderer &renderer)
 {
@@ -258,9 +182,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 		}
 
 		//
-		// Try to compile our most complex fragment shader program but without age mask generation
-		// that's not necessary (has the alternative of pre-compiled age masks) and
-		// 'supports_age_mask_generation()' will test for age mask generation *and* normal maps.
+		// Try to compile our most complex fragment shader program.
 		//
 		// If this fails then it could be exceeding some resource limit on the runtime system
 		// such as number of shader instructions allowed.
@@ -274,7 +196,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 			"#define SURFACE_LIGHTING\n"
 			"#define MAP_VIEW\n"
 			// Configure shader for using an age grid as that increases complexity.
-			// But we don't configure for age mask generation as mentioned above.
 			"#define USING_AGE_GRID\n"
 			// Configure shader for active polygons as that increases complexity.
 			"#define ACTIVE_POLYGONS\n";
@@ -2599,9 +2520,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 		// If using an age grid...
 		if (d_age_grid_cube_raster)
 		{
-			// If 'supports_age_mask_generation()' is true then this will not fail to compile.
-			// If 'supports_age_mask_generation()' is false then this can fail to compile in which
-			// case we'll resort to fixed-function pipeline without any loss (using GLAgeGridMaskSource).
 			d_render_fixed_point_with_age_grid_with_active_polygons_program =
 					create_shader_program(
 							renderer,
@@ -2626,10 +2544,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							false/*define_map_view*/);
 
 			// For rendering with age grid and surface lighting (but without a normal map).
-			//
-			// If 'supports_age_mask_generation()' is true then this will not fail to compile.
-			// If 'supports_age_mask_generation()' is false then this can fail to compile in which
-			// case we'll resort to fixed-function pipeline but will lose surface lighting.
 			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[GLOBE_VIEW] =
 					create_shader_program(
 							renderer,
@@ -2853,9 +2767,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 							true/*define_map_view*/);
 
 			// Since 'supports_normal_map()' is true then should not fail to compile.
-			// Note that normal maps *with* age mask generation are only compiled if
-			// 'supports_age_mask_generation()' returns true, otherwise age masking is still
-			// used but it's just not as fast and not as good quality.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[GLOBE_VIEW] &&
 						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[MAP_VIEW] &&
@@ -2903,15 +2814,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	}
 	if (define_generate_age_mask)
 	{
-		// Do we do the age comparison (with current reconstruction time) in the shader...
-		if (supports_age_mask_generation(renderer))
-		{
-			vertex_and_fragment_shader_defines += "#define GENERATE_AGE_MASK\n";
-		}
-		else
-		{
-			define_generate_age_mask = false;
-		}
+		vertex_and_fragment_shader_defines += "#define GENERATE_AGE_MASK\n";
 	}
 	if (define_active_polygons)
 	{

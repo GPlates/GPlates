@@ -35,7 +35,6 @@
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
-#include "GLAgeGridMaskSource.h"
 #include "GLContext.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
@@ -448,15 +447,13 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy);
 
 			/**
-			 * Returns the multi-resolution age grid mask cube raster for the specified
-			 * reconstruction time and current raster band (set on the layer).
+			 * Returns the multi-resolution age grid mask cube raster for the current raster band (set on the layer).
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_multi_resolution_age_grid_mask(
-					GLRenderer &renderer,
-					const double &reconstruction_time);
+					GLRenderer &renderer);
 
 			virtual
 			bool
