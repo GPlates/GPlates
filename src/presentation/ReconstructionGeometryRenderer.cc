@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstddef> // For std::size_t
 #include <utility>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructionGeometryRenderer.h"
@@ -238,6 +239,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	scalar_coverage_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	normal_map_height_field_scale_factor(1),
+	show_vgp([] (double, boost::optional<double>) { return true; }),  // Return true by default to always show VGP.
 	vgp_draw_circular_error(true),
 	show_topology_reconstructed_feature_geometries(true),
 	show_strain_accumulation(false),
@@ -272,6 +274,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_visual_layer_params(
 		const ReconstructVisualLayerParams &params)
 {
+	d_render_params.show_vgp = boost::bind(&ReconstructVisualLayerParams::show_vgp, &params, _1, _2);
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
 	d_render_params.fill_polylines = params.get_fill_polylines();
@@ -721,14 +724,44 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		return;
 	}
 
+	// See if should show the current VGP based on comparisons between its age and the current time.
+	if (!d_render_params.show_vgp(rvgp->get_reconstruction_time(), rvgp->vgp_params().d_age))
+	{
+		return;
+	}
+
 	// The RVGP feature-properties-based colour.
 	const GPlatesGui::ColourProxy rvgp_colour = get_colour(rvgp, d_colour, d_style_adapter);
+
+	// Get (and render) the site point.
+	boost::optional<GPlatesMaths::PointOnSphere> site_point;
+	if (rvgp->vgp_params().d_site_point)
+	{
+		site_point = d_reconstruction_adjustment
+				? d_reconstruction_adjustment.get() * *rvgp->vgp_params().d_site_point.get()
+				: *rvgp->vgp_params().d_site_point.get();
+
+		GPlatesViewOperations::RenderedGeometry rendered_site_point = 
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+					site_point.get(),
+					rvgp_colour,
+					d_render_params.reconstruction_point_size_hint);
+
+		GPlatesViewOperations::RenderedGeometry site_point_rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+					rvgp,
+					rendered_site_point);
+
+		// Render the rendered geometry.
+		render(site_point_rendered_geometry);
+	}
 	
-	if(rvgp->vgp_params().d_vgp_point)
+	// Get (and render) the VGP (pole) point and its circle/ellipse.
+	if (rvgp->vgp_params().d_vgp_point)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
 				create_rendered_reconstruction_geometry(
-						*rvgp->vgp_params().d_vgp_point,
+						rvgp->vgp_params().d_vgp_point.get(),
 						rvgp,
 						d_render_params,
 						rvgp_colour,
@@ -736,69 +769,54 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						d_feature_type_symbol_map);
 
 		// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
+		// In other words the VGP point is the reconstructed feature geometry (as opposed to the site point).
 		render_reconstruction_geometry_on_sphere(rendered_vgp_point);
-	}
 
-	boost::optional<GPlatesMaths::PointOnSphere> pole_point = boost::none;
-	boost::optional<GPlatesMaths::PointOnSphere> site_point = boost::none;
-	if(d_reconstruction_adjustment)
-	{
-		pole_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_vgp_point);
-		if(rvgp->vgp_params().d_site_point)
+		const GPlatesMaths::PointOnSphere pole_point = d_reconstruction_adjustment
+				? d_reconstruction_adjustment.get() * *rvgp->vgp_params().d_vgp_point.get()
+				: *rvgp->vgp_params().d_vgp_point.get();
+
+		if (d_render_params.vgp_draw_circular_error &&
+			rvgp->vgp_params().d_a95 )
 		{
-			site_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_site_point);
+			GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
+							GPlatesMaths::SmallCircle::create_colatitude(
+									pole_point.position_vector(),
+									GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
+							rvgp_colour);
+
+			// The circle/ellipse geometries are not (currently) queryable, so we
+			// just add the rendered geometry to the layer.
+
+			// Render the rendered geometry.
+			render(rendered_small_circle);
 		}
-	}
-	else
-	{
-		pole_point = (**rvgp->vgp_params().d_vgp_point);
-		if(rvgp->vgp_params().d_site_point)
+		// We can only draw an ellipse if we have dm and dp defined, and if we have
+		// a site point. We need the site point so that we can align the ellipse axes
+		// appropriately. 
+		else if (
+				!d_render_params.vgp_draw_circular_error &&
+				rvgp->vgp_params().d_dm  &&
+				rvgp->vgp_params().d_dp  &&
+				site_point)
 		{
-			site_point = (**rvgp->vgp_params().d_site_point);
-		}
-	}
-	if (d_render_params.vgp_draw_circular_error &&
-		rvgp->vgp_params().d_a95 )
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
-						GPlatesMaths::SmallCircle::create_colatitude(
-								pole_point->position_vector(),
-								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
+			GPlatesMaths::GreatCircle great_circle(site_point.get(), pole_point);
+				
+			GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_ellipse(
+						pole_point,
+						GPlatesMaths::convert_deg_to_rad(rvgp->vgp_params().d_dp.get()),
+						GPlatesMaths::convert_deg_to_rad(rvgp->vgp_params().d_dm.get()),
+						great_circle,
 						rvgp_colour);
 
-		// The circle/ellipse geometries are not (currently) queryable, so we
-		// just add the rendered geometry to the layer.
+			// The circle/ellipse geometries are not (currently) queryable, so we
+			// just add the rendered geometry to the layer.
 
-		// Render the rendered geometry.
-		render(rendered_small_circle);
-	}
-	// We can only draw an ellipse if we have dm and dp defined, and if we have
-	// a site point. We need the site point so that we can align the ellipse axes
-	// appropriately. 
-	else if (
-			!d_render_params.vgp_draw_circular_error && 
-			rvgp->vgp_params().d_dm  && 
-			rvgp->vgp_params().d_dp  && 
-			rvgp->vgp_params().d_site_point )
-	{
-		GPlatesMaths::GreatCircle great_circle(
-				*site_point,
-				*pole_point);
-				
-		GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_ellipse(
-					*pole_point,
-					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
-					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
-					great_circle,
-					rvgp_colour);
-
-		// The circle/ellipse geometries are not (currently) queryable, so we
-		// just add the rendered geometry to the layer.
-
-		// Render the rendered geometry.
-		render(rendered_ellipse);
+			// Render the rendered geometry.
+			render(rendered_ellipse);
+		}
 	}
 }
 
