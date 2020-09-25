@@ -349,8 +349,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Allocate a look up table with as many slots as there are in @a time_range.
 			 *
-			 * Note: Each time slot is initialised as T(), so type T must have a default constructor
-			 * (eg, std::vector, boost::optional, etc).
+			 * Note: Each time slot is initially empty (boost::none).
 			 */
 			static
 			non_null_ptr_type
