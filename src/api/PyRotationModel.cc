@@ -177,6 +177,28 @@ namespace GPlatesApi
 		/**
 		 * This is called directly from Python via 'RotationModel.__init__()'.
 		 *
+		 * This also enables Python code such as:
+		 *
+		 *   def my_func(rotation_features_or_model, ...):
+		 *     rotation_model = pygplates.RotationModel(rotation_features_or_model)
+		 *
+		 * ...which will work if 'rotation_features_or_model' is already a 'RotationModel'.
+		 */
+		RotationModel::non_null_ptr_type
+		rotation_model_adapt_existing_rotation_model(
+				RotationModel::non_null_ptr_type rotation_model,
+				unsigned int reconstruction_tree_cache_size,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id)
+		{
+			return RotationModel::create(
+					rotation_model,
+					reconstruction_tree_cache_size,
+					default_anchor_plate_id);
+		}
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()'.
+		 *
 		 * This enables Python code such as:
 		 *
 		 *   def my_func(rotation_features_or_model, ...):
@@ -185,7 +207,7 @@ namespace GPlatesApi
 		 * ...which will work if 'rotation_features_or_model' is already a 'RotationModel'.
 		 */
 		RotationModel::non_null_ptr_type
-		rotation_model_create_from_rotation_model(
+		rotation_model_return_existing_rotation_model(
 				RotationModel::non_null_ptr_type rotation_model)
 		{
 			return rotation_model;
@@ -288,6 +310,31 @@ GPlatesApi::RotationModel::create(
 			reconstruction_tree_cache_size,
 			extend_total_reconstruction_poles_to_distant_past,
 			default_anchor_plate_id);
+}
+
+
+GPlatesApi::RotationModel::non_null_ptr_type
+GPlatesApi::RotationModel::create(
+		RotationModel::non_null_ptr_type rotation_model,
+		unsigned int reconstruction_tree_cache_size,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
+{
+	// Create a reconstruction tree adaptor that re-uses the existing reconstruction tree creator
+	// (rotation model) but with a potentially different cache size and/or default anchor plate ID.
+	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_adaptor =
+			GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
+					rotation_model->get_reconstruction_tree_creator(),
+					default_anchor_plate_id,
+					reconstruction_tree_cache_size);
+
+	// Get the feature collections from the existing rotation model.
+	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+	rotation_model->get_files(feature_collection_files);
+
+	return non_null_ptr_type(
+			new RotationModel(
+					feature_collection_files,
+					reconstruction_tree_adaptor));
 }
 
 
@@ -467,7 +514,8 @@ export_rotation_model()
 			"of any combination of those four types\n"
 			"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
+			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
+			"Defaults to " << GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE << ".\n"
 			"  :type reconstruction_tree_cache_size: int\n"
 			"  :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate "
 			"sequence back infinitely far into the distant past such that reconstructed geometries will "
@@ -559,12 +607,58 @@ export_rotation_model()
 				rotation_model_from_features_constructor_docstring_stream.str().c_str())
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::rotation_model_create_from_rotation_model,
+						&GPlatesApi::rotation_model_adapt_existing_rotation_model,
+						bp::default_call_policies(),
+						(bp::arg("rotation_model"),
+							bp::arg("reconstruction_tree_cache_size") = 2,
+							bp::arg("default_anchor_plate_id") = 0)),
+			// Specific overload signature...
+			"__init__(rotation_model, [reconstruction_tree_cache_size=2], [default_anchor_plate_id=0])\n"
+			"  Use an existing rotation model but adapt it with a potentially different cache size and/or "
+			"default anchor plate ID.\n"
+			"\n"
+			"  :param rotation_model: an existing rotation model\n"
+			"  :type rotation_model: :class:`RotationModel`\n"
+			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
+			"Defaults to 2 - this is much lower than the usual default cache size since the existing rotation model "
+			"likely already has a sizeable cache anyway - and if you are leaving this at its default value then "
+			"you are presumably only interested in changing the default anchor plate ID (not increasing the cache size).\n"
+			"  :type reconstruction_tree_cache_size: int\n"
+			"  :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` "
+			"and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. "
+			"Defaults to 0. \n"
+			"  :type default_anchor_plate_id: int\n"
+			"\n"
+			"  This is useful if you want to use an existing rotation model but with a larger cache size or a "
+			"different default anchor plate ID:\n"
+			"  ::\n"
+			"\n"
+			"    rotation_model = pygplates.RotationModel(rotation_files)\n"
+			"    ...\n"
+			"    rotation_model_anchor_1 = pygplates.RotationModel(rotation_model, default_anchor_plate_id=1)\n"
+			"\n"
+			"  .. note:: The above example just changes the *default* anchor plate ID. You can still explicitly "
+			"specify any anchor plate ID to :meth:`get_rotation`. So the following two calls return the same results:\n"
+			"            ::\n"
+			"\n"
+			"              rotation_model.get_rotation(100.0, 802, anchor_plate_id=1)\n"
+			"              rotation_model_anchor_1.get_rotation(100.0, 802)\n"
+			"\n"
+			"  .. versionadded:: 29\n")
+		// Define this '__init__' after the one just above since we want it to have a higher priority
+		// (later definitions get higher priority). This is because both this '__init__' and the one above both
+		// accept a single RotationModel argument (since all other parameters in the one above has default values)
+		// and we want this '__init__' to be used in that case so that we simply return the existing RotationModel
+		// and don't create a new RotationModel that adapts the existing RotationModel (and, eg, adds its own cache
+		// which just uses more memory unnecessarily).
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::rotation_model_return_existing_rotation_model,
 						bp::default_call_policies(),
 						(bp::arg("rotation_model"))),
 			// Specific overload signature...
 			"__init__(rotation_model)\n"
-			"  Create from an existing rotation model as a convenience.\n"
+			"  Simply return an existing rotation model as a convenience.\n"
 			"\n"
 			"  :param rotation_model: an existing rotation model\n"
 			"  :type rotation_model: :class:`RotationModel`\n"
@@ -578,8 +672,8 @@ export_rotation_model()
 			"        rotation_model = pygplates.RotationModel(rotation_features_or_model)\n"
 			"        ...\n"
 			"\n"
-			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to *rotation_model* because a "
-			"*RotationModel* object is immutable (contains no operations or methods that modify its state) and "
+			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to the existing *rotation_model* "
+			"because a *RotationModel* object is immutable (contains no operations or methods that modify its state) and "
 			"hence a deep copy of *rotation_model* is not needed.\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,

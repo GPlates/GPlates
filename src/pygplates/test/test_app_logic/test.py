@@ -1351,6 +1351,17 @@ class RotationModelCase(unittest.TestCase):
                 clone_rotation_features=False)
         # Create a reference to the same (C++) rotation model.
         rotation_model_reference = pygplates.RotationModel(rotation_model)
+        self.assertTrue(rotation_model_reference == rotation_model)
+        
+        # Adapt an existing rotation model to use a different cache size and default anchor plate ID.
+        rotation_model_adapted = pygplates.RotationModel(self.rotation_model, default_anchor_plate_id=802)
+        self.assertTrue(rotation_model_adapted != self.rotation_model)  # Should be a different C++ instance.
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_adapted.get_rotation(self.to_time, 802),
+                self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=802)))
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_adapted.get_rotation(self.to_time, 802, anchor_plate_id=0),
+                self.rotation_model.get_rotation(self.to_time, 802)))
         
         # Test using a non-zero default anchor plate ID.
         rotation_model_non_zero_default_anchor = pygplates.RotationModel(self.rotations, default_anchor_plate_id=802)

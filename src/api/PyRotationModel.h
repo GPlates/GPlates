@@ -81,8 +81,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -102,8 +102,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -123,8 +123,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -133,6 +133,24 @@ namespace GPlatesApi
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
 				bool extend_total_reconstruction_poles_to_distant_past = false,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
+
+
+		/**
+		 * Instead of directly creating reconstruction trees the returned rotation model will get them
+		 * from the existing @a rotation_model.
+		 *
+		 * This is useful for re-using an existing @a RotationModel but extending the cache size and/or
+		 * changing the default anchor plate ID.
+		 *
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				RotationModel::non_null_ptr_type rotation_model,
+				unsigned int reconstruction_tree_cache_size,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id);
 	
 
 		/**
