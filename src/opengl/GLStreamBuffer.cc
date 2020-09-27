@@ -148,17 +148,12 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::map(
 	// If there was an error during mapping then report it and throw exception.
 	if (mapped_data == NULL)
 	{
+		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
 		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
-		// We shouldn't get there since a mapped data pointer of NULL should generate an OpenGL error.
-		// But if we do then throw an exception since we promised the caller they wouldn't have to check for NULL.
-#ifdef GPLATES_DEBUG
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-#else
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
 				"GLBufferStream::MapScope::map: failed to map OpenGL buffer object.");
-#endif
 	}
 
 	// Initialise the caller's parameters.
@@ -192,7 +187,7 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::unmap(
 
 	if (!glUnmapBuffer(d_target))
 	{
-		// Check OpenGL errors in case glUnmapBuffer used incorrectly - this will throw exception if so.
+		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
 		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted.

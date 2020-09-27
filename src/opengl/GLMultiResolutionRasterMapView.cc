@@ -54,12 +54,12 @@
 #include "utils/Profile.h"
 
 // Enables visually showing level-of-detail in the map view.
-//#define DEBUG_LEVEL_OF_DETAIL_VISUALLY
+#define DEBUG_LEVEL_OF_DETAIL_VISUALLY
 
 // Renders text displaying the level-of-detail of tiles, otherwise renders a checkerboard pattern
 // to visualise texel-to-pixel mapping ratios.
 // NOTE: 'DEBUG_LEVEL_OF_DETAIL_VISUALLY' must be defined.
-//#define DEBUG_LEVEL_OF_DETAIL_WITH_TEXT
+#define DEBUG_LEVEL_OF_DETAIL_WITH_TEXT
 
 
 namespace GPlatesOpenGL
@@ -164,14 +164,18 @@ namespace GPlatesOpenGL
 #endif
 
 			// Convert to ARGB32 format so it's easier to load into a texture.
-			debug_image = debug_image.convertToFormat(QImage::Format_ARGB32);
+			boost::scoped_array<GPlatesGui::rgba8_t> debug_rgba8_array;
+			GLTextureUtils::load_argb32_qimage_into_rgba8_array(
+					debug_image.convertToFormat(QImage::Format_ARGB32),
+					debug_rgba8_array);
 
-			// Load cached image into raster texture.
-			GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(
-					renderer,
-					boost::const_pointer_cast<GLTexture>(tile_texture),
-					debug_image,
-					0, 0);
+			gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+
+			// Load cached image into tile texture.
+			glTexSubImage2D(
+					GL_TEXTURE_2D, 0/*level*/,
+					0/*xoffset*/, 0/*yoffset*/, debug_image.width(), debug_image.height(),
+					GL_RGBA, GL_UNSIGNED_BYTE, debug_rgba8_array.get());
 		}
 #endif
 	}
@@ -486,6 +490,9 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 	}
 	const GLTexture::shared_ptr_to_const_type tile_texture = tile_texture_opt.get();
 
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(renderer);
+
 #if 0
 	qDebug()
 		<< "Rendered cube quad tree tile: " << num_tiles_rendered_to_scene
@@ -501,9 +508,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 	// Make sure we return the cached handle to our caller so they can cache it.
 	cached_tiles.push_back(source_raster_cache_handle);
 
-
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// The view transform never changes within a cube face so it's the same across
 	// an entire cube face quad tree (each cube face has its own quad tree).

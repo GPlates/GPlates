@@ -25,448 +25,65 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
-#include <boost/scoped_array.hpp>
-#include <QGLWidget>
-#include <QImage>
-#include <QMatrix>
+#include <boost/cstdint.hpp>
 
 #include "GLTextureUtils.h"
 
-#include "GLRenderer.h"
+#include "GL.h"
 #include "GLUtils.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
 
 void
-GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture_object,
-		GLenum target,
-		GLint internalformat,
-		GLsizei width,
-		GLint border,
-		bool mipmapped)
-{
-	// Generate level zero and the mip levels if requested.
-	GLint level = 0;
-	do
-	{
-		// Initialise the texture memory but provide no image data.
-		texture_object->gl_tex_image_1D(
-				renderer, target, level, internalformat, width, border,
-				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
-		// specifies the floor convention for determining the next smaller mipmap dimension.
-		width >>= 1;
-		++level;
-	}
-	while (mipmapped && width);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture_object,
-		GLenum target,
-		GLint internalformat,
-		GLsizei width,
-		GLsizei height,
-		GLint border,
-		bool mipmapped)
-{
-	// Generate level zero and the mip levels if requested.
-	GLint level = 0;
-	do
-	{
-		// Initialise the texture memory but provide no image data.
-		texture_object->gl_tex_image_2D(
-				renderer, target, level, internalformat, width, height, border,
-				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
-		// specifies the floor convention for determining the next smaller mipmap dimension.
-		width >>= 1;
-		height >>= 1;
-		++level;
-	}
-	while (mipmapped && width && height);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture_object,
-		GLenum target,
-		GLint internalformat,
-		GLsizei width,
-		GLsizei height,
-		GLsizei depth,
-		GLint border,
-		bool mipmapped)
-{
-	// Generate level zero and the mip levels if requested.
-	GLint level = 0;
-	do
-	{
-		// Initialise the texture memory but provide no image data.
-		texture_object->gl_tex_image_3D(
-				renderer, target, level, internalformat, width, height, depth, border,
-				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
-		// specifies the floor convention for determining the next smaller mipmap dimension.
-		width >>= 1;
-		height >>= 1;
-		depth >>= 1;
-		++level;
-	}
-	while (mipmapped && width && height && depth);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const void *image,
-		GLenum format,
-		GLenum type,
-		unsigned int image_width,
-		unsigned int image_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	PROFILE_FUNC();
-
-	// Each row of texels, in the raster image, is not necessarily aligned to 4 bytes.
-	//
-	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	// The client has ensured that the texture has been created in OpenGL (eg, by using
-	// glTexImage2D) so we can use the faster glTexSubImage2D that doesn't recreate the texture.
-	texture->gl_tex_sub_image_2D(renderer, GL_TEXTURE_2D, 0,
-			texel_u_offset, texel_v_offset, image_width, image_height,
-			format, type, image);
-
-	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
-	//
-	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
-#if 0 // No need to check this so frequently.
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-#endif
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
-		GLint pixels_offset,
-		GLenum format,
-		GLenum type,
-		unsigned int image_width,
-		unsigned int image_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	PROFILE_FUNC();
-
-	// Each row of texels, in the raster image, is not necessarily aligned to 4 bytes.
-	//
-	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	// The client has ensured that the texture has been created in OpenGL (eg, by using
-	// glTexImage2D) so we can use the faster glTexSubImage2D that doesn't recreate the texture.
-	texture->gl_tex_sub_image_2D(renderer, GL_TEXTURE_2D, 0,
-			texel_u_offset, texel_v_offset, image_width, image_height,
-			format, type, pixels, pixels_offset);
-
-	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
-	//
-	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
-#if 0 // No need to check this so frequently.
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-#endif
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
+GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_rgba8_array(
 		const QImage &argb32_qimage,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
+		boost::scoped_array<GPlatesGui::rgba8_t> &rgba8_array)
 {
 	PROFILE_FUNC();
 
-	const int argb32_image_width = argb32_qimage.width();
-	const int argb32_image_height = argb32_qimage.height();
+	const int image_width = argb32_qimage.width();
+	const int image_height = argb32_qimage.height();
 
-	// Create an array of pixels to copy into the texture.
-	boost::scoped_array<GPlatesGui::rgba8_t> texture_data_storage(
-			new GPlatesGui::rgba8_t[argb32_image_width * argb32_image_height]);
-	GPlatesGui::rgba8_t *const texture_data = texture_data_storage.get();
-	for (int i = 0; i < argb32_image_height; ++i)
+	// Allocate the array of RGBA8 pixels.
+	rgba8_array.reset(new GPlatesGui::rgba8_t[image_width * image_height]);
+	GPlatesGui::rgba8_t *const rgba8_data = rgba8_array.get();
+	for (int i = 0; i < image_height; ++i)
 	{
 		// Convert a row of QImage::Format_ARGB32 pixels to GPlatesGui::rgba8_t.
 		convert_argb32_to_rgba8(
 				reinterpret_cast<const boost::uint32_t *>(argb32_qimage.scanLine(i)),
-				texture_data + i * argb32_image_width,
-				argb32_image_width);
+				rgba8_data + i * image_width,
+				image_width);
 	}
-
-	load_image_into_rgba8_texture_2D(
-			renderer,
-			texture,
-			texture_data_storage.get(),
-			argb32_image_width,
-			argb32_image_height,
-			texel_u_offset,
-			texel_v_offset);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::load_colour_into_rgba8_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GPlatesGui::rgba8_t &colour,
-		unsigned int texel_width,
-		unsigned int texel_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	const unsigned num_texels_to_load = texel_width * texel_height;
-
-	// Create an array of same-colour entries.
-	boost::scoped_array<GPlatesGui::rgba8_t> image_data_storage(new GPlatesGui::rgba8_t[num_texels_to_load]);
-	GPlatesGui::rgba8_t *const image_data = image_data_storage.get();
-	for (unsigned int n = 0; n < num_texels_to_load; ++n)
-	{
-		image_data[n] = colour;
-	}
-
-	// Load image into texture...
-	load_image_into_rgba8_texture_2D(
-			renderer,
-			texture,
-			image_data_storage.get(),
-			texel_width, texel_height,
-			texel_u_offset, texel_v_offset);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::load_colour_into_rgba32f_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GPlatesGui::Colour &colour,
-		unsigned int texel_width,
-		unsigned int texel_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Floating-point textures must be supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.texture.gl_ARB_texture_float,
-			GPLATES_ASSERTION_SOURCE);
-
-	const unsigned num_texels_to_load = texel_width * texel_height;
-
-	// Create an array of same-colour entries.
-	boost::scoped_array<GPlatesGui::Colour> image_data_storage(new GPlatesGui::Colour[num_texels_to_load]);
-	GPlatesGui::Colour *const image_data = image_data_storage.get();
-	for (unsigned int n = 0; n < num_texels_to_load; ++n)
-	{
-		image_data[n] = colour;
-	}
-
-	// Load image into texture...
-	load_image_into_texture_2D(
-			renderer,
-			texture,
-			image_data_storage.get(),
-			GL_RGBA,
-			GL_FLOAT,
-			texel_width, texel_height,
-			texel_u_offset, texel_v_offset);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GLfloat fill_value,
-		GLenum format,
-		unsigned int texel_width,
-		unsigned int texel_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Floating-point textures must be supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.texture.gl_ARB_texture_float,
-			GPLATES_ASSERTION_SOURCE);
-
-	const unsigned num_texels_to_load = texel_width * texel_height;
-
-	// Create an array of same-fill entries.
-	boost::scoped_array<GLfloat> image_data_storage(new GLfloat[num_texels_to_load]);
-	GLfloat *const image_data = image_data_storage.get();
-	for (unsigned int n = 0; n < num_texels_to_load; ++n)
-	{
-		image_data[n] = fill_value;
-	}
-
-	// Load image into texture...
-	load_image_into_texture_2D(
-			renderer,
-			texture,
-			image_data_storage.get(),
-			format,
-			GL_FLOAT,
-			texel_width, texel_height,
-			texel_u_offset, texel_v_offset);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GLfloat first_fill_value,
-		const GLfloat second_fill_value,
-		GLenum format,
-		unsigned int texel_width,
-		unsigned int texel_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Floating-point textures must be supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.texture.gl_ARB_texture_float,
-			GPLATES_ASSERTION_SOURCE);
-
-	const unsigned num_texels_to_load = texel_width * texel_height;
-
-	// Create an array of same-fill entries.
-	boost::scoped_array<GLfloat> image_data_storage(new GLfloat[2 * num_texels_to_load]);
-	GLfloat *const image_data = image_data_storage.get();
-	for (unsigned int n = 0; n < num_texels_to_load; ++n)
-	{
-		image_data[2 * n] = first_fill_value;
-		image_data[2 * n + 1] = second_fill_value;
-	}
-
-	// Load image into texture...
-	load_image_into_texture_2D(
-			renderer,
-			texture,
-			image_data_storage.get(),
-			format,
-			GL_FLOAT,
-			texel_width, texel_height,
-			texel_u_offset, texel_v_offset);
-}
-
-
-void
-GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture,
-		const GLfloat first_fill_value,
-		const GLfloat second_fill_value,
-		const GLfloat third_fill_value,
-		GLenum format,
-		unsigned int texel_width,
-		unsigned int texel_height,
-		unsigned int texel_u_offset,
-		unsigned int texel_v_offset)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Floating-point textures must be supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.texture.gl_ARB_texture_float,
-			GPLATES_ASSERTION_SOURCE);
-
-	const unsigned num_texels_to_load = texel_width * texel_height;
-
-	// Create an array of same-fill entries.
-	boost::scoped_array<GLfloat> image_data_storage(new GLfloat[3 * num_texels_to_load]);
-	GLfloat *const image_data = image_data_storage.get();
-	for (unsigned int n = 0; n < num_texels_to_load; ++n)
-	{
-		image_data[3 * n] = first_fill_value;
-		image_data[3 * n + 1] = second_fill_value;
-		image_data[3 * n + 2] = third_fill_value;
-	}
-
-	// Load image into texture...
-	load_image_into_texture_2D(
-			renderer,
-			texture,
-			image_data_storage.get(),
-			format,
-			GL_FLOAT,
-			texel_width, texel_height,
-			texel_u_offset, texel_v_offset);
 }
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
-		GLRenderer &renderer)
+		GL &gl)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(renderer);
+	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(gl);
+
+	gl.BindTexture(GL_TEXTURE_2D, xy_clip_texture);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 4x4 image where the centre 2x2 texels are 1.0
@@ -484,7 +101,7 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 	};
 
 	// Create the texture and load the data into it.
-	xy_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
@@ -495,32 +112,26 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
-		GLRenderer &renderer)
+		GL &gl)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(renderer);
+	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(gl);
+
+	gl.BindTexture(GL_TEXTURE_2D, z_clip_texture);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 2x1 image where the one texel is white and the other black.
@@ -531,7 +142,7 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 	const GPlatesGui::rgba8_t mask_image[2] = { mask_zero, mask_one };
 
 	// Create the texture and load the data into it.
-	z_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
