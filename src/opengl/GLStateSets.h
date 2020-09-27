@@ -1136,10 +1136,7 @@ namespace GPlatesOpenGL
 		 */
 		GLPixelStoreStateSet(
 				GLenum pname,
-				GLint param) :
-			d_pname(pname),
-			d_param(param)
-		{  }
+				GLint param);
 
 		virtual
 		void

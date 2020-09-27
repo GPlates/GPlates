@@ -388,16 +388,22 @@ GPlatesGui::Stars::paint(
 	gl.Enable(GL_DEPTH_CLAMP);
 	gl.Enable(GL_CLIP_DISTANCE0);
 
-	// Set the alpha-blend state.
-	// Set up alpha blending for pre-multiplied alpha.
-	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-	// This is where the RGB channels have already been multiplied by the alpha channel.
-	// See class GLVisualRasterSource for why this is done.
 	//
-	// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+	// For alpha-blending we want:
 	//
-	//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
-	//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+	//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
+	//
+	//   RGB uses (A_src, 1 - A_src)
+	//     A uses (    1, 1 - A_src)
+	//
+	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+	// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
+	// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
+	//
 	gl.Enable(GL_BLEND);
 	gl.BlendFuncSeparate(
 			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,

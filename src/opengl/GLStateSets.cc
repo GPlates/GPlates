@@ -1633,6 +1633,29 @@ GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
 }
 
 
+GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
+		GLenum pname,
+		GLint param) :
+	d_pname(pname)
+{
+	// If pname is a boolean type...
+	if (pname == GL_PACK_SWAP_BYTES ||
+		pname == GL_UNPACK_SWAP_BYTES ||
+		pname == GL_PACK_LSB_FIRST ||
+		pname == GL_UNPACK_LSB_FIRST)
+	{
+		// OpenGL 3.3 spec says zero maps to false and non-zero to true, which if specified
+		// using an integer (ie, glPixelStorei instead of glPixelStoref) then false is 0 and true
+		// can be any non-zero integer (we choose 1).
+		d_param = (param != 0) ? 1 : 0;
+	}
+	else // all remaining pnames have type integer (in OpenGL 3.3)...
+	{
+		d_param = param;
+	}
+}
+
+
 void
 GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
 		const GLCapabilities &capabilities,

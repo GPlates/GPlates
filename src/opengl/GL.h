@@ -515,7 +515,7 @@ namespace GPlatesOpenGL
 		 *   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
 		 *
 		 * ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
-		 * is undefined after the draw call (apparently this was rectified in OpenGL 4.2) so we cannot track it.
+		 * is undefined after the draw call so we cannot track it (apparently this was rectified in OpenGL 4.2).
 		 *
 		 * You can either call glVertexAttrib4f, glVertexAttribI4i, etc natively, or perhaps even better
 		 * set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
