@@ -25,6 +25,7 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
+#include <algorithm>  // std::fill_n
 #include <cmath>
 #include <utility>
 #include <boost/bind.hpp>
@@ -34,8 +35,8 @@
 
 #include "GLScalarFieldDepthLayersSource.h"
 
+#include "GL.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 
@@ -50,49 +51,13 @@
 #include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
-bool
-GPlatesOpenGL::GLScalarFieldDepthLayersSource::is_supported(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// Floating-point textures and non-power-of-two textures are required.
-		// Vertex/fragment shader programs are required.
-		if (!capabilities.texture.gl_ARB_texture_float ||
-			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
-			!capabilities.shader.gl_ARB_vertex_shader ||
-			!capabilities.shader.gl_ARB_fragment_shader)
-		{
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
-}
-
 
 boost::optional<GPlatesOpenGL::GLScalarFieldDepthLayersSource::non_null_ptr_type>
 GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
-		GLRenderer &renderer,
+		GL &gl,
 		const depth_layer_seq_type &depth_layers,
 		unsigned int tile_texel_dimension)
 {
-	if (!is_supported(renderer))
-	{
-		return boost::none;
-	}
-
 	if (depth_layers.empty())
 	{
 		return boost::none;
@@ -153,9 +118,9 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 			boost::bind(&ProxiedDepthLayer::depth_radius, _2));
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > gl.get_capabilities().gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = gl.get_capabilities().gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -166,7 +131,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 
 	return non_null_ptr_type(
 			new GLScalarFieldDepthLayersSource(
-					renderer,
+					gl,
 					proxied_depth_layers,
 					raster_dimensions->first,
 					raster_dimensions->second,
@@ -175,7 +140,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 
 
 GPlatesOpenGL::GLScalarFieldDepthLayersSource::GLScalarFieldDepthLayersSource(
-		GLRenderer &renderer,
+		GL &gl,
 		const proxied_depth_layer_seq_type &proxied_depth_layers,
 		unsigned int raster_width,
 		unsigned int raster_height,
@@ -263,7 +228,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::initialise_level_of_detail_dimens
 
 void
 GPlatesOpenGL::GLScalarFieldDepthLayersSource::set_depth_layer(
-		GLRenderer &renderer,
+		GL &gl,
 		unsigned int depth_layer_index)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -285,7 +250,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::set_depth_layer(
 GLint
 GPlatesOpenGL::GLScalarFieldDepthLayersSource::get_target_texture_internal_format() const
 {
-	return GL_RGBA32F_ARB;
+	return GL_RGBA32F;
 }
 
 
@@ -297,13 +262,22 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GL &gl)
 {
 	PROFILE_FUNC();
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			level < d_level_of_detail_dimensions.size(),
 			GPLATES_ASSERTION_SOURCE);
+
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// Bind target texture before uploading to it.
+	gl.BindTexture(GL_TEXTURE_2D, target_texture);
+
+	// Our client memory image buffers are byte aligned.
+	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// The dimensions of the current level of detail of the entire raster.
 	const unsigned int lod_texel_width = d_level_of_detail_dimensions[level].first; 
@@ -397,7 +371,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_tile(
 					texel_width,
 					texel_height,
 					target_texture,
-					renderer);
+					gl);
 
 			// Nothing needs caching.
 			return cache_handle_type();
@@ -411,7 +385,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_tile(
 	}
 
 	generate_scalar_gradient_values(
-			renderer,
+			gl,
 			target_texture,
 			texel_width,
 			texel_height,
@@ -425,7 +399,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_tile(
 
 void
 GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLTexture::shared_ptr_type &target_texture,
 		unsigned int texel_width,
 		unsigned int texel_height,
@@ -663,23 +637,22 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 	}
 
 	// Load the finite differences into the RGBA texture.
-	GLTextureUtils::load_image_into_texture_2D(
-			renderer,
-			target_texture,
-			d_tile_scalar_gradient_data_working_space.get(),
-			GL_RGBA,
-			GL_FLOAT,
-			texel_width,
-			texel_height);
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
+			GL_RGBA, GL_FLOAT, d_tile_scalar_gradient_data_working_space.get());
 
 	// If the region does not occupy the entire tile then it means we've reached the right edge
 	// of the raster - we duplicate the last column of texels into the adjacent column to ensure
 	// that subsequent sampling of the texture at the right edge of the last column of texels
 	// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
 	//
-	// Note: We don't use anisotropic filtering for floating-point textures (like we do for fixed-point)
-	// and so we don't have to worry about a anisotropic filter width sampling texels beyond our
-	// duplicated single row/column of border texels.
+	// Note: We don't use anisotropic filtering for scalar/gradient textures (like we do for colour textures).
+	// And so we don't have to worry about an anisotropic filter width sampling texels beyond our duplicated
+	// single row/column of border texels.
+	// TODO: Re-consider whether to use anisotropic since scalar/gradient tile texture has already been
+	// explicitly calculated from data/coverage scalar field and so does not have the same restriction
+	// as GLDataRasterSource (which must handle the coverage part explicitly in the shader and thus needs
+	// to bypass any hardwired filtering).
 	if (texel_width < d_tile_texel_dimension)
 	{
 		// Copy the right edge of the region into the working space.
@@ -697,16 +670,11 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 			region_last_column += num_floats_per_scalar_gradient_data_texel * texel_width;
 		}
 
-		// Load the one-texel wide column of default normal data into adjacent column.
-		GLTextureUtils::load_image_into_texture_2D(
-				renderer,
-				target_texture,
-				d_tile_edge_working_space.get(),
-				GL_RGBA,
-				GL_FLOAT,
-				1/*image_width*/,
-				texel_height,
-				texel_width/*texel_u_offset*/);
+		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
+		glTexSubImage2D(
+				GL_TEXTURE_2D, 0/*level*/,
+				texel_width/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
+				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
 	}
 
 	// Same applies if we've reached the bottom edge of raster (where the raster height is not an
@@ -739,17 +707,11 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 			++texels_in_last_row;
 		}
 
-		// Load the one-texel wide row of default normal data into adjacent row.
-		GLTextureUtils::load_image_into_texture_2D(
-				renderer,
-				target_texture,
-				d_tile_edge_working_space.get(),
-				GL_RGBA,
-				GL_FLOAT,
-				texels_in_last_row/*image_width*/,
-				1/*image_height*/,
-				0/*texel_u_offset*/,
-				texel_height/*texel_v_offset*/);
+		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
+		glTexSubImage2D(
+				GL_TEXTURE_2D, 0/*level*/,
+				0/*xoffset*/, texel_height/*yoffset*/, texels_in_last_row/*width*/, 1/*height*/,
+				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
 	}
 }
 
@@ -828,7 +790,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_default_scalar_gradient_valu
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GL &gl)
 {
 	if (!d_logged_tile_load_failure_warning)
 	{
@@ -845,10 +807,11 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_default_scalar_gradient_valu
 	}
 
 	// Set the default scalar and gradient (R,GBA) to all zeros.
-	const GPlatesGui::Colour default_scalar_gradient(0, 0, 0, 0);
-
-	GLTextureUtils::load_colour_into_rgba32f_texture_2D(
-			renderer, target_texture, default_scalar_gradient, texel_width, texel_height);
+	boost::scoped_array<GLfloat> fill_scalar_gradient_storage(new GLfloat[4 * texel_width * texel_height]);
+	std::fill_n(fill_scalar_gradient_storage.get(), 4 * texel_width * texel_height, GLfloat(0));
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
+			GL_RGBA, GL_FLOAT, fill_scalar_gradient_storage.get());
 }
 
 

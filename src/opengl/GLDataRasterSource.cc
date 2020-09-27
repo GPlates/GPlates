@@ -198,9 +198,9 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	PROFILE_END(profile_proxy_raster_coverage);
 
 	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+	GL::StateScope save_restore_state(gl);
 
-	// Bind texture before uploading to it.
+	// Bind target texture before uploading to it.
 	gl.BindTexture(GL_TEXTURE_2D, target_texture);
 
 	// Our client memory image buffers are byte aligned.
@@ -246,7 +246,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 
 	// Load the packed data into the texture.
 	// Use RG-only format to pack raster data/coverage values.
-	glTexSubImage2D(GL_TEXTURE_2D, level,
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RG, GL_FLOAT, d_tile_pack_working_space.get());
 
@@ -260,11 +260,10 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	// to achieve the same effect otherwise numerical precision in the graphics hardware and
 	// nearest neighbour filtering could sample a garbage texel.
 	//
-	// Note: We don't use anisotropic filtering for floating-point textures (like we do for fixed-point)
-	// and so we don't have to worry about a anisotropic filter width sampling texels beyond our
-	// duplicated single row/column of border texels.
-	//
-	// TODO: Now that our min requirement is OpenGL 3.3, enable anisotropic filtering of floating-point textures.
+	// Note: We don't use anisotropic filtering for data textures (like we do for colour textures)
+	// since we want to explicitly multiply each texel's data value with its coverage value *before*
+	// filtering (we do this in the shader program). And so we don't have to worry about an
+	// anisotropic filter width sampling texels beyond our duplicated single row/column of border texels.
 	//
 	if (texel_width < d_tile_texel_dimension)
 	{
@@ -286,7 +285,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
 		// Use RG-only format to pack raster data/coverage values.
 		glTexSubImage2D(
-				GL_TEXTURE_2D, level,
+				GL_TEXTURE_2D, 0/*level*/,
 				texel_width/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
 				GL_RG, GL_FLOAT, d_tile_edge_working_space.get());
 	}
@@ -325,7 +324,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
 		// Use RG-only format to pack raster data/coverage values.
 		glTexSubImage2D(
-				GL_TEXTURE_2D, level,
+				GL_TEXTURE_2D, 0/*level*/,
 				0/*xoffset*/, texel_height/*yoffset*/, texels_in_last_row/*width*/, 1/*height*/,
 				GL_RG, GL_FLOAT, d_tile_edge_working_space.get());
 	}
@@ -363,7 +362,7 @@ GPlatesOpenGL::GLDataRasterSource::handle_error_loading_source_raster(
 	// Use RG-only format.
 	boost::scoped_array<GLfloat> fill_data_storage(new GLfloat[2 * texel_width * texel_height]);
 	std::fill_n(fill_data_storage.get(), 2 * texel_width * texel_height, GLfloat(0));
-	glTexSubImage2D(GL_TEXTURE_2D, level,
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RG, GL_FLOAT, fill_data_storage.get());
 }

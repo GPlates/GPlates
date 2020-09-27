@@ -50,18 +50,13 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
-	 * A raster source that contains depth layers for generating the scalar values and gradients
-	 * for a 3D scalar field.
+	 * A raster source that contains depth layers for generating the scalar values and gradients for a 3D scalar field.
 	 *
 	 * The floating-point RGBA output matches the format of GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample.
 	 * With red channel containing the scalar value and the GBA channels containing the field gradient.
-	 * 
-	 *
-	 * NOTE: The 'GL_ARB_texture_float' extension is required (along with GL_ARB_vertex_shader and
-	 * GL_ARB_fragment_shader) in which case the texture format is 'GL_RGBA32F_ARB'.
 	 */
 	class GLScalarFieldDepthLayersSource :
 			public GLMultiResolutionRasterSource
@@ -95,19 +90,6 @@ namespace GPlatesOpenGL
 		typedef std::vector<DepthLayer> depth_layer_seq_type;
 
 
-
-		/**
-		 * Returns true if @a GLScalarFieldDepthLayersSource is supported on the runtime system.
-		 *
-		 * The runtime system requires the OpenGL extension 'GL_ARB_texture_float' and
-		 * vertex/fragment shader programs (GL_ARB_vertex_shader and GL_ARB_fragment_shader).
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
 		/**
 		 * Creates a @a GLScalarFieldDepthLayersSource object from the specified depth layer rasters.
 		 *
@@ -117,20 +99,18 @@ namespace GPlatesOpenGL
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 *
-		 * Returns false if any depth layer raster in the sequence:
+		 * Returns none if any depth layer raster in the sequence:
 		 *  - is not a proxy raster, or
 		 *  - is uninitialised, or
 		 *  - do not contain numerical floating-point or integer data (ie, contains colour RGBA pixels),
-		 * ...or not all rasters have same dimensions, or
-		 * if @a is_supported returns false.
-		 * NOTE: The raster is expected to be floating-point (or integer), otherwise boost::none is returned.
-		 *
+		 * ...or not all rasters have same dimensions.
+	 *
 		 * NOTE: The depth layers do not need to be sorted by depth - that will be handled by this function.
 		 */
 		static
 		boost::optional<non_null_ptr_type>
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const depth_layer_seq_type &depth_layers,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
 
@@ -142,7 +122,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_depth_layer(
-				GLRenderer &renderer,
+				GL &gl,
 				unsigned int depth_layer_index);
 
 
@@ -184,7 +164,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 	private:
 
@@ -259,7 +239,7 @@ namespace GPlatesOpenGL
 
 
 		GLScalarFieldDepthLayersSource(
-				GLRenderer &renderer,
+				GL &gl,
 				const proxied_depth_layer_seq_type &proxied_depth_layers,
 				unsigned int raster_width,
 				unsigned int raster_height,
@@ -271,7 +251,7 @@ namespace GPlatesOpenGL
 
 		void
 		generate_scalar_gradient_values(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLTexture::shared_ptr_type &target_texture,
 				unsigned int texel_width,
 				unsigned int texel_height,
@@ -300,7 +280,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 		template <typename RealType>
 		void
