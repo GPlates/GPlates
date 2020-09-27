@@ -155,9 +155,10 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	d_raster_statistics_height_field_scale_factor(1), // Default scale
 	d_raster_resolution_height_field_scale_factor(1), // Default scale
 	d_client_height_field_scale_factor(height_field_scale_factor),
-	// These textures get reused even inside a single rendering frame so we just need a small number
-	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
-	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
+	// These height tile textures get reused even inside a single rendering frame so we just need a small number
+	// to give the graphics card some breathing room (ie, don't want to upload to same height texture that is
+	// currently being used to render to a normal map tile and be forced to wait)...
+	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2/*ping-pong between two height textures*/)),
 	d_generate_normals_program(GLProgram::create(gl)),
 	d_generate_normals_framebuffer(GLFramebuffer::create(gl)),
 	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
