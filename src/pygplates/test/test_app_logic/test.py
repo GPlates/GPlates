@@ -1487,6 +1487,65 @@ class RotationModelCase(unittest.TestCase):
             non_zero_present_day_rotation_model.get_rotation(10.0, 801) * non_zero_present_day_rotation_model.get_rotation(0.0, 801).get_inverse())
 
 
+class TopologicalModelCase(unittest.TestCase):
+    def setUp(self):
+        self.topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+
+        self.rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+        self.rotation_model = pygplates.RotationModel(self.rotations)
+
+    def test_create(self):
+        self.assertRaises(
+                pygplates.OpenFileForReadingError,
+                pygplates.TopologicalModel,
+                'non_existant_topology_file.gpml', self.rotations, 2)
+
+        # 'oldest_time - youngest_time' not an integer multiple of time_increment
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 5, time_increment=2)
+        # oldest_time later (or same as) youngest_time
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, 5)
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, 4)
+        # Oldest/youngest times cannot be distant-past or distant-future.
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, pygplates.GeoTimeInstant.create_distant_past())
+        # Oldest/youngest times and time increment must have integral values.
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4.01)
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, 1.99)
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, 1, 0.99)
+        # Time increment must be positive.
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, time_increment=-1)
+        self.assertRaises(
+                ValueError,
+                pygplates.TopologicalModel,
+                self.topologies, self.rotations, 4, time_increment=0)
+
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotations, 2)
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, 2, time_increment=2)
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -1499,7 +1558,8 @@ def suite():
             ReconstructTestCase,
             ReconstructionTreeCase,
             ResolvedTopologiesTestCase,
-            RotationModelCase
+            RotationModelCase,
+            TopologicalModelCase
         ]
 
     for test_case in test_cases:

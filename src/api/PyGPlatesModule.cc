@@ -72,6 +72,7 @@ void export_reconstruction_geometries();
 void export_reconstruction_tree();
 void export_resolve_topologies();
 void export_rotation_model();
+void export_topological_model();
 
 // api directory.
 void export_version();
@@ -179,6 +180,7 @@ export_cpp_python_api()
 	export_reconstruction_tree();
 	export_resolve_topologies();
 	export_rotation_model();
+	export_topological_model();
 
 	//export_co_registration();
 	export_colour();
@@ -240,6 +242,18 @@ BOOST_PYTHON_MODULE(pygplates)
 				"Python implementation must support infinity, quiet NaN and signaling NaN for float and double types.");
 		bp::throw_error_already_set();
 	}
+
+#if 0  // Testing search paths to find "proj.db"...
+	const char* proj_search_paths[] = { ".", NULL };
+#if defined(PROJ_VERSION_MAJOR) && (PROJ_VERSION_MAJOR > 6 || (PROJ_VERSION_MAJOR == 6 && PROJ_VERSION_MINOR >= 1))
+	// With Proj >=6.1, paths set here have priority over the PROJ_LIB to allow for multiple versions
+	// of PROJ resource files on your system without conflicting...
+	proj_context_set_search_paths(NULL, 1, proj_search_paths);
+#endif
+#if defined(GDAL_VERSION_MAJOR) && GDAL_VERSION_MAJOR >= 3
+	OSRSetPROJSearchPaths(proj_search_paths);
+#endif
+#endif
 
 	//
 	// Specify the 'pygplate' module's docstring options.

@@ -93,6 +93,8 @@ set(srcs
     PythonUtils.h
     PythonVariableFunctionArguments.cc
     PythonVariableFunctionArguments.h
+    PyTopologicalModel.cc
+    PyTopologicalModel.h
     PyTopologyTools.cc
     PyVector3D.cc
     PyViewportWindow.cc

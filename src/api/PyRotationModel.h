@@ -247,7 +247,10 @@ namespace GPlatesApi
 	 * To get an instance of @a RotationModelFunctionArgument you can either:
 	 *  (1) specify RotationModelFunctionArgument directly as a function argument type
 	 *      (in the C++ function being wrapped), or
-	 *  (2) use boost::python::extract<RotationModelFunctionArgument>().
+	 *  (2) use boost::python::extract<RotationModelFunctionArgument>(), or even
+	 *  (3) specify RotationModelFunctionArgument::function_argument_type as a function argument type or
+	 *      use boost::python::extract<RotationModelFunctionArgument::function_argument_type>()
+	 *      if you want to know whether argument was sourced from an existing RotationModel or rotation features.
 	 */
 	class RotationModelFunctionArgument
 	{
