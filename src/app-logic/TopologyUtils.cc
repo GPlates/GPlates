@@ -1083,6 +1083,46 @@ GPlatesAppLogic::TopologyUtils::has_topological_features(
 }
 
 
+boost::optional<GPlatesAppLogic::TopologyGeometry::Type>
+GPlatesAppLogic::TopologyUtils::get_topological_geometry_type(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+{
+	// Iterate over the feature properties.
+	GPlatesModel::FeatureHandle::const_iterator iter = feature->begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature->end();
+	for ( ; iter != end; ++iter) 
+	{
+		// If the current property is a topological geometry then we have a topological feature.
+		boost::optional<GPlatesPropertyValues::StructuralType> topology_geometry_property_value_type =
+				TopologyInternalUtils::get_topology_geometry_property_value_type(iter);
+		if (topology_geometry_property_value_type)
+		{
+			static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
+					GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
+			static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
+					GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
+			static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
+					GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
+
+			if (topology_geometry_property_value_type == GPML_TOPOLOGICAL_LINE)
+			{
+				return TopologyGeometry::LINE;
+			}
+			else if (topology_geometry_property_value_type == GPML_TOPOLOGICAL_POLYGON)
+			{
+				return TopologyGeometry::BOUNDARY;
+			}
+			else if (topology_geometry_property_value_type == GPML_TOPOLOGICAL_NETWORK)
+			{
+				return TopologyGeometry::NETWORK;
+			}
+		}
+	}
+
+	return boost::none;
+}
+
+
 bool
 GPlatesAppLogic::TopologyUtils::is_topological_line_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature)

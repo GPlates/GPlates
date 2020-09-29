@@ -25,6 +25,7 @@
  */
 
 #include <queue>
+#include <boost/optional.hpp>
 #include <QLocale>
 #include <QDebug>
 #include <QString>
@@ -94,33 +95,29 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus_ptr->focused_feature();
 
 	// Determine the topology geometry type.
-	GPlatesAppLogic::TopologyGeometry::Type topology_geometry_type = GPlatesAppLogic::TopologyGeometry::UNKNOWN;
-
-	if (GPlatesAppLogic::TopologyUtils::is_topological_line_feature(focused_feature))
-	{
-		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::LINE;
-		d_topology_sections_filter =
-				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_section;
-	}
-	else if (GPlatesAppLogic::TopologyUtils::is_topological_boundary_feature(focused_feature))
-	{
-		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::BOUNDARY;
-		d_topology_sections_filter =
-				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological_section;
-	}
-	else if (GPlatesAppLogic::TopologyUtils::is_topological_network_feature(focused_feature))
-	{
-		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::NETWORK;
-		d_topology_sections_filter =
-				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_section;
-	}
+	boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type =
+			GPlatesAppLogic::TopologyUtils::get_topological_geometry_type(focused_feature);
 
 	// Only activate for topologies.
-	if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::UNKNOWN)
+	if (!topology_geometry_type)
 	{
 		// unset the focus
- 		d_feature_focus_ptr->unset_focus();
+		d_feature_focus_ptr->unset_focus();
 		return;
+	}
+
+	switch (topology_geometry_type.get())
+	{
+	case GPlatesAppLogic::TopologyGeometry::LINE:
+		d_topology_sections_filter = &GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_section;
+		break;
+
+	case GPlatesAppLogic::TopologyGeometry::BOUNDARY:
+		d_topology_sections_filter = &GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological_section;
+
+	case GPlatesAppLogic::TopologyGeometry::NETWORK:
+		d_topology_sections_filter = &GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_section;
+		break;
 	}
 
 	// Save the focused feature so we can restore it when this tool is deactivated.
@@ -132,7 +129,7 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 
 	d_topology_tools_widget_ptr->activate(
 			GPlatesQtWidgets::TopologyToolsWidget::EDIT,
-			topology_geometry_type);
+			topology_geometry_type.get());
 
 	set_status_bar_message(QT_TR_NOOP("Click a feature to add it to a topology."));
 }

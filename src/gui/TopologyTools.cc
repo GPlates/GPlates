@@ -229,9 +229,7 @@ GPlatesGui::TopologyTools::TopologyTools(
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
 	d_feature_focus_ptr(&view_state.get_feature_focus()),
 	d_application_state_ptr(&view_state.get_application_state()),
-	d_viewport_window_ptr(&viewport_window),
-	// Arbitrary topology geometry type - will get set properly when tool is activated...
-	d_topology_geometry_type(GPlatesAppLogic::TopologyGeometry::UNKNOWN)
+	d_viewport_window_ptr(&viewport_window)
 {
 	// set up the drawing
 	create_child_rendered_layers();
@@ -412,6 +410,8 @@ GPlatesGui::TopologyTools::deactivate()
 
 	// Reset internal state - the very last thing we should do.
 	d_is_active = false;
+	d_topology_geometry_type = boost::none;
+	d_topology_time_period = boost::none;
 }
 
 
@@ -425,17 +425,16 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 	create_topological_sections(topological_sections);
 
 	// Make sure we have enough topological sections for the topology geometry type.
-	switch (d_topology_geometry_type)
+	if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::LINE)
 	{
-	case GPlatesAppLogic::TopologyGeometry::LINE:
 		// Need at least one topological section for a line topology.
 		if (topological_sections.size() >= 1)
 		{
 			return create_topological_line_property_value(topological_sections);
 		}
-		break;
-
-	case GPlatesAppLogic::TopologyGeometry::BOUNDARY:
+	}
+	else if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::BOUNDARY)
+	{
 		// Need at least one topological section for a boundary topology.
 		// Only need one section because it could be a static polygon (which is already a boundary) or
 		// it could be a line section that should be treated like a polygon (ie, first/last vertex joined).
@@ -443,9 +442,9 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 		{
 			return create_topological_polygon_property_value(topological_sections);
 		}
-		break;
-
-	case GPlatesAppLogic::TopologyGeometry::NETWORK:
+	}
+	else if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
+	{
 		// Need at least one topological section for a network boundary topology.
 		// Only need one section because it could be a static polygon (which is already a boundary) or
 		// it could be a line section that should be treated like a polygon (ie, first/last vertex joined).
@@ -457,10 +456,6 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 
 			return create_topological_network_property_value(topological_sections, topological_interiors);
 		}
-		break;
-
-	default:
-		break;
 	}
 
 	return boost::none;

@@ -85,6 +85,15 @@ namespace GPlatesAppLogic
 		has_topological_features(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
+		/**
+		 * Returns the type of topological geometry represented in the specified feature.
+		 *
+		 * Returns none if feature does not contain a topological geometry.
+		 */
+		boost::optional<TopologyGeometry::Type>
+		get_topological_geometry_type(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
 
 		/**
 		 * Returns true if @a feature contains a topological line geometry.
