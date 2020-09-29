@@ -1171,7 +1171,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
+		boost::optional<const std::set<GPlatesModel::FeatureId> &> topological_lines_referenced)
 {
 	PROFILE_FUNC();
 
@@ -1186,10 +1187,30 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 			reconstruction_time,
 			topological_sections_reconstruct_handles);
 
-	AppLogicUtils::visit_feature_collections(
-			topological_line_features_collection.begin(),
-			topological_line_features_collection.end(),
-			topology_line_resolver);
+	for (auto feature_collection : topological_line_features_collection)
+	{
+		if (feature_collection.is_valid())
+		{
+			for (auto feature : *feature_collection)
+			{
+				const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature->reference();
+
+				if (topological_lines_referenced)
+				{
+					// Only visit feature if its feature ID matches those specified.
+					const GPlatesModel::FeatureId &feature_id = feature_ref->feature_id();
+					if (topological_lines_referenced->find(feature_id) != topological_lines_referenced->end())
+					{
+						topology_line_resolver.visit_feature(feature_ref);
+					}
+				}
+				else
+				{
+					topology_line_resolver.visit_feature(feature_ref);
+				}
+			}
+		}
+	}
 
 	return reconstruct_handle;
 }
@@ -1201,7 +1222,8 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
+		boost::optional<const std::set<GPlatesModel::FeatureId> &> topological_lines_referenced)
 {
 	PROFILE_FUNC();
 
@@ -1216,10 +1238,25 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 			reconstruction_time,
 			topological_sections_reconstruct_handles);
 
-	AppLogicUtils::visit_features(
-			topological_line_features.begin(),
-			topological_line_features.end(),
-			topology_line_resolver);
+	for (auto feature_ref : topological_line_features)
+	{
+		if (feature_ref.is_valid())
+		{
+			if (topological_lines_referenced)
+			{
+				// Only visit feature if its feature ID matches those specified.
+				const GPlatesModel::FeatureId &feature_id = feature_ref->feature_id();
+				if (topological_lines_referenced->find(feature_id) != topological_lines_referenced->end())
+				{
+					topology_line_resolver.visit_feature(feature_ref);
+				}
+			}
+			else
+			{
+				topology_line_resolver.visit_feature(feature_ref);
+			}
+		}
+	}
 
 	return reconstruct_handle;
 }
@@ -1377,8 +1414,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		const double &reconstruction_time,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-		const TopologyNetworkParams &topology_network_params,
-		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced)
+		const TopologyNetworkParams &topology_network_params)
 {
 	PROFILE_FUNC();
 
@@ -1391,8 +1427,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 			reconstruction_time,
 			reconstruct_handle,
 			topological_geometry_reconstruct_handles,
-			topology_network_params,
-			topological_sections_referenced);
+			topology_network_params);
 
 	AppLogicUtils::visit_feature_collections(
 			topological_network_features_collection.begin(),
@@ -1409,8 +1444,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		const double &reconstruction_time,
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-		const TopologyNetworkParams &topology_network_params,
-		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced)
+		const TopologyNetworkParams &topology_network_params)
 {
 	PROFILE_FUNC();
 
@@ -1423,8 +1457,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 			reconstruction_time,
 			reconstruct_handle,
 			topological_geometry_reconstruct_handles,
-			topology_network_params,
-			topological_sections_referenced);
+			topology_network_params);
 
 	AppLogicUtils::visit_features(
 			topological_network_features.begin(),

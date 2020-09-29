@@ -79,14 +79,12 @@ GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
 		const double &reconstruction_time,
 		ReconstructHandle::type reconstruct_handle,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-		const TopologyNetworkParams &topology_network_params,
-		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced) :
+		const TopologyNetworkParams &topology_network_params) :
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_time(reconstruction_time),
 	d_reconstruct_handle(reconstruct_handle),
 	d_topological_geometry_reconstruct_handles(topological_geometry_reconstruct_handles),
-	d_topology_network_params(topology_network_params),
-	d_topological_sections_referenced(topological_sections_referenced)
+	d_topology_network_params(topology_network_params)
 {  
 }
 
@@ -473,14 +471,6 @@ boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyNetworkResolver::find_topological_reconstruction_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
-	// If caller has requested the referenced topological sections.
-	// Note that we add a topological section feature ID even if we cannot find
-	// any topological section features that have that feature ID.
-	if (d_topological_sections_referenced)
-	{
-		d_topological_sections_referenced->insert(geometry_delegate.get_feature_id());
-	}
-
 	// Get the reconstructed geometry of the geometry property delegate.
 	// The referenced RGs must be in our sequence of reconstructed/resolved topological geometries.
 	// If we need to restrict the topological RGs to specific reconstruct handles...

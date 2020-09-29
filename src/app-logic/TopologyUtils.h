@@ -121,6 +121,9 @@ namespace GPlatesAppLogic
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological lines.
 		 *        This is useful to avoid outdated RFGs still in existence (among other scenarios).
+		 * @param topological_lines_referenced Only resolved those topological line features matching
+		 *        the specified feature IDs. This is useful when subsequently resolving boundaries/networks
+		 *        that reference a subset of the topological line features specified.
 		 *
 		 * The returned reconstruct handle can be used to identify the resolved topological lines
 		 * when resolving topological *boundaries* (since they can reference resolved *lines*).
@@ -131,7 +134,8 @@ namespace GPlatesAppLogic
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none,
+				boost::optional<const std::set<GPlatesModel::FeatureId> &> topological_lines_referenced = boost::none);
 
 		/**
 		 * An overload of @a resolve_topological_lines accepting a vector of features instead of a feature collection.
@@ -142,7 +146,8 @@ namespace GPlatesAppLogic
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_line_features,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none,
+				boost::optional<const std::set<GPlatesModel::FeatureId> &> topological_lines_referenced = boost::none);
 
 
 		/**
@@ -233,9 +238,6 @@ namespace GPlatesAppLogic
 		 *        that should be searched when resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 * @param topology_network_params parameters used when creating the resolved networks.
-		 * @param topological_sections_referenced returns the topological section features referenced
-		 *        when visiting network features (note the referenced feature IDs are returned even
-		 *        if no features were found with those feature IDs).
 		 *
 		 * The returned reconstruct handle can be used to identify the resolved topological networks.
 		 * This is not currently used though.
@@ -246,8 +248,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
-				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams());
 
 		/**
 		 * An overload of @a resolve_topological_networks accepting a vector of features instead of a feature collection.
@@ -258,8 +259,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
-				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams());
 
 
 		/**
