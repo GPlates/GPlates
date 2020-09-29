@@ -79,7 +79,10 @@ namespace GPlatesApi
 		 */
 		void
 		get_topological_feature_collections(
-				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &topological_feature_collections) const;
+				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &topological_feature_collections) const
+		{
+			d_topological_features.get_feature_collections(topological_feature_collections);
+		}
 
 
 		/**
@@ -89,7 +92,10 @@ namespace GPlatesApi
 		 */
 		void
 		get_files(
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_feature_collections_files) const;
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_feature_collections_files) const
+		{
+			d_topological_features.get_files(topological_feature_collections_files);
+		}
 
 
 		/**
@@ -104,22 +110,29 @@ namespace GPlatesApi
 	private:
 
 		TopologicalModel(
-				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_feature_collections_files,
-				const RotationModel::non_null_ptr_type &rotation_model) :
-			d_topological_feature_collection_files(topological_feature_collections_files),
-			d_rotation_model(rotation_model)
+				const FeatureCollectionSequenceFunctionArgument &topological_features,
+				const RotationModel::non_null_ptr_type &rotation_model,
+				const GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type &topology_reconstruct) :
+			d_topological_features(topological_features),
+			d_rotation_model(rotation_model),
+			d_topology_reconstruct(topology_reconstruct)
 		{  }
 
 
 		/**
-		 * Keep the topological feature collections alive (by using intrusive pointers).
-		 *
-		 * We also keep track of the files the topological feature collections came from.
-		 * If any feature collection did not come from a file then it will have an empty filename.
+		 * Topological feature collections/files.
 		 */
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_feature_collection_files;
+		FeatureCollectionSequenceFunctionArgument d_topological_features;
 
+		/**
+		 * Rotation model associated with topological features.
+		 */
 		RotationModel::non_null_ptr_type d_rotation_model;
+
+		/**
+		 * Used to reconstruct regular features using our topologies.
+		 */
+		GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type d_topology_reconstruct;
 	};
 }
 

@@ -41,6 +41,12 @@
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "app-logic/ReconstructContext.h"
+#include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/ReconstructParams.h"
+#include "app-logic/TopologyInternalUtils.h"
+#include "app-logic/TopologyUtils.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
 
@@ -132,9 +138,7 @@ GPlatesApi::TopologicalModel::create(
 		bp::throw_error_already_set();
 	}
 
-	// Copy topological feature collection files into a vector.
-	std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_feature_collection_files;
-	topological_features.get_files(topological_feature_collection_files);
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
 	//
 	// Adapt an existing rotation model, or create a new rotation model.
@@ -144,15 +148,15 @@ GPlatesApi::TopologicalModel::create(
 	// continually evicted and re-populated as we reconstruct different geometries through time).
 	//
 	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-	const unsigned int reconstruction_tree_cache_size = time_range.get_num_time_slots() + 1;
+	const unsigned int reconstruction_tree_cache_size = num_time_slots + 1;
 
-	boost::optional<RotationModel::non_null_ptr_type> rotation_model;
+	boost::optional<RotationModel::non_null_ptr_type> rotation_model_opt;
 
 	if (const RotationModel::non_null_ptr_type *existing_rotation_model =
 		boost::get<RotationModel::non_null_ptr_type>(&rotation_model_argument))
 	{
 		// Adapt the existing rotation model.
-		rotation_model = RotationModel::create(
+		rotation_model_opt = RotationModel::create(
 				*existing_rotation_model,
 				reconstruction_tree_cache_size,
 				0/*default_anchor_plate_id*/);
@@ -163,43 +167,165 @@ GPlatesApi::TopologicalModel::create(
 				boost::get<FeatureCollectionSequenceFunctionArgument>(rotation_model_argument);
 
 		// Create a new rotation model (from rotation features).
-		rotation_model = RotationModel::create(
+		rotation_model_opt = RotationModel::create(
 				rotation_feature_collections_function_argument,
 				reconstruction_tree_cache_size,
 				false/*extend_total_reconstruction_poles_to_distant_past*/,
 				0/*default_anchor_plate_id*/);
 	}
 
+	RotationModel::non_null_ptr_type rotation_model = rotation_model_opt.get();
+	GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator = rotation_model->get_reconstruction_tree_creator();
+
+	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> topological_feature_collections;
+	topological_features.get_feature_collections(topological_feature_collections);
+
+	// Separate the topological features into topological line, boundary and network features, and
+	// regular features (used as topological sections).
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_line_features;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_boundary_features;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_network_features;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> regular_features;
+	for (auto feature_collection : topological_feature_collections)
+	{
+		for (auto feature : *feature_collection)
+		{
+			const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature->reference();
+
+			// Determine the topology geometry type.
+			boost::optional<GPlatesAppLogic::TopologyGeometry::Type> topology_geometry_type =
+					GPlatesAppLogic::TopologyUtils::get_topological_geometry_type(feature_ref);
+
+			if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::LINE)
+			{
+				topological_line_features.push_back(feature_ref);
+			}
+			else if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::BOUNDARY)
+			{
+				topological_boundary_features.push_back(feature_ref);
+			}
+			else if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
+			{
+				topological_network_features.push_back(feature_ref);
+			}
+			else
+			{
+				regular_features.push_back(feature_ref);
+			}
+		}
+	}
+
+	// Create our resolved topology (boundary/network) time spans.
+	GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_type resolved_boundary_time_span =
+			GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::create(time_range);
+	GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_type resolved_network_time_span =
+			GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::create(time_range);
+
+	// ReconstructContext used for reconstructing the regular features.
+	GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+	GPlatesAppLogic::ReconstructContext reconstruct_context(reconstruct_method_registry);
+	GPlatesAppLogic::ReconstructContext::context_state_reference_type reconstruct_context_state =
+			reconstruct_context.create_context_state(
+					GPlatesAppLogic::ReconstructMethodInterface::Context(
+							GPlatesAppLogic::ReconstructParams(),
+							reconstruction_tree_creator));
+	reconstruct_context.set_features(regular_features);
+
+	// Iterate over the time slots and fill in the resolved topological boundaries/networks.
+	for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
+	{
+		const double reconstruction_time = time_range.get_time(time_slot);
+
+		// Find the topological section feature IDs referenced by any topological features at current reconstruction time.
+		//
+		// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
+		// by topologies that exist at the reconstruction time are reconstructed.
+		std::set<GPlatesModel::FeatureId> topological_sections_referenced;
+		GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+				topological_sections_referenced,
+				topological_line_features,
+				GPlatesAppLogic::TopologyGeometry::LINE,
+				reconstruction_time);
+		GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+				topological_sections_referenced,
+				topological_boundary_features,
+				GPlatesAppLogic::TopologyGeometry::BOUNDARY,
+				reconstruction_time);
+		GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+				topological_sections_referenced,
+				topological_network_features,
+				GPlatesAppLogic::TopologyGeometry::NETWORK,
+				reconstruction_time);
+
+		// Contains the topological section regular geometries referenced by topologies.
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+
+		// Generate RFGs only for the referenced topological sections.
+		const GPlatesAppLogic::ReconstructHandle::type reconstruct_handle =
+				reconstruct_context.get_reconstructed_topological_sections(
+						reconstructed_feature_geometries,
+						topological_sections_referenced,
+						reconstruct_context_state,
+						reconstruction_time);
+
+		// All reconstruct handles used to find topological sections (referenced by topological boundaries/networks).
+		std::vector<GPlatesAppLogic::ReconstructHandle::type> topological_sections_reconstruct_handles(1, reconstruct_handle);
+
+		// Contains the resolved topological line sections referenced by topological boundaries and networks.
+		std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_topological_lines;
+
+		// Resolving topological lines generates its own reconstruct handle that will be used by
+		// topological boundaries and networks to find this group of resolved lines.
+		//
+		// So we always resolve topological *lines* regardless of whether the user requested it or not.
+		const GPlatesAppLogic::ReconstructHandle::type resolved_topological_lines_handle =
+				GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
+						resolved_topological_lines,
+						topological_line_features,
+						reconstruction_tree_creator, 
+						reconstruction_time,
+						// Resolved topo lines use the reconstructed non-topo geometries...
+						topological_sections_reconstruct_handles,
+						// Only those topo lines references by resolved boundaries/networks...
+						topological_sections_referenced);
+
+		topological_sections_reconstruct_handles.push_back(resolved_topological_lines_handle);
+
+		// Resolve topological boundaries.
+		std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
+		GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
+				resolved_topological_boundaries,
+				topological_boundary_features,
+				reconstruction_tree_creator, 
+				reconstruction_time,
+				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
+				topological_sections_reconstruct_handles);
+
+		// Resolve topological networks.
+		std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
+		GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
+				resolved_topological_networks,
+				reconstruction_time,
+				topological_network_features,
+				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
+				topological_sections_reconstruct_handles);
+
+		resolved_boundary_time_span->set_sample_in_time_slot(resolved_topological_boundaries, time_slot);
+		resolved_network_time_span->set_sample_in_time_slot(resolved_topological_networks, time_slot);
+	}
+
+	GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type topology_reconstruct =
+			GPlatesAppLogic::TopologyReconstruct::create(
+					time_range,
+					resolved_boundary_time_span,
+					resolved_network_time_span,
+					reconstruction_tree_creator);
+
 	return non_null_ptr_type(
 			new TopologicalModel(
-					topological_feature_collection_files,
-					rotation_model.get()));
-}
-
-
-void
-GPlatesApi::TopologicalModel::get_topological_feature_collections(
-		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &topological_feature_collections) const
-{
-	BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type feature_collection_file, d_topological_feature_collection_files)
-	{
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-				GPlatesUtils::get_non_null_pointer(
-						feature_collection_file->get_reference().get_feature_collection().handle_ptr());
-
-		topological_feature_collections.push_back(feature_collection);
-	}
-}
-
-
-void
-GPlatesApi::TopologicalModel::get_files(
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_feature_collection_files) const
-{
-	topological_feature_collection_files.insert(
-			topological_feature_collection_files.end(),
-			d_topological_feature_collection_files.begin(),
-			d_topological_feature_collection_files.end());
+					topological_features,
+					rotation_model,
+					topology_reconstruct));
 }
 
 

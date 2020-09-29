@@ -43,15 +43,16 @@
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructHandle.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodRegistry.h"
-#include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ResolvedTopologicalSection.h"
 #include "app-logic/ResolvedTopologicalSharedSubSegment.h"
+#include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -467,23 +468,42 @@ namespace GPlatesApi
 		}
 
 		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
-		// This ensures 'ReconstructUtils::reconstruct()' will reconstruct using the correct anchor plate.
+		// This ensures we will reconstruct topological sections using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 						rotation_model.get()->get_reconstruction_tree_creator(),
 						anchor_plate_id);
 
-		// Contains the topological section geometries referenced by topologies.
+		// Find the topological section feature IDs referenced by any topological features at the reconstruction time.
+		//
+		// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
+		// by topologies that exist at the reconstruction time are reconstructed.
+		std::set<GPlatesModel::FeatureId> topological_sections_referenced;
+		BOOST_FOREACH(GPlatesModel::FeatureCollectionHandle::weak_ref topological_feature_collection, topological_feature_collections)
+		{
+			GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+					topological_sections_referenced,
+					topological_feature_collection,
+					boost::none/*topology_geometry_type*/,
+					reconstruction_time.value());
+		}
+
+		// Contains the topological section regular geometries referenced by topologies.
 		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
 
+		// Generate RFGs only for the referenced topological sections.
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+		GPlatesAppLogic::ReconstructContext reconstruct_context(reconstruct_method_registry);
+		reconstruct_context.set_features(topological_feature_collections);
 		const GPlatesAppLogic::ReconstructHandle::type reconstruct_handle =
-				GPlatesAppLogic::ReconstructUtils::reconstruct(
+				reconstruct_context.get_reconstructed_topological_sections(
 						reconstructed_feature_geometries,
-						reconstruction_time.value(),
-						reconstruct_method_registry,
-						topological_feature_collections,
-						reconstruction_tree_creator);
+						topological_sections_referenced,
+						reconstruct_context.create_context_state(
+								GPlatesAppLogic::ReconstructMethodInterface::Context(
+										GPlatesAppLogic::ReconstructParams(),
+										reconstruction_tree_creator)),
+						reconstruction_time.value());
 
 		// All reconstruct handles used to find topological sections (referenced by topological boundaries/networks).
 		std::vector<GPlatesAppLogic::ReconstructHandle::type> topological_sections_reconstruct_handles(1, reconstruct_handle);
@@ -502,7 +522,9 @@ namespace GPlatesApi
 						reconstruction_tree_creator, 
 						reconstruction_time.value(),
 						// Resolved topo lines use the reconstructed non-topo geometries...
-						topological_sections_reconstruct_handles);
+						topological_sections_reconstruct_handles,
+						// Only those topo lines references by resolved boundaries/networks...
+						topological_sections_referenced);
 
 		topological_sections_reconstruct_handles.push_back(resolved_topological_lines_handle);
 
