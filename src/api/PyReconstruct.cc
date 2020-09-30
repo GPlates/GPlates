@@ -65,6 +65,7 @@
 #include <boost/python/raw_function.hpp>
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/ModelUtils.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -878,6 +879,8 @@ namespace GPlatesApi
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
 		reconstructable_features.get_files(reconstructable_files);
 
+		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+
 		// Iterate over the files.
 		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator reconstructable_files_iter =
 				reconstructable_files.begin();
@@ -890,8 +893,6 @@ namespace GPlatesApi
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_feature_collection =
 					reconstructable_file->get_reference().get_feature_collection();
 
-			GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-
 			// Iterate over the features in the reconstructable feature collection.
 			GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_iter =
 					reconstructable_feature_collection->begin();
@@ -901,6 +902,22 @@ namespace GPlatesApi
 			{
 				const GPlatesModel::FeatureHandle::weak_ref reconstructable_feature =
 						(*reconstructable_features_iter)->reference();
+
+				// Set the geometry import time to the reconstruction time so that the geometries are correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with version 3
+				// half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						reconstructable_feature,
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
 
 				// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
 				// Get the reconstruct method so we can reverse reconstruct the geometry.
@@ -1167,7 +1184,8 @@ export_reconstruct()
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
 			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
 			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
-			"  :param reconstruction_time: the specific geological time to reverse reconstruct from\n"
+			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
+			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
 			"  :type anchor_plate_id: int\n"
@@ -1195,8 +1213,7 @@ export_reconstruct()
 			"\n"
 			"  If any filenames are specified in *reconstructable_features* then the modified feature "
 			"collection(s) (containing reverse reconstructed geometries) that are associated with those "
-			"files are written back out to those same files. :class:`FeatureCollectionFileFormatRegistry` "
-			"is used internally to read/write feature collections from/to those files.\n"
+			"files are written back out to those same files.\n"
 			"\n"
 			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
 			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
@@ -1223,5 +1240,8 @@ export_reconstruct()
 			"  Reconstructing a single feature from 10Ma:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.reconstruct(feature, rotation_model, 10)\n");
+            "    pygplates.reconstruct(feature, rotation_model, 10)\n"
+			"\n"
+			"  .. versionchanged:: 29\n"
+			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n");
 }

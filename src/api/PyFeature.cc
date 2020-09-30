@@ -625,6 +625,23 @@ namespace GPlatesApi
 						reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(
 								reverse_reconstruct_object);
 
+				// Set the geometry import time to the reconstruction time so that the geometry is correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with
+				// version 3 half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						feature_handle.reference(),
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(
+										reverse_reconstruct_parameters.second/*reconstruction_time*/)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
+
 				// Before we can reverse reconstruct the geometry, the feature we use for this
 				// must have a geometry otherwise the reconstruct method will default to by-plate-id.
 				// It may already have a geometry but it doesn't matter if we overwrite it now
@@ -641,8 +658,8 @@ namespace GPlatesApi
 						geometry,
 						feature_handle,
 						reconstruct_method_registry,
-						reverse_reconstruct_parameters.first,
-						reverse_reconstruct_parameters.second);
+						reverse_reconstruct_parameters.first/*reconstruction_tree_creator*/,
+						reverse_reconstruct_parameters.second/*reconstruction_time*/);
 			}
 
 			// Wrap the geometry in a property value.
@@ -748,6 +765,23 @@ namespace GPlatesApi
 			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
 			{
 				reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(reverse_reconstruct_object);
+
+				// Set the geometry import time to the reconstruction time so that the geometries are correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with
+				// version 3 half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						feature_handle.reference(),
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(
+										reverse_reconstruct_parameters->second/*reconstruction_time*/)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
 			}
 
 			// Wrap the geometries in property values.
@@ -782,8 +816,8 @@ namespace GPlatesApi
 							geometry,
 							feature_handle,
 							reconstruction_method_registry,
-							reverse_reconstruct_parameters->first,
-							reverse_reconstruct_parameters->second);
+							reverse_reconstruct_parameters->first/*reconstruction_tree_creator*/,
+							reverse_reconstruct_parameters->second/*reconstruction_time*/);
 				}
 
 				// Wrap the current geometry in a property value.
@@ -3787,7 +3821,11 @@ export_feature()
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    isochron_feature.set_geometry(\n"
 				"        geometry_at_time_of_appearance,\n"
-				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
+				"\n"
+				"  .. versionchanged:: 29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_reconstructable_feature")
 		.def("create_topological_feature",
 				&GPlatesApi::feature_handle_create_topological_feature,
@@ -4015,7 +4053,17 @@ export_feature()
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    mid_ocean_ridge_feature.set_geometry(\n"
 				"        geometry_at_time_of_appearance,\n"
-				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
+				"\n"
+				"  In the examples above the :meth:`geometry import time<set_geometry_import_time>` is internally "
+				"set to `time_of_appearance` (either due to the `reverse_reconstruct` arguments or the "
+				":meth:`reverse_reconstruct` function). This is so the ridge geometry at the time of appearance is "
+				"correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 "
+				"half-stage rotations where the spreading start time is the geometry import time).\n"
+				"\n"
+				"  .. versionchanged:: 29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_tectonic_section")
 		.def("create_flowline",
 				&GPlatesApi::feature_handle_create_flowline,
@@ -4681,6 +4729,12 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_geometry(ridge_geometry_at_digitisation_time)\n"
 				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_digitisation)\n"
 				"\n"
+				"  In the examples above the :meth:`geometry import time<set_geometry_import_time>` is internally "
+				"set to `time_of_digitisation` (either due to the `reverse_reconstruct` argument or the "
+				":meth:`reverse_reconstruct` function). This is so the ridge geometry at digitisation time is "
+				"correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 "
+				"half-stage rotations where the spreading start time is the geometry import time).\n"
+				"\n"
 				"  .. note:: *geometry* can also be a coverage or sequence of coverages - where a coverage essentially "
 				"maps each point in a geometry to one or more scalar values. A coverage is specified in *geometry* "
 				"as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple (or a sequence of tuples) "
@@ -4704,7 +4758,11 @@ export_feature()
 				"to set only a single coverage (per geometry property name) - but that single coverage "
 				"can still have more than one list of scalars.\n"
 				"\n"
-				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n")
+				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n"
+				"\n"
+				"  .. versionchanged:: 29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
