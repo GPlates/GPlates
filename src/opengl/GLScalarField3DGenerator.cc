@@ -922,7 +922,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
 					d_georeferencing,
 					d_coordinate_transformation,
 					d_depth_layers_source.get(),
-					GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+					GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER,
 					// No need to cache tiles...
 					GLMultiResolutionRaster::CACHE_TILE_TEXTURES_NONE);
 

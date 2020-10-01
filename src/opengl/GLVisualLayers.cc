@@ -736,11 +736,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 						d_raster_layer_proxy->get_georeferencing().get(),
 						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_visual_raster_source.get(),
-						GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER,
-						// Use non-default here - our source GLVisualRasterSource has caching that
-						// insulates us from the file system so we don't really need any caching in
-						// GLMultiResolutionRaster and can save a lot of texture memory usage as a result...
-						GLMultiResolutionRaster::CACHE_TILE_TEXTURES_NONE);
+						GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER);
 
 		d_multi_resolution_raster = multi_resolution_raster;
 	}
