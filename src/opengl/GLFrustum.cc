@@ -131,15 +131,8 @@ GPlatesOpenGL::GLFrustum::GLFrustum()
 
 
 GPlatesOpenGL::GLFrustum::GLFrustum(
-		const GLMatrix &model_view_matrix,
-		const GLMatrix &projection_matrix)
+		const GLMatrix &model_view_projection_matrix)
 {
-	// Multiply the model-view and projection matrices.
-	// When we extract frustum planes from this combined matrix they will be
-	// in model-space (also called object-space).
-	GLMatrix mvp(projection_matrix);
-	mvp.gl_mult_matrix(model_view_matrix);
-
 	//
 	// From "Fast extraction of viewing frustum planes from the world-view-projection matrix"
 	// by Gil Gribb and Klaus Hartmann.
@@ -154,22 +147,22 @@ GPlatesOpenGL::GLFrustum::GLFrustum(
 	d_planes.reserve(6);
 
 	// Left clipping plane.
-	d_planes.push_back(get_left_plane(mvp));
+	d_planes.push_back(get_left_plane(model_view_projection_matrix));
 
 	// Right clipping plane.
-	d_planes.push_back(get_right_plane(mvp));
+	d_planes.push_back(get_right_plane(model_view_projection_matrix));
 
 	// Bottom clipping plane.
-	d_planes.push_back(get_bottom_plane(mvp));
+	d_planes.push_back(get_bottom_plane(model_view_projection_matrix));
 
 	// Top clipping plane.
-	d_planes.push_back(get_top_plane(mvp));
+	d_planes.push_back(get_top_plane(model_view_projection_matrix));
 
 	// Near clipping plane.
-	d_planes.push_back(get_near_plane(mvp));
+	d_planes.push_back(get_near_plane(model_view_projection_matrix));
 
 	// Far clipping plane.
-	d_planes.push_back(get_far_plane(mvp));
+	d_planes.push_back(get_far_plane(model_view_projection_matrix));
 }
 
 
@@ -185,15 +178,8 @@ GPlatesOpenGL::GLFrustum::set_identity_model_view_projection()
 
 void
 GPlatesOpenGL::GLFrustum::set_model_view_projection(
-		const GLMatrix &model_view_matrix,
-		const GLMatrix &projection_matrix)
+		const GLMatrix &model_view_projection_matrix)
 {
-	// Multiply the model-view and projection matrices.
-	// When we extract frustum planes from this combined matrix they will be
-	// in model-space (also called object-space).
-	GLMatrix mvp(projection_matrix);
-	mvp.gl_mult_matrix(model_view_matrix);
-
 	//
 	// From "Fast extraction of viewing frustum planes from the world-view-projection matrix"
 	// by Gil Gribb and Klaus Hartmann.
@@ -206,20 +192,20 @@ GPlatesOpenGL::GLFrustum::set_model_view_projection(
 	// NOTE: These planes do not have *unit* vector normals.
 
 	// Left clipping plane.
-	d_planes[LEFT_PLANE] = get_left_plane(mvp);
+	d_planes[LEFT_PLANE] = get_left_plane(model_view_projection_matrix);
 
 	// Right clipping plane.
-	d_planes[RIGHT_PLANE] = get_right_plane(mvp);
+	d_planes[RIGHT_PLANE] = get_right_plane(model_view_projection_matrix);
 
 	// Bottom clipping plane.
-	d_planes[BOTTOM_PLANE] = get_bottom_plane(mvp);
+	d_planes[BOTTOM_PLANE] = get_bottom_plane(model_view_projection_matrix);
 
 	// Top clipping plane.
-	d_planes[TOP_PLANE] = get_top_plane(mvp);
+	d_planes[TOP_PLANE] = get_top_plane(model_view_projection_matrix);
 
 	// Near clipping plane.
-	d_planes[NEAR_PLANE] = get_near_plane(mvp);
+	d_planes[NEAR_PLANE] = get_near_plane(model_view_projection_matrix);
 
 	// Far clipping plane.
-	d_planes[FAR_PLANE] = get_far_plane(mvp);
+	d_planes[FAR_PLANE] = get_far_plane(model_view_projection_matrix);
 }

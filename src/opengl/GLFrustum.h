@@ -39,7 +39,7 @@ namespace GPlatesOpenGL
 	/**
 	 * An array of the six frustum planes that bound a viewing volume.
 	 *
-	 * The *six* frustum planes represented by the current model-view and projection matrices.
+	 * The *six* frustum planes represented by the current model-view-projection matrix.
 	 *
 	 * These frustum planes are in model-space (before any model-view or projection
 	 * transformations are applied) also called object-space.
@@ -73,36 +73,35 @@ namespace GPlatesOpenGL
 		static const boost::uint32_t ALL_PLANES_ACTIVE_MASK = 0x3f;
 
 
-		//! Default constructor initialises planes using identity model-view and projection matrices.
+		//! Default constructor initialises planes using identity model-view-projection matrix.
 		GLFrustum();
 
 
 		/**
-		 * Initialises planes using the specified model-view and projection matrices.
+		 * Initialises planes using the specified model-view-projection matrix.
 		 *
 		 * These planes form the boundary of the frustum of the view volume in model space.
 		 */
+		explicit
 		GLFrustum(
-				const GLMatrix &model_view_matrix,
-				const GLMatrix &projection_matrix);
+				const GLMatrix &model_view_projection_matrix);
 
 
 		/**
-		 * Initialises planes using the identity model-view and projection matrices.
+		 * Initialises planes using the identity model-view-projection matrix.
 		 */
 		void
 		set_identity_model_view_projection();
 
 
 		/**
-		 * Initialises planes using the specified model-view and projection matrices.
+		 * Initialises planes using the specified model-view-projection matrix.
 		 *
 		 * These planes form the boundary of the frustum of the view volume in model space.
 		 */
 		void
 		set_model_view_projection(
-				const GLMatrix &model_view_matrix,
-				const GLMatrix &projection_matrix);
+				const GLMatrix &model_view_projection_matrix);
 
 
 		//
