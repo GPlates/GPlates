@@ -32,7 +32,7 @@
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
-#include "GLViewport.h"
+#include "GLViewProjection.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/SubjectObserverToken.h"
@@ -40,7 +40,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Interface for a (possibly reconstructed) multi-resolution raster.
@@ -89,9 +89,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the unclamped exact floating-point level-of-detail that theoretically represents
-		 * the exact level-of-detail that would be required to fulfill the resolution needs of a
-		 * render target (as defined by the specified viewport and view/projection matrices).
+		 * Returns the unclamped exact floating-point level-of-detail that theoretically represents the
+		 * exact level-of-detail that would be required to fulfill the resolution needs of a render target
+		 * as defined by the specified viewport and view/projection matrices (in @a view_projection).
 		 *
 		 * Since tiles are only at integer level-of-detail factors, an unclamped floating-point number
 		 * is only useful to determine if the current render target is big enough or if it's too big,
@@ -103,16 +103,14 @@ namespace GPlatesOpenGL
 		virtual
 		float
 		get_level_of_detail(
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				const GLViewport &viewport,
+				const GLViewProjection &view_projection,
 				float level_of_detail_bias = 0.0f) const = 0;
 
 
 		/**
-		 * Given the specified viewport (and model-view/projection matrices) and the desired
-		 * level-of-detail this method determines the scale factor that needs to be applied to
-		 * @a viewport width and height such that it is sized correctly to contain the resolution
+		 * Given the specified view-projection (viewport and view/projection matrices) and the desired
+		 * level-of-detail this method determines the scale factor that needs to be applied to the
+		 * viewport width and height such that it is sized correctly to contain the resolution
 		 * of the desired level-of-detail.
 		 *
 		 * This is useful if you want to adapt the render-target (viewport) size to an integer
@@ -130,9 +128,7 @@ namespace GPlatesOpenGL
 		 */
 		float
 		get_viewport_dimension_scale(
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				const GLViewport &viewport,
+				const GLViewProjection &view_projection,
 				float level_of_detail) const;
 
 
@@ -159,8 +155,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders all tiles visible in the view frustum (determined by the current viewport and
-		 * model-view/projection transforms of @a renderer) and returns true if any tiles were rendered.
+		 * Renders all tiles visible in the view frustum, determined by the specified viewport and
+		 * view/projection transforms (in @a view_projection), and returns true if any tiles were rendered.
 		 *
 		 * @a cache_handle_type should be kept alive until the next call to @a render.
 		 * This is designed purely to take advantage of frame-to-frame coherency.
@@ -193,14 +189,15 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				cache_handle_type &cache_handle,
 				float level_of_detail_bias = 0.0f);
 
 
 		/**
-		 * Renders all tiles visible in the view frustum (determined by the current model-view/projection
-		 * transforms of @a renderer) and returns true if any tiles were rendered.
+		 * Renders all tiles visible in the view frustum, determined by the specified
+		 * view-projection transform, and returns true if any tiles were rendered.
 		 *
 		 * This differs from the above @a render method in that the current viewport is *not* used
 		 * to determine the level-of-detail (because the level-of-detail is explicitly provided).
@@ -215,7 +212,8 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLMatrix &view_projection_transform,
 				float level_of_detail,
 				cache_handle_type &cache_handle) = 0;
 	};

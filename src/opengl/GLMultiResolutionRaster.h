@@ -35,7 +35,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GLBuffer.h"
-#include "GLCompiledDrawState.h"
 #include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionRasterInterface.h"
@@ -43,9 +42,9 @@
 #include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
+#include "GLViewProjection.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
-#include "GLViewport.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
@@ -58,8 +57,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GL;
 	class GLFrustum;
-	class GLRenderer;
 
 	/**
 	 * An arbitrary dimension raster image represented as a multi-resolution pyramid
@@ -94,8 +93,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Typedef for a handle to a tile.
 		 *
-		 * A tile represents an arbitrary patch of the raster that is
-		 * covered by a single OpenGL texture.
+		 * A tile represents an arbitrary patch of the raster that is covered by a single OpenGL texture.
 		 */
 		typedef std::size_t tile_handle_type;
 
@@ -105,26 +103,21 @@ namespace GPlatesOpenGL
 		typedef GLMultiResolutionRasterInterface::cache_handle_type cache_handle_type;
 
 		/**
-		 * The texture filter types to use for fixed-point textures.
+		 * The texture filter types.
 		 *
-		 * Floating-point textures always use nearest filtering with no anisotropic filtering.
-		 * This is because earlier hardware does not support anything but nearest filtering and
-		 * so it needs to be emulated in a fragment shader (instead of being part of a texture
-		 * object's state) and hence must be done by the client (not us).
-		 *
-		 * NOTE: Currently all filtering is 'neareset' instead of 'bilinear' but this will probably change soon.
+		 * NOTE: Currently all filtering is 'nearest' instead of 'bilinear' but this will probably change.
 		 * 
-		 * If anisotropic filtering is specified it will be ignored if the
-		 * 'GL_EXT_texture_filter_anisotropic' extension is not supported.
+		 * If anisotropic filtering is specified it will be ignored if the 'GL_EXT_texture_filter_anisotropic'
+		 * extension is not supported (it an ubiquitous extension that didn't become core until OpenGL 4.6).
 		 */
-		enum FixedPointTextureFilterType
+		enum TextureFilterType
 		{
 			// Nearest neighbour filtering...
-			FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC,
+			TEXTURE_FILTER_NO_ANISOTROPIC,
 			// Nearest neighbour (with anisotropic) filtering...
-			FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC,
+			TEXTURE_FILTER_ANISOTROPIC,
 
-			NUM_FIXED_POINT_TEXTURE_FILTER_TYPES // Must be the last enum.
+			NUM_TEXTURE_FILTER_TYPES // Must be the last enum.
 		};
 
 		/**
@@ -138,13 +131,10 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The default fixed-point texture filtering mode for the textures returned by @a get_tile_texture
+		 * The default texture filtering mode for the textures returned by @a get_tile_texture
 		 * is bilinear (with anisotropic) filtering.
-		 *
-		 * Note that floating-point textures are always nearest neighbour (with no anisotropic) regardless.
 		 */
-		static const FixedPointTextureFilterType DEFAULT_FIXED_POINT_TEXTURE_FILTER =
-				FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC;
+		static const TextureFilterType DEFAULT_TEXTURE_FILTER = TEXTURE_FILTER_ANISOTROPIC;
 
 
 		/**
@@ -164,42 +154,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if a normal map (@a GLNormalMapSource) can be used as raster source on the runtime system.
-		 *
-		 * This is useful for rendering surface normals into a cube raster to be used to provide
-		 * surface detail for another raster by giving it a bumpy appearance due to diffuse lighting
-		 * on a non-smooth surface.
-		 *
-		 * The normal map is converted from tangent-space to world-space by a shader program and
-		 * the rendered output consists of 8-bit RGB pixels containing the world-space surface normals.
-		 *
-		 * NOTE: This calls 'GLNormalMapSource::is_supported()' internally.
-		 */
-		static
-		bool
-		supports_normal_map_source(
-				GLRenderer &renderer);
-
-
-		/**
-		 * Returns true if scalar field depth layers (@a GLScalarFieldDepthLayersSource) can be used
-		 * as raster source on the runtime system.
-		 *
-		 * This is useful for generating scalar field gradients at various depth layers into a
-		 * cube raster to be used to render a 3D scalar field.
-		 *
-		 * Gradient computation involves finite difference calculations along the tangent frame
-		 * directions which are determined by the raster georeferencing.
-		 *
-		 * NOTE: This calls 'GLScalarFieldDepthLayersSource::is_supported()' internally.
-		 */
-		static
-		bool
-		supports_scalar_field_depth_layers_source(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
 		 * @a georeferencing locates the raster pixels/lines in the raster's spatial reference system.
@@ -208,9 +162,8 @@ namespace GPlatesOpenGL
 		 * *projection* spatial reference).
 		 * @a raster_source is the source of raster data.
 		 *
-		 * Default fixed-point texture filtering mode for the internal textures rendered during
-		 * @a render is nearest neighbour (with anisotropic) filtering.
-		 * Note that floating-point textures are always nearest neighbour (with no anisotropic) regardless.
+		 * Default texture filtering mode for the internal textures rendered during @a render is
+		 * nearest neighbour (with anisotropic) filtering.
 		 *
 		 * If @a cache_tile_textures is 'CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID' then the
 		 * internal texture/vertex cache is allowed to grow to encompass all tiles in all levels of detail.
@@ -226,18 +179,15 @@ namespace GPlatesOpenGL
 		 * Note that if @a cache_tile_textures is 'CACHE_TILE_TEXTURES_NONE' then the returned cache
 		 * handle from @a render will not contain any caching (of tile textures) and hence those same
 		 * rendered tile textures will need to be re-generated the next time @a render is called.
-		 * Note, however, that source tile textures from GLMultiResolutionRasterSource *are*
-		 * cached regardless (because that insulates us from the file system which is very slow).
-		 * However if there is no caching in GLMultiResolutionRasterSource then you should do it here.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+				TextureFilterType texture_filter = DEFAULT_TEXTURE_FILTER,
 				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
@@ -272,16 +222,14 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the unclamped exact floating-point level-of-detail that theoretically represents
 		 * the exact level-of-detail that would be required to fulfill the resolution needs of a
-		 * render target (as defined by the specified viewport and view/projection matrices).
+		 * render target as defined by the specified viewport and view/projection matrices (@a view_projection).
 		 *
 		 * See base class for more details.
 		 */
 		virtual
 		float
 		get_level_of_detail(
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				const GLViewport &viewport,
+				const GLViewProjection &view_projection,
 				float level_of_detail_bias = 0.0f) const;
 
 
@@ -301,8 +249,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders all tiles visible in the view frustum (determined by the current model-view/projection
-		 * transforms of @a renderer) and returns true if any tiles were rendered.
+		 * Renders all tiles visible in the view frustum, determined by the specified
+		 * view-projection transform, and returns true if any tiles were rendered.
 		 *
 		 * Throws exception if @a level_of_detail is outside the valid range.
 		 * Use @a clamp_level_of_detail to clamp to a valid range before calling this method.
@@ -312,38 +260,37 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLMatrix &view_projection_transform,
 				float level_of_detail,
 				cache_handle_type &cache_handle);
 
 
 		/**
 		 * Returns a list of tiles that are visible inside the view frustum planes defined
-		 * by the specified model-view and projection transforms.
+		 * by the specified view-projection transform.
 		 *
 		 * The specified level-of-detail determines which tiles (in the LOD hierarchy) should
 		 * be returned/rendered - see @a get_level_of_detail for viewport sizing details.
 		 *
 		 * NOTE: If @a get_level_of_detail was used to determine @a level_of_detail then
-		 * the model-view and projection transforms specified here and in @a get_level_of_detail
-		 * should match.
+		 * the view-projection transform specified here and in @a get_level_of_detail should match.
 		 *
 		 * NOTE: @a level_of_detail must be in the range [0, @a get_num_levels_of_detail - 1].
 		 */
 		void
 		get_visible_tiles(
 				std::vector<tile_handle_type> &visible_tiles,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
+				const GLMatrix &view_projection_transform,
 				float level_of_detail) const;
 
 
 		/**
 		 * Returns a list of tiles that are visible inside the view frustum planes defined
-		 * by the specified model-view and projection transforms.
+		 * by the specified view and projection transforms (in @a view_projection).
 		 *
-		 * The specified viewport determines the internal level-of-detail required that in turn
-		 * determines which tiles (in the LOD hierarchy) should be returned/rendered.
+		 * The specified viewport (in @a view_projection) determines the internal level-of-detail
+		 * required that in turn determines which tiles (in the LOD hierarchy) should be returned/rendered.
 		 *
 		 * All returned tiles are from the same level-of-detail in the multi-resolution raster.
 		 *
@@ -357,30 +304,25 @@ namespace GPlatesOpenGL
 		void
 		get_visible_tiles(
 				std::vector<tile_handle_type> &visible_tiles,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				const GLViewport &viewport,
+				const GLViewProjection &view_projection,
 				float level_of_detail_bias = 0.0f) const
 		{
 			get_visible_tiles(
 					visible_tiles,
-					model_view_transform,
-					projection_transform,
-					clamp_level_of_detail(
-							get_level_of_detail(
-									model_view_transform, projection_transform, viewport, level_of_detail_bias)));
+					view_projection.get_view_projection_transform(),
+					clamp_level_of_detail(get_level_of_detail(view_projection, level_of_detail_bias)));
 		}
 
 
 		/**
-		 * Renders the specified tiles to the current render target of @a renderer (returns true
-		 * if the specified tiles are not empty).
+		 * Renders the specified tiles (returns true if the specified tiles are not empty).
 		 *
 		 * See the first overload of @a render for more details.
 		 */
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLMatrix &view_projection_transform,
 				const std::vector<tile_handle_type> &tiles,
 				cache_handle_type &cache_handle);
 
@@ -400,12 +342,10 @@ namespace GPlatesOpenGL
 		 * Returns the texture internal format that can be used if rendering to a texture, when
 		 * calling @a render, as opposed to the main framebuffer.
 		 *
-		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
+		 * This is the 'internalformat' parameter of glTexImage2D for example.
 		 *
 		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
 		 * Currently 'nearest' fits best with the georeferencing information of rasters.
-		 * And also earlier hardware, that supports floating-point textures, does not implement
-		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
 		 */
 		GLint
 		get_target_texture_internal_format() const
@@ -424,7 +364,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		clear_framebuffer(
-				GLRenderer &renderer);
+				GL &gl);
 
 	private:
 		/**
@@ -436,17 +376,15 @@ namespace GPlatesOpenGL
 		{
 			explicit
 			TileVertices(
-					GLRenderer &renderer_) :
-				vertex_buffer(
-						GLVertexBuffer::create(
-								renderer_,
-								GLBuffer::create(renderer_, GLBuffer::BUFFER_TYPE_VERTEX))),
-				vertex_array(GLVertexArray::create(renderer_))
+					GL &gl_) :
+				vertex_buffer(GLBuffer::create(gl_)),
+				vertex_array(GLVertexArray::create(gl_)),
+				num_vertex_elements(0)
 			{  }
 
-			GLVertexBuffer::shared_ptr_type vertex_buffer;
-			GLVertexElementBuffer::shared_ptr_to_const_type vertex_element_buffer;
+			GLBuffer::shared_ptr_type vertex_buffer;
 			GLVertexArray::shared_ptr_type vertex_array;
+			GLsizei num_vertex_elements;
 		};
 
 		/**
@@ -462,10 +400,10 @@ namespace GPlatesOpenGL
 		{
 			explicit
 			TileTexture(
-					GLRenderer &renderer_,
+					GL &gl_,
 					const GLMultiResolutionRasterSource::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionRasterSource::cache_handle_type()) :
-				texture(GLTexture::create_unique(renderer_)),
+				texture(GLTexture::create_unique(gl_)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 
@@ -523,7 +461,7 @@ namespace GPlatesOpenGL
 					// Set to true to cache the GLMultiResolutionRaster tile texture...
 					CacheTileTexturesType cache_tile_textures_) :
 				tile_vertices(tile_.tile_vertices),
-				// NOTE: The GLMultiResolutionRasterSource tile is always cached...
+				// NOTE: Anything the GLMultiResolutionRasterSource itself wants cached is always cached...
 				source_cache_handle(tile_.tile_texture->source_cache_handle)
 			{
 				if (cache_tile_textures_ != CACHE_TILE_TEXTURES_NONE)
@@ -843,8 +781,11 @@ namespace GPlatesOpenGL
 			GPlatesMaths::UnitVector3D normal;
 		};
 
-		//! Typedef for vertices.
-		typedef GLVertexUtils::TextureVertex vertex_type;
+		//! Typedef for visual raster vertices.
+		typedef GLVertexUtils::TextureVertex visual_vertex_type;
+
+		//! Typedef for data raster vertices.
+		typedef GLVertexUtils::TextureVertex data_vertex_type;
 
 		//! Typedef for normal-map vertices.
 		typedef GLVertexUtils::TextureTangentSpaceVertex normal_map_vertex_type;
@@ -858,7 +799,7 @@ namespace GPlatesOpenGL
 		//! Typedef for mapping a tile's vertex dimensions to vertex indices (and draw call).
 		typedef std::map<
 				std::pair<unsigned int,unsigned int>,
-				GLVertexElementBuffer::shared_ptr_to_const_type> vertex_element_buffer_map_type;
+				GLBuffer::shared_ptr_type> vertex_element_buffer_map_type;
 
 		//! A 16:16 fixed point type to get fractional values without floating-point precision issues.
 		typedef boost::uint32_t texels_per_vertex_fixed_point_type;
@@ -876,16 +817,21 @@ namespace GPlatesOpenGL
 		public:
 			explicit
 			RenderSphereNormals(
-					GLRenderer &renderer);
+					GL &gl);
 
 			void
 			render(
-					GLRenderer &renderer);
+					GL &gl);
 
 		private:
+			typedef GLushort vertex_element_type;
+
 			GLVertexArray::shared_ptr_type d_vertex_array;
-			boost::optional<GLProgram::shared_ptr_type> d_program;
-			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_draw_vertex_array;
+			GLBuffer::shared_ptr_type d_vertex_buffer;
+			GLBuffer::shared_ptr_type d_vertex_element_buffer;
+			unsigned int d_num_vertex_elements;
+
+			GLProgram::shared_ptr_type d_program;
 		};
 
 
@@ -917,9 +863,9 @@ namespace GPlatesOpenGL
 		RasterScanlineOrderType d_raster_scanline_order;
 
 		/**
-		 * The texture filtering mode (for fixed-point textures) for textures rendered during @a render.
+		 * The texture filtering mode for textures rendered during @a render.
 		 */
-		FixedPointTextureFilterType d_fixed_point_texture_filter;
+		TextureFilterType d_texture_filter;
 
 
 		/**
@@ -931,8 +877,7 @@ namespace GPlatesOpenGL
 		float d_inverse_tile_texel_dimension;
 
 		/**
-		 * The (fractional) number of texels between two adjacent vertices along a horizontal or
-		 * vertical edge of the tile.
+		 * The (fractional) number of texels between two adjacent vertices along a horizontal or vertical edge of the tile.
 		 *
 		 * This is a 16:16 fixed point type to allow fractional values without floating-point precision issues.
 		 *
@@ -985,11 +930,9 @@ namespace GPlatesOpenGL
 		vertex_element_buffer_map_type d_vertex_element_buffers;
 
 		/**
-		 * Shader program to render either a *floating-point* raster or a normal-map raster.
-		 *
-		 * Otherwise is boost::none (only the fixed-function pipeline is needed).
+		 * Shader program for all rendering (eg, colour, normal-map, data, etc).
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_raster_program;
+		GLProgram::shared_ptr_type d_render_raster_program;
 
 		/**
 		 * Used to render sphere normals.
@@ -1037,17 +980,17 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionRaster(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-				FixedPointTextureFilterType fixed_point_texture_filter,
+				TextureFilterType texture_filter,
 				CacheTileTexturesType cache_tile_textures,
 				RasterScanlineOrderType raster_scanline_order);
 
 		void
-		create_shader_program_if_necessary(
-				GLRenderer &renderer);
+		compile_link_shader_program(
+				GL &gl);
 
 		/**
 		 * Creates the level-of-detail pyramid structures.
@@ -1141,14 +1084,19 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Gets, or creates if one doesn't exist, a uniform mesh of triangles covering a tile
+		 * Binds a vertex element buffer that indexes into a uniform mesh of triangles covering a tile
 		 * with @a num_vertices_along_tile_x_edge by @a num_vertices_along_tile_y_edge vertices.
 		 *
+		 * If a matching vertex element buffer is not found then one is created and cached.
+		 * This enables sharing of a vertex element buffer by multiple tiles.
+		 *
 		 * This is just the vertex indices (not the vertices themselves which differ for each tile).
+		 *
+		 * Returns the number of indices (vertex elements) in tile.
 		 */
-		GLVertexElementBuffer::shared_ptr_to_const_type
-		get_vertex_element_buffer(
-				GLRenderer &renderer,
+		GLsizei
+		bind_vertex_element_buffer(
+				GL &gl,
 				const unsigned int num_vertices_along_tile_x_edge,
 				const unsigned int num_vertices_along_tile_y_edge);
 
@@ -1174,14 +1122,14 @@ namespace GPlatesOpenGL
 		Tile
 		get_tile(
 				tile_handle_type tile_handle,
-				GLRenderer &renderer);
+				GL &gl);
 
 		/**
 		 * Returns the tile texture for the tile @a lod_tile.
 		 */
 		tile_texture_cache_type::object_shared_ptr_type
 		get_tile_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const LevelOfDetailTile &lod_tile);
 
 		/**
@@ -1189,7 +1137,7 @@ namespace GPlatesOpenGL
 		 */
 		tile_vertices_cache_type::object_shared_ptr_type
 		get_tile_vertices(
-				GLRenderer &renderer,
+				GL &gl,
 				const LevelOfDetailTile &lod_tile);
 
 		/**
@@ -1199,14 +1147,14 @@ namespace GPlatesOpenGL
 		load_raster_data_into_tile_texture(
 				const LevelOfDetailTile &lod_tile,
 				TileTexture &tile_texture,
-				GLRenderer &renderer);
+				GL &gl);
 
 		/**
 		 * Creates a texture in OpenGL but doesn't load any image data into it.
 		 */
 		void
 		create_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLTexture::shared_ptr_type &texture);
 
 		/**
@@ -1214,7 +1162,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		load_vertices_into_tile_vertex_buffer(
-				GLRenderer &renderer,
+				GL &gl,
 				const LevelOfDetailTile &lod_tile,
 				TileVertices &tile_vertices);
 

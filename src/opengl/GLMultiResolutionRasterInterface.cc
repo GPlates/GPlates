@@ -27,17 +27,15 @@
 
 #include "GLMultiResolutionRasterInterface.h"
 
-#include "GLRenderer.h"
+#include "GL.h"
 
 
 float
 GPlatesOpenGL::GLMultiResolutionRasterInterface::get_viewport_dimension_scale(
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
-		const GLViewport &viewport,
+		const GLViewProjection &view_projection,
 		float level_of_detail) const
 {
-	const float current_level_of_detail = get_level_of_detail(model_view_transform, projection_transform, viewport);
+	const float current_level_of_detail = get_level_of_detail(view_projection);
 
 	// new_viewport_dimension = viewport_dimension * pow(2, current_level_of_detail - level_of_detail)
 	return std::pow(2.0f, current_level_of_detail - level_of_detail);
@@ -46,18 +44,13 @@ GPlatesOpenGL::GLMultiResolutionRasterInterface::get_viewport_dimension_scale(
 
 bool
 GPlatesOpenGL::GLMultiResolutionRasterInterface::render(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		cache_handle_type &cache_handle,
 		float level_of_detail_bias)
 {
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	const float level_of_detail =
-			clamp_level_of_detail(
-					get_level_of_detail(
-							renderer.gl_get_matrix(GL_MODELVIEW),
-							renderer.gl_get_matrix(GL_PROJECTION),
-							renderer.gl_get_viewport(),
-							level_of_detail_bias));
+	const float level_of_detail = clamp_level_of_detail(get_level_of_detail(view_projection, level_of_detail_bias));
 
-	return render(renderer, level_of_detail, cache_handle);
+	return render(gl, view_projection.get_view_projection_transform(), level_of_detail, cache_handle);
 }
