@@ -144,6 +144,229 @@ namespace GPlatesApi
 	}
 
 
+	/**
+	 * Extract one geometry or coverage (geometry + scalars).
+	 */
+	std::tuple<
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
+	extract_geometry_or_coverage(
+			boost::python::object geometry_or_coverage_object)
+	{
+		//
+		// 'geometry_or_coverage_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a coverage.
+		//
+		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+		// of (scalar type, sequence of scalar values) 2-tuples.
+		//
+
+		const char *type_error_string = "Expected a GeometryOnSphere, or a coverage - where a coverage is a "
+				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_or_coverage_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			return std::make_tuple(geometry, boost::none);
+		}
+
+		// Attempt to extract a 2-tuple (GeometryOnSphere, coverage-range) which is a sequence of two objects.
+		std::vector<bp::object> sequence_of_objects;
+		PythonExtractUtils::extract_iterable(sequence_of_objects, geometry_or_coverage_object, type_error_string);
+
+		if (sequence_of_objects.size() != 2)
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		// Extract geometry from 2-tuple.
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_coverage_domain(sequence_of_objects[0]);
+		if (!extract_coverage_domain.check())
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain = extract_coverage_domain();
+
+		// Extract coverage range from 2-tuple.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
+				create_gml_data_block(sequence_of_objects[1], type_error_string);
+
+		return std::make_tuple(coverage_domain, coverage_range);
+	}
+
+
+	/**
+	 * Extract zero, one or more geometries or coverages (geometry + scalars).
+	 */
+	std::tuple<
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
+	extract_geometries_or_coverages(
+			boost::python::object geometries_or_coverages_object)
+	{
+		//
+		// 'geometries_or_coverages_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a coverage, or
+		//   4) a sequence of coverages.
+		//
+		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+		// of (scalar type, sequence of scalar values) 2-tuples.
+		//
+
+		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
+				"or a coverage, or a sequence of coverages - where a coverage is a "
+				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometries_or_coverages_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			return std::make_tuple(
+					std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{geometry},
+					boost::none);
+		}
+
+		// Attempt to extract a sequence of objects.
+		// All the following are sequences - including the tuple in (3)...
+		//
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage-range) tuple, or
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+		std::vector<bp::object> sequence_of_objects;
+		PythonExtractUtils::extract_iterable(sequence_of_objects, geometries_or_coverages_object, type_error_string);
+
+		// It's possible we were given an empty sequence
+		if (sequence_of_objects.empty())
+		{
+			// Return an empty vector.
+			return std::make_tuple(
+					std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{},
+					boost::none);
+		}
+
+		// If the first object in the sequence is a geometry then we've narrowed things down to:
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage-range) tuple.
+		//
+		// Ie, we've ruled out:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+		// ...because its first object is a tuple (not a geometry).
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_first_geometry(sequence_of_objects[0]);
+		if (extract_first_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_geometry = extract_first_geometry();
+
+			// If there's exactly two objects then we *could* be looking at a (GeometryOnSphere, coverage-range) tuple.
+			// Otherwise it has to be a sequence of GeometryOnSphere's.
+			if (sequence_of_objects.size() == 2)
+			{
+				// See if the second object is also a geometry.
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_second_geometry(sequence_of_objects[1]);
+				if (!extract_second_geometry.check())
+				{
+					// If we get here then we've narrowed things down to:
+					//   3) a (GeometryOnSphere, coverage-range) tuple.
+					//
+
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain_geometry = first_geometry;
+
+					// Extract the coverage range.
+					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+							create_gml_data_block(sequence_of_objects[1], type_error_string);
+
+					return std::make_tuple(
+							std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{coverage_domain_geometry},
+							std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>{gml_data_block});
+				}
+				// else second object is a geometry so we must have a sequence of geometries.
+			}
+
+			// If we get here then we've narrowed things down to:
+			//   2) a sequence of GeometryOnSphere's.
+			//
+
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+
+			// We've already extracted the first geometry.
+			geometries.push_back(first_geometry);
+
+			// Extract the remaining geometries.
+			for (unsigned int n = 1; n < sequence_of_objects.size(); ++n)
+			{
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						extract_geometry_n(sequence_of_objects[n]);
+				if (!extract_geometry_n.check())
+				{
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					bp::throw_error_already_set();
+				}
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_n = extract_geometry_n();
+
+				geometries.push_back(geometry_n);
+			}
+
+			return std::make_tuple(geometries, boost::none);
+		}
+
+		// If we get here then we've narrowed things down to:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> coverage_domains;
+		std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_ranges;
+
+		// Extract the sequence of coverages (domains/ranges).
+		std::vector<bp::object>::const_iterator sequence_of_objects_iter = sequence_of_objects.begin();
+		std::vector<bp::object>::const_iterator sequence_of_objects_end = sequence_of_objects.end();
+		for ( ; sequence_of_objects_iter != sequence_of_objects_end; ++sequence_of_objects_iter)
+		{
+			const bp::object &coverage_object = *sequence_of_objects_iter;
+
+			// Extract the domain/range tuple.
+			std::vector<bp::object> coverage_domain_range;
+			PythonExtractUtils::extract_iterable(coverage_domain_range, coverage_object, type_error_string);
+
+			if (coverage_domain_range.size() != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			// Extract the coverage domain.
+			bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					extract_coverage_domain(coverage_domain_range[0]);
+			if (!extract_coverage_domain.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain = extract_coverage_domain();
+			coverage_domains.push_back(coverage_domain);
+
+			// Extract the coverage range.
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
+					create_gml_data_block(coverage_domain_range[1], type_error_string);
+			coverage_ranges.push_back(coverage_range);
+		}
+
+		return std::make_tuple(coverage_domains, coverage_ranges);
+	}
+
+
 	namespace
 	{
 		/**
@@ -751,7 +974,7 @@ namespace GPlatesApi
 				const GPlatesModel::PropertyName &geometry_property_name,
 				bp::object reverse_reconstruct_object,
 				VerifyInformationModel::Value verify_information_model,
-				boost::optional<const std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> &>
+				boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
 						coverage_range_property_values = boost::none)
 		{
 			//
@@ -1877,49 +2100,14 @@ namespace GPlatesApi
 		}
 		const GPlatesModel::PropertyName &geometry_property_name = property_name.get();
 
-		//
-		// 'geometry_object' is either:
-		//   1) a GeometryOnSphere, or
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a coverage, or
-		//   4) a sequence of coverages.
-		//
-		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
-		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
-		// of (scalar type, sequence of scalar values) 2-tuples.
-		//
-
-		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
-				"or a coverage, or a sequence of coverages - where a coverage is a "
-				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
-				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
-
-		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
-		if (extract_geometry.check())
-		{
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
-
-			return set_geometry(
-					feature_handle,
-					geometry,
-					geometry_property_name,
-					reverse_reconstruct_object,
-					verify_information_model);
-		}
-
-		// Attempt to extract a sequence of objects.
-		// All the following are sequences - including the tuple in (3)...
-		//
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a (GeometryOnSphere, coverage-range) tuple, or
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-		std::vector<bp::object> sequence_of_objects;
-		PythonExtractUtils::extract_iterable(sequence_of_objects, geometry_object, type_error_string);
+		// Extract the geometries, or coverages (geometries + scalars).
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+		boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>> coverage_ranges;
+		std::tie(geometries, coverage_ranges) = extract_geometries_or_coverages(geometry_object);
 
 		// It's possible we were given an empty sequence - which means we should remove all
 		// matching geometries (domains) and coverage ranges.
-		if (sequence_of_objects.empty())
+		if (geometries.empty())
 		{
 			// Remove any geometry properties with the geometry property name.
 			feature_handle.remove_properties_by_name(geometry_property_name);
@@ -1937,125 +2125,28 @@ namespace GPlatesApi
 			return bp::list();
 		}
 
-		// If the first object in the sequence is a geometry then we've narrowed things down to:
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a (GeometryOnSphere, coverage-range) tuple.
-		//
-		// Ie, we've ruled out:
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-		// ...because it's first object is a tuple (not a geometry).
-		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				extract_first_geometry(sequence_of_objects[0]);
-		if (extract_first_geometry.check())
+		if (geometries.size() == 1)
 		{
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_geometry = extract_first_geometry();
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = geometries[0];
 
-			// If there's exactly two objects then we *could* be looking at a (GeometryOnSphere, coverage-range) tuple.
-			// Otherwise it has to be a sequence of GeometryOnSphere's.
-			if (sequence_of_objects.size() == 2)
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_range;
+			if (coverage_ranges)
 			{
-				// See if the second object is also a geometry.
-				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-						extract_second_geometry(sequence_of_objects[1]);
-				if (!extract_second_geometry.check())
-				{
-					// If we get here then we've narrowed things down to:
-					//   3) a (GeometryOnSphere, coverage-range) tuple.
-					//
-
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain_geometry = first_geometry;
-
-					// Extract the coverage range.
-					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-							create_gml_data_block(sequence_of_objects[1], type_error_string);
-
-					return set_geometry(
-							feature_handle,
-							coverage_domain_geometry,
-							geometry_property_name,
-							reverse_reconstruct_object,
-							verify_information_model,
-							gml_data_block);
-				}
-				// else second object is a geometry so we must have a sequence of geometries.
+				coverage_range = coverage_ranges.get()[0];
 			}
 
-			// If we get here then we've narrowed things down to:
-			//   2) a sequence of GeometryOnSphere's.
-			//
-
-			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
-
-			// We've already extracted the first geometry.
-			geometries.push_back(first_geometry);
-
-			// Extract the remaining geometries.
-			for (unsigned int n = 1; n < sequence_of_objects.size(); ++n)
-			{
-				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-						extract_geometry_n(sequence_of_objects[n]);
-				if (!extract_geometry_n.check())
-				{
-					PyErr_SetString(PyExc_TypeError, type_error_string);
-					bp::throw_error_already_set();
-				}
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_n = extract_geometry_n();
-
-				geometries.push_back(geometry_n);
-			}
-
-			return set_geometries(
+			return set_geometry(
 					feature_handle,
-					geometries,
+					geometry,
 					geometry_property_name,
 					reverse_reconstruct_object,
-					verify_information_model);
-		}
-
-		// If we get here then we've narrowed things down to:
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-
-		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> coverage_domains;
-		std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_ranges;
-
-		// Extract the sequence of coverages (domains/ranges).
-		std::vector<bp::object>::const_iterator sequence_of_objects_iter = sequence_of_objects.begin();
-		std::vector<bp::object>::const_iterator sequence_of_objects_end = sequence_of_objects.end();
-		for ( ; sequence_of_objects_iter != sequence_of_objects_end; ++sequence_of_objects_iter)
-		{
-			const bp::object &coverage_object = *sequence_of_objects_iter;
-
-			// Extract the domain/range tuple.
-			std::vector<bp::object> coverage_domain_range;
-			PythonExtractUtils::extract_iterable(coverage_domain_range, coverage_object, type_error_string);
-
-			if (coverage_domain_range.size() != 2)
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			// Extract the coverage domain.
-			bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-					extract_coverage_domain(coverage_domain_range[0]);
-			if (!extract_coverage_domain.check())
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-			coverage_domains.push_back(extract_coverage_domain());
-
-			// Extract the coverage range.
-			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
-					create_gml_data_block(coverage_domain_range[1], type_error_string);
-			coverage_ranges.push_back(coverage_range);
+					verify_information_model,
+					coverage_range);
 		}
 
 		return set_geometries(
 				feature_handle,
-				coverage_domains,
+				geometries,
 				geometry_property_name,
 				reverse_reconstruct_object,
 				verify_information_model,
