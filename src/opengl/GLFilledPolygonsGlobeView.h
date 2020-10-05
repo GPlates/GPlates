@@ -35,16 +35,18 @@
 #include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
-#include "GLCompiledDrawState.h"
 #include "GLCubeSubdivisionCache.h"
+#include "GLFramebuffer.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
 #include "GLProgram.h"
+#include "GLRenderbuffer.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
 #include "GLViewport.h"
+#include "GLViewProjection.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -65,7 +67,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A representation of (reconstructed) filled polygons (static or dynamic) that uses
@@ -91,7 +93,7 @@ namespace GPlatesOpenGL
 		struct FilledDrawable
 		{
 			/**
-			 * Contains 'gl_draw_range_elements' parameters that locate a geometry inside a vertex array.
+			 * Contains 'glDrawRangeElements' parameters that locate a geometry inside a vertex array.
 			 */
 			struct Drawable
 			{
@@ -377,21 +379,15 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLFilledPolygonsGlobeView object.
-		 *
-		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
-		 * (eg, due to exceeding shader instructions limit) then filled drawables will not be rendered
-		 * with surface lighting.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 				boost::optional<GLLight::non_null_ptr_type> light = boost::none)
 		{
-			return non_null_ptr_type(
-					new GLFilledPolygonsGlobeView(
-							renderer, multi_resolution_cube_mesh, light));
+			return non_null_ptr_type(new GLFilledPolygonsGlobeView(gl, multi_resolution_cube_mesh, light));
 		}
 
 
@@ -400,13 +396,14 @@ namespace GPlatesOpenGL
 		 */
 		void
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const filled_drawables_type &filled_drawables);
 
 	private:
 
 		/**
-		 * The maximum tile size for rendering filled drawables.
+		 * The tile's maximum viewport size for rendering filled drawables.
 		 *
 		 * The bigger this is the fewer times the filled drawables needed to be drawn.
 		 * But too big and starts to consume too much memory.
@@ -414,14 +411,14 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
 		 */
-		static const int MAX_TILE_TEXEL_DIMENSION = 1024;
+		static const int TILE_MAX_VIEWPORT_DIMENSION = 1024;
 
 		/**
-		 * The minimum tile size for rendering filled drawables.
+		 * The tile's minimum viewport size for rendering filled drawables.
 		 *
 		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
 		 */
-		static const int MIN_TILE_TEXEL_DIMENSION = 256;
+		static const int TILE_MIN_VIEWPORT_DIMENSION = 256;
 
 
 		/**
@@ -478,34 +475,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The maximum texture dimension of a cube quad tree tile.
-		 */
-		unsigned int d_max_tile_texel_dimension;
-
-		/**
-		 * The minimum texture dimension of a cube quad tree tile.
-		 */
-		unsigned int d_min_tile_texel_dimension;
-
-		/**
-		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
-		 */
-		GLVertexBuffer::shared_ptr_type d_drawables_vertex_buffer;
-
-		/**
-		 * The vertex buffer containing the vertex elements (indices) of all drawables of the current @a render call.
-		 */
-		GLVertexElementBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
-
-		/**
-		 * The vertex array containing all drawables of the current @a render call.
-		 *
-		 * All drawables for the current @a render call are stored here.
-		 * They'll get flushed/replaced when the next render call is made.
-		 */
-		GLVertexArray::shared_ptr_type d_drawables_vertex_array;
-
-		/**
 		 * Contains meshes for each cube quad tree node.
 		 */
 		GLMultiResolutionCubeMesh::non_null_ptr_to_const_type d_multi_resolution_cube_mesh;
@@ -517,51 +486,78 @@ namespace GPlatesOpenGL
 		boost::optional<GLLight::non_null_ptr_type> d_light;
 
 		/**
+		 * The vertex array containing all drawables of the current @a render call.
+		 *
+		 * All drawables for the current @a render call are stored here.
+		 * They'll get flushed/replaced when the next render call is made.
+		 */
+		GLVertexArray::shared_ptr_type d_drawables_vertex_array;
+
+		/**
+		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
+		 */
+		GLBuffer::shared_ptr_type d_drawables_vertex_buffer;
+
+		/**
+		 * The vertex element buffer containing the vertex elements (indices) of all drawables of the current @a render call.
+		 */
+		GLBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
+
+		/**
+		 * The tile size for rendering filled drawables.
+		 *
+		 * The bigger this is the fewer times the filled drawables needed to be drawn.
+		 * But too big and starts to consume too much memory.
+		 * Each pixel is 8 bytes (4 bytes for colour and 4 bytes for combined depth/stencil buffer).
+		 *
+		 * When the tile's viewport is maximum (ie, fits the entire tile) then the entire tile is used.
+		 * At other times we might not need that much resolution and hence use a smaller viewport into the tile.
+		 *
+		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
+		 */
+		unsigned int d_tile_texel_dimension;
+
+		/**
+		 * Tile texture.
+		 */
+		GLTexture::shared_ptr_type d_tile_texture;
+
+		/**
+		 * Stencil buffer used when rendering to tile texture.
+		 */
+		GLRenderbuffer::shared_ptr_type d_tile_stencil_buffer;
+
+		/**
+		 * Framebuffer object used to render drawables to the tile texture.
+		 */
+		GLFramebuffer::shared_ptr_type d_tile_texture_framebuffer;
+
+		/**
+		 * Shader program to render *to* the tile texture.
+		 */
+		GLProgram::shared_ptr_type d_render_to_tile_program;
+
+		/**
 		 * Shader program to render tiles to the scene (the final stage).
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_program;
-
-		/**
-		 * Shader program to render tiles to the scene (the final stage) with clipping.
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_clipping_program;
-
-		/**
-		 * Shader program to render tiles to the scene (the final stage) with lighting.
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_lighting_program;
-
-		/**
-		 * Shader program to render tiles to the scene (the final stage) with clipping and lighting.
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_clipping_and_lighting_program;
+		GLProgram::shared_ptr_type d_render_tile_to_scene_program;
 
 
 		//! Constructor.
 		GLFilledPolygonsGlobeView(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 				boost::optional<GLLight::non_null_ptr_type> light);
 
 		unsigned int
 		get_level_of_detail(
-				unsigned int &tile_texel_dimension,
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform) const;
+				unsigned int &tile_viewport_dimension,
+				const GLViewProjection &view_projection) const;
 
 		void
 		render_quad_tree(
-				GLRenderer &renderer,
-				unsigned int tile_texel_dimension,
+				GL &gl,
+				unsigned int tile_viewport_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				const filled_drawables_type &filled_drawables,
 				const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
@@ -577,8 +573,8 @@ namespace GPlatesOpenGL
 
 		void
 		render_quad_tree_node(
-				GLRenderer &renderer,
-				unsigned int tile_texel_dimension,
+				GL &gl,
+				unsigned int tile_viewport_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				const filled_drawables_type &filled_drawables,
 				const filled_drawables_spatial_partition_node_list_type &
@@ -600,8 +596,8 @@ namespace GPlatesOpenGL
 
 		void
 		set_tile_state(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				GL &gl,
+				unsigned int tile_viewport_dimension,
 				const GLTransform &projection_transform,
 				const GLTransform &clip_projection_transform,
 				const GLTransform &view_transform,
@@ -609,8 +605,8 @@ namespace GPlatesOpenGL
 
 		void
 		render_tile_to_scene(
-				GLRenderer &renderer,
-				unsigned int tile_texel_dimension,
+				GL &gl,
+				unsigned int tile_viewport_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				const filled_drawables_type &filled_drawables,
 				const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list,
@@ -621,9 +617,9 @@ namespace GPlatesOpenGL
 
 		void
 		render_filled_drawables_to_tile_texture(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				GL &gl,
 				const filled_drawable_seq_type &transformed_sorted_filled_drawables,
+				unsigned int tile_viewport_dimension,
 				const GLTransform &projection_transform,
 				const GLTransform &view_transform);
 
@@ -634,23 +630,30 @@ namespace GPlatesOpenGL
 				filled_drawables_spatial_partition_type::element_const_iterator end_root_filled_drawables,
 				const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list);
 
-		GLTexture::shared_ptr_type
-		acquire_tile_texture(
-				GLRenderer &renderer,
-				unsigned int tile_texel_dimension);
+		void
+		create_tile_texture(
+				GL &gl);
+
+		void
+		create_tile_stencil_buffer(
+				GL &gl);
+
+		void
+		create_tile_texture_framebuffer(
+				GL &gl);
 
 		void
 		create_drawables_vertex_array(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		write_filled_drawables_to_vertex_array(
-				GLRenderer &renderer,
+				GL &gl,
 				const filled_drawables_type &filled_drawables);
 
 		void
-		create_shader_programs(
-				GLRenderer &renderer);
+		compile_link_shader_programs(
+				GL &gl);
 	};
 }
 

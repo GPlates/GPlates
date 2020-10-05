@@ -34,15 +34,16 @@
 
 #include "GLFilledPolygonsGlobeView.h"
 
+#include "GL.h"
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLRenderer.h"
-#include "GLShaderProgramUtils.h"
+#include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"
 #include "GLViewProjection.h"
+#include "OpenGLException.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -50,7 +51,6 @@
 
 #include "gui/Colour.h"
 
-#include "utils/Base2Utils.h"
 #include "utils/IntrusiveSinglyLinkedList.h"
 #include "utils/Profile.h"
 
@@ -62,72 +62,186 @@ namespace GPlatesOpenGL
 		//! The inverse of log(2.0).
 		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 
-		//! Vertex shader source code to render a tile to the scene.
-		const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
-				":/opengl/multi_resolution_filled_polygons/render_tile_to_scene_vertex_shader.glsl";
+		/**
+		 * Vertex shader source for rendering *to* the tile texture.
+		 */
+		const char *RENDER_TO_TILE_VERTEX_SHADER_SOURCE =
+			R"(
+				uniform mat4 view_projection;
+			
+				layout(location = 0) in vec4 position;
+				layout(location = 1) in vec4 colour;
 
-		//! Fragment shader source code to render a tile to the scene.
-		const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
-				":/opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl";
+				out vec4 fill_colour;
+			
+				void main (void)
+				{
+					gl_Position = view_projection * position;
+					fill_colour = colour;
+				}
+			)";
+
+		/**
+		 * Fragment shader source for rendering *to* the tile texture.
+		 */
+		const char *RENDER_TO_TILE_FRAGMENT_SHADER_SOURCE =
+			R"(
+				in vec4 fill_colour;
+			
+				layout(location = 0) out vec4 colour;
+
+				void main (void)
+				{
+					colour = fill_colour;
+				}
+			)";
+
+		/**
+		 * Vertex shader source for rendering the tile texture to the scene.
+		 */
+		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
+			R"(
+				uniform mat4 scene_tile_texture_matrix;
+				uniform mat4 clip_texture_matrix;
+				uniform bool clip_to_tile_frustum;
+				uniform bool lighting_enabled;
+
+				layout(location = 0) in vec4 position;
+
+				out vec4 scene_tile_texture_coord;
+				out vec4 clip_texture_coord;
+				out vec3 world_space_position;  // world-space coordinates interpolated across geometry
+			
+				void main (void)
+				{
+					gl_Position = position;
+
+					// Transform present-day position by cube map projection and
+					// any texture coordinate adjustments before accessing textures.
+					scene_tile_texture_coord = scene_tile_texture_matrix * position;
+					if (clip_to_tile_frustum)
+					{
+						clip_texture_coord = clip_texture_matrix * position;
+					}
+
+					if (lighting_enabled)
+					{
+						// This assumes the geometry does not need a model transform (eg, reconstruction rotation).
+						world_space_position = position.xyz / position.w;
+					}
+				}
+			)";
+
+		/**
+		 * Fragment shader source for rendering the tile texture to the scene.
+		 *
+		 * If we're near the edge of a polygon (and there's no adjacent polygon)
+		 * then the fragment alpha will not be 1.0 (also happens if clipped).
+		 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
+		 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
+		 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
+		 * reduces the softness of the anti-aliasing.
+		 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
+		 */
+		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
+			R"(
+				
+				uniform sampler2D tile_texture_sampler;
+				uniform sampler2D clip_texture_sampler;
+				uniform bool clip_to_tile_frustum;
+				uniform bool lighting_enabled;
+				uniform float light_ambient_contribution;
+				uniform vec3 world_space_light_direction;
+
+				in vec4 scene_tile_texture_coord;
+				in vec4 clip_texture_coord;
+				in vec3 world_space_position;  // world-space coordinates interpolated across geometry
+			
+				layout(location = 0) out vec4 colour;
+				
+				void main (void)
+				{
+					// Projective texturing to handle cube map projection.
+					colour = textureProj(tile_texture_sampler, scene_tile_texture_coord);
+				
+					if (clip_to_tile_frustum)
+					{
+						colour *= textureProj(clip_texture_sampler, clip_texture_coord);
+					}
+				
+					// As a small optimisation discard the pixel if the alpha is zero.
+					//
+					// Note: This would not work on our 'data' floating-point textures because
+					//       it stores data in red channel and coverage in green channel.
+					//       However we're using regular 'visual' colour textures so it's not an issue.
+					//       Just noting this in case this changes later for some reason.
+					if (colour.a == 0)
+					{
+						discard;
+					}
+				
+					// Revert effect of blending with black texels near polygon edge.
+					colour.rgb /= colour.a;
+				
+					if (lighting_enabled)
+					{
+						// Apply the Lambert diffuse lighting using the world-space position as the globe surface normal.
+						// Note that neither the light direction nor the surface normal need be normalised.
+						float lambert = lambert_diffuse_lighting(world_space_light_direction, world_space_position);
+				
+						// Blend between ambient and diffuse lighting.
+						float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
+				
+						colour.rgb *= lighting;
+					}
+				}
+			)";
 	}
 }
 
 
 GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 		boost::optional<GLLight::non_null_ptr_type> light) :
-	d_max_tile_texel_dimension(
-			// Make sure tile dimensions does not exceed maximum texture dimensions...
-			(boost::numeric_cast<GLuint>(MAX_TILE_TEXEL_DIMENSION) >
-				renderer.get_capabilities().texture.gl_max_texture_size)
-					? renderer.get_capabilities().texture.gl_max_texture_size
-					: MAX_TILE_TEXEL_DIMENSION),
-	d_min_tile_texel_dimension(
-			// Make sure tile dimensions does not exceed maximum texture dimensions...
-			(boost::numeric_cast<GLuint>(MIN_TILE_TEXEL_DIMENSION) >
-				renderer.get_capabilities().texture.gl_max_texture_size)
-					? renderer.get_capabilities().texture.gl_max_texture_size
-					: MIN_TILE_TEXEL_DIMENSION),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh),
-	d_light(light)
+	d_light(light),
+	d_drawables_vertex_array(GLVertexArray::create(gl)),
+	d_drawables_vertex_buffer(GLBuffer::create(gl)),
+	d_drawables_vertex_element_buffer(GLBuffer::create(gl)),
+	d_tile_texel_dimension(
+			// Make sure tile dimensions does not exceed maximum texture dimensions...
+			(boost::numeric_cast<GLuint>(TILE_MAX_VIEWPORT_DIMENSION) > gl.get_capabilities().gl_max_texture_size)
+					? gl.get_capabilities().gl_max_texture_size
+					: TILE_MAX_VIEWPORT_DIMENSION),
+	d_tile_texture(GLTexture::create(gl)),
+	d_tile_stencil_buffer(GLRenderbuffer::create(gl)),
+	d_tile_texture_framebuffer(GLFramebuffer::create(gl)),
+	d_render_to_tile_program(GLProgram::create(gl)),
+	d_render_tile_to_scene_program(GLProgram::create(gl))
 {
-	// We want a power-of-two tile texel dimension range to ensure power-of-two tiles
-	// which enhances re-use of acquired tile textures and depth/stencil buffers.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			MAX_TILE_TEXEL_DIMENSION >= MIN_TILE_TEXEL_DIMENSION &&
-				GPlatesUtils::Base2::is_power_of_two(MAX_TILE_TEXEL_DIMENSION) &&
-				GPlatesUtils::Base2::is_power_of_two(MIN_TILE_TEXEL_DIMENSION),
-			GPLATES_ASSERTION_SOURCE);
-	if (!GPlatesUtils::Base2::is_power_of_two(d_max_tile_texel_dimension))
-	{
-		d_max_tile_texel_dimension = GPlatesUtils::Base2::previous_power_of_two(d_max_tile_texel_dimension);
-	}
-	if (!GPlatesUtils::Base2::is_power_of_two(d_min_tile_texel_dimension))
-	{
-		d_min_tile_texel_dimension = GPlatesUtils::Base2::previous_power_of_two(d_min_tile_texel_dimension);
-	}
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(gl);
 
-	create_drawables_vertex_array(renderer);
+	create_tile_texture(gl);
+	create_tile_stencil_buffer(gl);
+	create_tile_texture_framebuffer(gl);  // Note: should be called after tile texture and stencil buffer created
 
-	// If there's support for shader programs then create them.
-	create_shader_programs(renderer);
+	create_drawables_vertex_array(gl);
+	compile_link_shader_programs(gl);
 }
 
 
 unsigned int
 GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
-		unsigned int &tile_texel_dimension,
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform) const
+		unsigned int &tile_viewport_dimension,
+		const GLViewProjection &view_projection) const
 {
-	// Start with the highest tile texel dimension - we will reduce it if we can.
-	tile_texel_dimension = d_max_tile_texel_dimension;
+	// Start with the highest tile viewport dimension - we will reduce it if we can.
+	tile_viewport_dimension = d_tile_texel_dimension;
 
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
-	GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
 	const double min_pixel_size_on_unit_sphere = view_projection.get_min_pixel_size_on_unit_sphere();
 
 	//
@@ -146,17 +260,17 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 	// texel size will always be less than at the face centre so at least it's bounded and the
 	// variation across the cube face is not that large so we shouldn't be using a level-of-detail
 	// that is much higher than what we need.
-	const float max_lowest_resolution_texel_size_on_unit_sphere = 2.0 / tile_texel_dimension;
+	const float max_lowest_resolution_texel_size_on_unit_sphere = 2.0 / tile_viewport_dimension;
 
 	float level_of_detail_factor = INVERSE_LOG2 *
 			(std::log(max_lowest_resolution_texel_size_on_unit_sphere) -
 					std::log(min_pixel_size_on_unit_sphere));
 
 	// Reduce the tile texel dimension (by factors of two) if we don't need the extra resolution.
-	while (level_of_detail_factor < -1 && tile_texel_dimension > d_min_tile_texel_dimension)
+	while (level_of_detail_factor < -1 && tile_viewport_dimension > TILE_MIN_VIEWPORT_DIMENSION)
 	{
 		level_of_detail_factor += 1;
-		tile_texel_dimension >>= 1;
+		tile_viewport_dimension >>= 1;
 	}
 
 	// We need to round up instead of down and then clamp to zero.
@@ -180,13 +294,14 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		const filled_drawables_type &filled_drawables)
 {
 	PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	GL::StateScope save_restore_state(gl);
 
 	// If there are no filled drawables to render then return early.
 	if (filled_drawables.d_drawable_vertex_elements.empty())
@@ -194,43 +309,16 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		return;
 	}
 
-	// We need a stencil buffer so return early if there's not one - well, we actually use stencil
-	// buffer of a framebuffer object (FBO) and not main framebuffer but won't have the former
-	// if don't have the latter anyway.
-	//
-	// Note that we don't have an 'is_supported()' method that tests for this because pretty much all
-	// hardware should support a stencil buffer (and software implementations should also support).
-	if (!renderer.get_context().get_qgl_format().stencil())
-	{
-		// Only emit warning message once.
-		static bool emitted_warning = false;
-		if (!emitted_warning)
-		{
-			qWarning() <<
-					"Filled polygons NOT supported by this graphics hardware - \n"
-					"  requires stencil buffer - Most graphics hardware for over a decade supports this.";
-			emitted_warning = true;
-		}
-
-		return;
-	}
-
 	// Write the vertices/indices of all filled drawables (gathered by the client) into our
 	// vertex buffer and vertex element buffer.
-	write_filled_drawables_to_vertex_array(renderer, filled_drawables);
+	write_filled_drawables_to_vertex_array(gl, filled_drawables);
 
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	unsigned int tile_texel_dimension;
-	const unsigned int render_level_of_detail = get_level_of_detail(
-			tile_texel_dimension,
-			renderer.gl_get_viewport(),
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+	unsigned int tile_viewport_dimension;
+	const unsigned int render_level_of_detail = get_level_of_detail(tile_viewport_dimension, view_projection);
 
 	// Get the view frustum planes.
-	const GLFrustum frustum_planes(
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+	const GLFrustum frustum_planes(view_projection.get_view_projection_transform());
 
 	// Create a subdivision cube quad tree traversal.
 	// No caching is required since we're only visiting each subdivision node once.
@@ -241,15 +329,15 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create(
-									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
-											tile_texel_dimension,
+							GLCubeSubdivision::create(
+									GLCubeSubdivision::get_expand_frustum_ratio(
+											tile_viewport_dimension,
 											0.5/* half a texel */)));
 	// Cube subdivision cache for the clip texture (no frustum expansion here).
 	clip_cube_subdivision_cache_type::non_null_ptr_type
 			clip_cube_subdivision_cache =
 					clip_cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create());
+							GLCubeSubdivision::create());
 
 	//
 	// Traverse the source raster cube quad tree and the spatial partition of filled drawables.
@@ -286,8 +374,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		filled_drawables_spatial_partition_node_list_type filled_drawables_spatial_partition_node_list;
 
 		render_quad_tree(
-				renderer,
-				tile_texel_dimension,
+				gl,
+				tile_viewport_dimension,
 				mesh_quad_tree_root_node,
 				filled_drawables,
 				filled_drawables_spatial_partition_node_list,
@@ -307,8 +395,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
-		GLRenderer &renderer,
-		unsigned int tile_texel_dimension,
+		GL &gl,
+		unsigned int tile_viewport_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		const filled_drawables_type &filled_drawables,
 		const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
@@ -356,8 +444,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 		// Continue to recurse into the filled drawables spatial partition to continue to find
 		// those drawables that intersect the current quad tree node.
 		render_quad_tree_node(
-				renderer,
-				tile_texel_dimension,
+				gl,
+				tile_viewport_dimension,
 				mesh_quad_tree_node,
 				filled_drawables,
 				parent_filled_drawables_intersecting_node_list,
@@ -450,8 +538,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 									child_v_offset);
 
 			render_quad_tree(
-					renderer,
-					tile_texel_dimension,
+					gl,
+					tile_viewport_dimension,
 					child_mesh_quad_tree_node,
 					filled_drawables,
 					child_filled_drawables_intersecting_node_list,
@@ -471,8 +559,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
-		GLRenderer &renderer,
-		unsigned int tile_texel_dimension,
+		GL &gl,
+		unsigned int tile_viewport_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		const filled_drawables_type &filled_drawables,
 		const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
@@ -534,8 +622,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 
 	// Render the source raster tile to the scene.
 	render_tile_to_scene(
-			renderer,
-			tile_texel_dimension,
+			gl,
+			tile_viewport_dimension,
 			mesh_quad_tree_node,
 			filled_drawables,
 			filled_drawables_intersecting_node_list,
@@ -603,162 +691,104 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_drawables_intersecting_node
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &tile_texture,
+		GL &gl,
+		unsigned int tile_viewport_dimension,
 		const GLTransform &projection_transform,
 		const GLTransform &clip_projection_transform,
 		const GLTransform &view_transform,
 		bool clip_to_tile_frustum)
 {
-	// Used to transform texture coordinates to account for partial coverage of current tile.
+	// Bind the shader program for rendering *to* the tile texture.
+	gl.UseProgram(d_render_tile_to_scene_program);
+
+	// Used to transform position to texture coordinates.
 	GLMatrix scene_tile_texture_matrix;
+	// Scale texture coordinates [0, 1] to [0, tile_viewport_dimension / tile_dimension] since we
+	// might not have used the full tile resolution (when filled polygons were rendered to tile texture).
+	const double tile_viewport_scale = double(tile_viewport_dimension) / d_tile_texel_dimension;
+	scene_tile_texture_matrix.gl_scale(tile_viewport_scale, tile_viewport_scale, 1.0);
+	// Convert clip-space coordinates [-1, 1] to texture coordinates [0, 1].
 	scene_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
 	// Set up the texture matrix to perform model-view and projection transforms of the frustum.
 	scene_tile_texture_matrix.gl_mult_matrix(projection_transform.get_matrix());
 	scene_tile_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
-	// Load texture transform into texture unit 0.
-	renderer.gl_load_texture_matrix(GL_TEXTURE0, scene_tile_texture_matrix);
+
+	// Load scene tile texture matrix into program.
+	GLfloat scene_tile_texture_float_matrix[16];
+	scene_tile_texture_matrix.get_float_matrix(scene_tile_texture_float_matrix);
+	glUniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location("scene_tile_texture_matrix"),
+			1, GL_FALSE/*transpose*/, scene_tile_texture_float_matrix);
 
 	// Bind the scene tile texture to texture unit 0.
-	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+	gl.ActiveTexture(GL_TEXTURE0);
+	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
 
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
 	// we need to use a clip texture.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("clip_to_tile_frustum"),
+			clip_to_tile_frustum);
 	if (clip_to_tile_frustum)
 	{
-		// NOTE: If two texture units are not supported then just don't clip to the tile.
-		// It'll look worse but at least it'll still work mostly and will only be noticeable
-		// if they zoom in far enough (which is when this code gets activated).
-		if (renderer.get_capabilities().texture.gl_max_texture_units >= 2)
-		{
-			// State for the clip texture.
-			//
-			// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
-			// filtering instead of bilinear filtering and hence we're not removing a seam between
-			// tiles (instead we are clipping adjacent tiles).
-			GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
-			// Set up the texture matrix to perform model-view and projection transforms of the frustum.
-			clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
-			clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
-			// Load texture transform into texture unit 1.
-			renderer.gl_load_texture_matrix(GL_TEXTURE1, clip_texture_matrix);
+		// State for the clip texture.
+		//
+		// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
+		// filtering instead of bilinear filtering and hence we're not removing a seam between
+		// tiles (instead we are clipping adjacent tiles).
+		GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+		clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
+		clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
 
-			// Bind the clip texture to texture unit 1.
-			renderer.gl_bind_texture(d_multi_resolution_cube_mesh->get_clip_texture(), GL_TEXTURE1, GL_TEXTURE_2D);
-		}
-		else
-		{
-			// Only emit warning message once.
-			static bool emitted_warning = false;
-			if (!emitted_warning)
-			{
-				qWarning() <<
-						"High zoom levels of filled polygons NOT supported by this graphics hardware - \n"
-						"  requires two texture units - visual results will be incorrect.\n"
-						"  Most graphics hardware for over a decade supports this -\n"
-						"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
-				emitted_warning = true;
-			}
-		}
+		// Load clip texture matrix into program.
+		GLfloat clip_texture_float_matrix[16];
+		clip_texture_matrix.get_float_matrix(clip_texture_float_matrix);
+		glUniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location("clip_texture_matrix"),
+				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
+
+		// Bind the clip texture to texture unit 1.
+		gl.ActiveTexture(GL_TEXTURE1);
+		gl.BindTexture(GL_TEXTURE_2D, d_multi_resolution_cube_mesh->get_clip_texture());
 	}
 
-	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (d_render_tile_to_scene_program &&
-		d_render_tile_to_scene_with_clipping_program &&
-		d_render_tile_to_scene_with_lighting_program &&
-		d_render_tile_to_scene_with_clipping_and_lighting_program)
+	const bool lighting_enabled = d_light &&
+			d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+					GPlatesGui::SceneLightingParameters::LIGHTING_FILLED_GEOMETRY_ON_SPHERE);
+
+	// Enable lighting if requested.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("lighting_enabled"),
+			lighting_enabled);
+	if (lighting_enabled)
 	{
-		boost::optional<GLProgram::shared_ptr_type> program;
+		// Set the world-space light direction.
+		const GPlatesMaths::UnitVector3D &globe_view_light_direction = d_light.get()->get_globe_view_light_direction();
+		glUniform3f(
+				d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction"),
+				globe_view_light_direction.x().dval(),
+				globe_view_light_direction.y().dval(),
+				globe_view_light_direction.z().dval());
 
-		const bool lighting_enabled = d_light &&
-				d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
-						GPlatesGui::SceneLightingParameters::LIGHTING_FILLED_GEOMETRY_ON_SPHERE);
-
-		// Determine which shader program to use.
-		if (clip_to_tile_frustum)
-		{
-			program = lighting_enabled
-					? d_render_tile_to_scene_with_clipping_and_lighting_program
-					: d_render_tile_to_scene_with_clipping_program;
-		}
-		else
-		{
-			program = lighting_enabled
-					? d_render_tile_to_scene_with_lighting_program
-					: d_render_tile_to_scene_program;
-		}
-
-		// Bind the shader program.
-		renderer.gl_bind_program_object(program.get());
-
-		// Set the tile texture sampler to texture unit 0.
-		program.get()->gl_uniform1i(renderer, "tile_texture_sampler", 0/*texture unit*/);
-
-		if (clip_to_tile_frustum)
-		{
-			// Set the clip texture sampler to texture unit 1.
-			program.get()->gl_uniform1i(renderer, "clip_texture_sampler", 1/*texture unit*/);
-		}
-
-		if (lighting_enabled)
-		{
-			// Set the world-space light direction.
-			program.get()->gl_uniform3f(
-					renderer,
-					"world_space_light_direction",
-					d_light.get()->get_globe_view_light_direction(renderer));
-
-			// Set the light ambient contribution.
-			program.get()->gl_uniform1f(
-					renderer,
-					"light_ambient_contribution",
-					d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
-		}
-
-		// Instead of alpha-testing, the fragment shader uses 'discard'.
-	}
-	else // Fixed function (no lighting supported)...
-	{
-		// Enable texturing and set the texture function on texture unit 0.
-		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 0.
-		GLUtils::set_object_linear_tex_gen_state(renderer, 0/*texture_unit*/);
-
-		if (clip_to_tile_frustum)
-		{
-			// NOTE: If two texture units are not supported then just don't clip to the tile.
-			if (renderer.get_capabilities().texture.gl_max_texture_units >= 2)
-			{
-				// Enable texturing and set the texture function on texture unit 1.
-				renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
-				renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 1.
-				GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
-			}
-		}
-
-		// Alpha-test state.
-		// This enables alpha texture clipping when tile frustum is smaller than the multi-resolution
-		// cube mesh drawable. It's also a small optimisation for those areas of the tile that are
-		// not covered by any drawables (alpha-testing those pixels away avoids the alpha-blending stage).
-		renderer.gl_enable(GL_ALPHA_TEST);
-		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+		// Set the light ambient contribution.
+		glUniform1f(
+				d_render_tile_to_scene_program->get_uniform_location("light_ambient_contribution"),
+				d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 	}
 
 #if 0
-	// Used to render as wire-frame meshes instead of filled textured meshes for
-	// visualising mesh density.
-	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+	// Used to render as wire-frame meshes instead of filled textured meshes for visualising mesh density.
+	gl.PolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
 }
 
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
-		GLRenderer &renderer,
-		unsigned int tile_texel_dimension,
+		GL &gl,
+		unsigned int tile_viewport_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		const filled_drawables_type &filled_drawables,
 		const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list,
@@ -769,8 +799,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 	const filled_drawables_spatial_partition_type &filled_drawables_spatial_partition =
 			*filled_drawables.d_filled_drawables_spatial_partition;
@@ -812,15 +842,11 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 			clip_cube_subdivision_cache.get_projection_transform(
 					clip_cube_subdivision_cache_node);
 
-	// Get an unused tile texture from our texture cache.
-	const GLTexture::shared_ptr_to_const_type tile_texture =
-			acquire_tile_texture(renderer, tile_texel_dimension);
-
 	// Render the filled drawables to the tile texture.
 	render_filled_drawables_to_tile_texture(
-			renderer,
-			tile_texture,
+			gl,
 			filled_drawable_seq,
+			tile_viewport_dimension,
 			*projection_transform,
 			*view_transform);
 
@@ -831,153 +857,166 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 
 	// Prepare for rendering the current tile.
 	set_tile_state(
-			renderer,
-			tile_texture,
+			gl,
+			tile_viewport_dimension,
 			*projection_transform,
 			*clip_projection_transform,
 			*view_transform,
 			clip_to_tile_frustum);
 
 	// Draw the mesh covering the current quad tree node tile.
-	mesh_quad_tree_node.render_mesh_drawable(renderer);
+	mesh_quad_tree_node.render_mesh_drawable(gl);
 }
 
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_texture(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &tile_texture,
+		GL &gl,
 		const filled_drawable_seq_type &filled_drawables,
+		unsigned int tile_viewport_dimension,
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
 	//PROFILE_FUNC();
 
-	// Begin a render target that will render the individual filled drawables to the tile texture.
-	// Enable stencil buffering since we use it to fill each drawable.
-	GLRenderer::RenderTarget2DScope render_target_scope(
-			renderer,
-			tile_texture,
-			boost::none/*viewport covers entire texture*/,
-			0/*max_point_size_and_line_width*/,
-			0/*level*/,
-			true/*reset_to_default_state*/,
-			false/*depth_buffer*/,
-			true/*stencil_buffer*/);
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
 
-	// The render target tiling loop...
-	do
-	{
-		// Begin the current render target tile - this also sets the viewport.
-		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
+	// Bind our framebuffer object for rendering to the tile texture.
+	// This directs rendering to the tile texture at the first colour attachment, and
+	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_texture_framebuffer);
 
-		// Set up the projection transform adjustment for the current render target tile.
-		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
-		// NOTE: We use the half-texel-expanded projection transform since we want to render the
-		// border pixels (in each tile) exactly on the tile (plane) boundary.
-		// The tile textures are bilinearly filtered and this way the centres of border texels match up
-		// with adjacent tiles.
-		renderer.gl_mult_matrix(GL_PROJECTION, projection_transform.get_matrix());
+	// Specify the requested tile viewport.
+	gl.Viewport(0, 0, tile_viewport_dimension, tile_viewport_dimension);
 
-		renderer.gl_load_matrix(GL_MODELVIEW, view_transform.get_matrix());
+	// Clear the render target (colour and stencil).
+	// We also clear the depth buffer (even though we're not using depth) because it's usually
+	// interleaved with stencil so it's more efficient to clear both depth and stencil.
+	gl.ClearColor();
+	gl.ClearDepth();
+	gl.ClearStencil();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		// Clear the render target (colour and stencil).
-		// We also clear the depth buffer (even though we're not using depth) because it's usually
-		// interleaved with stencil so it's more efficient to clear both depth and stencil.
-		renderer.gl_clear_color();
-		renderer.gl_clear_depth();
-		renderer.gl_clear_stencil();
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	// Bind the shader program for rendering *to* the tile texture.
+	gl.UseProgram(d_render_to_tile_program);
 
-		// Set the alpha-blend state since filled drawable could have a transparent colour.
-		// Set up alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		// See class GLVisualRasterSource for why this is done.
-		renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	// Set view projection matrix in the currently bound program.
+	//
+	// NOTE: We use the half-texel-expanded projection transform since we want to render the
+	// border pixels (in each tile) exactly on the tile (plane) boundary.
+	// The tile textures are bilinearly filtered and this way the centres of border texels match up
+	// with adjacent tiles.
+	GLMatrix view_projection_matrix(projection_transform.get_matrix());
+	view_projection_matrix.gl_mult_matrix(view_transform.get_matrix());
 
-		// Enable stencil writes (this is the default OpenGL state anyway).
-		renderer.gl_stencil_mask(~0);
+	GLfloat view_projection_float_matrix[16];
+	view_projection_matrix.get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_render_to_tile_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
-		// Enable stencil testing.
-		renderer.gl_enable(GL_STENCIL_TEST);
+	//
+	// For alpha-blending we want:
+	//
+	//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
+	//
+	//   RGB uses (A_src, 1 - A_src)
+	//     A uses (    1, 1 - A_src)
+	//
+	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+	// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
+	// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
+	//
+	gl.BlendFuncSeparate(
+			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Enable stencil writes (this is the default OpenGL state anyway).
+	gl.StencilMask(~0);
+
+	// Enable stencil testing.
+	gl.Enable(GL_STENCIL_TEST);
 
 #if 0
-		// Used to render as wire-frame meshes instead of filled textured meshes for
-		// visualising mesh density.
-		renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_POINT);
+	// Used to render as wire-frame meshes instead of filled textured meshes for
+	// visualising mesh density.
+	gl.PolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 
-		// Set the anti-aliased line state.
-		renderer.gl_line_width(10.0f);
-		renderer.gl_point_size(10.0f);
-		//renderer.gl_enable(GL_LINE_SMOOTH);
-		//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	// Set the anti-aliased line state.
+	gl.LineWidth(10.0f);
+	gl.PointSize(10.0f);
+	//gl.Enable(GL_LINE_SMOOTH);
+	//gl.Hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 #endif
 
-		// Bind the vertex array before using it to draw.
-		d_drawables_vertex_array->gl_bind(renderer);
+	// Bind the vertex array before using it to draw.
+	gl.BindVertexArray(d_drawables_vertex_array);
 
-		// Iterate over the filled drawables and render each one into the tile texture.
-		filled_drawable_seq_type::const_iterator filled_drawables_iter = filled_drawables.begin();
-		filled_drawable_seq_type::const_iterator filled_drawables_end = filled_drawables.end();
-		for ( ; filled_drawables_iter != filled_drawables_end; ++filled_drawables_iter)
-		{
-			const filled_drawable_type &filled_drawable = *filled_drawables_iter;
+	// Iterate over the filled drawables and render each one into the tile texture.
+	filled_drawable_seq_type::const_iterator filled_drawables_iter = filled_drawables.begin();
+	filled_drawable_seq_type::const_iterator filled_drawables_end = filled_drawables.end();
+	for ( ; filled_drawables_iter != filled_drawables_end; ++filled_drawables_iter)
+	{
+		const filled_drawable_type &filled_drawable = *filled_drawables_iter;
 
-			// Set the stencil function to always pass.
-			renderer.gl_stencil_func(GL_ALWAYS, 0, ~0);
-			// Set the stencil operation to invert the stencil buffer value every time a pixel is
-			// rendered (this means we get 1 where a pixel is covered by an odd number of triangles
-			// and 0 by an even number of triangles).
-			renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_INVERT);
+		// Set the stencil function to always pass.
+		gl.StencilFunc(GL_ALWAYS, 0, ~0);
+		// Set the stencil operation to invert the stencil buffer value every time a pixel is
+		// rendered (this means we get 1 where a pixel is covered by an odd number of triangles
+		// and 0 by an even number of triangles).
+		gl.StencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
 
-			// Disable colour writes and alpha blending.
-			// We only want to modify the stencil buffer on this pass.
-			renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-			renderer.gl_enable(GL_BLEND, false);
+		// Disable colour writes and alpha blending.
+		// We only want to modify the stencil buffer on this pass.
+		gl.ColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		gl.Disable(GL_BLEND);
 
-			// Render the current filled drawable.
-			d_drawables_vertex_array->gl_draw_range_elements(
-					renderer,
-					GL_TRIANGLES,
-					filled_drawable.d_drawable.start,
-					filled_drawable.d_drawable.end,
-					filled_drawable.d_drawable.count,
-					GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
-					filled_drawable.d_drawable.indices_offset);
+		// Render the current filled drawable.
+		glDrawRangeElements(
+				GL_TRIANGLES,
+				filled_drawable.d_drawable.start,
+				filled_drawable.d_drawable.end,
+				filled_drawable.d_drawable.count,
+				GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(filled_drawable.d_drawable.indices_offset));
 
-			// Set the stencil function to pass only if the stencil buffer value is non-zero.
-			// This means we only draw into the tile texture for pixels 'interior' to the filled drawable.
-			renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);
-			// Set the stencil operation to set the stencil buffer to zero in preparation
-			// for the next drawable (also avoids multiple alpha-blending due to overlapping fan
-			// triangles as mentioned below).
-			renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_ZERO);
+		// Set the stencil function to pass only if the stencil buffer value is non-zero.
+		// This means we only draw into the tile texture for pixels 'interior' to the filled drawable.
+		gl.StencilFunc(GL_NOTEQUAL, 0, ~0);
+		// Set the stencil operation to set the stencil buffer to zero in preparation
+		// for the next drawable (also avoids multiple alpha-blending due to overlapping fan
+		// triangles as mentioned below).
+		gl.StencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
 
-			// Re-enable colour writes and alpha blending.
-			renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			renderer.gl_enable(GL_BLEND, true);
+		// Re-enable colour writes and alpha blending.
+		gl.ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		gl.Enable(GL_BLEND);
 
-			// Render the current filled drawable.
-			// This drawable covers at least all interior pixels of the filled drawable.
-			// It also can covers exterior pixels of the filled drawable.
-			// However only the interior pixels (where stencil buffer is non-zero) will
-			// pass the stencil test and get written into the tile (colour) texture.
-			// The drawable also can render pixels multiple times due to overlapping fan triangles.
-			// To avoid alpha blending each pixel more than once, the above stencil operation zeros
-			// the stencil buffer value of each pixel that passes the stencil test such that the next
-			// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
-			d_drawables_vertex_array->gl_draw_range_elements(
-					renderer,
-					GL_TRIANGLES,
-					filled_drawable.d_drawable.start,
-					filled_drawable.d_drawable.end,
-					filled_drawable.d_drawable.count,
-					GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
-					filled_drawable.d_drawable.indices_offset);
-		}
+		// Render the current filled drawable.
+		// This drawable covers at least all interior pixels of the filled drawable.
+		// It also can covers exterior pixels of the filled drawable.
+		// However only the interior pixels (where stencil buffer is non-zero) will
+		// pass the stencil test and get written into the tile (colour) texture.
+		// The drawable also can render pixels multiple times due to overlapping fan triangles.
+		// To avoid alpha blending each pixel more than once, the above stencil operation zeros
+		// the stencil buffer value of each pixel that passes the stencil test such that the next
+		// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
+		glDrawRangeElements(
+				GL_TRIANGLES,
+				filled_drawable.d_drawable.start,
+				filled_drawable.d_drawable.end,
+				filled_drawable.d_drawable.count,
+				GLVertexUtils::ElementTraits<drawable_vertex_element_type>::type,
+				GLVertexUtils::buffer_offset(filled_drawable.d_drawable.indices_offset));
 	}
-	while (render_target_scope.end_tile());
 }
 
 
@@ -1016,202 +1055,229 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_drawables(
 	}
 }
 
-GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLFilledPolygonsGlobeView::acquire_tile_texture(
-		GLRenderer &renderer,
-		unsigned int tile_texel_dimension)
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture(
+		GL &gl)
 {
 	//PROFILE_FUNC();
 
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Acquire a cached texture for rendering a tile to.
-	// It'll get returned to its cache when we no longer reference it.
-	const GLTexture::shared_ptr_type tile_texture =
-			renderer.get_context().get_shared_state()->acquire_texture(
-					renderer,
-					GL_TEXTURE_2D,
-					GL_RGBA8,
-					tile_texel_dimension,
-					tile_texel_dimension);
-
-	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
-	// state when it creates a new texture.
-	// Also even if the texture was cached it might have been used by another client that specified
-	// different filtering settings for it.
-	// So we set the filtering settings each time we acquire.
+	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
 
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 	// We do enable bilinear filtering (also note that the texture is a fixed-point format).
-	tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering if it's supported since we are not using mipmaps
 	// and any textures rendered near the edge of the globe will get squashed a bit due to
 	// the angle we are looking at them and anisotropic filtering will help here.
-	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
+	if (gl.get_capabilities().gl_EXT_texture_filter_anisotropic)
 	{
-		const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	return tile_texture;
+	// Create the texture in OpenGL - this actually creates the texture without any data.
+	//
+	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
+	// we just use GL_RGBA (and GL_UNSIGNED_BYTE).
+	glTexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA8,
+			d_tile_texel_dimension, d_tile_texel_dimension,
+			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+	// Check there are no OpenGL errors.
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_stencil_buffer(
+		GL &gl)
+{
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_stencil_buffer);
+
+	// Allocate a stencil buffer.
+	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_tile_texel_dimension, d_tile_texel_dimension);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture_framebuffer(
+		GL &gl)
+{
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_texture_framebuffer);
+
+	// Bind tile depth/stencil buffer to framebuffer's depth/stencil attachment.
+	//
+	// We're not actually using the depth buffer but in order to ensure we got a stencil buffer we had
+	// to ask for a depth/stencil internal format for the renderbuffer.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_tile_stencil_buffer);
+
+	// Bind tile texture to framebuffer's first colour attachment.
+	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, d_tile_texture, 0/*level*/);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles in globe filled polygons.");
 }
 
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::create_drawables_vertex_array(
-		GLRenderer &renderer)
+		GL &gl)
 {
-	d_drawables_vertex_array = GLVertexArray::create(renderer);
+	// Bind vertex array object.
+	gl.BindVertexArray(d_drawables_vertex_array);
 
-	// Set up the vertex element buffer.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
-	d_drawables_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
-	// Attach vertex element buffer to the vertex array.
-	d_drawables_vertex_array->set_vertex_element_buffer(renderer, d_drawables_vertex_element_buffer);
+	// Bind vertex element buffer object to currently bound vertex array object.
+	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_drawables_vertex_element_buffer);
 
-	// Set up the vertex buffer.
-	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
-	d_drawables_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
 
-	// Attach drawables vertex buffer to the vertex array.
-	//
-	// Later we'll be allocating a vertex buffer large enough to contain all drawables and
-	// rendering each drawable with its own OpenGL draw call.
-	bind_vertex_buffer_to_vertex_array<drawable_vertex_type>(
-			renderer,
-			*d_drawables_vertex_array,
-			d_drawables_vertex_buffer);
+	// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
+	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+	// to currently bound vertex array object.
+	gl.EnableVertexAttribArray(0);
+	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, x));
+	gl.EnableVertexAttribArray(1);
+	gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, colour));
 }
 
 
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array(
-		GLRenderer &renderer,
+		GL &gl,
 		const filled_drawables_type &filled_drawables)
 {
 	//PROFILE_FUNC();
 
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// Bind the vertex array - this binds the vertex *element* buffer (before we load data into it).
+	gl.BindVertexArray(d_drawables_vertex_array);
+
+	// Bind vertex buffer object (before we load data into it).
+	//
+	// Note: Unlike the vertex *element* buffer this vertex buffer binding is not stored in vertex array object state.
+	//       So we have to explicitly bind the vertex buffer before storing data in it.
+	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
+
+	//
 	// It's not 'stream' because the same filled drawables are accessed many times.
 	// It's not 'dynamic' because we allocate a new buffer (ie, glBufferData does not modify existing buffer).
 	// We really want to encourage this to be in video memory (even though it's only going to live
 	// there for a single rendering frame) because there are many accesses to this buffer as the same
 	// drawables are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
+	//
 
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_drawables_vertex_element_buffer->get_buffer();
-	vertex_element_buffer_data->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			filled_drawables.d_drawable_vertex_elements,
-			GLBuffer::USAGE_STATIC_DRAW);
+	// Transfer vertex element data to currently bound vertex element buffer object.
+	glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			filled_drawables.d_drawable_vertex_elements.size() * sizeof(filled_drawables.d_drawable_vertex_elements[0]),
+			filled_drawables.d_drawable_vertex_elements.data(),
+			GL_STATIC_DRAW);
 
-	GLBuffer::shared_ptr_type vertex_buffer_data = d_drawables_vertex_buffer->get_buffer();
-	vertex_buffer_data->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_ARRAY_BUFFER,
-			filled_drawables.d_drawable_vertices,
-			GLBuffer::USAGE_STATIC_DRAW);
+	// Transfer vertex element data to currently bound vertex element buffer object.
+	glBufferData(
+			GL_ARRAY_BUFFER,
+			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
+			filled_drawables.d_drawable_vertices.data(),
+			GL_STATIC_DRAW);
 
 	//qDebug() << "Writing triangles: " << filled_drawables.d_drawable_vertex_elements.size() / 3;
 }
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
-		GLRenderer &renderer)
+GPlatesOpenGL::GLFilledPolygonsGlobeView::compile_link_shader_programs(
+		GL &gl)
 {
 	//
-	// Shader programs for the final stage of rendering a tile to the scene.
+	// Shader program to render filled drawables to the tile texture.
+	//
+
+	// Vertex shader source.
+	GLShaderSource render_to_tile_vertex_shader_source;
+	render_to_tile_vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_to_tile_vertex_shader_source.add_code_segment(RENDER_TO_TILE_VERTEX_SHADER_SOURCE);
+
+	// Vertex shader.
+	GLShader::shared_ptr_type render_to_tile_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
+	render_to_tile_vertex_shader->shader_source(render_to_tile_vertex_shader_source);
+	render_to_tile_vertex_shader->compile_shader();
+
+	// Fragment shader source.
+	GLShaderSource render_to_tile_fragment_shader_source;
+	render_to_tile_fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_to_tile_fragment_shader_source.add_code_segment(RENDER_TO_TILE_FRAGMENT_SHADER_SOURCE);
+
+	// Fragment shader.
+	GLShader::shared_ptr_type render_to_tile_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
+	render_to_tile_fragment_shader->shader_source(render_to_tile_fragment_shader_source);
+	render_to_tile_fragment_shader->compile_shader();
+
+	// Vertex-fragment program.
+	d_render_to_tile_program->attach_shader(render_to_tile_vertex_shader);
+	d_render_to_tile_program->attach_shader(render_to_tile_fragment_shader);
+	d_render_to_tile_program->link_program();
+
+	//
+	// Shader program for the final stage of rendering a tile to the scene.
 	// To enhance (or remove effect of) anti-aliasing of drawables edges.
 	//
 
-	// A version without clipping or lighting.
-	d_render_tile_to_scene_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					GLShaderSource::create_shader_source_from_file(
-							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					GLShaderSource::create_shader_source_from_file(
-							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
+	// Vertex shader source.
+	GLShaderSource render_tile_to_scene_vertex_shader_source;
+	render_tile_to_scene_vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_tile_to_scene_vertex_shader_source.add_code_segment(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE);
 
-	// A version with clipping but without lighting.
-	GLShaderSource render_tile_to_scene_with_clipping_vertex_shader_source;
-	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
-	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_clipping_vertex_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
-	GLShaderSource render_tile_to_scene_with_clipping_fragment_shader_source;
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_clipping_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					render_tile_to_scene_with_clipping_vertex_shader_source,
-					render_tile_to_scene_with_clipping_fragment_shader_source);
+	// Vertex shader.
+	GLShader::shared_ptr_type render_tile_to_scene_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
+	render_tile_to_scene_vertex_shader->shader_source(render_tile_to_scene_vertex_shader_source);
+	render_tile_to_scene_vertex_shader->compile_shader();
 
-	// A version with lighting but without clipping.
-	GLShaderSource render_tile_to_scene_with_lighting_vertex_shader_source;
-	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment("#define SURFACE_LIGHTING\n");
-	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_lighting_vertex_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
-	GLShaderSource render_tile_to_scene_with_lighting_fragment_shader_source;
-	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment("#define SURFACE_LIGHTING\n");
-	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_lighting_fragment_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_lighting_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					render_tile_to_scene_with_lighting_vertex_shader_source,
-					render_tile_to_scene_with_lighting_fragment_shader_source);
+	// Fragment shader source.
+	GLShaderSource render_tile_to_scene_fragment_shader_source;
+	render_tile_to_scene_fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_tile_to_scene_fragment_shader_source.add_code_segment(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
 
-	// A version with clipping and lighting.
-	GLShaderSource render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source;
-	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_code_segment(
-			"#define ENABLE_CLIPPING\n"
-			"#define SURFACE_LIGHTING\n");
-	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
-	GLShaderSource render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source;
-	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment(
-			"#define ENABLE_CLIPPING\n"
-			"#define SURFACE_LIGHTING\n");
-	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-	d_render_tile_to_scene_with_clipping_and_lighting_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source,
-					render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source);
+	// Fragment shader.
+	GLShader::shared_ptr_type render_tile_to_scene_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
+	render_tile_to_scene_fragment_shader->shader_source(render_tile_to_scene_fragment_shader_source);
+	render_tile_to_scene_fragment_shader->compile_shader();
+
+	// Vertex-fragment program.
+	d_render_tile_to_scene_program->attach_shader(render_tile_to_scene_vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(render_tile_to_scene_fragment_shader);
+	d_render_tile_to_scene_program->link_program();
+
+	// Bind the shader program so we can set some uniform parameters in it.
+	gl.UseProgram(d_render_tile_to_scene_program);
+
+	// Set the tile texture sampler to texture unit 0.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("tile_texture_sampler"),
+			0/*texture unit*/);
+
+	// Set the clip texture sampler to texture unit 1.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+			1/*texture unit*/);
 }
 
 
