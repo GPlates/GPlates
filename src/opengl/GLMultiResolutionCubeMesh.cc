@@ -23,13 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <vector>
 #include <boost/static_assert.hpp>
 
 #include "GLMultiResolutionCubeMesh.h"
 
+#include "GL.h"
 #include "GLCubeMeshGenerator.h"
-#include "GLRenderer.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"
 
@@ -42,11 +44,11 @@
 
 
 GPlatesOpenGL::GLMultiResolutionCubeMesh::GLMultiResolutionCubeMesh(
-		GLRenderer &renderer) :
-	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(renderer)),
+		GL &gl) :
+	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(gl)),
 	d_mesh_cube_quad_tree(mesh_cube_quad_tree_type::create())
 {
-	create_mesh_drawables(renderer);
+	create_mesh_drawables(gl);
 }
 
 
@@ -104,7 +106,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::get_child_node(
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_mesh_drawables(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	PROFILE_FUNC();
 
@@ -124,13 +126,13 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_mesh_drawables(
 		// Create the vertex array and vertex element array for the current cube face by
 		// storing vertices/indices in quad tree traversal order.
 		create_cube_face_vertex_and_index_array(
-				renderer,
+				gl,
 				cube_face,
 				unique_cube_face_mesh_vertices);
 
 		// Do another quad tree traversal to create an individual vertex element array for
 		// each quad tree node (and drawable to wrap it in).
-		create_quad_tree_mesh_drawables(renderer, cube_face);
+		create_quad_tree_mesh_drawables(gl, cube_face);
 	}
 }
 
@@ -140,7 +142,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_array(
-		GLRenderer &renderer,
+		GL &gl,
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 		const std::vector<GPlatesMaths::UnitVector3D> &unique_cube_face_mesh_vertices)
 {
@@ -174,11 +176,45 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 
 	// Create a single OpenGL vertex array for the current cube face to contain the vertices
 	// (and vertex elements or indices) of *all* meshes.
-	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
-	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
-	// bound to the vertex array.
-	set_vertex_array_data(renderer, *vertex_array, mesh_vertices, mesh_indices);
+	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(gl);
+	GLBuffer::shared_ptr_type vertex_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+	GLBuffer::shared_ptr_type vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+
 	d_meshes_vertex_array[cube_face] = vertex_array;
+	d_meshes_vertex_buffer[cube_face] = vertex_buffer;
+	d_meshes_vertex_element_buffer[cube_face] = vertex_element_buffer;
+
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	// Bind vertex array object.
+	gl.BindVertexArray(vertex_array);
+
+	// Bind vertex element buffer object to currently bound vertex array object.
+	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
+
+	// Transfer vertex element data to currently bound vertex element buffer object.
+	glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			mesh_indices.size() * sizeof(mesh_indices[0]),
+			mesh_indices.data(),
+			GL_STATIC_DRAW);
+
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+
+	// Transfer vertex data to currently bound vertex buffer object.
+	glBufferData(
+			GL_ARRAY_BUFFER,
+			mesh_vertices.size() * sizeof(mesh_vertices[0]),
+			mesh_vertices.data(),
+			GL_STATIC_DRAW);
+
+	// Specify vertex attributes (position) in currently bound vertex buffer object.
+	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+	// to currently bound vertex array object.
+	gl.EnableVertexAttribArray(0);
+	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
 }
 
 
@@ -265,7 +301,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
-		GLRenderer &renderer,
+		GL &gl,
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face)
 {
 	unsigned int vertex_index = 0;
@@ -274,7 +310,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 	// Generate the mesh drawables quad tree for the current cube face.
 	mesh_cube_quad_tree_type::node_type::ptr_type root_mesh_quad_tree_node =
 			create_quad_tree_mesh_drawables(
-					renderer,
+					gl,
 					vertex_index,
 					vertex_element_index,
 					cube_face,
@@ -289,7 +325,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 
 GPlatesOpenGL::GLMultiResolutionCubeMesh::mesh_cube_quad_tree_type::node_type::ptr_type
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
-		GLRenderer &renderer,
+		GL &gl,
 		unsigned int &vertex_index,
 		unsigned int &vertex_element_index,
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
@@ -320,7 +356,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 				// Recurse into the child node.
 				child_mesh_quad_tree_nodes[child_y_offset][child_x_offset] =
 						create_quad_tree_mesh_drawables(
-								renderer,
+								gl,
 								vertex_index,
 								vertex_element_index,
 								cube_face,
@@ -337,7 +373,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 		base_vertex_index/*start*/,
 		vertex_index - 1/*end*/,
 		static_cast<GLsizei>(vertex_element_index - base_vertex_element_index)/*count*/,
-                static_cast<GLint>(sizeof(vertex_element_type) * base_vertex_element_index)/*indices_offset*/
+		static_cast<GLint>(sizeof(vertex_element_type) * base_vertex_element_index)/*indices_offset*/
 	};
 
 	// Create a quad tree node.
@@ -370,18 +406,17 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::QuadTreeNode::render_mesh_drawable(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
 	// Bind the vertex array.
-	d_mesh_drawable->vertex_array->gl_bind(renderer);
+	gl.BindVertexArray(d_mesh_drawable->vertex_array);
 
 	// Draw the vertex array.
-	d_mesh_drawable->vertex_array->gl_draw_range_elements(
-			renderer,
+	glDrawRangeElements(
 			GL_TRIANGLES,
 			d_mesh_drawable->start,
 			d_mesh_drawable->end,
 			d_mesh_drawable->count,
 			GLVertexUtils::ElementTraits<vertex_element_type>::type,
-			d_mesh_drawable->indices_offset);
+			GLVertexUtils::buffer_offset(d_mesh_drawable->indices_offset));
 }

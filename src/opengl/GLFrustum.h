@@ -88,6 +88,16 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Initialises planes using the specified model-view and projection matrices.
+		 *
+		 * These planes form the boundary of the frustum of the view volume in model space.
+		 */
+		GLFrustum(
+				const GLMatrix &model_view_matrix,
+				const GLMatrix &projection_matrix);
+
+
+		/**
 		 * Initialises planes using the identity model-view-projection matrix.
 		 */
 		void
@@ -102,6 +112,15 @@ namespace GPlatesOpenGL
 		void
 		set_model_view_projection(
 				const GLMatrix &model_view_projection_matrix);
+
+
+		/**
+		 * Overload of @a set_model_view_projection accepting separated model-view and projection matrics.
+		 */
+		void
+		set_model_view_projection(
+				const GLMatrix &model_view_matrix,
+				const GLMatrix &projection_matrix);
 
 
 		//
@@ -147,6 +166,11 @@ namespace GPlatesOpenGL
 		 * The left, right, bottom, top, near and far frustum planes.
 		 */
 		std::vector<GLIntersect::Plane> d_planes;
+
+
+		void
+		initialise_model_view_projection(
+				const GLMatrix &model_view_projection_matrix);
 	};
 }
 

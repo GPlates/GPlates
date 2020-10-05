@@ -1625,11 +1625,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 
 	// Vertex shader source.
 	GLShaderSource vertex_shader_source;
-	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
-	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 
 	//
 	// Compile/link different shader programs depending on the source raster:
