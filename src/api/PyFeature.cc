@@ -151,7 +151,8 @@ namespace GPlatesApi
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
 			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
 	extract_geometry_or_coverage(
-			boost::python::object geometry_or_coverage_object)
+			boost::python::object geometry_or_coverage_object,
+			const char *type_error_string)
 	{
 		//
 		// 'geometry_or_coverage_object' is either:
@@ -163,9 +164,12 @@ namespace GPlatesApi
 		// of (scalar type, sequence of scalar values) 2-tuples.
 		//
 
-		const char *type_error_string = "Expected a GeometryOnSphere, or a coverage - where a coverage is a "
-				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
-				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a GeometryOnSphere, or a coverage - where a coverage is a "
+					"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+					"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		}
 
 		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_or_coverage_object);
 		if (extract_geometry.check())
@@ -209,7 +213,8 @@ namespace GPlatesApi
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
 			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
 	extract_geometries_or_coverages(
-			boost::python::object geometries_or_coverages_object)
+			boost::python::object geometries_or_coverages_object,
+			const char *type_error_string)
 	{
 		//
 		// 'geometries_or_coverages_object' is either:
@@ -223,10 +228,13 @@ namespace GPlatesApi
 		// of (scalar type, sequence of scalar values) 2-tuples.
 		//
 
-		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
-				"or a coverage, or a sequence of coverages - where a coverage is a "
-				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
-				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
+					"or a coverage, or a sequence of coverages - where a coverage is a "
+					"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+					"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		}
 
 		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometries_or_coverages_object);
 		if (extract_geometry.check())

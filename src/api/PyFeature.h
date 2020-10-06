@@ -127,12 +127,19 @@ namespace GPlatesApi
 	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
 	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
 	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a coverage - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
 	 */
 	std::tuple<
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
 			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
 	extract_geometry_or_coverage(
-			boost::python::object geometry_or_coverage_object);
+			boost::python::object geometry_or_coverage_object,
+			const char *type_error_string = nullptr);
 
 
 	/**
@@ -147,12 +154,20 @@ namespace GPlatesApi
 	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
 	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
 	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a sequence of GeometryOnSphere,
+	 *   or a coverage, or a sequence of coverages - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
 	 */
 	std::tuple<
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
 			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
 	extract_geometries_or_coverages(
-			boost::python::object geometries_or_coverages_object);
+			boost::python::object geometries_or_coverages_object,
+			const char *type_error_string = nullptr);
 }
 
 #endif // GPLATES_API_PYFEATURE_H

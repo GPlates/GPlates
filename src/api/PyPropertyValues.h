@@ -43,14 +43,14 @@ namespace GPlatesApi
 	 * This will raise Python ValueError if @a scalar_type_to_values_mapping_object is empty, or
 	 * if each scalar type is not mapped to the same number of scalar values.
 	 *
-	 * The error message @a type_error_string should contain something like:
+	 * If @a type_error_string is not specified then it will default to:
 	 *
-	 *  "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples"
+	 *   Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples
 	 */
 	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
 	create_gml_data_block(
 			boost::python::object scalar_type_to_values_mapping_object,
-			const char *type_error_string);
+			const char *type_error_string = nullptr);
 
 
 	/**

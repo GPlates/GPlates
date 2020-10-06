@@ -515,6 +515,11 @@ namespace GPlatesApi
 			bp::object scalar_type_to_values_mapping_object,
 			const char *type_error_string)
 	{
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples";
+		}
+
 		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
 		PythonExtractUtils::key_value_map_type scalar_type_to_values_map;
 		PythonExtractUtils::extract_key_value_map(
@@ -593,9 +598,7 @@ namespace GPlatesApi
 	gml_data_block_create(
 			bp::object scalar_type_to_values_mapping_object)
 	{
-		return create_gml_data_block(
-				scalar_type_to_values_mapping_object,
-				"Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples");
+		return create_gml_data_block(scalar_type_to_values_mapping_object);
 	}
 
 	GmlDataBlockCoordinateListIterator
