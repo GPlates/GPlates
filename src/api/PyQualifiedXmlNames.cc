@@ -719,6 +719,15 @@ export_property_name()
 			"reconstructionPlateId");
 }
 
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::ValueObjectType gpml_crustal_thickness =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
+	const GPlatesPropertyValues::ValueObjectType gpml_crustal_stretching_factor =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+	const GPlatesPropertyValues::ValueObjectType gpml_crustal_thinning_factor =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+}
 
 void
 export_scalar_type()
@@ -736,8 +745,20 @@ export_scalar_type()
 			"The namespace-qualified type of scalar values.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. ScalarType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"As a convenience the following common property names are available as class attributes:\n"
+			"\n"
+			"* pygplates.ScalarType.gpml_crustal_thickness\n"
+			"* pygplates.ScalarType.gpml_crustal_stretching_factor\n"
+			"* pygplates.ScalarType.gpml_crustal_thinning_factor\n",
 			bp::no_init/*force usage of create functions*/);
+
+	// Some common scalar types...
+	scalar_type_class.def_readonly("gpml_crustal_thickness", GPlatesApi::gpml_crustal_thickness);
+	scalar_type_class.def_readonly("gpml_crustal_stretching_factor", GPlatesApi::gpml_crustal_stretching_factor);
+	scalar_type_class.def_readonly("gpml_crustal_thinning_factor", GPlatesApi::gpml_crustal_thinning_factor);
+
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	scalar_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::ValueObjectType>,
