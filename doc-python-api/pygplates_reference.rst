@@ -54,6 +54,7 @@ Class to query the history of a topological model, and reconstruct regular featu
    :toctree: generated
 
    pygplates.TopologicalModel
+   pygplates.ReconstructedGeometryTimeSpan
 
 Function to resolve topologies:
 

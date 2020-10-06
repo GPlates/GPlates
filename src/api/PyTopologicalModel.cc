@@ -37,16 +37,21 @@
 
 #include "PyTopologicalModel.h"
 
+#include "PyFeature.h"
 #include "PyFeatureCollection.h"
+#include "PyPropertyValues.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "app-logic/GeometryUtils.h"
+#include "app-logic/ScalarCoverageEvolution.h"
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ReconstructParams.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
 
@@ -329,9 +334,91 @@ GPlatesApi::TopologicalModel::create(
 }
 
 
+GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type
+GPlatesApi::TopologicalModel::reconstruct_geometry(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+		bp::object scalar_type_to_values_mapping_object) const
+{
+	// Create time span of reconstructed geometry.
+	GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+			d_topology_reconstruct->create_geometry_time_span(
+					geometry,
+					// TODO: Change 'create_geometry_time_span()' to use default anchor plate ID of
+					// RotationModel if plate ID not specified...
+					reconstruction_plate_id ? reconstruction_plate_id.get() : 0);
+
+	// Extract the optional scalar values.
+	ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type scalar_type_to_time_span_map;
+	if (scalar_type_to_values_mapping_object != bp::object()/*Py_None*/)
+	{
+		// Extract the mapping of scalar types to scalar values.
+		const std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				std::vector<double>/*scalars*/> scalar_type_to_values_map =
+						create_scalar_type_to_values_map(scalar_type_to_values_mapping_object);
+
+		// Number of points in domain must match number of scalar values in range.
+		const unsigned int num_domain_geometry_points =
+				GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometry);
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!scalar_type_to_values_map.empty(),
+				GPLATES_ASSERTION_SOURCE);
+		// Just test the scalar values length for the first scalar type (all types should already have the same length).
+		if (num_domain_geometry_points != scalar_type_to_values_map.begin()->second.size())
+		{
+			PyErr_SetString(PyExc_ValueError, "Number of scalar values must match number of points in geometry");
+			bp::throw_error_already_set();
+		}
+
+		// Create optional time spans of reconstructed scalars (one time span per scalar type).
+		for (auto scalar_type_to_values : scalar_type_to_values_map)
+		{
+			const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_type_to_values.first;
+			const std::vector<double> &scalar_values = scalar_type_to_values.second;
+
+			// Select function to evolve scalar values with (based on the scalar type).
+			boost::optional<GPlatesAppLogic::scalar_evolution_function_type> scalar_evolution_function =
+					get_scalar_evolution_function(scalar_type, GPlatesAppLogic::ReconstructScalarCoverageParams());
+
+			// Reconstruct scalar values over time span.
+			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
+					GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(
+							geometry_time_span,
+							scalar_values,
+							scalar_evolution_function);
+
+			scalar_type_to_time_span_map.insert(std::make_pair(scalar_type, scalar_coverage_time_span));
+		}
+	}
+
+	return ReconstructedGeometryTimeSpan::create(geometry_time_span, scalar_type_to_time_span_map);
+}
+
+
 void
 export_topological_model()
 {
+	//
+	// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesApi::ReconstructedGeometryTimeSpan,
+			GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
+			boost::noncopyable>(
+					"ReconstructedGeometryTimeSpan",
+					"A history of topologies over geological time.\n",
+					// Don't allow creation from python side...
+					// (Also there is no publicly-accessible default constructor).
+					bp::no_init)
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+	;
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::ReconstructedGeometryTimeSpan>();
+
+
 	//
 	// TopologicalModel - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -353,7 +440,7 @@ export_topological_model()
 							bp::arg("youngest_time") = GPlatesPropertyValues::GeoTimeInstant(0),
 							bp::arg("time_increment") = GPlatesMaths::real_t(1))),
 			"__init__(topological_features, rotation_model, oldest_time, [youngest_time=0], [time_increment=1])\n"
-			"  Create from topological features and a rotation model.\n"
+			"  Create from topological features, a rotation model and a time span.\n"
 			"\n"
 			"  :param topological_features: the topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
@@ -375,7 +462,42 @@ export_topological_model()
 			"  :raises: ValueError if oldest or youngest time is distant-past (``float('inf')``) or "
 			"distant-future (``float('-inf')``), or if oldest time is later than (or same as) youngest time, or if "
 			"time increment is not positive, or if oldest to youngest time period is not an integer multiple "
-			"of the time increment, or if oldest time or youngest time or time increment are not integral values.\n")
+			"of the time increment, or if oldest time or youngest time or time increment are not integral values.\n"
+			"\n"
+			"  Load a topological model (and its associated rotation model) from 100Ma to present day in 1My time increments:\n"
+			"  ::\n"
+			"\n"
+			"    rotation_model = pygplates.RotationModel('rotations.rot')\n"
+			"    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model, 100)\n"
+			"\n"
+			"  ...or alternatively just:"
+			"  ::\n"
+			"\n"
+			"    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot', 100)\n")
+		.def("reconstruct_geometry",
+				&GPlatesApi::TopologicalModel::reconstruct_geometry,
+				(bp::arg("geometry"),
+					bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+					bp::arg("scalars") = bp::object()/*Py_None*/),
+				"reconstruct_geometry(geometry, [reconstruction_plate_id], [scalars])\n"
+				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
+				"\n"
+				"  :param geometry: the geometry to reconstruct\n"
+				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param scalars: optional mapping of scalar types to sequences of scalar values\n"
+				"  :type scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
+				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
+				"  :raises: ValueError if *scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
+				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
+				"number of points in *geometry*\n"
+				"\n"
+				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n")
+		.def("get_rotation_model",
+				&GPlatesApi::TopologicalModel::get_rotation_model,
+				"get_rotation_model()\n"
+				"  Return the rotation model used internally.\n"
+				"\n"
+				"  :rtype: :class:`RotationModel`\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

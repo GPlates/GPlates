@@ -27,10 +27,12 @@
 #define GPLATES_API_PYTOPOLOGICALMODEL_H
 
 #include <vector>
+#include <map>
 
 #include "PyFeatureCollection.h"
 #include "PyRotationModel.h"
 
+#include "app-logic/ScalarCoverageDeformation.h"
 #include "app-logic/TopologyReconstruct.h"
 
 #include "file-io/File.h"
@@ -41,12 +43,64 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/ValueObjectType.h"
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesApi
 {
+	/**
+	 * Contains topology-reconstructed history of a geometry (and optional scalars) over a time span.
+	 */
+	class ReconstructedGeometryTimeSpan :
+			public GPlatesUtils::ReferenceCount<ReconstructedGeometryTimeSpan>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedGeometryTimeSpan> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedGeometryTimeSpan> non_null_ptr_to_const_type;
+
+		typedef std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type/*scalars*/>
+						scalar_type_to_time_span_map_type;
+
+
+		/**
+		 * Create a reconstructed geometry time span (with optional reconstructed scalars).
+		 */
+		static
+		non_null_ptr_type
+		create(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const scalar_type_to_time_span_map_type &scalar_type_to_time_span_map)
+		{
+			return non_null_ptr_type(new ReconstructedGeometryTimeSpan(geometry_time_span, scalar_type_to_time_span_map));
+		}
+
+	private:
+
+		ReconstructedGeometryTimeSpan(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const scalar_type_to_time_span_map_type &scalar_type_to_time_span_map) :
+			d_geometry_time_span(geometry_time_span),
+			d_scalar_type_to_time_span_map(scalar_type_to_time_span_map)
+		{  }
+
+
+		/**
+		 * Reconstructed geometry time span.
+		 */
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type d_geometry_time_span;
+
+		/**
+		 * Mapping of scalar types to their reconstructed scalar time spans.
+		 */
+		scalar_type_to_time_span_map_type d_scalar_type_to_time_span_map;
+	};
+
+
 	/**
 	 * Dynamic plates and deforming networks, and their associated rotation model.
 	 */
@@ -72,6 +126,27 @@ namespace GPlatesApi
 				const GPlatesPropertyValues::GeoTimeInstant &oldest_time,
 				const GPlatesPropertyValues::GeoTimeInstant &youngest_time,
 				const double &time_increment);
+
+
+		/**
+		 * Reconstruct/deform a geometry or a coverage (geometry + scalars).
+		 *
+		 * Returns a reconstructed time span.
+		 *
+		 * @a scalar_type_to_values_mapping_object can be any of the following:
+		 *   (1) a Python 'dict' mapping each 'ScalarType' to a sequence of float, or
+		 *   (2) a Python sequence of ('ScalarType', sequence of float) tuples.
+		 *   (3) boost::python::object()  // Py_None
+		 *
+		 * This will raise Python ValueError if @a scalar_type_to_values_mapping_object is not None but:
+		 * is empty, or if each scalar type is not mapped to the same number of scalar values, or
+		 * number of scalar values is not equal to number of points in @a geometry.
+		 */
+		ReconstructedGeometryTimeSpan::non_null_ptr_type
+		reconstruct_geometry(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+				boost::python::object scalar_type_to_values_mapping_object) const;
 
 
 		/**

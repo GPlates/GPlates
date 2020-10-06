@@ -1489,10 +1489,11 @@ class RotationModelCase(unittest.TestCase):
 
 class TopologicalModelCase(unittest.TestCase):
     def setUp(self):
-        self.topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
-
         self.rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
         self.rotation_model = pygplates.RotationModel(self.rotations)
+
+        self.topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        self.topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, 2)
 
     def test_create(self):
         self.assertRaises(
@@ -1544,6 +1545,9 @@ class TopologicalModelCase(unittest.TestCase):
 
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotations, 2)
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, 2, time_increment=2)
+
+    def test_get_rotation_model(self):
+        self.assertTrue(self.topological_model.get_rotation_model().get_rotation(1.0, 802) == self.rotation_model.get_rotation(1.0, 802))
 
 
 def suite():
