@@ -510,8 +510,10 @@ namespace GPlatesApi
 				gml_data_block_coordinate_lists.end());
 	}
 
-	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
-	create_gml_data_block(
+	std::map<
+			GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+			std::vector<double>/*scalars*/>
+	create_scalar_type_to_values_map(
 			bp::object scalar_type_to_values_mapping_object,
 			const char *type_error_string)
 	{
@@ -521,21 +523,19 @@ namespace GPlatesApi
 		}
 
 		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
-		PythonExtractUtils::key_value_map_type scalar_type_to_values_map;
+		PythonExtractUtils::key_value_map_type scalar_type_object_to_values_object_map;
 		PythonExtractUtils::extract_key_value_map(
-				scalar_type_to_values_map,
+				scalar_type_object_to_values_object_map,
 				scalar_type_to_values_mapping_object,
 				type_error_string);
 
-		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
+		std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				std::vector<double>/*scalars*/> scalar_type_to_values_map;
 
-		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_iter = scalar_type_to_values_map.begin();
-		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_end = scalar_type_to_values_map.end();
-		for ( ; scalar_type_to_values_map_iter != scalar_type_to_values_map_end; ++scalar_type_to_values_map_iter)
+		for (auto scalar_type_object_to_values_object : scalar_type_object_to_values_object_map)
 		{
-			const PythonExtractUtils::key_value_type &scalar_type_to_values = *scalar_type_to_values_map_iter;
-
-			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_to_values.first);
+			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_object_to_values_object.first);
 			if (!extract_scalar_type.check())
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
@@ -543,36 +543,57 @@ namespace GPlatesApi
 			}
 			const GPlatesPropertyValues::ValueObjectType scalar_type = extract_scalar_type();
 
-			// Make sure the each scalar type only occurs once - otherwise remove duplicate (similar behaviour to 'dict').
-			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
-					coordinate_lists_iter = coordinate_lists.begin();
-			const std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
-					coordinate_lists_end = coordinate_lists.end();
-			for ( ; coordinate_lists_iter != coordinate_lists_end; ++coordinate_lists_iter)
-			{
-				const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list = *coordinate_lists_iter;
-				if (scalar_type == coordinate_list->get_value_object_type())
-				{
-					coordinate_lists.erase(coordinate_lists_iter);
-					break;
-				}
-			}
+			// Add empty sequence of scalars for current scalar type.
+			std::vector<double> &scalar_values = scalar_type_to_values_map[scalar_type];
+			// This clears previous scalars (if have duplicate scalar types - which user shouldn't).
+			scalar_values.clear();
 
-			// Attempt to extract the scalar values for the current coordinate list.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
-			PythonExtractUtils::extract_iterable(scalar_values, scalar_type_to_values.second, type_error_string);
+			// Attempt to extract the scalar values for the current scalar type.
+			PythonExtractUtils::extract_iterable(scalar_values, scalar_type_object_to_values_object.second, type_error_string);
 
 			// Make sure the each scalar type has the same number of scalar values.
-			BOOST_FOREACH(
-					const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list,
-					coordinate_lists)
+			for (auto scalar_type_to_values : scalar_type_to_values_map)
 			{
-				if (scalar_values.size() != coordinate_list->get_coordinates().size())
+				if (scalar_values.size() != scalar_type_to_values.second.size())
 				{
 					PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
 					bp::throw_error_already_set();
 				}
 			}
+		}
+
+		// Need at least one scalar type (and associated scalar values).
+		if (scalar_type_to_values_map.empty())
+		{
+			PyErr_SetString(
+					PyExc_ValueError,
+					"At least one scalar type (and associated scalar values) is required");
+			bp::throw_error_already_set();
+		}
+
+		return scalar_type_to_values_map;
+	}
+
+	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+	create_gml_data_block(
+			bp::object scalar_type_to_values_mapping_object,
+			const char *type_error_string)
+	{
+		// Extract the mapping of scalar types to scalar values.
+		const std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				std::vector<double>/*scalars*/> scalar_type_to_values_map =
+						create_scalar_type_to_values_map(
+								scalar_type_to_values_mapping_object,
+								type_error_string);
+
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
+
+		// Store each map entry (scalar type and scalar values) in a GmlDataBlockCoordinateList.
+		for (auto scalar_type_to_values : scalar_type_to_values_map)
+		{
+			const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_type_to_values.first;
+			const std::vector<double> &scalar_values = scalar_type_to_values.second;
 
 			// Add a new list of scalar values (associated with scalar type) to the data block.
 			coordinate_lists.push_back(
@@ -580,15 +601,6 @@ namespace GPlatesApi
 							scalar_type,
 							GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
 							scalar_values));
-		}
-
-		// Need at least one scalar type (and associated scalar values).
-		if (coordinate_lists.empty())
-		{
-			PyErr_SetString(
-					PyExc_ValueError,
-					"At least one scalar type (and associated scalar values) is required");
-			bp::throw_error_already_set();
 		}
 
 		return GPlatesPropertyValues::GmlDataBlock::create(coordinate_lists);
