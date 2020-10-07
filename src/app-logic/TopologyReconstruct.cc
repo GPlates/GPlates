@@ -201,7 +201,7 @@ GPlatesAppLogic::TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS(
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type
 GPlatesAppLogic::TopologyReconstruct::create_geometry_time_span(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 		const double &geometry_import_time,
 		boost::optional<double> max_poly_segment_angular_extent_radians,
 		boost::optional<ActivePointParameters> active_point_parameters,
@@ -213,7 +213,7 @@ GPlatesAppLogic::TopologyReconstruct::create_geometry_time_span(
 			new GeometryTimeSpan(
 					this,
 					geometry,
-					feature_reconstruction_plate_id,
+					reconstruction_plate_id,
 					geometry_import_time,
 					max_poly_segment_angular_extent_radians,
 					active_point_parameters,
@@ -224,7 +224,7 @@ GPlatesAppLogic::TopologyReconstruct::create_geometry_time_span(
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometryTimeSpan(
 		TopologyReconstruct::non_null_ptr_to_const_type topology_reconstruct,
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 		const double &geometry_import_time,
 		boost::optional<double> max_poly_segment_angular_extent_radians,
 		boost::optional<ActivePointParameters> active_point_parameters,
@@ -232,7 +232,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometryTimeSpan(
 	d_topology_reconstruct(topology_reconstruct),
 	d_time_range(topology_reconstruct->get_time_range()),
 	d_pool_allocator(PoolAllocator::create()),
-	d_reconstruction_plate_id(feature_reconstruction_plate_id),
+	d_reconstruction_plate_id(reconstruction_plate_id),
 	d_geometry_import_time(geometry_import_time),
 	d_deformation_uses_natural_neighbour_interpolation(deformation_uses_natural_neighbour_interpolation),
 	d_time_window_span(

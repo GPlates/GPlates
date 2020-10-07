@@ -188,7 +188,7 @@ namespace GPlatesApi
 		rotation_model_adapt_existing_rotation_model(
 				RotationModel::non_null_ptr_type rotation_model,
 				unsigned int reconstruction_tree_cache_size,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id)
+				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id)
 		{
 			return RotationModel::create(
 					rotation_model,
@@ -517,7 +517,7 @@ export_rotation_model()
 			// Specific overload signature...
 			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
-			<< "], [extend_total_reconstruction_poles_to_distant_past=False],[default_anchor_plate_id=0])\n"
+			<< "], [extend_total_reconstruction_poles_to_distant_past=False], [default_anchor_plate_id=0])\n"
 			"  Create from rotation feature collection(s) and/or rotation filename(s).\n"
 			"\n"
 			"  :param rotation_features: A rotation feature collection, or rotation filename, or "
@@ -816,6 +816,8 @@ export_rotation_model()
 				&GPlatesApi::rotation_model_get_default_anchor_plate_id,
 				"get_default_anchor_plate_id()\n"
 				"  Return the default anchor plate ID (see :meth:`constructor<__init__>`).\n"
+				"\n"
+				"  :rtype: int\n"
 				"\n"
 				"  .. versionadded:: 29\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...

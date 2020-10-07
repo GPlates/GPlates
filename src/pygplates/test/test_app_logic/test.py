@@ -1355,6 +1355,7 @@ class RotationModelCase(unittest.TestCase):
         
         # Adapt an existing rotation model to use a different cache size and default anchor plate ID.
         rotation_model_adapted = pygplates.RotationModel(self.rotation_model, default_anchor_plate_id=802)
+        self.assertTrue(rotation_model_adapted.get_default_anchor_plate_id() == 802)
         self.assertTrue(rotation_model_adapted != self.rotation_model)  # Should be a different C++ instance.
         self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 rotation_model_adapted.get_rotation(self.to_time, 802),
@@ -1362,6 +1363,9 @@ class RotationModelCase(unittest.TestCase):
         self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 rotation_model_adapted.get_rotation(self.to_time, 802, anchor_plate_id=0),
                 self.rotation_model.get_rotation(self.to_time, 802)))
+        # Make sure newly adapted model using a new cache size but delegating default anchor plate ID actually delegates.
+        another_rotation_model_adapted = pygplates.RotationModel(rotation_model_adapted, 32)
+        self.assertTrue(another_rotation_model_adapted.get_default_anchor_plate_id() == 802)
         
         # Test using a non-zero default anchor plate ID.
         rotation_model_non_zero_default_anchor = pygplates.RotationModel(self.rotations, default_anchor_plate_id=802)
@@ -1545,6 +1549,9 @@ class TopologicalModelCase(unittest.TestCase):
 
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotations, 2)
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, 2, time_increment=2)
+
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, 2, anchor_plate_id=1)
+        self.assertTrue(topological_model.get_anchor_plate_id() == 1)
 
     def test_get_rotation_model(self):
         self.assertTrue(self.topological_model.get_rotation_model().get_rotation(1.0, 802) == self.rotation_model.get_rotation(1.0, 802))

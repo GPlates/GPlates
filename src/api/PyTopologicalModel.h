@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <map>
+#include <boost/optional.hpp>
 
 #include "PyFeatureCollection.h"
 #include "PyRotationModel.h"
@@ -125,7 +126,8 @@ namespace GPlatesApi
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 				const GPlatesPropertyValues::GeoTimeInstant &oldest_time,
 				const GPlatesPropertyValues::GeoTimeInstant &youngest_time,
-				const double &time_increment);
+				const double &time_increment,
+				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
 
 
 		/**
@@ -145,6 +147,7 @@ namespace GPlatesApi
 		ReconstructedGeometryTimeSpan::non_null_ptr_type
 		reconstruct_geometry(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+				const GPlatesPropertyValues::GeoTimeInstant &geometry_import_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 				boost::python::object scalar_type_to_values_mapping_object) const;
 

@@ -78,12 +78,24 @@ namespace GPlatesApi
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 				const GPlatesPropertyValues::GeoTimeInstant &oldest_time,
 				const GPlatesPropertyValues::GeoTimeInstant &youngest_time,
-				const double &time_increment)
+				const double &time_increment,
+				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 		{
 			return TopologicalModel::create(
 					topological_features,
 					rotation_model_argument,
-					oldest_time, youngest_time, time_increment);
+					oldest_time, youngest_time, time_increment,
+					anchor_plate_id);
+		}
+
+		/**
+		 * Returns the anchor plate ID.
+		 */
+		GPlatesModel::integer_plate_id_type
+		topological_model_get_anchor_plate_id(
+				TopologicalModel::non_null_ptr_type topological_model)
+		{
+			return topological_model->get_rotation_model()->get_reconstruction_tree_creator().get_default_anchor_plate_id();
 		}
 	}
 }
@@ -97,7 +109,8 @@ GPlatesApi::TopologicalModel::create(
 		const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 		const GPlatesPropertyValues::GeoTimeInstant &oldest_time_arg,
 		const GPlatesPropertyValues::GeoTimeInstant &youngest_time_arg,
-		const double &time_increment_arg)
+		const double &time_increment_arg,
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 {
 	if (!oldest_time_arg.is_real() ||
 		!youngest_time_arg.is_real())
@@ -164,7 +177,8 @@ GPlatesApi::TopologicalModel::create(
 		rotation_model_opt = RotationModel::create(
 				*existing_rotation_model,
 				reconstruction_tree_cache_size,
-				0/*default_anchor_plate_id*/);
+				// If anchor plate ID is none then defaults to the default anchor plate of existing rotation model...
+				anchor_plate_id);
 	}
 	else
 	{
@@ -176,7 +190,9 @@ GPlatesApi::TopologicalModel::create(
 				rotation_feature_collections_function_argument,
 				reconstruction_tree_cache_size,
 				false/*extend_total_reconstruction_poles_to_distant_past*/,
-				0/*default_anchor_plate_id*/);
+				// We're creating a new RotationModel from scratch (as opposed to adapting an existing one)
+				// so the anchor plate ID defaults to zero if not specified...
+				anchor_plate_id ? anchor_plate_id.get() : 0);
 	}
 
 	RotationModel::non_null_ptr_type rotation_model = rotation_model_opt.get();
@@ -337,16 +353,28 @@ GPlatesApi::TopologicalModel::create(
 GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type
 GPlatesApi::TopologicalModel::reconstruct_geometry(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+		const GPlatesPropertyValues::GeoTimeInstant &geometry_import_time,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		bp::object scalar_type_to_values_mapping_object) const
 {
+	// Geometry import time must not be distant past/future.
+	if (!geometry_import_time.is_real())
+	{
+		PyErr_SetString(PyExc_ValueError,
+				"Geometry import time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+		bp::throw_error_already_set();
+	}
+
 	// Create time span of reconstructed geometry.
 	GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
 			d_topology_reconstruct->create_geometry_time_span(
 					geometry,
-					// TODO: Change 'create_geometry_time_span()' to use default anchor plate ID of
-					// RotationModel if plate ID not specified...
-					reconstruction_plate_id ? reconstruction_plate_id.get() : 0);
+					// If a reconstruction plate ID is not specified then use the default anchor plate ID
+					// of our rotation model...
+					reconstruction_plate_id
+							? reconstruction_plate_id.get()
+							: d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
+					geometry_import_time.value());
 
 	// Extract the optional scalar values.
 	ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type scalar_type_to_time_span_map;
@@ -407,7 +435,9 @@ export_topological_model()
 			GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
 			boost::noncopyable>(
 					"ReconstructedGeometryTimeSpan",
-					"A history of topologies over geological time.\n",
+					"A history of geometries reconstructed using topologies over geological time.\n"
+					"\n"
+					"  .. versionadded:: 29\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -427,7 +457,9 @@ export_topological_model()
 			GPlatesApi::TopologicalModel::non_null_ptr_type,
 			boost::noncopyable>(
 					"TopologicalModel",
-					"A history of topologies over geological time.\n",
+					"A history of topologies over geological time.\n"
+					"\n"
+					"  .. versionadded:: 29\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -435,11 +467,13 @@ export_topological_model()
 				bp::make_constructor(
 						&GPlatesApi::topological_model_create,
 						bp::default_call_policies(),
-						(bp::arg("topological_features"), bp::arg("rotation_model"),
+						(bp::arg("topological_features"),
+							bp::arg("rotation_model"),
 							bp::arg("oldest_time"),
 							bp::arg("youngest_time") = GPlatesPropertyValues::GeoTimeInstant(0),
-							bp::arg("time_increment") = GPlatesMaths::real_t(1))),
-			"__init__(topological_features, rotation_model, oldest_time, [youngest_time=0], [time_increment=1])\n"
+							bp::arg("time_increment") = GPlatesMaths::real_t(1),
+							bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>())),
+			"__init__(topological_features, rotation_model, oldest_time, [youngest_time=0], [time_increment=1], [anchor_plate_id])\n"
 			"  Create from topological features, a rotation model and a time span.\n"
 			"\n"
 			"  :param topological_features: the topological boundary and/or network features and the "
@@ -459,6 +493,10 @@ export_topological_model()
 			"  :param time_increment: time step in the history of topologies (must have an integral value, "
 			"and ``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``)\n"
 			"  :type time_increment: float\n"
+			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
+			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
+			"  :type anchor_plate_id: int\n"
 			"  :raises: ValueError if oldest or youngest time is distant-past (``float('inf')``) or "
 			"distant-future (``float('-inf')``), or if oldest time is later than (or same as) youngest time, or if "
 			"time increment is not positive, or if oldest to youngest time period is not an integer multiple "
@@ -473,31 +511,61 @@ export_topological_model()
 			"  ...or alternatively just:"
 			"  ::\n"
 			"\n"
-			"    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot', 100)\n")
+			"    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot', 100)\n"
+			"\n"
+			"  .. note:: All reconstructions (including resolving topologies and reconstructing regular features and "
+			":meth:`geometries<reconstruct_geometry>`) use *anchor_plate_id*. So if you need to use a different "
+			"anchor plate ID then you'll need to create a new :class:`TopologicalModel<__init__>`. However this should "
+			"only be done if necessary since each :class:`TopologicalModel` created can consume a reasonable amount of "
+			"CPU and memory (since it caches resolved topologies and reconstructed geometries over time spans).\n")
 		.def("reconstruct_geometry",
 				&GPlatesApi::TopologicalModel::reconstruct_geometry,
 				(bp::arg("geometry"),
+					bp::arg("geometry_import_time") = GPlatesPropertyValues::GeoTimeInstant(0.0),
 					bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("scalars") = bp::object()/*Py_None*/),
-				"reconstruct_geometry(geometry, [reconstruction_plate_id], [scalars])\n"
+				"reconstruct_geometry(geometry, [geometry_import_time=0], [reconstruction_plate_id], [scalars])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
-				"  :param geometry: the geometry to reconstruct\n"
+				"  :param geometry: the geometry to reconstruct using topologies\n"
 				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param geometry_import_time: The time snapshot that *geometry* represents. Defaults to present day.\n"
+				"  :type geometry_import_time: float or :class:`GeoTimeInstant`\n"
+				"  :param reconstruction_plate_id: Used to rotate *geometry* (assumed to be in its present day position) "
+				"to its starting position at time *geometry_import_time*. Defaults to the anchored plate "
+				"(specified in :meth:`constructor<__init__>`).\n"
+				"  :type reconstruction_plate_id: int\n"
 				"  :param scalars: optional mapping of scalar types to sequences of scalar values\n"
 				"  :type scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
 				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
+				"  :raises: ValueError if *geometry_import_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"  :raises: ValueError if *scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
 				"number of points in *geometry*\n"
+				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
 				"\n"
-				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n")
+				"  The *reconstruction_plate_id* is used for any **rigid** reconstructions of *geometry*. This includes "
+				"the initial rigid rotation of *geometry* (assumed to be in its present day position) to its starting position "
+				"at time *geometry_import_time*. If a reconstruction plate ID is not specified, then *geometry* is assumed to "
+				"already be at its starting position at time *geometry_import_time*. "
+				"In addition, the reconstruction plate ID is also used when incrementally reconstructing from the geometry import time "
+				"to other times for any geometry points that fail to intersect topologies (dynamic plates and deforming networks). "
+				"This can happen either due to small gaps/cracks in a global topological model or when using a topological model that "
+				"does not cover the entire globe.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"
 				"  Return the rotation model used internally.\n"
 				"\n"
 				"  :rtype: :class:`RotationModel`\n")
+		.def("get_anchor_plate_id",
+				&GPlatesApi::topological_model_get_anchor_plate_id,
+				"get_anchor_plate_id()\n"
+				"  Return the anchor plate ID (see :meth:`constructor<__init__>`).\n"
+				"\n"
+				"  :rtype: int\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

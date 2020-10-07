@@ -153,7 +153,7 @@ namespace GPlatesAppLogic
 		 * reconstructed if it does not intersect any resolved boundaries/networks at specific times.
 		 *
 		 * If @a geometry_import_time is specified then the present day geometry is rigidly reconstructed
-		 * (using @a feature_reconstruction_plate_id) to the geometry import time. That geometry is then
+		 * (using @a reconstruction_plate_id) to the geometry import time. That geometry is then
 		 * reconstructed forward and/or backward in time as necessary to fill the time range.
 		 * This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies
 		 * through time (ie, masked by mid-ocean ridges going backward in time and subduction zones going forward in time).
@@ -179,7 +179,7 @@ namespace GPlatesAppLogic
 		/*GeometryTimeSpan::non_null_ptr_type*/GPlatesUtils::non_null_intrusive_ptr<GeometryTimeSpan>
 		create_geometry_time_span(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 				const double &geometry_import_time = 0.0,
 				boost::optional<double> max_poly_segment_angular_extent_radians = boost::none,
 				boost::optional<ActivePointParameters> active_point_parameters = DEFAULT_ACTIVE_POINT_PARAMETERS,
@@ -683,7 +683,7 @@ namespace GPlatesAppLogic
 			GeometryTimeSpan(
 					TopologyReconstruct::non_null_ptr_to_const_type topology_reconstruct,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-					GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 					const double &geometry_import_time,
 					boost::optional<double> max_poly_segment_angular_extent_radians,
 					boost::optional<ActivePointParameters> active_point_parameters,
