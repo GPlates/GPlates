@@ -119,7 +119,7 @@ namespace GPlatesApi
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-				GPlatesModel::integer_plate_id_type &anchor_plate_id)
+				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id)
 		{
 			// Define the explicit function argument types...
 			//
@@ -129,7 +129,7 @@ namespace GPlatesApi
 					FeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
 					double, // Note: This is not GPlatesPropertyValues::GeoTimeInstant.
-					GPlatesModel::integer_plate_id_type,
+					boost::optional<GPlatesModel::integer_plate_id_type>,
 					QString> // Only export filename supported (not a python list of RFG's).
 							reconstruct_args_type;
 
@@ -189,7 +189,7 @@ namespace GPlatesApi
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-				GPlatesModel::integer_plate_id_type &anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
 				ReconstructType::Value &reconstruct_type,
 				bool &export_wrap_to_dateline,
 				bool &group_with_feature)
@@ -229,7 +229,7 @@ namespace GPlatesApi
 					RotationModelFunctionArgument,
 					reconstructed_feature_geometries_argument_type,
 					GPlatesPropertyValues::GeoTimeInstant,
-					GPlatesModel::integer_plate_id_type>
+					boost::optional<GPlatesModel::integer_plate_id_type>>
 							reconstruct_args_type;
 
 			// Define the explicit function argument names...
@@ -242,8 +242,8 @@ namespace GPlatesApi
 							"anchor_plate_id");
 
 			// Define the default function arguments...
-			typedef boost::tuple<GPlatesModel::integer_plate_id_type> default_args_type;
-			default_args_type defaults_args(0/*anchor_plate_id*/);
+			typedef boost::tuple<boost::optional<GPlatesModel::integer_plate_id_type>> default_args_type;
+			default_args_type defaults_args(boost::none/*anchor_plate_id*/);
 
 			const reconstruct_args_type reconstruct_args =
 					VariableArguments::get_explicit_args<reconstruct_args_type>(
@@ -602,7 +602,7 @@ namespace GPlatesApi
 		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 		reconstructed_feature_geometries_argument_type reconstructed_feature_geometries_argument;
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
-		GPlatesModel::integer_plate_id_type anchor_plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 		ReconstructType::Value reconstruct_type;
 		bool export_wrap_to_dateline;
 		bool group_with_feature;
@@ -631,7 +631,8 @@ namespace GPlatesApi
 		// Reconstruct the features in the feature collection files.
 		//
 
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+		// (which if none then uses default anchor plate of 'rotation_model' instead).
 		// This ensures 'ReconstructMethodInterface' will reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -754,7 +755,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -765,7 +766,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -776,7 +777,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -854,7 +855,7 @@ namespace GPlatesApi
 			FeatureCollectionSequenceFunctionArgument reconstructable_features,
 			RotationModelFunctionArgument rotation_model,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-			GPlatesModel::integer_plate_id_type anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -864,7 +865,8 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+		// (which if none then uses default anchor plate of 'rotation_model' instead).
 		// This ensures we will reverse reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -985,7 +987,7 @@ export_reconstruct()
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
 			"reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, "
-			"reconstruction_time, [anchor_plate_id=0], [\\*\\*output_parameters])\n"
+			"reconstruction_time, [anchor_plate_id], [\\*\\*output_parameters])\n"
 			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
@@ -1008,7 +1010,8 @@ export_reconstruct()
 			"  :type reconstructed_geometries: string or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-			"  :param anchor_plate_id: the anchored plate id used during reconstruction\n"
+			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
@@ -1171,8 +1174,8 @@ export_reconstruct()
 			(bp::arg("reconstructable_features"),
 				bp::arg("rotation_model"),
 				bp::arg("reconstruction_time"),
-				bp::arg("anchor_plate_id")=0),
-			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id=0])\n"
+				bp::arg("anchor_plate_id")=boost::optional<GPlatesModel::integer_plate_id_type>()),
+			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id])\n"
 			"  Reverse reconstruct geological features from a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
@@ -1187,7 +1190,8 @@ export_reconstruct()
 			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
 			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
+			"  :param anchor_plate_id: The anchored plate id used during reverse reconstruction. "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: OpenFileForWritingError if *reconstructable_features* specifies any filename that "

@@ -212,6 +212,16 @@ namespace GPlatesApi
 		{
 			return rotation_model;
 		}
+
+		/**
+		 * Returns the default anchor plate ID.
+		 */
+		GPlatesModel::integer_plate_id_type
+		rotation_model_get_default_anchor_plate_id(
+				RotationModel::non_null_ptr_type rotation_model)
+		{
+			return rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id();
+		}
 	}
 }
 
@@ -317,10 +327,11 @@ GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		RotationModel::non_null_ptr_type rotation_model,
 		unsigned int reconstruction_tree_cache_size,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id)
 {
 	// Create a reconstruction tree adaptor that re-uses the existing reconstruction tree creator
-	// (rotation model) but with a potentially different cache size and/or default anchor plate ID.
+	// (rotation model) but with a potentially different cache size and/or default anchor plate ID
+	// (which if default anchor plate is none then uses default anchor plate of 'rotation_model' instead).
 	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_adaptor =
 			GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 					rotation_model->get_reconstruction_tree_creator(),
@@ -611,9 +622,9 @@ export_rotation_model()
 						bp::default_call_policies(),
 						(bp::arg("rotation_model"),
 							bp::arg("reconstruction_tree_cache_size") = 2,
-							bp::arg("default_anchor_plate_id") = 0)),
+							bp::arg("default_anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>())),
 			// Specific overload signature...
-			"__init__(rotation_model, [reconstruction_tree_cache_size=2], [default_anchor_plate_id=0])\n"
+			"__init__(rotation_model, [reconstruction_tree_cache_size=2], [default_anchor_plate_id])\n"
 			"  Use an existing rotation model but adapt it with a potentially different cache size and/or "
 			"default anchor plate ID.\n"
 			"\n"
@@ -626,7 +637,7 @@ export_rotation_model()
 			"  :type reconstruction_tree_cache_size: int\n"
 			"  :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` "
 			"and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. "
-			"Defaults to 0. \n"
+			"Defaults to the default anchor plate of *rotation_model*. \n"
 			"  :type default_anchor_plate_id: int\n"
 			"\n"
 			"  This is useful if you want to use an existing rotation model but with a larger cache size or a "
@@ -769,7 +780,7 @@ export_rotation_model()
 				"ideally be zero (identity), so typically there should not be a difference.\n"
 				"\n"
 				"  .. versionchanged:: 26\n"
-				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
+				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id*)\n"
 				"\n"
 				"  .. versionchanged:: 27\n"
 				"     *from_time* no longer defaults to zero, and no longer assumes present day "
@@ -801,6 +812,12 @@ export_rotation_model()
 				"  .. versionchanged:: 26\n"
 				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
 				"in :meth:`constructor<__init__>`).\n")
+		.def("get_default_anchor_plate_id",
+				&GPlatesApi::rotation_model_get_default_anchor_plate_id,
+				"get_default_anchor_plate_id()\n"
+				"  Return the default anchor plate ID (see :meth:`constructor<__init__>`).\n"
+				"\n"
+				"  .. versionadded:: 29\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

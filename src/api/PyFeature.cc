@@ -775,7 +775,7 @@ namespace GPlatesApi
 			}
 			const double reconstruction_time = reconstruction_geo_time_instant.value();
 
-			GPlatesModel::integer_plate_id_type anchor_plate_id = 0;
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 			if (tuple_len == 3)
 			{
 				bp::extract<GPlatesModel::integer_plate_id_type> extract_anchor_plate_id(reverse_reconstruct_tuple[2]);
@@ -788,7 +788,8 @@ namespace GPlatesApi
 				anchor_plate_id = extract_anchor_plate_id();
 			}
 
-			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+			// (which if none then uses default anchor plate of 'rotation_model' instead).
 			// This ensures we will reverse reconstruct using the correct anchor plate.
 			GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 					GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -3801,9 +3802,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed "
+				"using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - "
+				"this is only required if *geometry* is not present day - "
 				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
@@ -4078,10 +4080,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required "
+				"if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4215,10 +4217,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *left_plate*) - this is only required if *seed_geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* "
+				"is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4345,10 +4347,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if "
+				"*seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4719,10 +4721,10 @@ export_feature()
 				":class:`type<FeatureType>` is used instead\n"
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and this feature's existing properties "
-				"(eg, reconstruction plate id) - this is only required if *geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
+				"those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if "
+				"*geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"

@@ -143,14 +143,15 @@ namespace GPlatesApi
 		 * changing the default anchor plate ID.
 		 *
 		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter.
+		 * do not specify their 'anchor_plate_id' parameter (which if none then uses default anchor plate
+		 * of @a rotation_model instead).
 		 */
 		static
 		non_null_ptr_type
 		create(
 				RotationModel::non_null_ptr_type rotation_model,
 				unsigned int reconstruction_tree_cache_size,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id);
+				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id = boost::none);
 	
 
 		/**

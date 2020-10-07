@@ -133,7 +133,7 @@ namespace GPlatesApi
 				resolved_topologies_argument_type &resolved_topologies,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				boost::optional<resolved_topological_sections_argument_type> &resolved_topological_sections,
-				GPlatesModel::integer_plate_id_type &anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
 				unsigned int &resolve_topology_types,
 				unsigned int &resolve_topological_section_types,
 				bool &export_wrap_to_dateline,
@@ -155,7 +155,7 @@ namespace GPlatesApi
 					resolved_topologies_argument_type,
 					GPlatesPropertyValues::GeoTimeInstant,
 					boost::optional<resolved_topological_sections_argument_type>,
-					GPlatesModel::integer_plate_id_type>
+					boost::optional<GPlatesModel::integer_plate_id_type>>
 							resolve_topologies_args_type;
 
 			// Define the explicit function argument names...
@@ -171,9 +171,9 @@ namespace GPlatesApi
 			// Define the default function arguments...
 			typedef boost::tuple<
 					boost::optional<resolved_topological_sections_argument_type>,
-					GPlatesModel::integer_plate_id_type>
+					boost::optional<GPlatesModel::integer_plate_id_type>>
 							default_args_type;
-			default_args_type defaults_args(boost::none, 0/*anchor_plate_id*/);
+			default_args_type defaults_args(boost::none, boost::none/*anchor_plate_id*/);
 
 			const resolve_topologies_args_type resolve_topologies_args =
 					VariableArguments::get_explicit_args<resolve_topologies_args_type>(
@@ -414,7 +414,7 @@ namespace GPlatesApi
 		resolved_topologies_argument_type resolved_topologies_argument;
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
 		boost::optional<resolved_topological_sections_argument_type> resolved_topological_sections_argument;
-		GPlatesModel::integer_plate_id_type anchor_plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 		unsigned int resolve_topology_types;
 		unsigned int resolve_topological_section_types;
 		bool export_wrap_to_dateline;
@@ -467,7 +467,8 @@ namespace GPlatesApi
 					topological_file->get_reference().get_feature_collection());
 		}
 
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+		// (which if none then uses default anchor plate of 'rotation_model' instead).
 		// This ensures we will reconstruct topological sections using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -611,7 +612,7 @@ namespace GPlatesApi
 					*resolved_topologies_export_file_name,
 					topological_file_ptrs,
 					reconstruction_file_ptrs,
-					anchor_plate_id,
+					reconstruction_tree_creator.get_default_anchor_plate_id(),
 					reconstruction_time.value(),
 					export_wrap_to_dateline,
 					export_force_boundary_orientation);
@@ -670,7 +671,7 @@ namespace GPlatesApi
 						*resolved_topological_sections_export_file_name,
 						topological_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 			}
@@ -711,7 +712,7 @@ export_resolve_topologies()
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(resolve_topologies_function_name).attr("__doc__") =
 			"resolve_topologies(topological_features, rotation_model, resolved_topologies, "
-			"reconstruction_time, [resolved_topological_sections], [anchor_plate_id=0], [\\*\\*output_parameters])\n"
+			"reconstruction_time, [resolved_topological_sections], [anchor_plate_id], [\\*\\*output_parameters])\n"
 			"  Resolve topological features (lines, boundaries and networks) to a specific geological time.\n"
 			"\n"
 			"  :param topological_features: the topological boundary and network features and the "
@@ -738,7 +739,8 @@ export_resolve_topologies()
 			" are either exported to a file (with specified filename) or *appended* to a python ``list`` "
 			"(note that the list is *not* cleared first)\n"
 			"  :type resolved_topological_sections: string or ``list``\n"
-			"  :param anchor_plate_id: the anchored plate id used during reconstruction\n"
+			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
