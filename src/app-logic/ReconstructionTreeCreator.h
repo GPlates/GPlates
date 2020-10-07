@@ -110,6 +110,13 @@ namespace GPlatesAppLogic
 		get_reconstruction_tree(
 				const double &reconstruction_time) const;
 
+
+		/**
+		 * Returns the default anchor plate ID;
+		 */
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const;
+
 	private:
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeCreatorImpl> d_impl;
 	};
@@ -264,6 +271,12 @@ namespace GPlatesAppLogic
 		ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree_default_anchored_plate_id(
 				const double &reconstruction_time) = 0;
+
+
+		//! Returns the default anchor plate ID;
+		virtual
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const = 0;
 	};
 
 
@@ -370,9 +383,14 @@ namespace GPlatesAppLogic
 		get_reconstruction_tree_default_anchored_plate_id(
 				const double &reconstruction_time);
 
+		//! Returns the default anchor plate ID;
+		virtual
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const;
+
 	private:
 		//! Typedef for the key in the reconstruction tree cache.
-		typedef std::pair<GPlatesMaths::real_t, boost::optional<GPlatesModel::integer_plate_id_type>> cache_key_type;
+		typedef std::pair<GPlatesMaths::real_t, GPlatesModel::integer_plate_id_type> cache_key_type;
 
 		//! Typedef for the value in the reconstruction tree cache.
 		typedef ReconstructionTree::non_null_ptr_to_const_type cache_value_type;
@@ -384,16 +402,13 @@ namespace GPlatesAppLogic
 		typedef boost::function< cache_value_type (const cache_key_type &) >
 				create_reconstruction_tree_function_type;
 
+		//! Typedef for a function returning a default anchor plate ID.
+		typedef boost::function< GPlatesModel::integer_plate_id_type () >
+				get_default_anchor_plate_id_function_type;
 
-		/**
-		 * Default anchor plate.
-		 *
-		 * Note: It can only be none when adapting an existing @a ReconstructionTreeCreator, in which case
-		 *       none is equivalent to using the default anchor plate of the adapted @a ReconstructionTreeCreator.
-		 */
-		boost::optional<GPlatesModel::integer_plate_id_type> d_default_anchor_plate_id;
 
 		create_reconstruction_tree_function_type d_create_reconstruction_tree_function;
+		get_default_anchor_plate_id_function_type d_get_default_anchor_plate_id_function;
 		cache_type d_cache;
 
 

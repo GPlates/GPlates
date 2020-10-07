@@ -74,6 +74,14 @@ namespace GPlatesAppLogic
 				return d_reconstruction_layer_proxy->get_reconstruction_tree(reconstruction_time);
 			}
 
+			//! Returns the default anchor plate ID;
+			virtual
+			GPlatesModel::integer_plate_id_type
+			get_default_anchor_plate_id() const
+			{
+				return d_reconstruction_layer_proxy->get_current_anchor_plate_id();
+			}
+
 		private:
 			ReconstructionLayerProxy::non_null_ptr_type d_reconstruction_layer_proxy;
 		};
