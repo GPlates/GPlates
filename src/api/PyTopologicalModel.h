@@ -33,12 +33,20 @@
 #include "PyFeatureCollection.h"
 #include "PyRotationModel.h"
 
+#include "app-logic/ReconstructContext.h"
+#include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalLine.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ScalarCoverageDeformation.h"
+#include "app-logic/TimeSpanUtils.h"
 #include "app-logic/TopologyReconstruct.h"
 
 #include "file-io/File.h"
 
 #include "global/python.h"
+
+#include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
@@ -124,14 +132,14 @@ namespace GPlatesApi
 				// Note we're using 'RotationModelFunctionArgument::function_argument_type' instead of
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
-				const GPlatesPropertyValues::GeoTimeInstant &oldest_time,
-				const GPlatesPropertyValues::GeoTimeInstant &youngest_time,
-				const double &time_increment,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
 
 
 		/**
-		 * Reconstruct/deform a geometry or a coverage (geometry + scalars).
+		 * Reconstruct/deform a geometry or a coverage (geometry + scalars) over a time range.
+		 *
+		 * The time range is from @a oldest_time (defaults to @a initial_time) to
+		 * @a youngest_time (defaults to present day) in increments of @a time_increment (defaults to 1My).
 		 *
 		 * Returns a reconstructed time span.
 		 *
@@ -147,9 +155,12 @@ namespace GPlatesApi
 		ReconstructedGeometryTimeSpan::non_null_ptr_type
 		reconstruct_geometry(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
-				const GPlatesPropertyValues::GeoTimeInstant &geometry_import_time,
-				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-				boost::python::object scalar_type_to_values_mapping_object) const;
+				const GPlatesPropertyValues::GeoTimeInstant &initial_time,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> oldest_time = boost::none,
+				const GPlatesPropertyValues::GeoTimeInstant &youngest_time = GPlatesPropertyValues::GeoTimeInstant(0),
+				const double &time_increment = 1,
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id = boost::none,
+				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/);
 
 
 		/**
@@ -187,20 +198,19 @@ namespace GPlatesApi
 
 	private:
 
-		TopologicalModel(
-				const FeatureCollectionSequenceFunctionArgument &topological_features,
-				const RotationModel::non_null_ptr_type &rotation_model,
-				const GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type &topology_reconstruct) :
-			d_topological_features(topological_features),
-			d_rotation_model(rotation_model),
-			d_topology_reconstruct(topology_reconstruct)
-		{  }
-
-
 		/**
-		 * Topological feature collections/files.
+		 * Resolved topologies at a time instant.
 		 */
-		FeatureCollectionSequenceFunctionArgument d_topological_features;
+		struct ResolvedTopologiesTimeSlot
+		{
+			std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_lines;
+			std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundaries;
+			std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_networks;
+		};
+
+		//! Typedef for a mapping of (integral) times to resolved topologies.
+		typedef std::map<GPlatesMaths::real_t/*time*/, ResolvedTopologiesTimeSlot> resolved_topology_time_slots_type;
+
 
 		/**
 		 * Rotation model associated with topological features.
@@ -208,9 +218,55 @@ namespace GPlatesApi
 		RotationModel::non_null_ptr_type d_rotation_model;
 
 		/**
-		 * Used to reconstruct regular features using our topologies.
+		 * Topological feature collections/files.
 		 */
-		GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type d_topology_reconstruct;
+		FeatureCollectionSequenceFunctionArgument d_topological_features;
+
+		// Separate @a d_topological_features into regular features (used as topological sections for
+		// topological lines/boundaries/networks), topological lines (can also be used as topological
+		// sections for topological boundaries/networks), topological boundaries and topological networks.
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_section_regular_features;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_line_features;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_boundary_features;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_network_features;
+
+		GPlatesAppLogic::ReconstructMethodRegistry d_reconstruct_method_registry;
+
+		/**
+		 * Used to reconstruct @a d_topological_section_regular_features so they can be used as
+		 * topological sections for the topologies.
+		 */
+		GPlatesAppLogic::ReconstructContext d_topological_section_reconstruct_context;
+		GPlatesAppLogic::ReconstructContext::context_state_reference_type d_topological_section_reconstruct_context_state;
+
+		/**
+		 * Cache of resolved topologies at various (integer) time instants.
+		 */
+		resolved_topology_time_slots_type d_cached_resolved_topologies;
+
+
+		TopologicalModel(
+				const FeatureCollectionSequenceFunctionArgument &topological_features,
+				const RotationModel::non_null_ptr_type &rotation_model);
+
+		/**
+		 * Returns the resolved topologies for the specified time (creating and caching them if necessary).
+		 *
+		 * @a reconstruction_time should be an integral value.
+		 */
+		const ResolvedTopologiesTimeSlot &
+		get_resolved_topologies(
+				const double &reconstruction_time);
+
+		/**
+		 * Resolves topologies for the specified time.
+		 *
+		 * @a reconstruction_timereconstruction_time should be an integral value.
+		 */
+		void
+		resolve_topologies(
+				GPlatesApi::TopologicalModel::ResolvedTopologiesTimeSlot &resolved_topologies,
+				const double &reconstruction_time);
 	};
 }
 
