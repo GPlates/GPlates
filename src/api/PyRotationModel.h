@@ -197,6 +197,21 @@ namespace GPlatesApi
 
 
 		/**
+		 * Returns the internal cached reconstruction tree creator implementation.
+		 *
+		 * Only needed when desire to change the internal cache size of reconstruction trees.
+		 * Otherwise @a get_reconstruction_tree_creator should generally be used.
+		 *
+		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
+		 */
+		GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+		get_cached_reconstruction_tree_creator_impl() const
+		{
+			return d_cached_reconstruction_tree_creator_impl;
+		}
+
+
+		/**
 		 * Return the feature collections used to create this rotation model.
 		 */
 		void
@@ -217,9 +232,10 @@ namespace GPlatesApi
 
 		RotationModel(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator) :
+				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl) :
 			d_feature_collection_files(feature_collection_files),
-			d_reconstruction_tree_creator(reconstruction_tree_creator)
+			d_cached_reconstruction_tree_creator_impl(cached_reconstruction_tree_creator_impl),
+			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl)
 		{  }
 
 
@@ -233,7 +249,12 @@ namespace GPlatesApi
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_feature_collection_files;
 
 		/**
-		 * Cached reconstruction tree creator.
+		 * Cached reconstruction tree creator implementation.
+		 */
+		GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type d_cached_reconstruction_tree_creator_impl;
+
+		/**
+		 * Reconstruction tree creator (wrapper around cached reconstruction tree creator implementation).
 		 */
 		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
 

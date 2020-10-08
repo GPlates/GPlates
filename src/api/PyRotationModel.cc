@@ -283,14 +283,18 @@ GPlatesApi::RotationModel::create(
 	}
 
 	// Create a cached reconstruction tree creator.
-	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
-			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-					feature_collection_refs,
-					extend_total_reconstruction_poles_to_distant_past,
-					default_anchor_plate_id,
-					reconstruction_tree_cache_size);
+	const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+			cached_reconstruction_tree_creator_impl =
+					GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
+							feature_collection_refs,
+							extend_total_reconstruction_poles_to_distant_past,
+							default_anchor_plate_id,
+							reconstruction_tree_cache_size);
 
-	return non_null_ptr_type(new RotationModel(feature_collection_files, reconstruction_tree_creator));
+	return non_null_ptr_type(
+			new RotationModel(
+					feature_collection_files,
+					cached_reconstruction_tree_creator_impl));
 }
 
 
@@ -332,11 +336,12 @@ GPlatesApi::RotationModel::create(
 	// Create a reconstruction tree adaptor that re-uses the existing reconstruction tree creator
 	// (rotation model) but with a potentially different cache size and/or default anchor plate ID
 	// (which if default anchor plate is none then uses default anchor plate of 'rotation_model' instead).
-	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_adaptor =
-			GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
-					rotation_model->get_reconstruction_tree_creator(),
-					default_anchor_plate_id,
-					reconstruction_tree_cache_size);
+	const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+			cached_reconstruction_tree_adaptor_impl =
+					GPlatesAppLogic::create_cached_reconstruction_tree_adaptor_impl(
+							rotation_model->get_reconstruction_tree_creator(),
+							default_anchor_plate_id,
+							reconstruction_tree_cache_size);
 
 	// Get the feature collections from the existing rotation model.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
@@ -345,7 +350,7 @@ GPlatesApi::RotationModel::create(
 	return non_null_ptr_type(
 			new RotationModel(
 					feature_collection_files,
-					reconstruction_tree_adaptor));
+					cached_reconstruction_tree_adaptor_impl));
 }
 
 
