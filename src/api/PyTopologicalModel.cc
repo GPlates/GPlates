@@ -65,32 +65,137 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	/**
+	 * This is called directly from Python via 'TopologicalModel.__init__()'.
+	 */
+	TopologicalModel::non_null_ptr_type
+	topological_model_create(
+			const FeatureCollectionSequenceFunctionArgument &topological_features,
+			const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+	{
+		return TopologicalModel::create(
+				topological_features,
+				rotation_model_argument,
+				anchor_plate_id);
+	}
+
+	/**
+	 * Returns the anchor plate ID.
+	 */
+	GPlatesModel::integer_plate_id_type
+	topological_model_get_anchor_plate_id(
+			TopologicalModel::non_null_ptr_type topological_model)
+	{
+		return topological_model->get_rotation_model()->get_reconstruction_tree_creator().get_default_anchor_plate_id();
+	}
+
+
 	namespace
 	{
-		/**
-		 * This is called directly from Python via 'TopologicalModel.__init__()'.
-		 */
-		TopologicalModel::non_null_ptr_type
-		topological_model_create(
-				const FeatureCollectionSequenceFunctionArgument &topological_features,
-				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
-				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+		bp::list
+		add_scalar_values_to_list(
+				GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalars_time_span,
+				const double &reconstruction_time,
+				bool return_inactive_points)
 		{
-			return TopologicalModel::create(
-					topological_features,
-					rotation_model_argument,
-					anchor_plate_id);
+			// Put the scalar values in a Python list object.
+			boost::python::list scalar_values_list_object;
+
+			// Get the scalar values at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<double>> all_scalar_values;
+				scalars_time_span->get_all_scalar_values(reconstruction_time, all_scalar_values);
+
+				for (auto scalar_value : all_scalar_values)
+				{
+					// Note that boost::none gets translated to Python 'None'.
+					scalar_values_list_object.append(scalar_value);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<double> scalar_values;
+				scalars_time_span->get_scalar_values(reconstruction_time, scalar_values);
+
+				for (auto scalar_value : scalar_values)
+				{
+					scalar_values_list_object.append(scalar_value);
+				}
+			}
+
+			return scalar_values_list_object;
+		}
+	}
+
+	/**
+	 * Returns the list of reconstructed scalar values associated (at reconstruction time) with the specified scalar type (if specified),
+	 * otherwise returns a dict mapping available scalar types to their reconstructed scalar values (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_scalar_values(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			boost::optional<GPlatesPropertyValues::ValueObjectType> scalar_type,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
 		}
 
-		/**
-		 * Returns the anchor plate ID.
-		 */
-		GPlatesModel::integer_plate_id_type
-		topological_model_get_anchor_plate_id(
-				TopologicalModel::non_null_ptr_type topological_model)
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
 		{
-			return topological_model->get_rotation_model()->get_reconstruction_tree_creator().get_default_anchor_plate_id();
+			return bp::object()/*Py_None*/;
 		}
+
+		const ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type &scalar_type_to_time_span_map =
+				reconstructed_geometry_time_span->get_scalar_type_to_time_span_map();
+		if (scalar_type_to_time_span_map.empty())
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		if (scalar_type)
+		{
+			// Look up the scalar type.
+			auto scalar_type_to_time_span_iter = scalar_type_to_time_span_map.find(scalar_type.get());
+			if (scalar_type_to_time_span_iter == scalar_type_to_time_span_map.end())
+			{
+				// Not found.
+				return bp::object()/*Py_None*/;
+			}
+
+			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type
+					scalars_time_span = scalar_type_to_time_span_iter->second;
+
+			return add_scalar_values_to_list(scalars_time_span, reconstruction_time.value(), return_inactive_points);
+		}
+
+		bp::dict scalar_values_dict;
+
+		// Iterate over scalar types.
+		for (auto scalar_type_to_time_span : scalar_type_to_time_span_map)
+		{
+			const GPlatesPropertyValues::ValueObjectType &curr_scalar_type = scalar_type_to_time_span.first;
+			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type
+					curr_scalars_time_span = scalar_type_to_time_span.second;
+
+			boost::python::list curr_scalar_values_list_object = add_scalar_values_to_list(
+					curr_scalars_time_span,
+					reconstruction_time.value(),
+					return_inactive_points);
+
+			// Map the current scalar type to its scalar values.
+			scalar_values_dict[curr_scalar_type] = curr_scalar_values_list_object;
+		}
+
+		return scalar_values_dict;
 	}
 }
 
@@ -477,6 +582,30 @@ export_topological_model()
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
+		.def("get_scalar_values",
+				&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
+				(bp::arg("reconstruction_time"),
+					bp::arg("scalar_type") = boost::optional<GPlatesPropertyValues::ValueObjectType>(),
+					bp::arg("return_inactive_points") = false),
+				"get_scalar_values(reconstruction_time, [scalar_type], [return_inactive_points=False])\n"
+				"  Returns scalar values either for a single scalar type (as a ``list``) or for all scalar types "
+				"(as a ``dict``).\n"
+				"\n"
+				"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). "
+				"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"
+				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :param return_inactive_points: Whether to return scalars associated with inactive points. "
+				"By default only scalars for active points are returned.\n"
+				"  :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* "
+				"at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available "
+				"scalar types with their associated scalar values at *reconstruction_time* (or ``None`` if no scalar types "
+				"are available). Returns ``None`` if no points are active at *reconstruction_time*.\n"
+				"  :rtype: ``list`` or ``dict`` or ``None``\n"
+				"  :raises: ValueError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

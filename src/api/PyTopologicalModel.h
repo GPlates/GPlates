@@ -88,6 +88,26 @@ namespace GPlatesApi
 			return non_null_ptr_type(new ReconstructedGeometryTimeSpan(geometry_time_span, scalar_type_to_time_span_map));
 		}
 
+
+		/**
+		 * Return time span of reconstructed geometries.
+		 */
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type
+		get_geometry_time_span() const
+		{
+			return d_geometry_time_span;
+		}
+
+
+		/**
+		 * Return mapping of scalar types to sequences of reconstructed scalar values.
+		 */
+		const scalar_type_to_time_span_map_type &
+		get_scalar_type_to_time_span_map() const
+		{
+			return d_scalar_type_to_time_span_map;
+		}
+
 	private:
 
 		ReconstructedGeometryTimeSpan(

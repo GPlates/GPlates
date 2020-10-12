@@ -1604,6 +1604,22 @@ class TopologicalModelCase(unittest.TestCase):
                 oldest_time=4,
                 time_increment=0)
 
+    def test_get_reconstructed_scalars(self):
+        multipoint =  pygplates.MultiPointOnSphere([(0,0), (10,10)])
+        reconstructed_multipoint_time_span = self.topological_model.reconstruct_geometry(
+                multipoint,
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
+        self.assertTrue(len(scalars_dict) == 2)
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0])
+
 
 def suite():
     suite = unittest.TestSuite()
