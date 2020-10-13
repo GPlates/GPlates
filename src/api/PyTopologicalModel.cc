@@ -134,6 +134,45 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Extract reconstructed geometry points (at @a reconstruction_time) from geometry time span and
+		 * return as a Python list.
+		 */
+		bp::list
+		add_geometry_points_to_list(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const double &reconstruction_time,
+				bool return_inactive_points)
+		{
+			// Put the geometry points in a Python list object.
+			boost::python::list geometry_points_list_object;
+
+			// Get the geometry points at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<GPlatesMaths::PointOnSphere>> all_geometry_points;
+				geometry_time_span->get_all_geometry_data(reconstruction_time, all_geometry_points);
+
+				for (auto geometry_point : all_geometry_points)
+				{
+					// Note that boost::none gets translated to Python 'None'.
+					geometry_points_list_object.append(geometry_point);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+				geometry_time_span->get_geometry_data(reconstruction_time, geometry_points);
+
+				for (auto geometry_point : geometry_points)
+				{
+					geometry_points_list_object.append(geometry_point);
+				}
+			}
+
+			return geometry_points_list_object;
+		}
+
+		/**
 		 * Extract reconstructed scalar values (at @a reconstruction_time) from a scalar coverage time span and
 		 * return as a Python list.
 		 */
@@ -174,7 +213,36 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * Returns the list of reconstructed scalar values associated (at reconstruction time) with the specified scalar type (if specified),
+	 * Returns the list of reconstructed geometry points (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_geometry_points(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+				reconstructed_geometry_time_span->get_geometry_time_span();
+
+		return add_geometry_points_to_list(geometry_time_span, reconstruction_time.value(), return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed scalar values (at reconstruction time) associated with the specified scalar type (if specified),
 	 * otherwise returns a dict mapping available scalar types to their reconstructed scalar values (at reconstruction time).
 	 */
 	bp::object
@@ -629,14 +697,32 @@ export_topological_model()
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
+		.def("get_geometry_points",
+				&GPlatesApi::reconstructed_geometry_time_span_get_geometry_points,
+				(bp::arg("reconstruction_time"),
+					bp::arg("return_inactive_points") = false),
+				"get_geometry_points(reconstruction_time, [return_inactive_points=False])\n"
+				"  Returns geometry points at a specific reconstruction time.\n"
+				"\n"
+				"  :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param return_inactive_points: Whether to return inactive geometry points. "
+				"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
+				"of points is equal to the number of points in the initial geometry (which are all initially active). "
+				"By default only active points are returned.\n"
+				"  :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*\n"
+				"  :rtype: ``list`` or ``None``\n"
+				"  :raises: ValueError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
 		.def("get_scalar_values",
 				&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
 				(bp::arg("reconstruction_time"),
 					bp::arg("scalar_type") = boost::optional<GPlatesPropertyValues::ValueObjectType>(),
 					bp::arg("return_inactive_points") = false),
 				"get_scalar_values(reconstruction_time, [scalar_type], [return_inactive_points=False])\n"
-				"  Returns scalar values either for a single scalar type (as a ``list``) or for all scalar types "
-				"(as a ``dict``).\n"
+				"  Returns scalar values at a specific reconstruction time either for a single scalar type (as a ``list``) or "
+				"for all scalar types (as a ``dict``).\n"
 				"\n"
 				"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time.\n"
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
