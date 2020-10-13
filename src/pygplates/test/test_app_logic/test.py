@@ -1521,6 +1521,7 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(topological_model.get_rotation_model().get_default_anchor_plate_id() == 2)
 
     def test_reconstruct_geometry(self):
+        # Create from a multipoint.
         multipoint =  pygplates.MultiPointOnSphere([(0,0), (10,10)])
         reconstructed_multipoint_time_span = self.topological_model.reconstruct_geometry(
                 multipoint,
@@ -1529,7 +1530,33 @@ class TopologicalModelCase(unittest.TestCase):
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
                 scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        # Create from a point.
+        reconstructed_point_time_span = self.topological_model.reconstruct_geometry(
+                pygplates.PointOnSphere(0, 0),
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0]})
+        # Create from a sequence of points.
+        reconstructed_points_time_span = self.topological_model.reconstruct_geometry(
+                [(0, 0), (5, 5)],
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
 
+        # Number of scalars must match number of points.
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                pygplates.PointOnSphere(0, 0),
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
         # 'oldest_time - youngest_time' not an integer multiple of time_increment
         self.assertRaises(
                 ValueError,

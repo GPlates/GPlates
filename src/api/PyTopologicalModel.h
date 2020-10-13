@@ -170,11 +170,14 @@ namespace GPlatesApi
 		 *
 		 * This will raise Python ValueError if @a scalar_type_to_values_mapping_object is not None but:
 		 * is empty, or if each scalar type is not mapped to the same number of scalar values, or
-		 * number of scalar values is not equal to number of points in @a geometry.
+		 * number of scalar values is not equal to number of points in @a geometry_object.
+		 *
+		 * NOTE: Currently @a geometry_object is limited to a PointOnSphere, MultiPointOnSphere or sequence of points.
+		 *       In future this will be extended to include polylines and polygons (with interior holes).
 		 */
 		ReconstructedGeometryTimeSpan::non_null_ptr_type
 		reconstruct_geometry(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+				boost::python::object geometry_object,
 				const GPlatesPropertyValues::GeoTimeInstant &initial_time,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> oldest_time = boost::none,
 				const GPlatesPropertyValues::GeoTimeInstant &youngest_time = GPlatesPropertyValues::GeoTimeInstant(0),

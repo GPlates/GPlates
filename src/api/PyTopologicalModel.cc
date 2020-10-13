@@ -41,6 +41,7 @@
 #include "PyFeatureCollection.h"
 #include "PyPropertyValues.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -93,6 +94,49 @@ namespace GPlatesApi
 
 	namespace
 	{
+		/**
+		 * Extract the geometry.
+		 *
+		 * @a geometry_object can be either:
+		 * (1) a PointOnSphere, or
+		 * (2) a MultiPointOnSphere, or
+		 * (3) a sequence of PointOnSphere (or anything convertible to PointOnSphere), returned as a MultiPointOnSphere.
+		 *
+		 * NOTE: Currently @a geometry_object is limited to a PointOnSphere, MultiPointOnSphere or sequence of points.
+		 *       In future this will be extended to include polylines and polygons (with interior holes).
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		get_geometry(
+				bp::object geometry_object)
+		{
+			// See if it's a MultiPointOnSphere.
+			bp::extract<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>> extract_multi_point(geometry_object);
+			if (extract_multi_point.check())
+			{
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point = extract_multi_point();
+				return multi_point;
+			}
+
+			// See if it's a PointOnSphere.
+			bp::extract<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>> extract_point(geometry_object);
+			if (extract_point.check())
+			{
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point = extract_point();
+				return point;
+			}
+
+			// Attempt to extract a sequence of points.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			PythonExtractUtils::extract_iterable(points, geometry_object,
+					"Expected a point or a multipoint or a sequence of points");
+
+			return GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
+		}
+
+		/**
+		 * Extract reconstructed scalar values (at @a reconstruction_time) from a scalar coverage time span and
+		 * return as a Python list.
+		 */
 		bp::list
 		add_scalar_values_to_list(
 				GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalars_time_span,
@@ -413,7 +457,7 @@ GPlatesApi::TopologicalModel::resolve_topologies(
 
 GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type
 GPlatesApi::TopologicalModel::reconstruct_geometry(
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+		bp::object geometry_object,
 		const GPlatesPropertyValues::GeoTimeInstant &initial_time,
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> oldest_time_arg,
 		const GPlatesPropertyValues::GeoTimeInstant &youngest_time_arg,
@@ -506,6 +550,9 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 					resolved_network_time_span,
 					d_rotation_model->get_reconstruction_tree_creator());
 
+	// Extract the geometry.
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = get_geometry(geometry_object);
+
 	// Create time span of reconstructed geometry.
 	GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
 			topology_reconstruct->create_geometry_time_span(
@@ -597,10 +644,13 @@ export_topological_model()
 				"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"
 				"  :type scalar_type: :class:`ScalarType`\n"
 				"  :param return_inactive_points: Whether to return scalars associated with inactive points. "
+				"If ``True`` then each scalar corresponding to an inactive point stores ``None`` instead of a scalar and hence "
+				"the size of each ``list`` of scalars is equal to the number of points (and scalars) in the initial geometry "
+				"(which are all initially active). "
 				"By default only scalars for active points are returned.\n"
 				"  :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* "
 				"at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available "
-				"scalar types with their associated scalar values at *reconstruction_time* (or ``None`` if no scalar types "
+				"scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types "
 				"are available). Returns ``None`` if no points are active at *reconstruction_time*.\n"
 				"  :rtype: ``list`` or ``dict`` or ``None``\n"
 				"  :raises: ValueError if *reconstruction_time* is "
@@ -681,8 +731,10 @@ export_topological_model()
 			"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [scalars])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
-				"  :param geometry: the geometry to reconstruct using topologies\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+			"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
+				"multipoint, or a point or sequence of points. Polylines and polygons to be introduced in future.\n"
+				"  :type geometry: :class:`MultiPointOnSphere`, or :class:`PointOnSphere`, or sequence of points "
+				"(where a point can be :class:`PointOnSphere` or (x,y,z) tuple or (latitude,longitude) tuple in degrees)\n"
 				"  :param initial_time: The time that reconstruction by topologies starts at.\n"
 				"  :type initial_time: float or :class:`GeoTimeInstant`\n"
 				"  :param oldest_time: Oldest time in the history of topologies (must have an integral value). "
