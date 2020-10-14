@@ -48,6 +48,7 @@
 #include "app-logic/ScalarCoverageEvolution.h"
 #include "app-logic/ReconstructParams.h"
 #include "app-logic/TopologyInternalUtils.h"
+#include "app-logic/TopologyPointLocation.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -173,6 +174,51 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Extract the location in topologies of reconstructed geometry points (at @a reconstruction_time)
+		 * from geometry time span and return as a Python list.
+		 */
+		bp::list
+		add_topology_point_locations_to_list(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const double &reconstruction_time,
+				bool return_inactive_points)
+		{
+			// Put the topology point locations in a Python list object.
+			boost::python::list topology_point_locations_list_object;
+
+			// Get the topology point locations at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<GPlatesAppLogic::TopologyPointLocation>> all_topology_point_locations;
+				geometry_time_span->get_all_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						all_topology_point_locations);
+
+				for (auto topology_point_location : all_topology_point_locations)
+				{
+					// Note that boost::none gets translated to Python 'None'.
+					topology_point_locations_list_object.append(topology_point_location);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<GPlatesAppLogic::TopologyPointLocation> topology_point_locations;
+				geometry_time_span->get_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						topology_point_locations);
+
+				for (auto topology_point_location : topology_point_locations)
+				{
+					topology_point_locations_list_object.append(topology_point_location);
+				}
+			}
+
+			return topology_point_locations_list_object;
+		}
+
+		/**
 		 * Extract reconstructed scalar values (at @a reconstruction_time) from a scalar coverage time span and
 		 * return as a Python list.
 		 */
@@ -242,6 +288,35 @@ namespace GPlatesApi
 	}
 
 	/**
+	 * Returns the list of reconstructed geometry points (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_topology_point_locations(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+				reconstructed_geometry_time_span->get_geometry_time_span();
+
+		return add_topology_point_locations_to_list(geometry_time_span, reconstruction_time.value(), return_inactive_points);
+	}
+
+	/**
 	 * Returns the list of reconstructed scalar values (at reconstruction time) associated with the specified scalar type (if specified),
 	 * otherwise returns a dict mapping available scalar types to their reconstructed scalar values (at reconstruction time).
 	 */
@@ -308,6 +383,93 @@ namespace GPlatesApi
 		}
 
 		return scalar_values_dict;
+	}
+
+	/**
+	 * Returns true if point is not located in any resolved topologies.
+	 */
+	bool
+	topology_point_not_located_in_resolved_topology(
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+	{
+		return topology_point_location.not_located();
+	}
+
+	/**
+	 * Returns resolved topological boundary containing point, otherwise boost::none.
+	 */
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>
+	topology_point_located_in_resolved_boundary(
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+	{
+		return topology_point_location.located_in_resolved_boundary();
+	}
+
+	/**
+	 * Returns resolved topological network if it contains point, otherwise None.
+	 */
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>
+	topology_point_located_in_resolved_network(
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+	{
+		boost::optional<GPlatesAppLogic::TopologyPointLocation::network_location_type>
+				network_location = topology_point_location.located_in_resolved_network();
+		if (network_location)
+		{
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			return resolved_network;
+		}
+
+		return boost::none;
+	}
+
+	/**
+	 * Returns resolved topological network if its deforming region (excludes rigid blocks) contains point, otherwise None.
+	 */
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>
+	topology_point_located_in_resolved_network_deforming_region(
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+	{
+		boost::optional<GPlatesAppLogic::TopologyPointLocation::network_location_type>
+				network_location = topology_point_location.located_in_resolved_network();
+		if (network_location)
+		{
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
+
+			if (point_location.located_in_deforming_region())
+			{
+				return resolved_network;
+			}
+		}
+
+		return boost::none;
+	}
+
+	/**
+	 * Returns tuple (resolved topological network, rigid block RFG) containing point, otherwise None.
+	 */
+	bp::object
+	topology_point_located_in_resolved_network_rigid_block(
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+	{
+		// Is located in a resolved network?
+		boost::optional<GPlatesAppLogic::TopologyPointLocation::network_location_type>
+				network_location = topology_point_location.located_in_resolved_network();
+		if (network_location)
+		{
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
+
+			// Is located in one of resolved network's rigid blocks?
+			if (boost::optional<const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &> rigid_block =
+				point_location.located_in_rigid_block())
+			{
+				return bp::make_tuple(resolved_network, rigid_block->get_reconstructed_feature_geometry());
+			}
+		}
+
+		return bp::object()/*Py_None*/;
 	}
 }
 
@@ -684,6 +846,69 @@ void
 export_topological_model()
 {
 	//
+	// TopologyPointLocation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesAppLogic::TopologyPointLocation>(
+					"TopologyPointLocation",
+					"Locates a point in a specific resolved topological boundary or network (deforming region or interior rigid block).\n"
+					"\n"
+					"  .. versionadded:: 29\n",
+					// Don't allow creation from python side...
+					// (Also there is no publicly-accessible default constructor).
+					bp::no_init)
+		.def("not_located_in_resolved_topology",
+				&GPlatesApi::topology_point_not_located_in_resolved_topology,
+				"not_located_in_resolved_topology()\n"
+				"  Query if point is not located in any resolved topological boundaries or networks.\n"
+				"\n"
+				"  :returns: ``True`` if point is not located in any resolved topologies\n"
+				"  :rtype: bool\n")
+		.def("located_in_resolved_boundary",
+				&GPlatesApi::topology_point_located_in_resolved_boundary,
+				"located_in_resolved_boundary()\n"
+				"  Query if point is located in a :class:`resolved topological boundary<ResolvedTopologicalBoundary>`.\n"
+				"\n"
+				"  :returns: the resolved topological boundary that contains the point, otherwise ``None``\n"
+				"  :rtype: :class:`ResolvedTopologicalBoundary` or ``None``\n")
+		.def("located_in_resolved_network",
+				&GPlatesApi::topology_point_located_in_resolved_network,
+				"located_in_resolved_network()\n"
+				"  Query if point is located in a :class:`resolved topological network<ResolvedTopologicalNetwork>`.\n"
+				"\n"
+				"  :returns: the resolved topological network that contains the point, otherwise ``None``\n"
+				"  :rtype: :class:`ResolvedTopologicalNetwork` or ``None``\n"
+				"\n"
+				"  .. note:: The point can be anywhere inside a resolved topological network - inside its deforming region "
+				"or inside any one of its interior rigid blocks (if it has any).\n")
+		.def("located_in_resolved_network_deforming_region",
+				&GPlatesApi::topology_point_located_in_resolved_network_deforming_region,
+				"located_in_resolved_network_deforming_region()\n"
+				"  Query if point is located in the deforming region of a :class:`resolved topological network<ResolvedTopologicalNetwork>`.\n"
+				"\n"
+				"  :returns: the resolved topological network whose deforming region contains the point, otherwise ``None``\n"
+				"  :rtype: :class:`ResolvedTopologicalNetwork` or ``None``\n"
+				"\n"
+				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is also inside one of "
+				"its interior rigid blocks (and hence not inside its deforming region).\n")
+		.def("located_in_resolved_network_rigid_block",
+				&GPlatesApi::topology_point_located_in_resolved_network_rigid_block,
+				"located_in_resolved_network_rigid_block()\n"
+				"  Query if point is located in an interior rigid block of a :class:`resolved topological network<ResolvedTopologicalNetwork>`.\n"
+				"\n"
+				"  :returns: tuple of resolved topological network and its interior rigid block (that contains the point), otherwise ``None``\n"
+				"  :rtype: 2-tuple (:class:`ResolvedTopologicalNetwork`, :class:`ReconstructedFeatureGeometry`),  or ``None``\n"
+				"\n"
+				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is *not* inside one of "
+				"its interior rigid blocks.\n")
+		// Make unhashable, with no comparison operators...
+		.def(GPlatesApi::NoHashDefVisitor(false, false))
+	;
+
+	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::TopologyPointLocation>();
+
+
+	//
 	// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
@@ -711,6 +936,25 @@ export_topological_model()
 				"of points is equal to the number of points in the initial geometry (which are all initially active). "
 				"By default only active points are returned.\n"
 				"  :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*\n"
+				"  :rtype: ``list`` or ``None``\n"
+				"  :raises: ValueError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+		.def("get_topology_point_locations",
+				&GPlatesApi::reconstructed_geometry_time_span_get_topology_point_locations,
+				(bp::arg("reconstruction_time"),
+					bp::arg("return_inactive_points") = false),
+				"get_topology_point_locations(reconstruction_time, [return_inactive_points=False])\n"
+				"  Returns the locations of geometry points in resolved topologies at a specific reconstruction time.\n"
+				"\n"
+				"  :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
+				"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
+				"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
+				"in the initial geometry (which are all initially active). "
+				"By default only topology locations for active points are returned.\n"
+				"  :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*\n"
 				"  :rtype: ``list`` or ``None``\n"
 				"  :raises: ValueError if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "

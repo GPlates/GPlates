@@ -55,6 +55,7 @@ Class to query the history of a topological model, and reconstruct regular featu
 
    pygplates.TopologicalModel
    pygplates.ReconstructedGeometryTimeSpan
+   pygplates.TopologyPointLocation
 
 Function to resolve topologies:
 

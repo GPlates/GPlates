@@ -1632,27 +1632,36 @@ class TopologicalModelCase(unittest.TestCase):
                 time_increment=0)
 
     def test_get_reconstructed_data(self):
-        multipoint =  pygplates.MultiPointOnSphere([(0,0), (10,10)])
+        multipoint =  pygplates.MultiPointOnSphere([(0,0), (0,-30), (0,-60)])
         reconstructed_multipoint_time_span = self.topological_model.reconstruct_geometry(
                 multipoint,
                 initial_time=20.0,
                 oldest_time=30.0,
                 youngest_time=10.0,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]})
         
         # Points.
         reconstructed_points = reconstructed_multipoint_time_span.get_geometry_points(20)
-        self.assertTrue(len(reconstructed_points) == 2)
-        # Reconstructed points same as initial points (since outside deforming region and initial points not assigned a plate ID).
+        self.assertTrue(len(reconstructed_points) == 3)
+        # Reconstructed points same as initial points (since topologies are currently static and initial points not assigned a plate ID).
         self.assertTrue(reconstructed_points == list(multipoint))
+        
+        # Topology point locations.
+        topology_point_locations = reconstructed_multipoint_time_span.get_topology_point_locations(20)
+        self.assertTrue(len(topology_point_locations) == 3)
+        self.assertTrue(topology_point_locations[0].not_located_in_resolved_topology())
+        self.assertTrue(topology_point_locations[1].located_in_resolved_boundary())
+        self.assertTrue(topology_point_locations[2].located_in_resolved_network())
+        self.assertTrue(topology_point_locations[2].located_in_resolved_network_deforming_region())
+        self.assertFalse(topology_point_locations[2].located_in_resolved_network_rigid_block())
         
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
         self.assertTrue(len(scalars_dict) == 2)
-        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0])
-        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0])
-        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0])
-        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0, 10.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0, 1.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0, 10.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
 
 
 def suite():
